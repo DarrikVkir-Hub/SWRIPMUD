@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -28,7 +25,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <dirent.h>
+#include <sys/dir.h>
 #include "mud.h"
 
 /*
@@ -92,7 +89,7 @@ void save_home( CHAR_DATA *ch )
 	  	  fwrite_obj(ch, contents, fp, 0, OS_CARRY );
 		fprintf( fp, "#END\n" );
 		ch->top_level = templvl;
-    		fclose( fp );
+    		FCLOSE( fp );
     	}
     }
 }
@@ -209,7 +206,7 @@ void save_char_obj( CHAR_DATA *ch )
       if ( ( fp = fopen( strback, "w" ) ) == NULL )
       {
 	bug( "Save_god_level: fopen", 0 );
-	perror( strsave );
+	perror( strback );
       }
       else
       {
@@ -224,7 +221,7 @@ void save_char_obj( CHAR_DATA *ch )
 	if ( ch->pcdata->m_range_lo && ch->pcdata->m_range_hi )
 	  fprintf( fp, "MobRange     %d %d\n", ch->pcdata->m_range_lo,
 	  				       ch->pcdata->m_range_hi	);
-	fclose( fp );
+	FCLOSE( fp );
       }
     }
 
@@ -245,7 +242,7 @@ void save_char_obj( CHAR_DATA *ch )
 	if ( ch->pcdata->pet )
 		fwrite_mobile( fp, ch->pcdata->pet );
 	fprintf( fp, "#END\n" );
-	fclose( fp );
+	FCLOSE( fp );
     }
 
     re_equip_char( ch );
@@ -302,7 +299,7 @@ void save_clone( CHAR_DATA *ch )
 	if ( ch->pcdata && ch->pcdata->comments )         /* comments */
 	  fwrite_comments( ch, fp );        /* comments */
 	fprintf( fp, "#END\n" );
-	fclose( fp );
+	FCLOSE( fp );
     }
 
     ch->pcdata->clones--;
@@ -329,6 +326,7 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     fprintf( fp, "#%s\n", IS_NPC(ch) ? "MOB" : "PLAYER"		);
 
     fprintf( fp, "Version      %d\n",   SAVEVERSION		);
+    fprintf( fp, "Toplevel     %d\n",   ch->top_level           );
     fprintf( fp, "Name         %s~\n",	ch->name		);
     if ( ch->short_descr && ch->short_descr[0] != '\0' )
       fprintf( fp, "ShortDescr   %s~\n",	ch->short_descr	);
@@ -340,7 +338,6 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     fprintf( fp, "Race         %d\n",	ch->race		);
     fprintf( fp, "MainAbility  %d\n",	ch->main_ability	);
     fprintf( fp, "Languages    %d %d\n", ch->speaks, ch->speaking );
-    fprintf( fp, "Toplevel     %d\n",	ch->top_level		);
     if ( ch->trust )
       fprintf( fp, "Trust        %d\n",	ch->trust		);
     fprintf( fp, "Played       %d\n",
@@ -440,6 +437,7 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 	  fprintf( fp, "Prompt       %s~\n",	ch->pcdata->prompt	);
 	if ( ch->pcdata->pagerlen != 24 )
 	  fprintf( fp, "Pagerlen     %d\n",	ch->pcdata->pagerlen	);
+        fprintf(fp, "Commandgroup    %d\n", ch->pcdata->commandgroup);
         for ( pal = ch->pcdata->first_alias; pal; pal = pal->next )
         {
             if ( !pal->name || !pal->cmd || !*pal->name || !*pal->cmd )
@@ -600,6 +598,12 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
 	return;
     }
 
+	if( !obj )
+	{
+		bug( "%s: NULL obj", __FUNCTION__ );
+		return;
+	}
+
     /*
      * Slick recursion to write lists backwards,
      *   so loading them will load in forwards order.
@@ -629,24 +633,24 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
     fprintf( fp, (os_type == OS_CORPSE ? "#CORPSE\n" : "#OBJECT\n") );
 
     if ( iNest )
-	fprintf( fp, "Nest         %d\n",	iNest		     );
+		fprintf( fp, "Nest         %d\n",	iNest		     );
     if ( obj->count > 1 )
-	fprintf( fp, "Count        %d\n",	obj->count	     );
-    if ( QUICKMATCH( obj->name, obj->pIndexData->name ) == 0 )
-	fprintf( fp, "Name         %s~\n",	obj->name	     );
-    if ( QUICKMATCH( obj->short_descr, obj->pIndexData->short_descr ) == 0 )
-	fprintf( fp, "ShortDescr   %s~\n",	obj->short_descr     );
-    if ( QUICKMATCH( obj->description, obj->pIndexData->description ) == 0 )
-	fprintf( fp, "Description  %s~\n",	obj->description     );
-    if ( QUICKMATCH( obj->action_desc, obj->pIndexData->action_desc ) == 0 )
-	fprintf( fp, "ActionDesc   %s~\n",	obj->action_desc     );
+		fprintf( fp, "Count        %d\n",	obj->count	     );
+	if( obj->name && ( !obj->pIndexData->name  || str_cmp( obj->name, obj->pIndexData->name ) ) )
+		fprintf( fp, "Name         %s~\n", obj->name );
+	if( obj->short_descr && ( !obj->pIndexData->short_descr || str_cmp( obj->short_descr, obj->pIndexData->short_descr ) ) )
+		fprintf( fp, "ShortDescr   %s~\n", obj->short_descr );
+	if( obj->description && ( !obj->pIndexData->description || str_cmp( obj->description, obj->pIndexData->description ) ) )
+		fprintf( fp, "Description  %s~\n", obj->description );
+	if( obj->action_desc && ( !obj->pIndexData->action_desc || str_cmp( obj->action_desc, obj->pIndexData->action_desc ) ) )
+		fprintf( fp, "ActionDesc   %s~\n", obj->action_desc );
     fprintf( fp, "Vnum         %d\n",	obj->pIndexData->vnum	     );
     if ( os_type == OS_CORPSE && obj->in_room )
-      fprintf( fp, "Room         %d\n",   obj->in_room->vnum         );
+    	fprintf( fp, "Room         %d\n",   obj->in_room->vnum         );
     if ( obj->extra_flags != obj->pIndexData->extra_flags )
-	fprintf( fp, "ExtraFlags   %d\n",	obj->extra_flags     );
+		fprintf( fp, "ExtraFlags   %d\n",	obj->extra_flags     );
     if ( obj->wear_flags != obj->pIndexData->wear_flags )
-	fprintf( fp, "WearFlags    %d\n",	obj->wear_flags	     );
+		fprintf( fp, "WearFlags    %d\n",	obj->wear_flags	     );
     wear_loc = -1;
     for ( wear = 0; wear < MAX_WEAR; wear++ )
 	for ( x = 0; x < MAX_LAYERS; x++ )
@@ -765,6 +769,14 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
  */
 bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool preload )
 {
+  return load_char_obj_v2(d,name,preload,0);
+}
+
+/*
+ * Load a char and inventory into a new ch structure with option of restoring from backup.
+ */
+bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead)
+{
     char strsave[MAX_INPUT_LENGTH];
     CHAR_DATA *ch;
     FILE *fp;
@@ -819,8 +831,13 @@ bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool preload )
     ch->was_sentinel                    = NULL;
     ch->plr_home                        = NULL;
     found = FALSE;
-    sprintf( strsave, "%s%c/%s", PLAYER_DIR, tolower(name[0]),
+    if (undead) {
+      sprintf( strsave, "%s%c/%s", BACKUP_DIR, tolower(name[0]),
+                        capitalize( name ) );
+    } else {
+      sprintf( strsave, "%s%c/%s", PLAYER_DIR, tolower(name[0]),
 			capitalize( name ) );
+    }
     if ( stat( strsave, &fst ) != -1 )
     {
       if ( fst.st_size == 0 )
@@ -901,7 +918,7 @@ bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool preload )
 		break;
 	    }
 	}
-	fclose( fp );
+	FCLOSE( fp );
 	fpArea = NULL;
 	strcpy(strArea, "$");
     }
@@ -974,7 +991,7 @@ bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool preload )
 		}
 		else
 		    break;
-	}
+        }
 
     }
             
@@ -1004,20 +1021,26 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 {
     char buf[MAX_STRING_LENGTH];
     char *line;
-    char *word;
+    const char *word;
     int x1, x2, x3, x4, x5, x6, x7, x8, x9, x0;
     sh_int killcnt;
     bool fMatch;
     time_t lastplayed;
-    int sn, extra;
+    int sn;//, extra;
          
     file_ver = 0;
     killcnt = 0;
 
     for ( ; ; )
     {
-	word   = feof( fp ) ? "End" : fread_word( fp );
-	fMatch = FALSE;
+		word = ( feof( fp ) ? "End" : fread_word( fp ) );
+
+		if( word[0] == '\0' )
+		{
+			bug( "%s: EOF encountered reading file!", __FUNCTION__ );
+			word = "End";
+		}
+		fMatch = FALSE;
 
 	switch ( UPPER(word[0]) )
 	{
@@ -1196,7 +1219,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		break;
 	    }
 	    KEY( "Clones",	ch->pcdata->clones,		fread_number( fp ) );
-
+            KEY(  "Commandgroup", ch->pcdata->commandgroup,     fread_number( fp ) );
 	    if ( !str_cmp( word, "Condition" ) )
 	    {
 		line = fread_line( fp );
@@ -1409,7 +1432,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	    KEY( "PKills",	ch->pcdata->pkills,	fread_number( fp ) );
 	    KEY( "Played",	ch->pcdata->played,	fread_number( fp ) );
 	    KEY( "Position",	ch->position,		fread_number( fp ) );
-	    KEY( "Practice",	extra,		fread_number( fp ) );
+//	    KEY( "Practice",	extra,		fread_number( fp ) );
 	    KEY( "Prompt",	ch->pcdata->prompt,	fread_string( fp ) );
 	    if (!str_cmp ( word, "PTimer" ) )
 	    {
@@ -1677,12 +1700,12 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	    break;
 
 	case 'V':
-	    if ( !str_cmp( word, "Vnum" ) )
+/*	    if ( !str_cmp( word, "Vnum" ) ) - Removed from FUSS - DV 3-13-26
 	    {
 		ch->pIndexData = get_mob_index( fread_number( fp ) );
 		fMatch = TRUE;
 		break;
-	    }
+	    }*/
 	    KEY( "Version",	file_ver,		fread_number( fp ) );
 	    break;
 
@@ -1728,7 +1751,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 {
     OBJ_DATA *obj;
-    char *word;
+    const char *word;
     int iNest;
     bool fMatch;
     bool fNest;
@@ -1746,8 +1769,14 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 
     for ( ; ; )
     {
-	word   = feof( fp ) ? "End" : fread_word( fp );
-	fMatch = FALSE;
+      word = ( feof( fp ) ? "End" : fread_word( fp ) );
+
+      if( word[0] == '\0' )
+      {
+         bug( "%s: EOF encountered reading file!", __FUNCTION__ );
+         word = "End";
+      }
+      fMatch = FALSE;
 
 	switch ( UPPER(word[0]) )
 	{
@@ -1821,15 +1850,12 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 	    {
 		if ( !fNest || !fVnum )
 		{
-		    bug( "Fread_obj: incomplete object.", 0 );
-		    if ( obj->name )
-		      STRFREE( obj->name        );
-		    if ( obj->description )
-		      STRFREE( obj->description );
-		    if ( obj->short_descr )
-		      STRFREE( obj->short_descr );
-		    DISPOSE( obj );
-		    return;
+			if( obj->name )
+				bug( "%s: %s incomplete object.", __FUNCTION__, obj->name );
+			else
+				bug( "%s: incomplete object.", __FUNCTION__ );
+			free_obj( obj );
+			return;
 		}
 		else
 		{
@@ -2116,7 +2142,7 @@ void write_corpses( CHAR_DATA *ch, char *name )
   if ( fp )
   {
     fprintf(fp, "#END\n\n");
-    fclose(fp);
+    FCLOSE(fp);
   }
   else
   {
@@ -2131,7 +2157,7 @@ void write_corpses( CHAR_DATA *ch, char *name )
 void load_corpses( void )
 {
   DIR *dp;
-  struct dirent *de;
+  struct direct *de;
   extern FILE *fpArea;
   extern char strArea[MAX_INPUT_LENGTH];
   extern int falling;
@@ -2184,7 +2210,7 @@ void load_corpses( void )
           break;
         }
       }
-      fclose(fpArea);
+      FCLOSE(fpArea);
     }
   }
   fpArea = NULL;
@@ -2216,7 +2242,7 @@ if ( !(dp = opendir(STOREROOM_DIR)) )
     if ( de->d_name[0] != '.' )
     {
 	    int iNest;
-	    bool found;
+//	    bool found;
 	    OBJ_DATA *tobj, *tobj_next;
 	    ROOM_INDEX_DATA *storeroom;
 
@@ -2230,13 +2256,7 @@ if ( !(dp = opendir(STOREROOM_DIR)) )
 
 	    storeroom = get_room_index(atoi(de->d_name));
 	    if( !storeroom )
-	    {
-		fpArea = NULL;
-  		strcpy(strArea, "$");
-  		closedir(dp);
-  		falling = 0;
-  		return;
-  	    }
+  		continue;
   	    
 	    if ( !IS_SET( storeroom->room_flags, ROOM_CLANSTOREROOM ) )
 	    {
@@ -2249,7 +2269,7 @@ if ( !(dp = opendir(STOREROOM_DIR)) )
 	    for ( iNest = 0; iNest < MAX_NEST; iNest++ )
 		rgObjNest[iNest] = NULL;
 
-	    found = TRUE;
+//	    found = TRUE;
 	    for ( ; ; )
 	    {
 		char letter;
@@ -2283,7 +2303,7 @@ if ( !(dp = opendir(STOREROOM_DIR)) )
 		}
 	    }
 
-	    fclose( fpArea );
+	    FCLOSE( fpArea );
 
 	    for ( tobj = supermob->first_carrying; tobj; tobj = tobj_next )
 	    {
@@ -2334,7 +2354,7 @@ void save_storeroom( ROOM_INDEX_DATA *room )
        	if (contents)
   	  fwrite_obj(NULL, contents, fp, 0, OS_CARRY );
 	fprintf( fp, "#END\n" );
-	fclose( fp );
+	FCLOSE( fp );
 
     }
 
@@ -2394,7 +2414,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
         else if ( !strcmp( word, "END" ) )
           break;
        }
-      fclose(fpArea);
+      FCLOSE(fpArea);
     }
   }
   fpArea = NULL;
@@ -2418,13 +2438,13 @@ if ( !(dp = opendir(VENDOR_DIR)) )
          		&& mob->was_in_room )
              		? mob->was_in_room->vnum
              		: mob->in_room->vnum ); 
-   if ( QUICKMATCH( mob->name, mob->pIndexData->player_name) == 0 )
+   if ( str_cmp( mob->name, mob->pIndexData->player_name) )
          fprintf( fp, "Name     %s~\n", mob->name );
-   if ( QUICKMATCH( mob->short_descr, mob->pIndexData->short_descr) == 0 )
+   if ( str_cmp( mob->short_descr, mob->pIndexData->short_descr) )
    	fprintf( fp, "Short	%s~\n", mob->short_descr );
-   if ( QUICKMATCH( mob->long_descr, mob->pIndexData->long_descr) == 0 )
+   if ( str_cmp( mob->long_descr, mob->pIndexData->long_descr) )
    	fprintf( fp, "Long	%s~\n", mob->long_descr );
-   if ( QUICKMATCH( mob->description, mob->pIndexData->description) == 0 )
+   if ( str_cmp( mob->description, mob->pIndexData->description) )
    	fprintf( fp, "Description %s~\n", mob->description );
    fprintf( fp, "Position %d\n", mob->position );
    fprintf( fp, "Flags %d\n", mob->act );
@@ -2444,7 +2464,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
  CHAR_DATA *  fread_mobile( FILE *fp )
  {
    CHAR_DATA *mob = NULL;
-   char *word;
+   const char *word;
    bool fMatch;
    int inroom = 0;
    ROOM_INDEX_DATA *pRoomIndex = NULL;
@@ -2550,7 +2570,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
    if ( IS_NPC( ch ) || !ch->pcdata->pet )
  	return;
  
-   fclose( fpReserve );
+   FCLOSE( fpReserve );
    if ( (fp = fopen( argument, "w")) == NULL )
    {
  	sprintf(buf, "Write_char_mobile: couldn't open %s for writing!\n\r", 
@@ -2562,7 +2582,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
    mob = ch->pcdata->pet;
    REMOVE_BIT( mob->affected_by, AFF_CHARM );
    fwrite_mobile( fp, mob );
-   fclose( fp );
+   FCLOSE( fp );
    fpReserve = fopen( NULL_FILE, "r" );
    return;
  }
@@ -2573,10 +2593,10 @@ if ( !(dp = opendir(VENDOR_DIR)) )
  void read_char_mobile( char *argument )
  {
    FILE *fp;
-   CHAR_DATA *mob;
+//   CHAR_DATA *mob;
    char buf[MAX_STRING_LENGTH];
  
-   fclose( fpReserve );
+   FCLOSE( fpReserve );
    if ( (fp = fopen( argument, "r")) == NULL )
    {
  	sprintf(buf, "Read_char_mobile: couldn't open %s for reading!\n\r", 
@@ -2585,8 +2605,8 @@ if ( !(dp = opendir(VENDOR_DIR)) )
  	fpReserve = fopen( NULL_FILE, "r" );
  	return;
    }
-   mob = fread_mobile( fp );
-  fclose( fp );
+   /*mob = */fread_mobile( fp );
+  FCLOSE( fp );
   fpReserve = fopen( NULL_FILE, "r" );
 
 }

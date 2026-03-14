@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -74,10 +71,11 @@ void  explode( OBJ_DATA *obj )
     	           {
     	               if ( objcont->carried_by )
 	               {
-    	                   act( AT_WHITE, "$p EXPLODES in $n's hands!", objcont->carried_by, obj, NULL, TO_ROOM );
-	                   act( AT_WHITE, "$p EXPLODES in your hands!", objcont->carried_by, obj, NULL, TO_CHAR );
-	                   room = xch->in_room;
-	                   held = TRUE;
+      	                act( AT_WHITE, "$p EXPLODES in $n's hands!", objcont->carried_by, obj, NULL, TO_ROOM );
+                        act( AT_WHITE, "$p EXPLODES in your hands!", objcont->carried_by, obj, NULL, TO_CHAR );
+                        room = objcont->carried_by->in_room;
+                        held = TRUE;
+			            xch = objcont->carried_by;
 	               }
 	               else if ( objcont->in_room )
 	                   room = objcont->in_room;
@@ -86,10 +84,21 @@ void  explode( OBJ_DATA *obj )
 	                   
 	               if ( room )
 	               {
-    	                      if ( !held && room->first_person )
-    	                          act( AT_WHITE, "$p EXPLODES!", room->first_person , obj, NULL, TO_ROOM );
+			  char buf[MAX_STRING_LENGTH];
+
+    	                      if( !held )
+			      {
+				  sprintf( buf, "%s EXPLODES!\n\r", objcont->short_descr );
+				  echo_to_room( AT_BLOOD, room, buf );
+			      }
+			      else
+			      {
+				  sprintf( buf, "%s EXLODES in %s'shands!\n\r", objcont->short_descr, xch->name );
+				  echo_to_room( AT_BLOOD, room, buf );
+			      }
 	                      room_explode( obj , xch, room );
 	               }
+		      break;
     	           }           
     	    }
             make_scraps(obj);
@@ -119,24 +128,24 @@ void room_explode_1( OBJ_DATA *obj , CHAR_DATA *xch, ROOM_INDEX_DATA *room , int
     	                        
     	  for ( rch = room->first_person ; rch ;  rch = rnext )
     	  {  
-    	                           rnext = rch->next_in_room;
-    	                           act( AT_WHITE, "The shockwave from a massive explosion rips through your body!", room->first_person , obj, NULL, TO_ROOM );
-    	                           dam = number_range ( obj->value[0] , obj->value[1] );
-    	                           damage( rch, rch , dam, TYPE_UNDEFINED );
-    	                           if ( !char_died(rch) )
-    	                           {
-    	                            if ( IS_NPC( rch ) )
-                                    {
-      				      if ( IS_SET( rch->act , ACT_SENTINEL ) )
-      				      {
-         				rch->was_sentinel = rch->in_room;
-         				REMOVE_BIT( rch->act, ACT_SENTINEL );
-      				      }
-      			 	      start_hating( rch , xch );
-      			 	      start_hunting( rch , xch );
-   			            }
-   			           } 
-                                }
+            rnext = rch->next_in_room;
+            act( AT_WHITE, "The shockwave from a massive explosion rips through your body!", rch, obj, NULL, TO_CHAR );
+            dam = number_range ( obj->value[0] , obj->value[1] );
+            damage( rch, rch , dam, TYPE_UNDEFINED );
+            if ( !char_died(rch) )
+            {
+                if ( IS_NPC( rch ) )
+                {
+                    if ( IS_SET( rch->act , ACT_SENTINEL ) )
+                    {
+                        rch->was_sentinel = rch->in_room;
+                        REMOVE_BIT( rch->act, ACT_SENTINEL );
+                    }
+                    start_hating( rch , xch );
+                    start_hunting( rch , xch );
+                }
+            } 
+          }
     	                    
     	  for ( robj = room->first_content; robj; robj = robj_next )        
           {        
@@ -229,11 +238,13 @@ int get_exp_worth( CHAR_DATA *ch )
     exp += ( ch->barenumdie * ch->baresizedie + GET_DAMROLL(ch) ) * 50;
     exp += GET_HITROLL(ch) * ch->top_level * 10;
     if ( IS_AFFECTED(ch, AFF_SANCTUARY) )
-      exp += exp * 1.5;
+      exp += (int) ( exp * 1.5 );
     if ( IS_AFFECTED(ch, AFF_FIRESHIELD) )
-      exp += exp * 1.2;
+      exp += (int) ( exp * 1.2 );
+    if( IS_AFFECTED( ch, AFF_ICESHIELD ) )
+      exp += ( int )( exp * 1.2 );     
     if ( IS_AFFECTED(ch, AFF_SHOCKSHIELD) )
-      exp += exp * 1.2;
+      exp += (int) ( exp * 1.2 );
     exp = URANGE( MIN_EXP_WORTH, exp, MAX_EXP_WORTH );
 
     return exp;
@@ -292,8 +303,8 @@ sh_int get_trust( CHAR_DATA *ch )
       if ( ch->desc->original )
 	ch = ch->desc->original;
 */
-    if ( ch->trust != 0 )
-	return ch->trust;
+      if ( ch->trust != 0 )
+  	return ch->trust;
 
     if ( IS_NPC(ch) && ch->top_level >= LEVEL_AVATAR )
 	return LEVEL_AVATAR;
@@ -403,8 +414,8 @@ sh_int get_curr_dex( CHAR_DATA *ch )
 sh_int get_curr_con( CHAR_DATA *ch )
 {
     sh_int max;
-    max = UMIN(max,25);
-/*  if (!IS_NPC(ch))
+/*
+    if (!IS_NPC(ch))
     {
       max  = 20 + race_table[ch->race].con_plus;
       max = UMIN(max,25);
@@ -480,8 +491,8 @@ int can_carry_n( CHAR_DATA *ch )
     if ( !IS_NPC(ch) && get_trust(ch) >= LEVEL_IMMORTAL )
 	return get_trust(ch)*200;
 
-    if ( IS_NPC(ch) && IS_SET(ch->act, ACT_PET) )
-	return 0;
+    if ( IS_NPC(ch) && ch->top_level >= 105 )
+	return 1000;
 
     if ( get_eq_char(ch, WEAR_WIELD) )
       ++penalty;
@@ -506,8 +517,8 @@ int can_carry_w( CHAR_DATA *ch )
     if ( !IS_NPC(ch) && get_trust(ch) >= LEVEL_IMMORTAL )
 	return 1000000;
 
-    if ( IS_NPC(ch) && IS_SET(ch->act, ACT_PET) )
-	return 0;
+    if ( IS_NPC(ch) && ch->top_level >= 105 )
+	return 1000000;
 
     return str_app[get_curr_str(ch)].carry;
 }
@@ -1067,21 +1078,22 @@ void char_from_room( CHAR_DATA *ch )
 void char_to_room( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex )
 {
     OBJ_DATA *obj;
+//  ROOM_INDEX_DATA *tRoomCheck;
 
     if ( !ch )
     {
-	bug( "Char_to_room: NULL ch!", 0 );
-	return;
+        bug( "Char_to_room: NULL ch!", 0 );
+        return;
     }
-    if ( !pRoomIndex )
-    {
-	char buf[MAX_STRING_LENGTH];
 
-	sprintf( buf, "Char_to_room: %s -> NULL room!  Putting char in limbo (%d)",
-		ch->name, ROOM_VNUM_LIMBO );
-	bug( buf, 0 );
-        /* This used to just return, but there was a problem with crashing
-           and I saw no reason not to just put the char in limbo. -Narn */
+//    tRoomCheck = get_room_index( pRoomIndex->vnum );
+    if( !pRoomIndex || !get_room_index( pRoomIndex->vnum ) )
+    {
+        bug( "%s: %s -> NULL room!  Putting char in limbo (%d)", __FUNCTION__, ch->name, ROOM_VNUM_LIMBO );
+        /*
+        * This used to just return, but there was a problem with crashing
+        * and I saw no reason not to just put the char in limbo.  -Narn
+        */
         pRoomIndex = get_room_index( ROOM_VNUM_LIMBO );
     }
 
@@ -1140,11 +1152,10 @@ OBJ_DATA *obj_to_char( OBJ_DATA *obj, CHAR_DATA *ch )
     skipgroup = FALSE;
     grouped = FALSE;
 
-    if (IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
+    if( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
     {
-	if (!IS_IMMORTAL( ch ) 
-	&& (IS_NPC(ch) && !IS_SET(ch->act, ACT_PROTOTYPE)) )
-	  return obj_to_room( obj, ch->in_room );
+        if( !IS_IMMORTAL( ch ) && ( !IS_NPC( ch ) || !IS_SET( ch->act, ACT_PROTOTYPE ) ) )
+            return obj_to_room( obj, ch->in_room );
     }
 
     if ( loading_char == ch )
@@ -1670,7 +1681,7 @@ void extract_char( CHAR_DATA *ch, bool fPull )
     if ( gch_prev == ch )
       gch_prev = ch->prev;
 
-    if ( fPull && !IS_SET(ch->act, ACT_POLYMORPHED))
+    if ( fPull )
 	die_follower( ch );
 
     stop_fighting( ch, TRUE );
@@ -1739,7 +1750,10 @@ void extract_char( CHAR_DATA *ch, bool fPull )
         do_revert( ch, "" );
 
     if ( ch->desc && ch->desc->original )
-	do_return( ch, "" );
+	    do_return( ch, "" );
+
+    if( ch->switched && ch->switched->desc )
+        do_return( ch->switched, "" );    
 
     for ( wch = first_char; wch; wch = wch->next )
 	if ( wch->reply == ch )
@@ -2376,7 +2390,7 @@ bool room_is_private( CHAR_DATA *ch , ROOM_INDEX_DATA *pRoomIndex )
 
     if ( IS_SET(pRoomIndex->room_flags, ROOM_SOLITARY) && count >= 1 )
 	return TRUE;
-    if (ch->top_level == 105 ? 0: (pRoomIndex->vnum == IMP_ROOM1?1:(pRoomIndex->vnum == IMP_ROOM2?1:0)))
+    if (ch->top_level == LEVEL_SUPREME ? 0: (pRoomIndex->vnum == IMP_ROOM1?1:(pRoomIndex->vnum == IMP_ROOM2?1:0)))
       return TRUE;
     return FALSE;
 }
@@ -2441,6 +2455,10 @@ bool can_see( CHAR_DATA *ch, CHAR_DATA *victim )
 	if ( room_is_dark( ch->in_room ) && !IS_AFFECTED(ch, AFF_INFRARED) )
 	  return FALSE;
 
+	if ( IS_AFFECTED(victim, AFF_INVISIBLE)
+	&&  !IS_AFFECTED(ch, AFF_DETECT_INVIS) )
+	  return FALSE;
+
 	if ( IS_AFFECTED(victim, AFF_HIDE)
 	&&   !IS_AFFECTED(ch, AFF_DETECT_HIDDEN)
 	&&   !victim->fighting )
@@ -2451,10 +2469,6 @@ bool can_see( CHAR_DATA *ch, CHAR_DATA *victim )
         }
         
           
-	if ( IS_AFFECTED(victim, AFF_INVISIBLE)
-	&&  !IS_AFFECTED(ch, AFF_DETECT_INVIS) )
-	  return FALSE;
-
     }
 
     return TRUE;
@@ -2511,7 +2525,7 @@ bool can_drop_obj( CHAR_DATA *ch, OBJ_DATA *obj )
     if ( !IS_NPC(ch) && get_trust(ch) >= LEVEL_IMMORTAL )
 	return TRUE;
 
-    if ( IS_NPC(ch) && ch->pIndexData->vnum == 3 )
+    if ( IS_NPC(ch) && ch->pIndexData->vnum == MOB_VNUM_SUPERMOB )
 	return TRUE;
 
     return FALSE;
@@ -2635,7 +2649,10 @@ char *affect_bit_name( int vector )
     if ( vector & AFF_FAERIE_FIRE   ) strcat( buf, " faerie_fire"   );
     if ( vector & AFF_INFRARED      ) strcat( buf, " infrared"      );
     if ( vector & AFF_CURSE         ) strcat( buf, " curse"         );
-    if ( vector & AFF_FLAMING       ) strcat( buf, " flaming"       );
+	// Johnson ( Michael Shattuck ) 4/28 Start - Added 5-15-04 - DV
+	//if ( vector & AFF_FLAMING       ) strcat( buf, " flaming"       );
+	if ( vector & AFF_ENDURANCE		) strcat( buf, " endurance"		);
+	// Shattuck 4/28 End
     if ( vector & AFF_POISON        ) strcat( buf, " poison"        );
     if ( vector & AFF_PROTECT       ) strcat( buf, " protect"       );
     if ( vector & AFF_PARALYSIS     ) strcat( buf, " paralysis"     );
@@ -2656,7 +2673,7 @@ char *affect_bit_name( int vector )
     if ( vector & AFF_POSSESS       ) strcat( buf, " possess"       );
     if ( vector & AFF_BERSERK       ) strcat( buf, " berserk"       );
     if ( vector & AFF_AQUA_BREATH   ) strcat( buf, " aqua_breath"   );
-    return ( buf[0] != '\0' ) ? buf+1 : "none";
+    return ( buf[0] != '\0' ) ? buf+1 : (char *) "none";
 }
 
 
@@ -2685,7 +2702,7 @@ char *extra_bit_name( int extra_flags )
     if ( extra_flags & ITEM_INVENTORY    ) strcat( buf, " inventory"    );
     if ( extra_flags & ITEM_DEATHROT	 ) strcat( buf, " deathrot"	);
     if ( extra_flags & ITEM_ANTI_SOLDIER ) strcat( buf, " anti-soldier" );
-    if ( extra_flags & ITEM_ANTI_THIEF   ) strcat( buf, " anti-thief"   );
+    if ( extra_flags & ITEM_TWO_HANDS    ) strcat( buf, " two-hands"    );
     if ( extra_flags & ITEM_ANTI_HUNTER  ) strcat( buf, " anti-hunter"  );
     if ( extra_flags & ITEM_ANTI_JEDI    ) strcat( buf, " anti-jedi"    );
     if ( extra_flags & ITEM_ANTI_SITH    ) strcat( buf, " anti-sith"    );
@@ -2697,7 +2714,7 @@ char *extra_bit_name( int extra_flags )
     if ( extra_flags & ITEM_ANTI_CITIZEN ) strcat( buf, " anti-citizen" );
     if ( extra_flags & ITEM_PROTOTYPE    ) strcat( buf, " prototype"    );
     if ( extra_flags & ITEM_HUMAN_SIZE   ) strcat( buf, " human_size"   );
-    return ( buf[0] != '\0' ) ? buf+1 : "none";
+    return ( buf[0] != '\0' ) ? buf+1 : (char* )"none";
 }
 
 /*
@@ -2709,7 +2726,7 @@ char *magic_bit_name( int magic_flags )
 
     buf[0] = '\0';
     if ( magic_flags & ITEM_RETURNING     ) strcat( buf, " returning"     );
-    return ( buf[0] != '\0' ) ? buf+1 : "none";
+    return ( buf[0] != '\0' ) ? buf+1 : (char *) "none";
 }
 
 /*
@@ -2987,6 +3004,8 @@ void clean_obj( OBJ_INDEX_DATA *obj )
 	obj->value[1]		= 0;
 	obj->value[2]		= 0;
 	obj->value[3]		= 0;
+	obj->value[4]		= 0;
+	obj->value[5]		= 0;
 	for ( paf = obj->first_affect; paf; paf = paf_next )
 	{
 	    paf_next    = paf->next;
@@ -3223,6 +3242,64 @@ void queue_extracted_obj( OBJ_DATA *obj )
     extracted_obj_queue = obj;
 }
 
+/* Deallocates the memory used by a single object after it's been extracted. FUSS/DV 3-13-26*/
+void free_obj( OBJ_DATA * obj )
+{
+   AFFECT_DATA *paf, *paf_next;
+   EXTRA_DESCR_DATA *ed, *ed_next;
+// REL_DATA *RQueue, *rq_next;
+   MPROG_ACT_LIST *mpact, *mpact_next;
+
+   for( mpact = obj->mpact; mpact; mpact = mpact_next )
+   {
+      mpact_next = mpact->next;
+      DISPOSE( mpact->buf );
+      DISPOSE( mpact );
+   }
+
+   /*
+    * remove affects 
+    */
+   for( paf = obj->first_affect; paf; paf = paf_next )
+   {
+      paf_next = paf->next;
+      DISPOSE( paf );
+   }
+   obj->first_affect = obj->last_affect = NULL;
+
+   /*
+    * remove extra descriptions 
+    */
+   for( ed = obj->first_extradesc; ed; ed = ed_next )
+   {
+      ed_next = ed->next;
+      STRFREE( ed->description );
+      STRFREE( ed->keyword );
+      DISPOSE( ed );
+   }
+   obj->first_extradesc = obj->last_extradesc = NULL;
+/* Some stuff from FUSS that ain't in SWRIP - DV 3-13-26
+   for( RQueue = first_relation; RQueue; RQueue = rq_next )
+   {
+      rq_next = RQueue->next;
+      if( RQueue->Type == relOSET_ON )
+      {
+         if( obj == RQueue->Subject )
+            ( ( CHAR_DATA * ) RQueue->Actor )->dest_buf = NULL;
+         else
+            continue;
+         UNLINK( RQueue, first_relation, last_relation, next, prev );
+         DISPOSE( RQueue );
+      }
+   } */
+   STRFREE( obj->name );
+   STRFREE( obj->description );
+   STRFREE( obj->short_descr );
+   STRFREE( obj->action_desc );
+   DISPOSE( obj );
+   return;
+}
+
 /*
  * Clean out the extracted object queue
  */
@@ -3232,13 +3309,14 @@ void clean_obj_queue()
 
     while ( extracted_obj_queue )
     {
-	obj = extracted_obj_queue;
-	extracted_obj_queue = extracted_obj_queue->next;
-	STRFREE( obj->name        );
-	STRFREE( obj->description );
-	STRFREE( obj->short_descr );
-	DISPOSE( obj );
-	--cur_qobjs;
+    	obj = extracted_obj_queue;
+    	extracted_obj_queue = extracted_obj_queue->next;
+/*    	STRFREE( obj->name        );
+    	STRFREE( obj->description );
+	    STRFREE( obj->short_descr );
+	    DISPOSE( obj );
+*/      free_obj( obj );
+	    --cur_qobjs;
     }
 }
 
@@ -3538,10 +3616,10 @@ OBJ_DATA *group_object( OBJ_DATA *obj1, OBJ_DATA *obj2 )
     &&	!obj1->pIndexData->mudprogs
     &&  !obj2->pIndexData->mudprogs
 */
-    &&   QUICKMATCH( obj1->name,	obj2->name )
-    &&   QUICKMATCH( obj1->short_descr,	obj2->short_descr )
-    &&   QUICKMATCH( obj1->description,	obj2->description )
-    &&   QUICKMATCH( obj1->action_desc,	obj2->action_desc )
+    && !str_cmp( obj1->name, obj2->name )
+    && !str_cmp( obj1->short_descr, obj2->short_descr )
+    && !str_cmp( obj1->description, obj2->description )
+    && !str_cmp( obj1->action_desc, obj2->action_desc )
     &&   obj1->item_type	== obj2->item_type
     &&   obj1->extra_flags	== obj2->extra_flags
     &&   obj1->magic_flags	== obj2->magic_flags
@@ -3818,8 +3896,8 @@ void economize_mobgold( CHAR_DATA *mob )
  */
 void add_kill( CHAR_DATA *ch, CHAR_DATA *mob )
 {
-    int x;
-    sh_int vnum, track;
+    int x, vnum;
+    sh_int track;
 
     if ( IS_NPC(ch) )
 	return;
@@ -3853,8 +3931,8 @@ void add_kill( CHAR_DATA *ch, CHAR_DATA *mob )
  */
 int times_killed( CHAR_DATA *ch, CHAR_DATA *mob )
 {
-    int x;
-    sh_int vnum, track;
+    int x, vnum;
+    sh_int track;
 
     if ( IS_NPC(ch) )
 	return 0;
@@ -3871,4 +3949,55 @@ int times_killed( CHAR_DATA *ch, CHAR_DATA *mob )
 	if ( ch->pcdata->killed[x].vnum == 0 )
 	    break;
     return 0;
+}
+
+void check_switches( bool possess ) // switches from Valcados/Samson/FUSS - DV Added 3-13-26
+{
+   CHAR_DATA *ch;
+
+   for( ch = first_char; ch; ch = ch->next )
+      check_switch( ch, possess );
+}
+
+void check_switch( CHAR_DATA *ch, bool possess )
+{
+   AFFECT_DATA *paf;
+   CMDTYPE *cmd;
+   int hash, trust = get_trust(ch);
+
+   if( !ch->switched )
+      return;
+
+   if( !possess )
+   {
+      for( paf = ch->switched->first_affect; paf; paf = paf->next )
+      {
+         if( paf->duration == -1 )
+            continue;
+         if( paf->type != -1 && skill_table[paf->type]->spell_fun == spell_possess )
+            return;
+      }
+   }
+
+   for( hash = 0; hash < 126; hash++ )
+   {
+      for( cmd = command_hash[hash]; cmd; cmd = cmd->next )
+      {
+         if( cmd->do_fun != do_switch )
+            continue;
+         if( cmd->level <= trust )
+            return;
+
+         if( !IS_NPC(ch) && ch->pcdata->bestowments && is_name( cmd->name, ch->pcdata->bestowments )
+          && cmd->level <= trust )
+            return;
+      }
+   }
+
+   if( !possess )
+   {
+      set_char_color( AT_BLUE, ch->switched );
+      send_to_char( "You suddenly forfeit the power to switch!\n\r", ch->switched );
+   }
+   do_return( ch->switched, "" );
 }

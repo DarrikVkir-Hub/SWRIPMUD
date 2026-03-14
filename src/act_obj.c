@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -26,13 +23,14 @@
 #include <string.h>
 #include <time.h>
 #include "mud.h"
+#include "bet.h"
 
 /*double sqrt( double x );*/
 
 /*
  * External functions
  */
-
+void	write_corpses	args( ( CHAR_DATA *ch, char *name ) );
 void    show_list_to_char  args( ( OBJ_DATA *list, CHAR_DATA *ch,
 				bool fShort, bool fShowNothing ) );
 /*
@@ -105,22 +103,54 @@ void get_obj( CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container )
     else
       weight = get_obj_weight( obj );
 
-    if ( ch->carry_weight + weight > can_carry_w( ch ) )
-    {
-	act( AT_PLAIN, "$d: you can't carry that much weight.",
-		ch, NULL, obj->name, TO_CHAR );
-	return;
-    }
+	// Money weight shouldn't count - Samson/FUSS - DV added 3-14-26
+	if( obj->item_type != ITEM_MONEY )
+	{
+		if( obj->in_obj )
+		{
+			OBJ_DATA *tobj = obj->in_obj;
+			int inobj = 1;
+			bool checkweight = FALSE;
 
+			/* need to make it check weight if its in a magic container */
+			if( tobj->item_type == ITEM_CONTAINER && IS_OBJ_STAT( tobj, ITEM_MAGIC ) )
+				checkweight = TRUE;
+
+			while( tobj->in_obj )
+			{
+				tobj = tobj->in_obj;
+				inobj++;
+
+				/* need to make it check weight if its in a magic container */
+				if( tobj->item_type == ITEM_CONTAINER && IS_OBJ_STAT( tobj, ITEM_MAGIC ) )
+				checkweight = TRUE;
+			}
+
+			/* need to check weight if not carried by ch or in a magic container. */
+			if( !tobj->carried_by || tobj->carried_by != ch || checkweight )
+			{
+				if( ( ch->carry_weight + weight ) > can_carry_w( ch ) )
+				{
+				act( AT_PLAIN, "$d: you can't carry that much weight.", ch, NULL, obj->name, TO_CHAR );
+				return;
+				}
+			}
+		}
+		else if( ( ch->carry_weight + weight ) > can_carry_w( ch ) )
+		{
+			act( AT_PLAIN, "$d: you can't carry that much weight.", ch, NULL, obj->name, TO_CHAR );
+			return;
+		}
+	}
     if ( container )
     {
-	act( AT_ACTION, IS_OBJ_STAT(container, ITEM_COVERING) ? 
-		"You get $p from beneath $P." : "You get $p from $P",
-		ch, obj, container, TO_CHAR );
-	act( AT_ACTION, IS_OBJ_STAT(container, ITEM_COVERING) ?
-		"$n gets $p from beneath $P." : "$n gets $p from $P",
-		ch, obj, container, TO_ROOM );
-	obj_from_obj( obj );
+		act( AT_ACTION, IS_OBJ_STAT(container, ITEM_COVERING) ? 
+			"You get $p from beneath $P." : "You get $p from $P",
+			ch, obj, container, TO_CHAR );
+		act( AT_ACTION, IS_OBJ_STAT(container, ITEM_COVERING) ?
+			"$n gets $p from beneath $P." : "$n gets $p from $P",
+			ch, obj, container, TO_ROOM );
+		obj_from_obj( obj );
     }
     else
     {
@@ -143,8 +173,8 @@ void get_obj( CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container )
 
     if ( obj->item_type == ITEM_MONEY )
     {
-	ch->gold += obj->value[0];
-	extract_obj( obj );
+      	ch->gold += obj->value[0] * obj->count;
+      	extract_obj( obj );
     }
     else
     {
@@ -364,11 +394,9 @@ void do_get( CHAR_DATA *ch, char *argument )
 	    obj = get_obj_list( ch, arg1, container->first_content );
 	    if ( !obj )
 	    {
-		act( AT_PLAIN, IS_OBJ_STAT(container, ITEM_COVERING) ?
-			"I see nothing like that beneath the $T." :
-			"I see nothing like that in the $T.",
-			ch, NULL, arg2, TO_CHAR );
-		return;
+			act( AT_PLAIN, IS_OBJ_STAT(container, ITEM_COVERING) ?
+            "I see nothing like that beneath the $T." : "I see nothing like that in the $T.", ch, NULL, container->short_descr, TO_CHAR );
+			return;
 	    }
 	    separate_obj(obj);
 	    get_obj( ch, obj, container );
@@ -408,35 +436,38 @@ void do_get( CHAR_DATA *ch, char *argument )
 	    found = FALSE;
 	    for ( obj = container->first_content; obj; obj = obj_next )
 	    {
-		obj_next = obj->next_content;
-		if ( ( fAll || nifty_is_name( chk, obj->name ) )
-		&&   can_see_obj( ch, obj ) )
-		{
-		    found = TRUE;
-		    if ( number && (cnt + obj->count) > number )
-			split_obj( obj, number - cnt );
-		    cnt += obj->count;
-		    get_obj( ch, obj, container );
-		    if ( char_died(ch)
-		    ||   ch->carry_number >= can_carry_n( ch )
-		    ||   ch->carry_weight >= can_carry_w( ch )
-		    ||   (number && cnt >= number) )
-		      return;
-		}
+			obj_next = obj->next_content;
+			if ( ( fAll || nifty_is_name( chk, obj->name ) )
+			&&   can_see_obj( ch, obj ) )
+			{
+				found = TRUE;
+				if ( number && (cnt + obj->count) > number )
+					split_obj( obj, number - cnt );
+				cnt += obj->count;
+				get_obj( ch, obj, container );
+				if ( char_died(ch)
+					||   ch->carry_number >= can_carry_n( ch )
+					||   ch->carry_weight >= can_carry_w( ch )
+					||   (number && cnt >= number) )
+				{
+					if( container->item_type == ITEM_CORPSE_PC )
+						write_corpses( NULL, container->short_descr + 14 );
+					if( found && IS_SET( sysdata.save_flags, SV_GET ) )
+						save_char_obj( ch );
+					return;
+				}
+			}
 	    }
 
 	    if ( !found )
 	    {
-		if ( fAll )
-		  act( AT_PLAIN, IS_OBJ_STAT(container, ITEM_COVERING) ?
-			"I see nothing beneath the $T." :
-			"I see nothing in the $T.",
-			ch, NULL, arg2, TO_CHAR );
-		else
-		  act( AT_PLAIN, IS_OBJ_STAT(container, ITEM_COVERING) ?
-			"I see nothing like that beneath the $T." :
-			"I see nothing like that in the $T.",
-			ch, NULL, arg2, TO_CHAR );
+			if ( fAll )
+			act( AT_PLAIN, IS_OBJ_STAT(container, ITEM_COVERING) ?
+				"I see nothing beneath the $T." : "I see nothing in the $T.", ch, NULL, container->short_descr, TO_CHAR );
+			else
+			act( AT_PLAIN, IS_OBJ_STAT(container, ITEM_COVERING) ?
+				"I see nothing like that beneath the $T." :
+				"I see nothing like that in the $T.", ch, NULL, container->short_descr, TO_CHAR );
 	    }
 	    else
 	      check_for_trap( ch, container, TRAP_GET );
@@ -1216,7 +1247,7 @@ bool can_layer( CHAR_DATA *ch, OBJ_DATA *obj, sh_int wear_loc )
  */
 void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 {
-    char buf[MAX_STRING_LENGTH];
+//  char buf[MAX_STRING_LENGTH];
     OBJ_DATA *tmpobj;
     sh_int bit, tmp;
     bool check_size;
@@ -1230,19 +1261,17 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 	{
 	    if ( fReplace )
 	    {
-		switch( 1 << bit )
-		{
-		    case ITEM_HOLD:
-			send_to_char( "You cannot hold that.\n\r", ch );
-			break;
-		    case ITEM_WIELD:
-			send_to_char( "You cannot wield that.\n\r", ch );
-			break;
-		    default:
-			sprintf( buf, "You cannot wear that on your %s.\n\r",
-				w_flags[bit] );
-			send_to_char( buf, ch );
-		}
+			switch( 1 << bit )
+			{
+				case ITEM_HOLD:
+				send_to_char( "You cannot hold that.\n\r", ch );
+				break;
+				case ITEM_WIELD:
+				send_to_char( "You cannot wield that.\n\r", ch );
+				break;
+				default:
+					ch_printf( ch, "You cannot wear that on your %s.\r\n", w_flags[bit] );			
+			}
 	    }
 	    return;
 	}
@@ -1276,6 +1305,7 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
           case RACE_HUMAN:
           case RACE_ADARIAN:
           case RACE_RODIAN:
+		  case RACE_NOGHRI:
           case RACE_TWI_LEK:
              
              if ( !IS_OBJ_STAT(obj, ITEM_HUMAN_SIZE) )
@@ -1314,7 +1344,7 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
    
    if ( check_size )
    { 
-    if ( ch->race == RACE_DEFEL )
+    if ( ch->race == RACE_DEFEL && (1 << wear_bit != ITEM_WEAR_WRIST ) )
     {
 	act( AT_MAGIC, "It is against your nature to wear anything that might make you visible.", ch, NULL, NULL, TO_CHAR );
 	act( AT_ACTION, "$n wants to use $p, but doesn't.",
@@ -1377,7 +1407,7 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
     switch ( 1 << bit )
     {
 	default:
-	    bug( "wear_obj: uknown/unused item_wear bit %d", bit );
+        bug( "%s: unknown/unused item_wear bit %d", __func__, bit );
 	    if ( fReplace )
 	      send_to_char( "You can't wear, wield, or hold that.\n\r", ch );
 	    return;
@@ -1423,7 +1453,7 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 		return;
 	    }
 
-	    bug( "Wear_obj: no free finger.", 0 );
+        bug( "%s: no free finger.", __func__ );
 	    send_to_char( "You already wear something on both fingers.\n\r", ch );
 	    return;
 
@@ -1468,7 +1498,7 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 		return;
 	    }
 
-	    bug( "Wear_obj: no free neck.", 0 );
+        bug( "%s: no free neck.", __func__ );
 	    send_to_char( "You already wear two neck items.\n\r", ch );
 	    return;
 
@@ -1756,7 +1786,7 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 		return;
 	    }
 
-	    bug( "Wear_obj: no free wrist.", 0 );
+        bug( "%s: no free wrist.", __func__ );
 	    send_to_char( "You already wear two wrist items.\n\r", ch );
 	    return;
 
@@ -1777,9 +1807,9 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 	    oprog_wear_trigger( ch, obj );
 	    return;
 
-	case ITEM_WIELD:
-	    if ( (tmpobj  = get_eq_char( ch, WEAR_WIELD )) != NULL
-	    &&   !could_dual(ch) )
+    	case ITEM_MISSILE_WIELD:
+		case ITEM_WIELD:
+	    if ( (tmpobj  = get_eq_char( ch, WEAR_WIELD )) != NULL &&   !could_dual(ch) )
 	    {
 		send_to_char( "You're already wielding something.\n\r", ch );
 		return;
@@ -1794,6 +1824,19 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 			send_to_char( "It is too heavy for you to wield.\n\r", ch );
 			return;
 	      	    }
+
+		    if( IS_SET( tmpobj->extra_flags, ITEM_TWO_HANDS ) )
+		    {
+			send_to_char("Both hands are occupied wielding that weapon.\n\r",ch);
+			return;
+		    }
+
+		    if( IS_SET( obj->extra_flags, ITEM_TWO_HANDS  ) )
+		    {
+			send_to_char("You need two hands to wield that weapon.\n\r",ch);
+			return;
+		    }
+
                     if ( !oprog_use_trigger( ch, obj, NULL, NULL, NULL ) )
                     {
                      if ( !obj->action_desc || obj->action_desc[0]=='\0' )  
@@ -1816,6 +1859,12 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 		return;
 	    }
 
+	    if( IS_SET( obj->extra_flags, ITEM_TWO_HANDS ) && ch->race == RACE_HUTT )
+	    {
+		send_to_char("A Hutt cannot wield two handed weapons.\n\r",ch);
+		return;
+	    }
+
             if ( !oprog_use_trigger( ch, obj, NULL, NULL, NULL ) )
             {
              if ( !obj->action_desc || obj->action_desc[0]=='\0' )  
@@ -1831,7 +1880,9 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 	    return;
 
 	case ITEM_HOLD:
-	    if ( get_eq_char( ch, WEAR_DUAL_WIELD ) )
+	    if ( get_eq_char( ch, WEAR_DUAL_WIELD )
+         || ( get_eq_char( ch, WEAR_WIELD )
+         && ( get_eq_char( ch, WEAR_MISSILE_WIELD ) ) ) )		
 	    {
 		send_to_char( "You cannot hold something AND two weapons!\n\r", ch );
 		return;
@@ -1839,14 +1890,16 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 	    if ( !remove_obj( ch, WEAR_HOLD, fReplace ) )
 	      return;
             if ( obj->item_type == ITEM_DEVICE
-               || obj->item_type == ITEM_GRENADE
-               || obj->item_type == ITEM_FOOD 
-               || obj->item_type == ITEM_PILL
-               || obj->item_type == ITEM_POTION
-               || obj->item_type == ITEM_DRINK_CON 
-               || obj->item_type == ITEM_SALVE
-               || obj->item_type == ITEM_KEY
-               || !oprog_use_trigger( ch, obj, NULL, NULL, NULL ) )
+				|| obj->item_type == ITEM_GRENADE
+				|| obj->item_type == ITEM_FOOD 
+				|| obj->item_type == ITEM_PILL
+				|| obj->item_type == ITEM_POTION
+				|| obj->item_type == ITEM_DRINK_CON 
+				|| obj->item_type == ITEM_PIPE
+				|| obj->item_type == ITEM_HERB			   
+				|| obj->item_type == ITEM_SALVE
+				|| obj->item_type == ITEM_KEY
+				|| !oprog_use_trigger( ch, obj, NULL, NULL, NULL ) )
             {
 	      act( AT_ACTION, "$n holds $p in $s hands.",   ch, obj, NULL, TO_ROOM );
 	      act( AT_ACTION, "You hold $p in your hands.", ch, obj, NULL, TO_CHAR );
@@ -1890,7 +1943,6 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 	    equip_char( ch, obj, WEAR_OVER );
 	    oprog_wear_trigger( ch, obj );
 	    return;
-
 
     }
 }
@@ -2079,9 +2131,6 @@ void do_sacrifice( CHAR_DATA *ch, char *argument )
 
     one_argument( argument, arg );
 
-    if( !ch || !ch->in_room )
-      return;
-
     if ( arg[0] == '\0' || !str_cmp( arg, ch->name ) )
     {
 	send_to_char( "Junk what?", ch );
@@ -2147,8 +2196,8 @@ void do_brandish( CHAR_DATA *ch, char *argument )
     ||   sn >= top_sn
     ||   skill_table[sn]->spell_fun == NULL )
     {
-	bug( "Do_brandish: bad sn %d.", sn );
-	return;
+      	bug( "%s: bad sn %d.", __func__, sn );
+		return;
     }
 
     WAIT_STATE( ch, 2 * PULSE_VIOLENCE );
@@ -2170,8 +2219,8 @@ void do_brandish( CHAR_DATA *ch, char *argument )
 	    switch ( skill_table[sn]->target )
 	    {
 	    default:
-		bug( "Do_brandish: bad target for sn %d.", sn );
-		return;
+            bug( "%s: bad target for sn %d.", __func__, sn );
+			return;
 
 	    case TAR_IGNORE:
 		if ( vch != ch )
@@ -2179,6 +2228,7 @@ void do_brandish( CHAR_DATA *ch, char *argument )
 		break;
 
 	    case TAR_CHAR_OFFENSIVE:
+	    case TAR_CHAR_SEMIOFFENSIVE:
 		if ( IS_NPC(ch) ? IS_NPC(vch) : !IS_NPC(vch) )
 		    continue;
 		break;
@@ -2197,8 +2247,8 @@ void do_brandish( CHAR_DATA *ch, char *argument )
 	    retcode = obj_cast_spell( staff->value[3], staff->value[0], ch, vch, NULL );
 	    if ( retcode == rCHAR_DIED || retcode == rBOTH_DIED )
 	    {
-		bug( "do_brandish: char died", 0 );
-		return;
+            bug( "%s: char died", __func__ );
+			return;
 	    }  
 	}
     }
@@ -2291,8 +2341,8 @@ void do_zap( CHAR_DATA *ch, char *argument )
 	retcode = obj_cast_spell( wand->value[3], wand->value[0], ch, victim, obj );
 	if ( retcode == rCHAR_DIED || retcode == rBOTH_DIED )
 	{
-	   bug( "do_zap: char died", 0 );
-	   return;
+        bug( "%s: char died", __func__ );
+	   	return;
 	}
     }
 
@@ -2320,21 +2370,21 @@ void save_clan_storeroom( CHAR_DATA *ch, CLAN_DATA *clan )
 
     if ( !clan )
     {
-	bug( "save_clan_storeroom: Null clan pointer!", 0 );
-	return;
+      	bug( "%s: Null clan pointer!", __func__ );
+		return;
     }
 
     if ( !ch )
     {
-	bug ("save_clan_storeroom: Null ch pointer!", 0);
-	return;
+      	bug( "%s: Null ch pointer!", __func__ );
+		return;
     }
 
-    sprintf( filename, "%s%s.vault", CLAN_DIR, clan->filename );
+    SPRINTF( filename, "%s%s.vault", CLAN_DIR, clan->filename );
     if ( ( fp = fopen( filename, "w" ) ) == NULL )
     {
-	bug( "save_clan_storeroom: fopen", 0 );
-	perror( filename );
+      	bug( "%s: fopen", __func__ );
+		perror( filename );
     }
     else
     {
@@ -2345,7 +2395,7 @@ void save_clan_storeroom( CHAR_DATA *ch, CLAN_DATA *clan )
 	  fwrite_obj(ch, contents, fp, 0, OS_CARRY );
 	fprintf( fp, "#END\n" );
 	ch->top_level = templvl;
-	fclose( fp );
+	FCLOSE( fp );
 	return;
     }
     return;
@@ -2552,7 +2602,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
             send_to_char ("There isn't anything being auctioned right now.\n\r",ch);
             return;
         }
-      }
+    }
 
 /* finally... */
     if ( ms_find_obj(ch) )
@@ -2635,7 +2685,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
     else
     {
         act (AT_TELL, "Try again later - $p is being auctioned right now!",ch,auction->item,NULL,TO_CHAR);
-	WAIT_STATE( ch, 1.5 * PULSE_VIOLENCE );
+	WAIT_STATE( ch, (int) ( 1.5 * PULSE_VIOLENCE ) );
         return;
     }
 }
@@ -2649,7 +2699,7 @@ void obj_fall( OBJ_DATA *obj, bool through )
     EXIT_DATA *pexit;
     ROOM_INDEX_DATA *to_room;
     static int fall_count;
-    char buf[MAX_STRING_LENGTH];
+//  char buf[MAX_STRING_LENGTH];
     static bool is_falling; /* Stop loops from the call to obj_to_room()  -- Altrag */
 	
     if ( !obj->in_room || is_falling )
@@ -2657,10 +2707,10 @@ void obj_fall( OBJ_DATA *obj, bool through )
 
     if (fall_count > 30)
     {
-    	bug( "object falling in loop more than 30 times", 0 );
-	extract_obj(obj);
+      	bug( "%s: object falling in loop more than 30 times", __func__ );
+		extract_obj(obj);
     	fall_count = 0;
-	return;
+		return;
      }
 
      if ( IS_SET( obj->in_room->room_flags, ROOM_NOFLOOR )
@@ -2678,11 +2728,9 @@ void obj_fall( OBJ_DATA *obj, bool through )
 
 	if (obj->in_room == to_room)
 	{
-	    sprintf(buf, "Object falling into same room, room %d",
-		to_room->vnum);
-	    bug( buf, 0 );
+        bug( "%s: Object falling into same room, room %d", __func__, to_room->vnum );
 	    extract_obj( obj );
-            return;
+        return;
 	}
 
 	if (obj->in_room->first_person)
@@ -2720,9 +2768,12 @@ void obj_fall( OBJ_DATA *obj, bool through )
 				rch = rch->next_in_room, chcnt++ )
 				if ( number_range( 0, chcnt ) == 0 )
 					vch = rch;
-			act( AT_WHITE, "$p falls on $n!", vch, obj, NULL, TO_ROOM );
-			act( AT_WHITE, "$p falls on you!", vch, obj, NULL, TO_CHAR );
-			damage( vch, vch, dam*vch->top_level, TYPE_UNDEFINED );
+            if( vch )
+            {
+               act( AT_WHITE, "$p falls on $n!", vch, obj, NULL, TO_ROOM );
+               act( AT_WHITE, "$p falls on you!", vch, obj, NULL, TO_CHAR );
+               damage( vch, vch, dam * vch->top_level, TYPE_UNDEFINED );
+            }
 		}
     	/* Damage objects */
 	    switch( obj->item_type )

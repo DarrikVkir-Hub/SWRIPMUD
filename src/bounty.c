@@ -1,26 +1,23 @@
- /***************************************************************************
- *                   Star Wars: Rise in Power MUD Codebase                  *
- *--------------------------------------------------------------------------*
- * SWRiP Code Additions and changes from the SWReality and Smaug Code       *
- * copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
- *--------------------------------------------------------------------------*
- * Star Wars Reality Code Additions and changes from the Smaug Code         *
- * copyright (c) 1997 by Sean Cooper                                        *
- * -------------------------------------------------------------------------*
- * Starwars and Starwars Names copyright(c) Lucas Film Ltd.                 *
- *--------------------------------------------------------------------------*
- * SMAUG 1.0 (C) 1994, 1995, 1996 by Derek Snider                           *
- * SMAUG code team: Thoric, Altrag, Blodkai, Narn, Haus,                    *
- * Scryn, Rennard, Swordbearer, Gorog, Grishnakh and Tricops                *
- * ------------------------------------------------------------------------ *
- * Merc 2.1 Diku Mud improvments copyright (C) 1992, 1993 by Michael        *
- * Chastain, Michael Quan, and Mitchell Tse.                                *
- * Original Diku Mud copyright (C) 1990, 1991 by Sebastian Hammer,          *
- * Michael Seifert, Hans Henrik St{rfeldt, Tom Madsen, and Katja Nyboe.     *
- * ------------------------------------------------------------------------ *
- *		            Bounty Hunter Module    	 		   *   
- *                    (  and area capturing as well  )                      * 
- ****************************************************************************/
+/***************************************************************************
+*                           STAR WARS REALITY 1.0                          *
+*--------------------------------------------------------------------------*
+* Star Wars Reality Code Additions and changes from the Smaug Code         *
+* copyright (c) 1997 by Sean Cooper                                        *
+* -------------------------------------------------------------------------*
+* Starwars and Starwars Names copyright(c) Lucas Film Ltd.                 *
+*--------------------------------------------------------------------------*
+* SMAUG 1.0 (C) 1994, 1995, 1996 by Derek Snider                           *
+* SMAUG code team: Thoric, Altrag, Blodkai, Narn, Haus,                    *
+* Scryn, Rennard, Swordbearer, Gorog, Grishnakh and Tricops                *
+* ------------------------------------------------------------------------ *
+* Merc 2.1 Diku Mud improvments copyright (C) 1992, 1993 by Michael        *
+* Chastain, Michael Quan, and Mitchell Tse.                                *
+* Original Diku Mud copyright (C) 1990, 1991 by Sebastian Hammer,          *
+* Michael Seifert, Hans Henrik St{rfeldt, Tom Madsen, and Katja Nyboe.     *
+* ------------------------------------------------------------------------ *
+*		            Bounty Hunter Module    			   *   
+*                    (  and area capturing as well  )                      * 
+****************************************************************************/
 
 #include <sys/types.h>
 #include <ctype.h>
@@ -62,7 +59,7 @@ void save_disintigrations()
         fprintf( fpout, "%s\n", tbounty->poster );        
     }
     fprintf( fpout, "$\n" );
-    fclose( fpout );
+    FCLOSE( fpout );
     
 }
                                                                     
@@ -101,7 +98,7 @@ void load_bounties( )
     log_string( "Loading disintigrations..." );
 
     sprintf( bountylist, "%s%s", SYSTEM_DIR, DISINTIGRATION_LIST );
-    fclose( fpReserve );
+    FCLOSE( fpReserve );
     if ( ( fpList = fopen( bountylist, "r" ) ) == NULL )
     {
 	perror( bountylist );
@@ -110,7 +107,7 @@ void load_bounties( )
 
     for ( ; ; )
     {
-        target = feof( fpList ) ? "$" : fread_word( fpList );
+        target =  feof( fpList ) ? (char*) "$" : fread_word( fpList );
         if ( target[0] == '$' )
         break;
 	CREATE( bounty, BOUNTY_DATA, 1 );
@@ -119,7 +116,7 @@ void load_bounties( )
 
 	amount = fread_number( fpList );
 	bounty->amount = amount;
-        poster = feof( fpList ) ? "$" : fread_word( fpList );
+        poster = feof( fpList ) ? (char*)"$" : fread_word( fpList );
 
    	if ( poster[0] == '$' )
 	  break;
@@ -128,7 +125,7 @@ void load_bounties( )
    
     }
 
-    fclose( fpList );
+    FCLOSE( fpList );
     log_string(" Done bounties " );
     fpReserve = fopen( NULL_FILE, "r" );
 
@@ -234,12 +231,13 @@ void do_addbounty( CHAR_DATA *ch, char *argument )
     	return;
     }
 
+    /* Can now add bountys anywhere -- Kre
     if ( !ch->in_room || ch->in_room->vnum != 6604 )
     {
     	send_to_char( "You will have to go to the Guild on Tatooine to add a new bounty.", ch );
     	return;
     }
-    
+    */
     if (argument[0] == '\0' )
         amount = 0;
     else
@@ -313,7 +311,7 @@ void claim_disintigration( CHAR_DATA *ch , CHAR_DATA *victim )
 	}
 
         if (bounty && 
-        (!ch->pcdata || !ch->pcdata->clan || ( str_cmp(ch->pcdata->clan->name, "the hunters guild") || str_cmp(ch->pcdata->clan->name, "the assassins guild") ) ) ) 
+        (!ch->pcdata || !ch->pcdata->clan || ( str_cmp(ch->pcdata->clan->name, "the hunters guild") && str_cmp(ch->pcdata->clan->name, "the assassins guild") ) ) ) 
 	{
 	   remove_disintigration(bounty);                	
 	   bounty = NULL;
@@ -367,4 +365,4 @@ void do_rembounty(  CHAR_DATA *ch, char *argument )
     remove_disintigration(bounty);
   return;
 
-}
+}  

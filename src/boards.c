@@ -1,25 +1,22 @@
- /***************************************************************************
- *                   Star Wars: Rise in Power MUD Codebase                  *
- *--------------------------------------------------------------------------*
- * SWRiP Code Additions and changes from the SWReality and Smaug Code       *
- * copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
- *--------------------------------------------------------------------------*
- * Star Wars Reality Code Additions and changes from the Smaug Code         *
- * copyright (c) 1997 by Sean Cooper                                        *
- * -------------------------------------------------------------------------*
- * Starwars and Starwars Names copyright(c) Lucas Film Ltd.                 *
- *--------------------------------------------------------------------------*
- * SMAUG 1.0 (C) 1994, 1995, 1996 by Derek Snider                           *
- * SMAUG code team: Thoric, Altrag, Blodkai, Narn, Haus,                    *
- * Scryn, Rennard, Swordbearer, Gorog, Grishnakh and Tricops                *
- * ------------------------------------------------------------------------ *
- * Merc 2.1 Diku Mud improvments copyright (C) 1992, 1993 by Michael        *
- * Chastain, Michael Quan, and Mitchell Tse.                                *
- * Original Diku Mud copyright (C) 1990, 1991 by Sebastian Hammer,          *
- * Michael Seifert, Hans Henrik St{rfeldt, Tom Madsen, and Katja Nyboe.     *
- * ------------------------------------------------------------------------ *
- *			     Special boards module			    *
- ****************************************************************************/
+/***************************************************************************
+*                           STAR WARS REALITY 1.0                          *
+*--------------------------------------------------------------------------*
+* Star Wars Reality Code Additions and changes from the Smaug Code         *
+* copyright (c) 1997 by Sean Cooper                                        *
+* -------------------------------------------------------------------------*
+* Starwars and Starwars Names copyright(c) Lucas Film Ltd.                 *
+*--------------------------------------------------------------------------*
+* SMAUG 1.0 (C) 1994, 1995, 1996 by Derek Snider                           *
+* SMAUG code team: Thoric, Altrag, Blodkai, Narn, Haus,                    *
+* Scryn, Rennard, Swordbearer, Gorog, Grishnakh and Tricops                *
+* ------------------------------------------------------------------------ *
+* Merc 2.1 Diku Mud improvments copyright (C) 1992, 1993 by Michael        *
+* Chastain, Michael Quan, and Mitchell Tse.                                *
+* Original Diku Mud copyright (C) 1990, 1991 by Sebastian Hammer,          *
+* Michael Seifert, Hans Henrik St{rfeldt, Tom Madsen, and Katja Nyboe.     *
+* ------------------------------------------------------------------------ *
+*			     Special boards module			   *
+****************************************************************************/
 
 #include <sys/types.h>
 #include <ctype.h>
@@ -114,8 +111,8 @@ void write_boards_txt( )
     fpout = fopen( filename, "w" );
     if ( !fpout )
     {
-	bug( "FATAL: cannot open board.txt for writing!\n\r", 0 );
- 	return;
+      	bug( "%s: FATAL: cannot open board.txt for writing!\r\n", __func__ );
+ 		return;
     }	  
     for ( tboard = first_board; tboard; tboard = tboard->next )
     {
@@ -133,7 +130,7 @@ void write_boards_txt( )
 
 	fprintf( fpout, "End\n" );
     }
-    fclose( fpout );
+    FCLOSE( fpout );
 }
 
 BOARD_DATA *get_board( OBJ_DATA *obj )
@@ -213,7 +210,7 @@ void write_board( BOARD_DATA *board )
     /*
      * Rewrite entire list.
      */
-    fclose( fpReserve );
+    FCLOSE( fpReserve );
     sprintf( filename, "%s%s", BOARD_DIR, board->note_file );
     if ( ( fp = fopen( filename, "w" ) ) == NULL )
     {
@@ -235,7 +232,7 @@ void write_board( BOARD_DATA *board )
 		pnote->text
 		);
 	}
-	fclose( fp );
+	FCLOSE( fp );
     }
     fpReserve = fopen( NULL_FILE, "r" );
     return;
@@ -263,13 +260,13 @@ void note_remove( CHAR_DATA *ch, BOARD_DATA *board, NOTE_DATA *pnote )
 
     if ( !board )
     {
-      bug( "note remove: null board", 0 );
+      bug( "%s: null board", __func__ );
       return;
     }
 
     if ( !pnote )
     {
-      bug( "note remove: null pnote", 0 );
+      bug( "%s: null pnote", __func__ );
       return;
     }
     
@@ -408,8 +405,8 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 
     if ( !ch->desc )
     {
-	bug( "do_note: no descriptor", 0 );
-	return;
+      	bug( "%s: no descriptor", __func__ );
+		return;
     }
 
     switch( ch->substate )
@@ -420,11 +417,11 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	  if ( ( paper = get_eq_char(ch, WEAR_HOLD) ) == NULL
 	  ||     paper->item_type != ITEM_PAPER )
 	  {
-	     bug("do_note: player not holding paper", 0);
+         bug( "%s: player not holding paper", __func__ );
 	     stop_editing( ch );
 	     return;
-          }
-	  ed = ch->dest_buf;
+      }
+	  ed = (EXTRA_DESCR_DATA *) ch->dest_buf;
 	  STRFREE( ed->description );
 	  ed->description = copy_buffer( ch );
 	  stop_editing( ch );	   
@@ -1169,7 +1166,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 BOARD_DATA *read_board( char *boardfile, FILE *fp )
 {
     BOARD_DATA *board;
-    char *word;
+    const char *word;
     char  buf[MAX_STRING_LENGTH];
     bool fMatch;
     char letter;
@@ -1179,7 +1176,7 @@ BOARD_DATA *read_board( char *boardfile, FILE *fp )
 	    letter = getc( fp );
 	    if ( feof(fp) )
 	    {
-		fclose( fp );
+		FCLOSE( fp );
 		return NULL;
 	    }
 	}
@@ -1271,8 +1268,8 @@ NOTE_DATA *read_note( char *notefile, FILE *fp )
 	    letter = getc( fp );
 	    if ( feof(fp) )
 	    {
-		fclose( fp );
-		return NULL;
+			FCLOSE( fp );
+			return NULL;
 	    }
 	}
 	while ( isspace(letter) );
@@ -1328,7 +1325,7 @@ NOTE_DATA *read_note( char *notefile, FILE *fp )
 	return pnote;
     }
 
-    bug( "read_note: bad key word.", 0 );
+    bug( "%s: bad key word.", __func__ );
     exit( 1 );
 }
 

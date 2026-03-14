@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -33,10 +30,15 @@
 * this as you still save lots of space on duplicate strings.	-Thoric	   *
 ****************************************************************************/
 
+#include <openssl/sha.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+
+const bool TRUE = true;
+const bool FALSE = false;
+const short BERR = 255;
 
 #define STR_HASH_SIZE	1024
 
@@ -55,6 +57,19 @@ char *		hash_stats( void );
 
 struct hashstr_data *string_hash[STR_HASH_SIZE];
 
+/* Helper: hash a password with SHA-256 into hex string */
+void sha256_hash(const char *password, char out[65])
+{
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256((const unsigned char*)password, strlen(password), hash);
+
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+        sprintf(out + i * 2, "%02x", hash[i]);
+
+    out[64] = '\0';  // null-terminate
+}
+
+
 /*
  * Check hash table for existing occurance of string.
  * If found, increase link count, and return pointer,
@@ -62,8 +77,8 @@ struct hashstr_data *string_hash[STR_HASH_SIZE];
  */
 char *str_alloc( char *str )
 {
-   register int len, hash, psize;
-   register struct hashstr_data *ptr;
+   int len, hash, psize;
+   struct hashstr_data *ptr;
 
    len = strlen(str);
    psize = sizeof(struct hashstr_data);
@@ -95,7 +110,7 @@ char *str_alloc( char *str )
  */
 char *quick_link( char *str )
 {
-    register struct hashstr_data *ptr;
+    struct hashstr_data *ptr;
 
     ptr = (struct hashstr_data *) (str - sizeof(struct hashstr_data));
     if ( ptr->links == 0 )
@@ -116,8 +131,8 @@ char *quick_link( char *str )
  */
 int str_free( char *str )
 {
-    register int len, hash;
-    register struct hashstr_data *ptr, *ptr2, *ptr2_next;
+    int len, hash;
+    struct hashstr_data *ptr, *ptr2, *ptr2_next;
 
     len = strlen(str);
     hash = len % STR_HASH_SIZE;
@@ -170,17 +185,19 @@ void hash_dump( int hash )
 {
     struct hashstr_data *ptr;
     char *str;
-    int c, psize;
+    int c;
 
     if ( hash > STR_HASH_SIZE || hash < 0 )
     {
 	fprintf( stderr, "hash_dump: invalid hash size\n\r" );
 	return;
     }
-    psize = sizeof(struct hashstr_data);
+//  psize = sizeof(struct hashstr_data);
     for ( c=0, ptr = string_hash[hash]; ptr; ptr = ptr->next, c++ )
     {
-	str = (char *) (((int) ptr) + psize);
+// Pointer arithmetic is cleaner and more portable than casting to int and back, and it works on 64-bit systems without modification. AI&DV 3-12-26
+//	str = (char *) (((int) ptr) + psize);
+    str = (char *)(ptr + 1);
 	fprintf( stderr, "Len:%4d Lnks:%5d Str: %s\n\r",
 	  ptr->length, ptr->links, str );
     }
@@ -229,7 +246,7 @@ char *hash_stats( void )
 	     hilink = ptr->links;
 	   totlinks += ptr->links;
 	   bytesused += (ptr->length + 1 + sizeof(struct hashstr_data));
-	   wouldhave += (ptr->links * (ptr->length + 1));
+       wouldhave += ( ( ptr->links * sizeof(struct hashstr_data) ) + ( ptr->links * ( ptr->length + 1 ) ) );
 	}
     }
     sprintf( buf, "Hash strings allocated:%8d  Total links  : %d\n\rString bytes allocated:%8d  Bytes saved  : %d\n\rUnique (wasted) links :%8d  Hi-Link count: %d\n\r",
@@ -240,15 +257,31 @@ char *hash_stats( void )
 void show_high_hash( int top )
 {
     struct hashstr_data *ptr;
-    int x, psize;
+    int x;
     char *str;
 
-    psize = sizeof(struct hashstr_data);
+//  psize = sizeof(struct hashstr_data);
     for ( x = 0; x < STR_HASH_SIZE; x++ )
 	for ( ptr = string_hash[x]; ptr; ptr = ptr->next )
 	  if ( ptr->links >= top )
 	  {
-	     str = (char *) (((int) ptr) + psize);
+    // Pointer arithmetic is cleaner and more portable than casting to int and back, and it works on 64-bit systems without modification. AI&DV 3-12-26
+    //	str = (char *) (((int) ptr) + psize);
+    str = (char *)(ptr + 1);         
  	     fprintf( stderr, "Links: %5d  String: >%s<\n\r", ptr->links, str );
 	  }
+}
+
+bool in_hash_table( char *str )
+{
+   int len, hash, psize;
+   struct hashstr_data *ptr;
+
+   len = strlen( str );
+   psize = sizeof( struct hashstr_data );
+   hash = len % STR_HASH_SIZE;
+   for( ptr = string_hash[hash]; ptr; ptr = ptr->next )
+      if( len == ptr->length && str == ( (char *)ptr + psize ) )
+         return TRUE;
+   return FALSE;
 }

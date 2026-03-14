@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -43,16 +40,13 @@ bool is_immune( CHAR_DATA *ch, sh_int damtype )
 {
     switch( damtype )
     {
-	case SD_FIRE:	     if (IS_SET(ch->immune, RIS_FIRE))	 return TRUE;
-	case SD_COLD:	     if (IS_SET(ch->immune, RIS_COLD))	 return TRUE;
-	case SD_ELECTRICITY: if (IS_SET(ch->immune, RIS_ELECTRICITY)) return TRUE;
-	case SD_ENERGY:	     if (IS_SET(ch->immune, RIS_ENERGY)) return TRUE;
-	case SD_ACID:	     if (IS_SET(ch->immune, RIS_ACID))	 return TRUE;
-	case SD_POISON:	     if (IS_SET(ch->immune, RIS_POISON)) return TRUE;
-			     if (ch->race == RACE_DROID) return TRUE;
-	case SD_DRAIN:	     if (IS_SET(ch->immune, RIS_DRAIN))	 return TRUE;
-			     if (ch->race == RACE_DROID) return TRUE;
-
+      case SD_FIRE:           return( IS_SET( ch->immune, RIS_FIRE ) );
+      case SD_COLD:           return( IS_SET( ch->immune, RIS_COLD ) );
+      case SD_ELECTRICITY:    return( IS_SET( ch->immune, RIS_ELECTRICITY ) );
+      case SD_ENERGY:         return( IS_SET( ch->immune, RIS_ENERGY ) );
+      case SD_ACID:           return( IS_SET( ch->immune, RIS_ACID ) );
+      case SD_POISON:	      return( IS_SET(ch->immune, RIS_POISON) || ch->race == RACE_DROID );
+	  case SD_DRAIN:	      return( IS_SET(ch->immune, RIS_DRAIN) || ch->race == RACE_DROID );
     }
     return FALSE;
 }
@@ -156,14 +150,13 @@ int bsearch_skill( const char *name, int first, int top )
 
     for (;;)
     {
-	sn = (first + top) >> 1;
+        sn = (first + top) >> 1;
 
-	if ( LOWER(name[0]) == LOWER(skill_table[sn]->name[0])
-	&&  !str_prefix(name, skill_table[sn]->name) )
-	    return sn;
-	if (first >= top)
-	    return -1;
-    	if (strcmp(name, skill_table[sn]->name) < 1)
+        if ( LOWER(name[0]) == LOWER(skill_table[sn]->name[0]) &&  !str_prefix(name, skill_table[sn]->name) )
+            return sn;
+        if (first >= top)
+            return -1;
+        if( strcasecmp( name, skill_table[sn]->name ) < 1 )
 	    top = sn - 1;
     	else
 	    first = sn + 1;
@@ -182,11 +175,11 @@ int bsearch_skill_exact( const char *name, int first, int top )
 
     for (;;)
     {
-	sn = (first + top) >> 1;
-	if ( !str_prefix(name, skill_table[sn]->name) )
-	    return sn;
-	if (first >= top)
-	    return -1;
+        sn = (first + top) >> 1;
+        if ( !str_prefix(name, skill_table[sn]->name) )
+            return sn;
+        if (first >= top)
+            return -1;
     	if (strcmp(name, skill_table[sn]->name) < 1)
 	    top = sn - 1;
     	else
@@ -291,7 +284,8 @@ void successful_casting( SKILLTYPE *skill, CHAR_DATA *ch,
     sh_int chit	    = (skill->type == SKILL_SPELL ? AT_MAGIC : AT_HIT);
     sh_int chitme   = (skill->type == SKILL_SPELL ? AT_MAGIC : AT_HITME);
 
-    if ( skill->target != TAR_CHAR_OFFENSIVE )
+    if ( skill->target != TAR_CHAR_OFFENSIVE &&
+	 skill->target != TAR_CHAR_SEMIOFFENSIVE )
     {
 	chit = chitroom;
 	chitme = chitroom;
@@ -314,9 +308,13 @@ void successful_casting( SKILLTYPE *skill, CHAR_DATA *ch,
 	else
 	  act( chitme, skill->hit_vict, ch, obj, victim, TO_CHAR );
     }
-    else
-    if ( ch && ch == victim && skill->type == SKILL_SPELL )
-      act( chitme, "Ok.", ch, NULL, NULL, TO_CHAR );
+    else if( ch && ch == victim && skill->type == SKILL_SKILL )
+    {
+        if( skill->hit_char && ( skill->hit_char[0] != '\0' ) )
+            act( chit, skill->hit_char, ch, obj, victim, TO_CHAR );
+        else
+            act( chit, "Ok.", ch, NULL, NULL, TO_CHAR );
+    }
 }
 
 /*
@@ -329,7 +327,8 @@ void failed_casting( SKILLTYPE *skill, CHAR_DATA *ch,
     sh_int chit	    = (skill->type == SKILL_SPELL ? AT_MAGIC : AT_HIT);
     sh_int chitme   = (skill->type == SKILL_SPELL ? AT_MAGIC : AT_HITME);
 
-    if ( skill->target != TAR_CHAR_OFFENSIVE )
+    if ( skill->target != TAR_CHAR_OFFENSIVE &&
+	 skill->target != TAR_CHAR_SEMIOFFENSIVE)
     {
 	chit = chitroom;
 	chitme = chitroom;
@@ -373,7 +372,8 @@ void immune_casting( SKILLTYPE *skill, CHAR_DATA *ch,
     sh_int chit	    = (skill->type == SKILL_SPELL ? AT_MAGIC : AT_HIT);
     sh_int chitme   = (skill->type == SKILL_SPELL ? AT_MAGIC : AT_HITME);
 
-    if ( skill->target != TAR_CHAR_OFFENSIVE )
+    if ( skill->target != TAR_CHAR_OFFENSIVE &&
+	 skill->target != TAR_CHAR_SEMIOFFENSIVE)
     {
 	chit = chitroom;
 	chitme = chitroom;
@@ -385,7 +385,7 @@ void immune_casting( SKILLTYPE *skill, CHAR_DATA *ch,
 	  act( chit, skill->imm_char, ch, obj, victim, TO_CHAR );
 	else
 	if ( skill->miss_char && skill->miss_char[0] != '\0' )
-	  act( chit, skill->hit_char, ch, obj, victim, TO_CHAR );
+	  act( chit, skill->miss_char, ch, obj, victim, TO_CHAR );
 	else
 	if ( skill->type == SKILL_SPELL || skill->type == SKILL_SKILL )
           act( chit, "That appears to have no effect.", ch, NULL, NULL, TO_CHAR );
@@ -417,7 +417,7 @@ void immune_casting( SKILLTYPE *skill, CHAR_DATA *ch,
 	  act( chit, skill->imm_char, ch, obj, victim, TO_CHAR );
 	else
 	if ( skill->miss_char && skill->miss_char[0] != '\0' )
-	  act( chit, skill->hit_char, ch, obj, victim, TO_CHAR );
+	  act( chit, skill->miss_char, ch, obj, victim, TO_CHAR );
 	else
 	if ( skill->type == SKILL_SPELL || skill->type == SKILL_SKILL )
           act( chit, "That appears to have no affect.", ch, NULL, NULL, TO_CHAR );
@@ -430,8 +430,8 @@ void immune_casting( SKILLTYPE *skill, CHAR_DATA *ch,
  */
 void say_spell( CHAR_DATA *ch, int sn )
 {
-/*
-    CHAR_DATA *rch;
+/*  CHAR_DATA *rch;
+
 
     for ( rch = ch->in_room->first_person; rch; rch = rch->next_in_room )
     {
@@ -481,7 +481,8 @@ int ris_save( CHAR_DATA *ch, int chance, int ris )
  */
 int rd_parse(CHAR_DATA *ch, int level, char *exp)
 {
-  int x, lop = 0, gop = 0, eop = 0;
+  int lop = 0, gop = 0, eop = 0;
+  unsigned x;
   char operation;
   char *sexp[2];
   int total = 0, len = 0;
@@ -491,7 +492,7 @@ int rd_parse(CHAR_DATA *ch, int level, char *exp)
     return 0;
 
   /* get rid of brackets if they surround the entire expresion */
-  if ((*exp == '(') && !index(exp+1,'(') && exp[strlen(exp)-1] == ')')
+    if( ( *exp == '(' ) && exp[strlen( exp ) - 1] == ')' )
   {
     exp[strlen(exp)-1] = '\0';
     exp++;
@@ -515,10 +516,10 @@ int rd_parse(CHAR_DATA *ch, int level, char *exp)
 	case 'Y': case 'y':	return get_age(ch);
     }
 
-  for (x = 0; x < len; ++x)
+  for (x = 0; x < (unsigned int ) len; ++x)
     if (!isdigit(exp[x]) && !isspace(exp[x]))
       break;
-  if (x == len) return(atoi(exp));
+  if (x == (unsigned int ) len) return(atoi(exp));
   
   /* break it into 2 parts */
   for (x = 0; x < strlen(exp); ++x)
@@ -565,7 +566,7 @@ int rd_parse(CHAR_DATA *ch, int level, char *exp)
       {
         int y = rd_parse(ch, level, sexp[1]), z = total;
 
-        for (x = 1; x < y; ++x, z *= total);
+        for (x = 1; x < (unsigned int ) y; ++x, z *= total);
         total = z;
         break;
       }
@@ -590,7 +591,8 @@ bool saves_poison_death( int level, CHAR_DATA *victim )
 {
     int save;
 
-    save = 50 + ( victim->top_level - level - victim->saving_poison_death ) * 2;
+//    save = 50 + ( victim->top_level - level - victim->saving_poison_death ) * 2;  // Replaced in favor of FORCE_ABILLITY CHECK - DV 3-19-03
+    save = 50 + ( ( IS_NPC(victim) ? victim->top_level : victim->skill_level[FORCE_ABILITY] ) - level - victim->saving_poison_death ) *2;
     if ( victim->race == RACE_DROID )
       save += 50;
     save = URANGE( 5, save, 95 );
@@ -603,7 +605,8 @@ bool saves_wands( int level, CHAR_DATA *victim )
     if ( IS_SET( victim->immune, RIS_MAGIC ) )
       return TRUE;
 
-    save = 50 + ( victim->top_level - level - victim->saving_wand ) * 2;
+//  save = 50 + ( victim->top_level - level - victim->saving_wand ) * 2;  // Replaced - DV 3-19-03
+    save = 50 + ( ( IS_NPC(victim) ? victim->top_level : victim->skill_level[FORCE_ABILITY] ) - level - victim->saving_poison_death ) *2;
     save = URANGE( 5, save, 95 );
     return chance( victim, save );
 }
@@ -611,7 +614,8 @@ bool saves_para_petri( int level, CHAR_DATA *victim )
 {
     int save;
 
-    save = 50 + ( victim->top_level - level - victim->saving_para_petri ) * 2;
+//  save = 50 + ( victim->top_level - level - victim->saving_para_petri ) * 2;// Replaced - DV 3-19-03
+    save = 50 + ( ( IS_NPC(victim) ? victim->top_level : victim->skill_level[FORCE_ABILITY] ) - level - victim->saving_poison_death ) *2;
     if ( victim->race == RACE_DROID )
       save += 50;
     save = URANGE( 5, save, 95 );
@@ -621,7 +625,8 @@ bool saves_breath( int level, CHAR_DATA *victim )
 {
     int save;
 
-    save = 50 + ( victim->top_level - level - victim->saving_breath ) * 2;
+//  save = 50 + ( victim->top_level - level - victim->saving_breath ) * 2;// Replaced - DV 3-19-03
+    save = 50 + ( ( IS_NPC(victim) ? victim->top_level : victim->skill_level[FORCE_ABILITY] ) - level - victim->saving_poison_death ) *2;
     save = URANGE( 5, save, 95 );
     return chance( victim, save );
 }
@@ -634,7 +639,8 @@ bool saves_spell_staff( int level, CHAR_DATA *victim )
 
     if ( IS_NPC( victim ) && level > 10 )
       level -= 5;
-    save = 50 + ( victim->top_level - level - victim->saving_spell_staff ) * 2;
+//  save = 50 + ( victim->top_level - level - victim->saving_spell_staff ) * 2; // Replaced - DV 3-19-03
+    save = 50 + ( ( IS_NPC(victim) ? victim->top_level : victim->skill_level[FORCE_ABILITY] ) - level - victim->saving_poison_death ) *2;
     if ( victim->race == RACE_DROID )
       save += 20;
     save = URANGE( 5, save, 95 );
@@ -853,6 +859,7 @@ void *locate_targets( CHAR_DATA *ch, char *arg, int sn,
 	  break;
 
 	case TAR_CHAR_OFFENSIVE:
+	case TAR_CHAR_SEMIOFFENSIVE:
 	  if ( arg[0] == '\0' )
 	  {
 		if ( ( *victim = who_fighting( ch ) ) == NULL )
@@ -979,6 +986,7 @@ void do_cast( CHAR_DATA *ch, char *argument )
     void *vo;
     int mana;
     int sn;
+    int n = 0;
     ch_ret retcode;
     bool dont_wait = FALSE;
     SKILLTYPE *skill = NULL;
@@ -1122,8 +1130,12 @@ void do_cast( CHAR_DATA *ch, char *argument )
 		do_cast, 1 );
 	act( AT_MAGIC, "You begin to feel the force in yourself and those around you...", ch, NULL, NULL, TO_CHAR );
 	act( AT_MAGIC, "$n reaches out with the force to those around...", ch, NULL, NULL, TO_ROOM );
-	sprintf( staticbuf, "%s %s", arg2, target_name );
-	ch->dest_buf = str_dup( staticbuf );
+	n = snprintf( staticbuf, sizeof(staticbuf), "%s %s", arg2, target_name );
+
+        if (n >= (int)sizeof(staticbuf))
+            staticbuf[sizeof(staticbuf)-1] = '\0';  // ensure null-terminated
+
+    ch->dest_buf = str_dup( staticbuf );
 	ch->tempnum = sn;
 	return;	
       case SUB_TIMER_DO_ABORT:
@@ -1160,7 +1172,7 @@ void do_cast( CHAR_DATA *ch, char *argument )
 	    return;
 	}
         	mana = IS_NPC(ch) ? 0 : skill->min_mana;
-	strcpy( staticbuf, ch->dest_buf );
+	strcpy( staticbuf, (const char* ) ch->dest_buf );
 	target_name = one_argument(staticbuf, arg2);
 	DISPOSE( ch->dest_buf );
 	ch->substate = SUB_NONE;
@@ -1175,7 +1187,7 @@ void do_cast( CHAR_DATA *ch, char *argument )
 		&&   (t = get_timerptr( tmp, TIMER_DO_FUN )) != NULL
 		&&    t->count >= 1 && t->do_fun == do_cast
 		&&    tmp->tempnum == sn && tmp->dest_buf
-		&&   !str_cmp( tmp->dest_buf, staticbuf ) )
+		&&   !str_cmp( (const char* ) tmp->dest_buf, staticbuf ) )
 		  ++cnt;
 	    if ( cnt >= skill->participants )
 	    {
@@ -1184,7 +1196,7 @@ void do_cast( CHAR_DATA *ch, char *argument )
 		    &&   (t = get_timerptr( tmp, TIMER_DO_FUN )) != NULL
 		    &&    t->count >= 1 && t->do_fun == do_cast
 		    &&    tmp->tempnum == sn && tmp->dest_buf
-		    &&   !str_cmp( tmp->dest_buf, staticbuf ) )
+		    &&   !str_cmp( (const char* ) tmp->dest_buf, staticbuf ) )
 		{
 		    extract_timer( tmp, t );
 		    act( AT_MAGIC, "Channeling your energy into $n, you help direct the force", ch, NULL, tmp, TO_VICT );
@@ -1338,8 +1350,9 @@ void do_cast( CHAR_DATA *ch, char *argument )
     /*
      * Fixed up a weird mess here, and added double safeguards	-Thoric
      */
-    if ( skill->target == TAR_CHAR_OFFENSIVE
-    &&   victim
+    if ( victim &&
+	(skill->target == TAR_CHAR_OFFENSIVE ||
+	( ( skill->target == TAR_CHAR_SEMIOFFENSIVE ) & IS_NPC(victim)))
     &&  !char_died(victim)
     &&	 victim != ch )
     {
@@ -1393,7 +1406,8 @@ ch_ret obj_cast_spell( int sn, int level, CHAR_DATA *ch, CHAR_DATA *victim, OBJ_
      * Basically this was added to cut down on level 5 players using level
      * 40 scrolls in battle too often ;)		-Thoric
      */
-    if ( (skill->target == TAR_CHAR_OFFENSIVE
+    if ( ((skill->target == TAR_CHAR_OFFENSIVE || 
+		skill->target == TAR_CHAR_SEMIOFFENSIVE)
     ||    number_bits(7) == 1)	/* 1/128 chance if non-offensive */
     &&    skill->type != SKILL_HERB
     &&   !chance( ch, 95 + levdiff ) )
@@ -1435,6 +1449,7 @@ ch_ret obj_cast_spell( int sn, int level, CHAR_DATA *ch, CHAR_DATA *victim, OBJ_
 	break;
 
     case TAR_CHAR_OFFENSIVE:
+    case TAR_CHAR_SEMIOFFENSIVE:
 	if ( victim != ch )
 	{
 	  if ( !victim )
@@ -1496,7 +1511,8 @@ ch_ret obj_cast_spell( int sn, int level, CHAR_DATA *ch, CHAR_DATA *victim, OBJ_
     if ( char_died(ch) )
       return rCHAR_DIED;
 
-    if ( skill->target == TAR_CHAR_OFFENSIVE
+    if ( (skill->target == TAR_CHAR_OFFENSIVE ||
+	 (skill->target == TAR_CHAR_SEMIOFFENSIVE && IS_NPC(victim)))
     &&   victim != ch
     &&  !char_died(victim) )
     {
@@ -1551,6 +1567,10 @@ ch_ret spell_blindness( int sn, int level, CHAR_DATA *ch, void *vo )
     int tmp;
     SKILLTYPE *skill = get_skilltype(sn);
 
+    if ( victim == NULL) {
+	send_to_char("Your victim has managed to elude you!\n\r",ch);
+	return rSPELL_FAILED;
+    }
     if ( SPELL_FLAG(skill, SF_PKSENSITIVE)
     &&  !IS_NPC(ch) && !IS_NPC(victim) )
 	tmp = level;
@@ -1571,7 +1591,7 @@ ch_ret spell_blindness( int sn, int level, CHAR_DATA *ch, void *vo )
     af.type      = sn;
     af.location  = APPLY_HITROLL;
     af.modifier  = -4;
-    af.duration  = (1 + (level / 3)) * DUR_CONV;
+    af.duration  = (sh_int) ( (1 + (level / 3)) * DUR_CONV );
     af.bitvector = AFF_BLIND;
     affect_to_char( victim, &af );
     set_char_color( AT_MAGIC, victim );
@@ -1604,7 +1624,7 @@ ch_ret spell_burning_hands( int sn, int level, CHAR_DATA *ch, void *vo )
             ch->alignment = URANGE( -1000, ch->alignment, 1000 );
     sith_penalty( ch );
                     
-    level	= UMIN(level, sizeof(dam_each)/sizeof(dam_each[0]) - 1);
+    level	= UMIN(level, (int) (sizeof(dam_each)/sizeof(dam_each[0]) - 1 ));
     level	= UMAX(0, level);
     dam		= number_range( dam_each[level] / 2, dam_each[level] * 2 );
     if ( saves_spell_staff( level, victim ) )
@@ -1699,13 +1719,27 @@ ch_ret spell_cause_light( int sn, int level, CHAR_DATA *ch, void *vo )
 ch_ret spell_cause_critical( int sn, int level, CHAR_DATA *ch, void *vo )
 {
     send_to_char("You feel the hatred grow within you!\n\r", ch);
-        ch->alignment = ch->alignment - 70;
-            ch->alignment = URANGE( -1000, ch->alignment, 1000 );
+    ch->alignment = ch->alignment - 70;
+    ch->alignment = URANGE( -1000, ch->alignment, 1000 );
     sith_penalty( ch );
                     
     return damage( ch, (CHAR_DATA *) vo, dice(3, 8) + level, sn );
 }
 
+/* Same as spell_cause_critical but will not start a fight if it is
+   against a PC */
+ch_ret spell_cause_critical_no_fighting( int sn, int level, CHAR_DATA *ch, void *vo)
+{
+	if (IS_NPC(((CHAR_DATA *)vo))) {
+		return spell_cause_critical(sn,level,ch,vo);
+	} else {
+		send_to_char("You feel the hatred grow within you!\n\r",ch);
+		ch->alignment = ch->alignment - 70;
+		ch->alignment = URANGE(-1000, ch->alignment, 1000);
+		sith_penalty(ch);
+		return damage_no_fighting( ch, (CHAR_DATA *) vo, dice(3,8)+level, sn);
+	}
+}
 
 
 ch_ret spell_cause_serious( int sn, int level, CHAR_DATA *ch, void *vo )
@@ -1733,7 +1767,7 @@ ch_ret spell_change_sex( int sn, int level, CHAR_DATA *ch, void *vo )
     if ( is_affected( victim, sn ) )
 	return rSPELL_FAILED;
     af.type      = sn;
-    af.duration  = 10 * level * DUR_CONV;
+    af.duration  = (int) ( 10 * level * DUR_CONV );
     af.location  = APPLY_SEX;
     do
     {
@@ -1795,7 +1829,7 @@ ch_ret spell_charm_person( int sn, int level, CHAR_DATA *ch, void *vo )
 	stop_follower( victim );
     add_follower( victim, ch );
     af.type      = sn;
-    af.duration  = (number_fuzzy( (level + 1) / 3 ) + 1) * DUR_CONV;
+    af.duration  = (sh_int) ( (number_fuzzy( (level + 1) / 3 ) + 1) * DUR_CONV );
     af.location  = 0;
     af.modifier  = 0;
     af.bitvector = AFF_CHARM;
@@ -1837,7 +1871,7 @@ ch_ret spell_chill_touch( int sn, int level, CHAR_DATA *ch, void *vo )
     sith_penalty( ch );
                     
 
-    level	= UMIN(level, sizeof(dam_each)/sizeof(dam_each[0]) - 1);
+    level	= UMIN(level, (int) ( sizeof(dam_each)/sizeof(dam_each[0]) - 1) );
     level	= UMAX(0, level);
     dam		= number_range( dam_each[level] / 2, dam_each[level] * 2 );
     if ( !saves_spell_staff( level, victim ) )
@@ -1877,7 +1911,7 @@ ch_ret spell_colour_spray( int sn, int level, CHAR_DATA *ch, void *vo )
     };
     int dam;
 
-    level	= UMIN(level, sizeof(dam_each)/sizeof(dam_each[0]) - 1);
+    level	= UMIN(level, (int) (sizeof(dam_each)/sizeof(dam_each[0]) - 1 ));
     level	= UMAX(0, level);
     dam		= number_range( dam_each[level] / 2,  dam_each[level] * 2 );
     if ( saves_spell_staff( level, victim ) )
@@ -2052,7 +2086,7 @@ ch_ret spell_curse( int sn, int level, CHAR_DATA *ch, void *vo )
 	return rSPELL_FAILED;
     }
     af.type      = sn;
-    af.duration  = (4*level) * DUR_CONV;
+    af.duration  = (sh_int) ( (4*level) * DUR_CONV );
     af.location  = APPLY_HITROLL;
     af.modifier  = -1;
     af.bitvector = AFF_CURSE;
@@ -2377,7 +2411,7 @@ ch_ret spell_fireball( int sn, int level, CHAR_DATA *ch, void *vo )
     sith_penalty( ch );
                     
 
-    level	= UMIN(level, sizeof(dam_each)/sizeof(dam_each[0]) - 1);
+    level	= UMIN(level, (int) ( sizeof(dam_each)/sizeof(dam_each[0]) - 1) );
     level	= UMAX(0, level);
     dam		= number_range( dam_each[level] / 2, dam_each[level] * 2 );
     if ( saves_spell_staff( level, victim ) )
@@ -2427,7 +2461,7 @@ ch_ret spell_faerie_fire( int sn, int level, CHAR_DATA *ch, void *vo )
 	return rSPELL_FAILED;
     }
     af.type      = sn;
-    af.duration  = level * DUR_CONV;
+    af.duration  = (sh_int) ( level * DUR_CONV );
     af.location  = APPLY_AC;
     af.modifier  = 2 * level;
     af.bitvector = AFF_FAERIE_FIRE;
@@ -2744,7 +2778,7 @@ ch_ret spell_invis( int sn, int level, CHAR_DATA *ch, void *vo )
 
 	act( AT_MAGIC, "A momentary lapse in attention, and $n fades out of sight.", victim, NULL, NULL, TO_ROOM );
 	af.type      = sn;
-	af.duration  = ((level / 4) + 12) * DUR_CONV;
+	af.duration  = (sh_int) ( ((level / 4) + 12) * DUR_CONV );
 	af.location  = APPLY_NONE;
 	af.modifier  = 0;
 	af.bitvector = AFF_INVISIBLE;
@@ -2834,7 +2868,7 @@ ch_ret spell_lightning_bolt( int sn, int level, CHAR_DATA *ch, void *vo )
             ch->alignment = URANGE( -1000, ch->alignment, 1000 );
     sith_penalty( ch );
                     
-    level	= UMIN(level, sizeof(dam_each)/sizeof(dam_each[0]) - 1);
+    level	= UMIN(level, (int) ( sizeof(dam_each)/sizeof(dam_each[0]) - 1 ));
     level	= UMAX(0, level);
     dam		= number_range( dam_each[level] / 2, dam_each[level] * 2 );
     if ( saves_spell_staff( level, victim ) )
@@ -2930,7 +2964,7 @@ ch_ret spell_magic_missile( int sn, int level, CHAR_DATA *ch, void *vo )
             ch->alignment = URANGE( -1000, ch->alignment, 1000 );
     sith_penalty( ch );
                     
-    level	= UMIN(level, sizeof(dam_each)/sizeof(dam_each[0]) - 1);
+    level	= UMIN(level, (int) ( sizeof(dam_each)/sizeof(dam_each[0]) - 1) );
     level	= UMAX(0, level);
     dam		= number_range( dam_each[level] / 2, dam_each[level] * 2 );
     /*  What's this?  You can't save vs. magic missile!		-Thoric
@@ -2961,7 +2995,7 @@ ch_ret spell_pass_door( int sn, int level, CHAR_DATA *ch, void *vo )
 	return rSPELL_FAILED;
     }
     af.type      = sn;
-    af.duration  = number_fuzzy( level / 4 ) * DUR_CONV;
+    af.duration  = (sh_int) ( number_fuzzy( level / 4 ) * DUR_CONV );
     af.location  = APPLY_NONE;
     af.modifier  = 0;
     af.bitvector = AFF_PASS_DOOR;
@@ -2991,7 +3025,7 @@ ch_ret spell_poison( int sn, int level, CHAR_DATA *ch, void *vo )
     if ( IS_AFFECTED( victim, AFF_POISON ) )
 	first = FALSE;
     af.type      = sn;
-    af.duration  = level * DUR_CONV;
+    af.duration  = (sh_int) ( level * DUR_CONV );
     af.location  = APPLY_STR;
     af.modifier  = -2;
     af.bitvector = AFF_POISON;
@@ -3091,7 +3125,7 @@ ch_ret spell_shocking_grasp( int sn, int level, CHAR_DATA *ch, void *vo )
     sith_penalty( ch );
                     
 
-    level	= UMIN(level, sizeof(dam_each)/sizeof(dam_each[0]) - 1);
+    level	= UMIN(level, (int) ( sizeof(dam_each)/sizeof(dam_each[0]) - 1 ));
     level	= UMAX(0, level);
     dam		= number_range( dam_each[level] / 2, dam_each[level] * 2 );
     if ( saves_spell_staff( level, victim ) )
@@ -3122,6 +3156,11 @@ ch_ret spell_sleep( int sn, int level, CHAR_DATA *ch, void *vo )
     if ( !IS_NPC(victim) && victim->fighting )
     {
 	send_to_char( "You cannot sleep a fighting player.\n\r", ch );
+	return rSPELL_FAILED;
+    }
+
+    if (is_droid(victim)) {
+	send_to_char("You cannot put a droid to sleep.\n\r",ch );
 	return rSPELL_FAILED;
     }
 
@@ -3157,7 +3196,7 @@ ch_ret spell_sleep( int sn, int level, CHAR_DATA *ch, void *vo )
 	}
     }
     af.type      = sn;
-    af.duration  = (4 + level) * DUR_CONV;
+    af.duration  = (sh_int) ( (4 + level) * DUR_CONV );
     af.location  = APPLY_NONE;
     af.modifier  = 0;
     af.bitvector = AFF_SLEEP;
@@ -3247,7 +3286,7 @@ ch_ret spell_weaken( int sn, int level, CHAR_DATA *ch, void *vo )
     if ( is_affected( victim, sn ) || saves_wands( level, victim ) )
 	return rSPELL_FAILED;
     af.type      = sn;
-    af.duration  = level / 2 * DUR_CONV;
+    af.duration  = (sh_int) ( level / 2 * DUR_CONV );
     af.location  = APPLY_STR;
     af.modifier  = -2;
     af.bitvector = 0;
@@ -3578,12 +3617,12 @@ ch_ret spell_farsight( int sn, int level, CHAR_DATA *ch, void *vo )
     if ( ( victim = get_char_world( ch, target_name ) ) == NULL
     ||   victim == ch
     ||   !victim->in_room
-    ||   IS_SET(victim->in_room->room_flags, ROOM_PRIVATE)
+    ||   ((IS_SET(victim->in_room->room_flags, ROOM_PRIVATE)
     ||   IS_SET(victim->in_room->room_flags, ROOM_SOLITARY)
     ||   IS_SET(victim->in_room->room_flags, ROOM_PROTOTYPE)
     ||	(IS_NPC(victim) && IS_SET(victim->act, ACT_PROTOTYPE))
     ||  (IS_NPC(victim) && saves_spell_staff( level, victim ))  
-    || saving <= 50 )
+    || saving <= 50 ) && !IS_IMMORTAL(ch) ))
     {
 	failed_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -3805,34 +3844,52 @@ ch_ret spell_animate_dead( int sn, int level, CHAR_DATA *ch, void *vo )
 
     found = FALSE;
 
-    for (corpse = ch->in_room->first_content; corpse; corpse = corpse_next)
+    if ( target_name[0] != '\0' )
     {
-	corpse_next = corpse->next_content;
+        if( ( corpse = get_obj_here( ch, target_name ) ) == NULL )
+        {
+            send_to_char( "You cannot find that here.\r\n", ch );
+            return rSPELL_FAILED;
+        }
+        else if( corpse->item_type == ITEM_CORPSE_NPC && corpse->cost != -5 )
+            found = TRUE;
+        else
+        {
+            send_to_char( "That's not a suitable corpse.\r\n", ch );
+            return rSPELL_FAILED;
+        }
+    }
+    else
+    {
+        for( corpse = ch->in_room->first_content; corpse; corpse = corpse_next )
+        {
+            corpse_next = corpse->next_content;
 
-	if (corpse->item_type == ITEM_CORPSE_NPC && corpse->cost != -5)
-	{
-	   found = TRUE;
-	   break;
-	}
+            if( corpse->item_type == ITEM_CORPSE_NPC && corpse->cost != -5 )
+            {
+                found = TRUE;
+                break;
+            }
+        }
     }
   
     if( !found )
     {
-	send_to_char("You cannot find a suitable corpse here.\n\r", ch);
-	return rSPELL_FAILED;
+        send_to_char("You cannot find a suitable corpse here.\n\r", ch);
+        return rSPELL_FAILED;
     }
 
     if ( get_mob_index(MOB_VNUM_ANIMATED_CORPSE) == NULL )
     {
-	bug("Vnum 5 not found for spell_animate_dead!", 0);
-	return rNONE;
+        bug("Vnum 5 not found for spell_animate_dead!", 0);
+        return rNONE;
     }
  
 
     if ( (pMobIndex = get_mob_index((sh_int) abs(corpse->cost) )) == NULL )
     {
-	bug("Can not find mob for cost of corpse, spell_animate_dead", 0);
-	return rSPELL_FAILED;
+        bug("Can not find mob for cost of corpse, spell_animate_dead", 0);
+        return rSPELL_FAILED;
     }
 
     if ( !IS_NPC(ch) )
@@ -3888,7 +3945,7 @@ ch_ret spell_animate_dead( int sn, int level, CHAR_DATA *ch, void *vo )
 	mob->long_descr = STRALLOC(buf);
 	add_follower( mob, ch );
 	af.type      = sn;
-	af.duration  = (number_fuzzy( (level + 1) / 4 ) + 1) * DUR_CONV;
+	af.duration  = (sh_int) ( (number_fuzzy( (level + 1) / 4 ) + 1) * DUR_CONV );
 	af.location  = 0;
 	af.modifier  = 0;
 	af.bitvector = AFF_CHARM;
@@ -4264,7 +4321,7 @@ ch_ret spell_scorching_surge( int sn, int level, CHAR_DATA *ch, void *vo )
              ch->alignment = URANGE( -1000, ch->alignment, 1000 );
     sith_penalty( ch );
                      
-    level       = UMIN(level/2, sizeof(dam_each)/sizeof(dam_each[0]) - 1);
+    level       = UMIN(level/2, (int) ( sizeof(dam_each)/sizeof(dam_each[0]) - 1 ));
     level       = UMAX(0, level);
     dam         = number_range( dam_each[level] , dam_each[level] * 10 );
     if ( saves_spell_staff( level, victim ) )
@@ -4277,7 +4334,7 @@ ch_ret spell_scorching_surge( int sn, int level, CHAR_DATA *ch, void *vo )
         ch, NULL, NULL, TO_ROOM );
     act( AT_MAGIC, "A fiery current lashes through your body!",
         ch, NULL, NULL, TO_CHAR );   
-    return damage( ch, victim, (dam*1.4), sn );
+    return damage( ch, victim, (int) (dam*1.4), sn );
 }
  
 
@@ -4367,7 +4424,7 @@ ch_ret spell_area_attack( int sn, int level, CHAR_DATA *ch, void *vo )
     bool saved;
     bool affects;
     int dam;
-    bool ch_died = FALSE;
+//    bool ch_died = FALSE;
     ch_ret retcode;
 
     send_to_char("You feel the hatred grow within you!\n\r", ch);
@@ -4419,7 +4476,7 @@ ch_ret spell_area_attack( int sn, int level, CHAR_DATA *ch, void *vo )
 	    retcode = spell_affectchar( sn, level, ch, vch );
 	if ( retcode == rCHAR_DIED || char_died(ch) )
 	{
-	    ch_died = TRUE;
+//	    ch_died = TRUE;
 	    break;
 	}
     }
@@ -4857,11 +4914,11 @@ ch_ret spell_obj_inv( int sn, int level, CHAR_DATA *ch, void *vo )
 		   failed_casting( skill, ch, NULL, obj );
 		   return rNONE;
 		}
-		break;
 	     clone = clone_object(obj);
 	     clone->timer = skill->dice ? dice_parse(ch, level, skill->dice) : 0;
 	     obj_to_char( clone, ch );
 	     successful_casting( skill, ch, NULL, obj );
+		break;
 	  }
 	  return rNONE;
 
@@ -4995,7 +5052,7 @@ ch_ret spell_create_mob( int sn, int level, CHAR_DATA *ch, void *vo )
     char_to_room( mob, ch->in_room );
     add_follower( mob, ch );
     af.type      = sn;
-    af.duration  = (number_fuzzy( (level + 1) / 3 ) + 1) * DUR_CONV;
+    af.duration  = (sh_int) ( (number_fuzzy( (level + 1) / 3 ) + 1) * DUR_CONV );
     af.location  = 0;
     af.modifier  = 0;
     af.bitvector = AFF_CHARM;
@@ -5043,6 +5100,7 @@ ch_ret spell_smaug( int sn, int level, CHAR_DATA *ch, void *vo )
 	  return spell_affect( sn, level, ch, vo );
 
 	case TAR_CHAR_OFFENSIVE:
+	case TAR_CHAR_SEMIOFFENSIVE:
 	  /* a regular damage inflicting spell attack */
 	  if ((SPELL_ACTION(skill) == SA_DESTROY
 	  &&   SPELL_CLASS(skill) == SC_LIFE)
@@ -5112,11 +5170,11 @@ ch_ret spell_ethereal_fist( int sn, int level, CHAR_DATA *ch, void *vo )
     dam         = UMAX(0,dam);
 
     if ( saves_spell_staff( level, victim ) )
-	dam = 0;
+    	dam = 0;
 
-        send_to_char("You feel the hatred grow within you!\n\r", ch);
-          ch->alignment = ch->alignment - 100;
-                    ch->alignment = URANGE( -1000, ch->alignment, 1000 );
+    send_to_char("You feel the hatred grow within you!\n\r", ch);
+    ch->alignment = ch->alignment - 100;
+    ch->alignment = URANGE( -1000, ch->alignment, 1000 );
     sith_penalty( ch );
                             
 
@@ -5553,7 +5611,7 @@ ch_ret spell_midas_touch( int sn, int level, CHAR_DATA *ch, void *vo )
     }
 
     if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE )
-    &&   get_trust( victim ) < LEVEL_IMMORTAL )
+    &&   get_trust( ch ) < LEVEL_IMMORTAL )
     {
 	send_to_char( "That item is not for mortal hands to touch!\n\r", ch );
 	return rSPELL_FAILED;   /* Thoric */

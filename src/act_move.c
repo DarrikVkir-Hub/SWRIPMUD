@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -171,6 +168,7 @@ char *	const		room_sents[SECT_MAX][25]	=
     },
 
     {
+
 	"You stand in a lengthy tunnel of rock."
     }
 
@@ -405,8 +403,8 @@ EXIT_DATA *get_exit( ROOM_INDEX_DATA *room, sh_int dir )
 
     if ( !room )
     {
-	bug( "Get_exit: NULL room", 0 );
-	return NULL;
+      	bug( "Get_exit: NULL room", 0 );
+		return NULL;
     }
 
     for (xit = room->first_exit; xit; xit = xit->next )
@@ -424,8 +422,8 @@ EXIT_DATA *get_exit_to( ROOM_INDEX_DATA *room, sh_int dir, int vnum )
 
     if ( !room )
     {
-	bug( "Get_exit: NULL room", 0 );
-	return NULL;
+      	bug( "Get_exit: NULL room", 0 );
+		return NULL;
     }
 
     for (xit = room->first_exit; xit; xit = xit->next )
@@ -444,8 +442,8 @@ EXIT_DATA *get_exit_num( ROOM_INDEX_DATA *room, sh_int count )
 
     if ( !room )
     {
-	bug( "Get_exit: NULL room", 0 );
-	return NULL;
+      	bug( "Get_exit: NULL room", 0 );
+		return NULL;
     }
 
     for (cnt = 0, xit = room->first_exit; xit; xit = xit->next )
@@ -465,22 +463,22 @@ sh_int encumbrance( CHAR_DATA *ch, sh_int move )
     max = can_carry_w(ch);
     cur = ch->carry_weight;
     if ( cur >= max )
-      return move * 4;
+      return (sh_int ) ( move * 4 );
     else
     if ( cur >= max * 0.95 )
-      return move * 3.5;
+      return (sh_int ) ( move * 3.5 );
     else
     if ( cur >= max * 0.90 )
-      return move * 3;
+      return (sh_int ) ( move * 3 );
     else
     if ( cur >= max * 0.85 )
-      return move * 2.5;
+      return (sh_int ) ( move * 2.5 );
     else
     if ( cur >= max * 0.80 )
-      return move * 2;
+      return (sh_int ) ( move * 2 );
     else
     if ( cur >= max * 0.75 )
-      return move * 1.5;
+      return (sh_int ) ( move * 1.5 );
     else
       return move;
 }
@@ -603,7 +601,7 @@ ROOM_INDEX_DATA *generate_exit( ROOM_INDEX_DATA *in_room, EXIT_DATA **pexit )
 	  bxit->distance = fulldist - distance;
 	}
     }
-    (EXIT_DATA *) pexit = xit;
+	*pexit = xit;
     return room;
 }
 
@@ -635,8 +633,7 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
 #ifdef DEBUG
     if ( pexit )
     {
-	sprintf( buf, "move_char: %s to door %d", ch->name, pexit->vdir );
-	log_string( buf );
+		log_printf( "%s: %s to door %d", __func__, ch->name, pexit->vdir );
     }
 #endif
 
@@ -681,9 +678,14 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
     if ( IS_SET(pexit->exit_info, EX_NOMOB)
 	&& IS_NPC(ch) && !IS_SET(ch->act, ACT_SCAVENGER) )
     {
-	act( AT_PLAIN, "Mobs can't enter there.", ch, NULL, NULL, TO_CHAR );
-	return rNONE;
+		act( AT_PLAIN, "Mobs can't enter there.", ch, NULL, NULL, TO_CHAR );
+		return rNONE;
     }
+    if( IS_SET( to_room->room_flags, ROOM_NO_MOB ) && IS_NPC( ch ) && !IS_SET(ch->act, ACT_SCAVENGER) )
+    { 
+      act( AT_PLAIN, "Mobs can't enter there.", ch, NULL, NULL, TO_CHAR );
+      return rNONE;
+    }	
 
     if ( IS_SET(pexit->exit_info, EX_CLOSED)
     && (!IS_AFFECTED(ch, AFF_PASS_DOOR)
@@ -771,20 +773,6 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
     {
 	/*int iClass;*/
 	int move;
-/* Pretty sure we don't need to check for guilds anymore now that we have
-   the new dh. -- Narn
-*/
-/*
-	for ( iClass = 0; iClass < MAX_CLASS; iClass++ )
-	{
-	    if ( iClass != ch->class
-	    &&   to_room->vnum == class_table[iClass]->guild )
-	    {
-		send_to_char( "You aren't allowed in there.\n\r", ch );
-		return rNONE;
-	    }
-	}
-*/
 
 /* Prevent deadlies from entering a nopkill-flagged area from a 
    non-flagged area, but allow them to move around if already
@@ -961,7 +949,8 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
 	
 	  hpmove = 500/( ch->hit? ch->hit : 1 );
 	  if ( !IS_AFFECTED(ch, AFF_FLYING)
-	  &&   !IS_AFFECTED(ch, AFF_FLOATING) )
+	  &&   !IS_AFFECTED(ch, AFF_FLOATING)
+	  &&   !IS_AFFECTED(ch, AFF_ENDURANCE) )	// Johnson ( Michael Shattuck ) 4/28 - Added 5-15-04 - DV
 	    move = hpmove*encumbrance( ch, movement_loss[UMIN(SECT_MAX-1, in_room->sector_type)] );
 	  else
 	    move = 1;
@@ -1007,6 +996,7 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
         txt = "falls";
       else
       if ( !txt )
+
       {
         if ( ch->mount )
         {
@@ -1066,94 +1056,96 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
     if( char_died(ch) )
       return global_retcode;
 
-    char_from_room( ch );
-    if ( ch->mount )
-    {
-      rprog_leave_trigger( ch->mount );
-      if( char_died(ch) )
-        return global_retcode;
-      if( ch->mount )
-      {
-        char_from_room( ch->mount );
-        char_to_room( ch->mount, to_room );
-      }
-    }
+	if( get_room_index( to_room->vnum ) )
+	{
+		char_from_room( ch );
+		if ( ch->mount )
+		{
+		rprog_leave_trigger( ch->mount );
+		if( char_died(ch) )
+			return global_retcode;
+		if( ch->mount )
+		{
+			char_from_room( ch->mount );
+			char_to_room( ch->mount, to_room );
+		}
+		}
 
 
-    char_to_room( ch, to_room );
-    if ( !IS_AFFECTED(ch, AFF_SNEAK)
-    && ( IS_NPC(ch) || !IS_SET(ch->act, PLR_WIZINVIS) ) )
-    {
-      if ( fall )
-        txt = "falls";
-      else
-      if ( ch->mount )
-      {
-	if ( IS_AFFECTED( ch->mount, AFF_FLOATING ) )
-	  txt = "floats in";
-	else
-	if ( IS_AFFECTED( ch->mount, AFF_FLYING ) )
-	  txt = "flys in";
-	else
-	  txt = "rides in";
-      }
-      else
-      {
-	if ( IS_AFFECTED( ch, AFF_FLOATING ) )
-	{
-	  if ( drunk )
-	    txt = "floats in unsteadily";
-	   else
-	    txt = "floats in";
+		char_to_room( ch, to_room );
+		if ( !IS_AFFECTED(ch, AFF_SNEAK)
+		&& ( IS_NPC(ch) || !IS_SET(ch->act, PLR_WIZINVIS) ) )
+		{
+		if ( fall )
+			txt = "falls";
+		else
+		if ( ch->mount )
+		{
+		if ( IS_AFFECTED( ch->mount, AFF_FLOATING ) )
+		txt = "floats in";
+		else
+		if ( IS_AFFECTED( ch->mount, AFF_FLYING ) )
+		txt = "flys in";
+		else
+		txt = "rides in";
+		}
+		else
+		{
+		if ( IS_AFFECTED( ch, AFF_FLOATING ) )
+		{
+		if ( drunk )
+			txt = "floats in unsteadily";
+		else
+			txt = "floats in";
+		}
+		else
+		if ( IS_AFFECTED( ch, AFF_FLYING ) )
+		{
+		if ( drunk )
+			txt = "flys in shakily";
+		else
+			txt = "flys in";
+		}
+		else
+		if ( ch->position == POS_SHOVE )
+			txt = "is shoved in";
+		else
+		if ( ch->position == POS_DRAG )
+		txt = "is dragged in";
+		else
+		{
+		if ( drunk )
+			txt = "stumbles drunkenly in";
+		else
+			txt = "arrives";
+		}
+		}
+		switch( door )
+		{
+		default: dtxt = "somewhere";	break;
+		case 0:  dtxt = "the south";	break;
+		case 1:  dtxt = "the west";	break;
+		case 2:  dtxt = "the north";	break;
+		case 3:  dtxt = "the east";	break;
+		case 4:  dtxt = "below";		break;
+		case 5:  dtxt = "above";		break;
+		case 6:  dtxt = "the south-west";	break;
+		case 7:  dtxt = "the south-east";	break;
+		case 8:  dtxt = "the north-west";	break;
+		case 9:  dtxt = "the north-east";	break;
+		}
+		if ( ch->mount )
+		{
+		sprintf( buf, "$n %s from %s upon $N.", txt, dtxt );
+		act( AT_ACTION, buf, ch, NULL, ch->mount, TO_ROOM );
+		}
+		else
+		{
+		sprintf( buf, "$n %s from %s.", txt, dtxt );
+		act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
+		}
+		}
 	}
-	else
-	if ( IS_AFFECTED( ch, AFF_FLYING ) )
-	{
-	  if ( drunk )
-	    txt = "flys in shakily";
-	   else
-	    txt = "flys in";
-	}
-	else
-	if ( ch->position == POS_SHOVE )
-          txt = "is shoved in";
-	else
-	if ( ch->position == POS_DRAG )
-	  txt = "is dragged in";
-  	else
-	{
-	  if ( drunk )
-	    txt = "stumbles drunkenly in";
-	   else
-	    txt = "arrives";
-	}
-      }
-      switch( door )
-      {
-      default: dtxt = "somewhere";	break;
-      case 0:  dtxt = "the south";	break;
-      case 1:  dtxt = "the west";	break;
-      case 2:  dtxt = "the north";	break;
-      case 3:  dtxt = "the east";	break;
-      case 4:  dtxt = "below";		break;
-      case 5:  dtxt = "above";		break;
-      case 6:  dtxt = "the south-west";	break;
-      case 7:  dtxt = "the south-east";	break;
-      case 8:  dtxt = "the north-west";	break;
-      case 9:  dtxt = "the north-east";	break;
-      }
-      if ( ch->mount )
-      {
-	sprintf( buf, "$n %s from %s upon $N.", txt, dtxt );
-	act( AT_ACTION, buf, ch, NULL, ch->mount, TO_ROOM );
-      }
-      else
-      {
-	sprintf( buf, "$n %s from %s.", txt, dtxt );
-	act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
-      }
-    }
-
     if ( !IS_IMMORTAL(ch)
     &&  !IS_NPC(ch)
     &&  ch->in_room->area != to_room->area )
@@ -1192,15 +1184,19 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
 
       for ( fch = from_room->first_person; fch && ( count < chars ); fch = nextinroom )
       {
-	nextinroom = fch->next_in_room;
+		nextinroom = fch->next_in_room;
         count++;
-	if ( fch != ch		/* loop room bug fix here by Thoric */
-	&& fch->master == ch
-	&& fch->position == POS_STANDING )
-	{
-	act( AT_ACTION, "You follow $N.", fch, NULL, ch, TO_CHAR );
-	    move_char( fch, pexit, 0 );
-	}
+         if( fch != ch  /* loop room bug fix here by Thoric */
+             && fch->master == ch && fch->position == POS_STANDING )
+         {
+            if( !get_exit( from_room, door ) )
+            {
+              act( AT_ACTION, "The entrance closes behind $N, preventing you from following!", fch, NULL, ch, TO_CHAR );
+              continue;
+            }
+            act( AT_ACTION, "You follow $N.", fch, NULL, ch, TO_CHAR );
+            move_char( fch, pexit, 0 );
+         }
       }
     }
 
@@ -1452,6 +1448,7 @@ void do_open( CHAR_DATA *ch, char *argument )
             
             sound_to_room( ch->in_room , "!!SOUND(door)" );
             return;
+
 	}
     }
 
@@ -1495,7 +1492,7 @@ void do_open( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( !str_cmp(arg , "hatch") );
+    if ( !str_cmp(arg , "hatch") )
     {
       do_openhatch( ch , argument );
       return;
@@ -1739,7 +1736,7 @@ void do_unlock( CHAR_DATA *ch, char *argument )
 
 void do_bashdoor( CHAR_DATA *ch, char *argument )
 {
-	CHAR_DATA *gch;
+//	CHAR_DATA *gch;
 	EXIT_DATA *pexit;
 	char       arg [ MAX_INPUT_LENGTH ];
 
@@ -1827,7 +1824,7 @@ void do_bashdoor( CHAR_DATA *ch, char *argument )
 			ch, NULL, keyword, TO_CHAR );
 		act(AT_SKILL, "WHAAAAM!!!  $n bashes against the $d, but it holds strong.",
 			ch, NULL, keyword, TO_ROOM );
-		damage( ch, ch, ( ch->max_hit / 20 ) + 10, gsn_bashdoor );
+		damage( ch, ch, ( ch->max_hit / 20 ) + 10, gsn_bashdoor ); //Damage is already done here - DV 3-13-26
 		learn_from_failure(ch, gsn_bashdoor);
 	    }
 	}    
@@ -1840,6 +1837,7 @@ void do_bashdoor( CHAR_DATA *ch, char *argument )
 	    damage( ch, ch, ( ch->max_hit / 20 ) + 10, gsn_bashdoor );
 	    learn_from_failure(ch, gsn_bashdoor);
 	}
+/*	FUSS adjustment - unnecessary chance to kill themselves (damage is done above already) - DV 3-13-26
 	if ( !char_died( ch ) )
 	   for ( gch = ch->in_room->first_person; gch; gch = gch->next_in_room )
 	   {
@@ -1850,7 +1848,7 @@ void do_bashdoor( CHAR_DATA *ch, char *argument )
 		 && number_bits( 2 ) == 0 )
 		 multi_hit( gch, ch, TYPE_UNDEFINED );
 	   }
-
+*/
         return;
 }
 
@@ -2264,7 +2262,7 @@ void teleportch( CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool show )
       do_look( ch, "auto" );
 }
 
-void teleport( CHAR_DATA *ch, sh_int room, int flags )
+void teleport( CHAR_DATA *ch, int room, int flags )
 {
     CHAR_DATA *nch, *nch_next;
     ROOM_INDEX_DATA *pRoomIndex;
@@ -2273,8 +2271,8 @@ void teleport( CHAR_DATA *ch, sh_int room, int flags )
     pRoomIndex = get_room_index( room );
     if ( !pRoomIndex )
     {
-	bug( "teleport: bad room vnum %d", room );
-	return;
+      	bug( "%s: bad room vnum %d", __func__, room );
+		return;
     }
 
     if ( IS_SET( flags, TELE_SHOWDESC ) )
@@ -2299,13 +2297,13 @@ void teleport( CHAR_DATA *ch, sh_int room, int flags )
 void do_climb( CHAR_DATA *ch, char *argument )
 {
     EXIT_DATA *pexit;
-    bool found;
+//    bool found;
 
-    found = FALSE;
+//    found = FALSE;
     if ( argument[0] == '\0' )
     {
 	for ( pexit = ch->in_room->first_exit; pexit; pexit = pexit->next )
-	    if ( IS_SET( pexit->exit_info, EX_xCLIMB ) )
+         if( IS_SET( pexit->exit_info, EX_xCLIMB ) || IS_SET( pexit->exit_info, EX_CLIMB ) )
 	    {
 		move_char( ch, pexit, 0 );
 		return;
@@ -2314,8 +2312,8 @@ void do_climb( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( (pexit = find_door( ch, argument, TRUE )) != NULL
-    &&   IS_SET( pexit->exit_info, EX_xCLIMB ))
+   	if( ( pexit = find_door( ch, argument, TRUE ) ) != NULL
+    	&& ( IS_SET( pexit->exit_info, EX_xCLIMB ) || IS_SET( pexit->exit_info, EX_CLIMB ) ) )
     {
 	move_char( ch, pexit, 0 );
 	return;
@@ -2330,9 +2328,9 @@ void do_climb( CHAR_DATA *ch, char *argument )
 void do_enter( CHAR_DATA *ch, char *argument )
 {
     EXIT_DATA *pexit;
-    bool found;
+//    bool found;
 
-    found = FALSE;
+//    found = FALSE;
     if ( argument[0] == '\0' )
     {
 	for ( pexit = ch->in_room->first_exit; pexit; pexit = pexit->next )
@@ -2361,9 +2359,9 @@ void do_enter( CHAR_DATA *ch, char *argument )
 void do_leave( CHAR_DATA *ch, char *argument )
 {
     EXIT_DATA *pexit;
-    bool found;
+//    bool found;
 
-    found = FALSE;
+//    found = FALSE;
     if ( argument[0] == '\0' )
     {
 	for ( pexit = ch->in_room->first_exit; pexit; pexit = pexit->next )

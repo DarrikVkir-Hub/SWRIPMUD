@@ -28,7 +28,7 @@ struct map_type
 };
 
 /* Chars for each of the four compass direction exits */
-char map_chars[4] = "|-|-";
+char map_chars[5] = "|-|-";
 /* The map itself */
 struct map_type map[MAPX + 1][MAPY + 1];
 
@@ -281,11 +281,11 @@ int get_line( char *desc, int max_len )
 void show_map( CHAR_DATA *ch, char *text )
 {
     char buf[MAX_STRING_LENGTH * 2];
-    int x, y, pos;
-    char *p;
+    int x, y;//, pos;
+//    char *p;
 
-    pos = 0;
-    p = text;
+    //pos = 0;
+//    p = text;
     buf[0] = '\0';
 
     /* Place Marker 2 - referred to later */

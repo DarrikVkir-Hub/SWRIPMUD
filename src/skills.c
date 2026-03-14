@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -26,7 +23,6 @@
 #include <string.h>
 #include <time.h>
 #include "mud.h"
-#include "bet.h"
 
 char * const spell_flag[] =
 { "water", "earth", "air", "astral", "area", "distant", "reverse",
@@ -82,7 +78,7 @@ int get_ssave( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(spell_saves) / sizeof(spell_saves[0]); x++ )
+    for ( x = 0; x < (int ) ( sizeof(spell_saves) / sizeof(spell_saves[0]) ); x++ )
       if ( !str_cmp( name, spell_saves[x] ) )
         return x;
     return -1;
@@ -92,7 +88,7 @@ int get_starget( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(target_type) / sizeof(target_type[0]); x++ )
+    for ( x = 0; x < (int) ( sizeof(target_type) / sizeof(target_type[0]) ); x++ )
       if ( !str_cmp( name, target_type[x] ) )
         return x;
     return -1;
@@ -102,7 +98,7 @@ int get_sflag( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(spell_flag) / sizeof(spell_flag[0]); x++ )
+    for ( x = 0; x < (int) ( sizeof(spell_flag) / sizeof(spell_flag[0]) ); x++ )
       if ( !str_cmp( name, spell_flag[x] ) )
         return x;
     return -1;
@@ -112,7 +108,7 @@ int get_sdamage( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(spell_damage) / sizeof(spell_damage[0]); x++ )
+    for ( x = 0; x < (int) ( sizeof(spell_damage) / sizeof(spell_damage[0]) ); x++ )
       if ( !str_cmp( name, spell_damage[x] ) )
         return x;
     return -1;
@@ -122,7 +118,7 @@ int get_saction( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(spell_action) / sizeof(spell_action[0]); x++ )
+    for ( x = 0; x < (int) ( sizeof(spell_action) / sizeof(spell_action[0]) ); x++ )
       if ( !str_cmp( name, spell_action[x] ) )
         return x;
     return -1;
@@ -132,7 +128,7 @@ int get_spower( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(spell_power) / sizeof(spell_power[0]); x++ )
+    for ( x = 0; x < (int) ( sizeof(spell_power) / sizeof(spell_power[0]) ); x++ )
       if ( !str_cmp( name, spell_power[x] ) )
         return x;
     return -1;
@@ -142,7 +138,7 @@ int get_sclass( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(spell_class) / sizeof(spell_class[0]); x++ )
+    for ( x = 0; x < (int) ( sizeof(spell_class) / sizeof(spell_class[0]) ); x++ )
       if ( !str_cmp( name, spell_class[x] ) )
         return x;
     return -1;
@@ -250,6 +246,7 @@ bool check_skill( CHAR_DATA *ch, char *command, char *argument )
 	    break;
 
 	case TAR_CHAR_OFFENSIVE:
+	case TAR_CHAR_SEMIOFFENSIVE:
 	    if ( argument[0] == '\0'
 	    &&  (victim=who_fighting(ch)) == NULL )
 	    {
@@ -300,7 +297,7 @@ bool check_skill( CHAR_DATA *ch, char *command, char *argument )
 	if ( (number_percent( ) + skill_table[sn]->difficulty * 5)
 	   > (IS_NPC(ch) ? 75 : ch->pcdata->learned[sn]) )
 	{
-	    failed_casting( skill_table[sn], ch, vo, obj );
+	    failed_casting( skill_table[sn], ch, (CHAR_DATA *) vo, obj );
 	    learn_from_failure( ch, sn );
 	    if ( mana )
 	    {
@@ -331,7 +328,9 @@ bool check_skill( CHAR_DATA *ch, char *command, char *argument )
 	else
 	    learn_from_success( ch, sn );
 
-	if ( skill_table[sn]->target == TAR_CHAR_OFFENSIVE
+	if ( (skill_table[sn]->target == TAR_CHAR_OFFENSIVE ||
+		(skill_table[sn]->target == TAR_CHAR_SEMIOFFENSIVE &&
+IS_NPC(victim)))
 	&&   victim != ch
 	&&  !char_died(victim) )
 	{
@@ -966,7 +965,16 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	      modifier[0] = '\0';
 	    aff->duration = str_dup( duration );
 	    aff->location = loc;
-	    aff->modifier = str_dup( modifier );
+		if( loc == APPLY_AFFECT || loc == APPLY_RESISTANT || loc == APPLY_IMMUNE || loc == APPLY_SUSCEPTIBLE )
+		{
+			int modval = get_aflag( modifier );
+
+		/* Sanitize the flag input for the modifier if needed -- Samson */
+			if( modval < 0 )
+				modval = 0;
+			snprintf( modifier, MAX_INPUT_LENGTH, "%d", modval );
+		}
+		aff->modifier = str_dup( modifier );
 	    aff->bitvector = bit;
 	    aff->next = skill->affects;
 	    skill->affects = aff;
@@ -1151,7 +1159,9 @@ void do_sset( CHAR_DATA *ch, char *argument )
     {
 	if ( (sn = skill_lookup(arg1)) >= 0 )
 	{
-	    sprintf(arg1, "%d %s %s", sn, arg2, argument);
+	    int n = snprintf(arg1, sizeof(arg1),"%d %s %s", sn, arg2, argument);
+		if (n < 0 || n >= (int)sizeof(arg1))
+			arg1[sizeof(arg1) - 1] = '\0';
 	    do_sset(ch, arg1);
 	}
 	else
@@ -1420,7 +1430,7 @@ void do_detrap( CHAR_DATA *ch, char *argument )
 		bug( "do_detrap: ch->dest_buf NULL!", 0 );
 		return;
 	    }
-	    strcpy( arg, ch->dest_buf );
+	    strcpy( arg, (const char * )ch->dest_buf );
 	    DISPOSE( ch->dest_buf );
 	    DISPOSE(ch->dest_buf);
 	    ch->substate = SUB_NONE;
@@ -1548,7 +1558,7 @@ void do_dig( CHAR_DATA *ch, char *argument )
 	      bug( "do_dig: dest_buf NULL", 0 );
 	      return;
 	  }
-	  strcpy( arg, ch->dest_buf );  
+	  strcpy( arg, (const char* ) ch->dest_buf );  
 	  DISPOSE( ch->dest_buf );	
 	  break;
 
@@ -1635,7 +1645,7 @@ void do_search( CHAR_DATA *ch, char *argument )
     OBJ_DATA *container;
     OBJ_DATA *startobj;
     int percent, door;
-    bool found, room;
+    bool found;//, room;
 
     door = -1;
     switch( ch->substate )
@@ -1684,7 +1694,7 @@ void do_search( CHAR_DATA *ch, char *argument )
 		bug( "do_search: dest_buf NULL", 0 );
 		return;
 	    }
-	    strcpy( arg, ch->dest_buf );
+	    strcpy( arg, (const char * ) ch->dest_buf );
 	    DISPOSE( ch->dest_buf );
 	    break;
 	case SUB_TIMER_DO_ABORT:
@@ -1696,7 +1706,7 @@ void do_search( CHAR_DATA *ch, char *argument )
     ch->substate = SUB_NONE;
     if ( arg[0] == '\0' )
     {
-	room = TRUE;
+//	room = TRUE;
 	startobj = ch->in_room->first_content;
     }
     else
@@ -1893,12 +1903,12 @@ void do_steal( CHAR_DATA *ch, char *argument )
        if ( !IS_NPC(victim) || (ch->pcdata->learned[gsn_steal] < 50 ) )
 	learn_from_success( ch, gsn_steal );
 	
-       if ( IS_NPC( victim ) );
+       if ( IS_NPC( victim ) )
         {
           xp = UMIN( amount*10 , ( exp_level( ch->skill_level[SMUGGLING_ABILITY]+1 ) - exp_level( ch->skill_level[SMUGGLING_ABILITY])  ) / 35  );    
           xp = UMIN( xp , xp_compute( ch, victim ) );
           gain_exp( ch, xp , SMUGGLING_ABILITY);  
-          ch_printf( ch, "&WYou gain %ld smuggling experience!\n\r", xp );
+          ch_printf( ch, "&WYou gain %d smuggling experience!\n\r", xp );
         }
 	return;
     }
@@ -1952,12 +1962,12 @@ void do_steal( CHAR_DATA *ch, char *argument )
     send_to_char( "Ok.\n\r", ch );
     if ( IS_NPC(victim)  || ch->pcdata->learned[gsn_steal] )
       learn_from_success( ch, gsn_steal );
-    if ( IS_NPC( victim ) );
+    if ( IS_NPC( victim ) )
     {
       xp = UMIN( obj->cost*10 , ( exp_level( ch->skill_level[SMUGGLING_ABILITY]+1) - exp_level( ch->skill_level[SMUGGLING_ABILITY])  ) / 10  );    
       xp = UMIN( xp , xp_compute( ch, victim ) );
       gain_exp( ch, xp, SMUGGLING_ABILITY );  
-      ch_printf( ch, "&WYou gain %ld smuggling experience!\n\r", xp );
+      ch_printf( ch, "&WYou gain %d smuggling experience!\n\r", xp );
     }
     separate_obj( obj );
     obj_from_char( obj );
@@ -2103,7 +2113,11 @@ void do_rescue( CHAR_DATA *ch, char *argument )
 	send_to_char( "They are not fighting right now.\n\r", ch );
 	return;
     }
-
+	if( who_fighting( victim ) == ch )
+	{
+		send_to_char( "One would imagine THEY don't need your help.\r\n", ch );
+		return;
+	}
     if ( ch == fch )
     {
 	send_to_char( "Rescue them from yourself?\n\r", ch );
@@ -2618,6 +2632,8 @@ void disarm( CHAR_DATA *ch, CHAR_DATA *victim )
     &&  (tmpobj = get_eq_char( victim, WEAR_DUAL_WIELD)) != NULL )
        tmpobj->wear_loc = WEAR_WIELD;
 
+    oprog_remove_trigger( victim, obj );
+
     obj_from_char( obj );
     obj_to_room( obj, victim->in_room );
 
@@ -2861,8 +2877,8 @@ void do_pick( CHAR_DATA *ch, char *argument )
 		learn_from_failure( ch, gsn_pickshiplock );
             if ( ship->alarm == 0 )
                 return;
-                if ( !str_cmp("Public",ship->owner) )
-                    return;
+			if ( !str_cmp("Public",ship->owner) )
+				return;
             for ( d = first_descriptor; d; d = d->next )
             {
                 CHAR_DATA *victim;
@@ -2916,8 +2932,8 @@ void do_pick( CHAR_DATA *ch, char *argument )
    		learn_from_success( ch, gsn_pickshiplock );
             if ( ship->alarm == 0 )
                 return;
-                if ( !str_cmp("Public",ship->owner) )
-                    return;
+			if ( !str_cmp("Public",ship->owner) )
+				return;
             for ( d = first_descriptor; d; d = d->next )
             {
                 CHAR_DATA *victim;
@@ -2991,7 +3007,7 @@ void do_sneak( CHAR_DATA *ch, char *argument )
     if ( IS_NPC(ch) || number_percent( ) < ch->pcdata->learned[gsn_sneak] )
     {
 	af.type      = gsn_sneak;
-	af.duration  = ch->skill_level[SMUGGLING_ABILITY]  * DUR_CONV;
+	af.duration  = (sh_int) ( ch->skill_level[SMUGGLING_ABILITY]  * DUR_CONV );
 	af.location  = APPLY_NONE;
 	af.modifier  = 0;
 	af.bitvector = AFF_SNEAK;
@@ -4128,6 +4144,13 @@ void do_scan( CHAR_DATA *ch, char *argument )
     return;
   }
 
+	if( IS_AFFECTED( ch, AFF_BLIND ) && ( !IS_AFFECTED( ch, AFF_TRUESIGHT ) ||
+	( !IS_NPC( ch ) && !IS_SET( ch->act, PLR_HOLYLIGHT ) ) ) )
+	{
+		send_to_char( "Everything looks the same when you're blind...\r\n", ch );
+		return;
+	}
+
   if ( ( dir = get_door( argument ) ) == -1 )
   {
     send_to_char( "Scan in WHAT direction?\n\r", ch );
@@ -4196,7 +4219,8 @@ void do_scan( CHAR_DATA *ch, char *argument )
     {
       default: dist++; break;
       case SECT_AIR:
-	       if ( number_percent() < 80 ) dist++; break;
+	       if ( number_percent() < 80 ) dist++; 
+		   break;
       case SECT_INSIDE:
       case SECT_FIELD:
       case SECT_UNDERGROUND:
@@ -4242,10 +4266,10 @@ void do_scan( CHAR_DATA *ch, char *argument )
      OBJ_DATA *corpse;
      OBJ_DATA *obj;
      OBJ_DATA *skin;
-     bool found;
+//     bool found;
      char *name;
      char buf[MAX_STRING_LENGTH];
-     found = FALSE;
+//     found = FALSE;
   
      if ( argument[0] == '\0' )
      { 

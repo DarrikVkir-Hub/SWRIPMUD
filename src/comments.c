@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -403,7 +400,7 @@ void do_comment( CHAR_DATA *ch, char *argument )
 
 
 #ifdef NOTDEFD
-	fclose( fpReserve );
+	FCLOSE( fpReserve );
 	sprintf( notefile, "%s/%s", BOARD_DIR, board->note_file );
 	if ( ( fp = fopen( notefile, "a" ) ) == NULL )
 	{
@@ -418,7 +415,7 @@ void do_comment( CHAR_DATA *ch, char *argument )
 		pnote->subject,
 		pnote->text
 		);
-	    fclose( fp );
+	    FCLOSE( fp );
 	}
 	fpReserve = fopen( NULL_FILE, "r" );
 #endif
@@ -516,7 +513,7 @@ void fread_comment( CHAR_DATA *ch, FILE *fp )
 	    letter = getc( fp );
 	    if ( feof(fp) )
 	    {
-		fclose( fp );
+		FCLOSE( fp );
 		return;
 	    }
 	}

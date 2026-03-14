@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -309,13 +306,13 @@ void found_prey( CHAR_DATA *ch, CHAR_DATA *victim )
 	switch( number_bits( 2 ) )
 	{
 	case 0:	do_say( ch, "C'mon out, you coward!" );
-		sprintf( buf, "%s is a bloody coward!", victname );
+		sprintf( buf, "%.30s is a bloody coward!", victname );
 		do_yell( ch, buf );
 		break;
-	case 1: sprintf( buf, "Let's take this outside, %s", victname );
+	case 1: sprintf( buf, "Let's take this outside, %.30s", victname );
 		do_say( ch, buf );
 		break;
-	case 2: sprintf( buf, "%s is a yellow-bellied wimp!", victname );
+	case 2: sprintf( buf, "%.30s is a yellow-bellied wimp!", victname );
 		do_yell( ch, buf );
 		break;
 	case 3: act( AT_ACTION, "$n takes a few swipes at someone.", ch, NULL, victim, TO_NOTVICT );

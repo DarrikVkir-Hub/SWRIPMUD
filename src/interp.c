@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -171,7 +168,7 @@ char  * parse_target( CHAR_DATA *ch, char *oldstring )
    else if (argument[counter] == '|' && argument[counter+1] == '|') 
      for (counter2 = counter; argument[counter2] != '\0'; counter2++) 
        argument[counter2] = argument[counter2+1]; 
-     multicommand[counter] = argument[counter]; 
+   multicommand[counter] = argument[counter]; 
  } 
  d->incomm[0] = '\0'; 
  multicommand[counter] = '\0'; 
@@ -192,6 +189,7 @@ void interpret( CHAR_DATA *ch, char *argument )
     bool found;
     struct timeval time_used;
     long tmptime;
+
 
     if ( !ch )
     {
@@ -268,7 +266,7 @@ void interpret( CHAR_DATA *ch, char *argument )
 	    send_to_char( "You're totally frozen!\n\r", ch );
 	    return;
 	}
-	
+
 	/*
 	 * Grab the command word.
 	 * Special parsing so ' can be a command,
@@ -300,11 +298,10 @@ void interpret( CHAR_DATA *ch, char *argument )
 	 * Look for command in command table.
 	 * Check for council powers and/or bestowments
 	 */
-	 
 	trust = get_trust( ch );
 	for ( cmd = command_hash[LOWER(command[0])%126]; cmd; cmd = cmd->next )
 	    if ( !str_prefix( command, cmd->name )
-	    &&   (cmd->level <= trust
+	    &&   ((cmd->level <= trust && (IS_NPC(ch) || !cmd->commandgroup || (cmd->commandgroup & ch->pcdata->commandgroup)))
 	    ||  (!IS_NPC(ch) && ch->pcdata->bestowments && ch->pcdata->bestowments[0] != '\0'
 	    &&    is_name( cmd->name, ch->pcdata->bestowments )
 	    &&    cmd->level <= (trust+5)) ) )
@@ -484,19 +481,21 @@ CMDTYPE *find_command( char *command )
     return NULL;
 }
 
-SOCIALTYPE *find_social( char *command )
+SOCIALTYPE *find_social( const char *command )
 {
     SOCIALTYPE *social;
     int hash;
 
-    if ( command[0] < 'a' || command[0] > 'z' )
-	hash = 0;
-    else
-	hash = (command[0] - 'a') + 1;
+    char c = LOWER(command[0]);
 
-    for ( social = social_index[hash]; social; social = social->next )
-	if ( !str_prefix( command, social->name ) )
-	    return social;
+    if( c < 'a' || c > 'z' )
+        hash = 0;
+    else
+        hash = ( c - 'a' ) + 1;
+
+    for( social = social_index[hash]; social; social = social->next )
+        if( !str_prefix( command, social->name ) )
+            return social;
 
     return NULL;
 }
@@ -666,36 +665,45 @@ int number_argument( char *argument, char *arg )
 /*
  * Pick off one argument from a string and return the rest.
  * Understands quotes.
+ * Rewritten with AI to be buffer safe - DV 3-12-26
+
  */
-char *one_argument( char *argument, char *arg_first )
+
+char *one_argument(char *argument, char *arg_first)
 {
     char cEnd;
-    sh_int count;
+    size_t count = 0;
 
-    count = 0;
+    if (!argument || !arg_first)
+        return argument;  // safety check
 
-    while ( isspace(*argument) )
-	argument++;
+    // Skip leading spaces
+    while (isspace((unsigned char)*argument))
+        argument++;
 
+    // Determine delimiter
     cEnd = ' ';
-    if ( *argument == '\'' || *argument == '"' )
-	cEnd = *argument++;
+    if (*argument == '\'' || *argument == '"')
+        cEnd = *argument++;
 
-    while ( *argument != '\0' || ++count >= 255 )
+    // Copy argument safely
+    while (*argument != '\0' && *argument != cEnd && count < MAX_INPUT_LENGTH - 1)
     {
-	if ( *argument == cEnd )
-	{
-	    argument++;
-	    break;
-	}
-	*arg_first = LOWER(*argument);
-	arg_first++;
-	argument++;
+        *arg_first = tolower((unsigned char)*argument);
+        arg_first++;
+        argument++;
+        count++;
     }
-    *arg_first = '\0';
 
-    while ( isspace(*argument) )
-	argument++;
+    // Skip closing quote if any
+    if (*argument == cEnd)
+        argument++;
+
+    *arg_first = '\0';  // null terminate
+
+    // Skip trailing spaces
+    while (isspace((unsigned char)*argument))
+        argument++;
 
     return argument;
 }
@@ -703,36 +711,43 @@ char *one_argument( char *argument, char *arg_first )
 /*
  * Pick off one argument from a string and return the rest.
  * Understands quotes.  Delimiters = { ' ', '-' }
+ * Rewritten with AI to be buffer safe - MDM 3-12-26
  */
-char *one_argument2( char *argument, char *arg_first )
+char *one_argument2(char *argument, char *arg_first)
 {
     char cEnd;
-    sh_int count;
+    size_t count = 0;
 
-    count = 0;
+    if (!argument || !arg_first)
+        return argument;  // safety check
 
-    while ( isspace(*argument) )
-	argument++;
+    // Skip leading spaces
+    while (isspace((unsigned char)*argument))
+        argument++;
 
+    // Determine delimiter
     cEnd = ' ';
-    if ( *argument == '\'' || *argument == '"' )
-	cEnd = *argument++;
+    if (*argument == '\'' || *argument == '"')
+        cEnd = *argument++;
 
-    while ( *argument != '\0' || ++count >= 255 )
+    // Copy argument safely
+    while (*argument != '\0' && *argument != cEnd && *argument != '-' && count < MAX_INPUT_LENGTH - 1)
     {
-	if ( *argument == cEnd || *argument == '-' )
-	{
-	    argument++;
-	    break;
-	}
-	*arg_first = LOWER(*argument);
-	arg_first++;
-	argument++;
+        *arg_first = tolower((unsigned char)*argument);
+        arg_first++;
+        argument++;
+        count++;
     }
-    *arg_first = '\0';
 
-    while ( isspace(*argument) )
-	argument++;
+    // Skip closing delimiter or '-' if present
+    if (*argument == cEnd || *argument == '-')
+        argument++;
+
+    *arg_first = '\0';  // null terminate
+
+    // Skip trailing spaces
+    while (isspace((unsigned char)*argument))
+        argument++;
 
     return argument;
 }
@@ -775,7 +790,7 @@ void do_timecmd( CHAR_DATA *ch, char *argument )
   set_char_color(AT_PLAIN, ch);
   send_to_char( "Timing complete.\n\r", ch );
   subtract_times(&etime, &stime);
-  ch_printf( ch, "Timing took %d.%06d seconds.\n\r",
+  ch_printf( ch, "Timing took %ld.%06ld seconds.\n\r",
       etime.tv_sec, etime.tv_usec );
   return;
 }
@@ -819,7 +834,7 @@ void send_timer(struct timerset *vtime, CHAR_DATA *ch)
   carry = (vtime->total_time.tv_sec % vtime->num_uses) * 1000000;
   ntime.tv_usec = (vtime->total_time.tv_usec + carry) / vtime->num_uses;
   ch_printf(ch, "Has been used %d times this boot.\n\r", vtime->num_uses);
-  ch_printf(ch, "Time (in secs): min %d.%0.6d; avg: %d.%0.6d; max %d.%0.6d"
+  ch_printf(ch, "Time (in secs): min %ld.%0.6ld; avg: %ld.%0.6d; max %d.%0.6d"
       "\n\r", vtime->min_time.tv_sec, vtime->min_time.tv_usec, ntime.tv_sec,
       ntime.tv_usec, vtime->max_time.tv_sec, vtime->max_time.tv_usec);
   return;

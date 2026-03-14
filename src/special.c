@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -414,6 +411,7 @@ bool spec_customs_smut( CHAR_DATA *ch )
 	               ch_exp = UMIN( content->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                      ch_printf( victim, "You receive %ld experience for smuggling %s.\n\r " , ch_exp , content->short_descr );
                        gain_exp( victim, ch_exp, SMUGGLING_ABILITY );
+                   separate_obj( content );                                            
 	               SET_BIT( content->extra_flags , ITEM_CONTRABAND);
 	               return TRUE;
 	            }
@@ -471,7 +469,7 @@ bool spec_customs_weapons( CHAR_DATA *ch )
 	       else if ( can_see( ch, victim ) && !IS_SET( obj->extra_flags , ITEM_CONTRABAND)  ) 
 	       { 
                   ch_exp = UMIN( obj->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
-                  ch_printf( victim, "You receive %ld experience for smuggling %d.\n\r " , ch_exp, obj->short_descr );
+                  ch_printf( victim, "You receive %ld experience for smuggling %s.\n\r " , ch_exp, obj->short_descr );
                   gain_exp( victim, ch_exp, SMUGGLING_ABILITY );
        
 	         act( AT_ACTION, "$n looks at $N suspiciously.", ch, NULL, victim, TO_NOTVICT );
@@ -500,6 +498,7 @@ bool spec_customs_weapons( CHAR_DATA *ch )
 	               ch_exp = UMIN( content->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                      ch_printf( victim, "You receive %ld experience for smuggling %s.\n\r " , ch_exp , content->short_descr);
                        gain_exp( victim, ch_exp, SMUGGLING_ABILITY );
+                   separate_obj( content );                       
 	               SET_BIT( content->extra_flags , ITEM_CONTRABAND);
 	               return TRUE;
 	            }
@@ -557,26 +556,34 @@ bool spec_customs_alcohol( CHAR_DATA *ch )
                   gain_exp( victim, 0-ch_exp , SMUGGLING_ABILITY);
                   return TRUE;
 	       }
-	       else if ( can_see( ch, victim ) && !IS_SET( obj->extra_flags , ITEM_CONTRABAND)  ) 
-	       { 
-                  ch_exp = UMIN( obj->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
-                  ch_printf( victim, "You receive %ld experience for smuggling %d. \n\r" , ch_exp , obj->short_descr);
-                  gain_exp( victim, ch_exp , SMUGGLING_ABILITY);
-       
-	          act( AT_ACTION, "$n looks at $N suspiciously.", ch, NULL, victim, TO_NOTVICT );
-    		  act( AT_ACTION, "$n look at you suspiciously.",   ch, NULL, victim, TO_VICT  );
-    		  SET_BIT( obj->extra_flags , ITEM_CONTRABAND);
-	          return TRUE;
-	       }
-	       else if ( !IS_SET( obj->extra_flags , ITEM_CONTRABAND)  )
-	       {
-                  ch_exp = UMIN( obj->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
-                  ch_printf( victim, "You receive %ld experience for smuggling %d. \n\r" , ch_exp , obj->short_descr);
-                  gain_exp( victim, ch_exp , SMUGGLING_ABILITY);
-       
-	          SET_BIT( obj->extra_flags , ITEM_CONTRABAND);
-	          return TRUE;
-	       }
+            else if( can_see( ch, victim ) && !IS_SET( obj->extra_flags, ITEM_CONTRABAND ) )
+            {
+               ch_exp =
+                  UMIN( obj->cost * 10,
+                        ( exp_level( victim->skill_level[SMUGGLING_ABILITY] + 1 ) -
+                          exp_level( victim->skill_level[SMUGGLING_ABILITY] ) ) );
+               ch_printf( victim, "You receive %ld experience for smuggling %s.\r\n ", ch_exp, obj->short_descr );
+               gain_exp( victim, ch_exp, SMUGGLING_ABILITY );
+
+               act( AT_ACTION, "$n looks at $N suspiciously.", ch, NULL, victim, TO_NOTVICT );
+               act( AT_ACTION, "$n look at you suspiciously.", ch, NULL, victim, TO_VICT );
+               separate_obj( obj );
+               SET_BIT( obj->extra_flags, ITEM_CONTRABAND );
+
+               return TRUE;
+            }
+            else if( !IS_SET( obj->extra_flags, ITEM_CONTRABAND ) )
+            {
+               ch_exp =
+                  UMIN( obj->cost * 10,
+                        ( exp_level( victim->skill_level[SMUGGLING_ABILITY] + 1 ) -
+                          exp_level( victim->skill_level[SMUGGLING_ABILITY] ) ) );
+               ch_printf( victim, "You receive %ld experience for smuggling %s.\r\n ", ch_exp, obj->short_descr );
+               gain_exp( victim, ch_exp, SMUGGLING_ABILITY );
+               separate_obj( obj );
+               SET_BIT( obj->extra_flags, ITEM_CONTRABAND );
+               return TRUE;
+            }
 	     }
 	    }
 	    else if ( obj->item_type == ITEM_CONTAINER )
@@ -591,11 +598,14 @@ bool spec_customs_alcohol( CHAR_DATA *ch )
 	                    liquid = obj->value[2] = 0;
 	               if ( liq_table[ liquid ].liq_affect[COND_DRUNK] <= 0 )
 	                    continue;
-	               ch_exp = UMIN( content->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
-                     ch_printf( victim, "You receive %ld experience for smuggling %d.\n\r " , ch_exp , content->short_descr);
-                       gain_exp( victim, ch_exp , SMUGGLING_ABILITY);
-	               SET_BIT( content->extra_flags , ITEM_CONTRABAND);
-	               return TRUE;
+	                ch_exp = UMIN( content->cost*10 , 
+                        ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1 ) - 
+                          exp_level( victim->skill_level[SMUGGLING_ABILITY] ) ) );
+                    ch_printf( victim, "You receive %ld experience for smuggling %s.\n\r " , ch_exp , content->short_descr);
+                    gain_exp( victim, ch_exp , SMUGGLING_ABILITY);
+                    separate_obj( content );                    
+	                SET_BIT( content->extra_flags , ITEM_CONTRABAND);
+	                return TRUE;
 	            }
 	        }
 	    }
@@ -677,6 +687,7 @@ bool spec_customs_spice( CHAR_DATA *ch )
 	               ch_exp = UMIN( content->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                      ch_printf( victim, "You receive %ld experience for smuggling %s.\n\r " , ch_exp , content->short_descr);
                        gain_exp( victim, ch_exp, SMUGGLING_ABILITY );
+                   separate_obj( content );                       
 	               SET_BIT( content->extra_flags , ITEM_CONTRABAND);
 	               return TRUE;
 	            }
@@ -1232,7 +1243,10 @@ bool spec_janitor( CHAR_DATA *ch )
 	if ( !IS_SET( trash->wear_flags, ITEM_TAKE )
 	||    IS_OBJ_STAT( trash, ITEM_BURRIED ) )
 	    continue;
-	if ( trash->item_type == ITEM_DRINK_CON
+    if( IS_OBJ_STAT( trash, ITEM_PROTOTYPE ) && !IS_SET( ch->act, ACT_PROTOTYPE ) )
+        continue;        
+
+    if ( trash->item_type == ITEM_DRINK_CON
 	||   trash->item_type == ITEM_TRASH
 	||   trash->cost < 10
 	||  (trash->pIndexData->vnum == OBJ_VNUM_SHOPPING_BAG
@@ -1342,19 +1356,19 @@ bool spec_auth( CHAR_DATA *ch )
              } 
         }
         
-	if ( IS_NPC(victim)
-	||   !IS_SET(victim->pcdata->flags, PCFLAG_UNAUTHED) || victim->pcdata->auth_state == 2 )
-	    continue;
-    
-            victim->pcdata->auth_state = 3;
-            REMOVE_BIT(victim->pcdata->flags, PCFLAG_UNAUTHED);
-            if ( victim->pcdata->authed_by )
-                     STRFREE( victim->pcdata->authed_by );
-            victim->pcdata->authed_by = QUICKLINK( ch->name );
-            sprintf( buf, "%s authorized %s", ch->name,
-                         victim->name );
-            to_channel( buf, CHANNEL_MONITOR, "Monitor", ch->top_level );
-                                                                                                        
+        if ( IS_NPC(victim)
+            ||   !IS_SET(victim->pcdata->flags, PCFLAG_UNAUTHED) || victim->pcdata->auth_state == 2 )
+            continue;
+        
+        victim->pcdata->auth_state = 3;
+        REMOVE_BIT(victim->pcdata->flags, PCFLAG_UNAUTHED);
+        if ( victim->pcdata->authed_by )
+                    STRFREE( victim->pcdata->authed_by );
+        victim->pcdata->authed_by = QUICKLINK( ch->name );
+        sprintf( buf, "%s authorized %s", ch->name,
+                        victim->name );
+        to_channel( buf, CHANNEL_MONITOR, "Monitor", ch->top_level );
+                                                                                                            
     
     }
     return FALSE;
@@ -1369,4 +1383,4 @@ bool spec_random_pop( CHAR_DATA *ch )
   		      3026, 6230, 7340, 11215, 21050, 540, 28100, 28612,
   		    };
 }
-*/
+*/  

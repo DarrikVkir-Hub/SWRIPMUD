@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -27,6 +24,9 @@
 #include <string.h>
 #include "mud.h"
 
+bool	MOBtrigger;
+
+void transfer_char( CHAR_DATA *ch, CHAR_DATA *victim, ROOM_INDEX_DATA *location );
 char *	mprog_type_to_name	args( ( int type ) );
 ch_ret	simple_damage( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt );
 CHAR_DATA * get_char_room_mp  args( ( CHAR_DATA *ch, char *argument ) );
@@ -99,6 +99,7 @@ void do_mpstat( CHAR_DATA *ch, char *argument )
 	send_to_char( "Only Mobiles can have MobPrograms!\n\r", ch);
 	return;
     }
+
 
     if ( !( victim->pIndexData->progtypes ) )
     {
@@ -608,6 +609,7 @@ void do_mpoload( CHAR_DATA *ch, char *argument )
     }
 
     if ( ( pObjIndex = get_obj_index( atoi( arg1 ) ) ) == NULL )
+
     {
 	progbug( "Mpoload - Bad vnum arg", ch );
 	return;
@@ -615,10 +617,12 @@ void do_mpoload( CHAR_DATA *ch, char *argument )
 
     obj = create_object( pObjIndex, level );
     obj->timer = timer;
-    if ( CAN_WEAR(obj, ITEM_TAKE) )
-	obj_to_char( obj, ch );
+
+   // FUSS Bugfix - objects & rooms use supermob, so he should ALWAYS drop stuff. DV added 3-14-26
+   if( CAN_WEAR( obj, ITEM_TAKE ) && ch != supermob )
+	    obj_to_char( obj, ch );
     else
-	obj_to_room( obj, ch->in_room );
+	    obj_to_room( obj, ch->in_room );
 
     return;
 }
@@ -683,7 +687,7 @@ void do_mppurge( CHAR_DATA *ch, char *argument )
     	return;
     }
 
-    if ( IS_NPC( victim ) && victim->pIndexData->vnum == 3 )
+    if ( IS_NPC( victim ) && victim->pIndexData->vnum == MOB_VNUM_SUPERMOB )
     {
         progbug( "Mppurge: trying to purge supermob", ch );
 	return;
@@ -708,7 +712,7 @@ void do_mpinvis( CHAR_DATA *ch, char *argument )
     }
  
     argument = one_argument( argument, arg );
-    if ( arg && arg[0] != '\0' )
+    if ( arg[0] != '\0' )
     {
         if ( !is_number( arg ) )
         {
@@ -716,15 +720,15 @@ void do_mpinvis( CHAR_DATA *ch, char *argument )
            return;
         }       
         level = atoi( arg );
-        if ( level < 2 || level > 105 )
+        if ( level < 2 || level > LEVEL_SUPREME )
         {
             progbug( "MPinvis - Invalid level ", ch );
             return;
         }
  
-	ch->mobinvis = level;
-	ch_printf( ch, "Mobinvis level set to %d.\n\r", level );
-	return;
+        ch->mobinvis = level;
+        ch_printf( ch, "Mobinvis level set to %d.\n\r", level );
+        return;
     }
  
     if ( ch->mobinvis < 2 )
@@ -850,18 +854,20 @@ void do_mptransfer( CHAR_DATA *ch, char *argument )
 {
     char             arg1[ MAX_INPUT_LENGTH ];
     char             arg2[ MAX_INPUT_LENGTH ];
-    char buf[MAX_STRING_LENGTH];
     ROOM_INDEX_DATA *location;
     CHAR_DATA       *victim;
     CHAR_DATA       *nextinroom;
 
     if ( IS_AFFECTED( ch, AFF_CHARM ) )
-      return;
+    {
+        send_to_char( "Huh?\n\r", ch );
+        return;
+    }
 
     if ( !IS_NPC( ch ) )
     {
-	send_to_char( "Huh?\n\r", ch );
-	return;
+	    send_to_char( "Huh?\n\r", ch );
+	    return;
     }
     argument = one_argument( argument, arg1 );
     argument = one_argument( argument, arg2 );
@@ -872,44 +878,44 @@ void do_mptransfer( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    /* Put in the variable nextinroom to make this work right. -Narn */
-    if ( !str_cmp( arg1, "all" ) )
-    {
-	for ( victim = ch->in_room->first_person; victim; victim = nextinroom )
-	{
-            nextinroom = victim->next_in_room;
-	    if ( victim != ch
-	    &&   !NOT_AUTHED(victim)
-	    &&   can_see( ch, victim ) )
-	    {
-		sprintf( buf, "%s %s", victim->name, arg2 );
-		do_mptransfer( ch, buf );
-	    }
-	}
-	return;
-    }
-
     /*
      * Thanks to Grodyn for the optional location parameter.
      */
     if ( arg2[0] == '\0' )
     {
-	location = ch->in_room;
+    	location = ch->in_room;
     }
     else
     {
-	if ( ( location = find_location( ch, arg2 ) ) == NULL )
-	{
-	    progbug( "Mptransfer - No such location", ch );
-	    return;
-	}
+        if ( ( location = find_location( ch, arg2 ) ) == NULL )
+        {
+            progbug( "Mptransfer - No such location", ch );
+            return;
+        }
 
-	if ( room_is_private( ch, location ) )
-	{
-	    progbug( "Mptransfer - Private room", ch );
-	    return;
-	}
+        if ( room_is_private( ch, location ) )
+        {
+            progbug( "Mptransfer - Private room", ch );
+            return;
+        }
     }
+
+    /* Put in the variable nextinroom to make this work right. -Narn */
+    if ( !str_cmp( arg1, "all" ) )
+    {
+	for ( victim = ch->in_room->first_person; victim; victim = nextinroom )
+	{
+        nextinroom = victim->next_in_room;
+	    if ( victim != ch
+	    &&   !NOT_AUTHED(victim)
+	    &&   can_see( ch, victim ) )
+	    {
+            transfer_char( ch, victim, location );
+	    }
+	}
+	return;
+    }
+
 
     if ( ( victim = get_char_world( ch, arg1 ) ) == NULL )
     {
@@ -935,11 +941,7 @@ void do_mptransfer( CHAR_DATA *ch, char *argument )
     &&   !IS_SET( location->room_flags, ROOM_PROTOTYPE ) )
       return;
 
-    if ( victim->fighting )
-	stop_fighting( victim, TRUE );
-
-    char_from_room( victim );
-    char_to_room( victim, location );
+    transfer_char( ch, victim, location );
 
     return;
 }
@@ -1270,6 +1272,7 @@ void do_mp_open_passage( CHAR_DATA *ch, char *argument )
     {
 	progbug( "MpOpenPassage - Bad syntax", ch );
 	return;
+
     }
 
     if( !is_number(arg1) )
@@ -1659,10 +1662,10 @@ ch_ret simple_damage( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
     sh_int dameq;
     bool npcvict;
     OBJ_DATA *damobj;
-    ch_ret retcode;
+//    ch_ret retcode;
 
 
-    retcode = rNONE;
+//    retcode = rNONE;
 
     if ( !ch )
     {

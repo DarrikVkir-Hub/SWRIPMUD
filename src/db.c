@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -30,6 +27,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <math.h>
 #include "mud.h"
 
 extern	int	_filbuf		args( (FILE *) );
@@ -93,7 +91,7 @@ int			physicalobjects;
 MAP_INDEX_DATA  *       first_map;	/* maps */
 
 AUCTION_DATA    * 	auction;	/* auctions */
-
+OBJ_DATA *supermob_obj;
 FILE		*	fpLOG;
 
 /* criminals */
@@ -162,6 +160,14 @@ sh_int   gsn_gemcutting;
 sh_int   gsn_makejewelry;
 sh_int   gsn_fake_signal;
 sh_int   gsn_slicing;
+sh_int   gsn_makemedpac;
+sh_int   gsn_makefurniture;
+sh_int   gsn_module_engineering;
+sh_int   gsn_repairmodule;
+// Johnson 6-26-04 Begin:
+sh_int   gsn_basictrackingdevices;
+sh_int   gsn_advancedtrackingdevices;
+// Johnson 6-26 End
 
 /* weaponry */
 sh_int			gsn_blasters;
@@ -221,10 +227,6 @@ sh_int			gsn_track;
 sh_int			gsn_search;
 sh_int			gsn_dig;
 sh_int			gsn_mount;
-sh_int			gsn_bite;
-sh_int			gsn_claw;
-sh_int			gsn_sting;
-sh_int			gsn_tail;
 sh_int			gsn_scribe;
 sh_int			gsn_study;
 sh_int			gsn_brew;
@@ -342,6 +344,9 @@ void	load_shops	args( ( AREA_DATA *tarea, FILE *fp ) );
 void 	load_repairs	args( ( AREA_DATA *tarea, FILE *fp ) );
 void	load_specials	args( ( AREA_DATA *tarea, FILE *fp ) );
 void    load_ranges	args( ( AREA_DATA *tarea, FILE *fp ) );
+void    load_production	args( ( AREA_DATA *tarea, FILE *fp ) );
+void    load_depletion	args( ( AREA_DATA *tarea, FILE *fp ) );
+void    load_supply	args( ( AREA_DATA *tarea, FILE *fp ) );
 void	load_buildlist	args( ( void ) );
 bool	load_systemdata	args( ( SYSTEM_DATA *sys ) );
 void    load_banlist    args( ( void ) );
@@ -386,7 +391,7 @@ void shutdown_mud( char *reason )
     if ( (fp = fopen( SHUTDOWN_FILE, "a" )) != NULL )
     {
 	fprintf( fp, "%s\n", reason );
-	fclose( fp );
+	FCLOSE( fp );
     }
 }
 
@@ -561,6 +566,11 @@ void boot_db( void )
      */
     {
 	log_string("Assigning gsn's");
+		// Johnson 6-26-04 Begin:
+		ASSIGN_GSN( gsn_basictrackingdevices, "makehulltracker");
+		ASSIGN_GSN( gsn_advancedtrackingdevices, "makeinternaltracker");
+		// Johnson 6-26 End
+        ASSIGN_GSN( gsn_repairmodule, "repair_module" );
         ASSIGN_GSN( gsn_cloak, "cloak" );
         ASSIGN_GSN( gsn_cutdoor, "cutdoor" );
         ASSIGN_GSN( gsn_bind, "bind" );
@@ -589,7 +599,9 @@ void boot_db( void )
         ASSIGN_GSN( gsn_makearmor  , "makearmor" );        
         ASSIGN_GSN( gsn_makeshield  , "makeshield" );
         ASSIGN_GSN( gsn_makecontainer  , "makecontainer" );
-        ASSIGN_GSN( gsn_makemissile  , "makemissile" );        
+        ASSIGN_GSN( gsn_makemissile  , "makemissile" );
+	ASSIGN_GSN( gsn_makefurniture, "makefurniture" );
+  	ASSIGN_GSN( gsn_makemedpac, "makemedpac");        
         ASSIGN_GSN( gsn_gemcutting  , "gemcutting" );        
         ASSIGN_GSN( gsn_reinforcements  , "reinforcements" );
         ASSIGN_GSN( gsn_postguard   , "post guard" );
@@ -735,7 +747,7 @@ ASSIGN_GSN( gsn_yevethan, "yevethan" );
 	    load_area_file( last_area, strArea );
 	    
 	}
-	fclose( fpList );
+	FCLOSE( fpList );
     }
 
    /*
@@ -759,11 +771,6 @@ ASSIGN_GSN( gsn_yevethan, "yevethan" );
 	log_string( "Initializing economy" );
 	initialize_economy( );
 	/*loads vendors on each reboot -Legonas*/
-	log_string ( "Reading in Vendors" );
-	load_vendors ( );
-	log_string ( "Reading in Storerooms" );
-	load_storerooms( );
-	
 	log_string( "Loading buildlist" );
 	load_buildlist( );
 	log_string( "Loading boards" );
@@ -786,6 +793,10 @@ ASSIGN_GSN( gsn_yevethan, "yevethan" );
         load_planets( );
         log_string( "Resetting areas" );
 	area_update( );
+	log_string ( "Reading in Vendors" );
+	load_vendors ( );
+	log_string ( "Reading in Storerooms" );
+	load_storerooms( );
 	                
         MOBtrigger = TRUE;
     }
@@ -1535,7 +1546,6 @@ void load_resets( AREA_DATA *tarea, FILE *fp )
 	    }
 	    else if ( extra > 1 )
 	      not01 = TRUE;
-	    
 	    break;
 
 	case 'G':
@@ -1982,6 +1992,125 @@ void load_ranges( AREA_DATA *tarea, FILE *fp )
 
 }              
 
+void load_production( AREA_DATA *tarea, FILE *fp )
+{
+
+/*  Replaced by new cargo system - DV 3-24-04
+    int x1, x2, x3, x4, x5, x6, x7, x8;
+*/  char *ln;
+
+    if ( !tarea )
+    {
+	bug( "Load_production: no #AREA seen yet." );
+	shutdown_mud( "No #AREA" );
+	exit( 1 );
+    }
+
+    for ( ; ; )
+    {
+	ln = fread_line( fp );
+
+	if (ln[0] == '$')
+	  break;
+/*
+	x1=x2=x3=x4=x5=x6=x7=x8=0;
+	sscanf( ln, "%d %d %d %d %d %d %d %d",
+	      &x1, &x2, &x3, &x4, &x5, &x6, &x7, &x8 );
+
+	tarea->production[0] = x1;
+	tarea->production[1] = x2;
+	tarea->production[2] = x3;
+	tarea->production[3] = x4;
+	tarea->production[4] = x5;
+	tarea->production[5] = x6;
+	tarea->production[6] = x7;
+	tarea->production[7] = x8;
+*/  }
+
+    return;
+
+}           
+void load_depletion( AREA_DATA *tarea, FILE *fp )
+{
+	
+/*  Replaced by new cargo system - DV 3-24-04
+    int x1, x2, x3, x4, x5, x6, x7, x8;
+*/  char *ln;
+
+    if ( !tarea )
+    {
+	bug( "Load_depletion: no #AREA seen yet." );
+	shutdown_mud( "No #AREA" );
+	exit( 1 );
+    }
+
+    for ( ; ; )
+    {
+	ln = fread_line( fp );
+
+	if (ln[0] == '$')
+	  break;
+/*
+	x1=x2=x3=x4=x5=x6=x7=x8=0;
+	x1=x2=x3=x4=x5=x6=x7=x8=0;
+	sscanf( ln, "%d %d %d %d %d %d %d %d",
+	      &x1, &x2, &x3, &x4, &x5, &x6, &x7, &x8 );
+
+	tarea->depletion[0] = x1;
+	tarea->depletion[1] = x2;
+	tarea->depletion[2] = x3;
+	tarea->depletion[3] = x4;
+	tarea->depletion[4] = x5;
+	tarea->depletion[5] = x6;
+	tarea->depletion[6] = x7;
+	tarea->depletion[7] = x8;
+*/  }
+    
+
+    return;
+
+}           
+
+void load_supply( AREA_DATA *tarea, FILE *fp )
+{
+
+/*  Replaced by new cargo system - DV 3-24-04
+    int x1, x2, x3, x4, x5, x6, x7, x8;
+*/  char *ln;
+
+    if ( !tarea )
+    {
+	bug( "Load_supply: no #AREA seen yet." );
+	shutdown_mud( "No #AREA" );
+	exit( 1 );
+    }
+
+    for ( ; ; )
+    {
+	ln = fread_line( fp );
+
+	if (ln[0] == '$')
+	  break;
+/*
+	x1=x2=x3=x4=x5=x6=x7=x8=0;
+	x1=x2=x3=x4=x5=x6=x7=x8=0;
+	sscanf( ln, "%d %d %d %d %d %d %d %d",
+	      &x1, &x2, &x3, &x4, &x5, &x6, &x7, &x8 );
+
+	tarea->supply[0] = x1;
+	tarea->supply[1] = x2;
+	tarea->supply[2] = x3;
+	tarea->supply[3] = x4;
+	tarea->supply[4] = x5;
+	tarea->supply[5] = x6;
+	tarea->supply[6] = x7;
+	tarea->supply[7] = x8;
+*/  }
+
+    return;
+
+}        
+
 /*
  * Go through all areas, and set up initial economy based on mob
  * levels and gold
@@ -2186,11 +2315,23 @@ void randomize_exits( ROOM_INDEX_DATA *room, sh_int maxdir )
 void area_update( void )
 {
     AREA_DATA *pArea;
+    int count;
+
+    /* Cargo area update - by Aran - DV 3-05-03 */
+    
 
     for ( pArea = first_area; pArea; pArea = pArea->next )
     {
 	CHAR_DATA *pch;
 	int reset_age = pArea->reset_frequency ? pArea->reset_frequency : 15;
+
+      for (count = 0; count < 8; count++) 
+      {
+        pArea->supply[count] += pArea->production[count];
+        pArea->supply[count] -= pArea->depletion[count];
+        if (pArea->supply[count] < 0) 
+          pArea->supply[count] = 0;
+      }
 
 	if ( (reset_age == -1 && pArea->age == -1)
 	||    ++pArea->age < (reset_age-1) )
@@ -2286,10 +2427,10 @@ CHAR_DATA *create_mobile( MOB_INDEX_DATA *pMobIndex )
     mob->plr_home               = NULL;
     mob->guard_data             = NULL;
     
-    if ( !pMobIndex->ac )
+    if ( pMobIndex->ac )
       mob->armor		= pMobIndex->ac;
     else
-      mob->armor		= 100 - mob->top_level*2.5 ;
+      mob->armor		= (sh_int) ( 100 - mob->top_level*2.5 );
 
     if ( !pMobIndex->hitnodice )
       mob->max_hit		= mob->top_level * 10 + number_range(
@@ -2434,6 +2575,7 @@ OBJ_DATA *create_object( OBJ_INDEX_DATA *pObjIndex, int level )
     case ITEM_CONTAINER:
     case ITEM_DRINK_CON:
     case ITEM_KEY:
+    case ITEM_CARGO:
 	break;
     case ITEM_FOOD:
 	/*
@@ -2695,19 +2837,19 @@ void free_char( CHAR_DATA *ch )
 	DISPOSE( mpact->buf );
 	DISPOSE( mpact	    );
     }
-   if( ch->pcdata )
-    for ( comments = ch->pcdata->comments; comments; comments = comments_next )
-    {
-	comments_next = comments->next;
-	STRFREE( comments->text    );
-	STRFREE( comments->to_list );
-	STRFREE( comments->subject );
-	STRFREE( comments->sender  );
-	STRFREE( comments->date    );
-	DISPOSE( comments          );
-    }
-    DISPOSE( ch );
-    return;
+    if( ch->pcdata )
+		for ( comments = ch->pcdata->comments; comments; comments = comments_next )
+		{
+		comments_next = comments->next;
+		STRFREE( comments->text    );
+		STRFREE( comments->to_list );
+		STRFREE( comments->subject );
+		STRFREE( comments->sender  );
+		STRFREE( comments->date    );
+		DISPOSE( comments          );
+		}
+	DISPOSE( ch );
+	return;
 }
 
 
@@ -2794,7 +2936,7 @@ ROOM_INDEX_DATA *get_room_index( int vnum )
 	    return pRoomIndex;
 
     if ( fBootDb )
-	bug( "Get_room_index: bad vnum %d.", vnum );
+		bug( "Get_room_index: bad vnum %d.", vnum );
 
     return NULL;
 }
@@ -2836,7 +2978,93 @@ char fread_letter( FILE *fp )
     return c;
 }
 
+/*
+ * Read a float number from a file. Turn the result into a float value.
+ */
+float fread_float( FILE *fp )
+{
+   float number;
+   bool sign, decimal;
+   char c;
+   double place = 0;
 
+   do
+   {
+      if( feof( fp ) )
+      {
+         bug( "%s: EOF encountered on read.", __FUNCTION__ );
+         if( fBootDb )
+         {
+            shutdown_mud( "Corrupt file somewhere." );
+            exit( 1 );
+         }
+         return 0;
+      }
+      c = getc( fp );
+   }
+   while( isspace( c ) );
+
+   number = 0;
+
+   sign = FALSE;
+   decimal = FALSE;
+
+   if( c == '+' )
+      c = getc( fp );
+   else if( c == '-' )
+   {
+      sign = TRUE;
+      c = getc( fp );
+   }
+
+   if( !isdigit( c ) )
+   {
+      bug( "%s: bad format. (%c)", __FUNCTION__, c );
+      if( fBootDb )
+         exit( 1 );
+      return 0;
+   }
+
+   while( 1 )
+   {
+      if( c == '.' || isdigit( c ) )
+      {
+         if( c == '.' )
+         {
+            decimal = TRUE;
+            c = getc( fp );
+         }
+
+         if( feof( fp ) )
+         {
+            bug( "%s: EOF encountered on read.", __FUNCTION__ );
+            if( fBootDb )
+               exit( 1 );
+            return number;
+         }
+         if( !decimal )
+            number = number * 10 + c - '0';
+         else
+         {
+            place++;
+            number += pow( 10, ( -1 * place ) ) * ( c - '0' );
+         }
+         c = getc( fp );
+      }
+      else
+         break;
+   }
+
+   if( sign )
+      number = 0 - number;
+
+   if( c == '|' )
+      number += fread_float( fp );
+   else if( c != ' ' )
+      ungetc( c, fp );
+
+   return number;
+}
 
 /*
  * Read a number from a file.
@@ -2908,20 +3136,55 @@ int fread_number( FILE *fp )
 
 /*
  * custom str_dup using create					-Thoric
+ * Replaced with better version - DV 3-14-26
  */
-char *str_dup( char const *str )
+char *str_dup( const char *str )
 {
-    static char *ret;
-    int len;
+    if (!str)
+        return NULL;
 
-    if ( !str )
-	return NULL;
-    
-    len = strlen(str)+1;
+    size_t len = strlen(str) + 1;
+    char *ret = malloc(len);
 
-    CREATE( ret, char, len );
-    strcpy( ret, str );
+    if (!ret)
+        return NULL;
+
+    memcpy(ret, str, len);
     return ret;
+}
+
+bool is_valid_filename( CHAR_DATA *ch, const char *direct, const char *filename )
+{
+   char newfilename[256];
+   struct stat fst;
+
+   /* Length restrictions */
+   if( !filename || filename[0] == '\0' || strlen( filename ) < 3 )
+   {
+      if( !filename || !str_cmp( filename, "" ) )
+         send_to_char( "Empty filename is not valid.\r\n", ch );
+      else
+         ch_printf( ch, "%s: Filename is too short.\r\n", filename );
+      return FALSE;
+   }
+
+   /* Illegal characters */
+   if( strstr( filename, ".." ) || strstr( filename, "/" ) || strstr( filename, "\\" ) )
+   {
+      send_to_char( "A filename may not contain a '..', '/', or '\\' in it.\r\n", ch );
+      return FALSE;
+   }
+
+   /* If that filename is already being used lets not allow it now to be on the safe side */
+   snprintf( newfilename, sizeof( newfilename ), "%s%s", direct, filename );
+   if( stat( newfilename, &fst ) != -1 )
+   {
+      ch_printf( ch, "%s is already an existing filename.\r\n", newfilename );
+      return FALSE;
+   }
+
+   /* If we got here assume its valid */
+   return TRUE;
 }
 
 /*
@@ -3504,7 +3767,7 @@ char *stripclr( char *text )
 		buf[j] = '\0';
 
 		sprintf(done, "%s", buf);
-		buf = realloc(buf, j*sizeof(char));
+		buf = (char* ) realloc(buf, j*sizeof(char));
 		free( buf);
 
 		return done;
@@ -3668,19 +3931,42 @@ bool str_suffix( const char *astr, const char *bstr )
 
 
 
+
 /*
  * Returns an initial-capped string.
+ * Rewritten by FearItself@AvP for FUSS - DV added 3-14-26
  */
 char *capitalize( const char *str )
-{
-    static char strcap[MAX_STRING_LENGTH];
-    int i;
+{ 
+   static char buf[MAX_STRING_LENGTH];
+   char *dest = buf;
+   enum { Normal, Color } state = Normal;
+   bool bFirst = TRUE;
+   char c;
 
-    for ( i = 0; str[i] != '\0'; i++ )
-	strcap[i] = LOWER(str[i]);
-    strcap[i] = '\0';
-    strcap[0] = UPPER(strcap[0]);
-    return strcap;
+   while( (c = *str++) )
+   {
+      if( state == Normal )
+      {
+         if( c == '&' || c == '^' || c == '}' )
+         {
+            state = Color;
+         }
+         else if( isalpha(c) )
+         {
+            c = bFirst ? toupper(c) : tolower(c);
+            bFirst = FALSE;
+         }
+      }
+      else
+      {
+         state = Normal;
+      }
+      *dest++ = c;
+   }
+   *dest = c;
+
+   return buf;
 }
 
 
@@ -3759,7 +4045,7 @@ void append_file( CHAR_DATA *ch, char *file, char *str )
     if ( IS_NPC(ch) || str[0] == '\0' )
 	return;
 
-    fclose( fpLOG );
+    FCLOSE( fpLOG );
     if ( ( fp = fopen( file, "a" ) ) == NULL )
     {
 	send_to_char( "Could not open the file!\n\r", ch );
@@ -3768,7 +4054,7 @@ void append_file( CHAR_DATA *ch, char *file, char *str )
     {
 	fprintf( fp, "[%5d] %s: %s\n",
 	    ch->in_room ? ch->in_room->vnum : 0, ch->name, str );
-	fclose( fp );
+	FCLOSE( fp );
     }
 
     fpLOG = fopen( NULL_FILE, "r" );
@@ -3787,7 +4073,7 @@ void append_to_file( char *file, char *str )
     else
     {
 	fprintf( fp, "%s\n", str );
-	fclose( fp );
+	FCLOSE( fp );
     }
 
     return;
@@ -3818,8 +4104,9 @@ void bug( const char *str, ... )
 	    fseek( fpArea, 0, 0 );
 	    for ( iLine = 0; ftell( fpArea ) < iChar; iLine++ )
 	    {
-		while ( getc( fpArea ) != '\n' )
-		    ;
+            int letter;
+            while( ( letter = getc( fpArea ) ) && letter != EOF && letter != '\n' )
+		    	;
 	    }
 	    fseek( fpArea, iChar, 0 );
 	}
@@ -3832,7 +4119,7 @@ void bug( const char *str, ... )
 	    if ( ( fp = fopen( SHUTDOWN_FILE, "a" ) ) != NULL )
 	    {
 		fprintf( fp, "[*****] %s\n", buf );
-		fclose( fp );
+		FCLOSE( fp );
 	    }
 	}
     }
@@ -3847,11 +4134,11 @@ void bug( const char *str, ... )
     }
     log_string( buf );
 
-    fclose( fpLOG );
+    FCLOSE( fpLOG );
     if ( ( fp = fopen( BUG_FILE, "a" ) ) != NULL )
     {
 	fprintf( fp, "%s\n", buf );
-	fclose( fp );
+	FCLOSE( fp );
     }
     fpLOG = fopen( NULL_FILE, "r" );
 
@@ -3873,11 +4160,11 @@ void boot_log( const char *str, ... )
     va_end(param);
     log_string( buf );
 
-    fclose( fpLOG );
+    FCLOSE( fpLOG );
     if ( ( fp = fopen( BOOTLOG_FILE, "a" ) ) != NULL )
     {
 	fprintf( fp, "%s\n", buf );
- 	fclose( fp );
+ 	FCLOSE( fp );
     }
     fpLOG = fopen( NULL_FILE, "r" );
 
@@ -3886,33 +4173,20 @@ void boot_log( const char *str, ... )
 
 /*
  * Dump a text file to a player, a line at a time		-Thoric
+ * Replaced with AI generated function as there was a memory leak (missing FCLOSE), the it gave me a better option.  So why not? - DV 3-13-26
  */
-void show_file( CHAR_DATA *ch, char *filename )
+void show_file(CHAR_DATA *ch, char *filename)
 {
     FILE *fp;
     char buf[MAX_STRING_LENGTH];
-    int c;
-    int num = 0;
 
-    if ( (fp = fopen( filename, "r" )) != NULL )
-    {
-      while ( !feof(fp) )
-      {
-	while ((buf[num]=fgetc(fp)) != EOF
-	&&      buf[num] != '\n'
-	&&      buf[num] != '\r'
-	&&      num < (MAX_STRING_LENGTH-2))
-	  num++;
-	c = fgetc(fp);
-	if ( (c != '\n' && c != '\r') || c == buf[num] )
-	  ungetc(c, fp);
-	buf[num++] = '\n';
-	buf[num++] = '\r';
-	buf[num  ] = '\0';
-	send_to_pager( buf, ch );
-	num = 0;
-      }
-    }
+    if ((fp = fopen(filename, "r")) == NULL)
+        return;
+
+    while (fgets(buf, sizeof(buf), fp))
+        send_to_pager(buf, ch);
+
+    FCLOSE(fp);
 }
 
 /*
@@ -3922,6 +4196,46 @@ void do_dmesg( CHAR_DATA *ch, char *argument )
 {
     set_pager_color( AT_LOG, ch );
     show_file( ch, BOOTLOG_FILE );
+}
+
+
+// Two log_printf and a buffer_printf functions - DV added 3-14-26.  Going to replace log_buf as I come across them.  Feel free to follow!
+
+void buffer_printf( DESCRIPTOR_DATA * d, const char *fmt, ... )
+{
+    char buf[MAX_STRING_LENGTH * 2];
+
+    va_list args;
+
+    va_start( args, fmt );
+    vsprintf( buf, fmt, args );
+    va_end( args );
+
+    write_to_buffer( d, buf, strlen( buf ) );
+}
+
+void log_printf(const char *fmt, ...)
+{
+    char buf[MAX_STRING_LENGTH];
+    va_list args;
+
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    log_string(buf);
+}
+
+void log_printf_plus(int log_type, int level, const char *fmt, ...)
+{
+    char buf[MAX_STRING_LENGTH];
+    va_list args;
+
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    log_string_plus(buf, log_type, level);
 }
 
 /*
@@ -4013,7 +4327,7 @@ void towizfile( const char *line )
   if ( wfp )
   {
     fputs( outline, wfp );
-    fclose( wfp );
+    FCLOSE( wfp );
   }
 }
 
@@ -4067,7 +4381,7 @@ void make_wizlist( )
   DIR *dp;
   struct dirent *dentry;
   FILE *gfp;
-  char *word;
+  const char *word;
   int ilevel, iflags;
   WIZENT *wiz, *wiznext;
   char buf[MAX_STRING_LENGTH];
@@ -4095,11 +4409,11 @@ void make_wizlist( )
 	    iflags = fread_number( gfp );
           else
 	    iflags = 0;
-	  fclose( gfp );
+	  FCLOSE( gfp );
           if ( IS_SET( iflags, PCFLAG_RETIRED ) )
-            ilevel = MAX_LEVEL - 4;
+            ilevel = MAX_LEVEL - 9;
           if ( IS_SET( iflags, PCFLAG_GUEST ) )
-            ilevel = MAX_LEVEL - 4;
+            ilevel = MAX_LEVEL - 9;
 	  add_to_wizlist( dentry->d_name, ilevel );
 	}
       }
@@ -4126,11 +4440,17 @@ void make_wizlist( )
       ilevel = wiz->level;
       switch(ilevel)
       {
-	case MAX_LEVEL -  0: towizfile( " Implementors " );	break;
-	case MAX_LEVEL -  1: towizfile( " Head Administrator " );		break;
-	case MAX_LEVEL -  2: towizfile( " Administrators " );	break;
-	case MAX_LEVEL -  4: towizfile( " Lower Immortals " );		break;
-	default:             towizfile( " Builders" );	break;
+	case MAX_LEVEL -  0: towizfile( " Implementors " );		break;
+	case MAX_LEVEL -  1: towizfile( " Coders " );			break;
+	case MAX_LEVEL -  2: towizfile( " Head Administrators " );	break;
+	case MAX_LEVEL -  3: towizfile( " Administrators" );		break;
+	case MAX_LEVEL -  4: towizfile( " High Builders" );		break;
+	case MAX_LEVEL -  5: towizfile( " Low Builders" );		break;
+	case MAX_LEVEL -  6: towizfile( " Quest Immortals" );		break;
+	case MAX_LEVEL -  7: towizfile( " Clan Wizards" );		break;
+	case MAX_LEVEL -  8: towizfile( " Advisors " );			break;
+	case MAX_LEVEL -  9: towizfile( " Guest/Retired" );		break;
+	default:             towizfile( " Peon" );	break;
       }
     }
     if ( strlen( buf ) + strlen( wiz->name ) > 76 )
@@ -4284,7 +4604,7 @@ MPROG_DATA *mprog_file_read( char *f, MPROG_DATA *mprg,
       break;
     }
   }
-  fclose( progfile );
+  FCLOSE( progfile );
   return mprg2;
 }
 
@@ -4499,7 +4819,7 @@ MPROG_DATA *oprog_file_read( char *f, MPROG_DATA *mprg,
       break;
     }
   }
-  fclose( progfile );
+  FCLOSE( progfile );
   return mprg2;
 }
 
@@ -4711,7 +5031,7 @@ MPROG_DATA *rprog_file_read( char *f, MPROG_DATA *mprg,
       break;
     }
   }
-  fclose( progfile );
+  FCLOSE( progfile );
   return mprg2;
 }
 
@@ -4883,7 +5203,7 @@ bool delete_room( ROOM_INDEX_DATA *room )
     STRFREE( room->description );
 
     /* Free up the ram held by the room index itself. */
-    free( room );
+    DISPOSE( room );
 
     top_room--;
     return TRUE;
@@ -5089,7 +5409,7 @@ MOB_INDEX_DATA *make_mobile( sh_int vnum, sh_int cvnum, char *name )
 	  pMobIndex->resistant		= 0;
 	  pMobIndex->immune		= 0;
 	  pMobIndex->susceptible	= 0;
-	  pMobIndex->numattacks		= 0;
+	  pMobIndex->numattacks		= 1;
 	  pMobIndex->attacks		= 0;
 	  pMobIndex->defenses		= 0;
 	}
@@ -5304,6 +5624,10 @@ void load_area_file( AREA_DATA *tarea, char *filename )
 	else if ( !str_cmp( word, "AUTHOR"   ) ) load_author  (tarea, fpArea);
 	else if ( !str_cmp( word, "FLAGS"    ) ) load_flags   (tarea, fpArea);
 	else if ( !str_cmp( word, "RANGES"   ) ) load_ranges  (tarea, fpArea);
+	else if ( !str_cmp( word, "PRODUCTION"   ) ) load_production  (tarea, fpArea);
+	else if ( !str_cmp( word, "DEPLETION"   ) ) load_depletion  (tarea, fpArea);
+	else if ( !str_cmp( word, "SUPPLY"   ) ) load_supply  (tarea, fpArea);
+	else if ( !str_cmp( word, "RANGES"   ) ) load_ranges  (tarea, fpArea);
 	else if ( !str_cmp( word, "ECONOMY"  ) ) load_economy (tarea, fpArea);
 	else if ( !str_cmp( word, "RESETMSG" ) ) load_resetmsg(tarea, fpArea); 
 	/* Rennard */
@@ -5325,13 +5649,13 @@ void load_area_file( AREA_DATA *tarea, char *filename )
 	      exit( 1 );
 	    else
 	    {
-	      fclose( fpArea );
+	      FCLOSE( fpArea );
 	      fpArea = NULL;
 	      return;
 	    }
 	}
     }
-    fclose( fpArea );
+    FCLOSE( fpArea );
     fpArea = NULL;
     if ( tarea )
     {
@@ -5412,7 +5736,7 @@ void load_buildlist( void )
 				else if ( !strcmp( word, "ObjRange" ) )
 					olow = low, ohi = hi;
 			}
-			fclose( fp );
+			FCLOSE( fp );
 			if ( rlow && rhi && !badfile )
 			{
 				sprintf( buf, "%s%s.are", BUILD_DIR, dentry->d_name );
@@ -5429,7 +5753,7 @@ void load_buildlist( void )
 				{
 					sprintf( buf, "Make_buildlist: %s.are: no #AREA found.",
 						dentry->d_name );
-					fclose( fp );
+					FCLOSE( fp );
 					dentry = readdir(dp);
 					continue;
 				}
@@ -5444,7 +5768,7 @@ void load_buildlist( void )
 				sprintf( buf, "{PROTO} %s's area in progress", dentry->d_name );
 				pArea->name = str_dup( buf );
 #endif
-				fclose( fp );
+				FCLOSE( fp );
 				pArea->low_r_vnum = rlow; pArea->hi_r_vnum = rhi;
 				pArea->low_m_vnum = mlow; pArea->hi_m_vnum = mhi;
 				pArea->low_o_vnum = olow; pArea->hi_o_vnum = ohi;
@@ -5662,7 +5986,7 @@ void save_sysdata( SYSTEM_DATA sys )
 
     sprintf( filename, "%ssysdata.dat", SYSTEM_DIR );
     
-    fclose( fpReserve );
+    FCLOSE( fpReserve );
     if ( ( fp = fopen( filename, "w" ) ) == NULL )
     {
     	bug( "save_sysdata: fopen" );
@@ -5696,10 +6020,11 @@ void save_sysdata( SYSTEM_DATA sys )
 	fprintf( fp, "Guildadvisor   %s~\n", sys.guild_advisor		);
 	fprintf( fp, "Saveflags      %d\n", sys.save_flags		);
 	fprintf( fp, "Savefreq       %d\n", sys.save_frequency		);
+	fprintf( fp, "ShipIDCurrent  %ld\n", sys.currentshipID		);
 	fprintf( fp, "End\n\n"						);
 	fprintf( fp, "#END\n"						);
     }
-    fclose( fp );
+    FCLOSE( fp );
     fpReserve = fopen( NULL_FILE, "r" );
     return;
 }
@@ -5707,7 +6032,7 @@ void save_sysdata( SYSTEM_DATA sys )
 
 void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 {
-    char *word;
+    const char *word;
     bool fMatch;
 
     sys->time_of_max = NULL;
@@ -5738,6 +6063,8 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 	    {
 		if ( !sys->time_of_max )
 		    sys->time_of_max = str_dup("(not recorded)");
+		if ( !sys->currentshipID )
+		  sys->currentshipID = 4000;
 		return;
 	    }
 	    break;
@@ -5747,8 +6074,8 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 	    break;
 	    
 	case 'G':
-	    KEY( "Guildoverseer",  sys->guild_overseer,  fread_string( fp ) );
-	    KEY( "Guildadvisor",   sys->guild_advisor,   fread_string( fp ) );
+        KEY( "Guildoverseer", sys->guild_overseer, fread_string_nohash( fp ) );
+        KEY( "Guildadvisor", sys->guild_advisor, fread_string_nohash( fp ) );
 	    break;
 
 	case 'H':
@@ -5787,6 +6114,7 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 	    KEY( "Stunregular",    sys->stun_regular,	fread_number( fp ) );
 	    KEY( "Saveflags",	   sys->save_flags,	fread_number( fp ) );
 	    KEY( "Savefreq",	   sys->save_frequency,	fread_number( fp ) );
+	    KEY( "ShipIDCurrent",  sys->currentshipID, fread_number( fp ) );
 	    break;
 
 	case 'T':
@@ -5860,7 +6188,7 @@ bool load_systemdata( SYSTEM_DATA *sys )
 		break;
 	    }
 	}
-	fclose( fp );
+	FCLOSE( fp );
     }
 
     if ( !sysdata.guild_overseer ) sysdata.guild_overseer = str_dup( "" );
@@ -5884,13 +6212,13 @@ void load_banlist( void )
     if ( feof( fp ) )
     {
       bug( "Load_banlist: no -1 found." );
-      fclose( fp );
+      FCLOSE( fp );
       return;
     }
     number = fread_number( fp );
     if ( number == -1 )
     {
-      fclose( fp );
+      FCLOSE( fp );
       return;
     }
     CREATE( pban, BAN_DATA, 1 );

@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -100,7 +97,7 @@ void do_score(CHAR_DATA * ch, char *argument)
             ability_name[ability], ch->skill_level[ability], max_level(ch, ability), ch->experience[ability],
             exp_level( ch->skill_level[ability]+1 ) );
           else
-            ch_printf( ch, "&c%-15s   &CLevel: %-3d   Max: ???   Exp: ???          Next: ???\n\r",
+            ch_printf( ch, "&c%-15s   &CLevel: %-3d   Max: ???   Exp: %-10ld          Next: ???\n\r",
             ability_name[ability], ch->skill_level[ability], ch->experience[ability]);
     }
 
@@ -108,12 +105,13 @@ void do_score(CHAR_DATA * ch, char *argument)
 
 
 
-    ch_printf(ch, "&cCREDITS: &C%-10d   &cBANK: &C%-10d    &cPkills: &C%-5.5d   &cMkills: &C%-5.5d\n\r",
+    ch_printf(ch, "&cCREDITS: &C%-10d   &cBANK: &C%-10ld    &cPkills: &C%-5.5d   &cMkills: &C%-5.5d\n\r",
 	ch->gold, ch->pcdata->bank, ch->pcdata->pkills, ch->pcdata->mkills);
 
     ch_printf(ch, "&cWeight: &C%5.5d &c(&Cmax %7.7d&c)    Items: &C%5.5d &c(&Cmax %5.5d&c)\n\r",
 	ch->carry_weight, can_carry_w(ch) , ch->carry_number, can_carry_n(ch));
-
+    ch_printf(ch, "&cTime Played: &C%d Hours &C%d Minutes.\n\r",
+	ch->pcdata->played/3600,(ch->pcdata->played%3600)/60);
     ch_printf(ch, "&cPager: &C(%c) %3d   &cAutoExit(&C%c&c)  AutoLoot(&C%c&c)  Autosac(&C%c&c)\n\r",
 	IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) ? 'X' : ' ',
 	ch->pcdata->pagerlen, IS_SET(ch->act, PLR_AUTOEXIT) ? 'X' : ' ',
@@ -287,7 +285,7 @@ void do_score(CHAR_DATA * ch, char *argument)
 	    {
 		ch_printf(ch, "&c[&C%-34.34s&c]    ", sktmp->name);
 		if (i == 0)
-		   i = 2;
+		   i = 1;
 		if ((++i % 3) == 0)
 		   send_to_char("\n\r", ch);
 	     }
@@ -432,7 +430,7 @@ void do_oldscore( CHAR_DATA *ch, char *argument )
 
     if ( IS_SET(ch->act, ACT_MOBINVIS) )
       ch_printf( ch, "You are mobinvis at level %d.\n\r",
-            ch->mobinvis);
+    ch->mobinvis);
 
     
       ch_printf( ch,
@@ -627,7 +625,7 @@ void do_level( CHAR_DATA *ch, char *argument )
             ability_name[ability], ch->skill_level[ability], max_level(ch, ability), ch->experience[ability],
             exp_level( ch->skill_level[ability]+1 ) );
           else
-            ch_printf( ch, "%-15s   Level: %-3d   Max: ???   Exp: ???          Next: ???\n\r",
+            ch_printf( ch, "%-15s   Level: %-3d   Max: ???   Exp: %-10ld          Next: ???\n\r",
             ability_name[ability], ch->skill_level[ability], ch->experience[ability]);
 }
 

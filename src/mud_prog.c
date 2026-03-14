@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -107,6 +104,45 @@ void rprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
 
 /* if you dont have these functions, you damn well should... */
 
+void uphold_supermob( int *curr_serial, int serial, ROOM_INDEX_DATA **supermob_room, OBJ_DATA *true_supermob_obj ) // From Valcados/Samson/FUSS - DV added 3-13-26
+{
+   if( *curr_serial != serial )
+   {
+      char buf[128];
+
+      if( supermob->in_room != *supermob_room )
+      {
+         char_from_room( supermob );
+         char_to_room( supermob, *supermob_room );
+      }
+
+      if( true_supermob_obj && true_supermob_obj != supermob_obj )
+      {
+          supermob_obj = true_supermob_obj;
+          STRFREE( supermob->short_descr );
+          STRFREE( supermob->description );
+          supermob->short_descr = QUICKLINK( supermob_obj->short_descr );
+          snprintf( buf, 128, "Object #%d", supermob_obj->pIndexData->vnum );
+          supermob->description = STRALLOC( buf );
+      }
+      else
+      {
+         if( !true_supermob_obj )
+            supermob_obj = NULL;
+         if( supermob->short_descr )
+            STRFREE( supermob->short_descr );
+         if( supermob->description )
+            STRFREE( supermob->description );
+         supermob->short_descr = QUICKLINK( (*supermob_room)->name );
+         snprintf( buf, 128, "Room #%d", (*supermob_room)->vnum );
+         supermob->description = STRALLOC( buf );
+      }
+      *curr_serial = serial;
+   }
+   else
+      *supermob_room = supermob->in_room;
+}
+
 #ifdef DUNNO_STRSTR
 char * strstr(s1,s2) const char *s1; const char *s2;
 {
@@ -125,8 +161,8 @@ void init_supermob()
 {
    RID *office;
 
-   supermob = create_mobile(get_mob_index( 3 ));
-   office = get_room_index ( 3 );
+   supermob = create_mobile(get_mob_index( MOB_VNUM_SUPERMOB ));
+   office = get_room_index ( ROOM_VNUM_POLY );
    char_to_room( supermob, office );
 
 #ifdef NOTDEFD
@@ -156,7 +192,23 @@ char *mprog_next_command( char *clist )
   char *pointer = clist;
 
   while ( *pointer != '\n' && *pointer != '\0' )
+  {
+    if ( *pointer == '+' )
+    {
+      *pointer = ' ';
+      pointer++;
+      while ( *pointer == ' ' )
+        pointer++;
+      if ( *pointer == '\n' ) 
+      {
+        *pointer = '~';
+        pointer++;
+        if ( *pointer == '\r' )
+          *pointer = '~';
+      }
+    }
     pointer++;
+  }
   if ( *pointer == '\n' )
     *pointer++ = '\0';
   if ( *pointer == '\r' )
@@ -319,7 +371,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
 	case 'o':	chkobj = obj;			break;
 	case 'p':	chkobj = (OBJ_DATA *)vo;	break;
 	default:
-	  sprintf(rval, "Bad argument '%c' to '%s'", cvar[0], chck);
+	  sprintf(rval, "Bad argument '%c' to '%.800s'", cvar[0], chck);
 	  progbug(rval, mob);
 	  return BERR;
     }
@@ -403,11 +455,11 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     lhsvl = 0;
     for ( pObj = mob->first_carrying; pObj; pObj = pObj->next_content )
       if ( can_see_obj(mob, pObj) && pObj->pIndexData->vnum == vnum )
-        lhsvl++;
+        lhsvl += pObj->count;
     for ( pObj = mob->in_room->first_content; pObj;
           pObj = pObj->next_content )
       if ( can_see_obj(mob, pObj) && pObj->pIndexData->vnum == vnum )
-        lhsvl++;
+        lhsvl += pObj->count;
     rhsvl = is_number(rval) ? atoi(rval) : -1;
     if ( rhsvl < 1 )
       rhsvl = 1;
@@ -432,11 +484,11 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     lhsvl = 0;
     for ( pObj = mob->first_carrying; pObj; pObj = pObj->next_content )
       if ( can_see_obj(mob, pObj) && pObj->item_type == type )
-        lhsvl++;
+        lhsvl += pObj->count;
     for ( pObj = mob->in_room->first_content; pObj;
           pObj = pObj->next_content )
       if ( can_see_obj(mob, pObj) && pObj->item_type == type )
-        lhsvl++;
+        lhsvl += pObj->count;
     rhsvl = is_number(rval) ? atoi(rval) : -1;
     if ( rhsvl < 1 )
       rhsvl = 1;
@@ -451,6 +503,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     
     if ( vnum < 1 || vnum > 32767 )
     {
+
       progbug("OvnumRoom: bad vnum", mob);
       return BERR;
     }
@@ -458,7 +511,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     for ( pObj = mob->in_room->first_content; pObj;
           pObj = pObj->next_content )
       if ( can_see_obj(mob, pObj) && pObj->pIndexData->vnum == vnum )
-        lhsvl++;
+        lhsvl += pObj->count;
     rhsvl = is_number(rval) ? atoi(rval) : -1;
     if ( rhsvl < 1 )
       rhsvl = 1;
@@ -484,7 +537,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     for ( pObj = mob->in_room->first_content; pObj;
           pObj = pObj->next_content )
       if ( can_see_obj(mob, pObj) && pObj->item_type == type )
-        lhsvl++;
+        lhsvl += pObj->count;
     rhsvl = is_number(rval) ? atoi(rval) : -1;
     if ( rhsvl < 1 )
       rhsvl = 1;
@@ -505,7 +558,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     lhsvl = 0;
     for ( pObj = mob->first_carrying; pObj; pObj = pObj->next_content )
       if ( can_see_obj(mob, pObj) && pObj->pIndexData->vnum == vnum )
-        lhsvl++;
+        lhsvl += pObj->count;
     rhsvl = is_number(rval) ? atoi(rval) : -1;
     if ( rhsvl < 1 )
       rhsvl = 1;
@@ -530,7 +583,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     lhsvl = 0;
     for ( pObj = mob->first_carrying; pObj; pObj = pObj->next_content )
       if ( can_see_obj(mob, pObj) && pObj->item_type == type )
-        lhsvl++;
+        lhsvl += pObj->count;
     rhsvl = is_number(rval) ? atoi(rval) : -1;
     if ( rhsvl < 1 )
       rhsvl = 1;
@@ -552,7 +605,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     for ( pObj = mob->first_carrying; pObj; pObj = pObj->next_content )
       if ( pObj->wear_loc != WEAR_NONE && can_see_obj(mob, pObj) &&
            pObj->pIndexData->vnum == vnum )
-        lhsvl++;
+        lhsvl += pObj->count;
     rhsvl = is_number(rval) ? atoi(rval) : -1;
     if ( rhsvl < 1 )
       rhsvl = 1;
@@ -578,7 +631,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     for ( pObj = mob->first_carrying; pObj; pObj = pObj->next_content )
       if ( pObj->wear_loc != WEAR_NONE && can_see_obj(mob, pObj) &&
            pObj->item_type == type )
-        lhsvl++;
+        lhsvl += pObj->count;
     rhsvl = is_number(rval) ? atoi(rval) : -1;
     if ( rhsvl < 1 )
       rhsvl = 1;
@@ -600,7 +653,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     for ( pObj = mob->first_carrying; pObj; pObj = pObj->next_content )
       if ( pObj->wear_loc == WEAR_NONE && can_see_obj(mob, pObj) &&
            pObj->pIndexData->vnum == vnum )
-        lhsvl++;
+        lhsvl += pObj->count;
     rhsvl = is_number(rval) ? atoi(rval) : -1;
     if ( rhsvl < 1 )
       rhsvl = 1;
@@ -626,7 +679,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     for ( pObj = mob->first_carrying; pObj; pObj = pObj->next_content )
       if ( pObj->wear_loc == WEAR_NONE && can_see_obj(mob, pObj) &&
            pObj->item_type == type )
-        lhsvl++;
+        lhsvl += pObj->count;
     rhsvl = is_number(rval) ? atoi(rval) : -1;
     if ( rhsvl < 1 )
       rhsvl = 1;
@@ -647,15 +700,21 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     }
     if ( !str_cmp(chck, "questmob") )
     {
-      return ( mprog_veval(chkchar->questmob, opr, atoi(rval), mob ) );
+      if ((mprog_veval(( chkchar->questmob), opr, atoi(rval), mob ) ) )
+        return TRUE;
+      return FALSE;
     }
     if ( !str_cmp(chck, "questobj") )
     {
-      return ( mprog_veval(chkchar->questobj, opr, atoi(rval), mob ) );
+      if ((mprog_veval(( chkchar->questobj), opr, atoi(rval), mob ) ) )
+        return TRUE;
+      return FALSE;
     }
     if ( !str_cmp(chck, "questpoints") )
     {
-      return ( mprog_veval(chkchar->questpoints, opr, atoi(rval), mob ) );
+      if ((mprog_veval(( chkchar->questmob), opr, atoi(rval), mob ) ) )
+        return TRUE;
+      return FALSE;
     }
     if ( !str_cmp(chck, "ispc") )
     {
@@ -723,7 +782,8 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     }
     if ( !str_cmp(chck, "norecall") )
     {
-/*    return IS_SET(chkchar->in_room->room_flags, ROOM_NO_RECALL) ? TRUE : FALSE;*/
+/*    return IS_SET(chkchar->in_room->room_flags, ROOM_NO_RECALL) ? TRUE : FALSE;
+*/
 return FALSE;
     }
     if ( !str_cmp(chck, "sex") )
@@ -1304,7 +1364,22 @@ void mprog_driver ( char *com_list, CHAR_DATA *mob, CHAR_DATA *actor,
   int iflevel, result;
   bool ifstate[MAX_IFS][ DO_ELSE + 1 ];
   static int prog_nest;
-  
+  static int serial;
+  int curr_serial;
+  ROOM_INDEX_DATA *supermob_room;
+  OBJ_DATA *true_supermob_obj;
+  bool rprog_oprog = ( mob == supermob );
+
+  if( rprog_oprog )
+  {
+    serial++;
+    supermob_room = mob->in_room;
+    true_supermob_obj = supermob_obj;
+  }
+  else
+    true_supermob_obj = NULL, supermob_room = NULL;
+  curr_serial = serial;  
+
   if IS_AFFECTED( mob, AFF_CHARM )
     return;
     
@@ -1363,7 +1438,7 @@ void mprog_driver ( char *com_list, CHAR_DATA *mob, CHAR_DATA *actor,
   command_list = tmpcmndlst;
   if ( single_step )
   {
-    if ( mob->mpscriptpos > strlen( tmpcmndlst ) )
+    if ( mob->mpscriptpos > (int) strlen( tmpcmndlst ) )
        mob->mpscriptpos = 0;
     else
        command_list += mob->mpscriptpos;
@@ -1403,7 +1478,8 @@ void mprog_driver ( char *com_list, CHAR_DATA *mob, CHAR_DATA *actor,
             ( ifstate[iflevel][IN_IF] && !ifstate[iflevel][DO_IF] )
             || ( ifstate[iflevel][IN_ELSE] && !ifstate[iflevel][DO_ELSE] ),
             ( ignorelevel > 0 ) );
-
+    if( rprog_oprog )
+        uphold_supermob( &curr_serial, serial, &supermob_room, true_supermob_obj );
     /* Script prog support  -Thoric */
     if ( single_step )
     {
@@ -1613,7 +1689,7 @@ int mprog_do_command( char *cmnd, CHAR_DATA *mob, CHAR_DATA *actor,
   char buf[ MAX_INPUT_LENGTH ];
   char tmp[ MAX_INPUT_LENGTH ];
   char *point, *str, *i;
-  int validif, vnum;
+  int validif;
 
   /* Isolate the first word of the line, it gives us a clue what
      we want to do. */
@@ -1680,7 +1756,7 @@ int mprog_do_command( char *cmnd, CHAR_DATA *mob, CHAR_DATA *actor,
   if ( !str_cmp( firstword, "break" ) )
     return BERR;
 
-  vnum = mob->pIndexData->vnum;
+//  vnum = mob->pIndexData->vnum;
   point   = buf;
   str     = cmnd;
 
@@ -1689,7 +1765,11 @@ int mprog_do_command( char *cmnd, CHAR_DATA *mob, CHAR_DATA *actor,
   {
     if ( *str != '$' )
     {
-      *point++ = *str++;
+      if ( *str != '~' )
+      {
+        *point++ = *str;
+      }
+      ++str;
       continue;
     }
     str++;
@@ -1731,9 +1811,9 @@ bool mprog_keyword_check( const char *argu, const char *argl )
     strcpy( arg2, strlower( argl ) );
     arglist = arg2;
 
-    for ( i = 0; i < strlen( arglist ); i++ )
+    for ( i = 0; i < (int) strlen( arglist ); i++ )
 	arglist[i] = LOWER( arglist[i] );
-    for ( i = 0; i < strlen( arg ); i++ )
+    for ( i = 0; i < (int) strlen( arg ); i++ )
 	arg[i] = LOWER( arg[i] );
     if ( ( arglist[0] == 'p' ) && ( arglist[1] == ' ' ) )
     {
@@ -1785,16 +1865,17 @@ void mprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
   char       *end;
   int	      i;
 
+
   for ( mprg = mob->pIndexData->mudprogs; mprg; mprg = mprg->next )
     if ( mprg->type & type )
       {
 	strcpy( temp1, mprg->arglist );
 	list = temp1;
-	for ( i = 0; i < strlen( list ); i++ )
+	for ( i = 0; i < (int) strlen( list ); i++ )
 	  list[i] = LOWER( list[i] );
 	strcpy( temp2, arg );
 	dupl = temp2;
-	for ( i = 0; i < strlen( dupl ); i++ )
+	for ( i = 0; i < (int) strlen( dupl ); i++ )
 	  dupl[i] = LOWER( dupl[i] );
 	if ( ( list[0] == 'p' ) && ( list[1] == ' ' ) )
 	  {
@@ -1871,7 +1952,7 @@ void mprog_time_check( CHAR_DATA *mob, CHAR_DATA *actor, OBJ_DATA *obj,
      }
 
      if ( ( mprg->type & type )
-       && ( ( !mprg->triggered ) || ( mprg->type && HOUR_PROG ) ) )
+       && ( ( !mprg->triggered ) || ( mprg->type == HOUR_PROG ) ) )
      {
        mprg->triggered = TRUE;
        mprog_driver( mprg->comlist, mob, actor, obj, vo, FALSE );
@@ -2102,6 +2183,7 @@ void mprog_random_trigger( CHAR_DATA *mob )
   if ( mob->pIndexData->progtypes & RAND_PROG)
     mprog_percent_check(mob,NULL,NULL,NULL,RAND_PROG);
 
+
   return;
 }
 
@@ -2203,16 +2285,18 @@ void set_supermob( OBJ_DATA *obj)
 {
   ROOM_INDEX_DATA *room;
   OBJ_DATA *in_obj;
-  CHAR_DATA *mob;
+//  CHAR_DATA *mob;
   char buf[200];
 
   if ( !supermob )
-    supermob = create_mobile(get_mob_index( 3 ));
+    supermob = create_mobile(get_mob_index( MOB_VNUM_SUPERMOB ));
 
-  mob = supermob;   /* debugging */
+//  mob = supermob;   /* debugging */
 
   if(!obj)
      return;
+
+  supermob_obj = obj;
 
   for ( in_obj = obj; in_obj->in_obj; in_obj = in_obj->in_obj )
     ;
@@ -2250,8 +2334,9 @@ void set_supermob( OBJ_DATA *obj)
 
 void release_supermob( )
 {
-  char_from_room( supermob );
-  char_to_room( supermob, get_room_index( 3 ) );
+   supermob_obj = NULL;
+   char_from_room( supermob );
+   char_to_room( supermob, get_room_index( ROOM_VNUM_POLY ) );
 }
 
 
@@ -2498,6 +2583,7 @@ void oprog_zap_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
       set_supermob( obj );
       oprog_percent_check( supermob, ch, obj, NULL, ZAP_PROG );
       release_supermob();
+
    }
    return;
 }
@@ -2576,11 +2662,11 @@ void oprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
       {
 	strcpy( temp1, mprg->arglist );
 	list = temp1;
-	for ( i = 0; i < strlen( list ); i++ )
+	for ( i = 0; i < (int) strlen( list ); i++ )
 	  list[i] = LOWER( list[i] );
 	strcpy( temp2, arg );
 	dupl = temp2;
-	for ( i = 0; i < strlen( dupl ); i++ )
+	for ( i = 0; i < (int) strlen( dupl ); i++ )
 	  dupl[i] = LOWER( dupl[i] );
 	if ( ( list[0] == 'p' ) && ( list[1] == ' ' ) )
 	  {
@@ -2826,11 +2912,11 @@ void rprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
       {
 	strcpy( temp1, mprg->arglist );
 	list = temp1;
-	for ( i = 0; i < strlen( list ); i++ )
+	for ( i = 0; i < (int) strlen( list ); i++ )
 	  list[i] = LOWER( list[i] );
 	strcpy( temp2, arg );
 	dupl = temp2;
-	for ( i = 0; i < strlen( dupl ); i++ )
+	for ( i = 0; i < (int) strlen( dupl ); i++ )
 	  dupl[i] = LOWER( dupl[i] );
 	if ( ( list[0] == 'p' ) && ( list[1] == ' ' ) )
 	  {
@@ -2930,7 +3016,7 @@ void progbug( char *str, CHAR_DATA *mob )
 
   /* Check if we're dealing with supermob, which means the bug occurred
      in a room or obj prog. */
-  if ( mob->pIndexData->vnum == 3 )
+  if ( mob->pIndexData->vnum == MOB_VNUM_SUPERMOB )
   {
     /* It's supermob.  In set_supermob and rset_supermob, the description
        was set to indicate the object or room, so we just need to show
@@ -2972,7 +3058,7 @@ void room_act_update( void )
   
   while ( (runner = room_act_list) != NULL )
   {
-    ROOM_INDEX_DATA *room = runner->vo;
+    ROOM_INDEX_DATA *room = (ROOM_INDEX_DATA *) runner->vo;
     
     while ( (mpact = room->mpact) != NULL )
     {
@@ -3010,7 +3096,7 @@ void obj_act_update( void )
   
   while ( (runner = obj_act_list) != NULL )
   {
-    OBJ_DATA *obj = runner->vo;
+    OBJ_DATA *obj = (OBJ_DATA *) runner->vo;
     
     while ( (mpact = obj->mpact) != NULL )
     {
