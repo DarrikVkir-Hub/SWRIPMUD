@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -76,8 +73,9 @@ void  explode( OBJ_DATA *obj )
 	               {
     	                   act( AT_WHITE, "$p EXPLODES in $n's hands!", objcont->carried_by, obj, NULL, TO_ROOM );
 	                   act( AT_WHITE, "$p EXPLODES in your hands!", objcont->carried_by, obj, NULL, TO_CHAR );
-	                   room = xch->in_room;
+	                   room = objcont->carried_by->in_room;
 	                   held = TRUE;
+			   xch = objcont->carried_by;
 	               }
 	               else if ( objcont->in_room )
 	                   room = objcont->in_room;
@@ -86,10 +84,21 @@ void  explode( OBJ_DATA *obj )
 	                   
 	               if ( room )
 	               {
-    	                      if ( !held && room->first_person )
-    	                          act( AT_WHITE, "$p EXPLODES!", room->first_person , obj, NULL, TO_ROOM );
+			  char buf[MAX_STRING_LENGTH];
+
+    	                      if( !held )
+			      {
+				  sprintf( buf, "%s EXPLODES!\n\r", objcont->short_descr );
+				  echo_to_room( AT_BLOOD, room, buf );
+			      }
+			      else
+			      {
+				  sprintf( buf, "%s EXLODES in %s'shands!\n\r", objcont->short_descr, xch->name );
+				  echo_to_room( AT_BLOOD, room, buf );
+			      }
 	                      room_explode( obj , xch, room );
 	               }
+		      break;
     	           }           
     	    }
             make_scraps(obj);
@@ -229,11 +238,11 @@ int get_exp_worth( CHAR_DATA *ch )
     exp += ( ch->barenumdie * ch->baresizedie + GET_DAMROLL(ch) ) * 50;
     exp += GET_HITROLL(ch) * ch->top_level * 10;
     if ( IS_AFFECTED(ch, AFF_SANCTUARY) )
-      exp += exp * 1.5;
+      exp += (int) ( exp * 1.5 );
     if ( IS_AFFECTED(ch, AFF_FIRESHIELD) )
-      exp += exp * 1.2;
+      exp += (int) ( exp * 1.2 );
     if ( IS_AFFECTED(ch, AFF_SHOCKSHIELD) )
-      exp += exp * 1.2;
+      exp += (int) ( exp * 1.2 );
     exp = URANGE( MIN_EXP_WORTH, exp, MAX_EXP_WORTH );
 
     return exp;
@@ -292,8 +301,8 @@ sh_int get_trust( CHAR_DATA *ch )
       if ( ch->desc->original )
 	ch = ch->desc->original;
 */
-    if ( ch->trust != 0 )
-	return ch->trust;
+      if ( ch->trust != 0 )
+  	return ch->trust;
 
     if ( IS_NPC(ch) && ch->top_level >= LEVEL_AVATAR )
 	return LEVEL_AVATAR;
@@ -480,8 +489,8 @@ int can_carry_n( CHAR_DATA *ch )
     if ( !IS_NPC(ch) && get_trust(ch) >= LEVEL_IMMORTAL )
 	return get_trust(ch)*200;
 
-    if ( IS_NPC(ch) && IS_SET(ch->act, ACT_PET) )
-	return 0;
+    if ( IS_NPC(ch) && ch->top_level >= 105 )
+	return 1000;
 
     if ( get_eq_char(ch, WEAR_WIELD) )
       ++penalty;
@@ -506,8 +515,8 @@ int can_carry_w( CHAR_DATA *ch )
     if ( !IS_NPC(ch) && get_trust(ch) >= LEVEL_IMMORTAL )
 	return 1000000;
 
-    if ( IS_NPC(ch) && IS_SET(ch->act, ACT_PET) )
-	return 0;
+    if ( IS_NPC(ch) && ch->top_level >= 105 )
+	return 1000000;
 
     return str_app[get_curr_str(ch)].carry;
 }
@@ -2376,7 +2385,7 @@ bool room_is_private( CHAR_DATA *ch , ROOM_INDEX_DATA *pRoomIndex )
 
     if ( IS_SET(pRoomIndex->room_flags, ROOM_SOLITARY) && count >= 1 )
 	return TRUE;
-    if (ch->top_level == 105 ? 0: (pRoomIndex->vnum == IMP_ROOM1?1:(pRoomIndex->vnum == IMP_ROOM2?1:0)))
+    if (ch->top_level == LEVEL_SUPREME ? 0: (pRoomIndex->vnum == IMP_ROOM1?1:(pRoomIndex->vnum == IMP_ROOM2?1:0)))
       return TRUE;
     return FALSE;
 }
@@ -2441,6 +2450,10 @@ bool can_see( CHAR_DATA *ch, CHAR_DATA *victim )
 	if ( room_is_dark( ch->in_room ) && !IS_AFFECTED(ch, AFF_INFRARED) )
 	  return FALSE;
 
+	if ( IS_AFFECTED(victim, AFF_INVISIBLE)
+	&&  !IS_AFFECTED(ch, AFF_DETECT_INVIS) )
+	  return FALSE;
+
 	if ( IS_AFFECTED(victim, AFF_HIDE)
 	&&   !IS_AFFECTED(ch, AFF_DETECT_HIDDEN)
 	&&   !victim->fighting )
@@ -2451,10 +2464,6 @@ bool can_see( CHAR_DATA *ch, CHAR_DATA *victim )
         }
         
           
-	if ( IS_AFFECTED(victim, AFF_INVISIBLE)
-	&&  !IS_AFFECTED(ch, AFF_DETECT_INVIS) )
-	  return FALSE;
-
     }
 
     return TRUE;
@@ -2635,7 +2644,10 @@ char *affect_bit_name( int vector )
     if ( vector & AFF_FAERIE_FIRE   ) strcat( buf, " faerie_fire"   );
     if ( vector & AFF_INFRARED      ) strcat( buf, " infrared"      );
     if ( vector & AFF_CURSE         ) strcat( buf, " curse"         );
-    if ( vector & AFF_FLAMING       ) strcat( buf, " flaming"       );
+	// Johnson ( Michael Shattuck ) 4/28 Start - Added 5-15-04 - DV
+	//if ( vector & AFF_FLAMING       ) strcat( buf, " flaming"       );
+	if ( vector & AFF_ENDURANCE		) strcat( buf, " endurance"		);
+	// Shattuck 4/28 End
     if ( vector & AFF_POISON        ) strcat( buf, " poison"        );
     if ( vector & AFF_PROTECT       ) strcat( buf, " protect"       );
     if ( vector & AFF_PARALYSIS     ) strcat( buf, " paralysis"     );
@@ -2656,7 +2668,7 @@ char *affect_bit_name( int vector )
     if ( vector & AFF_POSSESS       ) strcat( buf, " possess"       );
     if ( vector & AFF_BERSERK       ) strcat( buf, " berserk"       );
     if ( vector & AFF_AQUA_BREATH   ) strcat( buf, " aqua_breath"   );
-    return ( buf[0] != '\0' ) ? buf+1 : "none";
+    return ( buf[0] != '\0' ) ? buf+1 : (char *) "none";
 }
 
 
@@ -2685,7 +2697,7 @@ char *extra_bit_name( int extra_flags )
     if ( extra_flags & ITEM_INVENTORY    ) strcat( buf, " inventory"    );
     if ( extra_flags & ITEM_DEATHROT	 ) strcat( buf, " deathrot"	);
     if ( extra_flags & ITEM_ANTI_SOLDIER ) strcat( buf, " anti-soldier" );
-    if ( extra_flags & ITEM_ANTI_THIEF   ) strcat( buf, " anti-thief"   );
+    if ( extra_flags & ITEM_TWO_HANDS    ) strcat( buf, " two-hands"    );
     if ( extra_flags & ITEM_ANTI_HUNTER  ) strcat( buf, " anti-hunter"  );
     if ( extra_flags & ITEM_ANTI_JEDI    ) strcat( buf, " anti-jedi"    );
     if ( extra_flags & ITEM_ANTI_SITH    ) strcat( buf, " anti-sith"    );
@@ -2697,7 +2709,7 @@ char *extra_bit_name( int extra_flags )
     if ( extra_flags & ITEM_ANTI_CITIZEN ) strcat( buf, " anti-citizen" );
     if ( extra_flags & ITEM_PROTOTYPE    ) strcat( buf, " prototype"    );
     if ( extra_flags & ITEM_HUMAN_SIZE   ) strcat( buf, " human_size"   );
-    return ( buf[0] != '\0' ) ? buf+1 : "none";
+    return ( buf[0] != '\0' ) ? buf+1 : (char* )"none";
 }
 
 /*
@@ -2709,7 +2721,7 @@ char *magic_bit_name( int magic_flags )
 
     buf[0] = '\0';
     if ( magic_flags & ITEM_RETURNING     ) strcat( buf, " returning"     );
-    return ( buf[0] != '\0' ) ? buf+1 : "none";
+    return ( buf[0] != '\0' ) ? buf+1 : (char *) "none";
 }
 
 /*

@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -56,7 +53,7 @@ const	struct	race_type	race_table	[MAX_RACE]	=
 	"Rodian",	0,	-1,	3,	0,	0,	1,	-1,	0,	0,	-10,	0,	0,	0,	0,	LANG_RODIAN
     },
     {
-	"Hutt",	0,	5,	-9,	3,	4,	5,	-10,	0,	0,	+700,	0, (RIS_SLEEP+RIS_POISON+RIS_PARALYSIS+RIS_ENERGY), 0,       0,     LANG_HUTT
+	"Hutt",		0,	5,	-9,	3,	4,	5,	-10,	0,	0,	+700,	0, RIS_SLEEP|RIS_POISON|RIS_PARALYSIS|RIS_ENERGY, 0,       0,     LANG_HUTT
     },//--cmbt, -smg, -80bh, ++lead
     {
 	"Mon Calamari",	AFF_AQUA_BREATH,	1,	-1,	2,	4,	0,	0,	0,	0,	+20,	0, 0, 0,	 0,    LANG_MON_CALAMARI
@@ -65,7 +62,7 @@ const	struct	race_type	race_table	[MAX_RACE]	=
 	"Shistavanen",	AFF_SNEAK,	+3,	+4,	-1,	0,	-2,	-4,	0,	0,	+20,	0, 0, RIS_NONMAGIC+RIS_POISON,	0, LANG_SHISTAVANEN    
     },
     {
-	"Gamorrean",	0,	5,	0,	-5,	-5,	5,	-2,	0,	0,	+60,	0, 0, (RIS_SLEEP+RIS_PARALYSIS+RIS_MAGIC),	 0,   LANG_GAMORREAN  
+	"Gamorrean",	0,	5,	0,	-5,	-5,	5,	-2,	0,	0,	+60,	0, 0, RIS_SLEEP|RIS_PARALYSIS|RIS_MAGIC,	 0,   LANG_GAMORREAN  
 	},
     {
 	"Jawa",	0,	-3,	3,	1,	0,	0,	-2,	0,	0,	-20,	0,	0,	0,	 0,    LANG_JAWA
@@ -133,7 +130,7 @@ const	struct	race_type	race_table	[MAX_RACE]	=
 	"Selonian",	0,	+2,	+2,	-5,	-2,	+3,	-1,	0,	0,	+35,	0,	0,	0,	0,	     LANG_COMMON
     },//+combat,--lead/dip/pil
     {
-	"Gran",	AFF_INFRARED,	+2,	0,	0,	-3,	+3,	-5,	0,	0,	0,	0,	RIS_POISON,	(RIS_SLEEP+RIS_PARALYSIS),	0,	     LANG_HUTT
+	"Gran",	AFF_INFRARED,	+2,	0,	0,	-3,	+3,	-5,	0,	0,	0,	0,	RIS_POISON,	RIS_SLEEP|RIS_PARALYSIS,	0,	     LANG_HUTT
     },//+bh
     {
 	"Yevetha",	0,	+3,	+1,	-3,	+2,	+2,	-8,	0,	0,	+45,	0,	RIS_POISON+RIS_COLD,	0,	0,	     LANG_YEVETHAN
@@ -151,7 +148,7 @@ const	struct	race_type	race_table	[MAX_RACE]	=
 	"Protocal Droid",	AFF_AQUA_BREATH+AFF_INFRARED,	-5,	-5,	+5,	+5,	0,	+5,	0,	0,	0,	0,	0,	RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_BINARY
     },//(+)dip
 	{
-	"Assassin Droid",	AFF_AQUA_BREATH+AFF_INFRARED,	+4,	+3,	-15,	+1,	+2,	-9,	0,	0,	100,	0,	0,	0,	0,	     LANG_BINARY
+	"Assassin Droid",	AFF_AQUA_BREATH+AFF_INFRARED,	+4,	+5,	-10,	+2,	+3,	-9,	0,	0,	100,	0,	RIS_NONMAGIC,	0,	0,	     LANG_BINARY
     },//++BH,++combat
     {
 	"Gladiator Droid",	AFF_AQUA_BREATH+AFF_INFRARED,	+5,	+3,	-9,	-6,	+4,	-9,	0,	0,	150,	0,	RIS_NONMAGIC,	RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_BINARY
@@ -169,6 +166,12 @@ const	struct	race_type	race_table	[MAX_RACE]	=
 
 };
 
+
+char * const command_groups [MAX_COMMAND_GROUP] =
+{
+ "[Implementor]", "[Coder]", "[Head Builder]", "[Builder]", "[Ship Builder]", 
+ "[Head Clan]", "[Clan Patron]", "[Head Administrator]", "[Administrator]", "[Quest Master]"
+};
 
 char *	const	npc_race	[MAX_NPC_RACE] =
 {

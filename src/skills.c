@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -26,7 +23,6 @@
 #include <string.h>
 #include <time.h>
 #include "mud.h"
-#include "bet.h"
 
 char * const spell_flag[] =
 { "water", "earth", "air", "astral", "area", "distant", "reverse",
@@ -82,7 +78,7 @@ int get_ssave( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(spell_saves) / sizeof(spell_saves[0]); x++ )
+    for ( x = 0; x < (int ) ( sizeof(spell_saves) / sizeof(spell_saves[0]) ); x++ )
       if ( !str_cmp( name, spell_saves[x] ) )
         return x;
     return -1;
@@ -92,7 +88,7 @@ int get_starget( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(target_type) / sizeof(target_type[0]); x++ )
+    for ( x = 0; x < (int) ( sizeof(target_type) / sizeof(target_type[0]) ); x++ )
       if ( !str_cmp( name, target_type[x] ) )
         return x;
     return -1;
@@ -102,7 +98,7 @@ int get_sflag( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(spell_flag) / sizeof(spell_flag[0]); x++ )
+    for ( x = 0; x < (int) ( sizeof(spell_flag) / sizeof(spell_flag[0]) ); x++ )
       if ( !str_cmp( name, spell_flag[x] ) )
         return x;
     return -1;
@@ -112,7 +108,7 @@ int get_sdamage( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(spell_damage) / sizeof(spell_damage[0]); x++ )
+    for ( x = 0; x < (int) ( sizeof(spell_damage) / sizeof(spell_damage[0]) ); x++ )
       if ( !str_cmp( name, spell_damage[x] ) )
         return x;
     return -1;
@@ -122,7 +118,7 @@ int get_saction( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(spell_action) / sizeof(spell_action[0]); x++ )
+    for ( x = 0; x < (int) ( sizeof(spell_action) / sizeof(spell_action[0]) ); x++ )
       if ( !str_cmp( name, spell_action[x] ) )
         return x;
     return -1;
@@ -132,7 +128,7 @@ int get_spower( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(spell_power) / sizeof(spell_power[0]); x++ )
+    for ( x = 0; x < (int) ( sizeof(spell_power) / sizeof(spell_power[0]) ); x++ )
       if ( !str_cmp( name, spell_power[x] ) )
         return x;
     return -1;
@@ -142,7 +138,7 @@ int get_sclass( char *name )
 {
     int x;
 
-    for ( x = 0; x < sizeof(spell_class) / sizeof(spell_class[0]); x++ )
+    for ( x = 0; x < (int) ( sizeof(spell_class) / sizeof(spell_class[0]) ); x++ )
       if ( !str_cmp( name, spell_class[x] ) )
         return x;
     return -1;
@@ -250,6 +246,7 @@ bool check_skill( CHAR_DATA *ch, char *command, char *argument )
 	    break;
 
 	case TAR_CHAR_OFFENSIVE:
+	case TAR_CHAR_SEMIOFFENSIVE:
 	    if ( argument[0] == '\0'
 	    &&  (victim=who_fighting(ch)) == NULL )
 	    {
@@ -300,7 +297,7 @@ bool check_skill( CHAR_DATA *ch, char *command, char *argument )
 	if ( (number_percent( ) + skill_table[sn]->difficulty * 5)
 	   > (IS_NPC(ch) ? 75 : ch->pcdata->learned[sn]) )
 	{
-	    failed_casting( skill_table[sn], ch, vo, obj );
+	    failed_casting( skill_table[sn], ch, (CHAR_DATA *) vo, obj );
 	    learn_from_failure( ch, sn );
 	    if ( mana )
 	    {
@@ -331,7 +328,9 @@ bool check_skill( CHAR_DATA *ch, char *command, char *argument )
 	else
 	    learn_from_success( ch, sn );
 
-	if ( skill_table[sn]->target == TAR_CHAR_OFFENSIVE
+	if ( (skill_table[sn]->target == TAR_CHAR_OFFENSIVE ||
+		(skill_table[sn]->target == TAR_CHAR_SEMIOFFENSIVE &&
+IS_NPC(victim)))
 	&&   victim != ch
 	&&  !char_died(victim) )
 	{
@@ -1420,7 +1419,7 @@ void do_detrap( CHAR_DATA *ch, char *argument )
 		bug( "do_detrap: ch->dest_buf NULL!", 0 );
 		return;
 	    }
-	    strcpy( arg, ch->dest_buf );
+	    strcpy( arg, (const char * )ch->dest_buf );
 	    DISPOSE( ch->dest_buf );
 	    DISPOSE(ch->dest_buf);
 	    ch->substate = SUB_NONE;
@@ -1548,7 +1547,7 @@ void do_dig( CHAR_DATA *ch, char *argument )
 	      bug( "do_dig: dest_buf NULL", 0 );
 	      return;
 	  }
-	  strcpy( arg, ch->dest_buf );  
+	  strcpy( arg, (const char* ) ch->dest_buf );  
 	  DISPOSE( ch->dest_buf );	
 	  break;
 
@@ -1684,7 +1683,7 @@ void do_search( CHAR_DATA *ch, char *argument )
 		bug( "do_search: dest_buf NULL", 0 );
 		return;
 	    }
-	    strcpy( arg, ch->dest_buf );
+	    strcpy( arg, (const char * ) ch->dest_buf );
 	    DISPOSE( ch->dest_buf );
 	    break;
 	case SUB_TIMER_DO_ABORT:
@@ -2991,7 +2990,7 @@ void do_sneak( CHAR_DATA *ch, char *argument )
     if ( IS_NPC(ch) || number_percent( ) < ch->pcdata->learned[gsn_sneak] )
     {
 	af.type      = gsn_sneak;
-	af.duration  = ch->skill_level[SMUGGLING_ABILITY]  * DUR_CONV;
+	af.duration  = (sh_int) ( ch->skill_level[SMUGGLING_ABILITY]  * DUR_CONV );
 	af.location  = APPLY_NONE;
 	af.modifier  = 0;
 	af.bitvector = AFF_SNEAK;

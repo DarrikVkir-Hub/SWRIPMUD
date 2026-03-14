@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -193,6 +190,7 @@ void interpret( CHAR_DATA *ch, char *argument )
     struct timeval time_used;
     long tmptime;
 
+
     if ( !ch )
     {
 	bug( "interpret: null ch!", 0 );
@@ -268,7 +266,7 @@ void interpret( CHAR_DATA *ch, char *argument )
 	    send_to_char( "You're totally frozen!\n\r", ch );
 	    return;
 	}
-	
+
 	/*
 	 * Grab the command word.
 	 * Special parsing so ' can be a command,
@@ -300,11 +298,10 @@ void interpret( CHAR_DATA *ch, char *argument )
 	 * Look for command in command table.
 	 * Check for council powers and/or bestowments
 	 */
-	 
 	trust = get_trust( ch );
 	for ( cmd = command_hash[LOWER(command[0])%126]; cmd; cmd = cmd->next )
 	    if ( !str_prefix( command, cmd->name )
-	    &&   (cmd->level <= trust
+	    &&   ((cmd->level <= trust && (IS_NPC(ch) || !cmd->commandgroup || (cmd->commandgroup & ch->pcdata->commandgroup)))
 	    ||  (!IS_NPC(ch) && ch->pcdata->bestowments && ch->pcdata->bestowments[0] != '\0'
 	    &&    is_name( cmd->name, ch->pcdata->bestowments )
 	    &&    cmd->level <= (trust+5)) ) )

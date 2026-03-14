@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -28,7 +25,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <dirent.h>
+#include <sys/dir.h>
 #include "mud.h"
 
 /*
@@ -329,6 +326,7 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     fprintf( fp, "#%s\n", IS_NPC(ch) ? "MOB" : "PLAYER"		);
 
     fprintf( fp, "Version      %d\n",   SAVEVERSION		);
+    fprintf( fp, "Toplevel     %d\n",   ch->top_level           );
     fprintf( fp, "Name         %s~\n",	ch->name		);
     if ( ch->short_descr && ch->short_descr[0] != '\0' )
       fprintf( fp, "ShortDescr   %s~\n",	ch->short_descr	);
@@ -340,7 +338,6 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     fprintf( fp, "Race         %d\n",	ch->race		);
     fprintf( fp, "MainAbility  %d\n",	ch->main_ability	);
     fprintf( fp, "Languages    %d %d\n", ch->speaks, ch->speaking );
-    fprintf( fp, "Toplevel     %d\n",	ch->top_level		);
     if ( ch->trust )
       fprintf( fp, "Trust        %d\n",	ch->trust		);
     fprintf( fp, "Played       %d\n",
@@ -440,6 +437,7 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 	  fprintf( fp, "Prompt       %s~\n",	ch->pcdata->prompt	);
 	if ( ch->pcdata->pagerlen != 24 )
 	  fprintf( fp, "Pagerlen     %d\n",	ch->pcdata->pagerlen	);
+        fprintf(fp, "Commandgroup    %d\n", ch->pcdata->commandgroup);
         for ( pal = ch->pcdata->first_alias; pal; pal = pal->next )
         {
             if ( !pal->name || !pal->cmd || !*pal->name || !*pal->cmd )
@@ -765,6 +763,14 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
  */
 bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool preload )
 {
+  return load_char_obj_v2(d,name,preload,0);
+}
+
+/*
+ * Load a char and inventory into a new ch structure with option of restoring from backup.
+ */
+bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead)
+{
     char strsave[MAX_INPUT_LENGTH];
     CHAR_DATA *ch;
     FILE *fp;
@@ -819,8 +825,13 @@ bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool preload )
     ch->was_sentinel                    = NULL;
     ch->plr_home                        = NULL;
     found = FALSE;
-    sprintf( strsave, "%s%c/%s", PLAYER_DIR, tolower(name[0]),
+    if (undead) {
+      sprintf( strsave, "%s%c/%s", BACKUP_DIR, tolower(name[0]),
+                        capitalize( name ) );
+    } else {
+      sprintf( strsave, "%s%c/%s", PLAYER_DIR, tolower(name[0]),
 			capitalize( name ) );
+    }
     if ( stat( strsave, &fst ) != -1 )
     {
       if ( fst.st_size == 0 )
@@ -974,7 +985,7 @@ bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool preload )
 		}
 		else
 		    break;
-	}
+        }
 
     }
             
@@ -1004,7 +1015,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 {
     char buf[MAX_STRING_LENGTH];
     char *line;
-    char *word;
+    const char *word;
     int x1, x2, x3, x4, x5, x6, x7, x8, x9, x0;
     sh_int killcnt;
     bool fMatch;
@@ -1196,7 +1207,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		break;
 	    }
 	    KEY( "Clones",	ch->pcdata->clones,		fread_number( fp ) );
-
+            KEY(  "Commandgroup", ch->pcdata->commandgroup,     fread_number( fp ) );
 	    if ( !str_cmp( word, "Condition" ) )
 	    {
 		line = fread_line( fp );
@@ -1728,7 +1739,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 {
     OBJ_DATA *obj;
-    char *word;
+    const char *word;
     int iNest;
     bool fMatch;
     bool fNest;
@@ -2131,7 +2142,7 @@ void write_corpses( CHAR_DATA *ch, char *name )
 void load_corpses( void )
 {
   DIR *dp;
-  struct dirent *de;
+  struct direct *de;
   extern FILE *fpArea;
   extern char strArea[MAX_INPUT_LENGTH];
   extern int falling;
@@ -2230,13 +2241,7 @@ if ( !(dp = opendir(STOREROOM_DIR)) )
 
 	    storeroom = get_room_index(atoi(de->d_name));
 	    if( !storeroom )
-	    {
-		fpArea = NULL;
-  		strcpy(strArea, "$");
-  		closedir(dp);
-  		falling = 0;
-  		return;
-  	    }
+  		continue;
   	    
 	    if ( !IS_SET( storeroom->room_flags, ROOM_CLANSTOREROOM ) )
 	    {
@@ -2444,7 +2449,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
  CHAR_DATA *  fread_mobile( FILE *fp )
  {
    CHAR_DATA *mob = NULL;
-   char *word;
+   const char *word;
    bool fMatch;
    int inroom = 0;
    ROOM_INDEX_DATA *pRoomIndex = NULL;

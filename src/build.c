@@ -1,25 +1,22 @@
- /***************************************************************************
- *                   Star Wars: Rise in Power MUD Codebase                  *
- *--------------------------------------------------------------------------*
- * SWRiP Code Additions and changes from the SWReality and Smaug Code       *
- * copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
- *--------------------------------------------------------------------------*
- * Star Wars Reality Code Additions and changes from the Smaug Code         *
- * copyright (c) 1997 by Sean Cooper                                        *
- * -------------------------------------------------------------------------*
- * Starwars and Starwars Names copyright(c) Lucas Film Ltd.                 *
- *--------------------------------------------------------------------------*
- * SMAUG 1.0 (C) 1994, 1995, 1996 by Derek Snider                           *
- * SMAUG code team: Thoric, Altrag, Blodkai, Narn, Haus,                    *
- * Scryn, Rennard, Swordbearer, Gorog, Grishnakh and Tricops                *
- * ------------------------------------------------------------------------ *
- * Merc 2.1 Diku Mud improvments copyright (C) 1992, 1993 by Michael        *
- * Chastain, Michael Quan, and Mitchell Tse.                                *
- * Original Diku Mud copyright (C) 1990, 1991 by Sebastian Hammer,          *
- * Michael Seifert, Hans Henrik St{rfeldt, Tom Madsen, and Katja Nyboe.     *
- * ------------------------------------------------------------------------ *
- *		       Online Building and Editing Module		   *
- ****************************************************************************/
+/***************************************************************************
+*                           STAR WARS REALITY 1.0                          *
+*--------------------------------------------------------------------------*
+* Star Wars Reality Code Additions and changes from the Smaug Code         *
+* copyright (c) 1997 by Sean Cooper                                        *
+* -------------------------------------------------------------------------*
+* Starwars and Starwars Names copyright(c) Lucas Film Ltd.                 *
+*--------------------------------------------------------------------------*
+* SMAUG 1.0 (C) 1994, 1995, 1996 by Derek Snider                           *
+* SMAUG code team: Thoric, Altrag, Blodkai, Narn, Haus,                    *
+* Scryn, Rennard, Swordbearer, Gorog, Grishnakh and Tricops                *
+* ------------------------------------------------------------------------ *
+* Merc 2.1 Diku Mud improvments copyright (C) 1992, 1993 by Michael        *
+* Chastain, Michael Quan, and Mitchell Tse.                                *
+* Original Diku Mud copyright (C) 1990, 1991 by Sebastian Hammer,          *
+* Michael Seifert, Hans Henrik St{rfeldt, Tom Madsen, and Katja Nyboe.     *
+* ------------------------------------------------------------------------ *
+*		       Online Building and Editing Module		   *
+****************************************************************************/
 
 #include <sys/types.h>
 #include <ctype.h>
@@ -43,7 +40,7 @@ char *  const   planet_flags [] =
   "coruscant", "kashyyyk", "ryloth", "rodia", "nal hutta", "mon calamari",
   "honoghr", "gamorr", "tatooine", "adari", "byss", "endor", "roche", "af'el", "trandosh",
   "chad", "", "corellia", "hoth", "asteroid", "bespin", "kuat", "socorro", "corulag", "hapes", "wroona",
-  "roche", "dathomir", "sullust", "p28", "p29", "p30", "p31"  
+  "roche", "dathomir", "sullust", "falleen", "etti", "p30", "p31"  
 };
 
 char *  const   weapon_table    [13] =
@@ -56,7 +53,7 @@ char *  const   weapon_table    [13] =
 
 char *  const   spice_table    [] =
 {
-    "glitterstim", "carsanum", "ryll","andris","lumni","s5","s6","s7","s8","s9"
+    "glitterstim", "carsanum", "ryll","andris","lumni","lycin","s6","s7","s8","s9"
 };
 
 char *  const   crystal_table    [8] =
@@ -85,7 +82,7 @@ char *	const	o_flags	[] =
 {
 "glow", "hum", "dark", "hutt_size", "contraband", "invis", "magic", "nodrop", "bless",
 "antigood", "antievil", "antineutral", "noremove", "inventory",
-"antisoldier", "antithief", "antihunter", "antijedi", "small_size", "large_size",
+"antisoldier", "twohands", "antihunter", "antijedi", "small_size", "large_size",
 "donation", "clanobject", "anticitizen", "antisith", "antipilot", 
 "hidden", "poisoned", "covering", "deathrot", "burried", "prototype", "human_size"
 };
@@ -127,7 +124,7 @@ char *	const	o_types	[] =
 "fabric", "rare_metal", "magnet",  "thread", "spice", "smut", "device", "spacecraft",
 "grenade", "landmine", "government", "droid_corpse", "bolt", "scope", 
 "fightercomp", "midcomp", "capitalcomp","chemical", "disguise",
-"disguise_fabric", "hair"
+"disguise_fabric", "hair", "stun_grenade", "cargo"
 };
 
 char *	const	a_types	[] =
@@ -147,7 +144,7 @@ char *	const	a_flags [] =
 {
 "blind", "invisible", "detect_evil", "detect_invis", "detect_magic",
 "detect_hidden", "weaken", "sanctuary", "faerie_fire", "infrared", "curse",
-"_flaming", "poison", "protect", "paralysis", "sneak", "hide", "sleep",
+"endurance", "poison", "protect", "paralysis", "sneak", "hide", "sleep",
 "charm", "flying", "pass_door", "floating", "truesight", "detect_traps",
 "scrying", "fireshield", "shockshield", "r1", "iceshield", "possess", 
 "berserk", "aqua_breath" };
@@ -353,7 +350,7 @@ bool can_mmodify( CHAR_DATA *ch, CHAR_DATA *mob )
 
 	if ( !IS_NPC( mob ) )
 	{
-	   if ( get_trust( ch ) >= sysdata.level_modify_proto && get_trust(ch) > 
+	   if ( get_trust( ch ) >= sysdata.level_modify_proto && get_trust(ch) >= 
 		get_trust( mob ) )
 	     return TRUE;
 	   else
@@ -404,7 +401,7 @@ bool can_medit( CHAR_DATA *ch, MOB_INDEX_DATA *mob )
 
 int get_otype( char *type )
 {
-    int x;
+    unsigned int x;
 
     for ( x = 0; x < (sizeof(o_types) / sizeof(o_types[0]) ); x++ )
       if ( !str_cmp( type, o_types[x] ) )
@@ -636,9 +633,10 @@ int get_langflag( char *flag )
  */
 char *strip_cr( char *str )
 {
-    static char newstr[MAX_STRING_LENGTH];
-    int i, j;
+//  static char newstr[MAX_STRING_LENGTH];
+//  int i, j;
 
+/*
     for ( i=j=0; str[i] != '\0'; i++ )
 	if ( str[i] != '\r' )
 	{
@@ -646,6 +644,8 @@ char *strip_cr( char *str )
 	}
     newstr[j] = '\0';
     return newstr;
+*/
+    return str;
 }
 
 
@@ -848,7 +848,7 @@ void do_goto( CHAR_DATA *ch, char *argument )
 
     if ( room_is_private(ch, location ) )
     {
-	if ( get_trust( ch ) < sysdata.level_override_private || (ch->top_level == 105 ? 0: (location->vnum == IMP_ROOM1?1:(location->vnum == IMP_ROOM2?1:0))))
+	if ( get_trust( ch ) < sysdata.level_override_private || (ch->top_level == LEVEL_SUPREME ? 0: (location->vnum == IMP_ROOM1?1:(location->vnum == IMP_ROOM2?1:0))))
 	{
        send_to_char( "That room is private right now.\n\r", ch );
 
@@ -943,7 +943,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
     int  num,size,plus;
     char char1,char2;
     CHAR_DATA *victim;
-    int value;
+    int value, i;
     int minattr, maxattr;
     bool lockvictim;
     char *origarg = argument;
@@ -972,7 +972,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 		ch->substate = SUB_NONE;
 		return;
 	  }
-	  victim = ch->dest_buf;
+	  victim = (CHAR_DATA *) ch->dest_buf;
 	  if ( char_died(victim) )
 	  {
 		send_to_char( "Your victim died!\n\r", ch );
@@ -997,7 +997,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 
     if ( ch->substate == SUB_REPEATCMD )
     {
-	victim = ch->dest_buf;
+	victim = (CHAR_DATA *)ch->dest_buf;
 	if ( char_died(victim) )
 	{
 	    send_to_char( "Your victim died!\n\r", ch );
@@ -1059,7 +1059,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	send_to_char( "\n\r",						ch );
 	send_to_char( "Field being one of:\n\r",			ch );
 	send_to_char( "  str int wis dex con cha lck frc sex\n\r",	ch );
-	send_to_char( "  credits hp force move align race\n\r",ch );
+	send_to_char( "  credits bank hp force move align race\n\r",ch );
 	send_to_char( "  hitroll damroll armor affected level\n\r",	ch );
 	send_to_char( "  thirst drunk full blood flags\n\r",		ch );
 	send_to_char( "  pos defpos part (see BODYPARTS)\n\r",		ch );
@@ -1068,7 +1068,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	send_to_char( "  attack defense numattacks\n\r",		ch );
 	send_to_char( "  speaking speaks (see LANGUAGES)\n\r",		ch );
 	send_to_char( "  name short long description title spec spec2\n\r", ch );
-	send_to_char( "  clan vip wanted\n\r",                  ch );
+	send_to_char( "  clan vip wanted commandgroup\n\r",                  ch );
 	send_to_char( "\n\r",						ch );
 	send_to_char( "For editing index/prototype mobiles:\n\r",	ch );
 	send_to_char( "  hitnumdie hitsizedie hitplus (hit points)\n\r",ch );
@@ -1097,13 +1097,13 @@ void do_mset( CHAR_DATA *ch, char *argument )
     if ( get_trust(ch) < sysdata.level_mset_player && (victim != ch) && !IS_NPC( victim ) )
     {
 	send_to_char( "You can't do that!\n\r", ch );
-	DISPOSE(ch->dest_buf);
+	ch->dest_buf = NULL;
 	return;
     }
     if ( get_trust( ch ) < get_trust( victim ) && !IS_NPC( victim ) )
     {
 	send_to_char( "You can't do that!\n\r", ch );
-	DISPOSE(ch->dest_buf);
+	ch->dest_buf = NULL;
 	return;
     }
     if ( lockvictim )
@@ -1416,13 +1416,13 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	       victim->skill_level[ability] = value;
 	}
 	victim->top_level = value;
-	victim->armor = 100-value*2.5;
+	victim->armor = (sh_int) ( 100-value*2.5 );
 	victim->hitroll = value/5;
 	victim->damroll = value/5;
 	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
 	{
 	  victim->pIndexData->level = value;
-	  victim->pIndexData->ac = 100-value*2.5;
+	  victim->pIndexData->ac = (sh_int ) ( 100-value*2.5 );
 	  victim->pIndexData->hitroll = victim->hitroll;
 	  victim->pIndexData->damroll = victim->damroll;
 	}
@@ -1442,6 +1442,30 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	return;
     }
 
+    if ( !str_cmp( arg2, "commandgroup"))
+    {
+        if (!IS_SET(ch->pcdata->commandgroup,1)) 
+          return;
+        if ( !can_mmodify( ch, victim ) )
+          return;
+        if ( IS_NPC(victim) )
+        {
+            send_to_char( "Not on NPC's.\n\r", ch );
+            return;
+        }
+        if (value < 0 || value > MAX_COMMAND_GROUP)
+        {
+          send_to_char("Command Groups: \n\r",ch);
+          for (i = 0; i <  MAX_COMMAND_GROUP; i++) {
+            sprintf(buf,"%d) %s\n\r",i, command_groups[i]); 
+            send_to_char(buf,ch);
+          }
+          return;
+        }
+        TOGGLE_BIT(victim->pcdata->commandgroup,(1<<value));
+        send_to_char("Ok.\n\r",ch);
+        return;
+    }  
     if ( !str_cmp( arg2, "numattacks" ) )
     {
 	if ( !can_mmodify( ch, victim ) )
@@ -1470,6 +1494,19 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	victim->gold = value;
 	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->gold = value;
+	return;
+    }
+
+    if ( !str_cmp( arg2, "bank" ) )
+    {
+	if ( !can_mmodify( ch, victim ) )
+	  return;
+	if( IS_NPC( victim ) )
+	{
+	  send_to_char( "Only on PCs\n\r", ch );
+	  return;
+	}
+	victim->pcdata->bank = value;
 	return;
     }
 
@@ -1503,6 +1540,20 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->max_hit = value;
+	return;
+    }
+
+    if ( !str_cmp( arg2, "carry_weight" ) )
+    {
+	if ( !can_mmodify( ch, victim ) )
+	  return;
+	if ( value < 0 || value > 32000 )
+	{
+	    send_to_char( "Let's be responible, hmm?", ch );
+	    victim->nextquest = 0;
+	    return;
+	}
+	victim->carry_weight = value;
 	return;
     }
 
@@ -2796,10 +2847,10 @@ void do_oset( CHAR_DATA *ch, char *argument )
 	   * the object and index-object lists, searching through the
 	   * extra_descr lists for a matching pointer...
 	   */
-	  ed  = ch->dest_buf;
+	  ed  = (EXTRA_DESCR_DATA *) ch->dest_buf;
 	  STRFREE( ed->description );
 	  ed->description = copy_buffer( ch );
-	  tmpobj = ch->spare_ptr;
+	  tmpobj = (OBJ_DATA * )ch->spare_ptr;
 	  stop_editing( ch );
 	  ch->dest_buf = tmpobj;
 	  ch->substate = ch->tempnum;
@@ -2813,7 +2864,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
 		ch->substate = SUB_NONE;
 		return;
 	  }
-	  obj = ch->dest_buf;
+	  obj = (OBJ_DATA *) ch->dest_buf;
 	  if ( obj && obj_extracted(obj) )
 	  {
 		send_to_char( "Your object was extracted!\n\r", ch );
@@ -2827,7 +2878,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
 		STRFREE( obj->pIndexData->description );
 		obj->pIndexData->description = QUICKLINK( obj->description );
 	  }
-	  tmpobj = ch->spare_ptr;
+	  tmpobj = (OBJ_DATA* )ch->spare_ptr;
 	  stop_editing( ch );
 	  ch->substate = ch->tempnum;
 	  ch->dest_buf = tmpobj;
@@ -2839,7 +2890,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
 
     if ( ch->substate == SUB_REPEATCMD )
     {
-	obj = ch->dest_buf;
+	obj = (OBJ_DATA * ) ch->dest_buf;
 	if ( obj && obj_extracted(obj) )
 	{
 	    send_to_char( "Your object was extracted!\n\r", ch );
@@ -2944,7 +2995,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
     if ( lockobj )
 	ch->dest_buf = obj;
     else
-	DISPOSE(ch->dest_buf);
+        ch->dest_buf = NULL;
 
     separate_obj( obj );
     value = atoi( arg3 );
@@ -3557,7 +3608,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
 	case ITEM_WEAPON:
 	    if ( !str_cmp( arg2, "weapontype" ) )
 	    {
-		int x;
+		unsigned int x;
 
 		value = -1;
 		for ( x = 0; x < sizeof( weapon_table ) / sizeof( weapon_table[0] ); x++ )
@@ -3595,7 +3646,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
 	    if ( !str_cmp( arg2, "grade" ) )          tmp = 1;
 	    if ( !str_cmp( arg2, "spicetype" ) )
 	    {
-		int x;
+		unsigned int x;
 
 		value = -1;
 		for ( x = 0; x < sizeof( spice_table ) / sizeof( spice_table[0] ); x++ )
@@ -3615,7 +3666,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
 	case ITEM_CRYSTAL:
 	    if ( !str_cmp( arg2, "gemtype" ) )
 	    {
-		int x;
+		unsigned int x;
 
 		value = -1;
 		for ( x = 0; x < sizeof( crystal_table ) / sizeof( crystal_table[0] ); x++ )
@@ -4046,7 +4097,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	default:
 	  break;
 	case SUB_ROOM_DESC:
-	  location = ch->dest_buf;
+	  location = (ROOM_INDEX_DATA *) ch->dest_buf;
 	  if ( !location )
 	  {
 		bug( "redit: sub_room_desc: NULL ch->dest_buf", 0 );
@@ -4058,7 +4109,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	  ch->substate = ch->tempnum;
 	  return;
 	case SUB_ROOM_EXTRA:
-	  ed = ch->dest_buf;
+	  ed = (EXTRA_DESCR_DATA *) ch->dest_buf;
 	  if ( !ed )
 	  {
 		bug( "redit: sub_room_extra: NULL ch->dest_buf", 0 );
@@ -5673,15 +5724,16 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
     bool		 complexmob;
 
     sprintf( buf, "Saving %s...", tarea->filename );
-    log_string_plus( buf, LOG_NORMAL, LEVEL_GREATER );
+    log_string_plus( buf, LOG_ALL, LEVEL_GREATER );
 
     sprintf( buf, "%s.bak", filename );
     rename( filename, buf );
     fclose( fpReserve );
-    if ( ( fpout = fopen( filename, "w" ) ) == NULL )
+    sprintf( buf, "%s.tmp", filename );
+    if ( ( fpout = fopen( buf, "w" ) ) == NULL )
     {
 	bug( "fold_area: fopen", 0 );
-	perror( filename );
+	perror( buf );
 	fpReserve = fopen( NULL_FILE, "r" );
 	return;
     }
@@ -6062,6 +6114,11 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 
     /* END */
     fprintf( fpout, "#$\n" );
+
+//Code to write to .tmp file before replacing area file... 
+//        prevents corruption on crash - DV 4-22-04
+    rename( buf, filename );
+    
     fclose( fpout );
     fpReserve = fopen( NULL_FILE, "r" );
     return;
@@ -6607,6 +6664,7 @@ void do_astat( CHAR_DATA *ch, char *argument )
 {
     AREA_DATA *tarea;
     bool proto, found;
+    int count;
  
 
     found = FALSE; proto = FALSE;
@@ -6656,6 +6714,21 @@ void do_astat( CHAR_DATA *ch, char *argument )
 	else
 	   ch_printf( ch, "Area economy: %d credits.\n\r",
 			tarea->low_economy );
+
+        send_to_char( "Production Values: ", ch );
+	for( count = 0; count < 8; count++ )
+	   ch_printf( ch, "%d ", tarea->production[count] );
+        send_to_char( "\n\r", ch );
+        send_to_char( "Depletion Values: ", ch );
+	for( count = 0; count < 8; count++ )
+	   ch_printf( ch, "%d ", tarea->depletion[count] );
+        send_to_char( "\n\r", ch );
+        send_to_char( "Current Supply Values: ", ch );
+	for( count = 0; count < 8; count++ )
+	   ch_printf( ch, "%d ", tarea->supply[count] );
+        send_to_char( "\n\r", ch );
+	
+	
         if ( tarea->planet )
 	   ch_printf( ch, "Planet: %s.\n\r",
 			tarea->planet->name );
@@ -6698,7 +6771,7 @@ void do_aset( CHAR_DATA *ch, char *argument )
     char arg2[MAX_INPUT_LENGTH];
     char arg3[MAX_INPUT_LENGTH];
     bool proto, found;
-    int vnum, value;
+    int vnum, value, type;
     
     argument = one_argument( argument, arg1 );
     argument = one_argument( argument, arg2 );
@@ -6906,6 +6979,54 @@ void do_aset( CHAR_DATA *ch, char *argument )
 	tarea->reset_frequency = vnum;
         send_to_char( "Done.\n\r", ch );
 	return;
+    }
+
+    if ( !str_cmp( arg2, "supply" ) )
+    {
+        if ( argument[0] != '\0' )
+          argument = one_argument( argument, arg3 );
+        type = atoi(arg3);
+        vnum = atoi(argument);
+	if ( type > 0 && type <= 8 )
+	{
+	  tarea->supply[type-1] = vnum;
+          send_to_char( "Done.\n\r", ch );
+        }
+        else
+          send_to_char( "Syntax: aset <area> supply <type 1-8> <value>.\n\r", ch );
+        return;
+    }
+
+    if ( !str_cmp( arg2, "depletion" ) )
+    {
+        if ( argument[0] != '\0' )
+          argument = one_argument( argument, arg3 );
+        type = atoi(arg3);
+        vnum = atoi(argument);
+	if ( type > 0 && type <= 8 )
+	{
+	  tarea->depletion[type-1] = vnum;
+          send_to_char( "Done.\n\r", ch );
+        }
+        else
+          send_to_char( "Syntax: aset <area> depletion <type 1-8> <value>.\n\r", ch );
+        return;
+    }
+
+    if ( !str_cmp( arg2, "production" ) )
+    {
+        if ( argument[0] != '\0' )
+          argument = one_argument( argument, arg3 );
+        type = atoi(arg3);
+        vnum = atoi(argument);
+	if ( type > 0 && type <= 8 )
+	{
+	  tarea->production[type-1] = vnum;
+          send_to_char( "Done.\n\r", ch );
+        }
+        else
+          send_to_char( "Syntax: aset <area> production <type 1-8> <value>.\n\r", ch );
+        return;
     }
 
     if ( !str_cmp( arg2, "flags" ) )
@@ -7158,7 +7279,7 @@ void do_mpedit( CHAR_DATA *ch, char *argument )
 		ch->substate = SUB_NONE;
 		return;
 	  }
-	  mprog	 = ch->dest_buf;
+	  mprog	 = (MPROG_DATA *) ch->dest_buf;
 	  if ( mprog->comlist )
 	    STRFREE( mprog->comlist );
 	  mprog->comlist = copy_buffer( ch );
@@ -7439,7 +7560,7 @@ void do_opedit( CHAR_DATA *ch, char *argument )
 		ch->substate = SUB_NONE;
 		return;
 	  }
-	  mprog	 = ch->dest_buf;
+	  mprog	 = (MPROG_DATA *) ch->dest_buf;
 	  if ( mprog->comlist )
 	    STRFREE( mprog->comlist );
 	  mprog->comlist = copy_buffer( ch );
@@ -7737,7 +7858,7 @@ void do_rpedit( CHAR_DATA *ch, char *argument )
 		ch->substate = SUB_NONE;
 		return;
 	  }
-	  mprog	 = ch->dest_buf;
+	  mprog	 = (MPROG_DATA *) ch->dest_buf;
 	  if ( mprog->comlist )
 	    STRFREE( mprog->comlist );
 	  mprog->comlist = copy_buffer( ch );

@@ -1,25 +1,22 @@
- /***************************************************************************
- *                   Star Wars: Rise in Power MUD Codebase                  *
- *--------------------------------------------------------------------------*
- * SWRiP Code Additions and changes from the SWReality and Smaug Code       *
- * copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
- *--------------------------------------------------------------------------*
- * Star Wars Reality Code Additions and changes from the Smaug Code         *
- * copyright (c) 1997 by Sean Cooper                                        *
- * -------------------------------------------------------------------------*
- * Starwars and Starwars Names copyright(c) Lucas Film Ltd.                 *
- *--------------------------------------------------------------------------*
- * SMAUG 1.0 (C) 1994, 1995, 1996 by Derek Snider                           *
- * SMAUG code team: Thoric, Altrag, Blodkai, Narn, Haus,                    *
- * Scryn, Rennard, Swordbearer, Gorog, Grishnakh and Tricops                *
- * ------------------------------------------------------------------------ *
- * Merc 2.1 Diku Mud improvments copyright (C) 1992, 1993 by Michael        *
- * Chastain, Michael Quan, and Mitchell Tse.                                *
- * Original Diku Mud copyright (C) 1990, 1991 by Sebastian Hammer,          *
- * Michael Seifert, Hans Henrik St{rfeldt, Tom Madsen, and Katja Nyboe.     *
- * ------------------------------------------------------------------------ *
- *			     Special boards module			    *
- ****************************************************************************/
+/***************************************************************************
+*                           STAR WARS REALITY 1.0                          *
+*--------------------------------------------------------------------------*
+* Star Wars Reality Code Additions and changes from the Smaug Code         *
+* copyright (c) 1997 by Sean Cooper                                        *
+* -------------------------------------------------------------------------*
+* Starwars and Starwars Names copyright(c) Lucas Film Ltd.                 *
+*--------------------------------------------------------------------------*
+* SMAUG 1.0 (C) 1994, 1995, 1996 by Derek Snider                           *
+* SMAUG code team: Thoric, Altrag, Blodkai, Narn, Haus,                    *
+* Scryn, Rennard, Swordbearer, Gorog, Grishnakh and Tricops                *
+* ------------------------------------------------------------------------ *
+* Merc 2.1 Diku Mud improvments copyright (C) 1992, 1993 by Michael        *
+* Chastain, Michael Quan, and Mitchell Tse.                                *
+* Original Diku Mud copyright (C) 1990, 1991 by Sebastian Hammer,          *
+* Michael Seifert, Hans Henrik St{rfeldt, Tom Madsen, and Katja Nyboe.     *
+* ------------------------------------------------------------------------ *
+*			     Special boards module			   *
+****************************************************************************/
 
 #include <sys/types.h>
 #include <ctype.h>
@@ -424,7 +421,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	     stop_editing( ch );
 	     return;
           }
-	  ed = ch->dest_buf;
+	  ed = (EXTRA_DESCR_DATA *) ch->dest_buf;
 	  STRFREE( ed->description );
 	  ed->description = copy_buffer( ch );
 	  stop_editing( ch );	   
@@ -1169,7 +1166,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 BOARD_DATA *read_board( char *boardfile, FILE *fp )
 {
     BOARD_DATA *board;
-    char *word;
+    const char *word;
     char  buf[MAX_STRING_LENGTH];
     bool fMatch;
     char letter;
