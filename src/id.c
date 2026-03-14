@@ -1,5 +1,8 @@
 /***************************************************************************
-*                           STAR WARS REALITY 1.0                          *
+*                   Star Wars: Rise in Power MUD Codebase                  *
+*--------------------------------------------------------------------------*
+* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
+* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
 *--------------------------------------------------------------------------*
 * Star Wars Reality 1.0                                                    *
 * copyright (c) 1997, 1998 by Sean Cooper                                  *
@@ -25,7 +28,6 @@
 #else
 #include <sys/types.h>
 #endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,7 +67,7 @@ void  start_auth( struct descriptor_data *d )
    nonblock( d->auth_fd );
    
    tlen = sizeof( sock );
-   getpeername( d->descriptor, ( struct sockaddr * )&sock, (socklen_t *) &tlen );
+   getpeername( d->descriptor, ( struct sockaddr * )&sock, &tlen );
    serv = getservbyname( "ident", "tcp" );
    if ( !serv )
      sock.sin_port = htons( 113 );
@@ -78,7 +80,7 @@ void  start_auth( struct descriptor_data *d )
    {
      /* Identd Denied */
 /*     bug( "Unable to verify userid", 9 ); */
-     closed( d->auth_fd );
+     close( d->auth_fd );
      d->auth_fd = -1;
      d->auth_state = 0;
      return;
@@ -95,13 +97,12 @@ void  send_auth( struct descriptor_data *d )
 {
     struct  sockaddr_in  us, them;
     char    authbuf[32];
-    int     ulen, tlen;
-    bool    z;
+    int     ulen, tlen, z;
     
     tlen = ulen = sizeof( us );
   
-    if ( getsockname( d->descriptor, ( struct sockaddr *)&us, (socklen_t *) &ulen )
-    ||   getpeername( d->descriptor, ( struct sockaddr *)&them, (socklen_t *) &tlen ) )
+    if ( getsockname( d->descriptor, ( struct sockaddr *)&us, &ulen )
+    ||   getpeername( d->descriptor, ( struct sockaddr *)&them, &tlen ) )
     {
 	bug( "auth getsockname error", 0 );
 	goto authsenderr;
@@ -111,12 +112,10 @@ void  send_auth( struct descriptor_data *d )
     sprintf( authbuf, "%u , %u\r\n", 
 	(unsigned int)ntohs(them.sin_port),
 	(unsigned int)ntohs(us.sin_port));
-
-	z = write_to_descriptor( d->auth_fd, authbuf, strlen(authbuf) );
   
-//    z = write( d->auth_fd, authbuf, strlen( authbuf ) ); - Removed for C++.
+    z = write( d->auth_fd, authbuf, strlen( authbuf ) );
   
-    if ( !z )
+    if ( z != strlen( authbuf ) )
     {
 	if (d->atimes >= 19)
 	{
@@ -125,7 +124,7 @@ void  send_auth( struct descriptor_data *d )
 	  perror("send_auth");
 	}
 	authsenderr:
-	closed( d->auth_fd );
+	close( d->auth_fd );
 	if ( d->auth_fd == maxdesc ) maxdesc--; 
 	d->auth_fd = -1;
 	d->auth_state &= ~FLAG_AUTH;    /* Failure/Continue */
@@ -151,7 +150,7 @@ void  read_auth( struct descriptor_data *d )
     * to buffer the authd reply.  May take more than one read.
     */
    
-    if ( ( len = readd( d->auth_fd, d->abuf + d->auth_inc,
+    if ( ( len = read( d->auth_fd, d->abuf + d->auth_inc,
      			sizeof( d->abuf ) - 1 - d->auth_inc ) ) >= 0 )
     {
 	d->auth_inc += len;
@@ -186,7 +185,7 @@ void  read_auth( struct descriptor_data *d )
 	log_string_plus( log_buf, LOG_COMM, LEVEL_GOD );
 	ruser[0] = '\0';
     }
-    closed( d->auth_fd );
+    close( d->auth_fd );
     if ( d->auth_fd == maxdesc )
       --maxdesc; 
     d->auth_inc = 0;

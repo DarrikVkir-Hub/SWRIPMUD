@@ -986,17 +986,6 @@ OthersNoArg $n eye's roll back in his head and $e starts to drool.~
 End
 
 #SOCIAL
-Name        kirnan~
-CharNoArg   When was the last time you felt safe?~
-OthersNoArg $n cowers as if the Dark Jedi Master Kirnan were chasing them!~
-CharFound   You gape at $N as if $E were Dark Jedi Master Kirnan himself!~
-OthersFound $n gapes at $N as if $E were Dark Jedi Master Kirnan himself!~
-VictFound   $n gapes at you as if you were the Dark Jedi Master Kirnan!~
-CharAuto    You do your best impersonation of Dark Jedi Master Kirnan.~
-OthersAuto  $n struts around, pretending to be Dark Jedi Master Kirnan.~
-End
-
-#SOCIAL
 Name        kiss~
 CharNoArg   Isn't there someone you want to kiss?~
 CharFound   You kiss $M.~
@@ -1592,7 +1581,7 @@ End
 #SOCIAL
 Name        sigh~
 CharNoArg   You sigh.~
-OthersNoArg $n sighs.~
+OthersNoArg $n sighs softly.~
 CharFound   You sigh as you think of $M.~
 OthersFound $n sighs at the sight of $N.~
 VictFound   $n sighs as $e thinks of you.  Touching, huh?~

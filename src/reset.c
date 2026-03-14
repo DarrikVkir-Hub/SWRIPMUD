@@ -1,5 +1,8 @@
 /***************************************************************************
-*                           STAR WARS REALITY 1.0                          *
+*                   Star Wars: Rise in Power MUD Codebase                  *
+*--------------------------------------------------------------------------*
+* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
+* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -380,9 +383,9 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
   argument = one_argument(argument, arg);
   if ( !*arg || !str_cmp(arg, "?") )
   {
-    const char *nm = (ch->substate == SUB_REPEATCMD ? "" : (aRoom ? "rreset "
+    char *nm = (ch->substate == SUB_REPEATCMD ? "" : (aRoom ? "rreset "
     		: "reset "));
-    const char *rn = (aRoom ? "" : " [room#]");
+    char *rn = (aRoom ? "" : " [room#]");
     ch_printf(ch, "Syntax: %s<list|edit|delete|add|insert|place%s>\n\r",
         nm, (aRoom ? "" : "|area"));
     ch_printf( ch, "Syntax: %sremove <#>\n\r", nm );
@@ -977,7 +980,7 @@ void do_reset( CHAR_DATA *ch, char *argument )
   parg = one_argument(argument, arg);
   if ( ch->substate == SUB_REPEATCMD )
   {
-    pArea = (AREA_DATA *) ch->dest_buf;
+    pArea = ch->dest_buf;
     if ( pArea && pArea != ch->pcdata->area && pArea != ch->in_room->area )
     {
       AREA_DATA *tmp;
@@ -1045,7 +1048,7 @@ void do_rreset( CHAR_DATA *ch, char *argument )
   
   if ( ch->substate == SUB_REPEATCMD )
   {
-    pRoom = (ROOM_INDEX_DATA *) ch->dest_buf;
+    pRoom = ch->dest_buf;
     if ( !pRoom )
     {
       send_to_char( "Your room pointer got lost.  Reset mode off.\n\r", ch);
@@ -1087,12 +1090,7 @@ void add_obj_reset( AREA_DATA *pArea, char cm, OBJ_DATA *obj, int v2, int v3 )
   if ( cm == 'P' )
     iNest++;
   for ( inobj = obj->first_content; inobj; inobj = inobj->next_content )
-  {
-    if ( inobj && inobj->pIndexData )
-      add_obj_reset( pArea, 'P', inobj, 1, inobj->pIndexData->vnum );
-    else
-      add_obj_reset( pArea, 'P', inobj, 1, 0 );
-  }
+    add_obj_reset( pArea, 'P', inobj, 1, 0 );
   if ( cm == 'P' )
     iNest--;
   return;
@@ -1304,11 +1302,11 @@ void reset_area( AREA_DATA *pArea )
       if ( !(pMobIndex = get_mob_index(pReset->arg1)) )
       {
         bug( "%s: Reset_area: 'M': bad mob vnum %d.", pArea->filename, pReset->arg1 );
-        if( !bootup )
-        {
-         UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-         DISPOSE( pReset );
-        }
+       if( !bootup )
+       {
+        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+        DISPOSE( pReset );
+       }
         continue;
       }
       if ( !(pRoomIndex = get_room_index(pReset->arg3)) )
@@ -1676,9 +1674,6 @@ void reset_area( AREA_DATA *pArea )
       break;
     }
   }
-  
-//fold_area( pArea, pArea->filename, FALSE );
-  
   return;
 }
 

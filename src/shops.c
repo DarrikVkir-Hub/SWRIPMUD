@@ -1,5 +1,8 @@
 /***************************************************************************
-*                           STAR WARS REALITY 1.0                          *
+*                   Star Wars: Rise in Power MUD Codebase                  *
+*--------------------------------------------------------------------------*
+* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
+* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -27,7 +30,7 @@
 #include <sys/stat.h>
 #include "mud.h"
 
-#define VENDOR_FEE  .05 /*fee vendor charges, taken out of all goods with teh getcredits command*/
+#define VENDOR_FEE  .05 /*fee vendor charges, taken out of all gode with teh GETGOLD command*/
 
 #define COST_EQUATION  (int) (cost*cost_equation( obj ))
 
@@ -210,53 +213,6 @@ int get_cost( CHAR_DATA *ch, CHAR_DATA *keeper, OBJ_DATA *obj, bool fBuy )
     if ( !obj || ( pShop = keeper->pIndexData->pShop ) == NULL )
 	return 0;
 
-    if( obj->item_type == ITEM_FIGHTERCOMP || obj->item_type == ITEM_MIDCOMP || obj->item_type == ITEM_CAPITALCOMP )
-    {
-      int costunit;
-      
-      switch ( obj->value[1] )
-      {
-      	case MOD_HYPERSPEED: costunit = 1000; break;
-      	case MOD_REALSPEED: costunit = 500; break;
-      	case MOD_LASER: costunit = 10000; break;
-      	case MOD_ION: costunit = 12500; break;
-      	case MOD_MAXSHIELD: costunit = 1000; break;
-      	case MOD_ENERGY: costunit = 10; break;
-      	case MOD_LAUNCHER: costunit = 20000; break;
-      	case MOD_TRACTORBEAM: costunit = 2500; break;
-      	case MOD_COMM: costunit = 75; break;
-      	case MOD_SENSOR: costunit = 125; break;
-      	case MOD_ASTRO_ARRAY: costunit = 125; break;
-      	case MOD_DEFENSELAUNCHER: costunit = 10000; break;
-      	case MOD_MANUEVER: costunit = 1000; break;
-      	case MOD_HULL: costunit = 200; break;
-      	case MOD_MISSILE: costunit = 1000; break;
-      	case MOD_TORPEDO: costunit = 1600; break;
-      	case MOD_ROCKET: costunit = 2000; break;
-      	case MOD_CHAFF: costunit = 400; break;
-      	case MOD_GRAVITY_PROJ: costunit = 1000; break;
-      	case MOD_TURRET: costunit = 100000; break;
-      	case MOD_CARGO: costunit = 1; break;
-      	default: costunit = 100000; break;
-      }
-      
-      if( obj->item_type == ITEM_CAPITALCOMP )
-      {
-      	if ( obj->value[1] == MOD_MAXSHIELD )
-      	  costunit *= 5;
-        costunit *= 2;
-      }
-        
-      cost = obj->value[3] * costunit;
-      if( !(obj->value[3]) )
-        cost += obj->value[2] * costunit;
-	            	
-      return cost;
-      
-    }
-
-    cost = obj->cost;
-
     if ( ( ch->gold + (IS_NPC(ch) ? 0 : ch->pcdata->bank) ) > (ch->top_level * 1000) )
 	richcustomer = TRUE;
     else
@@ -264,53 +220,52 @@ int get_cost( CHAR_DATA *ch, CHAR_DATA *keeper, OBJ_DATA *obj, bool fBuy )
 
     if ( fBuy )
     {
-    	    cost = (int) (cost * (80 + UMIN(ch->top_level, LEVEL_AVATAR))) / 100;
+	cost = (int) (cost * (80 + UMIN(ch->top_level, LEVEL_AVATAR))) / 100;
 
-    	    profitmod = 13 - get_curr_cha(ch) + (richcustomer ? 15 : 0)
-	    	      + ((URANGE(5,ch->top_level,LEVEL_AVATAR)-20)/2);
-	        cost = (int) (obj->cost
-	             * UMAX( (pShop->profit_sell+1), pShop->profit_buy+profitmod ) )
-	            / 100;
-    } else {
-	    OBJ_DATA *obj2;
-	    int itype;
+	profitmod = 13 - get_curr_cha(ch) + (richcustomer ? 15 : 0)
+		  + ((URANGE(5,ch->top_level,LEVEL_AVATAR)-20)/2);
+	cost = (int) (obj->cost
+	     * UMAX( (pShop->profit_sell+1), pShop->profit_buy+profitmod ) )
+	     / 100;
+    }
+    else
+    {
+	OBJ_DATA *obj2;
+	int itype;
 
-	    profitmod = get_curr_cha(ch) - 13 - (richcustomer ? 15 : 0);
-	    cost = 0;
-	    for ( itype = 0; itype < MAX_TRADE; itype++ )
+	profitmod = get_curr_cha(ch) - 13 - (richcustomer ? 15 : 0);
+	cost = 0;
+	for ( itype = 0; itype < MAX_TRADE; itype++ )
+	{
+	    if ( obj->item_type == pShop->buy_type[itype] )
 	    {
-	        if ( obj->item_type == pShop->buy_type[itype] )
-	        {
-		            cost = (int) (obj->cost
-		            * UMIN( (pShop->profit_buy-1),
-			        pShop->profit_sell+profitmod) ) / 100;
-		            break;
-	        }
+		cost = (int) (obj->cost
+		     * UMIN( (pShop->profit_buy-1),
+			      pShop->profit_sell+profitmod) ) / 100;
+		break;
 	    }
-
-            for ( obj2 = keeper->first_carrying; obj2; obj2 = obj2->next_content )
-    	    {
-	            if ( obj->pIndexData == obj2->pIndexData )
-    	        {
-    		        if( obj->item_type != ITEM_SPICE )
-    		          cost /= (obj2->count+1);
-	    	        break;
-	            }
-	        }
+	}
+        for ( obj2 = keeper->first_carrying; obj2; obj2 = obj2->next_content )
+	{
+	    if ( obj->pIndexData == obj2->pIndexData )
+	    {
+		cost /= (obj2->count+1);
+		break;
+	    }
+	}
     
-            cost = UMIN( cost , 2500 );
+        cost = UMIN( cost , 2500 );
+
     }
 
-
-    if (obj->item_type != ITEM_CARGO && obj->item_type != ITEM_SPICE ) {
-        if( cost > 0 )
-        {
-            cost = COST_EQUATION;
-            if( cost <= 0 )
-            cost = 1;
-        }
+    if( cost > 0 )
+    {
+      cost = COST_EQUATION;
+      if( cost <= 0 )
+        cost = 1;
     }
       
+
     if ( obj->item_type == ITEM_ARMOR )
       cost = (int) (cost * (obj->value[0]+1) / (obj->value[1]+1) );
     if ( obj->item_type == ITEM_WEAPON )
@@ -556,37 +511,7 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	    ch->reply = keeper;
 	    return;
 	}
-
-    /* Check local supply for availability
-     * -Aran
-     */
-    if( obj->item_type == ITEM_CARGO ) {
-        /* Cargo type */
-        int v0 = obj->value[0];
-            
-        /* Look at 10% of daily net produce */
-        int consume = 36 * ch->in_room->area->depletion[v0];
-        int produce = 36 * ch->in_room->area->production[v0];
-
-        /* Change in supply over the next 10% of the day */
-        int supply = produce - consume;
-
-        /* Change in suplpy if we sell the cargo */
-        supply = supply - obj->value[1];
-
-        /* Don't sell if change drops area to less than 75% of current */
-        if ((ch->in_room->area->supply[v0] + supply) <
-                (int)(0.75f * (float)ch->in_room->area->supply[v0])) {
-            interpret( keeper, "mutter" );
-            act( AT_TELL, "$n tells you 'Our local supply is running low. "
-                          "Come back when we have more to sell.'",
-                          keeper, NULL, ch, TO_VICT);
-            ch->reply = keeper;
-            return;
-        }
-    }
-
-    
+	
 	if ( ch->gold < cost )
 	{
 	    act( AT_TELL, "$n tells you 'You can't afford to buy $p.'",
@@ -617,12 +542,10 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 
-        separate_obj( obj );
-
 	if ( noi == 1 )
 	{
-//	    if ( !IS_OBJ_STAT( obj, ITEM_INVENTORY ) || ( keeper->home != NULL ) )  
-//            separate_obj( obj );
+	    if ( !IS_OBJ_STAT( obj, ITEM_INVENTORY ) || ( keeper->home != NULL ) )  
+	       separate_obj( obj );
 	    act( AT_ACTION, "$n buys $p.", ch, obj, NULL, TO_ROOM );
     	    act( AT_ACTION, "You buy $p.", ch, obj, NULL, TO_CHAR );
 	}
@@ -649,19 +572,12 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	    keeper->gold = maxgold/2;
 	    act( AT_ACTION, "$n puts some credits into a large safe.", keeper, NULL, NULL, TO_ROOM );
 	}
-	
-	ch->in_room->area->supply[obj->value[0]] -= obj->value[1]*noi;
 
 	if ( IS_OBJ_STAT( obj, ITEM_INVENTORY ) && ( keeper->home == NULL ) )
 	{
 	    OBJ_DATA *buy_obj, *bag;
 
 	    buy_obj = create_object( obj->pIndexData, obj->level );
-	    if ( obj->count > 1 )
-	    {
-	      obj->pIndexData->count -= ( obj->count - 1 );
-	      obj->count = 1;
-	    }
 
 	    /*
 	     * Due to grouped objects and carry limitations in SMAUG
@@ -699,8 +615,6 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	}
         else
 	{
-	    separate_obj( obj );
-	    
 	    obj_from_char( obj );
 	    obj_to_char( obj, ch );
 
@@ -784,35 +698,8 @@ void do_list( CHAR_DATA *ch, char *argument )
 		    found = TRUE;
 		    send_to_char( "[Price] {ref} Item\n\r", ch );
 		}
-		if ( obj->item_type == ITEM_FIGHTERCOMP )
-		{
-		  ch_printf( ch, "[%5d] {%3d} %s (Fighter)\n\r                %s Mod: %d Size: %d Cond: %d%%.\n\r",
-		  cost, oref, capitalize( obj->short_descr ),
-		  show_mod_type2( obj->value[1] ),
-          obj->value[3], obj->value[2], obj->value[0] );
-          continue;
-        }
-
-        if ( obj->item_type == ITEM_MIDCOMP )
-        {
-		  ch_printf( ch, "[%5d] {%3d} %s (Midsize)\n\r                %s Mod: %d Size: %d Cond: %d%%.\n\r",
-		  cost, oref, capitalize( obj->short_descr ),
-		  show_mod_type2( obj->value[1] ),
-          obj->value[3], obj->value[2], obj->value[0] );
-          continue;
-        }
-
-        if ( obj->item_type == ITEM_CAPITALCOMP )
-        {
-		  ch_printf( ch, "[%5d] {%3d} %s (Capital)\n\r                %s Mod: %d Size: %d Cond: %d%%.\n\r",
-		  cost, oref, capitalize( obj->short_descr ),
-		  show_mod_type2( obj->value[1] ),
-          obj->value[3], obj->value[2], obj->value[0] );
-          continue;
-        }
-
-        ch_printf( ch, "[%5d] {%3d} %s%s.\n\r",
-          cost, oref, capitalize( obj->short_descr ),
+		ch_printf( ch, "[%5d] {%3d} %s%s.\n\r",
+		    cost, oref, capitalize( obj->short_descr ),
 		    IS_SET(obj->extra_flags, ITEM_HUTT_SIZE) ? " (hutt size)" :
 		    ( IS_SET(obj->extra_flags, ITEM_LARGE_SIZE) ? " (large)" :
 		    ( IS_SET(obj->extra_flags, ITEM_HUMAN_SIZE) ? " (medium)" :
@@ -893,7 +780,7 @@ void do_sell( CHAR_DATA *ch, char *argument )
 	act( AT_ACTION, "$n can not afford $p right now.", keeper, obj, ch, TO_VICT );
 	return;
     }
-   
+              
     separate_obj( obj );
     act( AT_ACTION, "$n sells $p.", ch, obj, NULL, TO_ROOM );
     sprintf( buf, "You sell $p for %d credit%s.",
@@ -902,17 +789,9 @@ void do_sell( CHAR_DATA *ch, char *argument )
     ch->gold     += cost;
     keeper->gold -= cost;
     if ( spice )
-      boost_economy( ch->in_room->area, (int) ( cost*1.5 ) );
+      boost_economy( ch->in_room->area, cost*1.5);
     if ( keeper->gold < 0 )
 	keeper->gold = 0;
-
-    /* Modify area supply after selling cargo
-     * -Aran
-     */
-    if( obj->item_type == ITEM_CARGO ) {
-            int v0 = obj->value[0];
-            ch->in_room->area->supply[v0] += obj->value[1];
-    }
 
     if ( obj->item_type == ITEM_TRASH )
 	extract_obj( obj );
@@ -1127,10 +1006,10 @@ void appraise_all( CHAR_DATA *ch, CHAR_DATA *keeper, char *fixstr )
         && ( obj->item_type == ITEM_ARMOR
         ||   obj->item_type == ITEM_WEAPON
         ||   obj->item_type == ITEM_DEVICE ) )
-        {
-
+        
+	{
             if ( !can_drop_obj( ch, obj ) )
-            ch_printf( ch, "You can't let go of %s.\n\r", obj->name );
+              ch_printf( ch, "You can't let go of %s.\n\r", obj->name );
             else if ( ( cost = get_repaircost( keeper, obj ) ) < 0 )
             {
                if (cost != -2)
@@ -1394,7 +1273,7 @@ void do_shopset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "buy" ) )
     {
-	if ( value <= (shop->profit_sell) || value > 1000 )
+	if ( value <= (shop->profit_sell+5) || value > 1000 )
 	{
 	    send_to_char( "Out of range.\n\r", ch );
 	    return;
@@ -1406,7 +1285,7 @@ void do_shopset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "sell" ) )
     {
-	if ( value < 0 || value >= (shop->profit_buy) )
+	if ( value < 0 || value >= (shop->profit_buy-5) )
 	{
 	    send_to_char( "Out of range.\n\r", ch );
 	    return;
@@ -2088,7 +1967,7 @@ return;
 }
 
 gold = vendor->gold;
-gold -= (int) (gold * VENDOR_FEE);
+gold -= (gold * VENDOR_FEE);
 if( vendor->in_room && vendor->in_room->area )
   boost_economy( vendor->in_room->area, vendor->gold);
 vendor->gold = 0;
@@ -2096,8 +1975,6 @@ ch->gold += gold;
 
 send_to_char_color ("&GYour vendor gladly hands over his earnings minus a small fee of course..\n\r",ch);
 act( AT_ACTION, "$n hands over some money.\n\r", vendor, NULL, NULL, TO_ROOM );
-
-save_vendor(vendor);
 }
 
 
@@ -2128,7 +2005,7 @@ CHAR_DATA *  fread_vendor( FILE *fp )
 {
   CHAR_DATA *mob = NULL;
 
-  const char *word;
+  char *word;
   bool fMatch;
   int inroom = 0;
   ROOM_INDEX_DATA *pRoomIndex = NULL;

@@ -1,5 +1,8 @@
 /***************************************************************************
-*                           STAR WARS REALITY 1.0                          *
+*                   Star Wars: Rise in Power MUD Codebase                  *
+*--------------------------------------------------------------------------*
+* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
+* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -29,9 +32,6 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdarg.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-
 #include "mud.h"
 #ifdef DNS_SLAVE /* DNS Slave stuff */
 #include "dns_slave.h"
@@ -56,19 +56,7 @@ const	char	echo_off_str	[] = { IAC, WILL, TELOPT_ECHO, '\0' };
 const	char	echo_on_str	[] = { IAC, WONT, TELOPT_ECHO, '\0' };
 const	char 	go_ahead_str	[] = { IAC, GA, '\0' };
 
-#ifdef MCCP
-#define TELOPT_COMPRESS 85
-#define TELOPT_COMPRESS2 86
-const   char    eor_on_str      [] = { IAC, WILL, TELOPT_EOR, '\0' };
-const   char    compress_on_str [] = { IAC, WILL, TELOPT_COMPRESS, '\0' };
-const   char    compress2_on_str [] = { IAC, WILL, TELOPT_COMPRESS2, '\0' };
-
-bool    compressStart   args( ( DESCRIPTOR_DATA *d, unsigned char telopt ) );
-bool    compressEnd     args( ( DESCRIPTOR_DATA *d ) );
-#endif
-
 bool bootup = FALSE;
-
 void    send_auth args( ( struct descriptor_data *d ) );
 void    read_auth args( ( struct descriptor_data *d ) );
 void    start_auth args( ( struct descriptor_data *d ) );
@@ -116,6 +104,7 @@ void	game_loop		args( ( ) );
 int	init_socket		args( ( int port ) );
 void	new_descriptor		args( ( int new_desc ) );
 bool	read_from_descriptor	args( ( DESCRIPTOR_DATA *d ) );
+bool	write_to_descriptor	args( ( int desc, char *txt, int length ) );
 
 
 /*
@@ -142,14 +131,12 @@ bool	pager_output		args( ( DESCRIPTOR_DATA *d ) );
 
 
 void	mail_count		args( ( CHAR_DATA *ch ) );
-void    cron();
+
 
 
 int main( int argc, char **argv )
 {
     struct timeval now_time;
-    extern time_t new_boot_time_t;
-    
     int port;
 
     /*
@@ -178,10 +165,10 @@ int main( int argc, char **argv )
      * Init boot time.
      */
     set_boot_time = &set_boot_time_struct;
-/*  set_boot_time->hour   = 6;
+  /*  set_boot_time->hour   = 6;
     set_boot_time->min    = 0;
     set_boot_time->sec    = 0;*/
-    set_boot_time->manual = 1;
+    set_boot_time->manual = 0;
     
     new_boot_time = update_time(localtime(&current_time));
     /* Copies *new_boot_time to new_boot_struct, and then points
@@ -190,7 +177,7 @@ int main( int argc, char **argv )
     new_boot_time = &new_boot_struct;
     new_boot_time->tm_mday += 1;
     if(new_boot_time->tm_hour > 12)
-      new_boot_time->tm_mday += 1;
+    new_boot_time->tm_mday += 1;
     new_boot_time->tm_sec = 0;
     new_boot_time->tm_min = 0;
     new_boot_time->tm_hour = 6;
@@ -199,8 +186,6 @@ int main( int argc, char **argv )
     new_boot_time = update_time(new_boot_time);
     new_boot_struct = *new_boot_time;
     new_boot_time = &new_boot_struct;
-    reboot_check(mktime(new_boot_time));
-    new_boot_time_t = mktime(new_boot_time);
 
     /* Set reboot time string for do_time */
     get_reboot_string();
@@ -266,10 +251,6 @@ int main( int argc, char **argv )
     return 0;
 }
 
-int closed( int d )
-{
-  return close(d);
-}
 
 int init_socket( int port )
 {
@@ -452,16 +433,13 @@ void game_loop( )
     struct timeval	  last_time;
     char cmdline[MAX_INPUT_LENGTH];
     DESCRIPTOR_DATA *d;
-//  AREA_DATA *pArea;
-
 /*  time_t	last_check = 0;  */
 
     signal( SIGPIPE, SIG_IGN );
-    signal( SIGALRM, (void (*) (int) )caught_alarm );
+    signal( SIGALRM, caught_alarm );
     /* signal( SIGSEGV, SegVio ); */
     gettimeofday( &last_time, NULL );
     current_time = (time_t) last_time.tv_sec;
-    
 
     /* Main loop */
     while ( !mud_down )
@@ -470,7 +448,6 @@ void game_loop( )
 	accept_new( control2 );
 	accept_new( conclient);
 	accept_new( conjava  );
-        cron();
 	/*
 	 * Kick out descriptors with raised exceptions
 	 * or have been idle, then check for input.
@@ -707,13 +684,6 @@ void game_loop( )
 	}
 	*/
     }
-    
-/*  for ( pArea = first_area; pArea; pArea = pArea->next )
-    {
-      fold_area( pArea, pArea->filename, FALSE );
-    }
-*/
-    
     return;
 }
 
@@ -737,7 +707,7 @@ void new_descriptor( int new_desc )
       return;
     }
     set_alarm( 20 );
-    if ( ( desc = accept( new_desc, (struct sockaddr *) &sock, (socklen_t *)&size) ) < 0 )
+    if ( ( desc = accept( new_desc, (struct sockaddr *) &sock, &size) ) < 0 )
     {
 	perror( "New_descriptor: accept");
 /*	sprintf(bugbuf, "[*****] BUG: New_descriptor: accept");
@@ -785,44 +755,19 @@ void new_descriptor( int new_desc )
     CREATE( dnew->outbuf, char, dnew->outsize );
 
     strcpy( buf, inet_ntoa( sock.sin_addr ) );
+    sprintf( log_buf, "Sock.sinaddr:  %s, port %hd.",
+		buf, dnew->port );
+    log_string_plus( log_buf, LOG_COMM, sysdata.log_level );
 
     dnew->host = STRALLOC( buf );
 
-    //Watchdog code -- Kre
-    /*
-    if (strcmp(dnew->host,"127.0.0.1")==0) {
-      write_to_descriptor( desc,"@", 0 );
-      free_desc(dnew);
-      set_alarm( 0 );
-      return;
-    }
-    */
-
- /* Noresolve now does something useful - DV - Stuff for dontresolve. - Ulysses */
-     if ( !sysdata.NO_NAME_RESOLVING && !check_dont_resolve(buf) )
+     if ( !sysdata.NO_NAME_RESOLVING )
          from = gethostbyaddr( (char *) &sock.sin_addr,
      	  	sizeof(sock.sin_addr), AF_INET );
      else
          from = NULL;
     hostname = STRALLOC( (char *)( from ? from->h_name : "") );
-
-/*	
-    if ( !str_prefix( dnew->host, "172.1" ) )
-    {
-//    log_string_plus( "AOL Ping!", LOG_COMM, sysdata.log_level );
-      strcpy( buf, inet_ntoa( sock.sin_addr ) );
-      sprintf( log_buf, "Sock.sinaddr: AOL Ping! %s, port %hd.",
-		buf, dnew->port );
-      log_string_plus( log_buf, LOG_COMM, sysdata.log_level );
-      
-      write_to_descriptor( desc,
-      "AOL users have been banned from this site.  We apologize for the inconvenience.\n\r", 0 );
-      free_desc( dnew );
-      set_alarm( 0 );
-      return;
-    }
-*/
-
+	
     for ( pban = first_ban; pban; pban = pban->next )
     {
 	if ( 
@@ -840,11 +785,6 @@ void new_descriptor( int new_desc )
 	    return;
 	}
     }
-
-    strcpy( buf, inet_ntoa( sock.sin_addr ) );
-    sprintf( log_buf, "Sock.sinaddr:  %s, port %hd.",
-		buf, dnew->port );
-    log_string_plus( log_buf, LOG_COMM, sysdata.log_level );
 
     if ( !sysdata.NO_NAME_RESOLVING )
     {
@@ -867,12 +807,6 @@ void new_descriptor( int new_desc )
     }
 
     LINK( dnew, first_descriptor, last_descriptor, next, prev );
-
-#ifdef MCCP
-    write_to_buffer(dnew, eor_on_str, 0);
-    write_to_buffer(dnew, compress2_on_str, 0);
-    write_to_buffer(dnew, compress_on_str, 0);
-#endif
 
     /*
      * Send the greeting.
@@ -911,12 +845,6 @@ void free_desc( DESCRIPTOR_DATA *d )
     STRFREE( d->host );
     DISPOSE( d->outbuf );
     STRFREE( d->user );    /* identd */
-
-
-#ifdef MCCP
-    compressEnd(d);
-#endif
-
     if ( d->pagebuf )
 	DISPOSE( d->pagebuf );
     DISPOSE( d );
@@ -1043,10 +971,6 @@ void close_socket( DESCRIPTOR_DATA *dclose, bool force )
 	UNLINK( dclose, first_descriptor, last_descriptor, next, prev );
     }
 
-#ifdef MCCP
-    compressEnd(dclose);
-#endif
-
     if ( dclose->descriptor == maxdesc )
       --maxdesc;
     if ( dclose->auth_fd != -1 ) 
@@ -1056,14 +980,10 @@ void close_socket( DESCRIPTOR_DATA *dclose, bool force )
     return;
 }
 
-int readd( int handle, char *buffer, int length )
-{
-  return read( handle, buffer, length );
-}
 
 bool read_from_descriptor( DESCRIPTOR_DATA *d )
 {
-    unsigned int iStart;
+    int iStart;
 
     /* Hold horses if pending command already. */
     if ( d->incomm[0] != '\0' )
@@ -1118,9 +1038,6 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
 void read_from_buffer( DESCRIPTOR_DATA *d )
 {
     int i, j, k;
-#ifdef MCCP
-    int iac = 0;
-#endif
 
     /*
      * Hold horses if pending command already.
@@ -1159,43 +1076,6 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 	    d->inbuf[i+1] = '\0';
 	    break;
 	}
-
-#ifdef MCCP
-        if ( d->inbuf[i] == (signed char)IAC )
-            iac=1;
-        else if ( iac==1 && (d->inbuf[i] == (signed char)DO || d->inbuf[i] == (signed char)DONT) )
-            iac=2;
-        else if ( iac==2 )
-        {
-            iac = 0;
-//            char buf[MAX_STRING_LENGTH];
-            
-//            sprintf( buf, "C: %d, %c (%c %c) %d", d->compressing, d->inbuf[i-1], (signed char)DO, (signed char)DONT, d->inbuf[i] );
-//            bug( buf );
-            if ( d->inbuf[i] == (signed char)TELOPT_COMPRESS )
-            {
-                if ( d->inbuf[i-1] == (signed char)DO )
-                    compressStart(d, TELOPT_COMPRESS);
-                else if ( d->inbuf[i-1] == (signed char)DONT )
-                {
-                    if( d->compressing == TELOPT_COMPRESS )
-                      compressEnd(d);
-                }
-            }
-            else if ( d->inbuf[i] == (signed char)TELOPT_COMPRESS2 )
-            {
-                if ( d->inbuf[i-1] == (signed char)DO )
-                    compressStart(d, TELOPT_COMPRESS2);
-                else if ( d->inbuf[i-1] == (signed char)DONT )
-                {
-                    if( d->compressing == TELOPT_COMPRESS2 )
-                      compressEnd(d);
-                }
-            }
-        }
-        else
-#endif
-
 
 	if ( d->inbuf[i] == '\b' && k > 0 )
 	    --k;
@@ -1399,7 +1279,7 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
     /*
      * Expand the buffer as needed.
      */
-    while ( d->outtop + (unsigned int ) length >= d->outsize )
+    while ( d->outtop + length >= d->outsize )
     {
         if (d->outsize > 32000)
 	{
@@ -1422,89 +1302,6 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
     return;
 }
 
-
-#ifdef MCCP
-#define COMPRESS_BUF_SIZE 1024
-
-bool write_to_descriptor( int desc, char *txt, int length )
-{
-    DESCRIPTOR_DATA *d;
-    int     iStart = 0;
-    int     nWrite = 0;
-    int     nBlock;
-    int     len;
-
-    if (length <= 0)
-        length = strlen(txt);
-
-    for (d = first_descriptor; d; d = d->next)
-        if (d->descriptor == desc)
-            break;
-
-    if ( !d )
-      return FALSE;
-
-    if (d->descriptor != desc)
-        d = NULL;
-
-    if (d && d->out_compress)
-    {
-        d->out_compress->next_in = (unsigned char *)txt;
-        d->out_compress->avail_in = length;
-
-        while (d->out_compress->avail_in)
-        {
-            d->out_compress->avail_out = COMPRESS_BUF_SIZE - (d->out_compress->next_out - d->out_compress_buf);
-
-            if (d->out_compress->avail_out)
-            {
-                int status = deflate(d->out_compress, Z_SYNC_FLUSH);
-
-                if (status != Z_OK)
-                    return FALSE;
-            }
-
-            len = d->out_compress->next_out - d->out_compress_buf;
-            if (len > 0)
-            {
-                for (iStart = 0; iStart < len; iStart += nWrite)
-                {
-                    nBlock = UMIN (len - iStart, 4096);
-                    if ((nWrite = write(d->descriptor, d->out_compress_buf + iStart, nBlock)) < 0)
-                    {
-                        perror( "Write_to_descriptor: compressed" );
-                        return FALSE;
-                    }
-
-                    if (!nWrite)
-                        break;
-                }
-
-                if (!iStart)
-                    break;
-
-                if (iStart < len)
-                    memmove(d->out_compress_buf, d->out_compress_buf+iStart, len - iStart);
-
-                d->out_compress->next_out = d->out_compress_buf + len - iStart;
-            }
-        }
-        return TRUE;
-    }
-
-    for (iStart = 0; iStart < length; iStart += nWrite)
-    {
-        nBlock = UMIN (length - iStart, 4096);
-        if ((nWrite = write(desc, txt + iStart, nBlock)) < 0)
-        {
-            perror( "Write_to_descriptor" );
-            return FALSE;
-        }
-    }
-
-    return TRUE;
-}
-#else
 
 /*
  * Lowest level output function.
@@ -1531,7 +1328,7 @@ bool write_to_descriptor( int desc, char *txt, int length )
     return TRUE;
 }
 
-#endif
+
 
 void show_title( DESCRIPTOR_DATA *d )
 {
@@ -1916,13 +1713,15 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 		break;
 	    }
 	 }
-    if ( iRace == RACE_ASSASSIN_DROID || iRace == RACE_YEVETHA || iRace == RACE_TOGARIAN )
+
+/*
+    if ( iRace == RACE_ASSASSIN_DROID || iRace == RACE_YEVETHA || iRace == RACE_COYNITE || iRace == RACE_TOGARIAN)
 	{
 	    write_to_buffer( d,
 		"Do to too many people choosing this race, it now must be applied for.\n\rWhat IS your race? ", 0 );
 	    return;
 	}
-    
+*/    
 
     if ( iRace == MAX_RACE || iRace == RACE_GOD
     ||  !race_table[iRace].race_name || race_table[iRace].race_name[0] == '\0')
@@ -1977,7 +1776,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	    }
 	}
 
-    if ( iClass == MAX_ABILITY || iClass == 7 
+    if ( iClass == MAX_ABILITY || iClass == 7
     ||  !ability_name[iClass] || ability_name[iClass][0] == '\0')
 	{
 	    write_to_buffer( d,
@@ -2197,8 +1996,7 @@ case CON_GET_MSP:
 	    ch->perm_frc	 += race_table[ch->race].frc_plus;
             
        if ( ch->main_ability == FORCE_ABILITY )
-//         ch->perm_frc = URANGE( 1 , ch->perm_frc , 20 ); // Forcers always roll 25, per Sonja - DV 8/12/02
-	   ch->perm_frc = 5;
+         ch->perm_frc = URANGE( 1 , ch->perm_frc , 20 );
 	    else
 	       ch->perm_frc = URANGE( 0 , ch->perm_frc , 20 );
 	    /* Hunters do not recieve force */       
@@ -2355,7 +2153,7 @@ case CON_GET_MSP:
 	    
 	    for ( ship = first_ship; ship; ship = ship->next )
 	      if ( ch->in_room->vnum >= ship->firstroom && ch->in_room->vnum <= ship->lastroom )
-                if ( ship->shipclass != SHIP_PLATFORM || ship->spaceobject ) 
+                if ( ship->class != SHIP_PLATFORM || ship->spaceobject ) 
                   char_to_room( ch, ch->in_room );
 	}
 	else
@@ -2808,7 +2606,7 @@ void write_to_pager( DESCRIPTOR_DATA *d, const char *txt, int length )
     d->pagebuf[1] = '\r';
     d->pagetop = 2;
   }
-  while ( d->pagetop + (unsigned int) length >= d->pagesize )
+  while ( d->pagetop + length >= d->pagesize )
   {
     if ( d->pagesize > 32000 )
     {
@@ -3043,8 +2841,6 @@ char *act_string(const char *format, CHAR_DATA *to, CHAR_DATA *ch,
 		else
 		  i = he_she [URANGE(0, vch->sex, 2)];
 		break;
-      case 'l': i = lang_string(ch, to);
-      		break;
       case 'm': if (ch->sex > 2 || ch->sex < 0)
 		{
 		  bug("act_string: player %s has sex set at %d!", ch->name,
@@ -3284,7 +3080,7 @@ char *default_prompt( CHAR_DATA *ch )
 
 int getcolor(char clr)
 {
-  static const char colors[17] = "xrgObpcwzRGYBPCW";
+  static const char colors[16] = "xrgObpcwzRGYBPCW";
   int r;
   
   for ( r = 0; r < 16; r++ )
@@ -3441,7 +3237,7 @@ void display_prompt( DESCRIPTOR_DATA *d )
 	     : (IS_SET(ch->act, PLR_WIZINVIS) ? ch->pcdata->wizinvis : 0));
 	break;
       }
-      if ( stat != (int) 0x80000000 )
+      if ( stat != 0x80000000 )
 	sprintf(pbuf, "%d", stat);
       pbuf += strlen(pbuf);
       break;
@@ -3643,258 +3439,3 @@ bool pager_output( DESCRIPTOR_DATA *d )
   }
   return ret;
 }
-
-void whocount(struct tm tmdata)
-{
-  char datebuf[32];
-  char timebuf[32];
-  char countbuf[8];
-  int player_count = 0;
-  int imm_count = 0;
-  int count = 0;
-  int x;
-  DESCRIPTOR_DATA *d;
-
-  count = 0;
-  sprintf(datebuf,"%d/%d/%d",
-	      tmdata.tm_mon+1, tmdata.tm_mday, 1900+tmdata.tm_year);
-  sprintf(timebuf,"%d:%d",tmdata.tm_hour, tmdata.tm_min);
-  for ( d = last_descriptor; d; d = d->prev ) {
-    count++;
-    if (d->character) {
-      if (d->character->top_level > 100)
-        imm_count++;
-      else
-        player_count++;
-    }
-  }
-  sprintf(countbuf,"%d %d %d",player_count,imm_count,count);
-  if (fork() == 0) { 
-    x = execl("../bin/scripts/whocount.pl","../bin/scripts/whocount.pl",datebuf,timebuf,countbuf,NULL);
-    exit(0);
-  }
-}
-
-void cron()
-{
-  struct tm lastTM;
-  struct tm thisTM;
-  static time_t lastCheck = 0;
-  time_t thisCheck;
-  int status;
-  if (lastCheck == 0) {
-    lastCheck = time(NULL);
-    return;
-  }
-  thisCheck = time(NULL);
-  //If it is only 60 seconds difference leave
-  
-  if (thisCheck-lastCheck< 60) 
-    return;
-
-  localtime_r(&thisCheck,&thisTM);
-  localtime_r(&lastCheck,&lastTM);
-  //Check the minute, range 0-59
-  //Enters once during the minute
-  if (thisTM.tm_min != lastTM.tm_min) {
-
-    //clean up dead children every 5 minutes
-    if (thisTM.tm_min % 5 == 0) {
-      while(waitpid(-1,&status,WNOHANG) >= 0);
-    }
-  }
-  //Check the hour, range 0-23 
-  //Enters once during the hour
-  if (thisTM.tm_hour != lastTM.tm_hour) {
-    
-    //Do this stuff every hour
-    whocount(thisTM);
-
-  }
-  //Check the day, range 0-31
-  //Enters once during the day
-  if (thisTM.tm_mday != lastTM.tm_mday) {
-  
-    //Do this stuff every day
-    if (fork() == 0) {
-      execl("../bin/scripts/daily.sh","../bin/scripts/daily.sh",NULL);
-      exit(0);
-    }
-
-  }
-  lastCheck = thisCheck;
-}
-
-
-#ifdef MCCP
-/*
- * Ported to SMAUG by Garil of DOTDII Mud
- * aka Jesse DeFer <dotd@dotd.com>  http://www.dotd.com
- *
- * revision 1: MCCP v1 support
- * revision 2: MCCP v2 support
- * revision 3: Correct MMCP v2 support
- * revision 4: clean up of write_to_descriptor() suggested by Noplex@CB
- *
- * See the web site below for more info.
- */
-
-/*
- * mccp.c - support functions for mccp (the Mud Client Compression Protocol)
- *
- * see http://homepages.ihug.co.nz/~icecube/compress/ and README.Rom24-mccp
- *
- * Copyright (c) 1999, Oliver Jowett <icecube@ihug.co.nz>.
- *
- * This code may be freely distributed and used if this copyright notice is
- * retained intact.
- */
-
-void *zlib_alloc(void *opaque, unsigned int items, unsigned int size)
-{
-    return calloc(items, size);
-}
-
-void zlib_free(void *opaque, void *address)
-{
-    DISPOSE(address);
-}
-
-bool process_compressed(DESCRIPTOR_DATA *d)
-{
-    int iStart = 0, nBlock, nWrite, len;
-
-    if (!d->out_compress)
-        return TRUE;
-
-    // Try to write out some data..
-    len = d->out_compress->next_out - d->out_compress_buf;
-
-    if (len > 0)
-    {
-        // we have some data to write
-        for (iStart = 0; iStart < len; iStart += nWrite)
-        {
-            nBlock = UMIN (len - iStart, 4096);
-            if ((nWrite = write(d->descriptor, d->out_compress_buf + iStart, nBlock)) < 0)
-            {
-                if (errno == EAGAIN ||
-                    errno == ENOSR)
-                    break;
-
-                return FALSE;
-            }
-
-            if (!nWrite)
-                break;
-        }
-
-        if (iStart)
-        {
-            // We wrote "iStart" bytes
-            if (iStart < len)
-                memmove(d->out_compress_buf, d->out_compress_buf+iStart, len - iStart);
-
-            d->out_compress->next_out = d->out_compress_buf + len - iStart;
-        }
-    }
-
-    return TRUE;
-}
-
-char enable_compress[] =
-{
-    IAC, SB, TELOPT_COMPRESS, WILL, SE, 0
-};
-char enable_compress2[] =
-{
-    IAC, SB, TELOPT_COMPRESS2, IAC, SE, 0
-};
-
-bool compressStart(DESCRIPTOR_DATA *d, unsigned char telopt)
-{
-    z_stream *s;
-
-    if (d->out_compress)
-        return TRUE;
-
-    bug("Starting compression for descriptor %d", d->descriptor);
-
-    CREATE(s, z_stream, 1);
-    CREATE(d->out_compress_buf, unsigned char, COMPRESS_BUF_SIZE);
-
-    s->next_in = NULL;
-    s->avail_in = 0;
-
-    s->next_out = d->out_compress_buf;
-    s->avail_out = COMPRESS_BUF_SIZE;
-
-    s->zalloc = zlib_alloc;
-    s->zfree  = zlib_free;
-    s->opaque = NULL;
-
-    if (deflateInit(s, 9) != Z_OK)
-    {
-        DISPOSE(d->out_compress_buf);
-        DISPOSE(s);
-        return FALSE;
-    }
-
-    if (telopt == TELOPT_COMPRESS)
-        write_to_descriptor(d->descriptor, enable_compress, 0);
-    else if (telopt == TELOPT_COMPRESS2)
-        write_to_descriptor(d->descriptor, enable_compress2, 0);
-    else
-        bug("compressStart: bad TELOPT passed");
-
-    d->compressing = telopt;
-    d->out_compress = s;
-
-    return TRUE;
-}
-
-bool compressEnd(DESCRIPTOR_DATA *d)
-{
-    unsigned char dummy[1];
-
-    if (!d->out_compress)
-        return TRUE;
-
-    bug("Stopping compression for descriptor %d", d->descriptor);
-
-    d->out_compress->avail_in = 0;
-    d->out_compress->next_in = dummy;
-
-    if (deflate(d->out_compress, Z_FINISH) != Z_STREAM_END)
-        return FALSE;
-
-    if (!process_compressed(d)) /* try to send any residual data */
-        return FALSE;
-
-    deflateEnd(d->out_compress);
-    DISPOSE(d->out_compress_buf);
-    DISPOSE(d->out_compress);
-    d->compressing = 0;
-
-    return TRUE;
-}
-
-void do_compress( CHAR_DATA *ch, char *argument )
-{
-    if (!ch->desc) {
-        send_to_char("What descriptor?!\n", ch);
-        return;
-    }
-
-    if (!ch->desc->out_compress) {
-        send_to_char("Initiating compression.\n\r", ch);
-        write_to_buffer( ch->desc, compress2_on_str, 0 );
-        write_to_buffer( ch->desc, compress_on_str, 0 );
-    } else {
-        send_to_char("Terminating compression.\n\r", ch);
-        compressEnd(ch->desc);
-    }
-
-}
-#endif
-

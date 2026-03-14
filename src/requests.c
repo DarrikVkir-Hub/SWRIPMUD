@@ -1,5 +1,8 @@
 /***************************************************************************
-*                           STAR WARS REALITY 1.0                          *
+*                   Star Wars: Rise in Power MUD Codebase                  *
+*--------------------------------------------------------------------------*
+* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
+* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -70,7 +73,7 @@ void check_requests( )
      {
        argument = strdup(buf);
        argument = one_argument( arg, argument );
-       if( !strcmp( arg, "showstat" ) )
+       if( strcmp( arg, "showstat" ) )
        	 do_showstatistic_web( NULL, argument );
      }
   }

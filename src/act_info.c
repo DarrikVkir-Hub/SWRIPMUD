@@ -1,5 +1,8 @@
 /***************************************************************************
-*                           STAR WARS REALITY 1.0                          *
+*                   Star Wars: Rise in Power MUD Codebase                  *
+*--------------------------------------------------------------------------*
+* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
+* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -351,7 +354,8 @@ void show_list_to_char( OBJ_DATA *list, CHAR_DATA *ch, bool fShort, bool fShowNo
 	for ( x = 0; x < tmp; x++ )
 	{
 	    prgpstrShow [nShow] = str_dup( halucinated_object(ms, fShort) );
-	    prgnShow	[nShow] = 1; 	    pitShow	[nShow] = number_range( ITEM_LIGHT, ITEM_BOOK );
+	    prgnShow	[nShow] = 1;
+	    pitShow	[nShow] = number_range( ITEM_LIGHT, ITEM_BOOK );
 	    nShow++;
 	}
     }
@@ -767,7 +771,7 @@ void show_char_to_char_1( CHAR_DATA *victim, CHAR_DATA *ch )
     act( AT_ACTION, "$n looks at $N.",  ch, NULL, victim, TO_NOTVICT );
     }
 
-    ch_printf( ch, "%s is a %s %s\n\r", PERS(victim, ch), get_sex( victim ), npc_race[victim->race] );
+    ch_printf( ch, "%s is a %s %s\n\r", victim->name, get_sex( victim ), npc_race[victim->race] );
 
     if ( victim->description[0] != '\0' )
     {
@@ -843,12 +847,8 @@ void show_char_to_char( CHAR_DATA *list, CHAR_DATA *ch )
 	}
 	else if ( rch->race == RACE_DEFEL )
 	{
-         if ( !IS_AFFECTED(rch, AFF_INVISIBLE)
-         &&   !IS_SET(rch->act, PLR_WIZINVIS) )
-         {
-           set_char_color( AT_BLOOD, ch );
-	   send_to_char( "You see a pair of red eyes staring back at you.\n\r", ch );	
-	 }
+	    set_char_color( AT_BLOOD, ch );
+	    send_to_char( "You see a pair of red eyes staring back at you.\n\r", ch );	
 	}
 	else if ( room_is_dark( ch->in_room )
 	&&        IS_AFFECTED(rch, AFF_INFRARED ) )
@@ -863,41 +863,18 @@ void show_char_to_char( CHAR_DATA *list, CHAR_DATA *ch )
 
 void show_ships_to_char( SHIP_DATA *ship, CHAR_DATA *ch )
 {
-    SHIP_DATA *rship = NULL;
-//  SHIP_DATA *nship=NULL;
+    SHIP_DATA *rship;
+    SHIP_DATA *nship=NULL;
 
-/*  for ( rship = ship; rship && rship != nship; rship = nship )
+    for ( rship = ship; rship; rship = nship )
     {
         ch_printf( ch , "&C%-35s     ", rship->name );  
-        if ( ( nship = rship->next_in_room ) !=NULL && rship != nship )
+        if ( ( nship = rship->next_in_room ) !=NULL )
         {
             ch_printf( ch , "%-35s", nship->name );  
             nship = nship->next_in_room;
-        }
-        if ( nship == rship )
-          break;
+        }   
         ch_printf( ch, "\n\r&w");
-    }
-*/
-
-/* Adjusted look to search through all ships and display if at the room.
-   Waste of CPU time, I know, but there is a bug in the next_in_room code I
-   Simply can not find - DV 2-15-04 */
-  for ( rship = first_ship; rship; rship = rship->next )
-    {
-      if ( rship->location == ch->in_room->vnum )
-      {
-        ch_printf( ch , "&C%-35s     ", rship->name );  
-        for ( rship = rship->next; rship; rship = rship->next )
-          if ( rship && (rship->location == ch->in_room->vnum) )
-	    break;
-
-          if ( rship )
-            ch_printf( ch , "%-35s", rship->name ); 
-        ch_printf( ch, "\n\r&w");
-      }
-        if ( !rship )
-          break; 
     }
 
     return;
@@ -1027,13 +1004,7 @@ void do_look ( CHAR_DATA *ch, char *argument )
 	|| ( !IS_NPC(ch) && !IS_SET(ch->act, PLR_BRIEF) ) )
 	    send_to_char( ch->in_room->description, ch );
  
-        if ( IS_SET( ch->in_room->room_flags, ROOM_CAN_LAND ) )
-          send_to_char( "&GYou can rent ships here. ( Type rent )&R&W\n\r", ch );
 	
-	if ( is_bus_stop( ch->in_room->vnum ) )
-	  send_to_char( "&GA Serin shuttle picks up passengers here. ( Type findserin )&R&W\n\r", ch );
-	    
-
 	if ( !IS_NPC(ch) && IS_SET(ch->act, PLR_AUTOEXIT) )
 	        do_exits( ch, "" );
 
@@ -1078,9 +1049,9 @@ void do_look ( CHAR_DATA *ch, char *argument )
                    {
                         if ( target != ship && target->spaceobject )
                         {
-                          if ( abs((int) ( target->vx - ship->vx )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+1) &&
-                          abs( (int) ( target->vy - ship->vy )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+1) &&
-                          abs( (int) ( target->vz - ship->vz )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+1) )
+                          if ( abs(target->vx - ship->vx) < 100*(ship->sensor+10)*((target->class == SHIP_DEBRIS ? 2 : target->class)+1) &&
+                          abs(target->vy - ship->vy) < 100*(ship->sensor+10)*((target->class == SHIP_DEBRIS ? 2 : target->class)+1) &&
+                          abs(target->vz - ship->vz) < 100*(ship->sensor+10)*((target->class == SHIP_DEBRIS ? 2 : target->class)+1) )
 
                             ch_printf(ch, "%s    %.0f %.0f %.0f\n\r",
                               target->name,
@@ -1089,26 +1060,26 @@ void do_look ( CHAR_DATA *ch, char *argument )
 			      (target->vz - ship->vz));
 
 
-                         else if ( abs( (int) ( target->vx - ship->vx )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+3) &&
-                         abs((int) ( target->vy - ship->vy )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+3) &&
-                         abs((int) ( target->vz - ship->vz )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+3) )
+                         else if ( abs(target->vx - ship->vx) < 100*(ship->sensor+10)*((target->class == SHIP_DEBRIS ? 2 : target->class)+3) &&
+                         abs(target->vy - ship->vy) < 100*(ship->sensor+10)*((target->class == SHIP_DEBRIS ? 2 : target->class)+3) &&
+                         abs(target->vz - ship->vz) < 100*(ship->sensor+10)*((target->class == SHIP_DEBRIS ? 2 : target->class)+3) )
                          {
-                           if ( target->shipclass == FIGHTER_SHIP )
+                           if ( target->class == FIGHTER_SHIP )
                             ch_printf(ch, "A small metallic mass    %.0f %.0f %.0f\n\r",
 			      (target->vx - ship->vx),
 			      (target->vy - ship->vy),
 			      (target->vz - ship->vz));
-                           if ( target->shipclass == MIDSIZE_SHIP )
+                           if ( target->class == MIDSIZE_SHIP )
                             ch_printf(ch, "A goodsize metallic mass    %.0f %.0f %.0f\n\r",
 			      (target->vx - ship->vx),
 			      (target->vy - ship->vy),
 			      (target->vz - ship->vz));
-                           if ( target->shipclass == SHIP_DEBRIS )
+                           if ( target->class == SHIP_DEBRIS )
                             ch_printf(ch, "scattered metallic reflections    %.0f %.0f %.0f\n\r",
 			      (target->vx - ship->vx),
 			      (target->vy - ship->vy),
 			      (target->vz - ship->vz));
-                           else if ( target->shipclass >= CAPITAL_SHIP )
+                           else if ( target->class >= CAPITAL_SHIP )
                             ch_printf(ch, "A huge metallic mass    %.0f %.0f %.0f\n\r",
 			      (target->vx - ship->vx),
 			      (target->vy - ship->vy),
@@ -2129,24 +2100,17 @@ void do_help( CHAR_DATA *ch, char *argument )
 {
     HELP_DATA *pHelp;
 
-    char nohelp[MAX_STRING_LENGTH];
-
-    strcpy(nohelp, argument); /* For Finding "needed" helpfiles */
-
-    if ( !argument || argument[0] == '\0')
-    {
-      do_help( ch, "help" );
-      return;
-    }
+        if ( !argument || argument[0] == '\0')
+        {
+          do_help( ch, "help" );
+          return;
+        }
 
     if ( (pHelp = get_help( ch, argument )) == NULL )
     {
 	//  Looks better printing out the missed argument before going to similar
         //  helpfiles. - Senir
         pager_printf( ch, "&C&wNo help on \'%s\' found.\n\r", argument );
-
-//      append_file( ch, HELP_FILE, nohelp );  // Records attempted helpfile
-
         similar_help_files(ch, argument);
 	return;
     }
@@ -2167,14 +2131,6 @@ void do_help( CHAR_DATA *ch, char *argument )
 	send_to_pager_color( pHelp->text+1, ch );
     else
 	send_to_pager_color( pHelp->text  , ch );
-
-/*    if( pHelp->timemoded )
-    {
-      send_to_pager_color( asctime("Last Modified: ", ch );
-      send_to_pager_color( asctime(pHelp->timemoded, ch );
-      send_to_pager( "\n\r", ch );
-    }
-*/
     return;
 }
 
@@ -2196,7 +2152,7 @@ void do_hedit( CHAR_DATA *ch, char *argument )
 	default:
 	  break;
 	case SUB_HELP_EDIT:
-	  if ( (pHelp = (HELP_DATA *) ch->dest_buf) == NULL )
+	  if ( (pHelp = ch->dest_buf) == NULL )
 	  {
 		bug( "hedit: sub_help_edit: NULL ch->dest_buf", 0 );
 		stop_editing( ch );
@@ -2216,7 +2172,8 @@ void do_hedit( CHAR_DATA *ch, char *argument )
 	{
 	    lev = number_argument( argument, argnew );
 	    argument = argnew;
-	} 	else
+	}
+	else
 */	    lev = get_trust(ch);
 	CREATE( pHelp, HELP_DATA, 1 );
 	pHelp->keyword = STRALLOC( strupper(argument) );
@@ -2297,7 +2254,8 @@ void do_hset( CHAR_DATA *ch, char *argument )
 	return;
     }
     if ( !str_cmp( arg1, "remove" ) )
-    { 	UNLINK( pHelp, first_help, last_help, next, prev );
+    {
+	UNLINK( pHelp, first_help, last_help, next, prev );
 	STRFREE( pHelp->text );
 	STRFREE( pHelp->keyword );
 	DISPOSE( pHelp );
@@ -2395,11 +2353,9 @@ void do_who( CHAR_DATA *ch, char *argument )
   int iLevelUpper;
   int nNumber;
   int nMatch;
-  int whocloakcount = 0;
   bool rgfRace[MAX_RACE];
   bool fRaceRestrict;
   bool fImmortalOnly;
-  bool fCompressOnly;
   bool fShowHomepage;
   bool fClanMatch; /* SB who clan */
   bool NullCh = FALSE;
@@ -2420,13 +2376,13 @@ void do_who( CHAR_DATA *ch, char *argument )
 
   /*
    * Set default arguments.
-   */ 
+   */
+
   iLevelLower    = 0;
   iLevelUpper    = MAX_LEVEL;
 
   fRaceRestrict  = FALSE;
   fImmortalOnly  = FALSE;
-  fCompressOnly  = FALSE;
   fShowHomepage  = FALSE;
   fClanMatch	   = FALSE; /* SB who clan  */
 
@@ -2464,7 +2420,8 @@ void do_who( CHAR_DATA *ch, char *argument )
           case 1: iLevelLower = atoi( arg ); break;
           case 2: iLevelUpper = atoi( arg ); break;
           default:
-            send_to_char( "Only two level numbers allowed.\n\r", ch );             return;
+            send_to_char( "Only two level numbers allowed.\n\r", ch );
+            return;
         }
       }
       else
@@ -2516,8 +2473,6 @@ void do_who( CHAR_DATA *ch, char *argument )
 
       if ( !str_cmp( arg, "imm" ) || !str_cmp( arg, "gods" ) )
         fImmortalOnly = TRUE;
-      else if ( !str_cmp ( arg, "compress" ) )
-        fCompressOnly = TRUE;
       else
       {
         if ( !str_cmp( arg, "www" ) )
@@ -2590,9 +2545,6 @@ void do_who( CHAR_DATA *ch, char *argument )
 	if ( wch->top_level < iLevelLower
 	||   wch->top_level > iLevelUpper
 	|| ( fImmortalOnly  && wch->top_level < LEVEL_IMMORTAL )
-#ifdef MCCP
-	|| ( fCompressOnly && !d->out_compress )
-#endif
 	|| ( fRaceRestrict && !rgfRace[wch->race] )
 	|| ( fClanMatch && ( pClan != wch->pcdata->clan ))  /* SB */ )
 		 continue;
@@ -2600,11 +2552,8 @@ void do_who( CHAR_DATA *ch, char *argument )
    /* added optional invisibility on the who list to players who want it.
       Darrik Vequir */
 
-   if ( (wch->pcdata->whoCloak == TRUE) && (ch->top_level < LEVEL_GREATER)) // Changed WC check for Greater, which was 107+ at this time. DV 5-3-04
-   {
-       whocloakcount++;
+   if ( (wch->pcdata->whoCloak == TRUE) && (ch->top_level < LEVEL_GOD))
        continue;
-   }
 
 	if ( fShowHomepage
 	&&   wch->pcdata->homepage
@@ -2621,7 +2570,7 @@ void do_who( CHAR_DATA *ch, char *argument )
 	  
 	race = race_text;
 
-        if (wch->perm_frc > 0 && (ch->top_level >= LEVEL_GREATER) && !IS_IMMORTAL(wch))
+        if (wch->perm_frc > 0 && (ch->top_level >= LEVEL_GOD) && !IS_IMMORTAL(wch))
         {
           if(wch->skill_level[FORCE_ABILITY] > 1)
             force_char = '*';
@@ -2799,13 +2748,7 @@ void do_who( CHAR_DATA *ch, char *argument )
     }
 
     set_char_color( AT_YELLOW, ch );
-    if ( whocloakcount && ch->top_level <= 6 )
-      ch_printf( ch, "%d player%s, %d who cloaked ( SEE HELP WHO CLOAK ).\n\r", nMatch, nMatch == 1 ? "" : "s", whocloakcount );
-    else if ( whocloakcount )
-      ch_printf( ch, "%d player%s, %d who cloaked.\n\r", nMatch, nMatch == 1 ? "" : "s", whocloakcount );
-    else
-      ch_printf( ch, "%d player%s.\n\r", nMatch, nMatch == 1 ? "" : "s" );
-
+    ch_printf( ch, "%d player%s.\n\r", nMatch, nMatch == 1 ? "" : "s" );
     return;
 }
 
@@ -2833,7 +2776,8 @@ void do_compare( CHAR_DATA *ch, char *argument )
 	send_to_char( "You do not have that item.\n\r", ch );
 	return;
     }
-     if ( arg2[0] == '\0' )
+
+    if ( arg2[0] == '\0' )
     {
 	for ( obj2 = ch->first_carrying; obj2; obj2 = obj2->next_content )
 	{
@@ -3480,7 +3424,6 @@ void do_commands( CHAR_DATA *ch, char *argument )
 	    for ( command = command_hash[hash]; command; command = command->next )
 		if ( command->level <  LEVEL_HERO
 		&&   command->level <= get_trust( ch )
-		&& ( command->name )
 		&&  !str_prefix(argument, command->name)
 		&&  (command->name[0] != 'm'
 		&&   command->name[1] != 'p') )
@@ -3545,16 +3488,17 @@ void do_channels( CHAR_DATA *ch, char *argument )
 
 	send_to_char( !IS_SET(ch->deaf, CHANNEL_QUEST)
 	    ? " +QUEST"
-	    : " -quest", 	    ch );
+	    : " -quest",
+	    ch );
 
 	send_to_char( !IS_SET( ch->deaf, CHANNEL_TELLS )
 	    ? " +TELLS"
 	    : " -tells",
 	    ch );
 
-        send_to_char( !IS_SET( ch->deaf, CHANNEL_VULGAR )
-            ? " +VULGAR"
-            : " -vulgar",
+        send_to_char( !IS_SET( ch->deaf, CHANNEL_WARTALK )
+            ? " +WARTALK"
+            : " -wartalk",
             ch );
 
 	if ( IS_HERO(ch) )
@@ -3632,10 +3576,6 @@ void do_channels( CHAR_DATA *ch, char *argument )
 	        ? " +COMM"
 	        : " -comm",
 	        ch );
-            send_to_char( !IS_SET(ch->deaf, CHANNEL_NEWBIEASST)
-	        ? " +NEWBIEASST"
-	        : " -newbieasst",
-	        ch );
 	}
 	send_to_char( ".\n\r", ch );
     }
@@ -3676,9 +3616,8 @@ void do_channels( CHAR_DATA *ch, char *argument )
 	else if ( !str_cmp( arg+1, "yell"     ) ) bit = CHANNEL_YELL;
 	else if ( !str_cmp( arg+1, "comm"     ) ) bit = CHANNEL_COMM;
 	else if ( !str_cmp( arg+1, "order"    ) ) bit = CHANNEL_ORDER;
-        else if ( !str_cmp( arg+1, "vulgar"  ) ) bit = CHANNEL_VULGAR;
+        else if ( !str_cmp( arg+1, "wartalk"  ) ) bit = CHANNEL_WARTALK;
         else if ( !str_cmp( arg+1, "arena"  ) ) bit = CHANNEL_ARENA;
-        else if ( !str_cmp( arg+1, "newbieasst"  ) ) bit = CHANNEL_NEWBIEASST;
 	else if ( !str_cmp( arg+1, "all"      ) ) ClearAll = TRUE;
 	else
 	{
@@ -3698,7 +3637,6 @@ void do_channels( CHAR_DATA *ch, char *argument )
             REMOVE_BIT (ch->deaf, CHANNEL_SHOUT);
             REMOVE_BIT (ch->deaf, CHANNEL_YELL);
             REMOVE_BIT (ch->deaf, CHANNEL_ARENA);
-            REMOVE_BIT (ch->deaf, CHANNEL_NEWBIEASST);
 
        /*     if (ch->pcdata->clan)
               REMOVE_BIT (ch->deaf, CHANNEL_CLAN);
@@ -3904,7 +3842,8 @@ void do_config( CHAR_DATA *ch, char *argument )
 
 	send_to_char( !IS_SET(ch->act, PLR_LITTERBUG)
 	    ? ""
-	    : "[-litter  ] A convicted litterbug. You cannot drop anything.\n\r" 	    , ch );
+	    : "[-litter  ] A convicted litterbug. You cannot drop anything.\n\r"
+	    , ch );
     }
     else
     {
@@ -4096,7 +4035,7 @@ void do_slist( CHAR_DATA *ch, char *argument )
 
   for ( ability = -1 ; ability < MAX_ABILITY ; ability++ )
   {
-   if ( ability == FORCE_ABILITY && ch->top_level <= LEVEL_HERO)
+   if ( ability == FORCE_ABILITY )
       continue;
    if ( ability >= 0 )
    {
@@ -4322,7 +4261,7 @@ void do_showstatistic_web( CHAR_DATA *ch, char *argument )
 {
     PC_DATA *pcdata;
     CHAR_DATA *raceCh;
-    int race, plrclass, iR, iC, iC2;
+    int race, class, iR, iC, iC2;
     bool chk_race = FALSE;
     FILE *whoout;
     
@@ -4333,11 +4272,11 @@ void do_showstatistic_web( CHAR_DATA *ch, char *argument )
 
     race = get_race_from_name( argument );
     if ( race < 0 )
-      plrclass = get_class_from_name( argument );
+      class = get_class_from_name( argument );
     else
       chk_race = TRUE;
       
-    if( race < 0 && plrclass < 0 )
+    if( race < 0 && class < 0 )
     {
     	fprintf( whoout, "No such race or class\n\r" );
     	return;
@@ -4367,7 +4306,7 @@ void do_showstatistic_web( CHAR_DATA *ch, char *argument )
        raceCh->race = race;
     else
     {
-       raceCh->main_ability = plrclass;
+       raceCh->main_ability = class;
        raceCh->race = 0;
     }
 
@@ -4412,7 +4351,7 @@ void do_showstatistic_web( CHAR_DATA *ch, char *argument )
     }
     else
     {
-	fprintf( whoout, "&R%s Statistics\n\r", ability_name[plrclass]);
+	fprintf( whoout, "&R%s Statistics\n\r", ability_name[class]);
     	
     	for( iR = 0; iR < MAX_RACE; iR++ )
     	{
@@ -4442,7 +4381,7 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
 {
     PC_DATA *pcdata;
     CHAR_DATA *raceCh;
-    int race, plrclass, iR, iC, iC2;
+    int race, class, iR, iC, iC2;
     bool chk_race = FALSE;
     char buf[MAX_INPUT_LENGTH];
     char buf2[MAX_INPUT_LENGTH];
@@ -4452,11 +4391,11 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
 
     race = get_race_from_name( argument );
     if ( race < 0 )
-      plrclass = get_class_from_name( argument );
+      class = get_class_from_name( argument );
     else
       chk_race = TRUE;
       
-    if( race < 0 && plrclass < 0 )
+    if( race < 0 && class < 0 )
     {
     	send_to_char( "No such race or class.\n\r", ch );
     	return;
@@ -4480,12 +4419,13 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
     raceCh->perm_dex = 20;
     raceCh->perm_con = 20;
     raceCh->perm_cha = 20;
-    raceCh->perm_lck = 3; 
+    raceCh->perm_lck = 3;
+
     if( chk_race )
        raceCh->race = race;
     else
     {
-       raceCh->main_ability = plrclass;
+       raceCh->main_ability = class;
        raceCh->race = 0;
     }
 
@@ -4537,7 +4477,7 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
     }
     else
     {
-	sprintf( buf, "&R%s Statistics\n\r", ability_name[plrclass]);
+	sprintf( buf, "&R%s Statistics\n\r", ability_name[class]);
     	send_to_pager( buf, ch );
     	
     	for( iR = 0; iR < MAX_RACE; iR++ )

@@ -1,5 +1,8 @@
 /***************************************************************************
-*                           STAR WARS REALITY 1.0                          *
+*                   Star Wars: Rise in Power MUD Codebase                  *
+*--------------------------------------------------------------------------*
+* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
+* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -110,8 +113,7 @@ void do_score(CHAR_DATA * ch, char *argument)
 
     ch_printf(ch, "&cWeight: &C%5.5d &c(&Cmax %7.7d&c)    Items: &C%5.5d &c(&Cmax %5.5d&c)\n\r",
 	ch->carry_weight, can_carry_w(ch) , ch->carry_number, can_carry_n(ch));
-    ch_printf(ch, "&cTime Played: &C%d Hours &C%d Minutes.\n\r",
-	ch->pcdata->played/3600,(ch->pcdata->played%3600)/60);
+
     ch_printf(ch, "&cPager: &C(%c) %3d   &cAutoExit(&C%c&c)  AutoLoot(&C%c&c)  Autosac(&C%c&c)\n\r",
 	IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) ? 'X' : ' ',
 	ch->pcdata->pagerlen, IS_SET(ch->act, PLR_AUTOEXIT) ? 'X' : ' ',

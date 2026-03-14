@@ -1,5 +1,8 @@
 /***************************************************************************
-*                           STAR WARS REALITY 1.0                          *
+*                   Star Wars: Rise in Power MUD Codebase                  *
+*--------------------------------------------------------------------------*
+* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
+* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -153,23 +156,7 @@ char *mprog_next_command( char *clist )
   char *pointer = clist;
 
   while ( *pointer != '\n' && *pointer != '\0' )
-  {
-    if ( *pointer == '+' )
-    {
-      *pointer = ' ';
-      pointer++;
-      while ( *pointer == ' ' )
-        pointer++;
-      if ( *pointer == '\n' ) 
-      {
-        *pointer = '~';
-        pointer++;
-        if ( *pointer == '\r' )
-          *pointer = '~';
-      }
-    }
     pointer++;
-  }
   if ( *pointer == '\n' )
     *pointer++ = '\0';
   if ( *pointer == '\r' )
@@ -464,7 +451,6 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     
     if ( vnum < 1 || vnum > 32767 )
     {
-
       progbug("OvnumRoom: bad vnum", mob);
       return BERR;
     }
@@ -661,21 +647,15 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     }
     if ( !str_cmp(chck, "questmob") )
     {
-      if ((mprog_veval(( chkchar->questmob), opr, atoi(rval), mob ) ) )
-        return TRUE;
-      return FALSE;
+      return ( mprog_veval(chkchar->questmob, opr, atoi(rval), mob ) );
     }
     if ( !str_cmp(chck, "questobj") )
     {
-      if ((mprog_veval(( chkchar->questobj), opr, atoi(rval), mob ) ) )
-        return TRUE;
-      return FALSE;
+      return ( mprog_veval(chkchar->questobj, opr, atoi(rval), mob ) );
     }
     if ( !str_cmp(chck, "questpoints") )
     {
-      if ((mprog_veval(( chkchar->questmob), opr, atoi(rval), mob ) ) )
-        return TRUE;
-      return FALSE;
+      return ( mprog_veval(chkchar->questpoints, opr, atoi(rval), mob ) );
     }
     if ( !str_cmp(chck, "ispc") )
     {
@@ -743,8 +723,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     }
     if ( !str_cmp(chck, "norecall") )
     {
-/*    return IS_SET(chkchar->in_room->room_flags, ROOM_NO_RECALL) ? TRUE : FALSE;
-*/
+/*    return IS_SET(chkchar->in_room->room_flags, ROOM_NO_RECALL) ? TRUE : FALSE;*/
 return FALSE;
     }
     if ( !str_cmp(chck, "sex") )
@@ -1384,7 +1363,7 @@ void mprog_driver ( char *com_list, CHAR_DATA *mob, CHAR_DATA *actor,
   command_list = tmpcmndlst;
   if ( single_step )
   {
-    if ( mob->mpscriptpos > (int) strlen( tmpcmndlst ) )
+    if ( mob->mpscriptpos > strlen( tmpcmndlst ) )
        mob->mpscriptpos = 0;
     else
        command_list += mob->mpscriptpos;
@@ -1710,11 +1689,7 @@ int mprog_do_command( char *cmnd, CHAR_DATA *mob, CHAR_DATA *actor,
   {
     if ( *str != '$' )
     {
-      if ( *str != '~' )
-      {
-        *point++ = *str;
-      }
-      ++str;
+      *point++ = *str++;
       continue;
     }
     str++;
@@ -1756,9 +1731,9 @@ bool mprog_keyword_check( const char *argu, const char *argl )
     strcpy( arg2, strlower( argl ) );
     arglist = arg2;
 
-    for ( i = 0; i < (int) strlen( arglist ); i++ )
+    for ( i = 0; i < strlen( arglist ); i++ )
 	arglist[i] = LOWER( arglist[i] );
-    for ( i = 0; i < (int) strlen( arg ); i++ )
+    for ( i = 0; i < strlen( arg ); i++ )
 	arg[i] = LOWER( arg[i] );
     if ( ( arglist[0] == 'p' ) && ( arglist[1] == ' ' ) )
     {
@@ -1810,17 +1785,16 @@ void mprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
   char       *end;
   int	      i;
 
-
   for ( mprg = mob->pIndexData->mudprogs; mprg; mprg = mprg->next )
     if ( mprg->type & type )
       {
 	strcpy( temp1, mprg->arglist );
 	list = temp1;
-	for ( i = 0; i < (int) strlen( list ); i++ )
+	for ( i = 0; i < strlen( list ); i++ )
 	  list[i] = LOWER( list[i] );
 	strcpy( temp2, arg );
 	dupl = temp2;
-	for ( i = 0; i < (int) strlen( dupl ); i++ )
+	for ( i = 0; i < strlen( dupl ); i++ )
 	  dupl[i] = LOWER( dupl[i] );
 	if ( ( list[0] == 'p' ) && ( list[1] == ' ' ) )
 	  {
@@ -2127,7 +2101,6 @@ void mprog_random_trigger( CHAR_DATA *mob )
 {
   if ( mob->pIndexData->progtypes & RAND_PROG)
     mprog_percent_check(mob,NULL,NULL,NULL,RAND_PROG);
-
 
   return;
 }
@@ -2525,7 +2498,6 @@ void oprog_zap_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
       set_supermob( obj );
       oprog_percent_check( supermob, ch, obj, NULL, ZAP_PROG );
       release_supermob();
-
    }
    return;
 }
@@ -2604,11 +2576,11 @@ void oprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
       {
 	strcpy( temp1, mprg->arglist );
 	list = temp1;
-	for ( i = 0; i < (int) strlen( list ); i++ )
+	for ( i = 0; i < strlen( list ); i++ )
 	  list[i] = LOWER( list[i] );
 	strcpy( temp2, arg );
 	dupl = temp2;
-	for ( i = 0; i < (int) strlen( dupl ); i++ )
+	for ( i = 0; i < strlen( dupl ); i++ )
 	  dupl[i] = LOWER( dupl[i] );
 	if ( ( list[0] == 'p' ) && ( list[1] == ' ' ) )
 	  {
@@ -2854,11 +2826,11 @@ void rprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
       {
 	strcpy( temp1, mprg->arglist );
 	list = temp1;
-	for ( i = 0; i < (int) strlen( list ); i++ )
+	for ( i = 0; i < strlen( list ); i++ )
 	  list[i] = LOWER( list[i] );
 	strcpy( temp2, arg );
 	dupl = temp2;
-	for ( i = 0; i < (int) strlen( dupl ); i++ )
+	for ( i = 0; i < strlen( dupl ); i++ )
 	  dupl[i] = LOWER( dupl[i] );
 	if ( ( list[0] == 'p' ) && ( list[1] == ' ' ) )
 	  {
@@ -3000,7 +2972,7 @@ void room_act_update( void )
   
   while ( (runner = room_act_list) != NULL )
   {
-    ROOM_INDEX_DATA *room = (ROOM_INDEX_DATA *) runner->vo;
+    ROOM_INDEX_DATA *room = runner->vo;
     
     while ( (mpact = room->mpact) != NULL )
     {
@@ -3038,7 +3010,7 @@ void obj_act_update( void )
   
   while ( (runner = obj_act_list) != NULL )
   {
-    OBJ_DATA *obj = (OBJ_DATA *) runner->vo;
+    OBJ_DATA *obj = runner->vo;
     
     while ( (mpact = obj->mpact) != NULL )
     {

@@ -1,5 +1,8 @@
 /***************************************************************************
-*                           STAR WARS REALITY 1.0                          *
+*                   Star Wars: Rise in Power MUD Codebase                  *
+*--------------------------------------------------------------------------*
+* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
+* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -27,6 +30,7 @@
 #include "mud.h"
 
 #define MAX_NEST	100
+static	OBJ_DATA *	rgObjNest	[MAX_NEST];
 
 CLAN_DATA * first_clan;
 CLAN_DATA * last_clan;
@@ -52,6 +56,7 @@ bool	load_planet_file	args( ( char *planetfile ) );
 void	write_planet_list	args( ( void ) );
 void	save_member_list	args( ( MEMBER_LIST *members_list ) );
 void	show_members		args( ( CHAR_DATA *ch, char *argument, char *format ) );
+void	remove_member		args( ( CHAR_DATA *ch ) );
 
 
 /*
@@ -254,7 +259,7 @@ void save_planet( PLANET_DATA *planet )
 void fread_clan( CLAN_DATA *clan, FILE *fp )
 {
     char buf[MAX_STRING_LENGTH];
-    const char *word;
+    char *word;
     bool fMatch;
 
     for ( ; ; )
@@ -359,7 +364,7 @@ void fread_clan( CLAN_DATA *clan, FILE *fp )
 void fread_planet( PLANET_DATA *planet, FILE *fp )
 {
     char buf[MAX_STRING_LENGTH];
-    const char *word;
+    char *word;
     bool fMatch;
 
     for ( ; ; )
@@ -546,11 +551,14 @@ bool load_clan_file( char *clanfile )
 	sprintf( filename, "%s%s.vault", CLAN_DIR, clan->filename );
 	if ( ( fp = fopen( filename, "r" ) ) != NULL )
 	{
+	    int iNest;
 	    bool found;
 	    OBJ_DATA *tobj, *tobj_next;
 
 	    log_string( "Loading clan storage room" );
 	    rset_supermob(storeroom);
+	    for ( iNest = 0; iNest < MAX_NEST; iNest++ )
+		rgObjNest[iNest] = NULL;
 
 	    found = TRUE;
 	    for ( ; ; )
@@ -682,7 +690,7 @@ bool load_planet_file( char *planetfile )
 void load_clans( )
 {
     FILE *fpList;
-    const char *filename;
+    char *filename;
     char clanlist[256];
     char buf[MAX_STRING_LENGTH];
     CLAN_DATA *clan;
@@ -708,7 +716,7 @@ void load_clans( )
 	if ( filename[0] == '$' )
 	  break;
 
-	if ( !load_clan_file( (char* ) filename ) )
+	if ( !load_clan_file( filename ) )
 	{
 	  sprintf( buf, "Cannot load clan file: %s", filename );
 	  bug( buf, 0 );
@@ -738,7 +746,7 @@ void load_clans( )
 void load_planets( )
 {
     FILE *fpList;
-    const char *filename;
+    char *filename;
     char planetlist[256];
     char buf[MAX_STRING_LENGTH];
     
@@ -762,7 +770,7 @@ void load_planets( )
 	if ( filename[0] == '$' )
 	  break;
 
-	if ( !load_planet_file( (char * ) filename ) )
+	if ( !load_planet_file( filename ) )
 	{
 	  sprintf( buf, "Cannot load planet file: %s", filename );
 	  bug( buf, 0 );
@@ -1487,8 +1495,8 @@ void do_clans( CHAR_DATA *ch, char *argument )
     PLANET_DATA *planet;
     int count = 0;
     int pCount = 0;
-    float support;
-    float revenue;
+    int support;
+    long revenue;
         
     for ( clan = first_clan; clan; clan = clan->next )
     {
@@ -1520,7 +1528,7 @@ void do_clans( CHAR_DATA *ch, char *argument )
 	{
 		ch_printf( ch, "&O");
 	}
-	ch_printf( ch,"%-3.1f&W\n\rRevenue: &O%-29.0f",support,revenue);
+	ch_printf( ch,"%-3d&W\n\rRevenue: &O%-29ld",support,revenue);
 	ch_printf(ch,"&z&WLeader : ");
 	if( clan->leader[0] != 0 )
 	{
@@ -1578,7 +1586,7 @@ void do_planets( CHAR_DATA *ch, char *argument )
                    planet->name ,
                    planet->governed_by ? planet->governed_by->name : "",
                    IS_SET(planet->flags, PLANET_NOCAPTURE ) ? "(permanent)" : "" );
-        pager_printf( ch, "&WValue: &O%-10.0f&W/&O%-10d   ", 
+        pager_printf( ch, "&WValue: &O%-10ld&W/&O%-10d   ", 
                    get_taxes(planet) , planet->base_value);
         pager_printf( ch, "&WPopulation: &O%-5d   &W Pop Support: &R%.1f\n\r", 
                    planet->population , planet->pop_support );
@@ -2923,9 +2931,9 @@ void do_remsenator( CHAR_DATA *ch , char *argument )
 */
 }
 
-float get_taxes( PLANET_DATA *planet )
+long get_taxes( PLANET_DATA *planet )
 {
-      float gain;
+      long gain;
       
       gain = planet->base_value;
       gain += planet->base_value*planet->pop_support/100;
@@ -3052,7 +3060,7 @@ void show_members( CHAR_DATA *ch, char *argument, char *format )
     pager_printf( ch, "Spacecraft: %d  Vehicles: %d\n\r", clan->spacecraft, clan->vehicles );
     pager_printf( ch, 
 "------------------------------------------------------------\n\r" );
-    pager_printf( ch, "  Lvl         Name           Class Kills Deaths       Joined      Last On\n\r\n\r" );
+    pager_printf( ch, "  Lvl         Name           Class   Kills  Deaths       Joined\n\r\n\r" );
 
      if( format && format[0] != '\0' )
      {
@@ -3120,14 +3128,13 @@ void show_members( CHAR_DATA *ch, char *argument, char *format )
                      && str_cmp( sort->member->name, clan->number2 ) )
                  {
                      members++;
-                     pager_printf( ch, "[%3d] %12s %15s %5d %6d %10s %10s\n\r",
+                     pager_printf( ch, "[%3d] %12s %15s %7d %7d %10s\n\r",
                                    sort->member->level,
                                    capitalize(sort->member->name ),
-                                   ability_name[sort->member->plrclass],
+                                   ability_name[sort->member->class],
                                    sort->member->kills,
                                    sort->member->deaths,
-                                   sort->member->since,
-                                   sort->member->laston );
+                                   sort->member->since );
 		 }
 
          }
@@ -3136,14 +3143,13 @@ void show_members( CHAR_DATA *ch, char *argument, char *format )
              if( !str_prefix( format, member->name ) )
              {
              	 members++;
-                 pager_printf( ch, "[%3d] %12s %15s %5d %6d %10s %10s\n\r",
+                 pager_printf( ch, "[%3d] %12s %15s %7d %7d %10s\n\r",
                                member->level,
                                capitalize(member->name ),
-                               ability_name[member->plrclass],
+                               ability_name[member->class],
                                member->kills,
                                member->deaths,
-                               member->since,
-                               member->laston );
+                               member->since );
              }
 
      }
@@ -3155,14 +3161,13 @@ void show_members( CHAR_DATA *ch, char *argument, char *format )
                  && str_cmp( member->name, clan->number2 ) )
              {
              	 members++;
-                 pager_printf( ch, "[%3d] %12s %15s %5d %6d %10s %10s\n\r", 
+                 pager_printf( ch, "[%3d] %12s %15s %7d %7d %10s\n\r", 
                  	       member->level,
                                capitalize(member->name), 
-                               ability_name[member->plrclass],
+                               ability_name[member->class],
                                member->kills, 
                                member->deaths, 
-                               member->since,
-                               member->laston );
+                               member->since );
              }
      }
 
@@ -3312,11 +3317,10 @@ void save_member_list( MEMBER_LIST *members_list )
          return;
      }
 
-     fprintf( fp, "Version       2\n" );
      fprintf( fp, "Name          %s~\n", members_list->name );
      for( member = members_list->first_member; member; member = member->next )
-         fprintf( fp, "Member        %s %s %d %d %d %d %s\n", 
-         member->name, member->since, member->kills, member->deaths, member->level, member->plrclass, member->laston);
+         fprintf( fp, "Member        %s %s %d %d %d %d\n", 
+         member->name, member->since, member->kills, member->deaths, member->level, member->class);
      fprintf( fp, "End\n\n" );
      fclose( fp );
 
@@ -3328,7 +3332,6 @@ bool load_member_list( char *filename )
      char buf[MAX_STRING_LENGTH];
      MEMBER_LIST *members_list;
      MEMBER_DATA *member;
-     int version;
 
      sprintf( buf, "%s%s.mem", CLAN_DIR, filename );
 
@@ -3346,12 +3349,6 @@ bool load_member_list( char *filename )
 
          word = fread_word( fp );
 
-         if( !str_cmp( word, "Version" ) )
-         {
-             version = fread_number( fp );;
-             continue;
-         }
-         else
          if( !str_cmp( word, "Name" ) )
          {
              members_list->name = fread_string( fp );
@@ -3366,10 +3363,7 @@ bool load_member_list( char *filename )
              member->kills = fread_number( fp );
              member->deaths = fread_number( fp );
              member->level = fread_number( fp );
-	     member->plrclass = fread_number( fp );
-	     if ( version == 2 )
-	       member->laston = STRALLOC( fread_word( fp ) );
-	     
+	     member->class = fread_number( fp );
              LINK( member, members_list->first_member, members_list->last_member, next, prev );
              continue;
          }
@@ -3394,8 +3388,6 @@ void update_member( CHAR_DATA *ch )
 {
      MEMBER_LIST *members_list;
      MEMBER_DATA *member;
-     struct tm *t = localtime(&current_time);
-     char buf[MAX_STRING_LENGTH];
 
      if( IS_NPC( ch ) || IS_IMMORTAL(ch) || !ch->pcdata->clan )
          return;
@@ -3416,24 +3408,22 @@ void update_member( CHAR_DATA *ch )
                          member->kills = ch->pcdata->pkills;
                          member->deaths = ch->pcdata->clones;
                      }
-		     member->plrclass = ch->main_ability;
+		     member->class = ch->main_ability;
                      member->level = ch->top_level;
-                     sprintf( buf, "[%02d|%02d|%04d]", t->tm_mon+1, t->tm_mday, t->tm_year+1900 );
-                     member->laston = STRALLOC( buf );
-                     save_member_list( members_list );
                      return;
                  }
 
              if( member == NULL )
              {
+                 struct tm *t = localtime(&current_time);
+                 char buf[MAX_STRING_LENGTH];
+
                  CREATE( member, MEMBER_DATA, 1 );
                  member->name = STRALLOC( ch->name );
                  member->level = ch->top_level;
-		 member->plrclass = ch->main_ability;
+		 member->class = ch->main_ability;
                  sprintf( buf, "[%02d|%02d|%04d]", t->tm_mon+1, t->tm_mday, t->tm_year+1900 );
                  member->since = STRALLOC( buf );
-                 sprintf( buf, "[%02d|%02d|%04d]", t->tm_mon+1, t->tm_mday, t->tm_year+1900 );
-                 member->laston = STRALLOC( buf );
                  if( ch->pcdata->clan->clan_type == CLAN_PLAIN )
                  {
                      member->kills = ch->pcdata->pkills;

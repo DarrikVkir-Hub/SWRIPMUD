@@ -1,5 +1,8 @@
 /***************************************************************************
-*                           STAR WARS REALITY 1.0                          *
+*                   Star Wars: Rise in Power MUD Codebase                  *
+*--------------------------------------------------------------------------*
+* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
+* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -22,7 +25,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "mud.h"
-
 
 #if defined(KEY)
 #undef KEY
@@ -56,7 +58,6 @@ SPELL_FUN *spell_function( char *name )
     if ( !str_cmp( name, "spell_burning_hands" ))    return spell_burning_hands;
     if ( !str_cmp( name, "spell_call_lightning" ))   return spell_call_lightning;
     if ( !str_cmp( name, "spell_cause_critical" ))   return spell_cause_critical;
-    if ( !str_cmp( name, "spell_cause_critical_no_fighting" )) return spell_cause_critical_no_fighting;
     if ( !str_cmp( name, "spell_cause_light" ))	     return spell_cause_light;
     if ( !str_cmp( name, "spell_cause_serious" ))    return spell_cause_serious;
     if ( !str_cmp( name, "spell_change_sex" ))	     return spell_change_sex;
@@ -164,7 +165,6 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_affected" ))		return do_affected;
 	if ( !str_cmp( name, "do_afk" ))		return do_afk;
         if ( !str_cmp( name, "do_ahall" ))              return do_ahall;
-        if ( !str_cmp( name, "do_ahelp" ))              return do_ahelp;
 	if ( !str_cmp( name, "do_aid" ))		return do_aid;
 	if ( !str_cmp( name, "do_alias" ))		return do_alias;
 	if ( !str_cmp( name, "do_allclantalk" ))	return do_allclantalk;
@@ -233,7 +233,6 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_calculate" ))          return do_calculate; 
 	if ( !str_cmp( name, "do_calculate_diff" ))     return do_calculate_diff; 
 	if ( !str_cmp( name, "do_capture" ))            return do_capture; 
-	if ( !str_cmp( name, "do_cargo" ))		return do_cargo;
 	if ( !str_cmp( name, "do_cast" ))		return do_cast;
 	if ( !str_cmp( name, "do_cedit" ))		return do_cedit;
 	if ( !str_cmp( name, "do_chaff" ))		return do_chaff;
@@ -241,9 +240,7 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_channels" ))		return do_channels;
         if ( !str_cmp( name, "do_chaos" ))              return do_chaos;
 	if ( !str_cmp( name, "do_chat" ))		return do_chat;
-	if ( !str_cmp( name, "do_checkareaships" ))	return do_checkareaships;
 	if ( !str_cmp( name, "do_check_vnums" ))	return do_check_vnums;
-	if ( !str_cmp( name, "do_checkcargo" ))		return do_checkcargo;
 	if ( !str_cmp( name, "do_circle" ))		return do_circle;
 	if ( !str_cmp( name, "do_clanfunds" ))		return do_clanfunds;
 	if ( !str_cmp( name, "do_clans" ))		return do_clans;
@@ -262,9 +259,6 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_commands" ))		return do_commands;
 	if ( !str_cmp( name, "do_comment" ))		return do_comment;
 	if ( !str_cmp( name, "do_compare" ))		return do_compare;
-#ifdef MCCP
-	if ( !str_cmp( name, "do_compress" ))		return do_compress;
-#endif	
 	if ( !str_cmp( name, "do_config" ))		return do_config;
 	if ( !str_cmp( name, "do_consider" ))		return do_consider;
 	if ( !str_cmp( name, "do_copyship" ))		return do_copyship;
@@ -274,7 +268,6 @@ DO_FUN *skill_function( char *name )
 	break;
     case 'd':
         if ( !str_cmp( name, "do_decline" ))            return do_decline;
-	if ( !str_cmp( name, "do_degradeship" ))	return do_degradeship;
 	if ( !str_cmp( name, "do_delay" ))		return do_delay;
 	if ( !str_cmp( name, "do_demote" ))		return do_demote;
 	if ( !str_cmp( name, "do_deny" ))		return do_deny;
@@ -291,7 +284,6 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_dismiss" ))		return do_dismiss;
 	if ( !str_cmp( name, "do_dmesg" ))		return do_dmesg;
 	if ( !str_cmp( name, "do_dock" ))		return do_dock;
- 	if ( !str_cmp( name, "do_dontresolve" ))	return do_dontresolve;
 	if ( !str_cmp( name, "do_down" ))		return do_down;
 	if ( !str_cmp( name, "do_drag" ))		return do_drag;
 	if ( !str_cmp( name, "do_draw" ))		return do_draw;
@@ -339,7 +331,6 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_gemcutting" ))		return do_gemcutting;
 	if ( !str_cmp( name, "do_give" ))		return do_give;
 	if ( !str_cmp( name, "do_glance" ))		return do_glance;
-        if (!str_cmp(name, "do_gravityprojector"))	return do_gravityprojector;
         if ( !str_cmp( name, "do_gold" ))               return do_gold;
 	if ( !str_cmp( name, "do_goto" ))		return do_goto;
 	if ( !str_cmp( name, "do_gouge" ))		return do_gouge;
@@ -372,11 +363,9 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_idea" ))		return do_idea;
 	if ( !str_cmp( name, "do_immortalize" ))	return do_immortalize;
 	if ( !str_cmp( name, "do_immtalk" ))		return do_immtalk;
-	if ( !str_cmp( name, "do_improve_module" ))	return do_improve_module;
 	if ( !str_cmp( name, "do_info" ))               return do_info; 
 	if ( !str_cmp( name, "do_induct" ))		return do_induct;
 	if ( !str_cmp( name, "do_installarea" ))	return do_installarea;
-	if ( !str_cmp( name, "do_install_module" ))	return do_install_module;
 	if ( !str_cmp( name, "do_instaroom" ))		return do_instaroom;
 	if ( !str_cmp( name, "do_instazone" ))		return do_instazone;
 	if ( !str_cmp( name, "do_inventory" ))		return do_inventory;
@@ -402,9 +391,7 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_light" ))		return do_light;
 	if ( !str_cmp( name, "do_list" ))		return do_list;
 	if ( !str_cmp( name, "do_litterbug" ))		return do_litterbug;
-	if ( !str_cmp( name, "do_load" ))		return do_load;
 	if ( !str_cmp( name, "do_loadarea" ))		return do_loadarea;
-	if ( !str_cmp( name, "do_loadcargo" ))		return do_loadcargo;
 	if ( !str_cmp( name, "do_loadup" ))		return do_loadup;
 	if ( !str_cmp( name, "do_lock" ))		return do_lock;
 	if ( !str_cmp( name, "do_log" ))		return do_log;
@@ -427,10 +414,8 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_makecomlink" ))	return do_makecomlink;
 	if ( !str_cmp( name, "do_makeshield" ))		return do_makeshield;
 	if ( !str_cmp( name, "do_makecontainer" ))	return do_makecontainer;
-	if ( !str_cmp( name, "do_makemedpac" ))		return do_makemedpac;
 	if ( !str_cmp( name, "do_makejewelry" ))	return do_makejewelry;
 	if ( !str_cmp( name, "do_makeboard" ))		return do_makeboard;
-	if ( !str_cmp( name, "do_makefurniture" ))	return do_makefurniture;
 	if ( !str_cmp( name, "do_makeclan" ))		return do_makeclan;
 	if ( !str_cmp( name, "do_makemissile" ))	return do_makemissile;
 	if ( !str_cmp( name, "do_makeship" ))           return do_makeship;
@@ -439,11 +424,8 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_makespaceobject" ))     return do_makespaceobject;
 	if ( !str_cmp( name, "do_makewizlist" ))	return do_makewizlist;
 	if ( !str_cmp( name, "do_makeplanet" ))	        return do_makeplanet;
-	if ( !str_cmp( name, "do_maketemplateship" ))	return do_maketemplateship;
-	if ( !str_cmp( name, "do_marena" ))		return do_marena;
 	if ( !str_cmp( name, "do_massign" ))		return do_massign;
 	if ( !str_cmp( name, "do_mass_propeganda" ))	return do_mass_propeganda;
-        if ( !str_cmp( name, "do_mchallenge" ))		return do_mchallenge;
 	if ( !str_cmp( name, "do_mcreate" ))		return do_mcreate;
 	if ( !str_cmp( name, "do_mdelete" ))		return do_mdelete;
 	if ( !str_cmp( name, "do_memory" ))		return do_memory;
@@ -493,13 +475,10 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_murder" ))		return do_murder;
 	if ( !str_cmp( name, "do_music" ))		return do_music;
 	if ( !str_cmp( name, "do_mwhere" ))		return do_mwhere;
-
-
 	break;
     case 'n':
 	if ( !str_cmp( name, "do_name" ))		return do_name;
 	if ( !str_cmp( name, "do_newbiechat" ))		return do_newbiechat;
-	if ( !str_cmp( name, "do_newbieasst" ))		return do_newbieasst;
 	if ( !str_cmp( name, "do_newbieset" ))		return do_newbieset;
 	if ( !str_cmp( name, "do_newclan" ))		return do_newclan;
 	if ( !str_cmp( name, "do_newzones" ))		return do_newzones;
@@ -533,7 +512,6 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_orange" ))		return do_orange;
 	if ( !str_cmp( name, "do_order" ))		return do_order;
 	if ( !str_cmp( name, "do_orders" ))		return do_orders;
-	if ( !str_cmp( name, "do_ordership" ))		return do_ordership;
 	if ( !str_cmp( name, "do_ordertalk" ))		return do_ordertalk;
 	if ( !str_cmp( name, "do_oset" ))		return do_oset;
 	if ( !str_cmp( name, "do_ostat" ))		return do_ostat;
@@ -589,20 +567,17 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_reload" ))  		return do_reload;
 	if ( !str_cmp( name, "do_rembounty" ))          return do_rembounty;
 	if ( !str_cmp( name, "do_remove" ))		return do_remove;
-	if ( !str_cmp( name, "do_remove_module" ))	return do_remove_module;
 	if ( !str_cmp( name, "do_rempilot" ))           return do_rempilot; 
         if ( !str_cmp( name, "do_remresident" ))	return do_remresident;
 	if ( !str_cmp( name, "do_remsenator" ))         return do_remsenator; 
 	if ( !str_cmp( name, "do_renameship" ))		return do_renameship;
 	if ( !str_cmp( name, "do_rent" ))		return do_rent;
 	if ( !str_cmp( name, "do_repair" ))		return do_repair;
-	if ( !str_cmp( name, "do_repair_module" ))	return do_repair_module;
 	if ( !str_cmp( name, "do_repairset" ))		return do_repairset;
 	if ( !str_cmp( name, "do_repairship" ))         return do_repairship; 
 	if ( !str_cmp( name, "do_repairshops" ))	return do_repairshops;
 	if ( !str_cmp( name, "do_repairstat" ))		return do_repairstat;
 	if ( !str_cmp( name, "do_reply" ))		return do_reply;
-	if ( !str_cmp( name, "do_retell" )) 	        return do_retell;
 	if ( !str_cmp( name, "do_report" ))		return do_report;
 	if ( !str_cmp( name, "do_request"))		return do_request;
 	if ( !str_cmp( name, "do_rescue" ))		return do_rescue;
@@ -611,7 +586,6 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_resign" ))		return do_resign;
 	if ( !str_cmp( name, "do_rest" ))		return do_rest;
 	if ( !str_cmp( name, "do_restore" ))		return do_restore;
-	if ( !str_cmp( name, "do_restoreship" ))	return do_restoreship;
 	if ( !str_cmp( name, "do_restoretime" ))	return do_restoretime;
 	if ( !str_cmp( name, "do_restrict" ))		return do_restrict;
 	if ( !str_cmp( name, "do_retire" ))		return do_retire;
@@ -653,7 +627,6 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_setspaceobject" ))      return do_setspaceobject;
 	if ( !str_cmp( name, "do_setplanet" ))	        return do_setplanet;
 	if ( !str_cmp( name, "do_ships" ))              return do_ships;
-	if ( !str_cmp( name, "do_shipdelete" ))         return do_shipdelete;
 	if ( !str_cmp( name, "do_shiptrack" ))          return do_shiptrack;
 	if ( !str_cmp( name, "do_shops" ))		return do_shops;
 	if ( !str_cmp( name, "do_shopset" ))		return do_shopset;
@@ -662,7 +635,6 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_shove" ))		return do_shove;
 	if ( !str_cmp( name, "do_showclan" ))		return do_showclan;
 	if ( !str_cmp( name, "do_showlayers" ))		return do_showlayers;
-	if ( !str_cmp( name, "do_show_modules" ))	return do_show_modules;
 	if ( !str_cmp( name, "do_showplanet" ))		return do_showplanet;
 	if ( !str_cmp( name, "do_showship" ))           return do_showship;
 	if ( !str_cmp( name, "do_showspaceobject" ))     return do_showspaceobject;
@@ -723,16 +695,7 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_trajectory" ))		return do_trajectory;
 	if ( !str_cmp( name, "do_trajectory_actual" ))	return do_trajectory_actual;
 	if ( !str_cmp( name, "do_transfer" ))		return do_transfer;
-	if ( !str_cmp( name, "do_transfercargo" ))	return do_transfercargo;
-	if ( !str_cmp( name, "do_transferownership" ))	return do_transferownership;
 	if ( !str_cmp( name, "do_transship" ))		return do_transship;
-	if ( !str_cmp( name, "do_trivia" ))             return do_trivia;
-	if ( !str_cmp( name, "do_trivia_answer" ))      return do_trivia_answer;
-        if ( !str_cmp( name, "do_trivia_chat" ))      return do_trivia_chat;
-	if ( !str_cmp( name, "do_trivia_question" ))    return do_trivia_question;
-	if ( !str_cmp( name, "do_trivia_join" ))        return do_trivia_join;
-	if ( !str_cmp( name, "do_trivia_winner" ))      return do_trivia_winner;
-	if ( !str_cmp( name, "do_trivia_score" ))       return do_trivia_score;
 	if ( !str_cmp( name, "do_trust" ))		return do_trust;
 	if ( !str_cmp( name, "do_typo" ))		return do_typo;
 	break;
@@ -742,15 +705,11 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_unhell" ))		return do_unhell;
 	if ( !str_cmp( name, "do_undock" ))		return do_undock;
 	if ( !str_cmp( name, "do_unjail" ))		return do_unjail;
-	if ( !str_cmp( name, "do_unload" ))		return do_unload;
-	if ( !str_cmp( name, "do_unloadcargo" ))	return do_unloadcargo;
 	if ( !str_cmp( name, "do_unlock" ))		return do_unlock;
    if ( !str_cmp( name, "do_unsilence" ))          return do_unsilence;
 	if ( !str_cmp( name, "do_up" ))			return do_up;
-	if ( !str_cmp( name, "do_upgradeship" ))	return do_upgradeship;
 	if ( !str_cmp( name, "do_use" ))		return do_use;
 	if ( !str_cmp( name, "do_users" ))		return do_users;
-        if ( !str_cmp( name, "do_undead" ))             return do_undead;
 	break;
     case 'v':
 	if ( !str_cmp( name, "do_value" ))		return do_value;
@@ -759,10 +718,10 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_viewskills" ))		return do_viewskills;
 	if ( !str_cmp( name, "do_vnums" ))		return do_vnums;
 	if ( !str_cmp( name, "do_vsearch" ))		return do_vsearch;
-	if ( !str_cmp( name, "do_vulgar" ))		return do_vulgar;
 	break;
     case 'w':
 	if ( !str_cmp( name, "do_wake" ))		return do_wake;
+	if ( !str_cmp( name, "do_wartalk" ))		return do_wartalk;
 	if ( !str_cmp( name, "do_wear" ))		return do_wear;
 	if ( !str_cmp( name, "do_weather" ))		return do_weather;
 	if ( !str_cmp( name, "do_west" ))		return do_west;
@@ -794,7 +753,6 @@ char *spell_name( SPELL_FUN *spell )
     if ( spell == spell_burning_hands )	    return "spell_burning_hands";
     if ( spell == spell_call_lightning )    return "spell_call_lightning";
     if ( spell == spell_cause_critical )    return "spell_cause_critical";
-    if ( spell == spell_cause_critical_no_fighting ) return "spell_cause_critical_no_fighting";
     if ( spell == spell_cause_light )	    return "spell_cause_light";
     if ( spell == spell_cause_serious )	    return "spell_cause_serious";
     if ( spell == spell_change_sex )	    return "spell_change_sex";
@@ -884,13 +842,6 @@ char *spell_name( SPELL_FUN *spell )
 
 char *skill_name( DO_FUN *skill )
 {   
-    if ( skill == do_maketemplateship) return "do_maketemplateship";
-    if ( skill == do_ahelp) return "do_ahelp";
-    if ( skill == do_improve_module) return "do_improve_module";
-    if ( skill == do_gravityprojector) return "do_gravityprojector";
-    if ( skill == do_remove_module)    return "do_remove_module";
-    if ( skill == do_install_module)    return "do_install_module";
-    if ( skill == do_show_modules)    return "do_show_modules";
     if ( skill == do_findserin)    return "do_findserin";
     if ( skill == do_renameship)    return "do_renameship";
     if ( skill == do_showplanet)    return "do_showplanet";
@@ -931,8 +882,6 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_hijack )     return "do_hijack";
     if ( skill == do_pickshiplock )     return "do_pickshiplock";
     if ( skill == do_makejewelry )     return "do_makejewelry";
-    if ( skill == do_marena)         return "do_marena";
-    if ( skill == do_mchallenge)    return "do_mchallenge";
     if ( skill == do_spacetalk )     return "do_spacetalk";
     if ( skill == do_shiptalk )     return "do_shiptalk";
     if ( skill == do_systemtalk )     return "do_systemtalk";
@@ -1062,17 +1011,14 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_bury )		return "do_bury";
     if ( skill == do_buy )		return "do_buy";
     if ( skill == do_buyvendor )	return "do_buyvendor";
-    if ( skill == do_cargo )		return "do_cargo";
     if ( skill == do_cast )		return "do_cast";
     if ( skill == do_cedit )		return "do_cedit";
     if ( skill == do_channels )		return "do_channels";
     if ( skill == do_chat )		return "do_chat";
     if ( skill == do_ooc )		return "do_ooc";
-    if ( skill == do_checkareaships )	return "do_checkareaships";
     if ( skill == do_check_vnums )	return "do_check_vnums";
-    if ( skill == do_checkcargo )	return "do_checkcargo";
     if ( skill == do_circle )		return "do_circle";
-    if ( skill == do_clanfunds )	return "do_clanfunds";
+    if ( skill == do_clanfunds )		return "do_clanfunds";
     if ( skill == do_clans )		return "do_clans";
     if ( skill == do_clan_donate )	return "do_clan_donate";
     if ( skill == do_clan_withdraw )	return "do_clan_withdraw";
@@ -1084,15 +1030,11 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_commands )		return "do_commands";
     if ( skill == do_comment )		return "do_comment";
     if ( skill == do_compare )		return "do_compare";
-#ifdef MCCP
-    if ( skill == do_compress )		return "do_compress";
-#endif
     if ( skill == do_config )		return "do_config";
     if ( skill == do_consider )		return "do_consider";
     if ( skill == do_credits )		return "do_credits";
     if ( skill == do_cset )		return "do_cset";
     if ( skill == do_cutdoor )		return "do_cutdoor";
-    if ( skill == do_degradeship )	return "do_degradeship";
     if ( skill == do_deny )		return "do_deny";
     if ( skill == do_description )	return "do_description";
     if ( skill == do_destro )		return "do_destro";
@@ -1106,7 +1048,6 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_dmesg )		return "do_dmesg";
     if ( skill == do_dock )		return "do_dock";
     if ( skill == do_down )		return "do_down";
-    if ( skill == do_dontresolve )	return "do_dontresolve";
     if ( skill == do_drag )		return "do_drag";
     if ( skill == do_drink )		return "do_drink";
     if ( skill == do_drop )		return "do_drop";
@@ -1176,9 +1117,7 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_light )		return "do_light";
     if ( skill == do_list )		return "do_list";
     if ( skill == do_litterbug )	return "do_litterbug";
-    if ( skill == do_load )		return "do_load";
     if ( skill == do_loadarea )		return "do_loadarea";
-    if ( skill == do_loadcargo )	return "do_loadcargo";
     if ( skill == do_loadup )		return "do_loadup";
     if ( skill == do_lock )		return "do_lock";
     if ( skill == do_log )		return "do_log";
@@ -1191,10 +1130,8 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_makegrenade )	return "do_makegrenade";
     if ( skill == do_makelandmine )	return "do_makelandmine";
     if ( skill == do_makecontainer )	return "do_makecontainer";
-    if ( skill == do_makemedpac )	return "do_makemedpac";
     if ( skill == do_makeshield )	return "do_makeshield";
     if ( skill == do_makeblade )	return "do_makeblade";
-    if ( skill == do_makefurniture )	return "do_makefurniture";
     if ( skill == do_makeblaster )	return "do_makeblaster";
     if ( skill == do_makebowcaster )	return "do_makebowcaster";
     if ( skill == do_makelightsaber )	return "do_makelightsaber";
@@ -1256,7 +1193,6 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_mwhere )		return "do_mwhere";
     if ( skill == do_name )		return "do_name";
     if ( skill == do_newbiechat )	return "do_newbiechat";
-    if ( skill == do_newbieasst )	return "do_newbieasst";
     if ( skill == do_newbieset )	return "do_newbieset";
     if ( skill == do_newzones )		return "do_newzones";
     if ( skill == do_noemote )		return "do_noemote";
@@ -1284,7 +1220,6 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_orange )		return "do_orange";
     if ( skill == do_order )		return "do_order";
     if ( skill == do_orders )		return "do_orders";
-    if ( skill == do_ordership )	return "do_ordership";
     if ( skill == do_ordertalk )	return "do_ordertalk";
     if ( skill == do_oset )		return "do_oset";
     if ( skill == do_ostat )		return "do_ostat";
@@ -1324,12 +1259,10 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_remove )		return "do_remove";
     if ( skill == do_rent )		return "do_rent";
     if ( skill == do_repair )		return "do_repair";
-    if ( skill == do_repair_module )    return "do_repair_module";
     if ( skill == do_repairset )	return "do_repairset";
     if ( skill == do_repairshops )	return "do_repairshops";
     if ( skill == do_repairstat )	return "do_repairstat";
     if ( skill == do_reply )		return "do_reply";
-    if ( skill == do_retell )           return "do_retell";
     if ( skill == do_report )		return "do_report";
     if ( skill == do_request )		return "do_request";
     if ( skill == do_rescue )		return "do_rescue";
@@ -1337,7 +1270,6 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_resetship )	return "do_resetship";
     if ( skill == do_rest )		return "do_rest";
     if ( skill == do_restore )		return "do_restore";
-    if ( skill == do_restoreship )	return "do_restoreship";
     if ( skill == do_restoretime )	return "do_restoretime";
     if ( skill == do_restrict )		return "do_restrict";
     if ( skill == do_retire )		return "do_retire";
@@ -1368,8 +1300,7 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_set_boot_time )	return "do_set_boot_time";
     if ( skill == do_setclan )		return "do_setclan";
     if ( skill == do_setship )          return "do_setship";
-    if ( skill == do_setspaceobject )   return "do_setspaceobject";
-    if ( skill == do_shipdelete )       return "do_shipdelete";
+    if ( skill == do_setspaceobject )    return "do_setspaceobject";
     if ( skill == do_ships )            return "do_ships";
     if ( skill == do_shiptrack )        return "do_shiptrack";
     if ( skill == do_shops )		return "do_shops";
@@ -1418,37 +1349,24 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_trajectory )	return "do_trajectory";
     if ( skill == do_trajectory_actual)	return "do_trajectory_actual";
     if ( skill == do_transfer )		return "do_transfer";
-    if ( skill == do_transfercargo)     return "do_transfercargo";
-    if ( skill == do_transferownership) return "do_transferownership";
     if ( skill == do_transship )	return "do_transship";
-/*    if ( skill == do_trivia)            return "do_trivia";
-    if ( skill == do_trivia_answer)     return "do_trivia_answer";
-    if ( skill == do_trivia_chat)     return "do_trivia_chat";
-    if ( skill == do_trivia_join )      return "do_trivia_join";
-    if ( skill == do_trivia_question)   return "do_trivia_question";
-    if ( skill == do_trivia_winner)     return "do_trivia_winner";
-    if ( skill == do_trivia_score)      return "do_trivia_score";*/
     if ( skill == do_trust )		return "do_trust";
     if ( skill == do_typo )		return "do_typo";
     if ( skill == do_unfoldarea )	return "do_unfoldarea";
     if ( skill == do_unhell )		return "do_unhell";
-    if ( skill == do_unload )		return "do_unload";
-    if ( skill == do_unloadcargo )	return "do_unloadcargo";
     if ( skill == do_unlock )		return "do_unlock";
     if ( skill == do_undock )           return "do_undock";
     if ( skill == do_unjail )           return "do_unjail";
     if ( skill == do_unsilence )        return "do_unsilence";
     if ( skill == do_up )		return "do_up";
-    if ( skill == do_upgradeship )	return "do_upgradeship";
     if ( skill == do_users )		return "do_users";
-    if ( skill == do_undead )           return "do_undead";
     if ( skill == do_value )		return "do_value";
     if ( skill == do_vassign )           return "do_vassign";
     if ( skill == do_visible )		return "do_visible";
     if ( skill == do_vnums )		return "do_vnums";
     if ( skill == do_vsearch )		return "do_vsearch";
     if ( skill == do_wake )		return "do_wake";
-    if ( skill == do_vulgar )		return "do_vulgar";
+    if ( skill == do_wartalk )		return "do_wartalk";
     if ( skill == do_wear )		return "do_wear";
     if ( skill == do_weather )		return "do_weather";
     if ( skill == do_west )		return "do_west";
@@ -1731,7 +1649,6 @@ void save_commands()
 	    fprintf( fpout, "Position    %d\n",	 command->position	);
 	    fprintf( fpout, "Level       %d\n",	 command->level		);
 	    fprintf( fpout, "Log         %d\n",	 command->log		);
-            fprintf( fpout, "CommandGroup %d\n",  command->commandgroup  );
 	    fprintf( fpout, "End\n\n" );
 	}
     }
@@ -1742,7 +1659,7 @@ void save_commands()
 SKILLTYPE *fread_skill( FILE *fp )
 {
     char buf[MAX_STRING_LENGTH];
-    const char *word;
+    char *word;
     bool fMatch;
     SKILLTYPE *skill;
 
@@ -2003,7 +1920,7 @@ void load_herb_table()
 void fread_social( FILE *fp )
 {
     char buf[MAX_STRING_LENGTH];
-    const char *word;
+    char *word;
     bool fMatch;
     SOCIALTYPE *social;
 
@@ -2122,7 +2039,7 @@ void load_socials()
 void fread_command( FILE *fp )
 {
     char buf[MAX_STRING_LENGTH];
-    const char *word;
+    char *word;
     bool fMatch;
     CMDTYPE *command;
 
@@ -2142,7 +2059,6 @@ void fread_command( FILE *fp )
 
 	case 'C':
 	    KEY( "Code",	command->do_fun,	skill_function(fread_word(fp)) );
-            KEY("CommandGroup", command->commandgroup, fread_number(fp));
 	    break;
 
 	case 'E':

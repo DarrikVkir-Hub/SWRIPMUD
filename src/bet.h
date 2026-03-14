@@ -1,24 +1,29 @@
-/***************************************************************************
-*                           STAR WARS REALITY 1.0                          *
-*--------------------------------------------------------------------------*
-* Star Wars Reality 1.0						           *
-* copyright (c) 1997, 1998 by Sean Cooper                                  *
-* -------------------------------------------------------------------------*
-* Starwars and Starwars Names copyright(c) Lucasfilm Ltd.                  *
-*--------------------------------------------------------------------------*
-* SMAUG 1.0 (C) 1994, 1995, 1996 by Derek Snider                           *
-* SMAUG code team: Thoric, Altrag, Blodkai, Narn, Haus,                    *
-* Scryn, Rennard, Swordbearer, Gorog, Grishnakh and Tricops                *
-* ------------------------------------------------------------------------ *
-* Merc 2.1 Diku Mud improvments copyright (C) 1992, 1993 by Michael        *
-* Chastain, Michael Quan, and Mitchell Tse.                                *
-* Original Diku Mud copyright (C) 1990, 1991 by Sebastian Hammer,          *
-* Michael Seifert, Hans Henrik St{rfeldt, Tom Madsen, and Katja Nyboe.     *
-* ------------------------------------------------------------------------ *
-*			Auction bid parsing routines			   *
-****************************************************************************/
+ /***************************************************************************
+ *                   Star Wars: Rise in Power MUD Codebase                  *
+ *--------------------------------------------------------------------------*
+ * SWRiP Code Additions and changes from the SWReality and Smaug Code       *
+ * copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+ *--------------------------------------------------------------------------*
+ * Star Wars Reality 1.0				                    *
+ * copyright (c) 1997, 1998 by Sean Cooper                                  *
+ * -------------------------------------------------------------------------*
+ * Starwars and Starwars Names copyright(c) Lucasfilm Ltd.                  *
+ *--------------------------------------------------------------------------*
+ * SMAUG 1.0 (C) 1994, 1995, 1996 by Derek Snider                           *
+ * SMAUG code team: Thoric, Altrag, Blodkai, Narn, Haus,                    *
+ * Scryn, Rennard, Swordbearer, Gorog, Grishnakh and Tricops                *
+ * ------------------------------------------------------------------------ *
+ * Merc 2.1 Diku Mud improvments copyright (C) 1992, 1993 by Michael        *
+ * Chastain, Michael Quan, and Mitchell Tse.                                *
+ * Original Diku Mud copyright (C) 1990, 1991 by Sebastian Hammer,          *
+ * Michael Seifert, Hans Henrik St{rfeldt, Tom Madsen, and Katja Nyboe.     *
+ * ------------------------------------------------------------------------ *
+ *			Auction bid parsing routines		 	   *
+ ****************************************************************************/
 #include <ctype.h>
 
+
+#define triggerthis callas105
 
 /*
  * The following code was written by Erwin Andreasen for the automated

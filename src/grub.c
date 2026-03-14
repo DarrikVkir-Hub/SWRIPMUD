@@ -1,5 +1,8 @@
-/****************************************************************************
- * [S]imulated [M]edieval [A]dventure multi[U]ser [G]ame      |   \\._.//   *
+ /***************************************************************************
+ *                   Star Wars: Rise in Power MUD Codebase                  *
+ *--------------------------------------------------------------------------*
+ * SWRiP Code Additions and changes from the SWReality and Smaug Code       *
+ * copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
  * -----------------------------------------------------------|   (0...0)   *
  * SMAUG 1.4 (C) 1994, 1995, 1996, 1998  by Derek Snider      |    ).:.(    *
  * -----------------------------------------------------------|    {o o}    *
@@ -57,14 +60,14 @@ struct                          /* operand table - info about each op    */
 }  go_op [MAX_NUM_OPS];
 
 enum gr_field_type          /* enumerates the fields in the input record */
-   {name, sex, plrclass, race, level, room, gold, clan, council,
+   {name, sex, class, race, level, room, gold, clan, council,
     site, last, pkill};
 
 struct  gr_struct               /* input record containing pfile info    */
 {
    char    name [MAX_NAME_LENGTH];
    char    sex;
-   char    plrclass;
+   char    class;
    char    race;
    char    level;
    short   room;
@@ -682,7 +685,6 @@ bool go_read_names( CHAR_DATA *ch, OBJ_DATA *po, GO_STRUCT *r, bool np_sw,
   char *ground = "(none)";
   char *ack    = "(error in data structure)";
 
-
   r->s[ONAME] = ( po->name ) ? po->name : ack;  /* set object name */
 
   if ( po->carried_by )                  /* it's being carried by a char */
@@ -898,8 +900,8 @@ bool gr_eval_and (GR_STRUCT r, int op_num)
         if ( !go_eval_num (r.sex, gr_op[cou].op, gr_op[cou].nval) )
            return FALSE;
         else break;
-     case plrclass:
-        if ( !go_eval_num (r.plrclass, gr_op[cou].op, gr_op[cou].nval) )
+     case class:
+        if ( !go_eval_num (r.class, gr_op[cou].op, gr_op[cou].nval) )
            return FALSE;
         else break;
      case race:
@@ -961,8 +963,8 @@ bool gr_eval_or (GR_STRUCT r, int op_num)
         if ( go_eval_num (r.sex, gr_op[cou].op, gr_op[cou].nval) )
            return TRUE;
         else break;
-     case plrclass:
-        if ( go_eval_num (r.plrclass, gr_op[cou].op, gr_op[cou].nval) )
+     case class:
+        if ( go_eval_num (r.class, gr_op[cou].op, gr_op[cou].nval) )
            return TRUE;
         else break;
      case race:
@@ -1102,7 +1104,7 @@ void gr_read (
   int  tot_match = 0;                       /* total records matched     */
   GR_STRUCT r;                              /* input (physical record)   */
   char sex[]   = "NMF";                     /* convert sex to text       */
-  char plrclass[] = "MCTWVDRAPN";           /* convert class to text     */
+  char class[] = "MCTWVDRAPN";              /* convert class to text     */
   char race[][3] =                          /* convert race to text      */
   {"Hu", "El", "Dw", "Ha", "Px", "Va", "Og", "HO", "HT", "HE", "Gi",
    "Dr", "SE", "Li", "Gn"};
@@ -1140,7 +1142,7 @@ void gr_read (
            ch_printf(ch,
   "%-12s %2hd %c %2s %c %3s %3s %5hd %11ld %-15s %6lu %c\n\r", 
               r.name, r.level, sex[(unsigned char) r.sex],
-              race[(unsigned char) r.race], plrclass[(unsigned char) r.plrclass],
+              race[(unsigned char) r.race], class[(unsigned char) r.class],
               clan[(unsigned char) r.clan],
               council[(unsigned char) r.council],
               r.room, r.gold, r.site, r.last, r.pkill);
@@ -1628,7 +1630,10 @@ if (!str_cmp(arg1, "mrc"))
    race     = atoi (arg3);
    vnum1    = atoi (arg4);
    vnum2    = atoi (arg5);
-
+/*
+   ch_printf(ch, "dis_num=%d race=%d class=%d vnum1=%d vnum2=%d\n\r",
+       dis_num, race, class, vnum1, vnum2);
+*/
    send_to_char("\n\r", ch);
 
    for (cou = 0; cou < MAX_KEY_HASH; cou++)

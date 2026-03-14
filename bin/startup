@@ -5,20 +5,20 @@ port=7000
 if [ -n "$1" ]; then port=$1; fi
 
 # Obtain SWR base directory.
-swrdir=~/mud
+swrdir=~/swr
 if [ -n "$2" ]; then swrdir=$2; fi
 
 # Check that startup script or game binary isn't already running.
-#[ -e $swrdir/log/startup.pid ] && if [ /proc/`cat $swrdir/log/startup.pid`/exe \
-#-ef $swrdir/bin/startup ]; then
-#echo Error: Startup script already running.
-#exit 1
-#fi
-#[ -e $swrdir/log/current.log ] && if [ /proc/`sed "2,\\$d;s/^.*PID: //" \
-#$swrdir/log/current.log`/exe -ef $swrdir/bin/swrip ]; then
-#echo Error: Game binary already running.
-#exit 1
-#fi
+[ -e $swrdir/log/startup.pid ] && if [ /proc/`cat $swrdir/log/startup.pid`/exe \
+-ef $swrdir/bin/startup ]; then
+echo Error: Startup script already running.
+exit 1
+fi
+[ -e $swrdir/log/current.log ] && if [ /proc/`sed "2,\\$d;s/^.*PID: //" \
+$swrdir/log/current.log`/exe -ef $swrdir/bin/swrip ]; then
+echo Error: Game binary already running.
+exit 1
+fi
 
 cd $swrdir/area
 ulimit -s 1024

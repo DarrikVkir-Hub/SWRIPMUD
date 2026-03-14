@@ -13,14 +13,14 @@ $
 #FLAGS
 2
 
-#ECONOMY 0 42015975
+#ECONOMY 0 42255975
 
 #MOBILES
 #1
 Puff~
 Puff~
 Puff the Fractal Dragon is here, contemplating a higher reality.
-~
+~
 ~
 3 4194856 1000 Z
 50 20 -30 5d10+30550 4d10+200
@@ -33,37 +33,37 @@ Puff the Fractal Dragon is here, contemplating a higher reality.
 0 0 0 0 0 0 0 0
 > speech_prog test~
 say triggered by (name):	$n
-say triggered by (name&title): 	$N
-say triggerer is (he,she,it):	$e
-say triggerer is (him,her,it):	$m
-say triggerer is (his,hers,its):$s
-say random char (name):		$r
-say random char (name&title or short): 	$R
-say random char  (he,she,it):	$J
-say random char (him,her,it):	$L
-say random char (his,hers,its):	$K
-~
+say triggered by (name&title): 	$N
+say triggerer is (he,she,it):	$e
+say triggerer is (him,her,it):	$m
+say triggerer is (his,hers,its):$s
+say random char (name):		$r
+say random char (name&title or short): 	$R
+say random char  (he,she,it):	$J
+say random char (him,her,it):	$L
+say random char (his,hers,its):	$K
+~
 > speech_prog test2~
 say firstname of obj:	 	$i
-say short_desc/title of obj: 	$I
-say he/she/it of obj:	 	$j
-say him/her/it of obj:	 	$k
-say his/hers/its of obj:	$l
-say firstname of victim: 	$t
-say short_desc/title of victim:	$T
-say he/she/it of victim: 	$E
-say him/her/it of victim: 	$M
-say his/hers/its of victim:	$S
-~
+say short_desc/title of obj: 	$I
+say he/she/it of obj:	 	$j
+say him/her/it of obj:	 	$k
+say his/hers/its of obj:	$l
+say firstname of victim: 	$t
+say short_desc/title of victim:	$T
+say he/she/it of victim: 	$E
+say him/her/it of victim: 	$M
+say his/hers/its of victim:	$S
+~
 |
 #2
 Richard Simmons~
 Richard Simmons~
 Richard Simmons stands before you...he wants you...to dance....
-~
+~
 This demon is clearly something that you don't want to mess with...
-It appears to be very agile, and very strong.  
-~
+It appears to be very agile, and very strong.  
+~
 1073741827 40 -1000 Z
 50 1 -300 5d10+31550 1d2+2
 10000 0
@@ -75,46 +75,46 @@ This demon is clearly something that you don't want to mess with...
 0 0 0 0 0 0 0 0
 > act_prog p is dying~
 mpforce $n drink
-c heal $n
-~
+c heal $n
+~
 > act_prog p is starved~
 mpoload 20
-give roll $n
-mpforce $n eat roll
-cast heal $n
-emote cackles happily
-say Oh, the ponies!
-~
+give roll $n
+mpforce $n eat roll
+cast heal $n
+emote cackles happily
+say Oh, the ponies!
+~
 > act_prog p bashes against~
 cast heal $n
-cast heal $n
-~
+cast heal $n
+~
 > act_prog p shivers and~
 cast 'cure poison' $n
-cast heal $n
-~
+cast heal $n
+~
 > act_prog p wears~
 c heal $n
-c heal $n
-~
+c heal $n
+~
 > act_prog p wields~
 c heal $n
-c heal $n
-~
+c heal $n
+~
 > act_prog p is DEAD!!~
 mptrans $n 6
-~
+~
 > rand_prog 25~
 emote hops around singing, "I'm a pony, I'm a pony, I'm a pony!"
-~
+~
 |
 #3
 supermob~
 the supermob~
 The supermob is here.  He looks busy as hell.
-~
+~
 How clever he looks!
-~
+~
 10493953 4259882 -1000 Z
 105 1 -162 21d10+1050 10d4+2
 10000 0
@@ -126,16 +126,16 @@ How clever he looks!
 0 0 0 0 0 0 0 0
 > rand_prog 25~
 mpinvis 101
-~
+~
 > entry_prog 100~
 mpinvis 101
-~
+~
 |
 #4
 a vendor~
 a vendor~
 A Vendor owned by %s
-~
+~
 ~
 33555459 0 0 Z
 103 0 0 0d0+0 0d0+0
@@ -150,12 +150,12 @@ A Vendor owned by %s
 undead animated corpse~
 an animated corpse~
 An animated corpse struggles with the horror of its undeath.
-~
+~
 Denied its rightful death, this animated corpse has been infused with the
-powerful energies of its master.  It exists on the precipice between life
-and unlife, even as its physical body rots and decays under the strain of
-its tasks.
-~
+powerful energies of its master.  It exists on the precipice between life
+and unlife, even as its physical body rots and decays under the strain of
+its tasks.
+~
 1 0 0 Z
 1 0 0 0d0+0 0d0+0
 0 0
@@ -169,7 +169,7 @@ Denied its rightful death, this animated corpse has been infused with the
 Rosie O'Donnel~
 Rosie O'Donnel...~
 Rosie O'Donnel blubbers here...like a beached whale
-~
+~
 ~
 1074003969 0 -1000 Z
 1 0 0 0d0+0 0d0+0
@@ -184,7 +184,7 @@ Rosie O'Donnel blubbers here...like a beached whale
 Al Gore~
 a newly created Al Gore~
 Al Gore, the greatest thing since Nyquil, stands before you
-~
+~
 ~
 1073741825 0 0 Z
 1 0 0 0d0+0 0d0+0
@@ -197,22 +197,22 @@ Al Gore, the greatest thing since Nyquil, stands before you
 0 0 0 0 0 0 0 0
 > act_prog p is thirsty~
 mpforce $n drink
-emote grins quietly
-say After no dose stopped giving me
-cash...
-say The wife HAD to go.
-~
+emote grins quietly
+say After no dose stopped giving me
+cash...
+say The wife HAD to go.
+~
 |
 #10
 mauzumi die wolf~
 Mauzumi, the Dire Wolf~
 &z&W&zA huge Dire Wolf stands here.
-~
+~
 While this large beast circles you, you have a chance to see its large          
-fangs and its sharp claws.  The wolf's eyes are small, black and have           
-the aura of a deadly intent.  Its raggedy coat tells of a recent battle         
-with something.
-~
+fangs and its sharp claws.  The wolf's eyes are small, black and have           
+the aura of a deadly intent.  Its raggedy coat tells of a recent battle         
+with something.
+~
 168036355 0 0 Z
 80 0 -100 16d10+800 8d4+2
 0 0
@@ -226,11 +226,11 @@ While this large beast circles you, you have a chance to see its large
 mist~
 mist~
 A thick mist plays with your senses.
-~
+~
 Is it the fog you see?  Or are your eyes playing deadly tricks on you.  The
-mist swirls around you and then quickly disappears before you can blink.  You
-suddenly find yourself overcome with an unknown power.
-~
+mist swirls around you and then quickly disappears before you can blink.  You
+suddenly find yourself overcome with an unknown power.
+~
 1 2129920 0 Z
 1 0 0 0d0+0 0d0+0
 0 0
@@ -244,11 +244,11 @@ Is it the fog you see?  Or are your eyes playing deadly tricks on you.  The
 bat~
 bat~
 A bat hovers nearby with bloody fangs.
-~
+~
 As this bloodsucking creature flies past you, you notice the tiny black
-eyes that stare at your jugular vein.  This little black bat has the
-intentions of drinking your blood until there is none left in your body.
-~
+eyes that stare at your jugular vein.  This little black bat has the
+intentions of drinking your blood until there is none left in your body.
+~
 1 524288 0 Z
 1 0 0 0d0+0 0d0+0
 0 0
@@ -262,12 +262,12 @@ As this bloodsucking creature flies past you, you notice the tiny black
 hawk~
 hawk~
 A hawk watches you with predatory eyes from its perch.
-~
+~
 This proud creature stands upon its perch watching you with unblinking
-eyes.  Any movement made by you could make it flare its wings in disapproval
-and open its beak to scream its intent.  Its long beak open and before you
-know what has happened, it comes flying towards you.
-~
+eyes.  Any movement made by you could make it flare its wings in disapproval
+and open its beak to scream its intent.  Its long beak open and before you
+know what has happened, it comes flying towards you.
+~
 1 524288 0 Z
 1 0 0 0d0+0 0d0+0
 0 0
@@ -281,11 +281,11 @@ This proud creature stands upon its perch watching you with unblinking
 black cat~
 black cat~
 A black cat has crossed your path with deadly intent.
-~
+~
 With a furry black coat, and big yellow eyes, this cat gracefully walks
-across your path, bringing you several years of bad luck.  Its tail moves
-slowly to tell you that it is laughing at your misfortune.
-~
+across your path, bringing you several years of bad luck.  Its tail moves
+slowly to tell you that it is laughing at your misfortune.
+~
 1 8 0 Z
 1 0 0 0d0+0 0d0+0
 0 0
@@ -299,12 +299,12 @@ With a furry black coat, and big yellow eyes, this cat gracefully walks
 dove~
 dove~
 A beautiful dove sings a melancholy melody from its nest.
-~
+~
 With feathers the colour of soft grey and soft loving black eyes, this small
-delicate creature sings you a tune full of romance.  The tune it sings comes
-from the small breast that rises and falls with every chorus it sings.  You
-are at peace as you listen to this lovable creature.
-~
+delicate creature sings you a tune full of romance.  The tune it sings comes
+from the small breast that rises and falls with every chorus it sings.  You
+are at peace as you listen to this lovable creature.
+~
 1 524288 0 Z
 1 0 0 0d0+0 0d0+0
 0 0
@@ -318,12 +318,12 @@ With feathers the colour of soft grey and soft loving black eyes, this small
 fish~
 fish~
 A fish blows large bubbles as it quickly swims past you.
-~
+~
 With fins, teeth and gills, this slippery little thing is hard to catch.
-It swims with a speed no beast, human or animal can compete with.  It's
-tiny eyes, move with every breath.  It blows several large bubbles as it
-quickly swims past you.
-~
+It swims with a speed no beast, human or animal can compete with.  It's
+tiny eyes, move with every breath.  It blows several large bubbles as it
+quickly swims past you.
+~
 1 -2147483648 0 Z
 1 0 0 0d0+0 0d0+0
 0 0
@@ -337,7 +337,7 @@ With fins, teeth and gills, this slippery little thing is hard to catch.
 imperial trooper stormtrooper~
 a stormtrooper~
 An imperial stormtrooper stands at attention here.
-~
+~
 ~
 1073774593 0 0 Z
 10 0 75 2d10+100 1d4+2
@@ -352,7 +352,7 @@ An imperial stormtrooper stands at attention here.
 imperial guard stormtrooper~
 an imperial guard~
 An imperial guard stands at attention.
-~
+~
 ~
 3 0 0 Z
 1 0 0 0d0+0 1d10+0
@@ -367,7 +367,7 @@ An imperial guard stands at attention.
 Rebel Alliance guard~
 a Rebel Alliance guard~
 A Rebel Alliance guard stands at attention.
-~
+~
 ~
 3 0 0 Z
 1 0 0 0d0+0 1d10+0
@@ -382,7 +382,7 @@ A Rebel Alliance guard stands at attention.
 Rebel Alliance Trooper soldier~
 a rebel alliance trooper~
 A rebel alliance trooper is ready for battle.
-~
+~
 ~
 32769 0 0 Z
 1 0 0 0d0+0 1d10+0
@@ -397,7 +397,7 @@ A rebel alliance trooper is ready for battle.
 A mercenary~
 a mercenary~
 A mercenary stands here ready for battle.
-~
+~
 ~
 32769 0 0 Z
 1 0 0 0d0+0 1d10+0
@@ -412,7 +412,7 @@ A mercenary stands here ready for battle.
 bouncer guard thug~
 a guard~
 An alert guard stands at attention.
-~
+~
 ~
 3 0 0 Z
 1 0 0 0d0+0 1d10+0
@@ -427,7 +427,7 @@ An alert guard stands at attention.
 Imperial Elite Guard~
 an imperial guard~
 An elite imperial guard stands at rigid attention.
-~
+~
 ~
 3 32768 0 Z
 1 0 0 0d0+0 1d10+0
@@ -442,7 +442,7 @@ An elite imperial guard stands at rigid attention.
 The Empire~
 an imperial guard~
 An imperial guard stands at attention.
-~
+~
 ~
 1 0 0 Z
 1 0 0 0d0+0 1d10+0
@@ -457,7 +457,7 @@ An imperial guard stands at attention.
 an imperial specfor trooper~
 a stormtrooper~
 An imperial special forces trooper stands at rigid attention here.
-~
+~
 ~
 32769 0 0 Z
 10 0 75 2d10+100 1d4+2
@@ -472,7 +472,7 @@ An imperial special forces trooper stands at rigid attention here.
 rebel elite guard~
 a Rebel Alliance guard~
 An elite rebel guard stands at rigid attention.
-~
+~
 ~
 3 32768 0 Z
 1 0 0 0d0+0 1d10+0
@@ -487,7 +487,7 @@ An elite rebel guard stands at rigid attention.
 The Rebel Alliance~
 a Rebel Alliance guard~
 A Rebel Alliance guard stands at attention.
-~
+~
 ~
 1 0 0 Z
 1 0 0 0d0+0 1d10+0
@@ -502,7 +502,7 @@ A Rebel Alliance guard stands at attention.
 a rebel specfor trooper~
 a rebel alliance trooper~
 A rebel special forces trooper stands at rigid attention here.
-~
+~
 ~
 32769 32768 0 Z
 1 0 0 0d0+0 1d10+0
@@ -517,7 +517,7 @@ A rebel special forces trooper stands at rigid attention here.
 a merc elite guard~
 a guard~
 An elite guard stands at rigid attention.
-~
+~
 ~
 3 32768 0 Z
 1 0 0 0d0+0 1d10+0
@@ -532,7 +532,7 @@ An elite guard stands at rigid attention.
 bouncer guard thug~
 a guard~
 An alert guard stands at attention.
-~
+~
 ~
 1 0 0 Z
 1 0 0 0d0+0 1d10+0
@@ -547,7 +547,7 @@ An alert guard stands at attention.
 A mercenary~
 a mercenary~
 An ex-military special forces trooper stands here, looking relaxed.
-~
+~
 ~
 1073774593 0 0 Z
 1 0 0 0d0+0 1d10+0
@@ -562,7 +562,7 @@ An ex-military special forces trooper stands here, looking relaxed.
 Ship Upgrades Technician~
 the ship upgrades technician~
 The ship upgrades technician is here.
-~
+~
 ~
 1107300355 0 0 Z
 105 0 -162 21d10+1050 10d4+2
@@ -575,13 +575,13 @@ The ship upgrades technician is here.
 0 0 0 0 0 0 0 0
 > speech_prog autopilot~
 mpat 5991 autopilot
-~
+~
 |
 #50
 Master Yoda~
 Jedi Master Yoda~
 Master Yoda is here to train you in the ways of the force.
-~
+~
 ~
 1124074499 40 1000 Z
 105 0 -162 21d10+5000 10d4+2
@@ -594,41 +594,41 @@ Master Yoda is here to train you in the ways of the force.
 0 0 0 0 0 0 0 0
 > act_prog package.~
 if ovnuminv(10208) >= 1
-say Thank you.
-mpwithdraw 2500
-give 2500 credits $n
-mpgain $n 5 100000
-else
-say hmm... Thanks, but this isn't adressed to me.
-drop all
-endif
-mpat 10299 drop all
-mpat 10299 mppurge
-~
+say Thank you.
+mpwithdraw 2500
+give 2500 credits $n
+mpgain $n 5 100000
+else
+say hmm... Thanks, but this isn't adressed to me.
+drop all
+endif
+mpat 10299 drop all
+mpat 10299 mppurge
+~
 > speech_prog corusca~
 non $n 
-' The corusca is on of the best crytals used to make a lightsaber
-' and for that reason they are very rare
-' I have seen but a few in my day.
-~
+' The corusca is on of the best crytals used to make a lightsaber
+' and for that reason they are very rare
+' I have seen but a few in my day.
+~
 > speech_prog give~
 chuckle 
-' yes i did give a Corusca Crystal to a young apprentice of mine
-' he would have grown strong in the force, if his father would
-' not have died , and him have to return to his fathers shop.
-~
+' yes i did give a Corusca Crystal to a young apprentice of mine
+' he would have grown strong in the force, if his father would
+' not have died , and him have to return to his fathers shop.
+~
 > speech_prog shop~
 grin $n
-' yes the jedi shop in the space mall , he is the owner of it now.
-' if you seek the corusca crystal he may still have it 
-' i don't believe he had crafted his lightsaber before he left.
-~
+' yes the jedi shop in the space mall , he is the owner of it now.
+' if you seek the corusca crystal he may still have it 
+' i don't believe he had crafted his lightsaber before he left.
+~
 |
 #98
 janitor~
 a janitor~
 A janitor cleans up the ship here.
-~
+~
 ~
 1073741825 0 0 Z
 1 0 0 0d0+0 0d0+0
@@ -641,7 +641,7 @@ A janitor cleans up the ship here.
 0 0 0 0 0 0 0 0
 > rand_prog 100~
 mpat 32179 drop all
-~
+~
 |
 #0
 
@@ -958,8 +958,8 @@ A grenade .... run!!!!~
 E
 grenade~
 A Teklos low yield grenade.  Perfect for blowing your neighbor into tiny
-bits with. 
-~
+bits with. 
+~
 #46
 landmine mine~
 a landmine~
@@ -971,8 +971,8 @@ Don't step on the landmine.~
 E
 landmine mine~
 A Blastech plasma mine.  Developed after the Imperial defeat at Yavin, this
-mine was used to saturate possible rebel bases.
-~
+mine was used to saturate possible rebel bases.
+~
 #50
 blaster Blastech E11 rifle E-11~
 a Blastech E-11 blaster rifle~
@@ -984,12 +984,12 @@ A Blastech E-11 blaster rifle was left here.~
 E
 blaster Blastech E11 rifle E-11~
 The most common weapon in use by either the Rebel Alliance, New Order, or
-planetary militias. This highpowered weapon was so mass produced when
-first seeing service with the New Order's stormtrooper corps, that between
-stolen shipments and weapons scavenged from battlefields, the Alliance had
-almost as many of these rifles as the Empire. Later, the weapon was
-'cloned' by SoroSuub as the Stormtrooper One, or SoroSuub One rifle.
-~
+planetary militias. This highpowered weapon was so mass produced when
+first seeing service with the New Order's stormtrooper corps, that between
+stolen shipments and weapons scavenged from battlefields, the Alliance had
+almost as many of these rifles as the Empire. Later, the weapon was
+'cloned' by SoroSuub as the Stormtrooper One, or SoroSuub One rifle.
+~
 A
 18 2
 #51
@@ -1003,8 +1003,8 @@ A Blastech DL-18 lies here on the floor.~
 E
 blaster blastech dl-18 blaster pistol~
 The DL-18 is a sleek, hand-held blaster built by Blas-Tech, often referred
-to as the "Mos Eisley special". 
-~
+to as the "Mos Eisley special". 
+~
 A
 18 1
 #52
@@ -1018,9 +1018,9 @@ A heavy blaster pistol was dropped here.~
 E
 blaster blastech dl-44 heavy blaster pistol~
 The DL-44 is a high powered hand blaster, often banned from civilian use in
-certain planetary systems.  Han Solo himself uses a modified version of
-the DL-44.
-~
+certain planetary systems.  Han Solo himself uses a modified version of
+the DL-44.
+~
 A
 19 1
 #53
@@ -1034,9 +1034,9 @@ An assault rifle was left here.~
 E
 blaster blastech dlt-19 assault rifle~
 The DLT-19 is a long, sleek blaster rifle was manufactured by BlasTech.
-Although it mainly sees use only in the stormtrooper corps, it saw heavy
-combat on the side of the Alliance during the Battle of Hoth.
-~
+Although it mainly sees use only in the stormtrooper corps, it saw heavy
+combat on the side of the Alliance during the Battle of Hoth.
+~
 A
 18 2
 #54
@@ -1050,39 +1050,39 @@ A repeating blaster is collecting dust.~
 E
 blastech t-21 repeating blaster~
 A long, thick barreled weapon.  The T-21 is commonly seen in use with
-stormtrooper corps and Bounty Hunters. 
-~
+stormtrooper corps and Bounty Hunters. 
+~
 E
 blastech t-21 repeating blaster~
 A long, thick barreled weapon, the Blastec T-21 is a high powered rifle
-often seen in use by private militias and the stormtrooper corps.
-~
+often seen in use by private militias and the stormtrooper corps.
+~
 E
 blastech t-21 repeating blaster~
 A long, thick barreled weapon, the Blastec T-21 is a high powered rifle
-often seen in use by private militias and the stormtrooper corps.
-~
+often seen in use by private militias and the stormtrooper corps.
+~
 E
 blastech t-21 repeating blaster~
 A long, thick barreled weapon, often seen in use by stormtroopers.
-/
-~
+/
+~
 E
 blastech t-21 repeating blaster~
 A long, thick barreled weapon, often used by
-stormtroopers.
-~
+stormtroopers.
+~
 E
 blastech t-21 repeating blaster~
 A long, thick barreled blaster.
-~
+~
 E
 blastech t-21 repeating blaster~
 ~
 E
 blastech t-21 repeating blaster~
 A long barreled blaster
-~
+~
 A
 18 3
 #55
@@ -1096,9 +1096,9 @@ A Bryar heavy blaster pistol could come in handy.~
 E
 bryar pistol blaster~
 The Bryar heavy blaster pistol. Although considered antique in comparisson
-with the new and more powerful BlasTech models, this old blaster still
-packs a punch.
-~
+with the new and more powerful BlasTech models, this old blaster still
+packs a punch.
+~
 #56
 blaster Budgetline 3.0/12 holdout~
 a Budgetline 3.0/12~
@@ -1110,8 +1110,8 @@ A cheap holdout blaster is here.~
 E
 blaster Budgetline 3.0/12 holdout~
 A small, easily concealable blaster, the budgetline is used by undercover
-agents galaxy wide. It's lack of accuracy is made up for by it's stealth.
-~
+agents galaxy wide. It's lack of accuracy is made up for by it's stealth.
+~
 A
 18 -3
 #57
@@ -1150,34 +1150,6 @@ A blaster rifle was dropped here.~
 10 3000 300
 A
 18 1
-#61
-A recliner~
-a recliner~
-A large comfortable recliner is here with it's back to the fireplace.~
-~
-12 0 1
-1 1 3 0
-500 0 0
-#62
-A small silver spork~
-&CA small silver spork&R&W~
-&CA small silver spork is lieing here upon the ground...&R&W~
-~
-5 16 8192
-12 32700 32700 12
-7 0 0
-A
-18 5
-A
-18 5
-A
-18 5
-A
-19 5
-A
-19 5
-A
-19 5
 #70
 quest weapon double bladed lightsaber saber~
 &R&Wa &rd&Rou&R&Wbl&R&we-b&R&Wl&Rade&rd&R&W lightsaber~
@@ -1192,15 +1164,15 @@ A
 18 5
 > wear_prog 100~
 mpechoat $n &R&WBoth ends of your lightsaber ignite with a hiss and glow.
-mpechoat $n Two &rcrimson&R&W blades leap into life!
-mpechoaround $n $n's lightsaber ignites with a &rred&R&W glow. 
-mpechoaround $n There is a &R&whiss&R&W as its other end extends as well!
-mpechoaround $n &GA sick feeling develops in your stomach.&R&W 
-~
+mpechoat $n Two &rcrimson&R&W blades leap into life!
+mpechoaround $n $n's lightsaber ignites with a &rred&R&W glow. 
+mpechoaround $n There is a &R&whiss&R&W as its other end extends as well!
+mpechoaround $n &GA sick feeling develops in your stomach.&R&W 
+~
 > remove_prog 100~
 mpechoat $n &R&WYour lightsaber contracts with a soft &R&whiss&R&W. 
-mpechoaround $n &R&W$n's lightsaber contracts with a soft &R&whiss&R&W. 
-~
+mpechoaround $n &R&W$n's lightsaber contracts with a soft &R&whiss&R&W. 
+~
 |
 #71
 quest armor mandalorian battle helmet~
@@ -1213,17 +1185,17 @@ An evil looking battle helmet.~
 E
 quest armor mandalorian battle helmet~
 A Mandalorian helmet.  Worn by the most fierce warriors in the galaxy.
-~
+~
 A
 26 16777216
 A
 18 8
 > wear_prog 100~
 mpechoat $n &YWithin the battle helmet, your vision is sharpened. 
-~
+~
 > remove_prog 100~
 mpechoat $n &YYour vision returns to normal.
-~
+~
 |
 #72
 quest item~
@@ -1235,8 +1207,8 @@ A dud is here.~
 1 0 0
 > use_prog 100~
 mpoload 10313
-put ration item
-~
+put ration item
+~
 |
 #73
 quest shield generator~
@@ -1249,20 +1221,20 @@ A small energy device lies on the floor.~
 E
 quest shield~
 A glowing energy shield that seems to pulse with power.  It looks strong
-enough to repel some blaster fire.
-~
+enough to repel some blaster fire.
+~
 A
 26 67108864
 A
 28 8192
 > wear_prog 100~
 mpechoat $n &CYou feel protected within the energy shield.
-mpechoaround $n &CA bluish-green energy shield envelops $n.
-~
+mpechoaround $n &CA bluish-green energy shield envelops $n.
+~
 > remove_prog 100~
 mpechoat $n &CYou turn off your energy shield. 
-mpechoaround $n &CThe bluish glow around $n seems to dissolve. 
-~
+mpechoaround $n &CThe bluish glow around $n seems to dissolve. 
+~
 |
 #74
 quest item dinner~
@@ -1282,12 +1254,12 @@ quest token sapphire~
 2 0 0
 > get_prog 100~
 if questobj($n) == 75
-mpechoat $n &YYou have found the sapphire!  Return to your employer!
-else
-mpechoat $n &YYou weren't sent for this!
-mpforce $n drop sapphire
-endif
-~
+mpechoat $n &YYou have found the sapphire!  Return to your employer!
+else
+mpechoat $n &YYou weren't sent for this!
+mpforce $n drop sapphire
+endif
+~
 |
 #76
 quest token diamond~
@@ -1299,12 +1271,12 @@ quest token diamond~
 1 0 0
 > get_prog 100~
 if questobj($n) == 76
-mpechoat $n &YYou have found the diamond!  Return to your employer! 
-else
-mpechoat $n &YYou weren't sent for this!
-mpforce $n drop diamond
-endif
-~
+mpechoat $n &YYou have found the diamond!  Return to your employer! 
+else
+mpechoat $n &YYou weren't sent for this!
+mpforce $n drop diamond
+endif
+~
 |
 #77
 quest token emerald~
@@ -1316,12 +1288,12 @@ quest token emerald~
 1 0 0
 > get_prog 100~
 if questobj($n) == 77
-mpechoat $n &YYou have found the emerald!  Return to your employer! 
-else
-mpechoat $n &YYou weren't sent for this!
-mpforce $n drop emerald
-endif
-~
+mpechoat $n &YYou have found the emerald!  Return to your employer! 
+else
+mpechoat $n &YYou weren't sent for this!
+mpforce $n drop emerald
+endif
+~
 |
 #78
 quest token amythest~
@@ -1333,12 +1305,12 @@ quest token amythest~
 1 0 0
 > get_prog 100~
 if questobj($n) == 78
-mpechoat $n &YYou have found the amythest!  Return to your employer! 
-else
-mpechoat $n &YYou weren't sent for this!
-mpfroce $n drop amythest
-endif
-~
+mpechoat $n &YYou have found the amythest!  Return to your employer! 
+else
+mpechoat $n &YYou weren't sent for this!
+mpfroce $n drop amythest
+endif
+~
 |
 #79
 quest token ruby~
@@ -1350,12 +1322,12 @@ quest token ruby~
 1 0 0
 > get_prog 100~
 if questobj($n) == 79
-mpecohat $n &YYou have found the ruby!  Return to your employer! 
-else
-mpechoat $n &YYou weren't sent for this! 
-mpforce $n drop ruby
-endif
-~
+mpecohat $n &YYou have found the ruby!  Return to your employer! 
+else
+mpechoat $n &YYou weren't sent for this! 
+mpforce $n drop ruby
+endif
+~
 |
 #90
 Suggestions Board~
@@ -1378,15 +1350,15 @@ Some god dropped a newly created final object here.~
 
 #ROOMS
 #1
-&CCorran Horn's Landing Pad&R&W~
+&CCorrans Insane Apartment&g~
 This is Corran Horns Apartment. As you look around you see a few
-items scattered in a corner. The bed in the corner is made with 
-military preciceness, all the corners straight and tucked in as 
-tight as can be. There is a small desk with a DataTerminal in the 
-corner displaying the Rogue Squadron crest, and a Holo-projector.
-In the closet you see Civilian clothing and a few pressed
-uniforms neatly hung in a row.
-~
+items scattered in a corner. The bed in the corner is made with 
+military preciceness, all the corners straight and tucked in as 
+tight as can be. There is a small desk with a DataTerminal in the 
+corner displaying the Rogue Squadron crest, and a Holo-projector.
+In the closet you see Civilian clothing and a few pressed
+uniforms neatly hung in a row.
+~
 0 76546060 1
 D1
 ~
@@ -1396,46 +1368,42 @@ D4
 ~
 ~
 0 -1 107
-D10
-~
-pasta~
-526344 -1 32050
 > speech_prog test~
 say triggered by (name):	$n
-say triggered by (name&title): 	$N
-say triggerer is (he,she,it):	$e
-say triggerer is (him,her,it):	$m
-say triggerer is (his,hers,its):$s
-say random char (name):		$r
-say random char (name&title or short): 	$R
-say random char  (he,she,it):	$J
-say random char (him,her,it):	$K
-say random char (his,hers,its):	$L
-~
+say triggered by (name&title): 	$N
+say triggerer is (he,she,it):	$e
+say triggerer is (him,her,it):	$m
+say triggerer is (his,hers,its):$s
+say random char (name):		$r
+say random char (name&title or short): 	$R
+say random char  (he,she,it):	$J
+say random char (him,her,it):	$K
+say random char (his,hers,its):	$L
+~
 > speech_prog test2~
 say firstname of room:	 	$i
-say short_desc/title of room: 	$I
-say he/she/it of room:	 	$j
-say him/her/it of room:	 	$k
-say his/hers/its of room:	$l
-say firstname of victim: 	$t
-say short_desc/title of victim:	$T
-say he/she/it of victim: 	$E
-say him/her/it of victim: 	$M
-say his/hers/its of victim:	$S
-~
+say short_desc/title of room: 	$I
+say he/she/it of room:	 	$j
+say him/her/it of room:	 	$k
+say his/hers/its of room:	$l
+say firstname of victim: 	$t
+say short_desc/title of victim:	$T
+say he/she/it of victim: 	$E
+say him/her/it of victim: 	$M
+say his/hers/its of victim:	$S
+~
 > speech_prog die~
 mpdamage $n 234234
-~
+~
 |
 S
 #2
-An Empty Apartment~
+Limbo~
 You float in a formless void, detached from all sensation of physical
-matter, surrounded by swirling glowing light which fades into the
-relative darkness around you without any trace of edge or shadow.
-~
-0 2098188 1
+matter, surrounded by swirling glowing light which fades into the
+relative darkness around you without any trace of edge or shadow.
+~
+0 3146764 1
 D4
 ~
 ~
@@ -1444,28 +1412,28 @@ S
 #3
 Storage~
 This room is reserved for storage of polymorphed players.
-~
+~
 0 3156486 1
 S
 #4
 Storage~
 This room is reserved for future use.
-~
+~
 0 12 0
 S
 #5
-&A Green Hut&R&W~
+Floating in a void~
 ~
-0 1074790404 1
+0 1073741828 1
 S
 #6
 &GR&Ri&Gc&Rh&Ga&Rr&Gd S&bi&Rm&Gm&bo&Rn&G'&bs &RD&Wa&Bn&Rc&We &BA&bc&Ya&Bd&be&Ym&Gy&R&W~
 Now you've done it... the gods must have truly forsaken you, to have sent
-you straight to Richard Simmons and Rosie O'Donnel!
-   It is highly advised to wait here to make your appeal to the wrath of
-the gods... or face being damned to this place for all eternity!
-~
-0 8586316 1
+you straight to Richard Simmons and Rosie O'Donnel!
+   It is highly advised to wait here to make your appeal to the wrath of
+the gods... or face being damned to this place for all eternity!
+~
+0 8520780 1
 S
 #7
 Mobprog Purge Room~
@@ -1473,7 +1441,7 @@ Mobprog Purge Room~
 0 1073741828 1
 > speech_prog purge~
 mppurge
-~
+~
 |
 S
 #8
@@ -1482,40 +1450,31 @@ Immhood ClanStoreRoom~
 0 1074266116 1
 S
 #10
-&rT&Rh&re&R S&rc&Ro&rr&Rp&ri&Ro&rn&R'&rs&R D&re&Rn&R&W  ~
-A spacious room, its walls are constructed of brick and wood. A stone
-fireplace with extra firewood dominates one of the walls almost
-completely. Before the fireplace a rather comfy looking couch has been put
-into place, with a small coffee table before it and one on each side of
-the arm rests. Diagonal from the couch there is a large high backed
-recliner set with it's back partially towards the fireplace as to keep it
-warm, another small table upon its left side with a light upon it for
-reading. A large comfortanble looking bed has been pushed against one
-wall. Four posted, canopy style the curtains of the bed are a dark crimson
-color that while see through casts everything within in a red hue. The
-pillows are made of velvet and stuffed with goose feathers, like the
-matress itself. The beds soft satin sheets are pulled back, slightly,
-invitingly. Against the other wall one can see outside into the eternal
-darkness that surrounds this haven. A painting of a scene from 'A
-midsummer night's dream' takes up most of the wall beside the door though
-it appears unfinished. 
-~
-0 110101004 1
+An Empty Apartment~
+Simple wood logs provide the structure for this room.  A stone fireplace
+dominates one wall, while large windows provide cool breezes in summer.
+Cheery gingham curtains add a bit of life to the room.  A comfy couch and
+chair sit with lamps nearby for reading. A small bed is pushed against one
+wall, a down comforter is rumpled at its foot. A large picture of a
+beautiful boy hangs prominently on a wall near the door. This is a place
+of refuge.
+~
+0 111149580 1
 D5
 ~
 ~
 0 -1 100
 > entry_prog 100~
 if $n == isimm
-mpecho Hello
-endif
-~
+mpecho Hello
+endif
+~
 > speech_prog 100~
 mpmload 329
-mpforce mobslave mpoload 10313
-mpforce mobslave drop ration
-mppurge mobslave
-~
+mpforce mobslave mpoload 10313
+mpforce mobslave drop ration
+mppurge mobslave
+~
 |
 S
 #11
@@ -1531,11 +1490,11 @@ S
 #19
 Incognito Platform~
 A platform is here, located on a desolate shipyard located within the deep
-fabric of space. A few starships are found, being worked on by a greater
-life form and are produced for those mortals who have enough credits to
-purchase them. Quality seems of the essence, and speed nor time has no
-value.  It would seem this bleak area is managed by Den.
-~
+fabric of space. A few starships are found, being worked on by a greater
+life form and are produced for those mortals who have enough credits to
+purchase them. Quality seems of the essence, and speed nor time has no
+value.  It would seem this bleak area is managed by Den.
+~
 0 1073742900 1
 S
 #20
@@ -1546,8 +1505,8 @@ S
 #29
 The Arena~
 You find yourself on the Arena floor.  The roar of the crowd above you
-is overwhelming, while around you ... your opponent awaits your coming.
-~
+is overwhelming, while around you ... your opponent awaits your coming.
+~
 0 8204 1
 D1
 ~
@@ -1563,14 +1522,14 @@ D8
 0 -1 33
 > rand_prog 15~
 mpecho A slow chant floats down to you:  "Two man enter ... one man leave."
-~
+~
 |
 S
 #30
 The Arena~
 You find yourself on the Arena floor.  The roar of the crowd above you
-is overwhelming, while around you ... your opponent awaits your coming.
-~
+is overwhelming, while around you ... your opponent awaits your coming.
+~
 0 8204 1
 D0
 ~
@@ -1590,14 +1549,14 @@ D3
 0 -1 29
 > rand_prog 15~
 mpecho A slow chant floats down to you:  "Two man enter ... one man leave."
-~
+~
 |
 S
 #31
 The Arena~
 You find yourself on the Arena floor.  The roar of the crowd above you
-is overwhelming, while around you ... your opponent awaits your coming.
-~
+is overwhelming, while around you ... your opponent awaits your coming.
+~
 0 8204 1
 D2
 ~
@@ -1613,14 +1572,14 @@ D9
 0 -1 33
 > rand_prog 15~
 mpecho A slow chant floats down to you:  "Two man enter ... one man leave."
-~
+~
 |
 S
 #32
 The Arena~
 You find yourself on the Arena floor.  The roar of the crowd above you
-is overwhelming, while around you ... your opponent awaits your coming.
-~
+is overwhelming, while around you ... your opponent awaits your coming.
+~
 0 8196 1
 D0
 ~
@@ -1636,14 +1595,14 @@ D2
 0 -1 35
 > rand_prog 15~
 mpecho A slow chant floats down to you:  "Two man enter ... one man leave."
-~
+~
 |
 S
 #33
 The Arena~
 You find yourself on the Arena floor.  The roar of the crowd above you
-is overwhelming, while around you ... your opponent awaits your coming.
-~
+is overwhelming, while around you ... your opponent awaits your coming.
+~
 0 8204 1
 D0
 ~
@@ -1679,14 +1638,14 @@ D9
 0 -1 35
 > rand_prog 15~
 mpecho A slow chant floats down to you:  "Two man enter ... one man leave."
-~
+~
 |
 S
 #34
 The Arena~
 You find yourself on the Arena floor.  The roar of the crowd above you
-is overwhelming, while around you ... your opponent awaits your coming.
-~
+is overwhelming, while around you ... your opponent awaits your coming.
+~
 0 8204 1
 D0
 ~
@@ -1702,14 +1661,14 @@ D3
 0 -1 33
 > rand_prog 15~
 mpecho A slow chant floats down to you:  "Two man enter ... one man leave."
-~
+~
 |
 S
 #35
 The Arena~
 You find yourself on the Arena floor.  The roar of the crowd above you
-is overwhelming, while around you ... your opponent awaits your coming.
-~
+is overwhelming, while around you ... your opponent awaits your coming.
+~
 0 8204 1
 D0
 ~
@@ -1725,14 +1684,14 @@ D6
 0 -1 33
 > rand_prog 15~
 mpecho A slow chant floats down to you:  "Two man enter ... one man leave."
-~
+~
 |
 S
 #36
 The Arena~
 You find yourself on the Arena floor.  The roar of the crowd above you
-is overwhelming, while around you ... your opponent awaits your coming.
-~
+is overwhelming, while around you ... your opponent awaits your coming.
+~
 0 8204 1
 D0
 ~
@@ -1752,17 +1711,17 @@ D3
 0 -1 35
 > rand_prog 15~
 mpecho A slow chant floats down to you:  "Two man enter ... one man leave."
-~
+~
 |
 S
 #37
 The Arena~
 You stand in the direct center of the Arena.  Blood pools around your
-feet, and you almost slip in this morbid mess.  The stench of death
-surrounds you, momentarily blocking from your mind the realization
-that you could be attacked from any conceivable direction.  Spinning
-slowly about, you realize the poor tactical position you hold.
-~
+feet, and you almost slip in this morbid mess.  The stench of death
+surrounds you, momentarily blocking from your mind the realization
+that you could be attacked from any conceivable direction.  Spinning
+slowly about, you realize the poor tactical position you hold.
+~
 0 8204 1
 D0
 ~
@@ -1778,21 +1737,21 @@ D7
 0 -1 33
 > rand_prog 15~
 mpecho A slow chant floats down to you:  "Two man enter ... one man leave."
-~
+~
 |
 S
 #38
 Southern Sniper Tower Entrance~
 This large room is the main entrance to the Southern Sniper Tower in the
-Arena. It's a pretty bare room, and has a small set of stairs leading up
-to the main tower supervising the southern portion of the arena. The
-lighting is quite dim, and the bellowing echoes of the crowd would be
-quite distracting to the untrained combatant. The walls are of thick
-duratanium, and many charred blaster/explosive marks are strewn about the
-entire room.
+Arena. It's a pretty bare room, and has a small set of stairs leading up
+to the main tower supervising the southern portion of the arena. The
+lighting is quite dim, and the bellowing echoes of the crowd would be
+quite distracting to the untrained combatant. The walls are of thick
+duratanium, and many charred blaster/explosive marks are strewn about the
+entire room.
 
-&RCLIMBing is essential in getting up!&R&W
-~
+&RCLIMBing is essential in getting up!&R&W
+~
 0 8204 0
 D0
 ~
@@ -1804,19 +1763,19 @@ D4
 65664 -1 39
 > rand_prog 15~
 mpecho A slow chant floats down to you:  "Two man enter ... one man leave."
-~
+~
 |
 S
 #39
 Southern Sniper Tower~
 This tower is the primary advantage point for the Southern side of the
-Arena killing field. Featuring a thin line, combatants can target others
-who run about on the killing field. A careful sniper would watch the
-fields and below him at all times, to avoid ambush..or even being sniped
-from below.
+Arena killing field. Featuring a thin line, combatants can target others
+who run about on the killing field. A careful sniper would watch the
+fields and below him at all times, to avoid ambush..or even being sniped
+from below.
 
-&RCLIMBing is essential in getting down!&R&W
-~
+&RCLIMBing is essential in getting down!&R&W
+~
 0 8204 0
 D0
 ~
@@ -1836,20 +1795,20 @@ D7
 100664320 -1 35
 > rand_prog 15~
 mpecho A slow chant floats down to you:  "Two man enter ... one man leave."
-~
+~
 |
 S
 #40
 Northern Sniper Tower Entrance~
 This large room is the main entrance to the Northern Sniper Tower in the
-Arena. It's a pretty bare room, and has a small set of stairs leading up
-to the main tower supervising a portion of the arena. The lighting is
-quite dim, and the bellowing echoes of the crowd would be quite
-distracting to the untrained fighter. The walls are of thick duratanium,
-and many charred blaster/explosive marks are strewn about the entire room.
+Arena. It's a pretty bare room, and has a small set of stairs leading up
+to the main tower supervising a portion of the arena. The lighting is
+quite dim, and the bellowing echoes of the crowd would be quite
+distracting to the untrained fighter. The walls are of thick duratanium,
+and many charred blaster/explosive marks are strewn about the entire room.
 
-&RCLIMBing is essential in getting up!&R&W
-~
+&RCLIMBing is essential in getting up!&R&W
+~
 0 8204 0
 D2
 ~
@@ -1861,19 +1820,19 @@ D4
 65664 -1 41
 > rand_prog 15~
 mpecho A slow chant floats down to you:  "Two man enter ... one man leave."
-~
+~
 |
 S
 #41
 Northern Sniper Tower~
 This tower is the primary advantage point for the Northern side of the
-Arena killing field. Featuring a thin line, combatants can target others
-who run about on the killing field. A careful sniper would watch the
-fields and below him at all times, to avoid ambush..or even being sniped
-from below. 
+Arena killing field. Featuring a thin line, combatants can target others
+who run about on the killing field. A careful sniper would watch the
+fields and below him at all times, to avoid ambush..or even being sniped
+from below. 
 
-&RCLIMBing is essential in getting down!&R&W
-~
+&RCLIMBing is essential in getting down!&R&W
+~
 0 8204 0
 D2
 ~
@@ -1895,36 +1854,18 @@ S
 #42
 First Combatant's Chamber~
 You stand in a long hallway leading out into the Arena proper.  About
-you are stacked all manner of weaponry and armor.  Choose your armament
-properly, as it will be all that stands between you and death.
- 
- 
-&RIf you've become stuck here due to a crash, say exactly, "&YI Am Stuck In
-The Arena&R".&R&w
-~
+you are stacked all manner of weaponry and armor.  Choose your armament
+properly, as it will be all that stands between you and death.
+~
 0 9228 1
-> speech_prog p I Am Stuck In The Arena~
-mptransfer $n 32147
-mpat 32147 mpforce $n look
-~
-|
 S
 #43
 Second Combatant's Chamber~
 You stand in a long hallway leading out into the Arena proper.  About
-you are stacked all manner of weaponry and armor.  Choose your armament
-properly, as it will be all that stands between you and death.
- 
- 
-&RIf you've become stuck here due to a crash, say exactly, "&YI Am Stuck In
-The Arena&R".&R&w
-~
+you are stacked all manner of weaponry and armor.  Choose your armament
+properly, as it will be all that stands between you and death.
+~
 0 8204 1
-> speech_prog p I Am Stuck In The Arena~
-mptransfer $n 32147
-mpat 32147 mpforce $n look
-~
-|
 S
 #44
 Lost in Space~
@@ -1934,8 +1875,8 @@ S
 #45
 Limbo Shipyard~
 A wet grey mist hangs over this large yard of old an unused vessels.
-Ships of all types and sizes rest here empty and abandoned...
-~
+Ships of all types and sizes rest here empty and abandoned...
+~
 0 536870916 1
 S
 #0
@@ -1943,6 +1884,7 @@ S
 
 #RESETS
 M 0 1 1 2
+O 1 90 1 10
 M 1 6 1 6
 M 1 2 1 6
 M 1 7 1 6

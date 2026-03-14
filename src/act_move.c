@@ -1,5 +1,8 @@
 /***************************************************************************
-*                           STAR WARS REALITY 1.0                          *
+*                   Star Wars: Rise in Power MUD Codebase                  *
+*--------------------------------------------------------------------------*
+* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
+* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -168,7 +171,6 @@ char *	const		room_sents[SECT_MAX][25]	=
     },
 
     {
-
 	"You stand in a lengthy tunnel of rock."
     }
 
@@ -463,22 +465,22 @@ sh_int encumbrance( CHAR_DATA *ch, sh_int move )
     max = can_carry_w(ch);
     cur = ch->carry_weight;
     if ( cur >= max )
-      return (sh_int ) ( move * 4 );
+      return move * 4;
     else
     if ( cur >= max * 0.95 )
-      return (sh_int ) ( move * 3.5 );
+      return move * 3.5;
     else
     if ( cur >= max * 0.90 )
-      return (sh_int ) ( move * 3 );
+      return move * 3;
     else
     if ( cur >= max * 0.85 )
-      return (sh_int ) ( move * 2.5 );
+      return move * 2.5;
     else
     if ( cur >= max * 0.80 )
-      return (sh_int ) ( move * 2 );
+      return move * 2;
     else
     if ( cur >= max * 0.75 )
-      return (sh_int ) ( move * 1.5 );
+      return move * 1.5;
     else
       return move;
 }
@@ -769,6 +771,20 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
     {
 	/*int iClass;*/
 	int move;
+/* Pretty sure we don't need to check for guilds anymore now that we have
+   the new dh. -- Narn
+*/
+/*
+	for ( iClass = 0; iClass < MAX_CLASS; iClass++ )
+	{
+	    if ( iClass != ch->class
+	    &&   to_room->vnum == class_table[iClass]->guild )
+	    {
+		send_to_char( "You aren't allowed in there.\n\r", ch );
+		return rNONE;
+	    }
+	}
+*/
 
 /* Prevent deadlies from entering a nopkill-flagged area from a 
    non-flagged area, but allow them to move around if already
@@ -945,8 +961,7 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
 	
 	  hpmove = 500/( ch->hit? ch->hit : 1 );
 	  if ( !IS_AFFECTED(ch, AFF_FLYING)
-	  &&   !IS_AFFECTED(ch, AFF_FLOATING)
-	  &&   !IS_AFFECTED(ch, AFF_ENDURANCE) )	// Johnson ( Michael Shattuck ) 4/28 - Added 5-15-04 - DV
+	  &&   !IS_AFFECTED(ch, AFF_FLOATING) )
 	    move = hpmove*encumbrance( ch, movement_loss[UMIN(SECT_MAX-1, in_room->sector_type)] );
 	  else
 	    move = 1;
@@ -992,7 +1007,6 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
         txt = "falls";
       else
       if ( !txt )
-
       {
         if ( ch->mount )
         {
@@ -1438,7 +1452,6 @@ void do_open( CHAR_DATA *ch, char *argument )
             
             sound_to_room( ch->in_room , "!!SOUND(door)" );
             return;
-
 	}
     }
 
