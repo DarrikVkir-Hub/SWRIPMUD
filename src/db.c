@@ -3138,13 +3138,13 @@ int fread_number( FILE *fp )
  * custom str_dup using create					-Thoric
  * Replaced with better version - DV 3-14-26
  */
-char *str_dup( const char *str )
+char *str_dup(const char *str)
 {
     if (!str)
         return NULL;
 
     size_t len = strlen(str) + 1;
-    char *ret = malloc(len);
+    char *ret = (char*)malloc(len);
 
     if (!ret)
         return NULL;
