@@ -1,0 +1,79 @@
+#PLAYER
+Version      3
+Name         Darrik~
+Sex          1
+Race         0
+MainAbility  4
+Languages    -1 1
+Toplevel     105
+Played       1624
+Room         100
+HpManaMove   500 500 0 0 1000 1000
+Force        0 0 0 0
+Gold         5000
+Bank         0
+Ability        0 1 0
+Ability        1 1 0
+Ability        2 1 0
+Ability        3 1 0
+Ability        4 1 0
+Ability        5 1 0
+Ability        6 1 0
+Ability        7 1 0
+Ability        8 1 0
+Clones         0
+Salary_time         0
+Salary         0
+Clones         0
+Questpoints         0
+Nextquest         0
+Jailvnum         0
+Act          570426952
+Position     8
+SavingThrows 0 0 0 0 0
+Alignment    0
+Glory        0
+MGlory       0
+Hitroll      0
+Damroll      0
+Armor        100
+Mentalstate  0
+Password     Da17CRUXm12/.~
+Lastplayed   999302425
+Title         Darrik the Human~
+AuthedBy     professor schoolmaster teacher headmaster~
+Addiction    0 0 0 0 0 0 0 0 0 0
+Druglevel    0 0 0 0 0 0 0 0 0 0
+WizInvis     105
+Flags        0
+MKills       0
+MDeaths      0
+AttrPerm     9 17 9 17 11 6 10
+AttrMod      0 0 0 0 0 0 0
+Condition    0 48 48 10
+Site         localhost
+Tongue       100 'common'
+End
+
+#OBJECT
+Vnum         10311
+WearLoc      0
+Values       0 0 50 0 0 0
+End
+
+#OBJECT
+Vnum         10312
+WearLoc      16
+Values       12 5 20 2 981 1000
+End
+
+#OBJECT
+Vnum         10424
+End
+
+#OBJECT
+Vnum         10321
+Level        1
+End
+
+#END
