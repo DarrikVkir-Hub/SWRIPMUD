@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -162,6 +159,14 @@ sh_int   gsn_gemcutting;
 sh_int   gsn_makejewelry;
 sh_int   gsn_fake_signal;
 sh_int   gsn_slicing;
+sh_int   gsn_makemedpac;
+sh_int   gsn_makefurniture;
+sh_int   gsn_module_engineering;
+sh_int   gsn_repairmodule;
+// Johnson 6-26-04 Begin:
+sh_int   gsn_basictrackingdevices;
+sh_int   gsn_advancedtrackingdevices;
+// Johnson 6-26 End
 
 /* weaponry */
 sh_int			gsn_blasters;
@@ -221,10 +226,6 @@ sh_int			gsn_track;
 sh_int			gsn_search;
 sh_int			gsn_dig;
 sh_int			gsn_mount;
-sh_int			gsn_bite;
-sh_int			gsn_claw;
-sh_int			gsn_sting;
-sh_int			gsn_tail;
 sh_int			gsn_scribe;
 sh_int			gsn_study;
 sh_int			gsn_brew;
@@ -342,6 +343,9 @@ void	load_shops	args( ( AREA_DATA *tarea, FILE *fp ) );
 void 	load_repairs	args( ( AREA_DATA *tarea, FILE *fp ) );
 void	load_specials	args( ( AREA_DATA *tarea, FILE *fp ) );
 void    load_ranges	args( ( AREA_DATA *tarea, FILE *fp ) );
+void    load_production	args( ( AREA_DATA *tarea, FILE *fp ) );
+void    load_depletion	args( ( AREA_DATA *tarea, FILE *fp ) );
+void    load_supply	args( ( AREA_DATA *tarea, FILE *fp ) );
 void	load_buildlist	args( ( void ) );
 bool	load_systemdata	args( ( SYSTEM_DATA *sys ) );
 void    load_banlist    args( ( void ) );
@@ -561,6 +565,11 @@ void boot_db( void )
      */
     {
 	log_string("Assigning gsn's");
+		// Johnson 6-26-04 Begin:
+		ASSIGN_GSN( gsn_basictrackingdevices, "makehulltracker");
+		ASSIGN_GSN( gsn_advancedtrackingdevices, "makeinternaltracker");
+		// Johnson 6-26 End
+        ASSIGN_GSN( gsn_repairmodule, "repair_module" );
         ASSIGN_GSN( gsn_cloak, "cloak" );
         ASSIGN_GSN( gsn_cutdoor, "cutdoor" );
         ASSIGN_GSN( gsn_bind, "bind" );
@@ -589,7 +598,9 @@ void boot_db( void )
         ASSIGN_GSN( gsn_makearmor  , "makearmor" );        
         ASSIGN_GSN( gsn_makeshield  , "makeshield" );
         ASSIGN_GSN( gsn_makecontainer  , "makecontainer" );
-        ASSIGN_GSN( gsn_makemissile  , "makemissile" );        
+        ASSIGN_GSN( gsn_makemissile  , "makemissile" );
+	ASSIGN_GSN( gsn_makefurniture, "makefurniture" );
+  	ASSIGN_GSN( gsn_makemedpac, "makemedpac");        
         ASSIGN_GSN( gsn_gemcutting  , "gemcutting" );        
         ASSIGN_GSN( gsn_reinforcements  , "reinforcements" );
         ASSIGN_GSN( gsn_postguard   , "post guard" );
@@ -759,11 +770,6 @@ ASSIGN_GSN( gsn_yevethan, "yevethan" );
 	log_string( "Initializing economy" );
 	initialize_economy( );
 	/*loads vendors on each reboot -Legonas*/
-	log_string ( "Reading in Vendors" );
-	load_vendors ( );
-	log_string ( "Reading in Storerooms" );
-	load_storerooms( );
-	
 	log_string( "Loading buildlist" );
 	load_buildlist( );
 	log_string( "Loading boards" );
@@ -786,6 +792,10 @@ ASSIGN_GSN( gsn_yevethan, "yevethan" );
         load_planets( );
         log_string( "Resetting areas" );
 	area_update( );
+	log_string ( "Reading in Vendors" );
+	load_vendors ( );
+	log_string ( "Reading in Storerooms" );
+	load_storerooms( );
 	                
         MOBtrigger = TRUE;
     }
@@ -1535,7 +1545,6 @@ void load_resets( AREA_DATA *tarea, FILE *fp )
 	    }
 	    else if ( extra > 1 )
 	      not01 = TRUE;
-	    
 	    break;
 
 	case 'G':
@@ -1982,6 +1991,125 @@ void load_ranges( AREA_DATA *tarea, FILE *fp )
 
 }              
 
+void load_production( AREA_DATA *tarea, FILE *fp )
+{
+
+/*  Replaced by new cargo system - DV 3-24-04
+    int x1, x2, x3, x4, x5, x6, x7, x8;
+*/  char *ln;
+
+    if ( !tarea )
+    {
+	bug( "Load_production: no #AREA seen yet." );
+	shutdown_mud( "No #AREA" );
+	exit( 1 );
+    }
+
+    for ( ; ; )
+    {
+	ln = fread_line( fp );
+
+	if (ln[0] == '$')
+	  break;
+/*
+	x1=x2=x3=x4=x5=x6=x7=x8=0;
+	sscanf( ln, "%d %d %d %d %d %d %d %d",
+	      &x1, &x2, &x3, &x4, &x5, &x6, &x7, &x8 );
+
+	tarea->production[0] = x1;
+	tarea->production[1] = x2;
+	tarea->production[2] = x3;
+	tarea->production[3] = x4;
+	tarea->production[4] = x5;
+	tarea->production[5] = x6;
+	tarea->production[6] = x7;
+	tarea->production[7] = x8;
+*/  }
+
+    return;
+
+}           
+void load_depletion( AREA_DATA *tarea, FILE *fp )
+{
+	
+/*  Replaced by new cargo system - DV 3-24-04
+    int x1, x2, x3, x4, x5, x6, x7, x8;
+*/  char *ln;
+
+    if ( !tarea )
+    {
+	bug( "Load_depletion: no #AREA seen yet." );
+	shutdown_mud( "No #AREA" );
+	exit( 1 );
+    }
+
+    for ( ; ; )
+    {
+	ln = fread_line( fp );
+
+	if (ln[0] == '$')
+	  break;
+/*
+	x1=x2=x3=x4=x5=x6=x7=x8=0;
+	x1=x2=x3=x4=x5=x6=x7=x8=0;
+	sscanf( ln, "%d %d %d %d %d %d %d %d",
+	      &x1, &x2, &x3, &x4, &x5, &x6, &x7, &x8 );
+
+	tarea->depletion[0] = x1;
+	tarea->depletion[1] = x2;
+	tarea->depletion[2] = x3;
+	tarea->depletion[3] = x4;
+	tarea->depletion[4] = x5;
+	tarea->depletion[5] = x6;
+	tarea->depletion[6] = x7;
+	tarea->depletion[7] = x8;
+*/  }
+    
+
+    return;
+
+}           
+
+void load_supply( AREA_DATA *tarea, FILE *fp )
+{
+
+/*  Replaced by new cargo system - DV 3-24-04
+    int x1, x2, x3, x4, x5, x6, x7, x8;
+*/  char *ln;
+
+    if ( !tarea )
+    {
+	bug( "Load_supply: no #AREA seen yet." );
+	shutdown_mud( "No #AREA" );
+	exit( 1 );
+    }
+
+    for ( ; ; )
+    {
+	ln = fread_line( fp );
+
+	if (ln[0] == '$')
+	  break;
+/*
+	x1=x2=x3=x4=x5=x6=x7=x8=0;
+	x1=x2=x3=x4=x5=x6=x7=x8=0;
+	sscanf( ln, "%d %d %d %d %d %d %d %d",
+	      &x1, &x2, &x3, &x4, &x5, &x6, &x7, &x8 );
+
+	tarea->supply[0] = x1;
+	tarea->supply[1] = x2;
+	tarea->supply[2] = x3;
+	tarea->supply[3] = x4;
+	tarea->supply[4] = x5;
+	tarea->supply[5] = x6;
+	tarea->supply[6] = x7;
+	tarea->supply[7] = x8;
+*/  }
+
+    return;
+
+}        
+
 /*
  * Go through all areas, and set up initial economy based on mob
  * levels and gold
@@ -2186,11 +2314,23 @@ void randomize_exits( ROOM_INDEX_DATA *room, sh_int maxdir )
 void area_update( void )
 {
     AREA_DATA *pArea;
+    int count;
+
+    /* Cargo area update - by Aran - DV 3-05-03 */
+    
 
     for ( pArea = first_area; pArea; pArea = pArea->next )
     {
 	CHAR_DATA *pch;
 	int reset_age = pArea->reset_frequency ? pArea->reset_frequency : 15;
+
+      for (count = 0; count < 8; count++) 
+      {
+        pArea->supply[count] += pArea->production[count];
+        pArea->supply[count] -= pArea->depletion[count];
+        if (pArea->supply[count] < 0) 
+          pArea->supply[count] = 0;
+      }
 
 	if ( (reset_age == -1 && pArea->age == -1)
 	||    ++pArea->age < (reset_age-1) )
@@ -2289,7 +2429,7 @@ CHAR_DATA *create_mobile( MOB_INDEX_DATA *pMobIndex )
     if ( !pMobIndex->ac )
       mob->armor		= pMobIndex->ac;
     else
-      mob->armor		= 100 - mob->top_level*2.5 ;
+      mob->armor		= (sh_int) ( 100 - mob->top_level*2.5 );
 
     if ( !pMobIndex->hitnodice )
       mob->max_hit		= mob->top_level * 10 + number_range(
@@ -2434,6 +2574,7 @@ OBJ_DATA *create_object( OBJ_INDEX_DATA *pObjIndex, int level )
     case ITEM_CONTAINER:
     case ITEM_DRINK_CON:
     case ITEM_KEY:
+    case ITEM_CARGO:
 	break;
     case ITEM_FOOD:
 	/*
@@ -3504,7 +3645,7 @@ char *stripclr( char *text )
 		buf[j] = '\0';
 
 		sprintf(done, "%s", buf);
-		buf = realloc(buf, j*sizeof(char));
+		buf = (char* ) realloc(buf, j*sizeof(char));
 		free( buf);
 
 		return done;
@@ -4067,7 +4208,7 @@ void make_wizlist( )
   DIR *dp;
   struct dirent *dentry;
   FILE *gfp;
-  char *word;
+  const char *word;
   int ilevel, iflags;
   WIZENT *wiz, *wiznext;
   char buf[MAX_STRING_LENGTH];
@@ -4097,9 +4238,9 @@ void make_wizlist( )
 	    iflags = 0;
 	  fclose( gfp );
           if ( IS_SET( iflags, PCFLAG_RETIRED ) )
-            ilevel = MAX_LEVEL - 4;
+            ilevel = MAX_LEVEL - 9;
           if ( IS_SET( iflags, PCFLAG_GUEST ) )
-            ilevel = MAX_LEVEL - 4;
+            ilevel = MAX_LEVEL - 9;
 	  add_to_wizlist( dentry->d_name, ilevel );
 	}
       }
@@ -4126,11 +4267,17 @@ void make_wizlist( )
       ilevel = wiz->level;
       switch(ilevel)
       {
-	case MAX_LEVEL -  0: towizfile( " Implementors " );	break;
-	case MAX_LEVEL -  1: towizfile( " Head Administrator " );		break;
-	case MAX_LEVEL -  2: towizfile( " Administrators " );	break;
-	case MAX_LEVEL -  4: towizfile( " Lower Immortals " );		break;
-	default:             towizfile( " Builders" );	break;
+	case MAX_LEVEL -  0: towizfile( " Implementors " );		break;
+	case MAX_LEVEL -  1: towizfile( " Coders " );			break;
+	case MAX_LEVEL -  2: towizfile( " Head Administrators " );	break;
+	case MAX_LEVEL -  3: towizfile( " Administrators" );		break;
+	case MAX_LEVEL -  4: towizfile( " High Builders" );		break;
+	case MAX_LEVEL -  5: towizfile( " Low Builders" );		break;
+	case MAX_LEVEL -  6: towizfile( " Quest Immortals" );		break;
+	case MAX_LEVEL -  7: towizfile( " Clan Wizards" );		break;
+	case MAX_LEVEL -  8: towizfile( " Advisors " );			break;
+	case MAX_LEVEL -  9: towizfile( " Guest/Retired" );		break;
+	default:             towizfile( " Peon" );	break;
       }
     }
     if ( strlen( buf ) + strlen( wiz->name ) > 76 )
@@ -4883,7 +5030,7 @@ bool delete_room( ROOM_INDEX_DATA *room )
     STRFREE( room->description );
 
     /* Free up the ram held by the room index itself. */
-    free( room );
+    DISPOSE( room );
 
     top_room--;
     return TRUE;
@@ -5304,6 +5451,10 @@ void load_area_file( AREA_DATA *tarea, char *filename )
 	else if ( !str_cmp( word, "AUTHOR"   ) ) load_author  (tarea, fpArea);
 	else if ( !str_cmp( word, "FLAGS"    ) ) load_flags   (tarea, fpArea);
 	else if ( !str_cmp( word, "RANGES"   ) ) load_ranges  (tarea, fpArea);
+	else if ( !str_cmp( word, "PRODUCTION"   ) ) load_production  (tarea, fpArea);
+	else if ( !str_cmp( word, "DEPLETION"   ) ) load_depletion  (tarea, fpArea);
+	else if ( !str_cmp( word, "SUPPLY"   ) ) load_supply  (tarea, fpArea);
+	else if ( !str_cmp( word, "RANGES"   ) ) load_ranges  (tarea, fpArea);
 	else if ( !str_cmp( word, "ECONOMY"  ) ) load_economy (tarea, fpArea);
 	else if ( !str_cmp( word, "RESETMSG" ) ) load_resetmsg(tarea, fpArea); 
 	/* Rennard */
@@ -5696,6 +5847,7 @@ void save_sysdata( SYSTEM_DATA sys )
 	fprintf( fp, "Guildadvisor   %s~\n", sys.guild_advisor		);
 	fprintf( fp, "Saveflags      %d\n", sys.save_flags		);
 	fprintf( fp, "Savefreq       %d\n", sys.save_frequency		);
+	fprintf( fp, "ShipIDCurrent  %ld\n", sys.currentshipID		);
 	fprintf( fp, "End\n\n"						);
 	fprintf( fp, "#END\n"						);
     }
@@ -5707,7 +5859,7 @@ void save_sysdata( SYSTEM_DATA sys )
 
 void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 {
-    char *word;
+    const char *word;
     bool fMatch;
 
     sys->time_of_max = NULL;
@@ -5738,6 +5890,8 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 	    {
 		if ( !sys->time_of_max )
 		    sys->time_of_max = str_dup("(not recorded)");
+		if ( !sys->currentshipID )
+		  sys->currentshipID = 4000;
 		return;
 	    }
 	    break;
@@ -5787,6 +5941,7 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 	    KEY( "Stunregular",    sys->stun_regular,	fread_number( fp ) );
 	    KEY( "Saveflags",	   sys->save_flags,	fread_number( fp ) );
 	    KEY( "Savefreq",	   sys->save_frequency,	fread_number( fp ) );
+	    KEY( "ShipIDCurrent",  sys->currentshipID, fread_number( fp ) );
 	    break;
 
 	case 'T':

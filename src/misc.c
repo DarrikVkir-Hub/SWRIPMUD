@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -28,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 #include "mud.h"
 
 #define CLONEGOLD 1000
@@ -151,13 +149,13 @@ void do_clone( CHAR_DATA *ch, char *argument )
 		 return;
 	  }
 
-	  if ( ch->in_room->vnum != 10001 )
+	  if ( ch->in_room->vnum != 12120 )
 	  {
 		 ch_printf( ch, "You can't do that here!\n\r" );
 		 return;
 	  }
 
-          if ( ch->pcdata->clones >= 3 )
+          if ( ch->pcdata->clones >= 2 )
           {
             ch_printf( ch, "The medical droids tell you your genetical material is too far degraded.\n\r");
             return;
@@ -177,7 +175,7 @@ void do_clone( CHAR_DATA *ch, char *argument )
 	  }
 
 	  char_from_room( ch );
-	  char_to_room( ch, get_room_index( 10000 ) );
+	  char_to_room( ch, get_room_index( 12144 ) );
 
      /* random force change on cloning */
      frc = ch->perm_frc;
@@ -259,7 +257,7 @@ void do_clone( CHAR_DATA *ch, char *argument )
 	  strcpy( oldbestowments, ch->pcdata->bestowments);
 	  
 	  
-      if( ch->pcdata->clones == 2 )
+      if( ch->pcdata->clones == 1 )
       {
 
         ch_printf( ch, "The medical droids tell you your genetical material has degraded significantly.\n\r");
@@ -297,7 +295,7 @@ void do_clone( CHAR_DATA *ch, char *argument )
      ch->skill_level[7] = frc_level;
      ch->experience[7] = frc_experience;
      ch->mana = mana;
-      if( ch->pcdata->clones == 2 )
+      if( ch->pcdata->clones == 1 )
       	for(ability = 0; ability < MAX_ABILITY; ability++)
       	{
           ch->experience[ability] = experience[ability];
@@ -310,7 +308,7 @@ void do_clone( CHAR_DATA *ch, char *argument )
      ch->act = flags;
      ch->pcdata->bestowments=str_dup( oldbestowments);
      char_from_room( ch );
-     char_to_room( ch, get_room_index( 10002 ) );
+     char_to_room( ch, get_room_index( 12144 ) );
      do_look( ch , "" );
 
      ch_printf( ch, "\n\r&WA small tissue sample is taken from your arm.\n\r" );
@@ -901,6 +899,17 @@ void do_takedrug( CHAR_DATA *ch, char *argument )
 	       }
 	       break;
 
+		   // shattuck 4/30/04 begin
+	   case SPICE_LYCIN:
+		af.type = -1;
+		af.location = APPLY_NONE;
+		af.modifier = 0;
+		af.duration = URANGE( 1, ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug] ,obj->value[1] );
+		af.bitvector = AFF_ENDURANCE;
+		affect_to_char( ch, &af );
+	       break;
+		   // shattuck 4/30/04 end
+
             case SPICE_RYLL:
             
 	  	   af.type      = -1;
@@ -1486,10 +1495,10 @@ void do_drink( CHAR_DATA *ch, char *argument )
 
 	gain_condition( ch, COND_DRUNK,
 	    amount * liq_table[liquid].liq_affect[COND_DRUNK  ] );
-	gain_condition( ch, COND_FULL,
-	    amount * liq_table[liquid].liq_affect[COND_FULL   ] );
-	gain_condition( ch, COND_THIRST,
-	    amount * liq_table[liquid].liq_affect[COND_THIRST ] );
+//	gain_condition( ch, COND_FULL,
+//	    amount * liq_table[liquid].liq_affect[COND_FULL   ] );
+//	gain_condition( ch, COND_THIRST,
+//	    amount * liq_table[liquid].liq_affect[COND_THIRST ] );
 
 	if ( !IS_NPC(ch) )
 	{
@@ -1508,17 +1517,17 @@ void do_drink( CHAR_DATA *ch, char *argument )
 	    if ( ch->pcdata->condition[COND_DRUNK]  > 5 )
 		send_to_char( "You feel light headed.\n\r", ch );
 
-	    if ( ch->pcdata->condition[COND_FULL]   > 40 )
-		send_to_char( "You are full.\n\r", ch );
+//	    if ( ch->pcdata->condition[COND_FULL]   > 40 )
+//		send_to_char( "You are full.\n\r", ch );
 
-	    if ( ch->pcdata->condition[COND_THIRST] > 40 )
-		send_to_char( "You feel bloated.\n\r", ch );
-	    else
-	    if ( ch->pcdata->condition[COND_THIRST] > 36 )
-		send_to_char( "Your stomach is sloshing around.\n\r", ch );
-	    else
-	    if ( ch->pcdata->condition[COND_THIRST] > 30 )
-		send_to_char( "You do not feel thirsty.\n\r", ch );
+//	    if ( ch->pcdata->condition[COND_THIRST] > 40 )
+//		send_to_char( "You feel bloated.\n\r", ch );
+//	    else
+//	    if ( ch->pcdata->condition[COND_THIRST] > 36 )
+//		send_to_char( "Your stomach is sloshing around.\n\r", ch );
+//	    else
+//	    if ( ch->pcdata->condition[COND_THIRST] > 30 )
+//		send_to_char( "You do not feel thirsty.\n\r", ch );
 	}
 
 	if ( obj->value[3] )
@@ -1572,11 +1581,11 @@ void do_eat( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 
-	if ( !IS_NPC(ch) && ch->pcdata->condition[COND_FULL] > 40 )
-	{
-	    send_to_char( "You are too full to eat more.\n\r", ch );
-	    return;
-	}
+//	if ( !IS_NPC(ch) && ch->pcdata->condition[COND_FULL] > 40 )
+//	{
+//	    send_to_char( "You are too full to eat more.\n\r", ch );
+//	    return;
+//	}
     }
 
     /* required due to object grouping */
@@ -1611,14 +1620,14 @@ void do_eat( CHAR_DATA *ch, char *argument )
 
 	if ( !IS_NPC(ch) )
 	{
-	    int condition;
+//	    int condition;
 
-	    condition = ch->pcdata->condition[COND_FULL];
-	    gain_condition( ch, COND_FULL, (obj->value[0] * foodcond) / 10 );
-	    if ( condition <= 1 && ch->pcdata->condition[COND_FULL] > 1 )
-		send_to_char( "You are no longer hungry.\n\r", ch );
-	    else if ( ch->pcdata->condition[COND_FULL] > 40 )
-		send_to_char( "You are full.\n\r", ch );
+//	    condition = ch->pcdata->condition[COND_FULL];
+//	    gain_condition( ch, COND_FULL, (obj->value[0] * foodcond) / 10 );
+//	    if ( condition <= 1 && ch->pcdata->condition[COND_FULL] > 1 )
+//		send_to_char( "You are no longer hungry.\n\r", ch );
+//	    else if ( ch->pcdata->condition[COND_FULL] > 40 )
+//		send_to_char( "You are full.\n\r", ch );
 	}
 
 	if (  obj->value[3] != 0
@@ -2629,10 +2638,10 @@ void do_hail( CHAR_DATA *ch , char *argument )
       send_to_char("&RWhy don't you just say it?\n\r",ch);
       return;
     }
-    if (abs(target->vx - ship->vx) > 100*(ship->sensor+10)*((target->class)+1 ))
-      if ( abs(target->vx - ship->vx) > 100*((ship->comm)+(target->comm)+20) ||
-       abs(target->vy - ship->vy) > 100*((ship->comm)+(target->comm)+20) ||
-       abs(target->vz - ship->vz) > 100*((ship->comm)+(target->comm)+20) )
+    if (abs((int) ( target->vx - ship->vx )) > 100*(ship->mod->sensor+10)*((target->shipclass)+1 ))
+      if ( abs((int) (target->vx - ship->vx )) > 100*((ship->mod->comm)+(target->mod->comm)+20) ||
+       abs((int) ( target->vy - ship->vy) ) > 100*((ship->mod->comm)+(target->mod->comm)+20) ||
+       abs((int) ( target->vz - ship->vz) ) > 100*((ship->mod->comm)+(target->mod->comm)+20) )
 
     {
       send_to_char("&RThat ship is out of the range of your comm system.\n\r&w", ch);
@@ -2870,14 +2879,14 @@ void do_train( CHAR_DATA *ch, char *argument )
                       }
                       send_to_char("&GYou begin lessons in maners and ettiquite.\n\r", ch);
                 }
-            	add_timer ( ch , TIMER_DO_FUN , 10 , do_train , 1 );
+            	add_timer ( ch , TIMER_DO_FUN , 1 , do_train , 1 ); //was 10
     	    	ch->dest_buf = str_dup(arg);
     	    	return;
     	
     	case 1:
     		if ( !ch->dest_buf )
     		   return;
-    		strcpy(arg, ch->dest_buf);
+    		strcpy(arg, (const char* ) ch->dest_buf);
     		DISPOSE( ch->dest_buf);
     		break;
 
@@ -4082,4 +4091,65 @@ void quest_update(void)
     }
     return;
 }
- 
+
+  /* dontresolve: don't resolve certain IP blocks - Ulysses
+   * A hack of badname by Kre
+   */
+  bool check_dont_resolve( char *ip ){
+    FILE *fp;
+    char *ln;
+    if ( (fp = fopen(DONT_RESOLVE_FILE,"r")) == NULL) {
+      fp = fopen(DONT_RESOLVE_FILE,"w+");
+      fprintf(fp,"255.255.255~\n");
+      fprintf(fp,"$~");
+      fclose(fp);
+      return FALSE;
+    }
+  
+      while (!feof(fp))
+      {
+        ln = fread_string_nohash(fp);
+        if (!str_prefix(ln,ip))
+        {
+          fclose(fp);
+          return TRUE;
+        }
+        if (is_name("$",ln))
+        {
+        fclose(fp);
+          return FALSE;
+        }
+      }
+      fclose(fp);
+      return FALSE;
+  }
+  
+  int add_dont_resolve(char *ipmatch)
+  {
+    FILE *fp;
+    char *ln;
+    fpos_t pos;
+  
+    if (check_dont_resolve(ipmatch))
+      return 0;
+  
+    if ((fp = fopen(DONT_RESOLVE_FILE,"r+")) == NULL)
+    {
+      bug("Error opening Don't Resolve file.");
+      return -1;
+    }
+  
+    ln = fread_string_nohash(fp);
+    while(!is_name("$",ln) && !feof(fp))
+        ln = fread_string_nohash(fp);
+  
+    /* Delete the $~ from the end of the file */
+    fgetpos(fp, &pos);
+  
+    fsetpos(fp, &pos -2);
+    fsetpos(fp, &pos);
+    fprintf(fp,"%s~\n",ipmatch);
+    fprintf(fp,"$~");
+    fclose(fp);
+    return 1;
+   }

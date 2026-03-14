@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -26,6 +23,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "mud.h"
+
+bool	MOBtrigger;
 
 char *	mprog_type_to_name	args( ( int type ) );
 ch_ret	simple_damage( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt );
@@ -99,6 +98,7 @@ void do_mpstat( CHAR_DATA *ch, char *argument )
 	send_to_char( "Only Mobiles can have MobPrograms!\n\r", ch);
 	return;
     }
+
 
     if ( !( victim->pIndexData->progtypes ) )
     {
@@ -608,6 +608,7 @@ void do_mpoload( CHAR_DATA *ch, char *argument )
     }
 
     if ( ( pObjIndex = get_obj_index( atoi( arg1 ) ) ) == NULL )
+
     {
 	progbug( "Mpoload - Bad vnum arg", ch );
 	return;
@@ -716,7 +717,7 @@ void do_mpinvis( CHAR_DATA *ch, char *argument )
            return;
         }       
         level = atoi( arg );
-        if ( level < 2 || level > 105 )
+        if ( level < 2 || level > LEVEL_SUPREME )
         {
             progbug( "MPinvis - Invalid level ", ch );
             return;
@@ -1270,6 +1271,7 @@ void do_mp_open_passage( CHAR_DATA *ch, char *argument )
     {
 	progbug( "MpOpenPassage - Bad syntax", ch );
 	return;
+
     }
 
     if( !is_number(arg1) )

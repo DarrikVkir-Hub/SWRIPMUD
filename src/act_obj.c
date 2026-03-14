@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997 by Sean Cooper                                        *
@@ -26,6 +23,7 @@
 #include <string.h>
 #include <time.h>
 #include "mud.h"
+#include "bet.h"
 
 /*double sqrt( double x );*/
 
@@ -1314,7 +1312,7 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
    
    if ( check_size )
    { 
-    if ( ch->race == RACE_DEFEL )
+    if ( ch->race == RACE_DEFEL && (1 << wear_bit != ITEM_WEAR_WRIST ) )
     {
 	act( AT_MAGIC, "It is against your nature to wear anything that might make you visible.", ch, NULL, NULL, TO_CHAR );
 	act( AT_ACTION, "$n wants to use $p, but doesn't.",
@@ -1794,6 +1792,19 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 			send_to_char( "It is too heavy for you to wield.\n\r", ch );
 			return;
 	      	    }
+
+		    if( IS_SET( tmpobj->extra_flags, ITEM_TWO_HANDS ) )
+		    {
+			send_to_char("Both hands are occupied wielding that weapon.\n\r",ch);
+			return;
+		    }
+
+		    if( IS_SET( obj->extra_flags, ITEM_TWO_HANDS  ) )
+		    {
+			send_to_char("You need two hands to wield that weapon.\n\r",ch);
+			return;
+		    }
+
                     if ( !oprog_use_trigger( ch, obj, NULL, NULL, NULL ) )
                     {
                      if ( !obj->action_desc || obj->action_desc[0]=='\0' )  
@@ -1813,6 +1824,12 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 	    if ( get_obj_weight( obj ) > str_app[get_curr_str(ch)].wield )
 	    {
 		send_to_char( "It is too heavy for you to wield.\n\r", ch );
+		return;
+	    }
+
+	    if( IS_SET( obj->extra_flags, ITEM_TWO_HANDS ) && ch->race == RACE_HUTT )
+	    {
+		send_to_char("A Hutt cannot wield two handed weapons.\n\r",ch);
 		return;
 	    }
 
@@ -1890,7 +1907,6 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 	    equip_char( ch, obj, WEAR_OVER );
 	    oprog_wear_trigger( ch, obj );
 	    return;
-
 
     }
 }
@@ -2079,9 +2095,6 @@ void do_sacrifice( CHAR_DATA *ch, char *argument )
 
     one_argument( argument, arg );
 
-    if( !ch || !ch->in_room )
-      return;
-
     if ( arg[0] == '\0' || !str_cmp( arg, ch->name ) )
     {
 	send_to_char( "Junk what?", ch );
@@ -2179,6 +2192,7 @@ void do_brandish( CHAR_DATA *ch, char *argument )
 		break;
 
 	    case TAR_CHAR_OFFENSIVE:
+	    case TAR_CHAR_SEMIOFFENSIVE:
 		if ( IS_NPC(ch) ? IS_NPC(vch) : !IS_NPC(vch) )
 		    continue;
 		break;
@@ -2552,7 +2566,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
             send_to_char ("There isn't anything being auctioned right now.\n\r",ch);
             return;
         }
-      }
+    }
 
 /* finally... */
     if ( ms_find_obj(ch) )
@@ -2635,7 +2649,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
     else
     {
         act (AT_TELL, "Try again later - $p is being auctioned right now!",ch,auction->item,NULL,TO_CHAR);
-	WAIT_STATE( ch, 1.5 * PULSE_VIOLENCE );
+	WAIT_STATE( ch, (int) ( 1.5 * PULSE_VIOLENCE ) );
         return;
     }
 }

@@ -1,8 +1,5 @@
 /***************************************************************************
-*                   Star Wars: Rise in Power MUD Codebase                  *
-*--------------------------------------------------------------------------*
-* SWRiP Code Additions and changes from the SWReality and Smaug Code       *
-* copyright (c) 2001 by Mark Miller (Darrik Vequir)                        *
+*                           STAR WARS REALITY 1.0                          *
 *--------------------------------------------------------------------------*
 * Star Wars Reality Code Additions and changes from the Smaug Code         *
 * copyright (c) 1997, 1998 by Sean Cooper                                  *
@@ -20,12 +17,15 @@
 * ------------------------------------------------------------------------ *
 *			    Main mud header file			   *
 ****************************************************************************/
-
 #include <stdlib.h>
 #include <limits.h>
 #include <sys/cdefs.h>
 #include <sys/time.h>
 #include <math.h>
+#include <stdio.h>
+#ifdef MCCP
+#include <zlib.h>
+#endif
 
 /* #include <malloc_dbg.h> */
 
@@ -52,7 +52,7 @@ typedef	int				obj_ret;
 #define IMP_ROOM1 109
 #define IMP_ROOM2 122
 
-#define ALLOWED(char, room) (char->top_level == 105?1: \
+#define ALLOWED(char, room) (char->top_level == 110?1: \
                              room->vnum == IMP_ROOM1?0: \
                              room->vnum == IMP_ROOM2?0:1)
 
@@ -63,6 +63,7 @@ typedef	int				obj_ret;
 #define BAD_NAME_FILE  SYSTEM_DIR "badnames.lst"
 
 /* List of IP matches which we should not resolve */
+#define DONT_RESOLVE_FILE  SYSTEM_DIR "dontresolve.lst"
 
 /*
  * Short scalar types.
@@ -80,18 +81,16 @@ typedef	int				obj_ret;
 #define BERR	 255
 #endif
 
-#define rreturn bebad( ch, argument ); return
-
 #if	defined(_AIX)
 #if	!defined(const)
 #define const
 #endif
 typedef int				sh_int;
-typedef int				bool;
+//typedef int				bool;
 #define unix
 #else
 typedef short    int			sh_int;
-typedef unsigned char			bool;
+//typedef unsigned char			bool;
 #endif
 
 /*
@@ -128,6 +127,7 @@ typedef struct	hour_min_sec		HOUR_MIN_SEC;
 typedef struct	weather_data		WEATHER_DATA;
 typedef struct  bounty_data             BOUNTY_DATA;
 typedef struct  cargo_data		CARGO_DATA;
+typedef struct  cargo_data_list		CARGO_DATA_LIST;
 typedef struct  planet_data		PLANET_DATA;
 typedef struct  storeroom		STOREROOM;
 typedef struct  guard_data		GUARD_DATA;
@@ -135,7 +135,19 @@ typedef struct  space_data              SPACE_DATA;
 typedef	struct	clan_data		CLAN_DATA;
 typedef	struct	senate_data		SENATE_DATA;
 typedef struct  ship_data               SHIP_DATA;
+typedef struct  ship_mod_data           SHIP_MOD_DATA;
+typedef struct  turret_data             TURRET_DATA;
+typedef struct  rental_data             RENTAL_DATA;
+typedef struct  module_data             MODULE_DATA;
 typedef struct  missile_data            MISSILE_DATA;
+typedef struct  allegiance_data		ALLEGIANCE_DATA;
+typedef struct  shipgroup_data		SHIPGROUP_DATA;
+typedef struct  cargo_shipment		CARGO_SHIPMENT;
+typedef struct  reward_data		REWARD_DATA;
+typedef struct  available_data		AVAILABLE_DATA;
+typedef struct  goal_data		GOAL_DATA;
+typedef struct  mission_data		MISSION_DATA;
+typedef struct  shipnames_data		SHIPNAMES_DATA;
 typedef struct  tourney_data            TOURNEY_DATA;
 typedef struct	mob_prog_data		MPROG_DATA;
 typedef struct	mob_prog_act_list	MPROG_ACT_LIST;
@@ -154,6 +166,7 @@ typedef struct	wizent			WIZENT;
 typedef struct	member_data		MEMBER_DATA; /* Individual member data */
 typedef struct	member_list		MEMBER_LIST; /* List of members in clan */
 typedef struct  membersort_data         MS_DATA;     /* List for sorted roster list */
+typedef struct  tracker_data    TRACKER_DATA;
 
 /*
  * Function types.
@@ -223,12 +236,12 @@ typedef ch_ret	SPELL_FUN	args( ( int sn, int level, CHAR_DATA *ch, void *vo ) );
 #define MIN_EXP_WORTH		   25
 
 #define MAX_REXITS		   20	/* Maximum exits allowed in 1 room */
-#define MAX_SKILL		  276
+#define MAX_SKILL		  277
 #define MAX_ABILITY		    9
 #define MAX_RL_ABILITY		    8
 #define MAX_RACE		   40
 #define MAX_NPC_RACE		   91
-#define MAX_LEVEL		  105
+#define MAX_LEVEL		  110
 #define MAX_SKILL_LEVEL		  150
 #define MAX_CLAN		   50
 #define MAX_PLANET		  100
@@ -238,28 +251,68 @@ typedef ch_ret	SPELL_FUN	args( ( int sn, int level, CHAR_DATA *ch, void *vo ) );
 #define MAX_RAN_POP                16
 
 #define	MAX_HERB		   20
+#define MAX_COMMAND_GROUP          10
 
-#define LEVEL_HERO		   (MAX_LEVEL - 5)
-#define LEVEL_IMMORTAL		   (MAX_LEVEL - 4)
+#define LEVEL_HERO                 (MAX_LEVEL - 10)
+#define LEVEL_IMMORTAL             (MAX_LEVEL - 9)
+#define LEVEL_SUPREME              MAX_LEVEL
+#define LEVEL_IMPLEMENTOR          (MAX_LEVEL)
+#define LEVEL_SUB_IMPLEM           (MAX_LEVEL - 1)
+#define LEVEL_GREATER              (MAX_LEVEL - 3) // aassign blocks
+#define LEVEL_GOD                  (MAX_LEVEL - 9) // most 'admin' checks
+#define LEVEL_LESSER               (MAX_LEVEL - 9) // msetting mobs
+#define LEVEL_DEMI                 (MAX_LEVEL - 9) // Default level for mail
+#define LEVEL_SAVIOR               (MAX_LEVEL - 9) // Allows reference by vnum
+#define LEVEL_CREATOR              (MAX_LEVEL - 9) // Checked as well as GREATER for out-of-assigned-areas override
+#define LEVEL_NEOPHYTE             (MAX_LEVEL - 9) // Retired level
+
+#define LEVEL_INFINITE             (MAX_LEVEL - 9) // Not used
+#define LEVEL_ETERNAL              (MAX_LEVEL - 9) // Not used
+#define LEVEL_ASCENDANT            (MAX_LEVEL - 9) // Not used
+#define LEVEL_TRUEIMM              (MAX_LEVEL - 9) // Not used
+#define LEVEL_ACOLYTE              (MAX_LEVEL - 9) // Not used
+
+
+/*
+#define LEVEL_HERO		   (MAX_LEVEL - 10)
+#define LEVEL_IMMORTAL		   (MAX_LEVEL - 9)
 #define LEVEL_SUPREME		   MAX_LEVEL
-#define LEVEL_INFINITE		   (MAX_LEVEL - 1)
-#define LEVEL_ETERNAL		   (MAX_LEVEL - 1)
 #define LEVEL_IMPLEMENTOR	   (MAX_LEVEL - 1)
 #define LEVEL_SUB_IMPLEM	   (MAX_LEVEL - 1)
-#define LEVEL_ASCENDANT		   (MAX_LEVEL - 2)
-#define LEVEL_GREATER		   (MAX_LEVEL - 2)
-#define LEVEL_GOD		   (MAX_LEVEL - 2)
-#define LEVEL_LESSER		   (MAX_LEVEL - 3)
-#define LEVEL_TRUEIMM		   (MAX_LEVEL - 3)
-#define LEVEL_DEMI		   (MAX_LEVEL - 3)
-#define LEVEL_SAVIOR		   (MAX_LEVEL - 3)
-#define LEVEL_CREATOR		   (MAX_LEVEL - 3)
-#define LEVEL_ACOLYTE		   (MAX_LEVEL - 4)
-#define LEVEL_NEOPHYTE		   (MAX_LEVEL - 4)
-#define LEVEL_AVATAR		   (MAX_LEVEL - 5)
+#define LEVEL_GREATER		   (MAX_LEVEL - 3) // aassign blocks
+#define LEVEL_GOD		   (MAX_LEVEL - 3) // most 'admin' checks
+#define LEVEL_LESSER		   (MAX_LEVEL - 4) // msetting mobs
+#define LEVEL_DEMI		   (MAX_LEVEL - 5) // Default level for mail
+#define LEVEL_SAVIOR		   (MAX_LEVEL - 6) // Allows reference by vnum
+#define LEVEL_CREATOR		   (MAX_LEVEL - 3) // Checked as well as GREATER for out-of-assigned-areas override
+#define LEVEL_NEOPHYTE		   (MAX_LEVEL - 9) // Retired level
+
+#define LEVEL_INFINITE		   (MAX_LEVEL - 1) // Not used
+#define LEVEL_ETERNAL		   (MAX_LEVEL - 1) // Not used
+#define LEVEL_ASCENDANT		   (MAX_LEVEL - 2) // Not used
+#define LEVEL_TRUEIMM		   (MAX_LEVEL - 3) // Not used
+#define LEVEL_ACOLYTE		   (MAX_LEVEL - 4) // Not used
+*/
+
+
+#define LEVEL_AVATAR		   (MAX_LEVEL - 10)
 
 #define LEVEL_LOG		    LEVEL_LESSER
 #define LEVEL_HIGOD		    LEVEL_GOD
+
+/* When adding command groups, make sure to change 
+the command_group array in const.c - DV 2-2-03 */
+
+#define CGROUP_IMPLEMENTOR         BV00
+#define CGROUP_CODER		   BV01
+#define CGROUP_HEAD_BUILDER	   BV02
+#define CGROUP_BUILDER		   BV03
+#define CGROUP_SHIP_BUILDER	   BV04
+#define CGROUP_HEAD_CLAN	   BV05
+#define CGROUP_CLAN_PATRON	   BV06
+#define CGROUP_HEAD_ADMIN	   BV07
+#define CGROUP_ADMIN		   BV08
+#define CGROUP_QUEST_MASTER	   BV09
 
 #include "alias.h"
 
@@ -332,8 +385,7 @@ struct	ban_data
 {
     BAN_DATA *	next;
     BAN_DATA *	prev;
-    char *	name;
-    int		level;
+    char *	name;     int		level;
     char *	ban_time;
 };
 
@@ -432,8 +484,7 @@ struct	descriptor_data
     char *              hostip;
     int			port;
     int			descriptor;
-    sh_int		connected;
-    sh_int		idle;
+    sh_int		connected;     sh_int		idle;
     sh_int		lines;
     sh_int		scrlen;
     bool		fcommand;
@@ -458,6 +509,11 @@ struct	descriptor_data
     int 		atimes;
     int			newstate;
     unsigned char	prevcolor;
+#ifdef MCCP
+    unsigned char	compressing;
+    z_stream *          out_compress;
+    unsigned char *     out_compress_buf;
+#endif      
 };
 
 
@@ -626,8 +682,6 @@ struct  frc_app_type
 #define TO_VICT		    2
 #define TO_CHAR		    3
 
-
-
 /*
  * Real action "TYPES" for act.
  */
@@ -694,7 +748,7 @@ struct  frc_app_type
 #define AT_RESET	   AT_DGREEN
 #define AT_LOG		   AT_PURPLE
 #define AT_DIEMSG	   AT_WHITE
-#define AT_WARTALK         AT_RED
+#define AT_VULGAR         AT_RED
 #define AT_SHIP            AT_PINK
 #define AT_CLAN            AT_PINK
 
@@ -775,7 +829,7 @@ struct	mob_prog_data
     char *	 comlist;
 };
 
-bool	MOBtrigger;
+extern bool	MOBtrigger;
 
 /* race dedicated stuff */
 struct	race_type
@@ -792,8 +846,8 @@ struct	race_type
     sh_int	frc_plus;		/* Frc 	    "			*/
     sh_int      hit;
     sh_int      mana;
-    int      resist;
-    int      suscept;
+    int         resist;
+    int         suscept;
     int		class_restriction;	/* Flags for illegal classes	*/
     int         language;               /* Default racial language      */
 };
@@ -811,6 +865,24 @@ typedef enum {MISSILE_READY, MISSILE_FIRED, MISSILE_RELOAD, MISSILE_RELOAD_2, MI
 typedef enum {FIGHTER_SHIP, MIDSIZE_SHIP, CAPITAL_SHIP, SHIP_PLATFORM, CLOUD_CAR, OCEAN_SHIP, LAND_SPEEDER, WHEELED, LAND_CRAWLER, WALKER, SHIP_TRAINER, SHIP_DEBRIS } ship_classes;
 typedef enum {CONCUSSION_MISSILE, PROTON_TORPEDO, HEAVY_ROCKET, HEAVY_BOMB} missile_types;
 typedef enum {SPACE_SUN, SPACE_PLANET, SPACE_MOVEOBJ, SPACE_OBJ} spaceobjtypes;
+typedef enum {MOD_NONE, MOD_HYPERSPEED, MOD_REALSPEED, MOD_LASER, MOD_ION, MOD_MAXSHIELD, MOD_ENERGY, 
+	      MOD_LAUNCHER, MOD_TRACTORBEAM, MOD_COMM, MOD_SENSOR, MOD_ASTRO_ARRAY, 
+	      MOD_DEFENSELAUNCHER, MOD_MANUEVER, MOD_HULL, MOD_MISSILE, MOD_TORPEDO, MOD_ROCKET, 
+	      MOD_CHAFF, MOD_GRAVITY_PROJ, MOD_TURRET, MOD_CARGO, MOD_FLAG, MOD_MAX } moduletypes;
+typedef enum {STRTYPE_PILOTSEAT, STRTYPE_ENTRANCE, STRTYPE_COSEAT, STRTYPE_ENGINEROOM, STRTYPE_NAVSEAT,
+	      STRTYPE_GUNSEAT, STRTYPE_HANGAR, STRTYPE_COCKPIT, STRTYPE_DEFAULT } strtypes;
+typedef enum {CARGOTYPE_ORE, CARGOTYPE_FOOD, CARGOTYPE_ELECTRONICS, CARGOTYPE_WEAPONS, 
+	      CARGOTYPE_MEDICAL, CARGOTYPE_CLOTHING, CARGOTYPE_LUXURIES, CARGOTYPE_SPICE,
+	      CARGOTYPE_WATER, CARGOTYPE_SPECIAL, CARGOTYPE_DEFAULT } cargotypes;
+	     // If you add to CARGOTYPE, also add to the cargodefaults array in space2.h - DV 3-15-04
+	     
+#define STR_AREAVNUM 2700
+#define MAXMODFLAG 5
+
+#define MOD_CONDITION_START 100
+#define MOD_FIGHTER_OBJECT 26
+#define MOD_MIDSHIP_OBJECT 27
+#define MOD_CAPSHIP_OBJECT 28
 
 typedef enum { GROUP_CLAN, GROUP_COUNCIL, GROUP_GUILD } group_types;
 
@@ -825,7 +897,8 @@ struct member_data
 {
 	char 		*name;	/* Name of member */
 	char		*since;	/* Member since */
-	int		class;	/* class of member */
+	char		*laston;/* Member since */
+	int		     plrclass;	/* class of member */
 	int		level;	/* level of member */
 	int 		deaths;	/* Pdeaths for clans, mdeaths for guilds/orders */
 	int 		kills;	/* Pkills for clans, mkills for guilds/orders */
@@ -845,39 +918,19 @@ struct member_list
 #define LASER_DAMAGED    -1
 #define LASER_READY       0
 
+struct cargo_data_list
+{
+  CARGO_DATA_LIST *next;
+  CARGO_DATA_LIST *prev;
+  CARGO_DATA *cargo;
+};
+
 struct cargo_data
 {
-  int cargo0;
-  int cargo1;
-  int cargo2;
-  int cargo3;
-  int cargo4;
-  int cargo5;
-  int cargo6;
-  int cargo7;
-  int cargo8;
-  int cargo9;
-  int orgcargo0;
-  int orgcargo1;
-  int orgcargo2;
-  int orgcargo3;
-  int orgcargo4;
-  int orgcargo5;
-  int orgcargo6;
-  int orgcargo7;
-  int orgcargo8;
-  int orgcargo9;
-  int price0;
-  int price1;
-  int price2;
-  int price3;
-  int price4;
-  int price5;
-  int price6;
-  int price7;
-  int price8;
-  int price9;
-  bool smug;
+	
+  int cargotype;
+  int price;
+
 };
 
 struct space_data
@@ -909,7 +962,8 @@ struct space_data
     int          high;
     int          crash;
     bool	 trainer;
-    CARGO_DATA  *cargo;
+    CARGO_DATA_LIST  *first_cargo;
+    CARGO_DATA_LIST  *last_cargo;
 };
 
 struct  bounty_data
@@ -1002,13 +1056,95 @@ struct	clan_data
     int         spacecraft;
     int		vehicles;
     int         jail;
-    unsigned int enlistroom1;
-    unsigned int enlistroom2;
+    int     enlistroom1;
+    int     enlistroom2;
     char      * tmpstr;
+};
+
+struct templatetype
+{
+  int type;
+  int shipclass;
+  char name[MAX_STRING_LENGTH];
+  char string[MAX_STRING_LENGTH];
+  char desc[MAX_STRING_LENGTH];
+  int maxextmodules;
+  int maxintmodules;
+  int weight;
+};
+
+typedef enum { HOPPER_RENTAL, TWING_RENTAL, MAX_RENTALS } rental_types;
+
+struct rental_data
+{
+  sh_int type;
+  int templatevnum;
+};
+
+struct turret_type
+{
+  sh_int type;
+  int mindamage;
+  int maxdamage;
+  char name[MAX_STRING_LENGTH];
+  char targetdammsg[MAX_STRING_LENGTH];
+  char observerdammsg[MAX_STRING_LENGTH];
+  char selfdammsg[MAX_STRING_LENGTH];
+  char targetmissmsg[MAX_STRING_LENGTH];
+  char observermissmsg[MAX_STRING_LENGTH];
+  char selfmissmsg[MAX_STRING_LENGTH];
+
+};
+
+typedef enum { TURBOLASER_TURRET, QUAD_TURRET, ION_TURRET, MISSILE_TURRET, TRACTOR_TURRET, MAX_TURRET_TYPE } turret_types;
+
+struct turret_data
+{
+  TURRET_DATA *next;
+  TURRET_DATA *prev;
+  char type;
+  int roomvnum;
+  sh_int state;
+  SHIP_DATA *target;
+};
+
+struct ship_mod_data
+{
+    sh_int      comm;
+    sh_int      sensor;
+    sh_int      astro_array;
+    sh_int      hyperspeed;
+    sh_int      realspeed;
+    sh_int      lasers;
+    sh_int      tractorbeam;
+    sh_int      manuever;
+    int         maxenergy;
+    int         maxshield;
+    int         maxhull;
+    sh_int	ions;
+    sh_int	launchers;
+    sh_int	defenselaunchers;
+    int		gravitypower;
+    int		gravproj;
+};
+
+struct module_data
+{
+  char *name;
+  int type;
+  int condition;
+  int size;
+  int modification;
+  MODULE_DATA *next;
+  MODULE_DATA *prev;  
 };
 
 struct ship_data
 {
+	// Johnson 6-24 Begin
+	TRACKER_DATA *trackers;
+	// Johnson 6-24 End
+
     SHIP_DATA * next;
     SHIP_DATA * prev;
     SHIP_DATA * next_in_spaceobject;
@@ -1016,6 +1152,7 @@ struct ship_data
     SHIP_DATA * next_in_room;
     SHIP_DATA * prev_in_room;
     ROOM_INDEX_DATA *in_room;
+    ROOM_INDEX_DATA *cockpitroom; // COckpit nnum for one-room virtual ships.
     SPACE_DATA * spaceobject;
     SPACE_DATA * destin;
     char *      filename;
@@ -1028,7 +1165,7 @@ struct ship_data
     char *      copilot;
     char *      dest;
     sh_int      type;
-    sh_int      class;
+    sh_int      shipclass;
     sh_int      comm;
     sh_int      sensor;
     sh_int      astro_array;
@@ -1036,22 +1173,13 @@ struct ship_data
     int         hyperdistance;
     int         orighyperdistance;
     sh_int      realspeed;
+    sh_int	accel;
     sh_int	currspeed;
     sh_int	goalspeed;
     sh_int      shipstate;
     sh_int      docking;
     sh_int      statei0;
     sh_int      statet0;
-    sh_int      statet1;
-    sh_int      statet2;
-    sh_int      statet3;
-    sh_int      statet4;
-    sh_int      statet5;
-    sh_int      statet6;
-    sh_int      statet7;
-    sh_int      statet8;
-    sh_int      statet9;
-    sh_int      statet10;
     sh_int      statettractor;
     sh_int      statetdocking;
     sh_int      missiletype;
@@ -1063,6 +1191,7 @@ struct ship_data
     sh_int      rockets;
     sh_int      maxrockets;
     sh_int      lasers;
+    sh_int 	ions;
     sh_int      tractorbeam;
     sh_int      manuever;
     sh_int      upgradeblock;
@@ -1081,8 +1210,6 @@ struct ship_data
     float       jx, jy, jz;
     float       cx, cy, cz;
     float       ox, oy, oz;
-    int		maneuverdeg;
-    float       goalhx, goalhy, goalhz;
     int         maxenergy;
     int         energy;
     int         shield;
@@ -1090,22 +1217,13 @@ struct ship_data
     int         hull;
     int         maxhull;
     int         cockpit;
-    int         turret1;
-    int         turret2;
-    int			 turret3;
-    int 			 turret4;
-    int         turret5;
-    int         turret6;
-    int         turret7;
-    int         turret8;
-    int         turret9;
-    int         turret0;
+    TURRET_DATA *first_turret;
+    TURRET_DATA *last_turret;
     int         location;
     int         lastdoc;
     int         shipyard;
     int         entrance;
     int         hanger;
-    int         cargohold;
     int         engineroom;
     int         firstroom;
     int         lastroom;
@@ -1113,32 +1231,35 @@ struct ship_data
     int         pilotseat;
     int         coseat;
     int         gunseat;
-    long        collision;
     SHIP_DATA  *target0;
-    SHIP_DATA  *target1;
-    SHIP_DATA  *target2;
-    SHIP_DATA  *target3;
-    SHIP_DATA  *target4;
-    SHIP_DATA  *target5;
-    SHIP_DATA  *target6;
-    SHIP_DATA  *target7;
-    SHIP_DATA  *target8;
-    SHIP_DATA  *target9;
-    SHIP_DATA  *target10;
     SHIP_DATA  *tractoredby;
     SHIP_DATA  *tractored;
     SPACE_DATA *currjump;
     SPACE_DATA *lastsystem;
     sh_int      chaff;
     sh_int      maxchaff;
-    bool        chaff_released;
+    char        chaff_released;
     bool        autopilot;
-    bool 	opentube;
     SHIP_DATA  *docked;
     sh_int      alarm;
     int maxcargo;
-    int cargo0;
-    int cargo1;
+    sh_int caughtsmugcargo;
+    CHAR_DATA *ch;
+    SPACE_DATA *inorbitof;
+    int count;
+    MODULE_DATA *first_module;
+    MODULE_DATA *last_module;
+    SHIP_MOD_DATA *mod;
+    int		modules;
+    int		maxintmodules;
+    int		maxextmodules;
+//  int		maneuverdeg;  		// for delayed turning... not coded as of yet - DV 8/7/02
+//  float       goalhx, goalhy, goalhz; // for delayed turning... not coded as of yet - DV 8/7/02
+//  int         cargohold;
+//  long        collision;
+//  bool 	opentube;
+/*  int cargo0; // Turn into modules.
+    int cargo1; // Use size for amount of cargo, and modification for what kind of cargo. DV 8/7/02
     int cargo2;
     int cargo3;
     int cargo4;
@@ -1147,11 +1268,10 @@ struct ship_data
     int cargo7;
     int cargo8;
     int cargo9;
-    sh_int caughtsmug;
-    sh_int ions;
-    CHAR_DATA *ch;
-    SPACE_DATA *inorbitof;
-    int count;
+*/
+    long int shipID;
+    char *templatestring;
+    int weight;
 };
 
 struct missile_data
@@ -1167,7 +1287,7 @@ struct missile_data
     sh_int      missiletype;
     sh_int      age;
     int         speed;
-    int         mx, my, mz;
+    float         mx, my, mz;
 };
 
 
@@ -1339,6 +1459,8 @@ struct	smaug_affect
 #define VIP_WROONA  		BV24
 #define VIP_DATHOMIR  		BV25
 #define VIP_SULLUST		BV26
+#define VIP_FALLEEN		BV27
+#define VIP_ETTI		BV28
 
 /* player wanted bits */
 
@@ -1369,6 +1491,8 @@ struct	smaug_affect
 #define WANTED_WROONA  		VIP_WROONA
 #define WANTED_DATHOMIR		VIP_DATHOMIR
 #define WANTED_SULLUST		VIP_SULLUST
+#define WANTED_FALLEEN		VIP_FALLEEN
+#define WANTED_ETTI		VIP_ETTI
 /*
  * Bits for 'affected_by'.
 / * Used in #MOBILES.
@@ -1386,7 +1510,10 @@ struct	smaug_affect
 #define AFF_FAERIE_FIRE		  BV08
 #define AFF_INFRARED		  BV09
 #define AFF_CURSE		  BV10
-#define AFF_FLAMING		  BV11		/* Unused	*/
+// Johnson ( Michael Shattuck ) 4/28 Start - Added 5-15-04 - DV
+//#define AFF_FLAMING		  BV11		/* Unused	*/
+#define AFF_ENDURANCE		BV11
+// Shattuck 4/28 End
 #define AFF_POISON		  BV12
 #define AFF_PROTECT		  BV13
 #define AFF_PARALYSIS		  BV14
@@ -1593,9 +1720,6 @@ struct	smaug_affect
 typedef enum { SS_NONE, SS_POISON_DEATH, SS_ROD_WANDS, SS_PARA_PETRI,
 	       SS_BREATH, SS_SPELL_STAFF } save_types;
 
-/* Wierd bug I couldn't figure out - DV */
-#define bebad triggerthis
-
 #define ALL_BITS		INT_MAX
 #define SDAM_MASK		ALL_BITS & ~(BV00 | BV01 | BV02)
 #define SACT_MASK		ALL_BITS & ~(BV03 | BV04 | BV05)
@@ -1721,11 +1845,12 @@ typedef enum
   ITEM_RARE_METAL, ITEM_MAGNET, ITEM_THREAD, ITEM_SPICE, ITEM_SMUT, ITEM_DEVICE, ITEM_SPACECRAFT,
   ITEM_GRENADE, ITEM_LANDMINE, ITEM_GOVERNMENT, ITEM_DROID_CORPSE, ITEM_BOLT, ITEM_SCOPE, 
   ITEM_FIGHTERCOMP, ITEM_MIDCOMP, ITEM_CAPITALCOMP, ITEM_CHEMICAL,
-  ITEM_DISGUISE, ITEM_DIS_FABRIC, ITEM_HAIR
+  ITEM_DISGUISE, ITEM_DIS_FABRIC, ITEM_HAIR, ITEM_STUNGRENADE,
+  ITEM_CARGO, ITEM_TRACKINGDEVICE
 } item_types;
 
 
-#define MAX_ITEM_TYPE		     ITEM_CHEMICAL
+#define MAX_ITEM_TYPE		     ITEM_CARGO
 /*
  * Extra flags.
  * Used in #OBJECTS.
@@ -1745,7 +1870,7 @@ typedef enum
 #define ITEM_NOREMOVE		BV12
 #define ITEM_INVENTORY		BV13
 #define ITEM_ANTI_SOLDIER	BV14
-#define ITEM_ANTI_THIEF	        BV15
+#define ITEM_TWO_HANDS	        BV15
 #define ITEM_ANTI_HUNTER	BV16
 #define ITEM_ANTI_JEDI  	BV17
 #define ITEM_SMALL_SIZE		BV18
@@ -1854,6 +1979,7 @@ typedef enum
 #define SPICE_RYLL               2
 #define SPICE_ANDRIS             3
 #define SPICE_LUMNI		 4
+#define SPICE_LYCIN		 5		// Johnson ( Michael Shattuck ) 4/30/04 - Added 5-15-04 - D
 
 /* crystal types */
 #define GEM_NON_ADEGEN          0
@@ -1890,7 +2016,7 @@ typedef enum
 #define ITEM_MISSILE_WIELD	BV18
 #define ITEM_WEAR_FLOATING	BV19
 #define ITEM_WEAR_OVER		BV20
-#define ITEM_WEAR_DISGUISE      BV21
+#define ITEM_WEAR_DISGUISE      BV20
 
 /*
  * Apply types (for affects).
@@ -1906,8 +2032,7 @@ typedef enum
   APPLY_AFFECT, APPLY_RESISTANT, APPLY_IMMUNE, APPLY_SUSCEPTIBLE,
   APPLY_WEAPONSPELL, APPLY_LCK, APPLY_BACKSTAB, APPLY_PICK, APPLY_TRACK,
   APPLY_STEAL, APPLY_SNEAK, APPLY_HIDE, APPLY_PALM, APPLY_DETRAP, APPLY_DODGE,
-  APPLY_PEEK, APPLY_SCAN, APPLY_GOUGE, APPLY_SEARCH, APPLY_MOUNT, APPLY_DISARM,
-  APPLY_KICK, APPLY_PARRY, APPLY_BASH, APPLY_STUN, APPLY_PUNCH, APPLY_CLIMB,
+  APPLY_PEEK, APPLY_SCAN, APPLY_GOUGE, APPLY_SEARCH, APPLY_MOUNT, APPLY_DISARM,   APPLY_KICK, APPLY_PARRY, APPLY_BASH, APPLY_STUN, APPLY_PUNCH, APPLY_CLIMB,
   APPLY_GRIP, APPLY_SCRIBE, APPLY_BREW, APPLY_WEARSPELL, APPLY_REMOVESPELL,
   APPLY_EMOTION, APPLY_MENTALSTATE, APPLY_STRIPSN, APPLY_REMOVE, APPLY_DIG,
   APPLY_FULL, APPLY_THIRST, APPLY_DRUNK, APPLY_BLOOD, APPLY_SNIPE, MAX_APPLY_TYPE
@@ -2000,7 +2125,7 @@ typedef enum
 #define ROOM_NOFLOOR		BV24
 #define ROOM_REFINERY           BV25
 #define ROOM_FACTORY            BV26
-#define ROOM_RECRUIT          BV27
+#define ROOM_RECRUIT            BV27
 #define ROOM_PLR_SHOP           BV28
 #define ROOM_SPACECRAFT         BV29
 #define ROOM_PROTOTYPE	     	BV30
@@ -2074,7 +2199,7 @@ typedef enum
   WEAR_NECK_2, WEAR_BODY, WEAR_HEAD, WEAR_LEGS, WEAR_FEET, WEAR_HANDS,
   WEAR_ARMS, WEAR_SHIELD, WEAR_ABOUT, WEAR_WAIST, WEAR_WRIST_L, WEAR_WRIST_R,
   WEAR_WIELD, WEAR_HOLD, WEAR_DUAL_WIELD, WEAR_EARS, WEAR_EYES,
-  WEAR_MISSILE_WIELD, WEAR_FLOATING, WEAR_OVER, WEAR_DISGUISE, MAX_WEAR
+  WEAR_MISSILE_WIELD, WEAR_FLOATING, WEAR_OVER, MAX_WEAR, WEAR_DISGUISE
 } wear_locations;
 
 /* Board Types */
@@ -2204,7 +2329,7 @@ struct timer_data
 #define CHANNEL_TELLS		   BV19
 #define CHANNEL_ORDER              BV20
 #define CHANNEL_NEWBIE             BV21
-#define CHANNEL_WARTALK            BV22
+#define CHANNEL_VULGAR            BV22
 #define CHANNEL_OOC                BV23
 #define CHANNEL_SHIP               BV24
 #define CHANNEL_SYSTEM             BV25
@@ -2212,7 +2337,8 @@ struct timer_data
 #define CHANNEL_103		   BV27
 #define CHANNEL_ARENA		    BV28
 #define CHANNEL_ALLCLAN		   BV29
-
+#define CHANNEL_NEWS		   BV30
+#define CHANNEL_NEWBIEASST      BV31
 #define CHANNEL_CLANTALK	   CHANNEL_CLAN
 
 /* Area defines - Scryn 8/11
@@ -2225,6 +2351,7 @@ struct timer_data
 #define AFLAG_NOPKILL               BV00
 #define AFLAG_NOQUEST		    BV01
 #define AFLAG_CHANGED		    BV02
+
 
 /*
  * Prototype for a mob.
@@ -2342,6 +2469,7 @@ struct	char_data
     CHAR_DATA *		leader;
     FIGHT_DATA *	fighting;
     CHAR_DATA *		reply;
+    CHAR_DATA *         retell;
     CHAR_DATA *		switched;
     CHAR_DATA *		mount;
     HHF_DATA *		hunting;
@@ -2553,6 +2681,7 @@ struct	pc_data
     int			played;
     time_t		logon;
     time_t		save_time;
+    int                 commandgroup;
     
 };
 
@@ -2771,6 +2900,13 @@ struct	area_data
     int			illegal_pk;
     int			high_economy;
     int			low_economy;
+
+    /* Area cargo production/depletion and supply for trading
+       -Aran 
+    */
+    int         production[8];
+    int         depletion[8];
+    int         supply[8];
 };
 
 
@@ -2827,6 +2963,7 @@ struct	system_data
     char       *guild_advisor;		/* guild overseer and advisor. */ 
     int		save_flags;		/* Toggles for saving conditions */
     sh_int	save_frequency;		/* How old to autosave someone */
+    long int	currentshipID;		/* The next number to set for ShipIDs */
 };
 
 
@@ -2851,7 +2988,7 @@ struct	room_index_data
     char *		name;
     MAP_DATA *		map;                 /* maps */
     char *		description;
-    int			vnum;
+    int vnum;
     int			room_flags;
     MPROG_ACT_LIST *	mpact;               /* mudprogs */
     int			mpactnum;            /* mudprogs */
@@ -2893,7 +3030,7 @@ struct	teleport_data
 typedef enum
 {
   TAR_IGNORE, TAR_CHAR_OFFENSIVE, TAR_CHAR_DEFENSIVE, TAR_CHAR_SELF,
-  TAR_OBJ_INV
+  TAR_OBJ_INV, TAR_CHAR_SEMIOFFENSIVE
 } target_types;
 
 typedef enum
@@ -3026,11 +3163,21 @@ extern sh_int   gsn_makelandmine;
 extern sh_int   gsn_makearmor;
 extern sh_int   gsn_makeshield;
 extern sh_int   gsn_makecontainer;
+extern sh_int	gsn_makemedpac;
 extern sh_int   gsn_gemcutting;
 extern sh_int   gsn_lightsaber_crafting;
 extern sh_int   gsn_spice_refining;
 extern sh_int   gsn_fake_signal;
 extern sh_int   gsn_slicing;
+extern sh_int	gsn_makefurniture;
+extern sh_int	gsn_module_engineering;
+extern sh_int   gsn_repairmodule;
+// Johnson 6-26-04 Begin:
+extern sh_int   gsn_basictrackingdevices;
+extern sh_int   gsn_advancedtrackingdevices;
+// Johnson 6-26 End
+
+
 
 extern	sh_int	gsn_detrap;
 extern	sh_int	gsn_backstab;
@@ -3343,6 +3490,7 @@ do								\
  */
 #define IS_NPC(ch)		((IS_SET((ch)->act, ACT_IS_NPC)) || !((ch)->pcdata))
 #define IS_IMMORTAL(ch)		(get_trust((ch)) >= LEVEL_IMMORTAL)
+#define IS_GREATER(ch)		(get_trust((ch)) >= LEVEL_GREATER)
 #define IS_GOD(ch)		(get_trust((ch)) >= LEVEL_GOD)
 #define IS_HERO(ch)		(get_trust((ch)) >= LEVEL_HERO)
 #define IS_AFFECTED(ch, sn)	(IS_SET((ch)->affected_by, (sn)))
@@ -3446,7 +3594,6 @@ do								\
 /*
  * Description macros.
  */
-
 #define DISGUISE(ch)            ((!nifty_is_name(ch->name, ch->pcdata->title)) ?   \
   				1 : 0)
                                 
@@ -3473,6 +3620,7 @@ struct	cmd_type
     sh_int		position;
     sh_int		level;
     sh_int		log;
+    int                 commandgroup;
     struct		timerset	userec;
 };
 
@@ -3494,7 +3642,20 @@ struct	social_type
     char *		others_auto;
 };
 
+// Johnson 6-20-2004: Begin
+struct tracker_data
+{
+	TRACKER_DATA * next;
+	TRACKER_DATA * prev;
 
+	SHIP_DATA * parent;				// The ship that this device has been installed to
+	bool		isInternal;			// Flag for if this device is installed on the inside or outside of the ship
+	int			complexity;			// Complexity of the device, how well it is made,hidden, etcetera
+	char *		owner;				// Who owns the device
+	char *		slot1;				// A slot to add another player to have access to the device
+	char *		slot2;				// A slot to add another player to have access to the device
+	int			duration_installed;	// How long the device has been on the ship
+}; // Johnson: 6-20-2004: End
 
 /*
  * Global constants.
@@ -3542,18 +3703,21 @@ extern	char *	const	ris_flags	[];
 extern	char *	const	trig_flags	[];
 extern	char *	const	part_flags	[];
 extern	char *	const	npc_race	[];
+extern  char *  const   command_groups  []; 
 extern	char *	const	defense_flags	[];
 extern	char *	const	attack_flags	[];
 extern	char *	const	area_flags	[];
-
+extern  char *  const   cargo_names     [];
+extern  int     const   modflags	[MAXMODFLAG];
 extern	int	const	lang_array      [];
 extern	char *	const	lang_names      [];
 
 /*
  * Global variables.
  */
-extern bool bootup;
 
+extern bool bootup;
+ 
 extern	int	numobjsloaded;
 extern	int	nummobsloaded;
 extern	int	physicalobjects;
@@ -3618,6 +3782,7 @@ extern          BOUNTY_DATA       *     first_bounty;
 extern          BOUNTY_DATA       *     last_bounty;
 extern          BOUNTY_DATA       *     first_disintigration;
 extern          BOUNTY_DATA       *     last_disintigration;
+extern		SYSTEM_DATA	  	sysdata;
 extern		AREA_DATA	  *	first_area;
 extern		AREA_DATA	  *	last_area;
 extern		AREA_DATA	  *	first_build;
@@ -3657,12 +3822,23 @@ extern		struct act_prog_data *	mob_act_list;
  * Command functions.
  * Defined in act_*.c (mostly).
  */
+DECLARE_DO_FUN( do_repair_module );
+DECLARE_DO_FUN( do_maketemplateship);
+DECLARE_DO_FUN( do_ordership);
+DECLARE_DO_FUN( do_ahelp );
+DECLARE_DO_FUN( do_improve_module );
+DECLARE_DO_FUN( do_install_module );
+DECLARE_DO_FUN( do_remove_module );
+DECLARE_DO_FUN( do_show_modules );
 DECLARE_DO_FUN(	do_nohelps	);
 DECLARE_DO_FUN(	do_skin		);
 DECLARE_DO_FUN( do_dismiss	);
+DECLARE_DO_FUN(	do_dontresolve	);
 DECLARE_DO_FUN( do_draw );
 DECLARE_DO_FUN( do_focusalias   );
 DECLARE_DO_FUN( do_unfocusalias   );
+DECLARE_DO_FUN( do_marena       );
+DECLARE_DO_FUN( do_mchallenge   );
 DECLARE_DO_FUN( do_members      );
 DECLARE_DO_FUN( do_roster       );
 DECLARE_DO_FUN( do_scatter );
@@ -3733,6 +3909,7 @@ DECLARE_DO_FUN( do_makelight );
 DECLARE_DO_FUN( do_makecomlink );
 DECLARE_DO_FUN( do_makeshield );
 DECLARE_DO_FUN( do_makecontainer );
+DECLARE_DO_FUN( do_makefurniture );
 DECLARE_DO_FUN( do_makemissile );
 DECLARE_DO_FUN( do_gemcutting );
 DECLARE_DO_FUN( do_reinforcements );
@@ -3747,6 +3924,7 @@ DECLARE_DO_FUN( do_first_aid);
 DECLARE_DO_FUN( do_makeblade ); 
 DECLARE_DO_FUN( do_makeblaster );
 DECLARE_DO_FUN( do_makebowcaster );
+DECLARE_DO_FUN( do_makemedpac );
 DECLARE_DO_FUN( do_makelightsaber );
 DECLARE_DO_FUN( do_makespice );
 DECLARE_DO_FUN( do_closebay );
@@ -3773,8 +3951,7 @@ DECLARE_DO_FUN( do_hyperspace );
 DECLARE_DO_FUN( do_target );
 DECLARE_DO_FUN( do_fire );
 DECLARE_DO_FUN( do_calculate );
-DECLARE_DO_FUN( do_calculate_diff );
-DECLARE_DO_FUN( do_guard );
+DECLARE_DO_FUN( do_calculate_diff ); DECLARE_DO_FUN( do_guard );
 DECLARE_DO_FUN( do_recharge );
 DECLARE_DO_FUN( do_repairship );
 DECLARE_DO_FUN( do_refuel );
@@ -3854,16 +4031,20 @@ DECLARE_DO_FUN(	do_bug		);
 DECLARE_DO_FUN( do_bury		);
 DECLARE_DO_FUN( do_buy          );
 DECLARE_DO_FUN( do_buyvendor    );
+DECLARE_DO_FUN(	do_cargo	);
 DECLARE_DO_FUN(	do_cast		);
 DECLARE_DO_FUN(	do_cedit	);
 DECLARE_DO_FUN(	do_channels	);
 DECLARE_DO_FUN(	do_chat		);
 DECLARE_DO_FUN(	do_ooc		);
+DECLARE_DO_FUN(	do_checkareaships  );
 DECLARE_DO_FUN(	do_check_vnums  );
+DECLARE_DO_FUN(	do_checkcargo   );
 DECLARE_DO_FUN( do_circle	);
 DECLARE_DO_FUN( do_clanfunds	);
 DECLARE_DO_FUN(	do_clans	);
 DECLARE_DO_FUN( do_ships        );
+DECLARE_DO_FUN( do_shipdelete   );
 DECLARE_DO_FUN( do_shiptrack    );
 DECLARE_DO_FUN(	do_clantalk	);
 DECLARE_DO_FUN(	do_allclantalk	);
@@ -3877,6 +4058,9 @@ DECLARE_DO_FUN( do_collectgold  );
 DECLARE_DO_FUN(	do_commands	);
 DECLARE_DO_FUN(	do_comment	);
 DECLARE_DO_FUN(	do_compare	);
+#ifdef MCCP
+DECLARE_DO_FUN( do_compress	);
+#endif
 DECLARE_DO_FUN(	do_config	);
 DECLARE_DO_FUN(	do_consider	);
 DECLARE_DO_FUN( do_cutdoor     );
@@ -3931,6 +4115,7 @@ DECLARE_DO_FUN(	do_glance	);
 DECLARE_DO_FUN( do_gold         );
 DECLARE_DO_FUN(	do_goto		);
 DECLARE_DO_FUN( do_gouge	);
+DECLARE_DO_FUN( do_gravityprojector  );
 DECLARE_DO_FUN(	do_group	);
 DECLARE_DO_FUN(	do_grub 	);
 DECLARE_DO_FUN(	do_gtell	);
@@ -3970,7 +4155,9 @@ DECLARE_DO_FUN(	do_list		);
 DECLARE_DO_FUN(	do_litterbug	);
 DECLARE_DO_FUN( do_load	);
 DECLARE_DO_FUN( do_unload	);
+DECLARE_DO_FUN( do_unloadcargo	);
 DECLARE_DO_FUN( do_loadarea	);
+DECLARE_DO_FUN( do_loadcargo	);
 DECLARE_DO_FUN( do_loadup	);
 DECLARE_DO_FUN(	do_lock		);
 DECLARE_DO_FUN(	do_log		);
@@ -4000,6 +4187,7 @@ DECLARE_DO_FUN(	do_music	);
 DECLARE_DO_FUN(	do_mwhere	);
 DECLARE_DO_FUN( do_name		);
 DECLARE_DO_FUN( do_newbiechat   );
+DECLARE_DO_FUN( do_newbieasst   );
 DECLARE_DO_FUN( do_newbieset    );
 DECLARE_DO_FUN( do_newzones	);
 DECLARE_DO_FUN(	do_noemote	);
@@ -4066,6 +4254,7 @@ DECLARE_DO_FUN(	do_repairset	);
 DECLARE_DO_FUN(	do_repairshops	);
 DECLARE_DO_FUN(	do_repairstat	);
 DECLARE_DO_FUN(	do_reply	);
+DECLARE_DO_FUN( do_retell       );
 DECLARE_DO_FUN(	do_report	);
 DECLARE_DO_FUN(	do_request	);
 DECLARE_DO_FUN(	do_rescue	);
@@ -4073,6 +4262,7 @@ DECLARE_DO_FUN(	do_rest		);
 DECLARE_DO_FUN( do_reset	);
 DECLARE_DO_FUN( do_resetship	);
 DECLARE_DO_FUN(	do_restore	);
+DECLARE_DO_FUN(	do_restoreship	);
 DECLARE_DO_FUN(	do_restoretime	);
 DECLARE_DO_FUN(	do_restrict	);
 DECLARE_DO_FUN( do_retire       );
@@ -4146,6 +4336,8 @@ DECLARE_DO_FUN(	do_title	);
 DECLARE_DO_FUN( do_track	);
 DECLARE_DO_FUN(	do_toplevel	);
 DECLARE_DO_FUN(	do_transfer	);
+DECLARE_DO_FUN(	do_transfercargo);
+DECLARE_DO_FUN(	do_transferownership);
 DECLARE_DO_FUN( do_transship    );
 DECLARE_DO_FUN(	do_trust	);
 DECLARE_DO_FUN(	do_typo		);
@@ -4155,14 +4347,16 @@ DECLARE_DO_FUN(	do_undock	);
 DECLARE_DO_FUN(	do_unlock	);
 DECLARE_DO_FUN( do_unsilence    );
 DECLARE_DO_FUN(	do_up		);
+DECLARE_DO_FUN(	do_upgradeship	);
 DECLARE_DO_FUN(	do_users	);
+DECLARE_DO_FUN( do_undead       );
 DECLARE_DO_FUN(	do_value	);
 DECLARE_DO_FUN(	do_viewskills	);
 DECLARE_DO_FUN(	do_visible	);
 DECLARE_DO_FUN( do_vnums	);
 DECLARE_DO_FUN( do_vsearch	);
 DECLARE_DO_FUN(	do_wake		);
-DECLARE_DO_FUN( do_wartalk      );
+DECLARE_DO_FUN( do_vulgar      );
 DECLARE_DO_FUN(	do_wear		);
 DECLARE_DO_FUN(	do_weather	);
 DECLARE_DO_FUN(	do_west		);
@@ -4234,6 +4428,7 @@ DECLARE_SPELL_FUN(	spell_blindness		);
 DECLARE_SPELL_FUN(	spell_burning_hands	);
 DECLARE_SPELL_FUN(	spell_call_lightning	);
 DECLARE_SPELL_FUN(	spell_cause_critical	);
+DECLARE_SPELL_FUN(	spell_cause_critical_no_fighting);
 DECLARE_SPELL_FUN(	spell_cause_light	);
 DECLARE_SPELL_FUN(	spell_cause_serious	);
 DECLARE_SPELL_FUN(	spell_change_sex	);
@@ -4341,9 +4536,9 @@ char *	crypt		args( ( const char *key, const char *salt ) );
 #if	defined(interactive)
 #endif
 
-#if	defined(linux)
-char *	crypt		args( ( const char *key, const char *salt ) );
-#endif
+//#if	defined(linux)
+//char *	crypt		args( ( const char *key, const char *salt ) );
+//#endif
 
 #if	defined(MIPS_OS)
 char *	crypt		args( ( const char *key, const char *salt ) );
@@ -4421,6 +4616,9 @@ char *	crypt		args( ( const char *key, const char *salt ) );
 #define SYSTEM_DIR	"../system/"	/* Main system files		*/
 #define PROG_DIR	"mudprogs/"	/* MUDProg files		*/
 #define CORPSE_DIR	"../corpses/"	/* Corpses			*/
+#define SHIP_DIR	"../space/"	/* Player files			*/
+#define BACKUPSHIP_DIR	"../space/backup/"    /* Backup Player files		*/
+#define HELP_FILE       "../system/help.txt" // Attempted help file calls
 #define NULL_FILE	"/dev/null"	/* To reserve one stream	*/
 
 #define AREA_LIST	"area.lst"	/* List of areas		*/
@@ -4482,6 +4680,10 @@ char *	crypt		args( ( const char *key, const char *salt ) );
 #define SH      SHIP_DATA
 
 /* act_comm.c */
+int     closed          args( ( int d ) );
+int readd               args( ( int handle, char *buffer, int length ) );
+bool	write_to_descriptor	args( ( int desc, char *txt, int length ) );
+char *  lang_string( CHAR_DATA *ch, CHAR_DATA *vch );
 void    sound_to_room( ROOM_INDEX_DATA *room , char *argument );
 bool	circle_follow	args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );
 void	add_follower	args( ( CHAR_DATA *ch, CHAR_DATA *master ) );
@@ -4509,7 +4711,7 @@ char *	format_obj_to_char	args( ( OBJ_DATA *obj, CHAR_DATA *ch,
 				    bool fShort ) );
 void	show_list_to_char	args( ( OBJ_DATA *list, CHAR_DATA *ch,
 				    bool fShort, bool fShowNothing ) );
-void do_showstatistic_web	args( ( CHAR_DATA *ch, char *argument ) );
+void do_showstatistic_web( CHAR_DATA *ch, char *argument );
 
 /* act_move.c */
 void	clear_vrooms	args( ( void ) );
@@ -4543,11 +4745,6 @@ void	add_social	args( ( SOCIALTYPE *social ) );
 void	free_command	args( ( CMDTYPE *command ) );
 void	unlink_command	args( ( CMDTYPE *command ) );
 void	add_command	args( ( CMDTYPE *command ) );
-void	callas105	args( ( CHAR_DATA *ch, char *argument ) );
-
-/* bet.h */
-int advatoi 		args( (char *s) );
-int parsebet 		args( (const int currentbet, char *s) );
 
 /* boards.c */
 void	load_boards	args( ( void ) );
@@ -4562,6 +4759,9 @@ char *	strip_cr	args( ( char *str  ) );
 int     get_vip_flag    args( ( char *flag ) );
 int     get_wanted_flag args( ( char *flag ) );
 
+extern char  *  const           wear_locs [];
+extern  char *  const           ex_flags[];
+
 /* clans.c */
 CL *	get_clan		args( ( char *name ) );
 void	load_clans		args( ( void ) );
@@ -4571,10 +4771,10 @@ void	save_senate		args( ( void ) );
 PLANET_DATA *	get_planet	args( ( char *name ) );
 void	load_planets		args( ( void ) );
 void	save_planet		args( ( PLANET_DATA *planet ) );
-long    get_taxes               args( ( PLANET_DATA *planet ) );
+float   get_taxes               args( ( PLANET_DATA *planet ) );
 bool 	load_member_list	args( ( char *filename ) );
 void	update_member		args( ( CHAR_DATA *ch ) );
-void remove_member		args( ( CHAR_DATA *ch ) );
+void	remove_member		args( ( CHAR_DATA *ch ) );
 
 /* bounty.c */
 BOUNTY_DATA  * get_disintigration   args( ( char *target ) );
@@ -4587,6 +4787,7 @@ bool        is_disintigration args( ( CHAR_DATA *victim ) );
 
 /* space.c */
 SH        *  get_ship          	    args( ( char *name ) );
+SH        *  get_ship_from_filename args( ( char *name ) );
 void         load_ships        	    args( ( void ) );
 void         save_ship      	    args( ( SHIP_DATA *ship ) );
 void         load_space             args( ( void ) );
@@ -4603,6 +4804,7 @@ SHIP_DATA  * ship_from_pilotseat    args( ( int vnum ) );
 SHIP_DATA  * ship_from_gunseat      args( ( int vnum ) );
 SHIP_DATA  * ship_from_turret       args( ( int vnum ) );
 SHIP_DATA  * ship_from_engine       args( ( int vnum ) );
+SHIP_DATA  * ship_from_room         args( ( int vnum ) );
 SHIP_DATA  * ship_from_pilot        args( ( char *name ) );
 SHIP_DATA  * get_ship_here          args( ( char *name , SHIP_DATA *eShip) );
 void         showspaceobject         args( ( CHAR_DATA *ch , SPACE_DATA *spaceobject ) );
@@ -4621,9 +4823,9 @@ bool         extract_ship           args( ( SHIP_DATA *ship ) );
 bool         ship_to_room           args( ( SHIP_DATA *ship , int vnum ) );
 long         get_ship_value         args( ( SHIP_DATA *ship ) );
 bool         rent_ship              args( ( CHAR_DATA *ch , SHIP_DATA *ship ) );
-void         damage_ship            args( ( SHIP_DATA *ship, SHIP_DATA *assaulter, int min , int max ) );
-void         damage_ship_ch         args( ( SHIP_DATA *ship , int min , int max , CHAR_DATA *ch ) );
-void         destroy_ship           args( ( SHIP_DATA *ship , CHAR_DATA *ch ) );
+bool         damage_ship            args( ( SHIP_DATA *ship, SHIP_DATA *assaulter, int min , int max ) );
+bool         damage_ship_ch         args( ( SHIP_DATA *ship , int min , int max , CHAR_DATA *ch ) );
+bool         destroy_ship           args( ( SHIP_DATA *ship , CHAR_DATA *ch ) );
 void         ship_to_spaceobject     args( ( SHIP_DATA *ship , SPACE_DATA *spaceobject ) );
 void         ship_from_spaceobject   args( ( SHIP_DATA *ship , SPACE_DATA *spaceobject ) );
 void         new_missile            args( ( SHIP_DATA *ship , SHIP_DATA *target , CHAR_DATA *ch , int missiletype ) );
@@ -4635,16 +4837,38 @@ bool ship_in_range_c( SHIP_DATA *ship, SHIP_DATA *target );
 bool missile_in_range( SHIP_DATA *ship, MISSILE_DATA *missile );
 bool space_in_range( SHIP_DATA *ship, SPACE_DATA *object );
 void dockship( CHAR_DATA *ch, SHIP_DATA *ship );
-bool space_in_range_c			args( ( SHIP_DATA *ship, SPACE_DATA *object ) );
-bool check_hostile		    args( ( SHIP_DATA *ship ) );
-bool autofly			    args( ( SHIP_DATA *ship ) );
+bool is_bus_stop( int vnum );
+bool space_in_range_c( SHIP_DATA *ship, SPACE_DATA *object );
+bool    autofly(SHIP_DATA *ship);
+bool	load_ship_file	args( ( char *shipfile ) );
+
+/* space2.c */
+bool check_hostile( SHIP_DATA *ship );
+void update_ship_modules( SHIP_DATA *ship );
+void fread_modules( SHIP_DATA *ship, FILE *fp );
+void shipdelete(SHIP_DATA * ship, bool shiplist);
+void write_ship_list( void );
+char *show_mod_type( MODULE_DATA *module );
+char *show_mod_type2( int type );
+int get_intmodule_count( SHIP_DATA *ship );
+int get_extmodule_count( SHIP_DATA *ship );
+bool is_internal_mod( int type );
+bool is_external_mod( int type );
+bool add_random_modules( SHIP_DATA *ship, SHIP_DATA *origship );
+bool add_module_ship( SHIP_DATA* ship, char name [], int condition, int type, int size, int modification );
+sh_int get_acceleration( SHIP_DATA *ship );
+// Johnson 6-26-04 Begin:
+void do_makehulltracker( CHAR_DATA *ch, char *argument );
+void do_makeinternaltracker( CHAR_DATA *ch, char *argument );
+// Johnson 6-26-04 End
+
+/* templateparse.c */
+int parse_ship_template(char *string, SHIP_DATA *ship);
 
 /* comm.c */
 void	close_socket	args( ( DESCRIPTOR_DATA *dclose, bool force ) );
-void	write_to_buffer	args( ( DESCRIPTOR_DATA *d, const char *txt,
-				int length ) );
-void	write_to_pager	args( ( DESCRIPTOR_DATA *d, const char *txt,
-				int length ) );
+void	write_to_buffer	args( ( DESCRIPTOR_DATA *d, const char *txt, int length ) );
+void	write_to_pager	args( ( DESCRIPTOR_DATA *d, const char *txt, int length ) );
 void	send_to_char	args( ( const char *txt, CHAR_DATA *ch ) );
 void	send_to_char_color	args( ( const char *txt, CHAR_DATA *ch ) );
 void	send_to_pager	args( ( const char *txt, CHAR_DATA *ch ) );
@@ -4653,8 +4877,7 @@ void	set_char_color  args( ( sh_int AType, CHAR_DATA *ch ) );
 void	set_pager_color	args( ( sh_int AType, CHAR_DATA *ch ) );
 void	ch_printf	args( ( CHAR_DATA *ch, char *fmt, ... ) );
 void	pager_printf	args( (CHAR_DATA *ch, char *fmt, ...) );
-void	act		args( ( sh_int AType, const char *format, CHAR_DATA *ch,
-			    const void *arg1, const void *arg2, int type ) );
+void	act		args( ( sh_int AType, const char *format, CHAR_DATA *ch, const void *arg1, const void *arg2, int type ) );
 
 /* reset.c */
 RD  *	make_reset	args( ( char letter, int extra, int arg1, int arg2, int arg3 ) );
@@ -4724,6 +4947,7 @@ bool    delete_mob      args( ( MOB_INDEX_DATA *mob ) );
 void	obj_sort	args( ( OBJ_INDEX_DATA *pObj ) );
 void	room_sort	args( ( ROOM_INDEX_DATA *pRoom ) );*/
 void	sort_area	args( ( AREA_DATA *pArea, bool proto ) );
+void 	save_sysdata	args( ( SYSTEM_DATA sys ) );
 
 /* build.c */
 void	start_editing	args( ( CHAR_DATA *ch, char *data ) );
@@ -4757,6 +4981,11 @@ ch_ret	multi_hit	args( ( CHAR_DATA *ch, CHAR_DATA *victim, int dt ) );
 sh_int	ris_damage	args( ( CHAR_DATA *ch, sh_int dam, int ris ) );
 ch_ret	damage		args( ( CHAR_DATA *ch, CHAR_DATA *victim, int dam,
 			    int dt ) );
+ch_ret  damage_no_fighting args( (CHAR_DATA *ch, CHAR_DATA *victim, int dam, 
+				int dt));
+ch_ret  damage_optional_fighting args( ( CHAR_DATA *ch, CHAR_DATA *victim,
+					int dam, int dt, 
+					bool bool_start_fighting));
 void	update_pos	args( ( CHAR_DATA *victim ) );
 void	set_fighting	args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );
 void	stop_fighting	args( ( CHAR_DATA *ch, bool fBoth ) );
@@ -4780,7 +5009,6 @@ bool	legal_loot	args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );
 bool    check_illegal_pk args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );
 void    raw_kill        args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );   
 bool	in_arena	args( ( CHAR_DATA *ch ) );
-
 
 /* makeobjs.c */
 void	make_corpse	args( ( CHAR_DATA *ch, CHAR_DATA *killer ) );
@@ -4844,7 +5072,8 @@ bool	check_dodge		args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );
 bool 	check_grip		args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );
 void	disarm			args( ( CHAR_DATA *ch, CHAR_DATA *victim) );
 void	trip			args( ( CHAR_DATA *ch, CHAR_DATA *victim) );
-bool permsneak			args( ( CHAR_DATA *ch ) );
+bool permsneak( CHAR_DATA *ch );
+
 
 /* handler.c */
 void    explode         args( ( OBJ_DATA *obj ) );
@@ -4959,7 +5188,8 @@ void	economize_mobgold args( ( CHAR_DATA *mob ) );
 bool	economy_has	args( ( AREA_DATA *tarea, int gold ) );
 void	add_kill	args( ( CHAR_DATA *ch, CHAR_DATA *mob ) );
 int	times_killed	args( ( CHAR_DATA *ch, CHAR_DATA *mob ) );
-int count_users		args( (OBJ_DATA *obj) );
+int count_users(OBJ_DATA *obj);
+
 
 /* interp.c */
 bool	check_pos	args( ( CHAR_DATA *ch, sh_int position ) );
@@ -5010,6 +5240,7 @@ void	check_requests		args( ( void ) );
 void	save_char_obj	args( ( CHAR_DATA *ch ) );
 void	save_clone	args( ( CHAR_DATA *ch ) );
 bool	load_char_obj	args( ( DESCRIPTOR_DATA *d, char *name, bool preload ) );
+bool 	load_char_obj_v2 args( (DESCRIPTOR_DATA *d, char *name, bool preload , int undead) );
 void	set_alarm	args( ( long seconds ) );
 void	requip_char	args( ( CHAR_DATA *ch ) );
 void    fwrite_obj      args( ( CHAR_DATA *ch,  OBJ_DATA  *obj, FILE *fp, 
@@ -5018,11 +5249,12 @@ void	fread_obj	args( ( CHAR_DATA *ch,  FILE *fp, sh_int os_type ) );
 void	de_equip_char	args( ( CHAR_DATA *ch ) );
 void	re_equip_char	args( ( CHAR_DATA *ch ) );
 void	save_home	args( ( CHAR_DATA *ch ) );
-void save_storeroom	args( ( ROOM_INDEX_DATA *room ) );
-void load_storerooms	args( ( void ) );
+void save_storeroom( ROOM_INDEX_DATA *room );
+void load_storerooms( void );
+
 /* shops.c */
-int get_cost_quit	args( ( CHAR_DATA *ch ) )
-;
+int get_cost_quit( CHAR_DATA *ch );
+
 /* special.c */
 SF *	spec_lookup	args( ( const char *name ) );
 char *	lookup_spec	args( ( SPEC_FUN *special ) );
@@ -5071,12 +5303,20 @@ char *	check_hash	args( ( char *str ) );
 void	hash_dump	args( ( int hash ) );
 void	show_high_hash	args( ( int top ) );
 
+/* krearena.c */
+void remove_from_arena(CHAR_DATA *ch);
+
+
 /* newscore.c */
 char *  get_race 	args( (CHAR_DATA *ch) );
 
 /* badname functions */
 bool	check_bad_name		args( ( char *name ) );
 int	add_bad_name		args( ( char *name ) );
+
+/* dontresolve functions */
+bool	check_dont_resolve		args( ( char *ip ) );
+int	add_dont_resolve		args( ( char *ipmatch ) );
 
 /* vendor.c*/
 void fwrite_vendor args( ( FILE *fp, CHAR_DATA *mob ) );
@@ -5382,4 +5622,17 @@ void rprog_act_trigger( char *buf, ROOM_INDEX_DATA *room, CHAR_DATA *ch,
 #define GET_BETTED_ON(ch)    ((ch)->betted_on)
 #define GET_BET_AMT(ch) ((ch)->bet_amt)
 #define IN_ARENA(ch)            (IS_SET((ch)->in_room->room_flags, ROOM_ARENA))
-
+DECLARE_DO_FUN(do_trivia);
+DECLARE_DO_FUN(do_trivia_answer);
+DECLARE_DO_FUN(do_trivia_question);
+DECLARE_DO_FUN(do_trivia_chat);
+DECLARE_DO_FUN(do_trivia_winner);
+DECLARE_DO_FUN(do_trivia_score);
+DECLARE_DO_FUN(do_trivia_join);
+extern void do_trivia(CHAR_DATA *ch, char *argument);
+extern bool is_trivia_player(CHAR_DATA *ch);
+extern void do_trivia_join(CHAR_DATA *ch, char *argument);
+extern void do_trivia_answer(CHAR_DATA *ch, char *argument);
+extern void do_trivia_question(CHAR_DATA *ch, char *argument);
+extern void do_trivia_winner(CHAR_DATA *ch, char *argument);
+extern void do_trivia_chat(CHAR_DATA *ch, char *argument);
