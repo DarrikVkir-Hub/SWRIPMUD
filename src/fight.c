@@ -1689,9 +1689,9 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
         else
            loot = FALSE;
         
-//	set_cur_char(victim);
-//	raw_kill( ch, victim );
-//	victim = NULL;
+	set_cur_char(victim);
+	raw_kill( ch, victim );
+	victim = NULL;
 
 	if ( !IS_NPC(ch) && loot )
 	{
