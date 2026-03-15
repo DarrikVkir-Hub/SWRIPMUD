@@ -1087,7 +1087,8 @@ void char_to_room( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex )
     }
 
 //    tRoomCheck = get_room_index( pRoomIndex->vnum );
-    if( !pRoomIndex || !get_room_index( pRoomIndex->vnum ) )
+    if( !pRoomIndex )
+//    if( !pRoomIndex || !get_room_index( pRoomIndex->vnum ) )
     {
         bug( "%s: %s -> NULL room!  Putting char in limbo (%d)", __FUNCTION__, ch->name, ROOM_VNUM_LIMBO );
         /*

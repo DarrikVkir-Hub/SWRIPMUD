@@ -1056,7 +1056,7 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
     if( char_died(ch) )
       return global_retcode;
 
-	if( get_room_index( to_room->vnum ) )
+	if( to_room )
 	{
 		char_from_room( ch );
 		if ( ch->mount )
