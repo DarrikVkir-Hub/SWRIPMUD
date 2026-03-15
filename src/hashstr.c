@@ -42,6 +42,21 @@ const short BERR = 255;
 
 #define STR_HASH_SIZE	1024
 
+#define SPRINTF(dst, ...)                                                   \
+do {                                                                        \
+    static_assert(sizeof(dst) != sizeof(char*),                             \
+        "STRINIT requires a char array");                                   \
+                                                                            \
+    size_t __size = __builtin_object_size(dst, 0);                          \
+    if (__size != (size_t)-1)                                               \
+    {                                                                       \
+        int __n = snprintf((dst), __size, __VA_ARGS__);                     \
+        if (__n < 0 || (size_t)__n >= __size)                               \
+            (dst)[__size - 1] = '\0';                                       \
+    }                                                                       \
+} while (0)
+
+
 struct hashstr_data
 {
     struct hashstr_data	*next;		/* next hash element */
@@ -62,9 +77,12 @@ void sha256_hash(const char *password, char out[65])
 {
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256((const unsigned char*)password, strlen(password), hash);
-
+    static const char hex[] = "0123456789abcdef";
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
-        sprintf(out + i * 2, "%02x", hash[i]);
+    {
+        out[i * 2]     = hex[(hash[i] >> 4) & 0xF];
+        out[i * 2 + 1] = hex[hash[i] & 0xF];
+    }
 
     out[64] = '\0';  // null-terminate
 }
@@ -93,11 +111,11 @@ char *str_alloc( char *str )
    ptr = (struct hashstr_data *) malloc(len+psize+1);
    ptr->links		= 1;
    ptr->length		= len;
-   if (len)
-     strcpy( (char *) ptr+psize, str );
-/*     memcpy( (char *) ptr+psize, str, len+1 ); */
-   else
-     strcpy( (char *) ptr+psize, "" );
+//   if (len)
+//     strcpy( (char *) ptr+psize, str );
+     memcpy( (char *) ptr+psize, str, len+1 );
+//   else
+//     strcpy( (char *) ptr+psize, "" );
    ptr->next		= string_hash[hash];
    string_hash[hash]	= ptr;
    return (char *) ptr+psize;
@@ -221,10 +239,10 @@ char *check_hash( char *str )
 	p = c+1;
      }
    if ( fnd )
-     sprintf( buf, "Hash info on string: %s\n\rLinks: %d  Position: %d/%d  Hash: %d  Length: %d\n\r",
+     SPRINTF( buf, "Hash info on string: %s\n\rLinks: %d  Position: %d/%d  Hash: %d  Length: %d\n\r",
 	  str, fnd->links, p, c, hash, fnd->length );
    else
-     sprintf( buf, "%s not found.\n\r", str );
+     SPRINTF( buf, "%s not found.\n\r", str );
    return buf;
 }
 
@@ -249,7 +267,7 @@ char *hash_stats( void )
        wouldhave += ( ( ptr->links * sizeof(struct hashstr_data) ) + ( ptr->links * ( ptr->length + 1 ) ) );
 	}
     }
-    sprintf( buf, "Hash strings allocated:%8d  Total links  : %d\n\rString bytes allocated:%8d  Bytes saved  : %d\n\rUnique (wasted) links :%8d  Hi-Link count: %d\n\r",
+    SPRINTF( buf, "Hash strings allocated:%8d  Total links  : %d\n\rString bytes allocated:%8d  Bytes saved  : %d\n\rUnique (wasted) links :%8d  Hi-Link count: %d\n\r",
 	total, totlinks, bytesused, wouldhave - bytesused, unique, hilink );
     return buf;
 }

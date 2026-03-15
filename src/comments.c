@@ -97,7 +97,7 @@ void comment_remove( CHAR_DATA *ch, CHAR_DATA *victim, NOTE_DATA *pnote )
 
 void do_comment( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+//  char buf[MAX_STRING_LENGTH];
     char arg[MAX_INPUT_LENGTH];
     char arg1[MAX_INPUT_LENGTH];
     NOTE_DATA  *pnote;
@@ -201,13 +201,12 @@ void do_comment( CHAR_DATA *ch, char *argument )
 	for ( pnote = victim->pcdata->comments; pnote; pnote = pnote->next )
 	{
 	  vnum++;
-	  sprintf( buf, "%2d) %-10s [%s] %s\n\r",
+	  ch_printf( ch, "%2d) %-10s [%s] %s\n\r",
 	     vnum,
 	     pnote->sender,
              pnote->date, 
 	     pnote->subject );
 /* Brittany added date to comment list and whois with above change */
-	  send_to_char( buf, ch );
 	}
 
 	/* act( AT_ACTION, "$n glances over the notes.", ch, NULL, NULL, TO_ROOM ); */
@@ -269,14 +268,13 @@ void do_comment( CHAR_DATA *ch, char *argument )
 	    vnum++;
 	    if ( vnum == anum || fAll )
 	    {
-		sprintf( buf, "[%3d] %s: %s\n\r%s\n\rTo: %s\n\r",
+		ch_printf( ch, "[%3d] %s: %s\n\r%s\n\rTo: %s\n\r",
 		    vnum,
 		    pnote->sender,
 		    pnote->subject,
 		    pnote->date,
 		    pnote->to_list
 		    );
-		send_to_char( buf, ch );
 		send_to_char( pnote->text, ch );
 		/* act( AT_ACTION, "$n reads a note.", ch, NULL, NULL, TO_ROOM ); */
 		return;
@@ -339,12 +337,11 @@ void do_comment( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 
-	sprintf( buf, "%s: %s\n\rTo: %s\n\r",
+	ch_printf( ch, "%s: %s\n\rTo: %s\n\r",
 	    ch->pcdata->pnote->sender,
 	    ch->pcdata->pnote->subject,
 	    ch->pcdata->pnote->to_list
 	    );
-	send_to_char( buf, ch );
 	send_to_char( ch->pcdata->pnote->text, ch );
 	return;
     }
@@ -401,7 +398,7 @@ void do_comment( CHAR_DATA *ch, char *argument )
 
 #ifdef NOTDEFD
 	FCLOSE( fpReserve );
-	sprintf( notefile, "%s/%s", BOARD_DIR, board->note_file );
+	SPRINTF( notefile, "%s/%s", BOARD_DIR, board->note_file );
 	if ( ( fp = fopen( notefile, "a" ) ) == NULL )
 	{
 	    perror( notefile );

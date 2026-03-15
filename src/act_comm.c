@@ -1543,9 +1543,9 @@ void do_emote( CHAR_DATA *ch, char *argument )
     for ( plast = argument; *plast != '\0'; plast++ )
 	;
 
-    strcpy( buf, argument );
+    STRLCPY( buf, argument );
     if ( isalpha(plast[-1]) )
-	strcat( buf, "." );
+	STRAPP( buf, "." );
 
     MOBtrigger = FALSE;
     act( AT_ACTION, "$n $T", ch, NULL, buf, TO_ROOM );
@@ -1738,11 +1738,6 @@ void do_quit( CHAR_DATA *ch, char *argument )
 	for ( y = 0; y < MAX_LAYERS; y++ )
 	    save_equipment[x][y] = NULL;
 
-    /* don't show who's logging off to leaving player */
-/*
-    to_channel( log_buf, CHANNEL_MONITOR, "Monitor", level ); 
-*/
-//    log_string_plus( log_buf, LOG_COMM, level );
     return;
 }
 
@@ -2105,7 +2100,7 @@ void do_order( CHAR_DATA *ch, char *argument )
     bool found;
     bool fAll;
 
-    strcpy( argbuf, argument );
+    STRLCPY( argbuf, argument );
     argument = one_argument( argument, arg );
 
     if ( arg[0] == '\0' || argument[0] == '\0' )

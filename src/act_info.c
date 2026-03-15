@@ -132,26 +132,26 @@ char *format_obj_to_char( OBJ_DATA *obj, CHAR_DATA *ch, bool fShort )
     static char buf[MAX_STRING_LENGTH];
 
     buf[0] = '\0';
-    if ( IS_OBJ_STAT(obj, ITEM_INVIS)     )   strcat( buf, "(Invis) "     );
+    if ( IS_OBJ_STAT(obj, ITEM_INVIS)     )   STRAPP( buf, "(Invis) "     );
     if ( ( IS_AFFECTED(ch, AFF_DETECT_MAGIC) || IS_IMMORTAL(ch) )
-	 && IS_OBJ_STAT(obj, ITEM_MAGIC)  )   strcat( buf, "&B(Blue Aura)&w "   );
-    if ( IS_OBJ_STAT(obj, ITEM_GLOW)      )   strcat( buf, "(Glowing) "   );
-    if ( IS_OBJ_STAT(obj, ITEM_HUM)       )   strcat( buf, "(Humming) "   );
-    if ( IS_OBJ_STAT(obj, ITEM_HIDDEN)	  )   strcat( buf, "(Hidden) "	  );
-    if ( IS_OBJ_STAT(obj, ITEM_BURRIED)	  )   strcat( buf, "(Burried) "	  );
-    if ( IS_IMMORTAL(ch) && IS_OBJ_STAT(obj, ITEM_PROTOTYPE) ) strcat( buf, "(PROTO) "	  );
+	 && IS_OBJ_STAT(obj, ITEM_MAGIC)  )   STRAPP( buf, "&B(Blue Aura)&w "   );
+    if ( IS_OBJ_STAT(obj, ITEM_GLOW)      )   STRAPP( buf, "(Glowing) "   );
+    if ( IS_OBJ_STAT(obj, ITEM_HUM)       )   STRAPP( buf, "(Humming) "   );
+    if ( IS_OBJ_STAT(obj, ITEM_HIDDEN)	  )   STRAPP( buf, "(Hidden) "	  );
+    if ( IS_OBJ_STAT(obj, ITEM_BURRIED)	  )   STRAPP( buf, "(Burried) "	  );
+    if ( IS_IMMORTAL(ch) && IS_OBJ_STAT(obj, ITEM_PROTOTYPE) ) STRAPP( buf, "(PROTO) "	  );
    if( ( IS_AFFECTED( ch, AFF_DETECTTRAPS ) || IS_SET( ch->act, PLR_HOLYLIGHT ) ) && is_trapped( obj ) )
-        strcat( buf, "(Trap) "  );
+        STRAPP( buf, "(Trap) "  );
 
     if ( fShort )
     {
 	if ( obj->short_descr )
-	    strcat( buf, obj->short_descr );
+	    STRAPP( buf, "%s", obj->short_descr );
     }
     else
     {
 	if ( obj->description )
-	    strcat( buf, obj->description );
+	    STRAPP( buf, "%s", obj->description );
     }
 
     return buf;
@@ -477,8 +477,8 @@ void show_visible_affects_to_char( CHAR_DATA *victim, CHAR_DATA *ch )
     &&    victim->switched && IS_AFFECTED(victim->switched, AFF_POSSESS) )
     {
 	set_char_color( AT_MAGIC, ch );
-	strcpy( buf, PERS( victim, ch ) );
-	strcat( buf, " appears to be in a deep trance...\n\r" );
+	STRLCPY( buf, PERS( victim, ch ));
+	STRAPP( buf, " appears to be in a deep trance...\n\r" );
     }
 }
 
@@ -491,109 +491,109 @@ void show_char_to_char_0( CHAR_DATA *victim, CHAR_DATA *ch )
     buf[0] = '\0';
 
     if ( IS_NPC(victim) )
-      strcat( buf, " "  );
+      STRAPP( buf, " "  );
       
     if ( !IS_NPC(victim) && !victim->desc )
     {
-	if ( !victim->switched )		strcat( buf, "(Link Dead) "  );
+	if ( !victim->switched )		STRAPP( buf, "(Link Dead) "  );
 	else
 	if ( !IS_AFFECTED(victim->switched, AFF_POSSESS) )
-						strcat( buf, "(Switched) " );
+						STRAPP( buf, "(Switched) " );
     }
     if ( !IS_NPC(victim)
-    && IS_SET(victim->act, PLR_AFK) )		strcat( buf, "[AFK] ");        
+    && IS_SET(victim->act, PLR_AFK) )		STRAPP( buf, "[AFK] ");        
 
     if ( (!IS_NPC(victim) && IS_SET(victim->act, PLR_WIZINVIS))
       || (IS_NPC(victim) && IS_SET(victim->act, ACT_MOBINVIS)) ) 
     {
         if (!IS_NPC(victim))
     snprintf(buf1, sizeof(buf1), "(Invis %d) ", victim->pcdata->wizinvis);
-        else sprintf( buf1,"(Mobinvis %d) ", victim->mobinvis);
-	strcat( buf, buf1 );
+        else SPRINTF( buf1,"(Mobinvis %d) ", victim->mobinvis);
+	STRAPP( buf, "%s", buf1 );
     }
-    if ( IS_AFFECTED(victim, AFF_INVISIBLE)   ) strcat( buf, "(Invis) "      );
-    if ( IS_AFFECTED(victim, AFF_HIDE)        ) strcat( buf, "(Stealth) "       );
-    if ( IS_AFFECTED(victim, AFF_PASS_DOOR)   ) strcat( buf, "(Translucent) ");
-    if ( IS_AFFECTED(victim, AFF_FAERIE_FIRE) ) strcat( buf, "&P(Pink Aura)&w "  );
+    if ( IS_AFFECTED(victim, AFF_INVISIBLE)   ) STRAPP( buf, "(Invis) "      );
+    if ( IS_AFFECTED(victim, AFF_HIDE)        ) STRAPP( buf, "(Stealth) "       );
+    if ( IS_AFFECTED(victim, AFF_PASS_DOOR)   ) STRAPP( buf, "(Translucent) ");
+    if ( IS_AFFECTED(victim, AFF_FAERIE_FIRE) ) STRAPP( buf, "&P(Pink Aura)&w "  );
     if ( IS_EVIL(victim)
-    &&   IS_AFFECTED(ch, AFF_DETECT_EVIL)     ) strcat( buf, "&R(Red Aura)&w "   );
+    &&   IS_AFFECTED(ch, AFF_DETECT_EVIL)     ) STRAPP( buf, "&R(Red Aura)&w "   );
     if ( ( victim->mana > 10 )
     &&   ( IS_AFFECTED( ch , AFF_DETECT_MAGIC ) || IS_IMMORTAL( ch ) ) )
-                                                 strcat( buf, "&B(Blue Aura)&w "  );   
+                                                 STRAPP( buf, "&B(Blue Aura)&w "  );   
     if ( !IS_NPC(victim) && IS_SET(victim->act, PLR_LITTERBUG  ) )
-						strcat( buf, "(LITTERBUG) "  );
+						STRAPP( buf, "(LITTERBUG) "  );
     if ( IS_NPC(victim) && IS_IMMORTAL(ch)
-	 && IS_SET(victim->act, ACT_PROTOTYPE) ) strcat( buf, "(PROTO) " );
+	 && IS_SET(victim->act, ACT_PROTOTYPE) ) STRAPP( buf, "(PROTO) " );
     if ( victim->desc && victim->desc->connected == CON_EDITING )
-						strcat( buf, "(Writing) " );
+						STRAPP( buf, "(Writing) " );
 
     set_char_color( AT_PERSON, ch );
     if ( victim->position == victim->defposition && victim->long_descr[0] != '\0' )
     {
-	strcat( buf, victim->long_descr );
+	STRAPP( buf, "%s", victim->long_descr );
 	send_to_char( buf, ch );
 	show_visible_affects_to_char( victim, ch );
 	return;
     }
 
-   /*   strcat( buf, PERS( victim, ch ) );       old system of titles
+   /*   STRAPP( buf, PERS( victim, ch ) );       old system of titles
     *    removed to prevent prepending of name to title     -Kuran  
     *
     *    But added back bellow so that you can see mobs too :P   -Durga 
     */
     
     if ( !IS_NPC(victim) && !IS_SET(ch->act, PLR_BRIEF) )
-	strcat( buf, victim->pcdata->title );
+	    STRAPP( buf, "%s", victim->pcdata->title );
     else
-        strcat( buf, PERS( victim, ch ) );  
+        STRAPP( buf, "%s", PERS( victim, ch ) );  
     
     switch ( victim->position )
     {
-    case POS_DEAD:     strcat( buf, " is DEAD!!" );			break;
-    case POS_MORTAL:   strcat( buf, " is mortally wounded." );		break;
-    case POS_INCAP:    strcat( buf, " is incapacitated." );		break;
-    case POS_STUNNED:  strcat( buf, " is lying here stunned." );	break;
+    case POS_DEAD:     STRAPP( buf, " is DEAD!!" );			break;
+    case POS_MORTAL:   STRAPP( buf, " is mortally wounded." );		break;
+    case POS_INCAP:    STRAPP( buf, " is incapacitated." );		break;
+    case POS_STUNNED:  STRAPP( buf, " is lying here stunned." );	break;
     case POS_SLEEPING: 
 	if (victim->on != NULL)
 	{
 	    if (victim->on->value[2] == SLEEP_AT)
   	    {
-		sprintf(message," is sleeping at %s",
+		SPRINTF(message," is sleeping at %s",
 		    victim->on->short_descr);
               if( ((ch->position < POS_FIGHTING) && (ch->position > POS_STUNNED)) 
               && ch->on && (ch->on == victim->on ) )
-              	strcat(message, " with you");
-              strcat(message, ".");
-	      strcat(buf,message);
+              	STRAPP(message, " with you");
+              STRAPP(message, ".");
+	      STRAPP(buf,"%s", message);
 	    }
 	    else if (victim->on->value[2] == SLEEP_ON)
 	    {
-		sprintf(message," is sleeping on %s",
+		SPRINTF(message," is sleeping on %s",
 		    victim->on->short_descr); 
               if( ((ch->position < POS_FIGHTING) && (ch->position > POS_STUNNED)) 
               && ch->on && (ch->on == victim->on ) )
-              	strcat(message, " with you");
-              strcat(message, ".");
-              strcat(buf,message);
+              	STRAPP(message, " with you");
+              STRAPP(message, ".");
+              STRAPP(buf,"%s", message);
 	    }
 	    else
 	    {
-		sprintf(message, " is sleeping in %s",
+		SPRINTF(message, " is sleeping in %s",
 		    victim->on->short_descr);
               if( ((ch->position < POS_FIGHTING) && (ch->position > POS_STUNNED)) 
               && ch->on && (ch->on == victim->on ) )
-              	strcat(message, " with you");
-              strcat(message, ".");
-              strcat(buf,message);
+              	STRAPP(message, " with you");
+              STRAPP(message, ".");
+              STRAPP(buf, "%s",message);
 	    }
 	}
 	else 
 	{
          if (ch->position == POS_SITTING
          ||  ch->position == POS_RESTING )
-            strcat( buf, " is sleeping nearby." );
+            STRAPP( buf, " is sleeping nearby." );
 	 else
-            strcat( buf, " is deep in slumber here." );
+            STRAPP( buf, " is deep in slumber here." );
         }
         break;
     case POS_RESTING:  
@@ -601,44 +601,44 @@ void show_char_to_char_0( CHAR_DATA *victim, CHAR_DATA *ch )
 	{
             if (victim->on->value[2] == REST_AT)
             {
-                sprintf(message," is resting at %s",
+                SPRINTF(message," is resting at %s",
                     victim->on->short_descr);
               if( ((ch->position < POS_FIGHTING) && (ch->position > POS_STUNNED)) 
               && ch->on && (ch->on == victim->on ) )
-              	strcat(message, " with you");
-              strcat(message, ".");
-              strcat(buf,message);
+              	STRAPP(message, " with you");
+              STRAPP(message, ".");
+              STRAPP(buf, "%s", message);
             }
             else if (victim->on->value[2] == REST_ON)
             {
-                sprintf(message," is resting on %s",
+                SPRINTF(message," is resting on %s",
                     victim->on->short_descr);
               if( ((ch->position < POS_FIGHTING) && (ch->position > POS_STUNNED)) 
               && ch->on && (ch->on == victim->on ) )
-              	strcat(message, " with you");
-              strcat(message, ".");
-              strcat(buf,message);
+              	STRAPP(message, " with you");
+              STRAPP(message, ".");
+              STRAPP(buf, "%s", message);
             }
             else 
             {
-                sprintf(message, " is resting in %s",
+                SPRINTF(message, " is resting in %s",
                     victim->on->short_descr);
               if( ((ch->position < POS_FIGHTING) && (ch->position > POS_STUNNED)) 
               && ch->on && (ch->on == victim->on ) )
-              	strcat(message, " with you");
-              strcat(message, ".");
-              strcat(buf,message);
+              	STRAPP(message, " with you");
+              STRAPP(message, ".");
+              STRAPP(buf, "%s", message);
             }
 	}
        else
        {
         if (ch->position == POS_RESTING)
-            strcat ( buf, " is sprawled out alongside you." );
+            STRAPP ( buf, " is sprawled out alongside you." );
         else
 	if (ch->position == POS_MOUNTED)
-	    strcat ( buf, " is sprawled out at the foot of your mount." );
+	    STRAPP ( buf, " is sprawled out at the foot of your mount." );
 	else
-            strcat (buf, " is sprawled out here." );
+            STRAPP (buf, " is sprawled out here." );
        }
         break;
     case POS_SITTING:  
@@ -646,105 +646,105 @@ void show_char_to_char_0( CHAR_DATA *victim, CHAR_DATA *ch )
         {
             if (victim->on->value[2] == SIT_AT)
             {
-                sprintf(message," is sitting at %s",
+                SPRINTF(message," is sitting at %s",
                     victim->on->short_descr);
               if( (ch->position == POS_SITTING) 
               && ch->on && (ch->on == victim->on ) )
-              	strcat(message, " with you");
-              strcat(message, ".");
-              strcat(buf,message);
+              	STRAPP(message, " with you");
+              STRAPP(message, ".");
+              STRAPP(buf, "%s", message);
             }
             else if (victim->on->value[2] == SIT_ON)
             {
-                sprintf(message," is sitting on %s",
+                SPRINTF(message," is sitting on %s",
                     victim->on->short_descr);
               if( (ch->position == POS_SITTING) 
               && ch->on && (ch->on == victim->on ) )
-              	strcat(message, " with you");
-              strcat(message, ".");
-              strcat(buf,message);
+              	STRAPP(message, " with you");
+              STRAPP(message, ".");
+              STRAPP(buf, "%s", message);
             }
             else
             {
-                sprintf(message, " is sitting in %s",
+                SPRINTF(message, " is sitting in %s",
                     victim->on->short_descr);
               if( (ch->position == POS_SITTING) 
               	&& ch->on && (ch->on == victim->on ) )
-              	strcat(message, " with you");
-              strcat(message, ".");
-              strcat(buf,message);
+              	STRAPP(message, " with you");
+              STRAPP(message, ".");
+              STRAPP(buf, "%s", message);
             }
         }
 	else
 	{
          if (ch->position == POS_SITTING)
-            strcat( buf, " sits here with you." );
+            STRAPP( buf, " sits here with you." );
          else
          if (ch->position == POS_RESTING)
-            strcat( buf, " sits nearby as you lie around." );
+            STRAPP( buf, " sits nearby as you lie around." );
          else
-            strcat( buf, " sits upright here." );
+            STRAPP( buf, " sits upright here." );
         }
         break;
     case POS_STANDING:
 	if ( IS_IMMORTAL(victim) )
-            strcat( buf, " is here before you." );
+            STRAPP( buf, " is here before you." );
 	else
         if ( ( victim->in_room->sector_type == SECT_UNDERWATER )
         && !IS_AFFECTED(victim, AFF_AQUA_BREATH) && !IS_NPC(victim) )
-            strcat( buf, " is drowning here." );
+            STRAPP( buf, " is drowning here." );
 	else
 	if ( victim->in_room->sector_type == SECT_UNDERWATER )
-            strcat( buf, " is here in the water." );
+            STRAPP( buf, " is here in the water." );
 	else
 	if ( ( victim->in_room->sector_type == SECT_OCEANFLOOR )
 	&& !IS_AFFECTED(victim, AFF_AQUA_BREATH) && !IS_NPC(victim) )
-	    strcat( buf, " is drowning here." );
+	    STRAPP( buf, " is drowning here." );
 	else
 	if ( victim->in_room->sector_type == SECT_OCEANFLOOR )
-	    strcat( buf, " is standing here in the water." );
+	    STRAPP( buf, " is standing here in the water." );
 	else
 	if ( IS_AFFECTED(victim, AFF_FLOATING)
         || IS_AFFECTED(victim, AFF_FLYING) )
-          strcat( buf, " is hovering here." );
+          STRAPP( buf, " is hovering here." );
         else
-          strcat( buf, " is standing here." );
+          STRAPP( buf, " is standing here." );
         break;
-    case POS_SHOVE:    strcat( buf, " is being shoved around." );	break;
-    case POS_DRAG:     strcat( buf, " is being dragged around." );	break;
+    case POS_SHOVE:    STRAPP( buf, " is being shoved around." );	break;
+    case POS_DRAG:     STRAPP( buf, " is being dragged around." );	break;
     case POS_MOUNTED:
-	strcat( buf, " is here, upon " );
+	STRAPP( buf, " is here, upon " );
 	if ( !victim->mount )
-	    strcat( buf, "thin air???" );
+	    STRAPP( buf, "thin air???" );
 	else
 	if ( victim->mount == ch )
-	    strcat( buf, "your back." );
+	    STRAPP( buf, "your back." );
 	else
 	if ( victim->in_room == victim->mount->in_room )
 	{
-	    strcat( buf, PERS( victim->mount, ch ) );
-	    strcat( buf, "." );
+	    STRAPP( buf, "%s", PERS( victim->mount, ch ) );
+	    STRAPP( buf, "." );
 	}
 	else
-	    strcat( buf, "someone who left??" );
+	    STRAPP( buf, "someone who left??" );
 	break;
     case POS_FIGHTING:
-	strcat( buf, " is here, fighting " );
+	STRAPP( buf, " is here, fighting " );
 	if ( !victim->fighting )
-	    strcat( buf, "thin air???" );
+	    STRAPP( buf, "thin air???" );
 	else if ( who_fighting( victim ) == ch )
-	    strcat( buf, "YOU!" );
+	    STRAPP( buf, "YOU!" );
 	else if ( victim->in_room == victim->fighting->who->in_room )
 	{
-	    strcat( buf, PERS( victim->fighting->who, ch ) );
-	    strcat( buf, "." );
+	    STRAPP( buf, "%s", PERS( victim->fighting->who, ch ) );
+	    STRAPP( buf, "." );
 	}
 	else
-	    strcat( buf, "someone who left??" );
+	    STRAPP( buf, "someone who left??" );
 	break;
     }
 
-    strcat( buf, "\n\r" );
+    STRAPP( buf, "\n\r" );
     buf[0] = UPPER(buf[0]);
     send_to_char( buf, ch );
     show_visible_affects_to_char( victim, ch );
@@ -1010,10 +1010,10 @@ void do_look ( CHAR_DATA *ch, char *argument )
          {
             if( IS_SET( ch->act, PLR_ROOMVNUM ) )
             {
-                set_char_color( AT_BLUE, ch );   /* Added 10/17 by Kuran of */
-                send_to_char( "{", ch );   /* SWReality */
+                set_char_color( AT_BLUE, ch );      /* Added 10/17 by Kuran of */
+                send_to_char( "{", ch );            /* SWReality */
                 ch_printf( ch, "%d", ch->in_room->vnum );
-                send_to_char( "}}", ch );
+                send_to_char( "}", ch );
             }
             if( IS_SET( ch->pcdata->flags, PCFLAG_ROOM ) )
             {
@@ -1464,39 +1464,39 @@ void show_condition( CHAR_DATA *ch, CHAR_DATA *victim )
         percent = -1;
 
 
-    strcpy( buf, PERS(victim, ch) );
+    STRLCPY( buf, PERS(victim, ch) );
 
     if ( (IS_NPC ( victim ) && IS_SET( victim->act , ACT_DROID ) ) ||
          ( victim->race == RACE_DROID ) )
     {
     
-         if ( percent >= 100 ) strcat( buf, " is in perfect condition.\n\r"  );
-    else if ( percent >=  90 ) strcat( buf, " is slightly scratched.\n\r" );
-    else if ( percent >=  80 ) strcat( buf, " has a few scrapes.\n\r"     );
-    else if ( percent >=  70 ) strcat( buf, " has some dents.\n\r"         );
-    else if ( percent >=  60 ) strcat( buf, " has a couple holes in its plating.\n\r"    );
-    else if ( percent >=  50 ) strcat( buf, " has a many broken pieces.\n\r" );
-    else if ( percent >=  40 ) strcat( buf, " has many exposed circuits.\n\r"    );
-    else if ( percent >=  30 ) strcat( buf, " is leaking oil.\n\r"   );
-    else if ( percent >=  20 ) strcat( buf, " has smoke coming out of it.\n\r"       );
-    else if ( percent >=  10 ) strcat( buf, " is almost completely broken.\n\r"        );
-    else                       strcat( buf, " is about to EXPLODE.\n\r"              );
+         if ( percent >= 100 ) STRAPP( buf, " is in perfect condition.\n\r"  );
+    else if ( percent >=  90 ) STRAPP( buf, " is slightly scratched.\n\r" );
+    else if ( percent >=  80 ) STRAPP( buf, " has a few scrapes.\n\r"     );
+    else if ( percent >=  70 ) STRAPP( buf, " has some dents.\n\r"         );
+    else if ( percent >=  60 ) STRAPP( buf, " has a couple holes in its plating.\n\r"    );
+    else if ( percent >=  50 ) STRAPP( buf, " has a many broken pieces.\n\r" );
+    else if ( percent >=  40 ) STRAPP( buf, " has many exposed circuits.\n\r"    );
+    else if ( percent >=  30 ) STRAPP( buf, " is leaking oil.\n\r"   );
+    else if ( percent >=  20 ) STRAPP( buf, " has smoke coming out of it.\n\r"       );
+    else if ( percent >=  10 ) STRAPP( buf, " is almost completely broken.\n\r"        );
+    else                       STRAPP( buf, " is about to EXPLODE.\n\r"              );
     
     }
     else  
     { 
     
-         if ( percent >= 100 ) strcat( buf, " is in perfect health.\n\r"  );
-    else if ( percent >=  90 ) strcat( buf, " is slightly scratched.\n\r" );
-    else if ( percent >=  80 ) strcat( buf, " has a few bruises.\n\r"     );
-    else if ( percent >=  70 ) strcat( buf, " has some cuts.\n\r"         );
-    else if ( percent >=  60 ) strcat( buf, " has several wounds.\n\r"    );
-    else if ( percent >=  50 ) strcat( buf, " has many nasty wounds.\n\r" );
-    else if ( percent >=  40 ) strcat( buf, " is bleeding freely.\n\r"    );
-    else if ( percent >=  30 ) strcat( buf, " is covered in blood.\n\r"   );
-    else if ( percent >=  20 ) strcat( buf, " is leaking guts.\n\r"       );
-    else if ( percent >=  10 ) strcat( buf, " is almost dead.\n\r"        );
-    else                       strcat( buf, " is DYING.\n\r"              );
+         if ( percent >= 100 ) STRAPP( buf, " is in perfect health.\n\r"  );
+    else if ( percent >=  90 ) STRAPP( buf, " is slightly scratched.\n\r" );
+    else if ( percent >=  80 ) STRAPP( buf, " has a few bruises.\n\r"     );
+    else if ( percent >=  70 ) STRAPP( buf, " has some cuts.\n\r"         );
+    else if ( percent >=  60 ) STRAPP( buf, " has several wounds.\n\r"    );
+    else if ( percent >=  50 ) STRAPP( buf, " has many nasty wounds.\n\r" );
+    else if ( percent >=  40 ) STRAPP( buf, " is bleeding freely.\n\r"    );
+    else if ( percent >=  30 ) STRAPP( buf, " is covered in blood.\n\r"   );
+    else if ( percent >=  20 ) STRAPP( buf, " is leaking guts.\n\r"       );
+    else if ( percent >=  10 ) STRAPP( buf, " is almost dead.\n\r"        );
+    else                       STRAPP( buf, " is DYING.\n\r"              );
     
     }
     buf[0] = UPPER(buf[0]);
@@ -1593,7 +1593,7 @@ void do_examine( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    sprintf( buf, "%s noprog", arg );
+    SPRINTF( buf, "%s noprog", arg );
     do_look( ch, buf );
 
     /*
@@ -1621,39 +1621,39 @@ void do_examine( CHAR_DATA *ch, char *argument )
 	    if ( obj->value[1] == 0 )
 	      obj->value[1] = 1;
 	    dam = (sh_int) ((obj->value[0] * 10) / obj->value[1]);
-	    strcpy( buf, "As you look more closely, you notice that it is ");
-	    if (dam >= 10) strcat( buf, "in superb condition.");
-            else if (dam ==  9) strcat( buf, "in very good condition.");
-            else if (dam ==  8) strcat( buf, "in good shape.");
-            else if (dam ==  7) strcat( buf, "showing a bit of wear.");
-            else if (dam ==  6) strcat( buf, "a little run down.");
-            else if (dam ==  5) strcat( buf, "in need of repair.");
-            else if (dam ==  4) strcat( buf, "in great need of repair.");
-            else if (dam ==  3) strcat( buf, "in dire need of repair.");
-            else if (dam ==  2) strcat( buf, "very badly worn.");
-            else if (dam ==  1) strcat( buf, "practically worthless.");
-            else if (dam <=  0) strcat( buf, "broken.");
-                strcat( buf, "\n\r" );
+	    STRLCPY( buf, "As you look more closely, you notice that it is " );
+	    if (dam >= 10) STRAPP( buf, "in superb condition.");
+            else if (dam ==  9) STRAPP( buf, "in very good condition.");
+            else if (dam ==  8) STRAPP( buf, "in good shape.");
+            else if (dam ==  7) STRAPP( buf, "showing a bit of wear.");
+            else if (dam ==  6) STRAPP( buf, "a little run down.");
+            else if (dam ==  5) STRAPP( buf, "in need of repair.");
+            else if (dam ==  4) STRAPP( buf, "in great need of repair.");
+            else if (dam ==  3) STRAPP( buf, "in dire need of repair.");
+            else if (dam ==  2) STRAPP( buf, "very badly worn.");
+            else if (dam ==  1) STRAPP( buf, "practically worthless.");
+            else if (dam <=  0) STRAPP( buf, "broken.");
+                STRAPP( buf, "\n\r" );
        send_to_char( buf, ch );
        break;
 
 	case ITEM_WEAPON:
 	    dam = INIT_WEAPON_CONDITION - obj->value[0];
-	    strcpy( buf, "As you look more closely, you notice that it is ");
-	    if (dam ==  0) strcat( buf, "in superb condition.");
-            else if (dam ==  1) strcat( buf, "in excellent condition.");
-            else if (dam ==  2) strcat( buf, "in very good condition.");
-            else if (dam ==  3) strcat( buf, "in good shape.");
-            else if (dam ==  4) strcat( buf, "showing a bit of wear.");
-            else if (dam ==  5) strcat( buf, "a little run down.");
-            else if (dam ==  6) strcat( buf, "in need of repair.");
-            else if (dam ==  7) strcat( buf, "in great need of repair.");
-            else if (dam ==  8) strcat( buf, "in dire need of repair.");
-            else if (dam ==  9) strcat( buf, "very badly worn.");
-            else if (dam == 10) strcat( buf, "practically worthless.");
-            else if (dam == 11) strcat( buf, "almost broken.");
-            else if (dam == 12) strcat( buf, "broken.");
-    	    strcat( buf, "\n\r" );
+	    STRLCPY( buf, "As you look more closely, you notice that it is " );
+	    if (dam ==  0) STRAPP( buf, "in superb condition.");
+            else if (dam ==  1) STRAPP( buf, "in excellent condition.");
+            else if (dam ==  2) STRAPP( buf, "in very good condition.");
+            else if (dam ==  3) STRAPP( buf, "in good shape.");
+            else if (dam ==  4) STRAPP( buf, "showing a bit of wear.");
+            else if (dam ==  5) STRAPP( buf, "a little run down.");
+            else if (dam ==  6) STRAPP( buf, "in need of repair.");
+            else if (dam ==  7) STRAPP( buf, "in great need of repair.");
+            else if (dam ==  8) STRAPP( buf, "in dire need of repair.");
+            else if (dam ==  9) STRAPP( buf, "very badly worn.");
+            else if (dam == 10) STRAPP( buf, "practically worthless.");
+            else if (dam == 11) STRAPP( buf, "almost broken.");
+            else if (dam == 12) STRAPP( buf, "broken.");
+    	    STRAPP( buf, "\n\r" );
 
         send_to_char( buf, ch );
 	    if (obj->value[3] == WEAPON_BLASTER )
@@ -1685,19 +1685,19 @@ void do_examine( CHAR_DATA *ch, char *argument )
 	      dam = (obj->timer * 10) / obj->value[1];
 	    else
 	      dam = 10;
-	    strcpy( buf, "As you examine it carefully you notice that it " );
-	    if (dam >= 10) strcat( buf, "is fresh.");
-            else if (dam ==  9) strcat( buf, "is nearly fresh.");
-            else if (dam ==  8) strcat( buf, "is perfectly fine.");
-            else if (dam ==  7) strcat( buf, "looks good.");
-            else if (dam ==  6) strcat( buf, "looks ok.");
-            else if (dam ==  5) strcat( buf, "is a little stale.");
-            else if (dam ==  4) strcat( buf, "is a bit stale.");
-            else if (dam ==  3) strcat( buf, "smells slightly off.");
-            else if (dam ==  2) strcat( buf, "smells quite rank.");
-            else if (dam ==  1) strcat( buf, "smells revolting.");
-            else if (dam <=  0) strcat( buf, "is crawling with maggots.");
-    	        strcat( buf, "\n\r" );
+	    STRLCPY( buf, "As you examine it carefully you notice that it " );
+	    if (dam >= 10) STRAPP( buf, "is fresh.");
+            else if (dam ==  9) STRAPP( buf, "is nearly fresh.");
+            else if (dam ==  8) STRAPP( buf, "is perfectly fine.");
+            else if (dam ==  7) STRAPP( buf, "looks good.");
+            else if (dam ==  6) STRAPP( buf, "looks ok.");
+            else if (dam ==  5) STRAPP( buf, "is a little stale.");
+            else if (dam ==  4) STRAPP( buf, "is a bit stale.");
+            else if (dam ==  3) STRAPP( buf, "smells slightly off.");
+            else if (dam ==  2) STRAPP( buf, "smells quite rank.");
+            else if (dam ==  1) STRAPP( buf, "smells revolting.");
+            else if (dam <=  0) STRAPP( buf, "is crawling with maggots.");
+    	        STRAPP( buf, "\n\r" );
 	    send_to_char( buf, ch );
 	    break;
 
@@ -1718,7 +1718,7 @@ void do_examine( CHAR_DATA *ch, char *argument )
 
 /* Not needed due to check in do_look already
 	case ITEM_PORTAL:
-	    sprintf( buf, "in %s noprog", arg );
+	    SPRINTF( buf, "in %s noprog", arg );
 	    do_look( ch, buf );
 	    break;
 */
@@ -1753,7 +1753,7 @@ void do_examine( CHAR_DATA *ch, char *argument )
 	    if ( IS_OBJ_STAT( obj, ITEM_COVERING ) )
 	      break;
 	    send_to_char( "When you look inside, you see:\n\r", ch );
-	    sprintf( buf, "in %s noprog", arg );
+	    SPRINTF( buf, "in %s noprog", arg );
 	    do_look( ch, buf );
 	    break;
 	
@@ -1788,12 +1788,12 @@ void do_examine( CHAR_DATA *ch, char *argument )
 
 	case ITEM_DRINK_CON:
 	    send_to_char( "When you look inside, you see:\n\r", ch );
-	    sprintf( buf, "in %s noprog", arg );
+	    SPRINTF( buf, "in %s noprog", arg );
 	    do_look( ch, buf );
 	}
 	if ( IS_OBJ_STAT( obj, ITEM_COVERING ) )
 	{
-	    sprintf( buf, "under %s noprog", arg );
+	    SPRINTF( buf, "under %s noprog", arg );
 	    do_look( ch, buf );
 	}
 	oprog_examine_trigger( ch, obj );
@@ -1827,7 +1827,7 @@ void do_exits( CHAR_DATA *ch, char *argument )
         send_to_char( "It is pitch black ... \r\n", ch );
         return;
     }
-    strcpy( buf, fAuto ? "Exits:" : "Obvious exits:\n\r" );
+    STRLCPY( buf, fAuto ? "Exits:" : "Obvious exits:\n\r" );
 
     found = FALSE;
     for ( pexit = ch->in_room->first_exit; pexit; pexit = pexit->next )
@@ -1840,24 +1840,24 @@ void do_exits( CHAR_DATA *ch, char *argument )
 	    {	
 		if ( IS_SET(pexit->exit_info, EX_CLOSED) )
 		{
-		    sprintf( buf + strlen(buf), "%-5s - (closed)\n\r",
+		    STRAPP( buf, "%-5s - (closed)\n\r",
 		    capitalize( dir_name[pexit->vdir] ) );
 		}
 		else if ( IS_SET(pexit->exit_info, EX_WINDOW) )
 		{
-		    sprintf( buf + strlen(buf), "%-5s - (window)\n\r",
+		    STRAPP( buf, "%-5s - (window)\n\r",
 		    capitalize( dir_name[pexit->vdir] ) );
 		}
 		else if ( IS_SET(pexit->exit_info, EX_xAUTO) )
 		{
-		   sprintf( buf + strlen(buf), "%-5s - %s\n\r",
+		   STRAPP( buf, "%-5s - %s\n\r",
 		    capitalize( pexit->keyword ),
 		    room_is_dark( pexit->to_room )
 			?  "Too dark to tell"
 			: pexit->to_room->name );
 		}
 		else
-		    sprintf( buf + strlen(buf), "%-5s - %s\n\r",
+		    STRAPP( buf, "%-5s - %s\n\r",
 		    capitalize( dir_name[pexit->vdir] ),
 		    room_is_dark( pexit->to_room )
 			?  "Too dark to tell"
@@ -1865,17 +1865,17 @@ void do_exits( CHAR_DATA *ch, char *argument )
 	    }
 	    else
 	    {
-	        sprintf( buf + strlen(buf), " %s",
+	        STRAPP( buf, " %s",
 		    capitalize( dir_name[pexit->vdir] ) );
 	    }
 	}
     }
 
     if ( !found )
-	strcat( buf, fAuto ? " none.\n\r" : "None.\n\r" );
+	STRAPP( buf, fAuto ? " none.\n\r" : "None.\n\r" );
     else
       if ( fAuto )
-	strcat( buf, ".\n\r" );
+	STRAPP( buf, ".\n\r" );
     send_to_char( buf, ch );
     return;
 }
@@ -1988,8 +1988,8 @@ HELP_DATA *get_help( CHAR_DATA *ch, char *argument )
     {
 	argument = one_argument( argument, argone );
 	if ( argall[0] != '\0' )
-	    strcat( argall, " " );
-	strcat( argall, argone );
+	    STRAPP( argall, " " );
+	STRAPP( argall, "%s", argone );
     }
 
     for ( pHelp = first_help; pHelp; pHelp = pHelp->next )
@@ -2066,7 +2066,7 @@ void similar_help_files(CHAR_DATA *ch, char *argument)
    char *extension;
    sh_int lvl=0;
    bool single=FALSE;
-// char *argnew;    
+// char argnew[MAX_INPUT_LENGTH];    
 
 /*
     if ( isdigit(argument[0]) && (index(argument, '.')))
@@ -2120,12 +2120,23 @@ void similar_help_files(CHAR_DATA *ch, char *argument)
               if ( str_similarity(argument, buf) >= lvl
                    && pHelp->level <= get_trust(ch))
               {
-                 if (single)
-                 {
-                    send_to_pager_color( "&C&GOpening only similar helpfile.&C\n\r", ch);
-                    do_help( ch, buf);
-                    return;
-                 }
+                    if (single)
+                    {
+                        send_to_pager_color("&C&GOpening closest helpfile.&C\n\r", ch);
+
+                        if ( pHelp->level >= 0 && str_cmp( argument, "imotd" ) )
+                        {
+                            send_to_pager( pHelp->keyword, ch );
+                            send_to_pager( "\n\r", ch );
+                        }
+
+                        if (pHelp->text[0] == '.')
+                            send_to_pager_color(pHelp->text + 1, ch);
+                        else
+                            send_to_pager_color(pHelp->text, ch);
+
+                        return;
+                    }
 
                  pager_printf(ch, "&C&G   %s\n\r", pHelp->keyword);
                  break;
@@ -2145,14 +2156,14 @@ void do_help( CHAR_DATA *ch, char *argument )
 {
     HELP_DATA *pHelp;
 
-    char nohelp[MAX_STRING_LENGTH];
+//    char nohelp[MAX_STRING_LENGTH];
 
-    strcpy(nohelp, argument); /* For Finding "needed" helpfiles */
+//    STRLCPY(nohelp, argument); /* For Finding "needed" helpfiles */
 
     if ( !argument || argument[0] == '\0')
     {
-      do_help( ch, "help" );
-      return;
+      argument = "help";
+      //return;
     }
 
     if ( (pHelp = get_help( ch, argument )) == NULL )
@@ -2164,13 +2175,13 @@ void do_help( CHAR_DATA *ch, char *argument )
 //      append_file( ch, HELP_FILE, nohelp );  // Records attempted helpfile
 
         similar_help_files(ch, argument);
-	return;
+	    return;
     }
 
     if ( pHelp->level >= 0 && str_cmp( argument, "imotd" ) )
     {
-	send_to_pager( pHelp->keyword, ch );
-	send_to_pager( "\n\r", ch );
+    	send_to_pager( pHelp->keyword, ch );
+	    send_to_pager( "\n\r", ch );
     }
 
     if ( !IS_NPC(ch) && IS_SET( ch->act , PLR_SOUND ) )
@@ -2560,7 +2571,7 @@ void do_who( CHAR_DATA *ch, char *argument )
 	        else		 /* SB who clan (order), guild */
             {
                 if (!str_cmp( arg, "clan" ) && ch->pcdata && ch->pcdata->clan)
-                    strcpy(arg, ch->pcdata->clan->name);
+                    STRLCPY(arg, ch->pcdata->clan->name);
                 if ( (pClan = get_clan (arg)) && (fClanMatch != TRUE))
                 {
                     if ((ch->top_level >= LEVEL_IMMORTAL) || (ch->pcdata && ch->pcdata->clan && !strcmp(ch->pcdata->clan->name, pClan->name)))
@@ -2644,15 +2655,15 @@ void do_who( CHAR_DATA *ch, char *argument )
 	if ( fShowHomepage
 	&&   wch->pcdata->homepage
 	&&   wch->pcdata->homepage[0] != '\0' )
-	  sprintf( char_name, "<A HREF=\"%s\">%s</A>",
+	  SPRINTF( char_name, "<A HREF=\"%s\">%s</A>",
 		show_tilde( wch->pcdata->homepage ), wch->name );
 	else
-	  strcpy( char_name, "") ;
+	  STRLCPY( char_name, "") ;
 
 	if ( IS_GOD(ch) )
-	  sprintf( race_text, "(%s) ", race_table[wch->race].race_name);
+	  SPRINTF( race_text, "(%s) ", race_table[wch->race].race_name);
 	else
-	  strcpy( race_text, "" );
+	  STRLCPY( race_text, "" );
 	  
 	race = race_text;
 
@@ -2676,9 +2687,9 @@ void do_who( CHAR_DATA *ch, char *argument )
 	}
 
         if ( !nifty_is_name(wch->name, wch->pcdata->title) && ch->top_level > wch->top_level )
-          sprintf( extra_title , " [%s]" , wch->name );
+          SPRINTF( extra_title , " [%s]" , wch->name );
         else
-          strcpy(extra_title, "");
+          STRLCPY(extra_title, "");
         
         if ( IS_RETIRED( wch ) )
           race = "Retired";
@@ -2693,24 +2704,24 @@ void do_who( CHAR_DATA *ch, char *argument )
 	{
           CLAN_DATA *pclan = wch->pcdata->clan;
 
-	  strcpy( clan_name, " (" );
+	  STRLCPY( clan_name, " (" );
 
 	    if ( !str_cmp( wch->name, pclan->leader ) )
-              strcat( clan_name, "Leader, " );
+              STRAPP( clan_name, "Leader, " );
             if ( !str_cmp( wch->name, pclan->number1 ) )
-              strcat( clan_name, "First, " );
+              STRAPP( clan_name, "First, " );
             if ( !str_cmp( wch->name, pclan->number2 ) )
-              strcat( clan_name, "Second, " );
+              STRAPP( clan_name, "Second, " );
 
-	  strcat( clan_name, pclan->name );
-	  strcat( clan_name, ")" );
+	  STRAPP( clan_name, "%s", pclan->name );
+	  STRAPP( clan_name, ")" );
 	}
 	else
 	  clan_name[0] = '\0';
 
 
 	if ( IS_SET(wch->act, PLR_WIZINVIS) )
-	  sprintf( invis_str, "(%d) ", wch->pcdata->wizinvis );
+	  SPRINTF( invis_str, "(%d) ", wch->pcdata->wizinvis );
 	else
 	  invis_str[0] = '\0';
 
@@ -2807,7 +2818,7 @@ snprintf(buf, sizeof(buf),
     for ( cur_who = first_newbie; cur_who; cur_who = next_who )
     {
       if ( NullCh )
-        fprintf( whoout, cur_who->text );
+        fprintf( whoout, "%s", cur_who->text );
       else
         send_to_pager( cur_who->text, ch );
       next_who = cur_who->next;
@@ -2827,7 +2838,7 @@ snprintf(buf, sizeof(buf),
     for ( cur_who = first_mortal; cur_who; cur_who = next_who )
     {
       if ( NullCh )
-        fprintf( whoout, cur_who->text );
+        fprintf( whoout, "%s", cur_who->text );
       else
         send_to_pager( cur_who->text, ch );
       next_who = cur_who->next;
@@ -2846,7 +2857,7 @@ snprintf(buf, sizeof(buf),
     for ( cur_who = first_imm; cur_who; cur_who = next_who )
     {
       if ( NullCh )
-        fprintf( whoout, cur_who->text );
+        fprintf( whoout, "%s", cur_who->text );
       else
         send_to_pager( cur_who->text, ch );
       next_who = cur_who->next;
@@ -3212,7 +3223,7 @@ void do_practice( CHAR_DATA *ch, char *argument )
 	 */
 	if ( skill_table[sn]->teachers && skill_table[sn]->teachers[0] != '\0' )
 	{
-	    sprintf( buf, "%d", mob->pIndexData->vnum );
+	    SPRINTF( buf, "%d", mob->pIndexData->vnum );
 	    if ( !is_name( buf, skill_table[sn]->teachers ) )
 	    {
 		act( AT_TELL, "$n tells you, 'I know not know how to teach that.'",
@@ -3231,7 +3242,7 @@ void do_practice( CHAR_DATA *ch, char *argument )
 
         if ( ch->gold < skill_table[sn]->min_level*10 )
 	{
-	    sprintf ( buf , "$n tells you, 'I charge %d credits to teach that. You don't have enough.'" , skill_table[sn]->min_level*10 );
+	    SPRINTF ( buf , "$n tells you, 'I charge %d credits to teach that. You don't have enough.'" , skill_table[sn]->min_level*10 );
 	    act( AT_TELL, "$n tells you 'You don't have enough credits.'",
 		mob, NULL, ch, TO_VICT );
 	    return;
@@ -3239,7 +3250,7 @@ void do_practice( CHAR_DATA *ch, char *argument )
 
 	if ( ch->pcdata->learned[sn] >= adept )
 	{
-	    sprintf( buf, "$n tells you, 'I've taught you everything I can about %s.'",
+	    SPRINTF( buf, "$n tells you, 'I've taught you everything I can about %s.'",
 		skill_table[sn]->name );
 	    act( AT_TELL, buf, mob, NULL, ch, TO_VICT );
 	    act( AT_TELL, "$n tells you, 'You'll have to practice it on your own now...'",
@@ -3349,10 +3360,10 @@ void do_teach( CHAR_DATA *ch, char *argument )
 	else
 	{
 	    victim->pcdata->learned[sn] += int_app[get_curr_int(ch)].learn;
-	    sprintf( buf, "You teach %s $T.", victim->name );
+	    SPRINTF( buf, "You teach %s $T.", victim->name );
 	    act( AT_ACTION, buf,
 		    ch, NULL, skill_table[sn]->name, TO_CHAR );
-	    sprintf( buf, "%s teaches you $T.", ch->name );
+	    SPRINTF( buf, "%s teaches you $T.", ch->name );
 	    act( AT_ACTION, buf,
 		    victim, NULL, skill_table[sn]->name, TO_CHAR );
 	}
@@ -4334,8 +4345,8 @@ void do_whois( CHAR_DATA *ch, char *argument)
     return;
   }
 
-  strcat(buf, "0.");
-  strcat(buf, argument);
+  STRAPP(buf, "0.");
+  STRAPP(buf, "%s", argument);
   if( ( ( victim = get_char_world(ch, buf) ) == NULL ))
   {
     send_to_char("No such player online.\n\r", ch);
@@ -4436,29 +4447,29 @@ void do_whois( CHAR_DATA *ch, char *argument)
     {
       snprintf(buf2, sizeof(buf2), "This player has the following flags set:");
       if(IS_SET(victim->act, PLR_SILENCE)) 
-        strcat(buf2, " silence");
+        STRAPP(buf2, " silence");
       if(IS_SET(victim->act, PLR_NO_EMOTE)) 
-        strcat(buf2, " noemote");
+        STRAPP(buf2, " noemote");
       if(IS_SET(victim->act, PLR_NO_TELL) )
-        strcat(buf2, " notell");
-      strcat(buf2, ".\n\r");
+        STRAPP(buf2, " notell");
+      STRAPP(buf2, ".\n\r");
       send_to_char(buf2, ch);
     }
     if ( victim->desc && victim->desc->host[0]!='\0' )   /* added by Gorog */
     {
-      sprintf (buf2, "%s's IP info: %s ", victim->name, victim->desc->hostip);
+      SPRINTF (buf2, "%s's IP info: %s ", victim->name, victim->desc->hostip);
       if (get_trust(ch) > LEVEL_GOD)
       {
-        strcat (buf2, victim->desc->user);
-        strcat (buf2, "@");
-        strcat (buf2, victim->desc->host);
+        STRAPP (buf2, "%s", victim->desc->user);
+        STRAPP (buf2, "@");
+        STRAPP (buf2, "%s", victim->desc->host);
       }
-      strcat (buf2, "\n\r");
+      STRAPP (buf2, "\n\r");
       send_to_char(buf2, ch);
     }
     if (get_trust(ch) >= LEVEL_GOD && get_trust(ch) >= get_trust( victim ) && victim->pcdata )
     {
-        sprintf (buf2, "Email: %s\n\r" , victim->pcdata->email );
+        SPRINTF (buf2, "Email: %s\n\r" , victim->pcdata->email );
         send_to_char(buf2, ch);
     }
   }
@@ -4671,17 +4682,17 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
 
     if( chk_race )
     {
-	sprintf( buf, "&R%s Statistics\n\r", race_table[race].race_name );
+	SPRINTF( buf, "&R%s Statistics\n\r", race_table[race].race_name );
     	send_to_pager( buf, ch );
-	sprintf( buf, "&cStr: &C%d  &cWis: &C%d  &cInt: &C%d  &cDex: &C%d  &cCon: &C%d  &cCha: &C%d\n\r", 
+	SPRINTF( buf, "&cStr: &C%d  &cWis: &C%d  &cInt: &C%d  &cDex: &C%d  &cCon: &C%d  &cCha: &C%d\n\r", 
 	         raceCh->perm_str, raceCh->perm_wis, raceCh->perm_int, 
 	         raceCh->perm_dex, raceCh->perm_con, raceCh->perm_cha );
     	send_to_pager( buf, ch );
 /*
-        sprintf( "Resistant  : %s\n\r",
+        SPRINTF( "Resistant  : %s\n\r",
 	flag_string(race_table[raceCh->race].resist, ris_flags) );
     	send_to_pager( buf, ch );
-    	sprintf( "Susceptible: %s\n\r",
+    	SPRINTF( "Susceptible: %s\n\r",
 	flag_string(race_table[raceCh->race].suscept, ris_flags) );
     	send_to_pager( buf, ch );
 */    	
@@ -4690,7 +4701,7 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
     	  if( iC == FORCE_ABILITY )
     	    continue;
     	  raceCh->main_ability = iC;
-    	  sprintf( buf, "\n\r&c%-20s &B| &C", ability_name[iC] );
+    	  SPRINTF( buf, "\n\r&c%-20s &B| &C", ability_name[iC] );
     	  for( iC2 = 0; iC2 < MAX_ABILITY; iC2++ )
     	  {
     	  if( iC2 == FORCE_ABILITY )
@@ -4699,18 +4710,18 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
     	    continue;
 
     	   if( iC2 == SMUGGLING_ABILITY )
-    	    sprintf( buf2, "%-3d+ &B| &C", max_level( raceCh, iC2 ) );
+    	    SPRINTF( buf2, "%-3d+ &B| &C", max_level( raceCh, iC2 ) );
 	   else    	   
-    	    sprintf( buf2, "%-3d &B| &C", max_level( raceCh, iC2 ) );
+    	    SPRINTF( buf2, "%-3d &B| &C", max_level( raceCh, iC2 ) );
 
-   	   strcat( buf, buf2 );
+   	   STRAPP( buf, "%s", buf2 );
     	  }
 	  send_to_pager( buf, ch );
     	}
     }
     else
     {
-	sprintf( buf, "&R%s Statistics\n\r", ability_name[plrclass]);
+	SPRINTF( buf, "&R%s Statistics\n\r", ability_name[plrclass]);
     	send_to_pager( buf, ch );
     	
     	for( iR = 0; iR < MAX_RACE; iR++ )
@@ -4722,14 +4733,14 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
           raceCh->perm_dex = 20 + race_table[raceCh->race].dex_plus;
           raceCh->perm_con = 20 + race_table[raceCh->race].con_plus;
           raceCh->perm_cha = 20 + race_table[raceCh->race].cha_plus;
-    	  sprintf( buf, "\n\r&c%-20s &B| &C", race_table[iR].race_name );
+    	  SPRINTF( buf, "\n\r&c%-20s &B| &C", race_table[iR].race_name );
     	  for( iC2 = 0; iC2 < FORCE_ABILITY; iC2++ )
     	  {
     	   if( iC2 == SMUGGLING_ABILITY )
-    	    sprintf( buf2, "%-3d+ &B| &C", max_level( raceCh, iC2 ) );
+    	    SPRINTF( buf2, "%-3d+ &B| &C", max_level( raceCh, iC2 ) );
 	   else
-    	    sprintf( buf2, "%-3d &B| &C", max_level( raceCh, iC2 ) );
-    	   strcat( buf, buf2 );
+    	    SPRINTF( buf2, "%-3d &B| &C", max_level( raceCh, iC2 ) );
+    	   STRAPP( buf, "%s", buf2 );
     	  }
 	  send_to_pager( buf, ch );
     	}

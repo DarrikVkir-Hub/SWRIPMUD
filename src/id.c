@@ -108,7 +108,7 @@ void  send_auth( struct descriptor_data *d )
     }
   
     /* compose request */
-    sprintf( authbuf, "%u , %u\r\n", 
+    SPRINTF( authbuf, "%u , %u\r\n", 
 	(unsigned int)ntohs(them.sin_port),
 	(unsigned int)ntohs(us.sin_port));
 
@@ -120,8 +120,7 @@ void  send_auth( struct descriptor_data *d )
     {
 	if (d->atimes >= 19)
 	{
-/*	  sprintf( log_buf, "auth request, broken pipe [%d/%d]", z, errno );
-	  log_string(log_buf); */
+//	  log_printf( "auth request, broken pipe [%d/%d]", z, errno );
 	  perror("send_auth");
 	}
 	authsenderr:
@@ -174,16 +173,14 @@ void  read_auth( struct descriptor_data *d )
 	    *t++ = *s;
 	*t = '\0';
  
-	sprintf( log_buf, "auth reply ok, incoming user: [%s]", ruser );
-        log_string_plus( log_buf, LOG_COMM, LEVEL_GOD );
+	log_printf_plus( LOG_COMM, LEVEL_GOD, "auth reply ok, incoming user: [%s]", ruser );
 /*      STRFREE(d->user);
       d->user = STRALLOC(ruser);*/
     }
     else if ( len != 0 )
     {
 	if (!index( d->abuf, '\n' ) && !index( d->abuf, '\r' ) ) return;
-	sprintf( log_buf, "bad auth reply: %s", d->abuf );
-	log_string_plus( log_buf, LOG_COMM, LEVEL_GOD );
+	log_printf_plus( LOG_COMM, LEVEL_GOD, "bad auth reply: %s", d->abuf );
 	ruser[0] = '\0';
     }
     closed( d->auth_fd );
@@ -195,7 +192,7 @@ void  read_auth( struct descriptor_data *d )
     d->auth_state = 0;
 
     if (ruser[0] == '\0' ) 
-      strcpy(ruser, "(no auth)" );
+      SPRINTF(ruser, "(no auth)" );
 
     STRFREE(d->user);
     d->user = STRALLOC(ruser);
@@ -216,9 +213,10 @@ int workaround( struct descriptor_data *d )
 {
    BAN_DATA *tmp;
    char *nicnamehost;
+   char buf[MAX_STRING_LENGTH];
    
-   sprintf( log_buf, "%s!%s@%s", d->name, d->user, d->host );
-   nicknamehost = str_dup( log_buf );
+   SPRINTF( buf, "%s!%s@%s", d->name, d->user, d->host );
+   nicknamehost = str_dup( buf );
    for ( tmp = ncsa_list; tmp; tmp = tmp->next )
    {
      if ( !match( tmp->user, nicknamehost ) )

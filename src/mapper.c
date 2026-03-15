@@ -95,11 +95,10 @@ void clear_coord( int x, int y )
 /* Clear all exits for one room */
 void clear_room( int x, int y )
 {
-    int dir, exitx, exity;
-
-    /* Cycle through the four directions */
-    for( dir = 0; dir < 10; dir++ )
+    /* Clear all exits surrounding a room coordinate */
+    for( int dir = 0; dir < MAX_DIR; dir++ )
     {
+        int exitx, exity;
         /* Find next coord in this direction */
         get_exit_dir( dir, &exitx, &exity, x, y );
         /* If coord is valid, clear it */
@@ -112,18 +111,10 @@ void clear_room( int x, int y )
 void map_exits( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoom,
                 int x, int y, int depth )
 {
-    int door;
-    int exitx = 0, exity = 0;
-    int roomx = 0, roomy = 0;
-    EXIT_DATA *pExit;
-/*
-    char *buf;
-    
-    for ( rch = pRoom->first_person; rch; rch = rch->next_in_room )
-	count++;
-   
-    sprintf( buf, "%d", count );
-*/
+    /* Limit recursion */
+    if ( depth > MAXDEPTH )
+        return;
+
     /* Setup this coord as a room */
     map[x][y].mapch = 'O';
     map[x][y].vnum = pRoom->vnum;
@@ -131,22 +122,14 @@ void map_exits( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoom,
     map[x][y].info = pRoom->room_flags;
     map[x][y].can_see = room_is_dark( pRoom );
 
-    /* Limit recursion */
-    if ( depth > MAXDEPTH )
-        return;
-
     /* This room is done, deal with it's exits */
-    for( door = 0; door < 10; door++ )
+    for( int door = 0; door < MAX_DIR; door++ )
     {
-        /* Skip if there is no exit in this direction */
-/*      for (xit = pRoom->first_exit; xit; xit = xit->next )
-        if ( xit->vdir == door )
-          break;
-      if ( !xit )
-        continue;
-*/
-      if ( ( pExit = get_exit( pRoom, door ) )== NULL )
-           continue;
+        EXIT_DATA *pExit = get_exit(pRoom, door);
+        if (!pExit || !pExit->to_room)
+            continue;
+        int exitx = 0, exity = 0;
+        int roomx = 0, roomy = 0;
 
         /* Get the coords for the next exit and room in this direction */
         get_exit_dir( door, &exitx, &exity, x, y );
@@ -154,10 +137,6 @@ void map_exits( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoom,
 
         /* Skip if coords fall outside map */
         if ( BOUNDARY( exitx, exity ) || BOUNDARY( roomx, roomy ) )
-            continue;
-
-        /* Skip if there is no room beyond this exit */
-        if ( pExit->to_room == NULL )
             continue;
 
         /* Ensure there are no clashes with previously defined rooms */
@@ -184,14 +163,10 @@ void map_exits( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoom,
         map[exitx][exity].depth = depth;
         map[exitx][exity].vnum = pExit->to_room->vnum;
         map[exitx][exity].info = pExit->exit_info;
-//      sprintf( buf, "%c", map_chars[door] );
         map[exitx][exity].mapch = map_chars[door];
 
-        /* Place Marker 1 - referred to later */
-
         /* More to do? If so we recurse */
-        if ( ( depth < MAXDEPTH ) &&
-             ( ( map[roomx][roomy].vnum == pExit->to_room->vnum ) ||
+        if ( ( ( map[roomx][roomy].vnum == pExit->to_room->vnum ) ||
                ( map[roomx][roomy].vnum == 0 ) ) )
         {
             /* Depth increases by one each time */
@@ -241,7 +216,7 @@ void reformat_desc( char *desc )
     buf[j] = '\0';
 
     /* Copy to desc */
-    sprintf( desc, buf );
+    snprintf( desc, MAX_STRING_LENGTH, buf );
 }
 
 int get_line( char *desc, int max_len )
@@ -277,48 +252,45 @@ int get_line( char *desc, int max_len )
     return j + 1;
 }
 #endif
-/* Display the map to the player */
+// Display the map to the player - Replaced AI/DV 3-15-26
 void show_map( CHAR_DATA *ch, char *text )
 {
     char buf[MAX_STRING_LENGTH * 2];
-    int x, y;//, pos;
-//    char *p;
+    size_t len = 0;
+    int x, y;
 
-    //pos = 0;
-//    p = text;
     buf[0] = '\0';
 
-    /* Place Marker 2 - referred to later */
-
     /* Top of map frame */
-    sprintf( buf, "+-----------+ " );
-    /* First line of text */
-    strcat( buf, "\n\r" );
+    len += snprintf(buf + len, sizeof(buf) - len, "+-----------+ \n\r");
 
-    /* Write out the main map area with text */
-    for( y = 0; y <= MAPY; y++ )
+    /* Main map area */
+    for (y = 0; y <= MAPY && len < sizeof(buf) - 1; y++)
     {
-        strcat( buf, "|" );
+        /* Left border */
+        buf[len++] = '|';
 
-        for( x = 0; x <= MAPX; x++ )
+        /* Map row */
+        for (x = 0; x <= MAPX && len < sizeof(buf) - 1; x++)
+            buf[len++] = map[x][y].mapch;
+
+        /* Right border + newline */
+        if (len < sizeof(buf) - 3)
         {
-            /* Choose a color based on map contents here */
-
-            /* Write the map character */
-            sprintf( buf + strlen( buf ), "%c", map[x][y].mapch );
+            buf[len++] = '|';
+            buf[len++] = ' ';
+            buf[len++] = '\n';
+            buf[len++] = '\r';
         }
 
-        strcat( buf, "| \n\r" );
-        /* Add the text, if necessary */
+        buf[len] = '\0';
     }
 
-    /* Finish off map area */
-    strcat( buf, "+-----------+ " );
+    /* Bottom frame */
+    if (len < sizeof(buf) - 15)
+        len += snprintf(buf + len, sizeof(buf) - len, "+-----------+ ");
 
-    /* Deal with any leftover text */
-
-    /* Act can also be used here, as can send_to_char if desired */
-    send_to_pager( buf, ch );
+    send_to_pager(buf, ch);
 }
 
 /* Clear, generate and display the map */
@@ -327,7 +299,7 @@ void do_draw( CHAR_DATA *ch, char *desc )
     int x, y;
     static char buf[MAX_STRING_LENGTH];
     OBJ_DATA *device;
-    //sprintf( buf, desc );
+    //SPRINTF( buf, desc );
     /* Remove undesirable characters */
     //reformat_desc( buf );
 
@@ -378,7 +350,7 @@ void do_draw( CHAR_DATA *ch, char *desc )
     map_exits( ch, ch->in_room, x, y, 0 );
 
     /* Current position should be a "X" */
-//  sprintf( buf2, "%c", 'X' );
+//  SPRINTF( buf2, "%c", 'X' );
     map[x][y].mapch = 'X';
     /* Send the map */
     show_map( ch, buf );

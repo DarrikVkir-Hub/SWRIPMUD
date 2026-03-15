@@ -260,7 +260,7 @@ void do_clone( CHAR_DATA *ch, char *argument )
 	  ch->pcdata->bank = 0;
 	  home = ch->plr_home;
 	  ch->plr_home = NULL;
-	  strcpy( oldbestowments, ch->pcdata->bestowments);
+	  SPRINTF( oldbestowments, "%s", ch->pcdata->bestowments);
 	  
 	  
       if( ch->pcdata->clones == 1 )
@@ -283,10 +283,10 @@ void do_clone( CHAR_DATA *ch, char *argument )
       
       if ( ch->pcdata->clan_name && ch->pcdata->clan_name[0] != '\0' )
       {
-	 strcpy( clanname, ch->pcdata->clan_name);
+	 SPRINTF( clanname, "%s", ch->pcdata->clan_name);
 	 STRFREE( ch->pcdata->clan_name );
 	 ch->pcdata->clan_name = STRALLOC( "" );
-         strcpy( bestowments, ch->pcdata->bestowments);
+         SPRINTF( bestowments, "%s", ch->pcdata->bestowments);
          DISPOSE( ch->pcdata->bestowments );
          ch->pcdata->bestowments = str_dup( "" );
          save_clone(ch);
@@ -1869,48 +1869,45 @@ void pullorpush( CHAR_DATA *ch, OBJ_DATA *obj, bool pull )
     switch( obj->item_type )
     {
 	default:
-	  sprintf( buf, "You can't %s that!\n\r", pull ? "pull" : "push" );
-	  send_to_char( buf, ch );
-	  return;
-	  break;
+      ch_printf( ch, "You can't %s that!\n\r", pull ? "pull" : "push" );
+      return;
+      break;
 	case ITEM_SWITCH:
 	case ITEM_LEVER:
 	case ITEM_PULLCHAIN:
 	  if ( (!pull && isup) || (pull && !isup) )
 	  {
-		sprintf( buf, "It is already %s.\n\r", isup ? "up" : "down" );
-		send_to_char( buf, ch );
-		return;
+      ch_printf( ch, "It is already %s.\n\r", isup ? "up" : "down" );
+      return;
  	  }
 	case ITEM_BUTTON:
 	  if ( (!pull && isup) || (pull & !isup) )
 	  {
-		sprintf( buf, "It is already %s.\n\r", isup ? "in" : "out" );
-		send_to_char( buf, ch );
-		return;
+      ch_printf( ch, "It is already %s.\n\r", isup ? "in" : "out" );
+      return;
 	  }
 	  break;
     }
     if( (pull) && IS_SET(obj->pIndexData->progtypes,PULL_PROG) )
     {
-	if ( !IS_SET(obj->value[0], TRIG_AUTORETURN ) )
- 	  REMOVE_BIT( obj->value[0], TRIG_UP );
- 	oprog_pull_trigger( ch, obj );
-        return;
+      if ( !IS_SET(obj->value[0], TRIG_AUTORETURN ) )
+        REMOVE_BIT( obj->value[0], TRIG_UP );
+      oprog_pull_trigger( ch, obj );
+      return;
     }
     if( (!pull) && IS_SET(obj->pIndexData->progtypes,PUSH_PROG) )
     {
-	if ( !IS_SET(obj->value[0], TRIG_AUTORETURN ) )
-	  SET_BIT( obj->value[0], TRIG_UP );
-	oprog_push_trigger( ch, obj );
-        return;
+      if ( !IS_SET(obj->value[0], TRIG_AUTORETURN ) )
+        SET_BIT( obj->value[0], TRIG_UP );
+      oprog_push_trigger( ch, obj );
+      return;
     }
 
     if ( !oprog_use_trigger( ch, obj, NULL, NULL, NULL ) )
     {
-      sprintf( buf, "$n %s $p.", pull ? "pulls" : "pushes" );
+      SPRINTF( buf, "$n %s $p.", pull ? "pulls" : "pushes" );
       act( AT_ACTION, buf,  ch, obj, NULL, TO_ROOM );
-      sprintf( buf, "You %s $p.", pull ? "pull" : "push" );
+      SPRINTF( buf, "You %s $p.", pull ? "pull" : "push" );
       act( AT_ACTION, buf, ch, obj, NULL, TO_CHAR );
     }
 
@@ -2555,9 +2552,9 @@ while ( *srcptr != '\0' )
 *roomptr = '\0';
 
 /*
-sprintf( buf, "Charbuf: %s", charbuf );
+SPRINTF( buf, "Charbuf: %s", charbuf );
 log_string_plus( buf, LOG_HIGH, LEVEL_LESSER ); 
-sprintf( buf, "Roombuf: %s", roombuf );
+SPRINTF( buf, "Roombuf: %s", roombuf );
 log_string_plus( buf, LOG_HIGH, LEVEL_LESSER ); 
 */
 
@@ -2609,7 +2606,7 @@ void do_hail( CHAR_DATA *ch , char *argument )
   SHIP_DATA *target = NULL;
 
   argument = one_argument( argument, arg );
-  strcpy ( arg2, argument);
+  SPRINTF ( arg2, "%s", argument);
 
   if ( arg[0] != '\0' )
 {
@@ -2656,19 +2653,19 @@ void do_hail( CHAR_DATA *ch , char *argument )
       return;
     }
 
-    strcpy( buf , "You hail the " );
-    strcat( buf , target->name );
-    strcat( buf , ": &C" );
-    strcat( buf , arg2 );
-    strcat( buf , "&w\n\r" );
+    SPRINTF( buf , "You hail the " );
+    STRAPP( buf , "%s", target->name );
+    STRAPP( buf , ": &C" );
+    STRAPP( buf , "%s", arg2 );
+    STRAPP( buf , "&w\n\r" );
 
     echo_to_ship( AT_WHITE , ship , buf);
 
 
-    strcpy( buf , ship->name );
-    strcat( buf , " hails you: &C" );
-    strcat( buf , arg2 );
-    strcat( buf , "&w\n\r" );
+    SPRINTF( buf , "%s", ship->name );
+    STRAPP( buf , " hails you: &C" );
+    STRAPP( buf , "%s", arg2 );
+    STRAPP( buf , "&w\n\r" );
 
     echo_to_ship( AT_WHITE , target , buf);
 
@@ -2784,7 +2781,7 @@ void do_train( CHAR_DATA *ch, char *argument )
     if ( IS_NPC(ch) )
 	return;
 
-    strcpy( arg, argument );    
+    SPRINTF( arg, "%s", argument );    
     
     switch( ch->substate )
     { 
@@ -2894,7 +2891,7 @@ void do_train( CHAR_DATA *ch, char *argument )
     	case 1:
     		if ( !ch->dest_buf )
     		   return;
-    		strcpy(arg, (const char* ) ch->dest_buf);
+    		SPRINTF(arg, "%s", (const char* ) ch->dest_buf);
     		DISPOSE( ch->dest_buf);
     		break;
 
@@ -2989,7 +2986,7 @@ void do_train( CHAR_DATA *ch, char *argument )
 
 void do_suicide( CHAR_DATA *ch, char *argument )
 {
-        char  logbuf[MAX_STRING_LENGTH];
+//      char  logbuf[MAX_STRING_LENGTH];
 
         OBJ_DATA *obj;
 
@@ -3013,16 +3010,14 @@ sha256_hash(argument, pwdhash);
 if (strcmp(pwdhash, ch->pcdata->pwd))
 {
     send_to_char("Sorry wrong password.\n\r", ch);
-    sprintf(logbuf, "%s attempting to commit suicide... WRONG PASSWORD!", ch->name);
-    log_string(logbuf);
+    log_printf("%s attempting to commit suicide... WRONG PASSWORD!", ch->name);
     return;
 }
 /*
         if ( strcmp( crypt( argument, ch->pcdata->pwd ), ch->pcdata->pwd ) )
 	{
 	    send_to_char( "Sorry wrong password.\n\r", ch );
-	    sprintf( logbuf , "%s attempting to commit suicide... WRONG PASSWORD!" , ch->name );
-	    log_string( logbuf );
+	    log_printf( "%s attempting to commit suicide... WRONG PASSWORD!" , ch->name );
 	    return;
 	}
 */
@@ -3036,8 +3031,7 @@ if (strcmp(pwdhash, ch->pcdata->pwd))
 
        act( AT_BLOOD, "With a sad determination and trembling hands you slit your own throat!",  ch, NULL, NULL, TO_CHAR    );
        act( AT_BLOOD, "Cold shivers run down your spine as you watch $n slit $s own throat!",  ch, NULL, NULL, TO_ROOM );
-	    sprintf( logbuf , "%s just committed suicide." , ch->name );
-	    log_string( logbuf );
+ 	     log_printf( "%s just committed suicide." , ch->name );
 
        set_cur_char(ch);
        raw_kill( ch, ch );
@@ -3507,42 +3501,39 @@ void do_aquest(CHAR_DATA *ch, char *argument)
     if (!strcmp(arg1, "info"))
     {
         if (IS_SET(ch->act, PLR_QUESTOR))
-	{
-	    if (ch->questmob == -1 && ch->questgiver->short_descr != NULL)
-	    {
-		sprintf(buf, "Your quest is ALMOST complete!\n\rGet back to %s before your time runs out!\n\r",ch->questgiver->short_descr);
-		send_to_char(buf, ch);
-	    }
-	    else if (ch->questobj > 0)
-	    {
-                questinfoobj = get_obj_index(ch->questobj);
-		if (questinfoobj != NULL)
-		{
-		    sprintf(buf, "You are on a quest to recover the fabled %s!\n\r",questinfoobj->name);
-		    send_to_char(buf, ch);
-		}
-		else send_to_char("You aren't currently on a quest.\n\r",ch);
-		return;
-	    }
-	    else if (ch->questmob > 0)
-	    {
-                questinfo = get_mob_index(ch->questmob);
-		if (questinfo != NULL)
-		{
-	            sprintf(buf, "You are on a quest to slay the dreaded %s!\n\r",questinfo->short_descr);
-		    send_to_char(buf, ch);
-		}
-		else send_to_char("You aren't currently on a quest.\n\r",ch);
-		return;
-	    }
-	}
-	else
-	    send_to_char("You aren't currently on a quest.\n\r",ch);
-	return;
+      {
+          if (ch->questmob == -1 && ch->questgiver->short_descr != NULL)
+          {
+            ch_printf(ch, "Your quest is ALMOST complete!\n\rGet back to %s before your time runs out!\n\r",ch->questgiver->short_descr);
+          }
+          else if (ch->questobj > 0)
+          {
+            questinfoobj = get_obj_index(ch->questobj);
+            if (questinfoobj != NULL)
+            {
+                ch_printf(ch, "You are on a quest to recover the fabled %s!\n\r",questinfoobj->name);
+            }
+            else send_to_char("You aren't currently on a quest.\n\r",ch);
+            return;
+          }
+          else if (ch->questmob > 0)
+          {
+            questinfo = get_mob_index(ch->questmob);
+            if (questinfo != NULL)
+            {
+                ch_printf(ch, "You are on a quest to slay the dreaded %s!\n\r",questinfo->short_descr);
+            }
+            else send_to_char("You aren't currently on a quest.\n\r",ch);
+            return;
+          }
+      }
+      else
+          send_to_char("You aren't currently on a quest.\n\r",ch);
+	    return;
     }
     if (!strcmp(arg1, "points"))
     {
-	sprintf(buf, "You have %d quest points.\n\r",ch->questpoints);
+	SPRINTF(buf, "You have %d quest points.\n\r",ch->questpoints);
 	send_to_char(buf, ch);
 	return;
     }
@@ -3553,18 +3544,18 @@ void do_aquest(CHAR_DATA *ch, char *argument)
 	    send_to_char("You aren't currently on a quest.\n\r",ch);
 	    if (ch->nextquest > 1)
 	    {
-		sprintf(buf, "There are %d minutes remaining until you can go on another quest.\n\r",ch->nextquest);
+		SPRINTF(buf, "There are %d minutes remaining until you can go on another quest.\n\r",ch->nextquest);
 		send_to_char(buf, ch);
 	    }
 	    else if (ch->nextquest == 1)
 	    {
-		sprintf(buf, "There is less than a minute remaining until you can go on another quest.\n\r");
+		SPRINTF(buf, "There is less than a minute remaining until you can go on another quest.\n\r");
 		send_to_char(buf, ch);
 	    }
 	}
         else if (ch->countdown > 0)
         {
-	    sprintf(buf, "Time left for current quest: %d\n\r",ch->countdown);
+	    SPRINTF(buf, "Time left for current quest: %d\n\r",ch->countdown);
 	    send_to_char(buf, ch);
 	}
 	return;
@@ -3616,7 +3607,7 @@ void do_aquest(CHAR_DATA *ch, char *argument)
     {
         act(AT_PLAIN,"$n asks $N for a list of quest items.",ch,NULL,questman,TO_ROOM); 
 	act(AT_PLAIN,"You ask $N for a list of quest items.",ch,NULL,questman,TO_CHAR);
-	sprintf(buf, "Current Quest Items available for Purchase:\n\r\n\r\
+	SPRINTF(buf, "Current Quest Items available for Purchase:\n\r\n\r\
 [1] %dqp.......%s\n\r\
 [2] %dqp.......%s\n\r\
 [3] %dqp........%s\n\r\
@@ -3648,7 +3639,7 @@ QUEST_VALUE5, obj5->short_descr);
 	    }
 	    else
 	    {
-		sprintf(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
+		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
 		do_say(questman,buf);
 		return;
 	    }
@@ -3662,7 +3653,7 @@ QUEST_VALUE5, obj5->short_descr);
 	    }
 	    else
 	    {
-		sprintf(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
+		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
 		do_say(questman,buf);
 		return;
 	    }
@@ -3676,7 +3667,7 @@ QUEST_VALUE5, obj5->short_descr);
 	    }
 	    else
 	    {
-		sprintf(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
+		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
 		do_say(questman,buf);
 		return;
 	    }
@@ -3690,7 +3681,7 @@ QUEST_VALUE5, obj5->short_descr);
 	    }
 	    else
 	    {
-		sprintf(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
+		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
 		do_say(questman,buf);
 		return;
 	    }
@@ -3704,7 +3695,7 @@ QUEST_VALUE5, obj5->short_descr);
 	    }
 	    else
 	    {
-		sprintf(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
+		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
 		do_say(questman,buf);
 		return;
 	    }
@@ -3723,7 +3714,7 @@ QUEST_VALUE5, obj5->short_descr);
 	    }
 	    else
 	    {
-		sprintf(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
+		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
 		do_say(questman,buf);
 		return;
 	    }
@@ -3742,14 +3733,14 @@ QUEST_VALUE5, obj5->short_descr);
 	    }
 	    else
 	    {
-		sprintf(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
+		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
 		do_say(questman,buf);
 		return;
 	    }
 	}
 	else
 	{
-	    sprintf(buf, "I don't have that item, %s.",ch->name);
+	    SPRINTF(buf, "I don't have that item, %s.",ch->name);
 	    do_say(questman, buf);
 	}
 	if (obj != NULL)
@@ -3763,7 +3754,7 @@ QUEST_VALUE5, obj5->short_descr);
     else if (!strcmp(arg1, "request"))
     {
 
-            sprintf(buf, "Do to extreme stupidity of its system, the quest system has been removed\n\rThere are other ways to gain quest points now!");
+            SPRINTF(buf, "Do to extreme stupidity of its system, the quest system has been removed\n\rThere are other ways to gain quest points now!");
 	    do_say(questman, buf);
 	    return;
 
@@ -3771,20 +3762,20 @@ QUEST_VALUE5, obj5->short_descr);
 	act(AT_PLAIN,"You ask $N for a quest.",ch, NULL, questman, TO_CHAR);
         if (IS_SET(ch->act, PLR_QUESTOR))
 	{
-            sprintf(buf, "But you're already on a quest!\n\rBetter hurry up and finish it!");
+            SPRINTF(buf, "But you're already on a quest!\n\rBetter hurry up and finish it!");
 	    do_say(questman, buf);
 	    return;
 	}
 	if (ch->nextquest > 0)
 	{
-	    sprintf(buf, "You're very brave, %s, but let someone else have a chance.",ch->name);
+	    SPRINTF(buf, "You're very brave, %s, but let someone else have a chance.",ch->name);
 	    do_say(questman, buf);
-	    sprintf(buf, "Come back later.");
+	    SPRINTF(buf, "Come back later.");
 	    do_say(questman, buf);
 	    return;
 	}
 
-	sprintf(buf, "Thank you, brave %s!",ch->name);
+	SPRINTF(buf, "Thank you, brave %s!",ch->name);
 	do_say(questman, buf);
 
 	generate_quest(ch, questman);
@@ -3793,9 +3784,9 @@ QUEST_VALUE5, obj5->short_descr);
 	{
             ch->countdown = number_range(10,30);
             SET_BIT(ch->act, PLR_QUESTOR);
-	    sprintf(buf, "You have %d minutes to complete this quest.",ch->countdown);
+	    SPRINTF(buf, "You have %d minutes to complete this quest.",ch->countdown);
 	    do_say(questman, buf);
-	    sprintf(buf, "May the gods go with you!");
+	    SPRINTF(buf, "May the gods go with you!");
 	    do_say(questman, buf);
 	}
 	return;
@@ -3808,7 +3799,7 @@ QUEST_VALUE5, obj5->short_descr);
 		questman, TO_CHAR);
 	if (ch->questgiver != questman)
 	{
-	    sprintf(buf, "I never sent you on a quest! Perhaps you're thinking of someone else.");
+	    SPRINTF(buf, "I never sent you on a quest! Perhaps you're thinking of someone else.");
 	    do_say(questman,buf);
 	    return;
 	}
@@ -3822,9 +3813,9 @@ QUEST_VALUE5, obj5->short_descr);
                 reward = number_range(5000,10000);
                 pointreward = number_range(1,5);
 
-		sprintf(buf, "Congratulations on completing your quest!");
+		SPRINTF(buf, "Congratulations on completing your quest!");
 		do_say(questman,buf);
-		sprintf(buf,"As a reward, I am giving you %d quest points, and %d gold.",pointreward,reward);
+		SPRINTF(buf,"As a reward, I am giving you %d quest points, and %d gold.",pointreward,reward);
 		do_say(questman,buf);
 
                 REMOVE_BIT(ch->act, PLR_QUESTOR);
@@ -3863,9 +3854,9 @@ QUEST_VALUE5, obj5->short_descr);
 		    act(AT_PLAIN,"You hand $p to $N.",ch, obj, questman, TO_CHAR);
 		    act(AT_PLAIN,"$n hands $p to $N.",ch, obj, questman, TO_ROOM);
 
-	    	    sprintf(buf, "Congratulations on completing your quest!");
+	    	    SPRINTF(buf, "Congratulations on completing your quest!");
 		    do_say(questman,buf);
-		    sprintf(buf,"As a reward, I am giving you %d quest points, and %d gold.",pointreward,reward);
+		    SPRINTF(buf,"As a reward, I am giving you %d quest points, and %d gold.",pointreward,reward);
 		    do_say(questman,buf);
 
                     REMOVE_BIT(ch->act, PLR_QUESTOR);
@@ -3881,7 +3872,7 @@ QUEST_VALUE5, obj5->short_descr);
 		}
 		else
 		{
-		    sprintf(buf, "You haven't completed the quest yet, but there is still time!");
+		    SPRINTF(buf, "You haven't completed the quest yet, but there is still time!");
 		    do_say(questman, buf);
 		    return;
 		}
@@ -3889,14 +3880,14 @@ QUEST_VALUE5, obj5->short_descr);
 	    }
 	    else if ((ch->questmob > 0 || ch->questobj > 0) && ch->countdown > 0)
 	    {
-		sprintf(buf, "You haven't completed the quest yet, but there is still time!");
+		SPRINTF(buf, "You haven't completed the quest yet, but there is still time!");
 		do_say(questman, buf);
 		return;
 	    }
 	}
 	if (ch->nextquest > 0)
-	    sprintf(buf,"But you didn't complete your quest in time!");
-	else sprintf(buf, "You have to REQUEST a quest first, %s.",ch->name);
+	    SPRINTF(buf,"But you didn't complete your quest in time!");
+	else SPRINTF(buf, "You have to REQUEST a quest first, %s.",ch->name);
 	do_say(questman, buf);
 	return;
     }
@@ -3943,7 +3934,7 @@ void generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 	      noquest = TRUE;
 */	     
 		
-            if (((level_diff < -5 && level_diff > -5)
+            if (((level_diff > -5 && level_diff < 5)
                 || (ch->top_level > 30 && ch->top_level < 40 && vsearch->level > 30 && vsearch->level < 54)
                 || (ch->top_level > 40 && vsearch->level > 40))
 		&& IS_EVIL(vsearch)
@@ -3963,9 +3954,9 @@ void generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 
     if ( vsearch == NULL || ( victim = get_char_world( ch, vsearch->player_name ) ) == NULL || !IS_NPC(victim))
     {
-	sprintf(buf, "I'm sorry, but I don't have any quests for you at this time.");
+	SPRINTF(buf, "I'm sorry, but I don't have any quests for you at this time.");
 	do_say(questman, buf);
-	sprintf(buf, "Try again later.");
+	SPRINTF(buf, "Try again later.");
 	do_say(questman, buf);
 	ch->nextquest = 5;
         return;
@@ -3973,9 +3964,9 @@ void generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 
     if ( ( room = find_location( ch, victim->name) )== NULL )
     {
-	sprintf(buf, "I'm sorry, but I don't have any quests for you at this time.");
+	SPRINTF(buf, "I'm sorry, but I don't have any quests for you at this time.");
 	do_say(questman, buf);
-	sprintf(buf, "Try again later.");
+	SPRINTF(buf, "Try again later.");
 	do_say(questman, buf);
 	ch->nextquest = 5;
         return;
@@ -4015,7 +4006,7 @@ void generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 	questitem->timer = 30;
 	ch->questobj = questitem->pIndexData->vnum;
 
-        sprintf(buf, "Vile pilferers have stolen %s from the treasury!",questitem->short_descr);
+        SPRINTF(buf, "Vile pilferers have stolen %s from the treasury!",questitem->short_descr);
 	do_say(questman, buf);
 	do_say(questman, "My court wizardess, with her magic mirror, has pinpointed its location.");
 
@@ -4023,7 +4014,7 @@ void generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 	   and none of the level stuff. You may want to comment these next two
 	   lines. - Vassago */
 
-	sprintf(buf, "Look in the general area of %s for %s!",room->area->name, room->name);
+	SPRINTF(buf, "Look in the general area of %s for %s!",room->area->name, room->name);
 	do_say(questman, buf);
 	return;
     }
@@ -4035,16 +4026,16 @@ void generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
     switch(number_range(0,1))
     {
 	case 0:
-        sprintf(buf, "An enemy of ours, %s, is making vile threats against my master.",victim->short_descr);
+        SPRINTF(buf, "An enemy of ours, %s, is making vile threats against my master.",victim->short_descr);
         do_say(questman, buf);
-        sprintf(buf, "This threat must be eliminated!");
+        SPRINTF(buf, "This threat must be eliminated!");
         do_say(questman, buf);
 	break;
 
 	case 1:
-        sprintf(buf, "One of the galaxy's most heinous criminal, %s, is wandering lose!",victim->short_descr);
+        SPRINTF(buf, "One of the galaxy's most heinous criminal, %s, is wandering lose!",victim->short_descr);
 	do_say(questman, buf);
-	sprintf(buf, "%s has murdered %d civillians, that we know of!",victim->short_descr, number_range(2,20));
+	SPRINTF(buf, "%s has murdered %d civillians, that we know of!",victim->short_descr, number_range(2,20));
 	do_say(questman, buf);
 	do_say(questman,"The penalty for this crime is death, and you are to deliver the sentence!");
 	break;
@@ -4052,14 +4043,14 @@ void generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 
     if (room->name != NULL)
     {
-        sprintf(buf, "Seek %s out somewhere in the vicinity of %s!",victim->short_descr,room->name);
+        SPRINTF(buf, "Seek %s out somewhere in the vicinity of %s!",victim->short_descr,room->name);
         do_say(questman, buf);
 
 	/* I changed my area names so that they have just the name of the area
 	   and none of the level stuff. You may want to comment these next two
 	   lines. - Vassago */
 
-	sprintf(buf, "That location is in the general area of %s.",room->area->name);
+	SPRINTF(buf, "That location is in the general area of %s.",room->area->name);
 	do_say(questman, buf);
     }
     ch->questmob = victim->pIndexData->vnum;
@@ -4096,7 +4087,7 @@ void quest_update(void)
     	        char buf [MAX_STRING_LENGTH];
 
 	        ch->nextquest = 30;
-	        sprintf(buf, "You have run out of time for your quest!\n\rYou may quest again in %d minutes.\n\r",ch->nextquest);
+	        SPRINTF(buf, "You have run out of time for your quest!\n\rYou may quest again in %d minutes.\n\r",ch->nextquest);
 	        send_to_char(buf, ch);
                 REMOVE_BIT(ch->act, PLR_QUESTOR);
                 ch->questgiver = NULL;

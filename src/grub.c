@@ -188,30 +188,30 @@ void go_init (void)
   go_fd[22].num=FALSE;
   go_fd[23].num=FALSE;
 
-  strcpy(go_fd[ 0].nam, "count");
-  strcpy(go_fd[ 1].nam, "vnum" );
-  strcpy(go_fd[ 2].nam, "type" );
-  strcpy(go_fd[ 3].nam, "level");
-  strcpy(go_fd[ 4].nam, "wear" );
-  strcpy(go_fd[ 5].nam, "avg"  );
-  strcpy(go_fd[ 6].nam, "hr"   );
-  strcpy(go_fd[ 7].nam, "dr"   );
-  strcpy(go_fd[ 8].nam, "hp"   );
-  strcpy(go_fd[ 9].nam, "mp"   );
-  strcpy(go_fd[10].nam, "ac"   );
-  strcpy(go_fd[11].nam, "str"  );
-  strcpy(go_fd[12].nam, "dex"  );
-  strcpy(go_fd[13].nam, "con"  );
-  strcpy(go_fd[14].nam, "wis"  );
-  strcpy(go_fd[15].nam, "int"  );
-  strcpy(go_fd[16].nam, "luck" );
-  strcpy(go_fd[17].nam, "sav0" );
-  strcpy(go_fd[18].nam, "sav1" );
-  strcpy(go_fd[19].nam, "sav2" );
-  strcpy(go_fd[20].nam, "sav3" );
-  strcpy(go_fd[21].nam, "sav4" );
-  strcpy(go_fd[22].nam, "cname" );
-  strcpy(go_fd[23].nam, "name" );
+  SPRINTF(go_fd[ 0].nam, "count");
+  SPRINTF(go_fd[ 1].nam, "vnum" );
+  SPRINTF(go_fd[ 2].nam, "type" );
+  SPRINTF(go_fd[ 3].nam, "level");
+  SPRINTF(go_fd[ 4].nam, "wear" );
+  SPRINTF(go_fd[ 5].nam, "avg"  );
+  SPRINTF(go_fd[ 6].nam, "hr"   );
+  SPRINTF(go_fd[ 7].nam, "dr"   );
+  SPRINTF(go_fd[ 8].nam, "hp"   );
+  SPRINTF(go_fd[ 9].nam, "mp"   );
+  SPRINTF(go_fd[10].nam, "ac"   );
+  SPRINTF(go_fd[11].nam, "str"  );
+  SPRINTF(go_fd[12].nam, "dex"  );
+  SPRINTF(go_fd[13].nam, "con"  );
+  SPRINTF(go_fd[14].nam, "wis"  );
+  SPRINTF(go_fd[15].nam, "int"  );
+  SPRINTF(go_fd[16].nam, "luck" );
+  SPRINTF(go_fd[17].nam, "sav0" );
+  SPRINTF(go_fd[18].nam, "sav1" );
+  SPRINTF(go_fd[19].nam, "sav2" );
+  SPRINTF(go_fd[20].nam, "sav3" );
+  SPRINTF(go_fd[21].nam, "sav4" );
+  SPRINTF(go_fd[22].nam, "cname" );
+  SPRINTF(go_fd[23].nam, "name" );
 }
 
 char *go_otype_to_disp (int arg)
@@ -316,7 +316,7 @@ void go_sort( CHAR_DATA *ch, GO_STRUCT **p,
   if ( n_s )
      testn = p[left]->n[ind];
   else
-     strcpy( tests, p[left]->s[ind] );
+     SPRINTF( tests, "%s", p[left]->s[ind] );
 
   do
   {
@@ -443,7 +443,7 @@ bool go_parse_operator (CHAR_DATA *ch, char *pch, int *op_num)
         pager_printf(ch, "Char string is too long:%s\n\r", pch);
         return FALSE;
      }
-     strcpy ( go_op[*op_num].sval, pch );      /* store str value in table */
+     SPRINTF ( go_op[*op_num].sval, "%s", pch );      /* store str value in table */
   }
   (*op_num)++;                            /* operand now stored in table */
   return TRUE;
@@ -1009,18 +1009,18 @@ bool gr_eval_or (GR_STRUCT r, int op_num)
 
 void gr_init (void)
 {
-  strcpy(gr_fd[ 0].nam, "name"   ); gr_fd[0].num=FALSE;
-  strcpy(gr_fd[ 1].nam, "sex"    ); gr_fd[ 1].num=TRUE;
-  strcpy(gr_fd[ 2].nam, "class"  ); gr_fd[ 2].num=TRUE;
-  strcpy(gr_fd[ 3].nam, "race"   ); gr_fd[ 3].num=TRUE;
-  strcpy(gr_fd[ 4].nam, "level"  ); gr_fd[ 4].num=TRUE;
-  strcpy(gr_fd[ 5].nam, "room"   ); gr_fd[ 5].num=TRUE;
-  strcpy(gr_fd[ 6].nam, "gold"   ); gr_fd[ 6].num=TRUE;
-  strcpy(gr_fd[ 7].nam, "clan"   ); gr_fd[ 7].num=TRUE;
-  strcpy(gr_fd[ 8].nam, "council"); gr_fd[ 8].num=TRUE;
-  strcpy(gr_fd[ 9].nam, "site"   ); gr_fd[ 9].num=FALSE;
-  strcpy(gr_fd[10].nam, "last"   ); gr_fd[10].num=TRUE;
-  strcpy(gr_fd[11].nam, "pkill"  ); gr_fd[11].num=FALSE;
+  SPRINTF(gr_fd[ 0].nam, "name"   ); gr_fd[0].num=FALSE;
+  SPRINTF(gr_fd[ 1].nam, "sex"    ); gr_fd[ 1].num=TRUE;
+  SPRINTF(gr_fd[ 2].nam, "class"  ); gr_fd[ 2].num=TRUE;
+  SPRINTF(gr_fd[ 3].nam, "race"   ); gr_fd[ 3].num=TRUE;
+  SPRINTF(gr_fd[ 4].nam, "level"  ); gr_fd[ 4].num=TRUE;
+  SPRINTF(gr_fd[ 5].nam, "room"   ); gr_fd[ 5].num=TRUE;
+  SPRINTF(gr_fd[ 6].nam, "gold"   ); gr_fd[ 6].num=TRUE;
+  SPRINTF(gr_fd[ 7].nam, "clan"   ); gr_fd[ 7].num=TRUE;
+  SPRINTF(gr_fd[ 8].nam, "council"); gr_fd[ 8].num=TRUE;
+  SPRINTF(gr_fd[ 9].nam, "site"   ); gr_fd[ 9].num=FALSE;
+  SPRINTF(gr_fd[10].nam, "last"   ); gr_fd[10].num=TRUE;
+  SPRINTF(gr_fd[11].nam, "pkill"  ); gr_fd[11].num=FALSE;
 }
 
 /*
@@ -1061,7 +1061,7 @@ bool gr_parse_operator (CHAR_DATA *ch, char *pch, int *op_num)
      if ( strlen(pch) > MAX_FIELD_LENGTH )
         {ch_printf(ch, "Char string is too long:%s\n\r", pch); return FALSE;}
      gr_op[*op_num].num  = FALSE;
-     strcpy (gr_op[*op_num].sval, pch);  /* store str operand value in table */
+     SPRINTF (gr_op[*op_num].sval, "%s", pch);  /* store str operand value in table */
   }
   (*op_num)++;                         /* operand now stored in table      */
   return TRUE;
@@ -1381,7 +1381,7 @@ if (!str_cmp(arg1, "rf"))
 {
    #define DIAG_RF_MAX_SIZE 5000
    ROOM_INDEX_DATA *pRoom;
-   int match, lo, hi, hit_cou, cou, vnum[DIAG_RF_MAX_SIZE];
+   int match, lo, hi, hit_cou, vnum[DIAG_RF_MAX_SIZE];
 
    if (!*arg2)                                   /* empty arg gets help scrn */
    {
@@ -1536,9 +1536,9 @@ char           buf[MAX_STRING_LENGTH];
 
 //pa=NULL;
 ch_printf(ch, "CHAR name=%s \n\r", ch->name);
-strcpy(buf, ch->first_carrying ? ch->first_carrying->name : "NULL");
+SPRINTF(buf, "%s", ch->first_carrying ? ch->first_carrying->name : "NULL");
 ch_printf(ch, "   first_carry=%s\n\r", buf);
-strcpy(buf, ch->last_carrying ? ch->last_carrying->name : "NULL");
+SPRINTF(buf, "%s", ch->last_carrying ? ch->last_carrying->name : "NULL");
 ch_printf(ch, "   last_carry=%s\n\r", buf);
 
 /*
@@ -1563,13 +1563,13 @@ for (po=first_object; po; po=po->next)
     {
 //       px = po->pIndexData;
        ch_printf(ch, "\n\r%d OBJ name=%s \n\r", i, po->name);
-       strcpy(buf, po->next_content ? po->next_content->name : "NULL");
+       SPRINTF(buf, "%s", po->next_content ? po->next_content->name : "NULL");
        ch_printf(ch, "   next_content=%s\n\r", buf);
-       strcpy(buf, po->prev_content ? po->prev_content->name : "NULL");
+       SPRINTF(buf, "%s", po->prev_content ? po->prev_content->name : "NULL");
        ch_printf(ch, "   prev_content=%s\n\r", buf);
-       strcpy(buf, po->first_content ? po->first_content->name : "NULL");
+       SPRINTF(buf, "%s", po->first_content ? po->first_content->name : "NULL");
        ch_printf(ch, "   first_content=%s\n\r", buf);
-       strcpy(buf, po->last_content ? po->last_content->name : "NULL");
+       SPRINTF(buf, "%s", po->last_content ? po->last_content->name : "NULL");
        ch_printf(ch, "   last_content=%s\n\r", buf);
 
 /*  
@@ -1614,7 +1614,7 @@ return;
 if (!str_cmp(arg1, "mrc"))
 {
    MOB_INDEX_DATA *pm;
-   sh_int cou, race, dis_num, vnum1, vnum2, dis_cou = 0;
+   sh_int race, dis_num, vnum1, vnum2, dis_cou = 0;
 
    if ( !*arg2 || !*arg3 || !*arg4 || !*arg5
    ||  !isdigit(*arg2) || !isdigit(*arg3) || !isdigit(*arg4)

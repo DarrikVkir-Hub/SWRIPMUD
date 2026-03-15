@@ -274,28 +274,28 @@ char *wordwrap( char *txt, sh_int wrap )
           if ( (ln + x + 1) < wrap )
           {
 	    if ( line[ln-1] == '.' )
-              strcat( line, "  " );
+              STRAPP( line, "  " );
 	    else
-              strcat( line, " " );
-            strcat( line, temp );
+              STRAPP( line, " " );
+            STRAPP( line, "%s", temp );
             p = strchr( line, '\n' );
             if ( !p )
               p = strchr( line, '\r' );
             if ( p )
             {
-                strcat( buf, line );
+                STRAPP( buf, "%s", line );
                 line[0] = '\0';
             }
           }
           else
           {
-            strcat( line, "\r\n" );
-            strcat( buf, line );
-            strcpy( line, temp );
+            STRAPP( line, "\r\n" );
+            STRAPP( buf, "%s", line );
+            STRLCPY( line, temp );
           }
         }
         if ( line[0] != '\0' )
-            strcat( buf, line );
+            STRAPP( buf, "%s", line );
     }
     return bufp;
 }
@@ -339,19 +339,19 @@ void decorate_room( ROOM_INDEX_DATA *room )
 	    previous[iRand] = x;
 
 	    len = strlen(buf);
-	    sprintf( buf2, "%s", room_sents[sector][x] );
+	    SPRINTF( buf2, "%s", room_sents[sector][x] );
 	    if ( len > 5 && buf[len-1] == '.' )
 	    {
-		strcat( buf, "  " );
+		STRAPP( buf, "  " );
 		buf2[0] = UPPER(buf2[0] );
 	    }
 	    else
 	    if ( len == 0 )
 	        buf2[0] = UPPER(buf2[0] );
-	    strcat( buf, buf2 );
+	    STRAPP( buf, "%s", buf2 );
 	}
     }
-    sprintf( buf2, "%s\n\r", wordwrap(buf, 78) );
+    SPRINTF( buf2, "%s\n\r", wordwrap(buf, 78) );
     room->description = STRALLOC( buf2 );
 }
 
@@ -1042,12 +1042,12 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
       }
       if ( ch->mount )
       {
-	sprintf( buf, "$n %s %s upon $N.", txt, dir_name[door] );
+	SPRINTF( buf, "$n %s %s upon $N.", txt, dir_name[door] );
 	act( AT_ACTION, buf, ch, NULL, ch->mount, TO_NOTVICT );
       }
       else
       {
-	sprintf( buf, "$n %s $T.", txt );
+	SPRINTF( buf, "$n %s $T.", txt );
 	act( AT_ACTION, buf, ch, NULL, dir_name[door], TO_ROOM );
       }
     }
@@ -1136,16 +1136,18 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
 		}
 		if ( ch->mount )
 		{
-		sprintf( buf, "$n %s from %s upon $N.", txt, dtxt );
+		SPRINTF( buf, "$n %s from %s upon $N.", txt, dtxt );
 		act( AT_ACTION, buf, ch, NULL, ch->mount, TO_ROOM );
 		}
 		else
 		{
-		sprintf( buf, "$n %s from %s.", txt, dtxt );
+		SPRINTF( buf, "$n %s from %s.", txt, dtxt );
 		act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
 		}
 		}
 	}
+	else
+		bug( "%s failed to find destination vnum %d", ch->name, to_room->vnum);
     if ( !IS_IMMORTAL(ch)
     &&  !IS_NPC(ch)
     &&  ch->in_room->area != to_room->area )

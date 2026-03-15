@@ -162,7 +162,7 @@ char  * parse_target( CHAR_DATA *ch, char *oldstring )
      for (counter2 = 0; argument[counter] != '\0'; counter2++,counter++) 
        leftover[counter2] = argument[counter]; 
      leftover[counter2] = '\0'; 
-     strcpy( d->incomm,leftover ); 
+     SPRINTF( d->incomm, "%s", leftover ); 
      return (multicommand); 
    } 
    else if (argument[counter] == '|' && argument[counter+1] == '|') 
@@ -233,7 +233,7 @@ void interpret( CHAR_DATA *ch, char *argument )
 		bug( "interpret: SUB_REPEATCMD: last_cmd invalid", 0 );
 		return;
 	    }
-	    sprintf( logline, "(%s) %s", cmd->name, argument );
+	    SPRINTF( logline, "(%s) %s", cmd->name, argument );
 	}
     }
 
@@ -272,7 +272,7 @@ void interpret( CHAR_DATA *ch, char *argument )
 	 * Special parsing so ' can be a command,
 	 *   also no spaces needed after punctuation.
 	 */
-	strcpy( logline, argument );
+	SPRINTF( logline, "%s", argument );
 
   	if( ch->desc && (index(argument, '|')))
 	  argument = get_multi_command( ch->desc, argument ); 
@@ -323,10 +323,10 @@ void interpret( CHAR_DATA *ch, char *argument )
     /*
      * Log and snoop.
      */
-    sprintf( lastplayercmd, "** %s: %s", ch->name, logline );
+    SPRINTF( lastplayercmd, "** %s: %s", ch->name, logline );
 
     if ( found && cmd->log == LOG_NEVER )
-	strcpy( logline, "XXXXXXXX XXXXXXXX XXXXXXXX" );
+	SPRINTF( logline, "XXXXXXXX XXXXXXXX XXXXXXXX" );
 
     loglvl = found ? cmd->log : LOG_NORMAL;
 
@@ -336,33 +336,26 @@ void interpret( CHAR_DATA *ch, char *argument )
     ||   loglvl == LOG_HIGH
     ||   loglvl == LOG_ALWAYS )
     {
-        /* Added by Narn to show who is switched into a mob that executes
+        /*
+        * Make it so a 'log all' will send most output to the log
+        * file only, and not spam the log channel to death	-Thoric
+        */
+        if ( fLogAll && loglvl == LOG_NORMAL
+        &&  (IS_NPC(ch) || !IS_SET(ch->act, PLR_LOG)) )
+        loglvl = LOG_ALL;
+
+      /* Added by Narn to show who is switched into a mob that executes
            a logged command.  Check for descriptor in case force is used. */
         if ( ch->desc && ch->desc->original ) 
-          sprintf( log_buf, "Log %s (%s): %s", ch->name,
+          log_printf_plus( loglvl, ch->top_level, "Log %s (%s): %s", ch->name,
                    ch->desc->original->name, logline );
         else
-          sprintf( log_buf, "Log %s: %s", ch->name, logline );
-
-	/*
-	 * Make it so a 'log all' will send most output to the log
-	 * file only, and not spam the log channel to death	-Thoric
-	 */
-	if ( fLogAll && loglvl == LOG_NORMAL
-	&&  (IS_NPC(ch) || !IS_SET(ch->act, PLR_LOG)) )
-	  loglvl = LOG_ALL;
-
-	/* This is handled in get_trust already */
-/*	if ( ch->desc && ch->desc->original )
-	  log_string_plus( log_buf, loglvl,
-		ch->desc->original->level );
-	else*/
-	  log_string_plus( log_buf, loglvl, ch->top_level );
+          log_printf_plus( loglvl, ch->top_level, "Log %s: %s", ch->name, logline );
     }
 
     if ( ch->desc && ch->desc->snoop_by )
     {
-  	sprintf( logname, "%s", ch->name);
+  	SPRINTF( logname, "%s", ch->name);
 	write_to_buffer( ch->desc->snoop_by, logname, 0 );
 	write_to_buffer( ch->desc->snoop_by, "% ",    2 );
 	write_to_buffer( ch->desc->snoop_by, logline, 0 );
@@ -457,11 +450,10 @@ void interpret( CHAR_DATA *ch, char *argument )
     /* laggy command notice: command took longer than 1.5 seconds */
     if ( tmptime > 1500000 )
     {
-        sprintf(log_buf, "[*****] LAG: %s: %s %s (R:%d S:%d.%06d)", ch->name,
+        log_printf_plus(LOG_NORMAL, get_trust(ch), "[*****] LAG: %s: %s %s (R:%d S:%d.%06d)", ch->name,
                 cmd->name, (cmd->log == LOG_NEVER ? "XXX" : argument),
 		ch->in_room ? ch->in_room->vnum : 0,
 		(int) (time_used.tv_sec),(int) (time_used.tv_usec) );
-	log_string_plus(log_buf, LOG_NORMAL, get_trust(ch));
     }
 
     tail_chain( );
@@ -651,12 +643,12 @@ int number_argument( char *argument, char *arg )
 	    *pdot = '\0';
 	    number = atoi( argument );
 	    *pdot = '.';
-	    strcpy( arg, pdot+1 );
+	    snprintf( arg, MAX_INPUT_LENGTH, "%s", pdot+1 );
 	    return number;
 	}
     }
 
-    strcpy( arg, argument );
+    snprintf( arg, MAX_INPUT_LENGTH, "%s", argument );
     return 1;
 }
 

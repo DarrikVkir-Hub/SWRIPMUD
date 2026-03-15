@@ -1502,12 +1502,10 @@ void do_mpapply( CHAR_DATA *ch, char *argument )
   
   if( victim->pcdata->auth_state >= 1 )
     return;
-
-  sprintf( log_buf, "%s@%s new %s applying for authorization...", 
+  log_channelf(CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL,
+                  "%s@%s new %s applying for authorization...", 
            victim->name, victim->desc->host, 
            race_table[victim->race].race_name);
-  log_string( log_buf );
-  to_channel( log_buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
   victim->pcdata->auth_state = 1;
   return;
 }
@@ -1552,11 +1550,9 @@ void do_mpapplyb( CHAR_DATA *ch, char *argument )
   case 1:   
   default:
   send_to_char( "You attempt to regain the gods' attention.\n\r", victim);
-  sprintf( log_buf, "%s@%s new %s applying for authorization...",                      
+  log_channelf( CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL, "%s@%s new %s applying for authorization...",                      
                     victim->name, victim->desc->host,
                     race_table[victim->race].race_name);
-  log_string( log_buf );
-  to_channel( log_buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
   add_timer(victim, TIMER_APPLIED, 10, NULL, 0);
   victim->pcdata->auth_state = 1;
   break; 
@@ -1817,14 +1813,10 @@ ch_ret simple_damage( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
     {
 	if ( !npcvict )
 	{
-	    sprintf( log_buf, "%s killed by %s at %d",
-		victim->name,
-		(IS_NPC(ch) ? ch->short_descr : ch->name),
-		victim->in_room->vnum );
-	    log_string( log_buf );
-	    to_channel( log_buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
-
-
+	    log_channelf( CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL, "%s killed by %s at %d",
+            victim->name,
+            (IS_NPC(ch) ? ch->short_descr : ch->name),
+            victim->in_room->vnum );
 	}
 	set_cur_char(victim);
 	raw_kill( ch, victim );

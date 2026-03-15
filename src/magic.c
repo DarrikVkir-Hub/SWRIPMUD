@@ -579,7 +579,7 @@ int dice_parse(CHAR_DATA *ch, int level, char *exp)
 {
     char buf[MAX_INPUT_LENGTH];
 
-    strcpy( buf, exp );
+    SPRINTF( buf, "%s", exp );
     return rd_parse(ch, level, buf);
 }
 
@@ -1172,7 +1172,7 @@ void do_cast( CHAR_DATA *ch, char *argument )
 	    return;
 	}
         	mana = IS_NPC(ch) ? 0 : skill->min_mana;
-	strcpy( staticbuf, (const char* ) ch->dest_buf );
+	SPRINTF( staticbuf, "%s", (const char* ) ch->dest_buf );
 	target_name = one_argument(staticbuf, arg2);
 	DISPOSE( ch->dest_buf );
 	ch->substate = SUB_NONE;
@@ -1839,7 +1839,7 @@ ch_ret spell_charm_person( int sn, int level, CHAR_DATA *ch, void *vo )
     if ( ch != victim )
 	send_to_char( "Ok.\n\r", ch );
 
-    sprintf( buf, "%s has charmed %s.", ch->name, victim->name);
+    SPRINTF( buf, "%s has charmed %s.", ch->name, victim->name);
     log_string_plus( buf, LOG_NORMAL, ch->top_level );
 /*
     to_channel( buf, CHANNEL_MONITOR, "Monitor", UMAX( LEVEL_IMMORTAL, ch->top_level ) );
@@ -1991,7 +1991,7 @@ ch_ret spell_create_water( int sn, int level, CHAR_DATA *ch, void *vo )
 	{
 	    char buf[MAX_STRING_LENGTH];
 
-	    sprintf( buf, "%s water", obj->name );
+	    SPRINTF( buf, "%s water", obj->name );
 	    STRFREE( obj->name );
 	    obj->name = STRALLOC( buf );
 	}
@@ -2904,7 +2904,7 @@ ch_ret spell_locate_object( int sn, int level, CHAR_DATA *ch, void *vo )
 	    ;
 	if ( cnt >= MAX_NEST )
 	{
-	    sprintf( buf, "spell_locate_obj: object [%d] %s is nested more than %d times!",
+	    SPRINTF( buf, "spell_locate_obj: object [%d] %s is nested more than %d times!",
 		obj->pIndexData->vnum, obj->short_descr, MAX_NEST );
 	    bug( buf, 0 );
 	    continue;
@@ -2918,12 +2918,12 @@ ch_ret spell_locate_object( int sn, int level, CHAR_DATA *ch, void *vo )
 	      && IS_SET( in_obj->carried_by->act, PLR_WIZINVIS ) )
 	      continue;
 
-	    sprintf( buf, "%s carried by %s.\n\r",
+	    SPRINTF( buf, "%s carried by %s.\n\r",
 		   obj_short(obj), PERS(in_obj->carried_by, ch) );
 	}
 	else
 	{
-	    sprintf( buf, "%s in %s.\n\r",
+	    SPRINTF( buf, "%s in %s.\n\r",
 		obj_short(obj), in_obj->in_room == NULL
 		    ? "somewhere" : in_obj->in_room->name );
 	}
@@ -3140,6 +3140,7 @@ ch_ret spell_shocking_grasp( int sn, int level, CHAR_DATA *ch, void *vo )
 
 ch_ret spell_sleep( int sn, int level, CHAR_DATA *ch, void *vo )
 {
+    char buf[MAX_STRING_LENGTH];
     AFFECT_DATA af;
     int retcode;
     int chance;
@@ -3205,9 +3206,9 @@ ch_ret spell_sleep( int sn, int level, CHAR_DATA *ch, void *vo )
     /* Added by Narn at the request of Dominus. */
     if ( !IS_NPC( victim ) )
     {
-	sprintf( log_buf, "%s has cast sleep on %s.", ch->name, victim->name );
-	log_string_plus( log_buf, LOG_NORMAL, ch->top_level );
-	to_channel( log_buf, CHANNEL_MONITOR, "Monitor", UMAX( LEVEL_IMMORTAL, ch->top_level ) );
+	SPRINTF( buf, "%s has cast sleep on %s.", ch->name, victim->name );
+	log_string_plus( buf, LOG_NORMAL, ch->top_level );
+	to_channel( buf, CHANNEL_MONITOR, "Monitor", UMAX( LEVEL_IMMORTAL, ch->top_level ) );
     }
 
     if ( IS_AWAKE(victim) && victim->race != RACE_DROID )
@@ -3253,8 +3254,8 @@ ch_ret spell_ventriloquate( int sn, int level, CHAR_DATA *ch, void *vo )
 
     target_name = one_argument( target_name, speaker );
 
-    sprintf( buf1, "%s says '%s'.\n\r",              speaker, target_name );
-    sprintf( buf2, "Someone makes %s say '%s'.\n\r", speaker, target_name );
+    SPRINTF( buf1, "%s says '%s'.\n\r",              speaker, target_name );
+    SPRINTF( buf2, "Someone makes %s say '%s'.\n\r", speaker, target_name );
     buf1[0] = UPPER(buf1[0]);
 
     for ( vch = ch->in_room->first_person; vch; vch = vch->next_in_room )
@@ -3932,15 +3933,15 @@ ch_ret spell_animate_dead( int sn, int level, CHAR_DATA *ch, void *vo )
 	act(AT_MAGIC, "$n makes $T rise from the grave!", ch, NULL, pMobIndex->short_descr, TO_ROOM);
 	act(AT_MAGIC, "You make $T rise from the grave!", ch, NULL, pMobIndex->short_descr, TO_CHAR);
 
-	sprintf(buf, "animated corpse %s", pMobIndex->player_name);
+	SPRINTF(buf, "animated corpse %s", pMobIndex->player_name);
 	STRFREE(mob->name);
 	mob->name = STRALLOC(buf);
 
-	sprintf(buf, "The animated corpse of %s", pMobIndex->short_descr);
+	SPRINTF(buf, "The animated corpse of %s", pMobIndex->short_descr);
 	STRFREE(mob->short_descr);
 	mob->short_descr = STRALLOC(buf);
 
-	sprintf(buf, "An animated corpse of %s struggles with the horror of its undeath.\n\r", pMobIndex->short_descr);
+	SPRINTF(buf, "An animated corpse of %s struggles with the horror of its undeath.\n\r", pMobIndex->short_descr);
 	STRFREE(mob->long_descr);
 	mob->long_descr = STRALLOC(buf);
 	add_follower( mob, ch );
@@ -4043,7 +4044,7 @@ ch_ret spell_possess( int sn, int level, CHAR_DATA *ch, void *vo )
     af.bitvector = AFF_POSSESS;
     affect_to_char( victim, &af );
 
-    sprintf(buf, "You have possessed %s!\n\r", victim->short_descr);
+    SPRINTF(buf, "You have possessed %s!\n\r", victim->short_descr);
 
     ch->desc->character = victim;
     ch->desc->original  = ch;
@@ -4827,7 +4828,7 @@ ch_ret spell_obj_inv( int sn, int level, CHAR_DATA *ch, void *vo )
 		{
 		    char buf[MAX_STRING_LENGTH];
 
-		    sprintf( buf, "%s water", obj->name );
+		    SPRINTF( buf, "%s water", obj->name );
 		    STRFREE( obj->name );
 		    obj->name = STRALLOC( buf );
 		}

@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdarg.h>
 #include "mud.h"
 
 /* Defines by Narn for new mudprog parsing, used as 
@@ -237,8 +238,7 @@ bool mprog_seval( char *lhs, char *opr, char *rhs, CHAR_DATA *mob )
   if ( !str_cmp( opr, "!/" ) )
     return ( bool )( str_infix( rhs, lhs ) );
 
-  sprintf( log_buf, "Improper MOBprog operator '%s'", opr );
-  progbug( log_buf, mob );
+  progbugf( mob, "Improper MOBprog operator '%s'", opr );
   return 0;
 
 }
@@ -263,8 +263,7 @@ bool mprog_veval( int lhs, char *opr, int rhs, CHAR_DATA *mob )
   if ( !str_cmp( opr, "|" ) )
     return ( lhs | rhs );
 
-  sprintf( log_buf, "Improper MOBprog operator '%s'", opr );
-  progbug( log_buf, mob );
+  progbugf( mob, "Improper MOBprog operator '%s'", opr );
 
   return 0;
 
@@ -351,7 +350,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     while ( *point == ' ' )
       point++;
     pchck = rval;
-    while ( *point != '\0' && *point != '\0' )
+    while ( *point != '\0' )
       *pchck++ = *point++;
     *pchck = '\0';
   }
@@ -371,8 +370,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
 	case 'o':	chkobj = obj;			break;
 	case 'p':	chkobj = (OBJ_DATA *)vo;	break;
 	default:
-	  sprintf(rval, "Bad argument '%c' to '%.800s'", cvar[0], chck);
-	  progbug(rval, mob);
+	  progbugf(mob, "Bad argument '%c' to '%.800s'", cvar[0], chck);
 	  return BERR;
     }
     if ( !chkchar && !chkobj )
@@ -410,7 +408,6 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
   if ( !str_cmp(chck, "mobinroom") )
   {
     int vnum = atoi(cvar);
-    int lhsvl;
     CHAR_DATA *oMob;
     
     if ( vnum < 1 || vnum > 32767 )
@@ -426,7 +423,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     rhsvl = atoi(rval);
     if ( rhsvl < 1 ) rhsvl = 1;
     if ( !*opr )
-      strcpy( opr, "==" );
+      SPRINTF( opr, "==" );
     return mprog_veval(lhsvl, opr, rhsvl, mob);
   }
   if ( !str_cmp(chck, "timeskilled") )
@@ -464,7 +461,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     if ( rhsvl < 1 )
       rhsvl = 1;
     if ( !*opr )
-      strcpy(opr, "==");
+      SPRINTF(opr, "==");
     return mprog_veval(lhsvl, opr, rhsvl, mob);
   }
   if ( !str_cmp(chck, "otypehere") )
@@ -493,7 +490,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     if ( rhsvl < 1 )
       rhsvl = 1;
     if ( !*opr )
-      strcpy(opr, "==");
+      SPRINTF(opr, "==");
     return mprog_veval(lhsvl, opr, rhsvl, mob);
   }
   if ( !str_cmp(chck, "ovnumroom") )
@@ -516,7 +513,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     if ( rhsvl < 1 )
       rhsvl = 1;
     if ( !*opr )
-      strcpy(opr, "==");
+      SPRINTF(opr, "==");
     return mprog_veval(lhsvl, opr, rhsvl, mob);
   }
   if ( !str_cmp(chck, "otyperoom") )
@@ -542,7 +539,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     if ( rhsvl < 1 )
       rhsvl = 1;
     if ( !*opr )
-      strcpy(opr, "==");
+      SPRINTF(opr, "==");
     return mprog_veval(lhsvl, opr, rhsvl, mob);
   }
   if ( !str_cmp(chck, "ovnumcarry") )
@@ -563,7 +560,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     if ( rhsvl < 1 )
       rhsvl = 1;
     if ( !*opr )
-      strcpy(opr, "==");
+      SPRINTF(opr, "==");
     return mprog_veval(lhsvl, opr, rhsvl, mob);
   }
   if ( !str_cmp(chck, "otypecarry") )
@@ -588,7 +585,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     if ( rhsvl < 1 )
       rhsvl = 1;
     if ( !*opr )
-      strcpy(opr, "==");
+      SPRINTF(opr, "==");
     return mprog_veval(lhsvl, opr, rhsvl, mob);
   }
   if ( !str_cmp(chck, "ovnumwear") )
@@ -610,7 +607,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     if ( rhsvl < 1 )
       rhsvl = 1;
     if ( !*opr )
-      strcpy(opr, "==");
+      SPRINTF(opr, "==");
     return mprog_veval(lhsvl, opr, rhsvl, mob);
   }
   if ( !str_cmp(chck, "otypewear") )
@@ -636,7 +633,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     if ( rhsvl < 1 )
       rhsvl = 1;
     if ( !*opr )
-      strcpy(opr, "==");
+      SPRINTF(opr, "==");
     return mprog_veval(lhsvl, opr, rhsvl, mob);
   }
   if ( !str_cmp(chck, "ovnuminv") )
@@ -658,7 +655,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     if ( rhsvl < 1 )
       rhsvl = 1;
     if ( !*opr )
-      strcpy(opr, "==");
+      SPRINTF(opr, "==");
     return mprog_veval(lhsvl, opr, rhsvl, mob);
   }
   if ( !str_cmp(chck, "otypeinv") )
@@ -684,7 +681,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     if ( rhsvl < 1 )
       rhsvl = 1;
     if ( !*opr )
-      strcpy(opr, "==");
+      SPRINTF(opr, "==");
     return mprog_veval(lhsvl, opr, rhsvl, mob);
   }
   if ( chkchar )
@@ -1038,7 +1035,7 @@ void mprog_translate( char ch, char *t, CHAR_DATA *mob, CHAR_DATA *actor,
 	   if (mob->name)
               one_argument( mob->name, t );
          } else
-	    strcpy( t, "someone" );
+	    snprintf(t, MAX_INPUT_LENGTH, "someone" );
       break;
 
      case 'I':
@@ -1046,12 +1043,12 @@ void mprog_translate( char ch, char *t, CHAR_DATA *mob, CHAR_DATA *actor,
 	 {
 	   if (mob->short_descr)
 	   {
-              strcpy( t, mob->short_descr );
+              snprintf( t, MAX_INPUT_LENGTH, "%s", mob->short_descr );
            } else {
-	      strcpy( t, "someone" );
+	      snprintf( t, MAX_INPUT_LENGTH,"someone" );
 	   }
          } else
-	    strcpy( t, "someone" );
+	    snprintf( t, MAX_INPUT_LENGTH, "someone" );
       break;
 
      case 'n':
@@ -1062,7 +1059,7 @@ void mprog_translate( char ch, char *t, CHAR_DATA *mob, CHAR_DATA *actor,
   	     *t = UPPER( *t );
          }
 	 else
-	      strcpy( t, "someone" );
+	      snprintf( t, MAX_INPUT_LENGTH, "someone" );
          break;
 
      case 'N':
@@ -1070,17 +1067,17 @@ void mprog_translate( char ch, char *t, CHAR_DATA *mob, CHAR_DATA *actor,
 	 {
             if ( can_see( mob, actor ) )
 	       if ( IS_NPC( actor ) )
-		 strcpy( t, actor->short_descr );
+		 snprintf( t, MAX_INPUT_LENGTH, "%s", actor->short_descr );
 	       else
 	       {
-		   strcpy( t, actor->name );
-		   strcat( t, actor->pcdata->title );
+		   snprintf( t, MAX_INPUT_LENGTH, "%s", actor->name );
+		   snprintf( t, MAX_INPUT_LENGTH, "%s", actor->pcdata->title );
 	       }
 	    else
-	      strcpy( t, "someone" );
+	      snprintf( t, MAX_INPUT_LENGTH, "someone" );
          } 
 	 else
-	      strcpy( t, "someone" );
+	      snprintf( t, MAX_INPUT_LENGTH, "someone" );
 	 break;
 
      case 't':
@@ -1091,7 +1088,7 @@ void mprog_translate( char ch, char *t, CHAR_DATA *mob, CHAR_DATA *actor,
 	     *t = UPPER( *t );
          } 
 	 else 
-	      strcpy( t, "someone" );
+	      snprintf( t, MAX_INPUT_LENGTH, "someone" );
 
 	 break;
 
@@ -1100,18 +1097,18 @@ void mprog_translate( char ch, char *t, CHAR_DATA *mob, CHAR_DATA *actor,
 	 {
             if ( can_see( mob, vict ) )
 	       if ( IS_NPC( vict ) )
-		 strcpy( t, vict->short_descr );
+		 snprintf( t, MAX_INPUT_LENGTH, "%s", vict->short_descr );
 	       else
 	       {
-		 strcpy( t, vict->name );
-		 strcat( t, " " );
-		 strcat( t, vict->pcdata->title );
+		 snprintf( t, MAX_INPUT_LENGTH, "%s", vict->name );
+		 snprintf( t, MAX_INPUT_LENGTH, " " );
+		 snprintf( t, MAX_INPUT_LENGTH, "%s", vict->pcdata->title );
 	       }
 	    else
-	      strcpy( t, "someone" );
+	      snprintf( t, MAX_INPUT_LENGTH, "someone" );
          }
 	 else 
-	      strcpy( t, "someone" );
+	      snprintf( t, MAX_INPUT_LENGTH, "someone" );
 	 break;
      
      case 'r':             
@@ -1124,7 +1121,7 @@ void mprog_translate( char ch, char *t, CHAR_DATA *mob, CHAR_DATA *actor,
            }
 	 }  
 	 else
-	   strcpy( t, "someone" );
+	   snprintf( t, MAX_INPUT_LENGTH, "someone" );
       break;
 
      case 'R':
@@ -1132,206 +1129,212 @@ void mprog_translate( char ch, char *t, CHAR_DATA *mob, CHAR_DATA *actor,
 	 {
             if ( can_see( mob, rndm ) )
 	       if ( IS_NPC( rndm ) )
-		 strcpy(t,rndm->short_descr);
+		 snprintf( t, MAX_INPUT_LENGTH, "%s",rndm->short_descr);
 	       else
 	       {
-		 strcpy( t, rndm->name );
-		 strcat( t, " " );
-		 strcat( t, rndm->pcdata->title );
+		 snprintf( t, MAX_INPUT_LENGTH, "%s", rndm->name );
+		 snprintf( t, MAX_INPUT_LENGTH, " " );
+		 snprintf( t, MAX_INPUT_LENGTH, "%s", rndm->pcdata->title );
 	       }
 	    else
-	      strcpy( t, "someone" );
+	      snprintf( t, MAX_INPUT_LENGTH, "someone" );
          }
 	 else 
-	      strcpy( t, "someone" );
+	      snprintf( t, MAX_INPUT_LENGTH, "someone" );
 	 break;
 
      case 'e':
          if ( actor && !char_died(actor) )
 	 {
-	   can_see( mob, actor ) ? strcpy( t, he_she[ actor->sex ] )
-	                         : strcpy( t, "someone" );
+	   can_see( mob, actor ) ? snprintf( t, MAX_INPUT_LENGTH, "%s", he_she[ actor->sex ] )
+	                         : snprintf( t, MAX_INPUT_LENGTH, "someone" );
          } 
 	 else
-	      strcpy( t, "it" );
+	      snprintf( t, MAX_INPUT_LENGTH, "it" );
 	 break;
   
      case 'm':
          if ( actor && !char_died(actor) )
 	 {
-	   can_see( mob, actor ) ? strcpy( t, him_her[ actor->sex ] )
-                                 : strcpy( t, "someone" );
+	   can_see( mob, actor ) ?snprintf( t, MAX_INPUT_LENGTH, "%s", him_her[ actor->sex ] )
+                                 : snprintf( t, MAX_INPUT_LENGTH, "someone" );
          }
 	 else
-	      strcpy( t, "it" );
+	      snprintf( t, MAX_INPUT_LENGTH, "it" );
 	 break;
   
      case 's':
          if ( actor && !char_died(actor) )
 	 {
-	   can_see( mob, actor ) ? strcpy( t, his_her[ actor->sex ] )
-	                         : strcpy( t, "someone's" );
+	   can_see( mob, actor ) ? snprintf( t, MAX_INPUT_LENGTH, "%s", his_her[ actor->sex ] )
+	                         : snprintf( t, MAX_INPUT_LENGTH, "someone's" );
          }
 	 else
-	      strcpy( t, "its'" );
+	      snprintf( t, MAX_INPUT_LENGTH, "its'" );
 	 break;
      
      case 'E':
          if ( vict && !char_died(vict) )
 	 {
-	   can_see( mob, vict ) ? strcpy( t, he_she[ vict->sex ] )
-                                : strcpy( t, "someone" );
+	   can_see( mob, vict ) ? snprintf( t, MAX_INPUT_LENGTH, "%s", he_she[ vict->sex ] )
+                                : snprintf( t, MAX_INPUT_LENGTH, "someone" );
          }
 	 else
-	      strcpy( t, "it" );
+	      snprintf( t, MAX_INPUT_LENGTH, "it" );
 	 break;
   
      case 'M':
          if ( vict && !char_died(vict) )
 	 {
-	   can_see( mob, vict ) ? strcpy( t, him_her[ vict->sex ] )
-                                : strcpy( t, "someone" );
+	   can_see( mob, vict ) ? snprintf( t, MAX_INPUT_LENGTH, "%s", him_her[ vict->sex ] )
+                                : snprintf( t, MAX_INPUT_LENGTH, "someone" );
          }
 	 else
-	      strcpy( t, "it" );
+	      snprintf( t, MAX_INPUT_LENGTH, "it" );
 	 break;
   
      case 'S':
          if ( vict && !char_died(vict) )
 	 {
-	   can_see( mob, vict ) ? strcpy( t, his_her[ vict->sex ] )
-                                : strcpy( t, "someone's" ); 
+	   can_see( mob, vict ) ? snprintf( t, MAX_INPUT_LENGTH, "%s", his_her[ vict->sex ] )
+                                : snprintf( t, MAX_INPUT_LENGTH, "someone's" ); 
          }
 	 else
-	      strcpy( t, "its'" );
+	      snprintf( t, MAX_INPUT_LENGTH, "its'" );
 	 break;
 
      case 'j':
 	 if (mob && !char_died(mob))
 	 {
-	    strcpy( t, he_she[ mob->sex ] );
+	    snprintf( t, MAX_INPUT_LENGTH, "%s", he_she[ mob->sex ] );
          } else {
-	    strcpy( t, "it" );
+	    snprintf( t, MAX_INPUT_LENGTH, "it" );
 	 }
 	 break;
   
      case 'k':
 	 if( mob && !char_died(mob) )
 	 {
-	   strcpy( t, him_her[ mob->sex ] );
+	   snprintf( t, MAX_INPUT_LENGTH, "%s", him_her[ mob->sex ] );
          } else {
-	    strcpy( t, "it" );
+	    snprintf( t, MAX_INPUT_LENGTH, "it" );
 	 }
 	 break;
   
      case 'l':
 	 if( mob && !char_died(mob) )
 	 {
-	   strcpy( t, his_her[ mob->sex ] );
+	   snprintf( t, MAX_INPUT_LENGTH, "%s", his_her[ mob->sex ] );
          } else {
-	    strcpy( t, "it" );
+	    snprintf( t, MAX_INPUT_LENGTH, "it" );
 	 }
 	 break;
 
      case 'J':
          if ( rndm && !char_died(rndm) )
 	 {
-	   can_see( mob, rndm ) ? strcpy( t, he_she[ rndm->sex ] )
-	                        : strcpy( t, "someone" );
+	   can_see( mob, rndm ) ? snprintf( t, MAX_INPUT_LENGTH, "%s", he_she[ rndm->sex ] )
+	                        : snprintf( t, MAX_INPUT_LENGTH, "someone" );
          }
 	 else
-	      strcpy( t, "it" );
+	      snprintf( t, MAX_INPUT_LENGTH, "it" );
 	 break;
   
      case 'K':
          if ( rndm && !char_died(rndm) )
 	 {
-	   can_see( mob, rndm ) ? strcpy( t, him_her[ rndm->sex ] )
-                                : strcpy( t, "someone's" );
+	   can_see( mob, rndm ) ? snprintf( t, MAX_INPUT_LENGTH, "%s", him_her[ rndm->sex ] )
+                                : snprintf( t, MAX_INPUT_LENGTH, "someone's" );
          }
 	 else
-	      strcpy( t, "its'" );
+	      snprintf( t, MAX_INPUT_LENGTH, "its'" );
 	 break;
   
      case 'L':
          if ( rndm && !char_died(rndm) )
 	 {
-	   can_see( mob, rndm ) ? strcpy( t, his_her[ rndm->sex ] )
-	                        : strcpy( t, "someone" );
+	   can_see( mob, rndm ) ? snprintf( t, MAX_INPUT_LENGTH, "%s", his_her[ rndm->sex ] )
+	                        : snprintf( t, MAX_INPUT_LENGTH, "someone" );
          }
 	 else
-	      strcpy( t, "its" );
+	      snprintf( t, MAX_INPUT_LENGTH, "its" );
 	 break;
 
      case 'o':
          if ( obj && !obj_extracted(obj) )
 	 {
-	   can_see_obj( mob, obj ) ? one_argument( obj->name, t )
-                                   : strcpy( t, "something" );
+      if (!can_see_obj(mob, obj))
+          snprintf(t, MAX_INPUT_LENGTH, "something");
+      else
+          one_argument(obj->name, t);
          }
 	 else
-	      strcpy( t, "something" );
+	      snprintf(t, MAX_INPUT_LENGTH, "something" );
 	 break;
 
      case 'O':
          if ( obj && !obj_extracted(obj) )
 	 {
-	   can_see_obj( mob, obj ) ? strcpy( t, obj->short_descr )
-                                   : strcpy( t, "something" );
+	   can_see_obj( mob, obj ) ?snprintf(t, MAX_INPUT_LENGTH, "%s", obj->short_descr )
+                                   : snprintf(t, MAX_INPUT_LENGTH, "something" );
          }
 	 else
-	      strcpy( t, "something" );
+	      snprintf(t, MAX_INPUT_LENGTH, "something" );
 	 break;
 
      case 'p':
          if ( v_obj && !obj_extracted(v_obj) )
-	 {
-	   can_see_obj( mob, v_obj ) ? one_argument( v_obj->name, t )
-                                     : strcpy( t, "something" );
+	       {
+            if (!can_see_obj(mob, v_obj))
+                snprintf(t, MAX_INPUT_LENGTH, "something");
+            else
+                one_argument(v_obj->name, t);
          }
 	 else
-	      strcpy( t, "something" );
+	      snprintf(t, MAX_INPUT_LENGTH, "something" );
 	 break;
 
      case 'P':
          if ( v_obj && !obj_extracted(v_obj) )
-	 {
-	   can_see_obj( mob, v_obj ) ? strcpy( t, v_obj->short_descr )
-                                     : strcpy( t, "something" );
+	       {
+            if (!can_see_obj(mob, v_obj))
+                snprintf(t, MAX_INPUT_LENGTH, "something");
+            else
+                one_argument(v_obj->name, t);
          }
 	 else
-	      strcpy( t, "something" );
+	      snprintf(t, MAX_INPUT_LENGTH, "something" );
       break;
 
      case 'a':
          if ( obj && !obj_extracted(obj) ) 
 	 {
-	    strcpy( t, aoran(obj->name) );
+	    snprintf(t, MAX_INPUT_LENGTH, "%s", aoran(obj->name) );
 /*
           switch ( *( obj->name ) )
 	  {
 	    case 'a': case 'e': case 'i':
-            case 'o': case 'u': strcpy( t, "an" );
+            case 'o': case 'u': snprintf(t, MAX_INPUT_LENGTH, "an" );
 	      break;
-            default: strcpy( t, "a" );
+            default: snprintf(t, MAX_INPUT_LENGTH, "a" );
           }
 */
          }
 	 else
-	      strcpy( t, "a" );
+	      snprintf(t, MAX_INPUT_LENGTH, "a" );
 	 break;
 
      case 'A':
          if ( v_obj && !obj_extracted(v_obj) )
 	 {
-	      strcpy( t, aoran(v_obj->name) );
+	      snprintf(t, MAX_INPUT_LENGTH, "%s", aoran(v_obj->name) );
          }
 	 else
-	      strcpy( t, "a" );
+	      snprintf(t, MAX_INPUT_LENGTH, "a" );
 	 break;
 
      case '$':
-         strcpy( t, "$" );
+         snprintf(t, MAX_INPUT_LENGTH, "$" );
 	 break;
 
      default:
@@ -1434,7 +1437,7 @@ void mprog_driver ( char *com_list, CHAR_DATA *mob, CHAR_DATA *actor,
         count++;
       }
   
-  strcpy( tmpcmndlst, com_list );
+  SPRINTF( tmpcmndlst, "%s", com_list );
   command_list = tmpcmndlst;
   if ( single_step )
   {
@@ -1806,9 +1809,9 @@ bool mprog_keyword_check( const char *argu, const char *argl )
     char *arg, *arglist;
     char *start, *end;
 
-    strcpy( arg1, strlower( argu ) );
+    SPRINTF( arg1, "%s", strlower( argu ) );
     arg = arg1;
-    strcpy( arg2, strlower( argl ) );
+    SPRINTF( arg2, "%s", strlower( argl ) );
     arglist = arg2;
 
     for ( i = 0; i < (int) strlen( arglist ); i++ )
@@ -1869,11 +1872,11 @@ void mprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
   for ( mprg = mob->pIndexData->mudprogs; mprg; mprg = mprg->next )
     if ( mprg->type & type )
       {
-	strcpy( temp1, mprg->arglist );
+	SPRINTF( temp1, "%s", mprg->arglist );
 	list = temp1;
 	for ( i = 0; i < (int) strlen( list ); i++ )
 	  list[i] = LOWER( list[i] );
-	strcpy( temp2, arg );
+	SPRINTF( temp2, "%s", arg );
 	dupl = temp2;
 	for ( i = 0; i < (int) strlen( dupl ); i++ )
 	  dupl[i] = LOWER( dupl[i] );
@@ -2043,7 +2046,7 @@ void mprog_bribe_trigger( CHAR_DATA *mob, CHAR_DATA *ch, int amount )
         return;
 
       obj = create_object( get_obj_index( OBJ_VNUM_MONEY_SOME ), 0 );
-      sprintf( buf, obj->short_descr, amount );
+      SPRINTF_RUNTIME( buf, obj->short_descr, amount );
       STRFREE( obj->short_descr );
       obj->short_descr = STRALLOC( buf );
       obj->value[0]    = amount;
@@ -2133,8 +2136,7 @@ void mprog_greet_trigger( CHAR_DATA *ch )
 
 #ifdef DEBUG
  char buf[MAX_STRING_LENGTH];
- sprintf( buf, "mprog_greet_trigger -> %s", ch->name );
- log_string( buf );
+ log_printf( "mprog_greet_trigger -> %s", ch->name );
 #endif
 
  for ( vmob = ch->in_room->first_person; vmob; vmob = vmob_next )
@@ -2321,7 +2323,7 @@ void set_supermob( OBJ_DATA *obj)
 
   /* Added by Jenny to allow bug messages to show the vnum
      of the object, and not just supermob's vnum */
-  sprintf( buf, "Object #%d", obj->pIndexData->vnum );
+  SPRINTF( buf, "Object #%d", obj->pIndexData->vnum );
   STRFREE( supermob->description );
   supermob->description = STRALLOC( buf );
 
@@ -2660,11 +2662,11 @@ void oprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
   for ( mprg = iobj->pIndexData->mudprogs; mprg; mprg = mprg->next )
     if ( mprg->type & type )
       {
-	strcpy( temp1, mprg->arglist );
+	SPRINTF( temp1, "%s", mprg->arglist );
 	list = temp1;
 	for ( i = 0; i < (int) strlen( list ); i++ )
 	  list[i] = LOWER( list[i] );
-	strcpy( temp2, arg );
+	SPRINTF( temp2, "%s", arg );
 	dupl = temp2;
 	for ( i = 0; i < (int) strlen( dupl ); i++ )
 	  dupl[i] = LOWER( dupl[i] );
@@ -2733,7 +2735,7 @@ void rset_supermob( ROOM_INDEX_DATA *room)
 
     /* Added by Jenny to allow bug messages to show the vnum
        of the room, and not just supermob's vnum */
-    sprintf( buf, "Room #%d", room->vnum );
+    SPRINTF( buf, "Room #%d", room->vnum );
     STRFREE( supermob->description );
     supermob->description = STRALLOC( buf );
 
@@ -2910,11 +2912,11 @@ void rprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
   for ( mprg = room->mudprogs; mprg; mprg = mprg->next )
     if ( mprg->type & type )
       {
-	strcpy( temp1, mprg->arglist );
+	SPRINTF( temp1, "%s", mprg->arglist );
 	list = temp1;
 	for ( i = 0; i < (int) strlen( list ); i++ )
 	  list[i] = LOWER( list[i] );
-	strcpy( temp2, arg );
+	SPRINTF( temp2, "%s", arg );
 	dupl = temp2;
 	for ( i = 0; i < (int) strlen( dupl ); i++ )
 	  dupl[i] = LOWER( dupl[i] );
@@ -3012,7 +3014,7 @@ void rprog_hour_trigger( CHAR_DATA *ch )
 /* Written by Jenny, Nov 29/95 */
 void progbug( char *str, CHAR_DATA *mob )
 {
-  char buf[MAX_STRING_LENGTH];
+//char buf[MAX_STRING_LENGTH];
 
   /* Check if we're dealing with supermob, which means the bug occurred
      in a room or obj prog. */
@@ -3021,18 +3023,28 @@ void progbug( char *str, CHAR_DATA *mob )
     /* It's supermob.  In set_supermob and rset_supermob, the description
        was set to indicate the object or room, so we just need to show
        the description in the bug message. */
-    sprintf( buf, "%s, %s.", str, 
+    bug( "%s, %s.", str, 
              mob->description == NULL ? "(unknown)" : mob->description );
   }
   else
   {
-    sprintf( buf, "%s, Mob #%d.", str, mob->pIndexData->vnum );
+    bug( "%s, Mob #%d.", str, mob->pIndexData->vnum );
   }
 
-  bug( buf, 0 );
   return;
 }
 
+void progbugf( CHAR_DATA *mob, const char *fmt, ... )
+{
+    char buf[MAX_STRING_LENGTH];
+    va_list args;
+
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    progbug(buf, mob);
+}
 
 /* Room act prog updates.  Use a separate list cuz we dont really wanna go
    thru 5-10000 rooms every pulse.. can we say lag? -- Alty */

@@ -75,7 +75,7 @@ char			bug_buf		[2*MAX_INPUT_LENGTH];
 CHAR_DATA *		first_char;
 CHAR_DATA *		last_char;
 char *			help_greeting;
-char			log_buf		[2*MAX_INPUT_LENGTH];
+//char			log_buf		[2*MAX_INPUT_LENGTH];
 
 OBJ_DATA *		first_object;
 OBJ_DATA *		last_object;
@@ -740,7 +740,7 @@ ASSIGN_GSN( gsn_yevethan, "yevethan" );
 
 	for ( ; ; )
 	{
-	    strcpy( strArea, fread_word( fpList ) );
+	    SPRINTF( strArea, "%s", fread_word( fpList ) );
 	    if ( strArea[0] == '$' )
 		break;
 
@@ -1043,7 +1043,7 @@ void load_mobiles( AREA_DATA *tarea, FILE *fp )
 
     for ( ; ; )
     {
-	char buf[MAX_STRING_LENGTH];
+//	char buf[MAX_STRING_LENGTH];
 	sh_int vnum;
 	char letter;
 	int iHash;
@@ -1080,8 +1080,7 @@ void load_mobiles( AREA_DATA *tarea, FILE *fp )
 	    else
 	    {
 		pMobIndex = get_mob_index( vnum );
-		sprintf( buf, "Cleaning mobile: %d", vnum );
-		log_string_plus( buf, LOG_BUILD, sysdata.log_level );
+		log_printf_plus( LOG_BUILD, sysdata.log_level, "Cleaning mobile: %d", vnum );
 		clean_mob( pMobIndex );
 		oldmob = TRUE;
 	    }
@@ -1261,7 +1260,7 @@ void load_objects( AREA_DATA *tarea, FILE *fp )
 
     for ( ; ; )
     {
-	char buf[MAX_STRING_LENGTH];
+//	char buf[MAX_STRING_LENGTH];
 	int vnum;
 	int iHash;
 	bool tmpBootDb;
@@ -1297,8 +1296,7 @@ void load_objects( AREA_DATA *tarea, FILE *fp )
 	    else
 	    {
 		pObjIndex = get_obj_index( vnum );
-		sprintf( buf, "Cleaning object: %d", vnum );
-		log_string_plus( buf, LOG_BUILD, sysdata.log_level );
+		log_printf_plus( LOG_BUILD, sysdata.log_level, "Cleaning object: %d", vnum );
 		clean_obj( pObjIndex );
 		oldobj = TRUE;
 	    }
@@ -1442,7 +1440,7 @@ void load_objects( AREA_DATA *tarea, FILE *fp )
  */
 void load_resets( AREA_DATA *tarea, FILE *fp )
 {
-    char buf[MAX_STRING_LENGTH];
+//    char buf[MAX_STRING_LENGTH];
     bool not01 = FALSE;
     int count = 0;
 
@@ -1473,8 +1471,7 @@ void load_resets( AREA_DATA *tarea, FILE *fp )
 	 /*
 	  * Clean out the old resets
 	  */
-	  sprintf( buf, "Cleaning resets: %s", tarea->name );
-	  log_string_plus( buf, LOG_BUILD, sysdata.log_level );
+	  log_printf_plus( LOG_BUILD, sysdata.log_level, "Cleaning resets: %s", tarea->name );
 	  clean_resets( tarea );
 	}	
     }
@@ -1636,7 +1633,7 @@ void load_resets( AREA_DATA *tarea, FILE *fp )
 void load_rooms( AREA_DATA *tarea, FILE *fp )
 {
     ROOM_INDEX_DATA *pRoomIndex;
-    char buf[MAX_STRING_LENGTH];
+//    char buf[MAX_STRING_LENGTH];
     char *ln;
 
     if ( !tarea )
@@ -1686,8 +1683,7 @@ void load_rooms( AREA_DATA *tarea, FILE *fp )
 	    else
 	    {
 	      pRoomIndex = get_room_index( vnum );
-	      sprintf( buf, "Cleaning room: %d", vnum );
-	      log_string_plus( buf, LOG_BUILD, sysdata.log_level );
+	      log_printf_plus( LOG_BUILD, sysdata.log_level, "Cleaning room: %d", vnum );
 	      clean_room( pRoomIndex );
 	      oldroom = TRUE;
 	    }
@@ -2346,9 +2342,9 @@ void area_update( void )
 
 	    /* Rennard */
 	    if ( pArea->resetmsg )
-		sprintf( buf, "%s\n\r", pArea->resetmsg );
+			SPRINTF( buf, "%s\n\r", pArea->resetmsg );
 	    else
-		strcpy( buf, "You hear some squeaking sounds...\n\r" );
+			SPRINTF( buf, "You hear some squeaking sounds...\n\r" );
 	    for ( pch = first_char; pch; pch = pch->next )
 	    {
 		if ( !IS_NPC(pch)
@@ -3385,8 +3381,8 @@ char *fread_line( FILE *fp )
 	{
 	    bug("fread_line: EOF encountered on read.\n\r");
 	    if ( fBootDb )
-		exit(1);
-	    strcpy(line, "");
+			exit(1);
+		line[0] = '\0';
 	    return line;
 	}
 	c = getc( fp );
@@ -3766,7 +3762,7 @@ char *stripclr( char *text )
 
 		buf[j] = '\0';
 
-		sprintf(done, "%s", buf);
+		SPRINTF(done, "%s", buf);
 		buf = (char* ) realloc(buf, j*sizeof(char));
 		free( buf);
 
@@ -4027,10 +4023,10 @@ char *aoran( const char *str )
 
     if ( isavowel(str[0])
     || ( strlen(str) > 1 && tolower(str[0]) == 'y' && !isavowel(str[1])) )
-      strcpy( temp, "an " );
+      SPRINTF( temp, "an " );
     else
-      strcpy( temp, "a " );
-    strcat( temp, str );
+      SPRINTF( temp, "a " );
+    STRAPP( temp, "%s", str );
     return temp;
 }
 
@@ -4111,8 +4107,7 @@ void bug( const char *str, ... )
 	    fseek( fpArea, iChar, 0 );
 	}
 
-	sprintf( buf, "[*****] FILE: %s LINE: %d", strArea, iLine );
-	log_string( buf );
+	log_printf( "[*****] FILE: %s LINE: %d", strArea, iLine );
 
 	if ( stat( SHUTDOWN_FILE, &fst ) != -1 )	/* file exists */
 	{
@@ -4124,21 +4119,20 @@ void bug( const char *str, ... )
 	}
     }
 
-    strcpy( buf, "[*****] BUG: " );
-    {
+	size_t len = snprintf(buf, sizeof(buf), "[*****] BUG: ");
+
 	va_list param;
-    
 	va_start(param, str);
-	vsprintf( buf + strlen(buf), str, param );
+	vsnprintf(buf + len, sizeof(buf) - len, str, param);
 	va_end(param);
-    }
-    log_string( buf );
+
+	log_string(buf);
 
     FCLOSE( fpLOG );
     if ( ( fp = fopen( BUG_FILE, "a" ) ) != NULL )
     {
-	fprintf( fp, "%s\n", buf );
-	FCLOSE( fp );
+		fprintf( fp, "%s\n", buf );
+		FCLOSE( fp );
     }
     fpLOG = fopen( NULL_FILE, "r" );
 
@@ -4148,27 +4142,18 @@ void bug( const char *str, ... )
 /*
  * Add a string to the boot-up log				-Thoric
  */
-void boot_log( const char *str, ... )
+void boot_log(const char *fmt, ...)
 {
     char buf[MAX_STRING_LENGTH];
-    FILE *fp;
-    va_list param;
+    va_list args;
 
-    strcpy( buf, "[*****] BOOT: " );
-    va_start(param, str);
-    vsprintf( buf+strlen(buf), str, param );
-    va_end(param);
-    log_string( buf );
+    size_t len = snprintf(buf, sizeof(buf), "[*****] BOOT: ");
 
-    FCLOSE( fpLOG );
-    if ( ( fp = fopen( BOOTLOG_FILE, "a" ) ) != NULL )
-    {
-	fprintf( fp, "%s\n", buf );
- 	FCLOSE( fp );
-    }
-    fpLOG = fopen( NULL_FILE, "r" );
+    va_start(args, fmt);
+    vsnprintf(buf + len, sizeof(buf) - len, fmt, args);
+    va_end(args);
 
-    return;
+    log_string(buf);
 }
 
 /*
@@ -4199,7 +4184,7 @@ void do_dmesg( CHAR_DATA *ch, char *argument )
 }
 
 
-// Two log_printf and a buffer_printf functions - DV added 3-14-26.  Going to replace log_buf as I come across them.  Feel free to follow!
+// Two log_printf and a buffer_printf functions - DV added 3-14-26.  Going to replace log buf as I come across them.  Feel free to follow!
 
 void buffer_printf( DESCRIPTOR_DATA * d, const char *fmt, ... )
 {
@@ -4208,10 +4193,24 @@ void buffer_printf( DESCRIPTOR_DATA * d, const char *fmt, ... )
     va_list args;
 
     va_start( args, fmt );
-    vsprintf( buf, fmt, args );
+    vsnprintf( buf, sizeof(buf), fmt, args );
     va_end( args );
 
     write_to_buffer( d, buf, strlen( buf ) );
+}
+
+void log_channelf(int channel, const char *channel_name, int level,
+                  const char *fmt, ...)
+{
+    char buf[MAX_STRING_LENGTH];
+    va_list args;
+
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    log_string(buf);
+    to_channel(buf, channel, channel_name, level);
 }
 
 void log_printf(const char *fmt, ...)
@@ -4319,10 +4318,10 @@ void towizfile( const char *line )
      filler = 1;
    filler /= 2;
    for ( xx = 0; xx < filler; xx++ )
-      strcat( outline, " " );
-    strcat( outline, line );
+      STRAPP( outline, " " );
+    STRAPP( outline, "%s", line );
   }
-  strcat( outline, "\n\r" );
+  STRAPP( outline, "\n\r" );
   wfp = fopen( WIZLIST_FILE, "a" );
   if ( wfp )
   {
@@ -4397,7 +4396,7 @@ void make_wizlist( )
   {
       if ( dentry->d_name[0] != '.' )
       {
-	sprintf( buf, "%s%s", GOD_DIR, dentry->d_name );
+	SPRINTF( buf, "%s%s", GOD_DIR, dentry->d_name );
 	gfp = fopen( buf, "r" );
 	if ( gfp )
 	{
@@ -4458,8 +4457,8 @@ void make_wizlist( )
 	towizfile( buf );
 	buf[0] = '\0';
     }
-    strcat( buf, " " );
-    strcat( buf, wiz->name );
+    STRAPP( buf, " " );
+    STRAPP( buf, "%s", wiz->name );
     if ( strlen( buf ) > 70 )
     {
       towizfile( buf );
@@ -4545,7 +4544,7 @@ MPROG_DATA *mprog_file_read( char *f, MPROG_DATA *mprg,
   MPROG_DATA *mprg_next, *mprg2;
   bool        done = FALSE;
 
-  sprintf( MUDProgfile, "%s%s", PROG_DIR, f );
+  SPRINTF( MUDProgfile, "%s%s", PROG_DIR, f );
 
   progfile = fopen( MUDProgfile, "r" );
   if ( !progfile )
@@ -4760,7 +4759,7 @@ MPROG_DATA *oprog_file_read( char *f, MPROG_DATA *mprg,
   MPROG_DATA *mprg_next, *mprg2;
   bool        done = FALSE;
 
-  sprintf( MUDProgfile, "%s%s", PROG_DIR, f );
+  SPRINTF( MUDProgfile, "%s%s", PROG_DIR, f );
 
   progfile = fopen( MUDProgfile, "r" );
   if ( !progfile )
@@ -4972,7 +4971,7 @@ MPROG_DATA *rprog_file_read( char *f, MPROG_DATA *mprg,
   MPROG_DATA *mprg_next, *mprg2;
   bool        done = FALSE;
 
-  sprintf( MUDProgfile, "%s%s", PROG_DIR, f );
+  SPRINTF( MUDProgfile, "%s%s", PROG_DIR, f );
 
   progfile = fopen( MUDProgfile, "r" );
   if ( !progfile )
@@ -5279,9 +5278,9 @@ OBJ_INDEX_DATA *make_object( int vnum, int cvnum, char *name )
 	pObjIndex->last_extradesc	= NULL;
 	if ( !cObjIndex )
 	{
-	  sprintf( buf, "A %s", name );
+	  SPRINTF( buf, "A %s", name );
 	  pObjIndex->short_descr	= STRALLOC( buf  );
-	  sprintf( buf, "A %s is here.", name );
+	  SPRINTF( buf, "A %s is here.", name );
 	  pObjIndex->description	= STRALLOC( buf );
 	  pObjIndex->action_desc	= STRALLOC( "" );
 	  pObjIndex->short_descr[0]	= LOWER(pObjIndex->short_descr[0]);
@@ -5366,9 +5365,9 @@ MOB_INDEX_DATA *make_mobile( sh_int vnum, sh_int cvnum, char *name )
 	pMobIndex->player_name		= STRALLOC( name );
 	if ( !cMobIndex )
 	{
-	  sprintf( buf, "A newly created %s", name );
+	  SPRINTF( buf, "A newly created %s", name );
 	  pMobIndex->short_descr	= STRALLOC( buf  );
-	  sprintf( buf, "Some god abandoned a newly created %s here.\n\r", name );
+	  SPRINTF( buf, "Some god abandoned a newly created %s here.\n\r", name );
 	  pMobIndex->long_descr		= STRALLOC( buf );
 	  pMobIndex->description	= STRALLOC( "" );
 	  pMobIndex->short_descr[0]	= LOWER(pMobIndex->short_descr[0]);
@@ -5700,14 +5699,13 @@ void load_buildlist( void )
 	{
 		if ( dentry->d_name[0] != '.' )
 		{
-			sprintf( buf, "%s%s", GOD_DIR, dentry->d_name );
+			log_printf( "%s%s", GOD_DIR, dentry->d_name );
 			if ( !(fp = fopen( buf, "r" )) )
 			{
 				bug( "Load_buildlist: invalid file" );
 				dentry = readdir(dp);
 				continue;
 			}
-			log_string( buf );
 			badfile = FALSE;
 			rlow=rhi=olow=ohi=mlow=mhi=0;
 			while ( !feof(fp) && !ferror(fp) )
@@ -5724,7 +5722,7 @@ void load_buildlist( void )
 				{
 					if ( low < LEVEL_AVATAR )
 					{
-						sprintf( buf, "%s: God file with level %d < %d",
+						SPRINTF( buf, "%s: God file with level %d < %d",
 							dentry->d_name, low, LEVEL_AVATAR );
 						badfile = TRUE;
 					}
@@ -5739,7 +5737,7 @@ void load_buildlist( void )
 			FCLOSE( fp );
 			if ( rlow && rhi && !badfile )
 			{
-				sprintf( buf, "%s%s.are", BUILD_DIR, dentry->d_name );
+				SPRINTF( buf, "%s%s.are", BUILD_DIR, dentry->d_name );
 				if ( !(fp = fopen( buf, "r" )) )
 				{
 					bug( "Load_buildlist: cannot open area file for read" );
@@ -5748,10 +5746,10 @@ void load_buildlist( void )
 				}
 #if !defined(READ_AREA)  /* Dont always want to read stuff.. dunno.. shrug */
 
-				strcpy( word, fread_word( fp ) );
+				SPRINTF( word, "%s", fread_word( fp ) );
 				if ( word[0] != '#' || strcmp( &word[1], "AREA" ) )
 				{
-					sprintf( buf, "Make_buildlist: %s.are: no #AREA found.",
+					SPRINTF( buf, "Make_buildlist: %s.are: no #AREA found.",
 						dentry->d_name );
 					FCLOSE( fp );
 					dentry = readdir(dp);
@@ -5759,13 +5757,13 @@ void load_buildlist( void )
 				}
 #endif
 				CREATE( pArea, AREA_DATA, 1 );
-				sprintf( buf, "%s.are", dentry->d_name );
+				SPRINTF( buf, "%s.are", dentry->d_name );
 				pArea->author = STRALLOC( dentry->d_name );
 				pArea->filename = str_dup( buf );
 #if !defined(READ_AREA)
 				pArea->name = fread_string_nohash( fp );
 #else
-				sprintf( buf, "{PROTO} %s's area in progress", dentry->d_name );
+				SPRINTF( buf, "{PROTO} %s's area in progress", dentry->d_name );
 				pArea->name = str_dup( buf );
 #endif
 				FCLOSE( fp );
@@ -5984,7 +5982,7 @@ void save_sysdata( SYSTEM_DATA sys )
     FILE *fp;
     char filename[MAX_INPUT_LENGTH];
 
-    sprintf( filename, "%ssysdata.dat", SYSTEM_DIR );
+    SPRINTF( filename, "%ssysdata.dat", SYSTEM_DIR );
     
     FCLOSE( fpReserve );
     if ( ( fp = fopen( filename, "w" ) ) == NULL )
@@ -6149,7 +6147,7 @@ bool load_systemdata( SYSTEM_DATA *sys )
     bool found;
 
     found = FALSE;
-    sprintf( filename, "%ssysdata.dat", SYSTEM_DIR );
+    SPRINTF( filename, "%ssysdata.dat", SYSTEM_DIR );
 
     if ( ( fp = fopen( filename, "r" ) ) != NULL )
     {
@@ -6313,11 +6311,11 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
     
     if (all)
     {
-      sprintf(buf, "room %d %d", low_range, high_range);
+      SPRINTF(buf, "room %d %d", low_range, high_range);
       do_check_vnums(ch, buf);
-      sprintf(buf, "mob %d %d", low_range, high_range);
+      SPRINTF(buf, "mob %d %d", low_range, high_range);
       do_check_vnums(ch, buf);
-      sprintf(buf, "object %d %d", low_range, high_range);
+      SPRINTF(buf, "object %d %d", low_range, high_range);
       do_check_vnums(ch, buf);
       return;
     }
@@ -6381,19 +6379,19 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
 
 	if (area_conflict)
 	{
-	sprintf(buf, "Conflict:%-15s| ",
+	SPRINTF(buf, "Conflict:%-15s| ",
 		(pArea->filename ? pArea->filename : "(invalid)"));
         if(room)
-          sprintf( buf2, "Rooms: %5d - %-5d\n\r", pArea->low_r_vnum, 
+          SPRINTF( buf2, "Rooms: %5d - %-5d\n\r", pArea->low_r_vnum, 
           pArea->hi_r_vnum);
         if(mob)
-          sprintf( buf2, "Mobs: %5d - %-5d\n\r", pArea->low_m_vnum, 
+          SPRINTF( buf2, "Mobs: %5d - %-5d\n\r", pArea->low_m_vnum, 
           pArea->hi_m_vnum);
         if(obj)
-          sprintf( buf2, "Objects: %5d - %-5d\n\r", pArea->low_o_vnum, 
+          SPRINTF( buf2, "Objects: %5d - %-5d\n\r", pArea->low_o_vnum, 
           pArea->hi_o_vnum);
         
-        strcat( buf, buf2 );
+        STRAPP( buf, "%s", buf2 );
 	send_to_char(buf, ch);
     	}
     }    
@@ -6455,19 +6453,19 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
 
 	if (area_conflict)
 	{
-	sprintf(buf, "Conflict:%-15s| ",
+	SPRINTF(buf, "Conflict:%-15s| ",
 		(pArea->filename ? pArea->filename : "(invalid)"));
         if(room)
-          sprintf( buf2, "Rooms: %5d - %-5d\n\r", pArea->low_r_vnum, 
+          SPRINTF( buf2, "Rooms: %5d - %-5d\n\r", pArea->low_r_vnum, 
           pArea->hi_r_vnum);
         if(mob)
-          sprintf( buf2, "Mobs: %5d - %-5d\n\r", pArea->low_m_vnum, 
+          SPRINTF( buf2, "Mobs: %5d - %-5d\n\r", pArea->low_m_vnum, 
           pArea->hi_m_vnum);
         if(obj)
-          sprintf( buf2, "Objects: %5d - %-5d\n\r", pArea->low_o_vnum, 
+          SPRINTF( buf2, "Objects: %5d - %-5d\n\r", pArea->low_o_vnum, 
           pArea->hi_o_vnum);
         
-        strcat( buf, buf2 );
+        STRAPP( buf, "%s", buf2 );
 	send_to_char(buf, ch);
     	}
     }    
@@ -6525,7 +6523,7 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
 	    area_conflict = TRUE;
 
 	if (area_conflict)
-	  sprintf(ch, "Conflict:%-15s| Rooms: %5d - %-5d"
+	  SPRINTF(ch, "Conflict:%-15s| Rooms: %5d - %-5d"
 		     " Objs: %5d - %-5d Mobs: %5d - %-5d\n\r",
 		(pArea->filename ? pArea->filename : "(invalid)"),
 		pArea->low_r_vnum, pArea->hi_r_vnum,

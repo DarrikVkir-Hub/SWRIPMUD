@@ -24,6 +24,7 @@
 #include <sys/time.h>
 #include <math.h>
 #include <stdio.h>
+#include <cstdarg>
 #include <cstdio>   // for snprintf
 #include <cstddef>  // for size_t
 #ifdef MCCP
@@ -3323,15 +3324,100 @@ static inline int urange(int mincheck, int check, int maxcheck)
 #define REMOVE_BIT(var, bit)	((var) &= ~(bit))
 #define TOGGLE_BIT(var, bit)	((var) ^= (bit))
 
+/* Safe string helpers */
+#define SAFE_APPEND(dst, src, end) \
+do { \
+    const char *__s = (src); \
+    while (*__s && (dst) < (end)) \
+        *(dst)++ = *__s++; \
+} while (0)
+
+#define STRAPP(dst, ...)                                                    \
+do {                                                                        \
+    static_assert(sizeof(dst) != sizeof(char*),                             \
+        "STRAPP requires a char array");                                    \
+                                                                            \
+    size_t __size = __builtin_object_size(dst, 0);                          \
+    if (__size != (size_t)-1)                                               \
+    {                                                                       \
+        size_t __len = strlen(dst);                                         \
+                                                                            \
+        if (__len < __size - 1)                                             \
+        {                                                                   \
+            int __n = snprintf((dst) + __len, __size - __len, __VA_ARGS__); \
+                                                                            \
+            if (__n < 0 || (size_t)__n >= __size - __len)                   \
+                (dst)[__size - 1] = '\0';                                   \
+        }                                                                   \
+    }                                                                       \
+} while (0)
+
+#define STRAPP_RAW(dst,str) STRAPP(dst,"%s",str)
+
+#define STRLCPY(dst, src) \
+    do { \
+        static_assert(sizeof(dst) != sizeof(char*), \
+            "STRLCPY requires a char array"); \
+        snprintf((dst), sizeof(dst), "%s", (src)); \
+    } while (0)
+
+#define STRLCAT(dst, src, size)                     \
+do {                                                \
+    size_t __len = strlen(dst);                     \
+    if (__len < (size) - 1)                         \
+        snprintf((dst) + __len, (size) - __len,     \
+                 "%s", (src));                      \
+} while (0)
+
+static inline int mud_vsnprintf(char *dst, size_t size,
+                                const char *fmt, va_list ap)
+{
+    int n = vsnprintf(dst, size, fmt, ap);
+
+    if (size > 0)
+        dst[size - 1] = '\0';
+
+    return n;
+}
+
+static inline int mud_snprintf_runtime(char *dst, size_t size,
+                                        const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    int n = mud_vsnprintf(dst, size, fmt, ap);
+    va_end(ap);
+    return n;
+}
+
+#define SPRINTF_RUNTIME(dst, fmt, ...)                         \
+do {                                                           \
+    static_assert(sizeof(dst) != sizeof(char*),                \
+        "SPRINTF_RUNTIME requires a char array");              \
+                                                               \
+    size_t __size = sizeof(dst);                               \
+    int __n = mud_snprintf_runtime((dst), __size, (fmt), ##__VA_ARGS__); \
+    if (__n < 0 || (size_t)__n >= __size)                      \
+        (dst)[__size - 1] = '\0';                              \
+} while (0)
+
+#define SPRINTF(dst, ...)                                                   \
+do {                                                                        \
+    static_assert(sizeof(dst) != sizeof(char*),                             \
+        "STRINIT requires a char array");                                   \
+                                                                            \
+    size_t __size = __builtin_object_size(dst, 0);                          \
+    if (__size != (size_t)-1)                                               \
+    {                                                                       \
+        int __n = snprintf((dst), __size, __VA_ARGS__);                     \
+        if (__n < 0 || (size_t)__n >= __size)                               \
+            (dst)[__size - 1] = '\0';                                       \
+    }                                                                       \
+} while (0)
+
 /*
  * Memory allocation macros.
  */
-
-#define SPRINTF(buf, ...)                                           \
-    do {                                                            \
-if ( snprintf(buf, sizeof(buf), __VA_ARGS__) >= (int)sizeof(buf))   \
-          buf[sizeof(buf) - 1] = '\0';                             \
-    } while(0)
 
 
 #define CREATE(result, type, number)				\
@@ -4923,6 +5009,7 @@ void	reset_area	args( ( AREA_DATA * pArea ) );
 void buffer_printf args ( ( DESCRIPTOR_DATA * d, const char *fmt, ... ) );
 void log_printf args( (const char *fmt, ...) );
 void log_printf_plus args ( (int log_type, int level, const char *fmt, ...) );
+void log_channelf args ( (int channel, const char *channel_name, int level, const char *fmt, ...) );
 void	show_file	args( ( CHAR_DATA *ch, char *filename ) );
 bool  is_valid_filename args( ( CHAR_DATA *ch, const char *direct, const char *filename ) );
 char *	str_dup		args( ( char const *str ) );
@@ -5093,6 +5180,7 @@ void    mprog_script_trigger    args ( ( CHAR_DATA *mob ) );
 void    mprog_hour_trigger      args ( ( CHAR_DATA *mob ) );
 void    mprog_time_trigger      args ( ( CHAR_DATA *mob ) );
 void    progbug                 args( ( char *str, CHAR_DATA *mob ) );
+void progbugf                   args( ( CHAR_DATA *mob, const char *fmt, ... ) );
 void	rset_supermob		args( ( ROOM_INDEX_DATA *room) );
 void	release_supermob	args( ( ) );
 

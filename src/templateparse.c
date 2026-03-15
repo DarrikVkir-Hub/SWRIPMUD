@@ -230,8 +230,8 @@ int join_template_rooms(int room1, ROOM_INDEX_DATA *room2, int exitType)
 	default: return 1;
     }
     
-//sprintf( buf, "Room1: %d Room2: %d exitType: %d\n\r", room1, room2->vnum, exitType );
-//bug ( buf, 0 );
+//  bug( "Room1: %d Room2: %d exitType: %d\n\r", room1, room2->vnum, exitType );
+
     
     if( twoway )
     {
@@ -275,8 +275,7 @@ int parse_ship_template(char *string, SHIP_DATA *ship)
     int room;
     int room2;
     
-//  sprintf( buf, "Parser activated: String: %s, Ship: %s", string, ship->personalname );
-//  bug( buf, 0 );
+//  bug( "Parser activated: String: %s, Ship: %s", string, ship->personalname );
     
     masterIndex=0;
     //Parse out the number of rooms
@@ -326,7 +325,7 @@ int parse_ship_template(char *string, SHIP_DATA *ship)
 	    }
 	    continue;
 	}
-        if (string[index] < '0' && string[index] > '9')
+        if (string[index] < '0' || string[index] > '9')
 	    continue;  //haven't hit a number yet
 	if (start == 1) {
 	    buf[bindex] = string[index];
@@ -366,8 +365,7 @@ int parse_ship_template(char *string, SHIP_DATA *ship)
 
 /*  for( i = 0; i < roomCount; i++ )
     {
-    	sprintf(debug, "Rooms: Tmp#: %d Vnum: %d\n\r", roomArray[i], vnumArray[i]->vnum );
-    	bug( debug, 0 );
+    	bug("Rooms: Tmp#: %d Vnum: %d\n\r", roomArray[i], vnumArray[i]->vnum );
     }
 */
 
@@ -384,8 +382,7 @@ int parse_ship_template(char *string, SHIP_DATA *ship)
 	    for(j = 0; j < roomCount; j++) {
 		if ( ( roomArray[j] == room ) && vnumArray[j] ) 
 		{
-//		    sprintf( debug, "Tmp#: %d Vnum: %d\n\r", room, vnumArray[j]->vnum );
-//		    bug( debug, 0 );
+//		    bug("Tmp#: %d Vnum: %d\n\r", room, vnumArray[j]->vnum );
 		    room = vnumArray[j]->vnum;
 		    bindex = 0;
 		    break;
@@ -425,8 +422,7 @@ int parse_ship_template(char *string, SHIP_DATA *ship)
 	    }
 	    buf[j] = '\0';
 	    room2 = atoi((char*)buf+j+1);
-//	    sprintf( debug, "Buf: %s Room2: %d\n\r", buf, room2 );
-//	    bug( debug, 0 );
+//	    bug("Buf: %s Room2: %d\n\r", buf, room2 );
 	    for(j = 0; j < roomCount; j++) {
 		if (roomArray[j] == room2) {
 		    if (join_template_rooms(room,vnumArray[j],atoi(buf))) {
@@ -457,7 +453,7 @@ int parse_ship_template(char *string, SHIP_DATA *ship)
 	    room = -1;
 	    start = 0;
 	}
-        if (string[index] < '0' && string[index] > '9' && string[index] != ':')
+        if ( (string[index] < '0' || string[index] > '9') && string[index] != ':')
 	    continue;  //haven't hit a number yet
 	buf[bindex] = string[index];
 	bindex++;

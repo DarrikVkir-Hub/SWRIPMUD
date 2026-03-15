@@ -787,9 +787,8 @@ void mobile_update( void )
 	
 	if ( gch_prev && gch_prev->next != ch )
 	{
-	    sprintf( buf, "FATAL: Mobile_update: %s->prev->next doesn't point to ch.",
+	    bug("FATAL: Mobile_update: %s->prev->next doesn't point to ch.",
 		ch->name );
-	    bug( buf, 0 );	    
 	    bug( "Short-cutting here", 0 );
 	    gch_prev = NULL;
 	    ch->prev = NULL;
@@ -1003,16 +1002,16 @@ void mobile_update( void )
 		    switch( number_bits(2) )
 		    {
 			case 0:
-			  sprintf( buf, "Get away from me, %s!", rch->name );
+			  SPRINTF( buf, "Get away from me, %s!", rch->name );
 			  break;
 			case 1:
-			  sprintf( buf, "Leave me be, %s!", rch->name );
+			  SPRINTF( buf, "Leave me be, %s!", rch->name );
 			  break;
 			case 2:
-			  sprintf( buf, "%s is trying to kill me!  Help!", rch->name );
+			  SPRINTF( buf, "%s is trying to kill me!  Help!", rch->name );
 			  break;
 			case 3:
-			  sprintf( buf, "Someone save me from %s!", rch->name );
+			  SPRINTF( buf, "Someone save me from %s!", rch->name );
 			  break;
 		    }
 		    do_yell( ch, buf );
@@ -1098,31 +1097,31 @@ void weather_update( void )
     {
     case  5:
 	weather_info.sunlight = SUN_LIGHT;
-	strcat( buf, "The day has begun." );
+	STRAPP( buf, "The day has begun." );
         AT_TEMP = AT_YELLOW;
 	break;
 
     case  6:
 	weather_info.sunlight = SUN_RISE;
-	strcat( buf, "The sun rises in the east." );
+	STRAPP( buf, "The sun rises in the east." );
         AT_TEMP = AT_ORANGE;
 	break;
 
     case 12:
         weather_info.sunlight = SUN_LIGHT;
-        strcat( buf, "It's noon." ); 
+        STRAPP( buf, "It's noon." ); 
         AT_TEMP = AT_YELLOW;
    	break;
 	
     case 19:
 	weather_info.sunlight = SUN_SET;
-	strcat( buf, "The sun slowly disappears in the west." );
+	STRAPP( buf, "The sun slowly disappears in the west." );
         AT_TEMP = AT_BLOOD;
   	break;
 
     case 20:
 	weather_info.sunlight = SUN_DARK;
-	strcat( buf, "The night has begun." );
+	STRAPP( buf, "The night has begun." );
         AT_TEMP = AT_DGREY;
 	break;
 
@@ -1187,7 +1186,7 @@ void weather_update( void )
 	if ( weather_info.mmhg <  990
 	|| ( weather_info.mmhg < 1010 && number_bits( 2 ) == 0 ) )
 	{
-	    strcat( buf, "The sky is getting cloudy." );
+	    STRAPP( buf, "The sky is getting cloudy." );
 	    weather_info.sky = SKY_CLOUDY;
             AT_TEMP = AT_GREY;
 	}
@@ -1197,14 +1196,14 @@ void weather_update( void )
 	if ( weather_info.mmhg <  970
 	|| ( weather_info.mmhg <  990 && number_bits( 2 ) == 0 ) )
 	{
-	    strcat( buf, "It starts to rain." );
+	    STRAPP( buf, "It starts to rain." );
 	    weather_info.sky = SKY_RAINING;
             AT_TEMP = AT_BLUE;
 	}
 
 	if ( weather_info.mmhg > 1030 && number_bits( 2 ) == 0 )
 	{
-	    strcat( buf, "The clouds disappear." );
+	    STRAPP( buf, "The clouds disappear." );
 	    weather_info.sky = SKY_CLOUDLESS;
             AT_TEMP = AT_WHITE;
 	}
@@ -1213,7 +1212,7 @@ void weather_update( void )
     case SKY_RAINING:
 	if ( weather_info.mmhg <  970 && number_bits( 2 ) == 0 )
 	{
-	    strcat( buf, "Lightning flashes in the sky." );
+	    STRAPP( buf, "Lightning flashes in the sky." );
 	    weather_info.sky = SKY_LIGHTNING;
 	    AT_TEMP = AT_YELLOW;
 	}
@@ -1221,7 +1220,7 @@ void weather_update( void )
 	if ( weather_info.mmhg > 1030
 	|| ( weather_info.mmhg > 1010 && number_bits( 2 ) == 0 ) )
 	{
-	    strcat( buf, "The rain stopped." );
+	    STRAPP( buf, "The rain stopped." );
 	    weather_info.sky = SKY_CLOUDY;
 	    AT_TEMP = AT_WHITE;
 	}
@@ -1231,7 +1230,7 @@ void weather_update( void )
 	if ( weather_info.mmhg > 1010
 	|| ( weather_info.mmhg >  990 && number_bits( 2 ) == 0 ) )
 	{
-	    strcat( buf, "The lightning has stopped." );
+	    STRAPP( buf, "The lightning has stopped." );
 	    weather_info.sky = SKY_RAINING;
             AT_TEMP = AT_GREY;
 	    break;
@@ -1691,10 +1690,10 @@ void obj_update( void )
 	    separate_obj(obj);
             obj->value[2] = timerfrac;
             if ( obj->item_type == ITEM_DROID_CORPSE )
-              sprintf( buf, d_corpse_descs[ UMIN( timerfrac - 1, 4 ) ], 
+              SPRINTF_RUNTIME( buf, d_corpse_descs[ UMIN( timerfrac - 1, 4 ) ], 
                           bufptr ); 
             else 
-              sprintf( buf, corpse_descs[ UMIN( timerfrac - 1, 4 ) ], 
+              SPRINTF_RUNTIME( buf, corpse_descs[ UMIN( timerfrac - 1, 4 ) ], 
                           capitalize( bufptr ) ); 
 
             STRFREE( obj->description );
@@ -2477,7 +2476,7 @@ void reboot_check( time_t reset )
   
   if ( (current_time % 1800) == 0 )
   {
-    sprintf(buf, "%.24s: %d players", ctime(&current_time), num_descriptors);
+    SPRINTF(buf, "%.24s: %d players", ctime(&current_time), num_descriptors);
     append_to_file(USAGE_FILE, buf);
   }
   
@@ -2492,7 +2491,7 @@ void reboot_check( time_t reset )
     
     if ( auction->item )
     {
-      sprintf(buf, "Sale of %s has been stopped by mud.",
+      SPRINTF(buf, "Sale of %s has been stopped by mud.",
           auction->item->short_descr);
       talk_auction(buf);
       obj_to_char(auction->item, auction->seller);
@@ -2568,7 +2567,7 @@ void reboot_check( char *arg )
 
 if ((current_time % 1800) == 0)
 {
-  sprintf(buf, "%s: %d players", ctime(&current_time), num_descriptors);  
+  SPRINTF(buf, "%s: %d players", ctime(&current_time), num_descriptors);  
   append_to_file(USAGE_FILE, buf);
 }
 
@@ -2590,7 +2589,7 @@ if ((current_time % 1800) == 0)
        /* Return auction item to seller */
        if (auction->item != NULL)
        {
-        sprintf (buf,"Sale of %s has been stopped by mud.",
+        SPRINTF (buf,"Sale of %s has been stopped by mud.",
                  auction->item->short_descr);
         talk_auction (buf);
         obj_to_char (auction->item, auction->seller);
@@ -2602,9 +2601,9 @@ if ((current_time % 1800) == 0)
         }
        }      
 
-       sprintf( buf, "You are forced from these realms by a strong magical presence" ); 
+       SPRINTF( buf, "You are forced from these realms by a strong magical presence" ); 
        echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
-       sprintf( buf, "as life here is reconstructed." );
+       SPRINTF( buf, "as life here is reconstructed." );
        echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 
        /* Save all characters before booting. */
@@ -2627,7 +2626,7 @@ if ((current_time % 1800) == 0)
   {
     if ( one == FALSE )
     {
-	sprintf( buf, "You feel the ground shake as the end comes near!" );
+	SPRINTF( buf, "You feel the ground shake as the end comes near!" );
 	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 	one = TRUE;
 	sysdata.DENY_NEW_PLAYERS = TRUE;
@@ -2640,7 +2639,7 @@ if ((current_time % 1800) == 0)
   {
     if ( two == FALSE )
     {
-	sprintf( buf, "Lightning crackles in the sky above!" );
+	SPRINTF( buf, "Lightning crackles in the sky above!" );
 	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 	two = TRUE;
 	sysdata.DENY_NEW_PLAYERS = TRUE;
@@ -2653,7 +2652,7 @@ if ((current_time % 1800) == 0)
   {
     if ( three == FALSE )
     {
-	sprintf( buf, "Crashes of thunder sound across the land!" );
+	SPRINTF( buf, "Crashes of thunder sound across the land!" );
 	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 	three = TRUE;
 	sysdata.DENY_NEW_PLAYERS = TRUE;
@@ -2666,7 +2665,7 @@ if ((current_time % 1800) == 0)
   {
     if ( four == FALSE )
     {
-	sprintf( buf, "The sky has suddenly turned midnight black." );
+	SPRINTF( buf, "The sky has suddenly turned midnight black." );
 	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 	four = TRUE;
 	sysdata.DENY_NEW_PLAYERS = TRUE;
@@ -2679,7 +2678,7 @@ if ((current_time % 1800) == 0)
   {
     if ( five == FALSE )
     {
-	sprintf( buf, "You notice the life forms around you slowly dwindling away." );
+	SPRINTF( buf, "You notice the life forms around you slowly dwindling away." );
 	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 	five = TRUE;
 	sysdata.DENY_NEW_PLAYERS = TRUE;
@@ -2692,7 +2691,7 @@ if ((current_time % 1800) == 0)
   {
     if ( ten == FALSE )
     {
-	sprintf( buf, "The seas across the realm have turned frigid." );
+	SPRINTF( buf, "The seas across the realm have turned frigid." );
 	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 	ten = TRUE;
     }
@@ -2704,7 +2703,7 @@ if ((current_time % 1800) == 0)
   {
     if ( fifteen == FALSE )
     {
-	sprintf( buf, "The aura of magic which once surrounded the realms seems slightly unstable." );
+	SPRINTF( buf, "The aura of magic which once surrounded the realms seems slightly unstable." );
 	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 	fifteen = TRUE;
     }
@@ -2716,7 +2715,7 @@ if ((current_time % 1800) == 0)
   { 
     if ( thirty == FALSE )
     {
-	sprintf( buf, "You sense a change in the magical forces surrounding you." );
+	SPRINTF( buf, "You sense a change in the magical forces surrounding you." );
 	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 	thirty = TRUE;
     }
@@ -2739,10 +2738,10 @@ void auction_update (void)
 	case 1 : /* going once */
 	case 2 : /* going twice */
 	    if (auction->bet > auction->starting)
-		sprintf (buf, "%s: going %s for %d.", auction->item->short_descr,
+		SPRINTF (buf, "%s: going %s for %d.", auction->item->short_descr,
 			((auction->going == 1) ? "once" : "twice"), auction->bet);
 	    else
-		sprintf (buf, "%s: going %s (bid not received yet).", auction->item->short_descr,
+		SPRINTF (buf, "%s: going %s (bid not received yet).", auction->item->short_descr,
 			((auction->going == 1) ? "once" : "twice"));
 
 	    talk_auction (buf);
@@ -2756,7 +2755,7 @@ void auction_update (void)
 	    }
 	    if (auction->bet > 0 && auction->buyer != auction->seller)
 	    {
-		sprintf (buf, "%s sold to %s for %d.",
+		SPRINTF (buf, "%s sold to %s for %d.",
 			auction->item->short_descr,
 			IS_NPC(auction->buyer) ? auction->buyer->short_descr : auction->buyer->name,
 			auction->bet);
@@ -2781,7 +2780,7 @@ void auction_update (void)
 		tax = (int) (auction->bet * 0.1 );
 		boost_economy( auction->seller->in_room->area, tax );
                 auction->seller->gold += pay; /* give him the money, tax 10 % */
-		sprintf(buf, "The auctioneer pays you %d gold, charging an auction fee of %d.\n\r", pay, tax);
+		SPRINTF(buf, "The auctioneer pays you %d gold, charging an auction fee of %d.\n\r", pay, tax);
 		send_to_char(buf, auction->seller);
                 auction->item = NULL; /* reset item */
 		if ( IS_SET( sysdata.save_flags, SV_AUCTION ) )
@@ -2792,7 +2791,7 @@ void auction_update (void)
             }
             else /* not sold */
             {
-                sprintf (buf, "No bids received for %s - object has been removed from auction\n\r.",auction->item->short_descr);
+                SPRINTF (buf, "No bids received for %s - object has been removed from auction\n\r.",auction->item->short_descr);
                 talk_auction(buf);
                 act (AT_ACTION, "The auctioneer appears before you to return $p to you.",
                       auction->seller,auction->item,NULL,TO_CHAR);
@@ -2814,7 +2813,7 @@ void auction_update (void)
 		    obj_to_char (auction->item,auction->seller);
 		tax = (int) ( auction->item->cost * 0.05 );
 		boost_economy( auction->seller->in_room->area, tax );
-		sprintf(buf, "The auctioneer charges you an auction fee of %d.\n\r", tax );
+		SPRINTF(buf, "The auctioneer charges you an auction fee of %d.\n\r", tax );
 		send_to_char(buf, auction->seller);
 		if ((auction->seller->gold - tax) < 0)
 		  auction->seller->gold = 0;

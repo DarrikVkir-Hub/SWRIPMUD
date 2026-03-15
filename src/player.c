@@ -120,34 +120,34 @@ void do_score(CHAR_DATA * ch, char *argument)
     switch (ch->position)
     {
 	case POS_DEAD:
-		sprintf(buf, "&CYou are slowly decomposing. ");
+		SPRINTF(buf, "&CYou are slowly decomposing. ");
 		break;
 	case POS_MORTAL:
-		sprintf(buf, "&CYou are mortally wounded. ");
+		SPRINTF(buf, "&CYou are mortally wounded. ");
 		break;
 	case POS_INCAP:
-		sprintf(buf, "&CYou are incapacitated. ");
+		SPRINTF(buf, "&CYou are incapacitated. ");
 		break;
 	case POS_STUNNED:
-		sprintf(buf, "&CYou are stunned. ");
+		SPRINTF(buf, "&CYou are stunned. ");
 		break;
 	case POS_SLEEPING:
-		sprintf(buf, "&CYou are sleeping. ");
+		SPRINTF(buf, "&CYou are sleeping. ");
 		break;
 	case POS_RESTING:
-		sprintf(buf, "&CYou are resting. ");
+		SPRINTF(buf, "&CYou are resting. ");
 		break;
 	case POS_STANDING:
-		sprintf(buf, "&CYou are standing. ");
+		SPRINTF(buf, "&CYou are standing. ");
 		break;
 	case POS_FIGHTING:
-		sprintf(buf, "&CYou are fighting. " );
+		SPRINTF(buf, "&CYou are fighting. " );
 		break;
 	case POS_MOUNTED:
-		sprintf(buf, "&CYou are mounted. ");
+		SPRINTF(buf, "&CYou are mounted. ");
 		break;
         case POS_SITTING:
-		sprintf(buf, "&CYou are sitting. ");
+		SPRINTF(buf, "&CYou are sitting. ");
 		break;
     }
 
@@ -202,7 +202,7 @@ void do_score(CHAR_DATA * ch, char *argument)
     {
     	if (ch->pcdata->target && ch->pcdata->target[0] != '\0' )
     	{
-    		sprintf( buf,
+    		SPRINTF( buf,
     		"&cYour current alias focus is : &C%s.\n\r", ch->pcdata->target);
     		send_to_char( buf, ch );
     	}
@@ -212,7 +212,7 @@ void do_score(CHAR_DATA * ch, char *argument)
 
     send_to_char("&cSPICE Level/Addiction: &C", ch );
     for ( drug = 0; drug <= 9; drug++ )
-	if ( ch->pcdata->drug_level[drug] > 0 || ch->pcdata->drug_level[drug] > 0 )
+	if ( ch->pcdata->drug_level[drug] > 0 )
 	{
 	    ch_printf( ch, "%s&c(&C%d&c/&C%d&c) ", spice_table[drug],
 	                                 ch->pcdata->drug_level[drug],
@@ -730,7 +730,7 @@ void do_equipment( CHAR_DATA *ch, char *argument )
 		if ( can_see_obj( ch, obj ) )
 		{
 		    send_to_char( format_obj_to_char( obj, ch, TRUE ), ch );
-		    strcpy( buf , "" );
+			buf[0] = '\0';
 		    switch ( obj->item_type )
 	            {
 	                default:
@@ -742,23 +742,23 @@ void do_equipment( CHAR_DATA *ch, char *argument )
 	    		    if ( obj->value[1] == 0 )
 	      			obj->value[1] = 1;
 	    		    dam = (sh_int) ((obj->value[0] * 10) / obj->value[1]);
-			    if (dam >= 10) strcat( buf, " (superb) ");
-			    else if (dam >=  7) strcat( buf, " (good) ");
- 		            else if (dam >=  5) strcat( buf, " (worn) ");
-			    else if (dam >=  3) strcat( buf, " (poor) ");
-			    else if (dam >=  1) strcat( buf, " (awful) ");
-			    else if (dam ==  0) strcat( buf, " (broken) ");
+			    if (dam >= 10) STRAPP( buf, " (superb) ");
+			    else if (dam >=  7) STRAPP( buf, " (good) ");
+ 		            else if (dam >=  5) STRAPP( buf, " (worn) ");
+			    else if (dam >=  3) STRAPP( buf, " (poor) ");
+			    else if (dam >=  1) STRAPP( buf, " (awful) ");
+			    else if (dam ==  0) STRAPP( buf, " (broken) ");
                   	    send_to_char( buf, ch );
 	                    break;
 
 	                 case ITEM_WEAPON:
 	                   dam = INIT_WEAPON_CONDITION - obj->value[0];
-	                   if (dam < 2) strcat( buf, " (superb) ");
-                           else if (dam < 4) strcat( buf, " (good) ");
-                           else if (dam < 7) strcat( buf, " (worn) ");
-                           else if (dam < 10) strcat( buf, " (poor) ");
-                           else if (dam < 12) strcat( buf, " (awful) ");
-                           else if (dam ==  12) strcat( buf, " (broken) ");
+	                   if (dam < 2) STRAPP( buf, " (superb) ");
+                           else if (dam < 4) STRAPP( buf, " (good) ");
+                           else if (dam < 7) STRAPP( buf, " (worn) ");
+                           else if (dam < 10) STRAPP( buf, " (poor) ");
+                           else if (dam < 12) STRAPP( buf, " (awful) ");
+                           else if (dam ==  12) STRAPP( buf, " (broken) ");
                 	   send_to_char( buf, ch );
 	                   if (obj->value[3] == WEAPON_BLASTER )
 	                   {
@@ -813,11 +813,11 @@ void set_title( CHAR_DATA *ch, char *title )
 
     if ( isalpha(title[0]) || isdigit(title[0]) )
     {
-	buf[0] = ' ';
-	strcpy( buf+1, title );
+		buf[0] = ' ';
+		snprintf(buf + 1, sizeof(buf) - 1, "%s", title ? title : "");
     }
     else
-	strcpy( buf, title );
+		SPRINTF( buf, "%s", title );
 
     STRFREE( ch->pcdata->title );
     ch->pcdata->title = STRALLOC( buf );
@@ -828,6 +828,7 @@ void set_title( CHAR_DATA *ch, char *title )
 
 void do_title( CHAR_DATA *ch, char *argument )
 {
+    char buf[MAX_STRING_LENGTH];	
     if ( IS_NPC(ch) )
 	return;
 
@@ -855,9 +856,9 @@ void do_title( CHAR_DATA *ch, char *argument )
 	return;
 	}
     smash_tilde( argument );
-    strcat(argument, " &R&W^x");
+    snprintf(buf, sizeof(buf), "%s &R&W^x", argument);
     
-    set_title( ch, argument );
+    set_title( ch, buf );
     send_to_char( "Ok.\n\r", ch );
 }
 
@@ -888,9 +889,9 @@ void do_homepage( CHAR_DATA *ch, char *argument )
     }
 
     if ( strstr( argument, "://" ) )
-	strcpy( buf, argument );
+	SPRINTF( buf, "%s", argument );
     else
-	sprintf( buf, "http://%s", argument );
+	SPRINTF( buf, "http://%s", argument );
     if ( strlen(buf) > 70 )
 	buf[70] = '\0';
 
@@ -1002,7 +1003,7 @@ void do_report( CHAR_DATA *ch, char *argument )
 	ch->move, ch->max_move   );
 
     
-      sprintf( buf, "$n reports: %d/%d hp %d/%d.",
+      SPRINTF( buf, "$n reports: %d/%d hp %d/%d.",
 	ch->hit,  ch->max_hit,
 	ch->move, ch->max_move   );
 
@@ -1047,7 +1048,7 @@ void set_target( CHAR_DATA *ch, char *target )
 {
     char buf[MAX_STRING_LENGTH];
 
-    strcpy( buf, target );
+    SPRINTF( buf, "%s", target );
 
     if (ch->pcdata->target && ch->pcdata->target[0] != '\0')
      	STRFREE( ch->pcdata->target ); 
@@ -1075,7 +1076,7 @@ void do_focusalias( CHAR_DATA *ch, char *argument)
   	
   	if ( ch->pcdata->target && ch->pcdata->target[0] != '\0' ) 
   	{
-  		sprintf( buf, "Your current alias focus is : %s\n\r", ch->pcdata->target);
+  		SPRINTF( buf, "Your current alias focus is : %s\n\r", ch->pcdata->target);
   		send_to_char(buf,ch);
   		return;
   	}
@@ -1087,7 +1088,7 @@ void do_focusalias( CHAR_DATA *ch, char *argument)
   else
   {
   	set_target( ch, arg );
-  	sprintf( buf, "Your new alias focus is : %s\n\r", ch->pcdata->target);
+  	SPRINTF( buf, "Your new alias focus is : %s\n\r", ch->pcdata->target);
   	send_to_char( buf, ch );
   	return;
   }

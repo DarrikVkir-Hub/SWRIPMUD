@@ -1742,7 +1742,7 @@ void save_commands()
 
 SKILLTYPE *fread_skill( FILE *fp )
 {
-    char buf[MAX_STRING_LENGTH];
+//  char buf[MAX_STRING_LENGTH];
     const char *word;
     bool fMatch;
     SKILLTYPE *skill;
@@ -1796,8 +1796,7 @@ SKILLTYPE *fread_skill( FILE *fp )
 		   skill->skill_fun = dofun;
 		else
 		{
-		   sprintf( buf, "fread_skill: unknown skill/spell %s", w );
-		   bug( buf, 0 );
+		   bug( "fread_skill: unknown skill/spell %s", w );
 		   skill->spell_fun = spell_null;
 		}
 		break;
@@ -1883,8 +1882,7 @@ SKILLTYPE *fread_skill( FILE *fp )
 	
 	if ( !fMatch )
 	{
-            sprintf( buf, "Fread_skill: no match: %s", word );
-	    bug( buf, 0 );
+            bug("Fread_skill: no match: %s", word );
 	}
     }
 }
@@ -2003,7 +2001,7 @@ void load_herb_table()
 
 void fread_social( FILE *fp )
 {
-    char buf[MAX_STRING_LENGTH];
+//  char buf[MAX_STRING_LENGTH];
     const char *word;
     bool fMatch;
     SOCIALTYPE *social;
@@ -2065,8 +2063,7 @@ void fread_social( FILE *fp )
 	
 	if ( !fMatch )
 	{
-            sprintf( buf, "Fread_social: no match: %s", word );
-	    bug( buf, 0 );
+            bug( "Fread_social: no match: %s", word );
 	}
     }
 }
@@ -2122,7 +2119,7 @@ void load_socials()
 
 void fread_command( FILE *fp )
 {
-    char buf[MAX_STRING_LENGTH];
+//  char buf[MAX_STRING_LENGTH];
     const char *word;
     bool fMatch;
     CMDTYPE *command;
@@ -2182,8 +2179,7 @@ void fread_command( FILE *fp )
 	
 	if ( !fMatch )
 	{
-            sprintf( buf, "Fread_command: no match: %s", word );
-	    bug( buf, 0 );
+            bug( "Fread_command: no match: %s", word );
 	}
     }
 }

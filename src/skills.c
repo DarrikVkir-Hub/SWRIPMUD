@@ -450,14 +450,14 @@ void do_slookup( CHAR_DATA *ch, char *argument )
 		spell_action[SPELL_ACTION( skill )],
 		spell_class[SPELL_CLASS( skill )],
 		spell_power[SPELL_POWER( skill )] );
-	    strcpy( buf, "Flags:" );
+	    SPRINTF( buf, "Flags:" );
 	    for ( x = 11; x < 32; x++ )
 	      if ( SPELL_FLAG( skill, 1 << x ) )
 	      {
-		strcat( buf, " " );
-		strcat( buf, spell_flag[x-11] );
+		STRAPP( buf, " " );
+		STRAPP( buf, "%s", spell_flag[x-11] );
 	      }
-	    strcat( buf, "\n\r" );
+	    STRAPP( buf, "\n\r" );
 	    send_to_char( buf, ch );
 	}
 	ch_printf( ch, "Saves: %s\n\r", spell_saves[(int) skill->saves] );
@@ -493,39 +493,39 @@ void do_slookup( CHAR_DATA *ch, char *argument )
 	{
 	    if ( aff == skill->affects )
 	      send_to_char( "\n\r", ch );
-	    sprintf( buf, "Affect %d", ++cnt );
+	    SPRINTF( buf, "Affect %d", ++cnt );
 	    if ( aff->location )
 	    {
-		strcat( buf, " modifies " );
-		strcat( buf, a_types[aff->location % REVERSE_APPLY] );
-		strcat( buf, " by '" );
-		strcat( buf, aff->modifier );
+		STRAPP( buf, " modifies " );
+		STRAPP( buf, "%s", a_types[aff->location % REVERSE_APPLY] );
+		STRAPP( buf, " by '" );
+		STRAPP( buf, "%s", aff->modifier );
 		if ( aff->bitvector )
-		  strcat( buf, "' and" );
+		  STRAPP( buf, "' and" );
 		else
-		  strcat( buf, "'" );
+		  STRAPP( buf, "'" );
 	    }
 	    if ( aff->bitvector )
 	    {
 		int x;
 
-		strcat( buf, " applies" );
+		STRAPP( buf, " applies" );
 		for ( x = 0; x < 32; x++ )
 		  if ( IS_SET(aff->bitvector, 1 << x) )
 		  {
-		      strcat( buf, " " );
-		      strcat( buf, a_flags[x] );
+		      STRAPP( buf, " " );
+		      STRAPP( buf, "%s", a_flags[x] );
 		  }
 	    }
 	    if ( aff->duration[0] != '\0' && aff->duration[0] != '0' )
 	    {
-		strcat( buf, " for '" );
-		strcat( buf, aff->duration );
-		strcat( buf, "' rounds" );
+		STRAPP( buf, " for '" );
+		STRAPP( buf, "%s", aff->duration );
+		STRAPP( buf, "' rounds" );
 	    }
 	    if ( aff->location >= REVERSE_APPLY )
-		strcat( buf, " (affects caster only)" );
-	    strcat( buf, "\n\r" );
+		STRAPP( buf, " (affects caster only)" );
+	    STRAPP( buf, "\n\r" );
 	    send_to_char( buf, ch );
 	    if ( !aff->next )
 	      send_to_char( "\n\r", ch );
@@ -556,7 +556,7 @@ void do_slookup( CHAR_DATA *ch, char *argument )
 	    ch_printf( ch, "Immroom   : %s\n\r", skill->imm_room );
 	if ( skill->type != SKILL_HERB && skill->guild >= 0 && skill->guild < MAX_ABILITY)
 	{
-		sprintf(buf, "guild: %s   Align: %4d   lvl: %3d\n\r",
+		SPRINTF(buf, "guild: %s   Align: %4d   lvl: %3d\n\r",
 				ability_name[skill->guild], skill->alignment,    skill->min_level );
             send_to_char( buf, ch );
 	}
@@ -1430,7 +1430,7 @@ void do_detrap( CHAR_DATA *ch, char *argument )
 		bug( "do_detrap: ch->dest_buf NULL!", 0 );
 		return;
 	    }
-	    strcpy( arg, (const char * )ch->dest_buf );
+	    SPRINTF( arg, "%s", (const char * )ch->dest_buf );
 	    DISPOSE( ch->dest_buf );
 	    DISPOSE(ch->dest_buf);
 	    ch->substate = SUB_NONE;
@@ -1558,7 +1558,7 @@ void do_dig( CHAR_DATA *ch, char *argument )
 	      bug( "do_dig: dest_buf NULL", 0 );
 	      return;
 	  }
-	  strcpy( arg, (const char* ) ch->dest_buf );  
+	  SPRINTF( arg, "%s", (const char* ) ch->dest_buf );  
 	  DISPOSE( ch->dest_buf );	
 	  break;
 
@@ -1694,7 +1694,7 @@ void do_search( CHAR_DATA *ch, char *argument )
 		bug( "do_search: dest_buf NULL", 0 );
 		return;
 	    }
-	    strcpy( arg, (const char * ) ch->dest_buf );
+	    SPRINTF( arg, "%s", (const char * ) ch->dest_buf );
 	    DISPOSE( ch->dest_buf );
 	    break;
 	case SUB_TIMER_DO_ABORT:
@@ -1849,7 +1849,7 @@ void do_steal( CHAR_DATA *ch, char *argument )
 
 	if (IS_NPC(victim))
 	{
-	  sprintf( buf, "%s is a bloody thief!", ch->name );
+	  SPRINTF( buf, "%s is a bloody thief!", ch->name );
 	  do_yell( victim, buf );
 	}
 
@@ -2164,7 +2164,6 @@ void do_rescue( CHAR_DATA *ch, char *argument )
 void do_kick( CHAR_DATA *ch, char *argument )
 {
     CHAR_DATA *victim;
-    char logbuf[MAX_STRING_LENGTH];
 
     if ( IS_NPC(ch) && IS_AFFECTED( ch, AFF_CHARM ) )
     {
@@ -2180,8 +2179,7 @@ void do_kick( CHAR_DATA *ch, char *argument )
     
     if ( IS_SET(victim->act, PLR_AFK))
     {
-      sprintf( logbuf , "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
-      log_string( logbuf );
+      log_printf( "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
     }
     
 
@@ -2296,8 +2294,7 @@ void do_bite( CHAR_DATA *ch, char *argument )
     
     if ( IS_SET(victim->act, PLR_AFK))
     {
-      sprintf( logbuf , "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
-      log_string( logbuf );
+      log_printf( "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
     }
     
 
@@ -2340,8 +2337,7 @@ void do_claw( CHAR_DATA *ch, char *argument )
     
     if ( IS_SET(victim->act, PLR_AFK))
     {
-      sprintf( logbuf , "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
-      log_string( logbuf );
+      log_printf( "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
     }
     
 
@@ -2381,8 +2377,7 @@ void do_sting( CHAR_DATA *ch, char *argument )
     
     if ( IS_SET(victim->act, PLR_AFK))
     {
-      sprintf( logbuf , "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
-      log_string( logbuf );
+      log_printf( "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
     }
     
 
@@ -2423,8 +2418,7 @@ void do_tail( CHAR_DATA *ch, char *argument )
     
     if ( IS_SET(victim->act, PLR_AFK))
     {
-      sprintf( logbuf , "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
-      log_string( logbuf );
+      log_printf( "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
     }
     
 
@@ -2883,7 +2877,7 @@ void do_pick( CHAR_DATA *ch, char *argument )
             {
                 CHAR_DATA *victim;
                 bool victim_comlink;
-                OBJ_DATA *obj;
+                OBJ_DATA *vobj;
                 victim = d->original ? d->original : d->character;
 
                 if ( d->connected != CON_PLAYING )
@@ -2895,9 +2889,9 @@ void do_pick( CHAR_DATA *ch, char *argument )
                 victim_comlink = FALSE;
                 if ( IS_IMMORTAL(victim) )
                     victim_comlink = TRUE;
-                for ( obj = victim->last_carrying; obj; obj = obj->prev_content )
+                for ( vobj = victim->last_carrying; vobj; vobj = vobj->prev_content )
                 {
-                    if ( obj->pIndexData->item_type == ITEM_COMLINK )
+                    if ( vobj->pIndexData->item_type == ITEM_COMLINK )
                         victim_comlink = TRUE;
                 }
                 if ( !victim_comlink )
@@ -2938,7 +2932,7 @@ void do_pick( CHAR_DATA *ch, char *argument )
             {
                 CHAR_DATA *victim;
                 bool victim_comlink;
-                OBJ_DATA *obj;
+                OBJ_DATA *vobj;
                 victim = d->original ? d->original : d->character;
 
                 if ( d->connected != CON_PLAYING )
@@ -2950,9 +2944,9 @@ void do_pick( CHAR_DATA *ch, char *argument )
                 victim_comlink = FALSE;
                 if ( IS_IMMORTAL(victim) )
                     victim_comlink = TRUE;
-                for ( obj = victim->last_carrying; obj; obj = obj->prev_content )
+                for ( vobj = victim->last_carrying; vobj; vobj = vobj->prev_content )
                 {
-                    if ( obj->pIndexData->item_type == ITEM_COMLINK )
+                    if ( vobj->pIndexData->item_type == ITEM_COMLINK )
                         victim_comlink = TRUE;
                 }
                 if ( !victim_comlink )
@@ -3765,19 +3759,19 @@ void do_scribe( CHAR_DATA *ch, char *argument )
 
      scroll->value[0] = ch->top_level;
 
-     sprintf(buf1, "scribed book" );
+     SPRINTF(buf1, "scribed book" );
 
      STRFREE(scroll->short_descr);
 
      scroll->short_descr = STRALLOC( aoran(buf1) );
 
-     sprintf(buf2, "A scribed book lies in the dust." );
+     SPRINTF(buf2, "A scribed book lies in the dust." );
 
      STRFREE(scroll->description);
 
      scroll->description = STRALLOC(buf2);
 
-     sprintf(buf3, "scroll scribing scribed book %s", skill_table[sn]->name);
+     SPRINTF(buf3, "scroll scribing scribed book %s", skill_table[sn]->name);
 
      STRFREE(scroll->name);
 
@@ -4068,7 +4062,6 @@ void do_hitall( CHAR_DATA *ch, char *argument )
   sh_int nvict = 0;
   sh_int nhit = 0;
   sh_int percent;
-  char logbuf[MAX_STRING_LENGTH];
   
   if ( IS_SET(ch->in_room->room_flags, ROOM_SAFE) )
   {
@@ -4093,8 +4086,7 @@ void do_hitall( CHAR_DATA *ch, char *argument )
       
     if ( IS_SET(vch->act, PLR_AFK))
     {
-      sprintf( logbuf , "%s just attacked %s with HITALL with an afk flag on!." , ch->name, vch->name );
-      log_string( logbuf );
+      log_printf( "%s just attacked %s with HITALL with an afk flag on!." , ch->name, vch->name );
     }
 
     if ( chance(ch, percent) )
@@ -4321,20 +4313,20 @@ void do_scan( CHAR_DATA *ch, char *argument )
  //  korps               = create_object( get_obj_index(OBJ_VNUM_CORPSE_PC), 0 );
      skin                = create_object( get_obj_index(OBJ_VNUM_SKIN), 0 );
      name                = IS_NPC(ch) ? korps->short_descr : corpse->short_descr;
-     sprintf( buf, skin->short_descr, name );
+     SPRINTF_RUNTIME( buf, skin->short_descr, name );
      STRFREE( skin->short_descr );
      skin->short_descr = STRALLOC( buf );
-     sprintf( buf, skin->description, name );
+     SPRINTF_RUNTIME( buf, skin->description, name );
      STRFREE( skin->description );
      skin->description = STRALLOC( buf );
  
-     sprintf( buf, "The skinned bones of %s", name );
+     SPRINTF( buf, "The skinned bones of %s", name );
      STRFREE( corpse->name );
      corpse->name = STRALLOC( buf );
-     sprintf( buf, "The skinned bones of %s", name );
+     SPRINTF( buf, "The skinned bones of %s", name );
      STRFREE( corpse->description );
      corpse->description = STRALLOC( buf );
-     sprintf( buf, "The skinned bones of %s", name );
+     SPRINTF( buf, "The skinned bones of %s", name );
      STRFREE( corpse->short_descr );
      corpse->short_descr = STRALLOC( buf );
      corpse->value[1] = 1;

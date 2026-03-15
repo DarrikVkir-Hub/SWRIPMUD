@@ -44,7 +44,7 @@ void save_disintigrations()
     FILE *fpout;
     char filename[256];
     
-    sprintf( filename, "%s%s", SYSTEM_DIR, DISINTIGRATION_LIST );
+    SPRINTF( filename, "%s%s", SYSTEM_DIR, DISINTIGRATION_LIST );
     fpout = fopen( filename, "w" );
     if ( !fpout )
     {
@@ -97,7 +97,7 @@ void load_bounties( )
 
     log_string( "Loading disintigrations..." );
 
-    sprintf( bountylist, "%s%s", SYSTEM_DIR, DISINTIGRATION_LIST );
+    SPRINTF( bountylist, "%s%s", SYSTEM_DIR, DISINTIGRATION_LIST );
     FCLOSE( fpReserve );
     if ( ( fpList = fopen( bountylist, "r" ) ) == NULL )
     {
@@ -189,7 +189,7 @@ void disintigration ( CHAR_DATA *ch , CHAR_DATA *victim , long amount )
     bounty->amount      = bounty->amount + amount;
     save_disintigrations();
 
-    sprintf( buf, "&R%s has added %ld credits to the bounty on %s.\r\n", ch->name, amount , victim->name );
+    SPRINTF( buf, "&R%s has added %ld credits to the bounty on %s.\r\n", ch->name, amount , victim->name );
     send_to_char(buf, ch);
 
     for (p = last_char; p ; p = p_prev )
@@ -331,7 +331,7 @@ void claim_disintigration( CHAR_DATA *ch , CHAR_DATA *victim )
 	        SET_BIT(ch->act, PLR_KILLER );
 	        ch_printf( ch, "You are now wanted for the murder of %s.\n\r", victim->name );
 	     }
-/*	     sprintf( buf, "%s is Dead!", victim->name );
+/*	     SPRINTF( buf, "%s is Dead!", victim->name );
              echo_to_all ( AT_RED , buf, 0 );
 */
 	     return;
@@ -346,9 +346,9 @@ void claim_disintigration( CHAR_DATA *ch , CHAR_DATA *victim )
 	set_char_color( AT_BLOOD, ch );
 	ch_printf( ch, "You receive %ld experience and %ld credits,\n\r from the bounty on %s\n\r", exp, bounty->amount, bounty->target );
 	
-	sprintf( buf, "The disintigration bounty on %s has been claimed!",victim->name );
+	SPRINTF( buf, "The disintigration bounty on %s has been claimed!",victim->name );
 	echo_to_all ( AT_RED , buf, 0 );
-/*	sprintf( buf, "%s is Dead!", victim->name );
+/*	SPRINTF( buf, "%s is Dead!", victim->name );
 	echo_to_all ( AT_RED , buf, 0 ); 
 */
 	

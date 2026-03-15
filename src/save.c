@@ -75,7 +75,7 @@ void save_home( CHAR_DATA *ch )
        	OBJ_DATA *contents;
 
 
-       	sprintf( filename, "%s%c/%s.home", PLAYER_DIR, tolower(ch->name[0]),
+       	SPRINTF( filename, "%s%c/%s.home", PLAYER_DIR, tolower(ch->name[0]),
 				 capitalize( ch->name ) );
     	if ( ( fp = fopen( filename, "w" ) ) == NULL )
     	{
@@ -119,7 +119,7 @@ void de_equip_char( CHAR_DATA *ch )
 		   }
 		if ( x == MAX_LAYERS )
 		{
-		    sprintf( buf, "%s had on more than %d layers of clothing in one location (%d): %s",
+		    SPRINTF( buf, "%s had on more than %d layers of clothing in one location (%d): %s",
 			ch->name, MAX_LAYERS, obj->wear_loc, obj->name );
 		    bug( buf, 0 );
 		}
@@ -179,7 +179,7 @@ void save_char_obj( CHAR_DATA *ch )
     de_equip_char( ch );
 
     ch->pcdata->save_time = current_time;
-    sprintf( strsave, "%s%c/%s", PLAYER_DIR, tolower(ch->name[0]),
+    SPRINTF( strsave, "%s%c/%s", PLAYER_DIR, tolower(ch->name[0]),
 				 capitalize( ch->name ) );
 
     /*
@@ -187,7 +187,7 @@ void save_char_obj( CHAR_DATA *ch )
      */
     if ( IS_SET( sysdata.save_flags, SV_BACKUP ) )
     {
-	sprintf( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
+	SPRINTF( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
 				 capitalize( ch->name ) );
 	rename( strsave, strback );
     }
@@ -201,7 +201,7 @@ void save_char_obj( CHAR_DATA *ch )
      */
     if ( get_trust(ch) > LEVEL_HERO )
     {
-      sprintf( strback, "%s%s", GOD_DIR, capitalize( ch->name ) );
+      SPRINTF( strback, "%s%s", GOD_DIR, capitalize( ch->name ) );
 
       if ( ( fp = fopen( strback, "w" ) ) == NULL )
       {
@@ -275,7 +275,7 @@ void save_clone( CHAR_DATA *ch )
     ch->pcdata->clones++;
     
     ch->pcdata->save_time = current_time;
-    sprintf( strsave, "%s%c/%s.clone", PLAYER_DIR, tolower(ch->name[0]),
+    SPRINTF( strsave, "%s%c/%s.clone", PLAYER_DIR, tolower(ch->name[0]),
 				 capitalize( ch->name ) );
 
     /*
@@ -283,7 +283,7 @@ void save_clone( CHAR_DATA *ch )
      */
     if ( IS_SET( sysdata.save_flags, SV_BACKUP ) )
     {
-	sprintf( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
+	SPRINTF( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
 				 capitalize( ch->name ) );
 	rename( strsave, strback );
     }
@@ -785,7 +785,7 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
     int i, x;
     extern FILE *fpArea;
     extern char strArea[MAX_INPUT_LENGTH];
-    char buf[MAX_INPUT_LENGTH];
+//  char buf[MAX_INPUT_LENGTH];
     
     CREATE( ch, CHAR_DATA, 1 );
     for ( x = 0; x < MAX_WEAR; x++ )
@@ -832,26 +832,25 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
     ch->plr_home                        = NULL;
     found = FALSE;
     if (undead) {
-      sprintf( strsave, "%s%c/%s", BACKUP_DIR, tolower(name[0]),
+      SPRINTF( strsave, "%s%c/%s", BACKUP_DIR, tolower(name[0]),
                         capitalize( name ) );
     } else {
-      sprintf( strsave, "%s%c/%s", PLAYER_DIR, tolower(name[0]),
+      SPRINTF( strsave, "%s%c/%s", PLAYER_DIR, tolower(name[0]),
 			capitalize( name ) );
     }
     if ( stat( strsave, &fst ) != -1 )
     {
       if ( fst.st_size == 0 )
       {
-	sprintf( strsave, "%s%c/%s", BACKUP_DIR, tolower(name[0]),
+	SPRINTF( strsave, "%s%c/%s", BACKUP_DIR, tolower(name[0]),
 			capitalize( name ) );
 	send_to_char( "Restoring your backup player file...", ch );
       }
       else
       {
-	sprintf( buf, "%s player data for: %s (%dK)",
+	log_printf_plus( LOG_COMM, LEVEL_GREATER, "%s player data for: %s (%dK)",
 	  preload ? "Preloading" : "Loading", ch->name,
 	  (int) fst.st_size/1024 );
-	log_string_plus( buf, LOG_COMM, LEVEL_GREATER );
       }
     }
     /* else no player file */
@@ -866,7 +865,7 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
 	found = TRUE;
 	/* Cheat so that bug will show line #'s -- Altrag */
 	fpArea = fp;
-	strcpy(strArea, strsave);
+	SPRINTF(strArea, "%s", strsave);
 	for ( ; ; )
 	{
 	    char letter;
@@ -920,7 +919,7 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
 	}
 	FCLOSE( fp );
 	fpArea = NULL;
-	strcpy(strArea, "$");
+	SPRINTF(strArea, "$");
     }
 
     
@@ -1108,7 +1107,6 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		}
 		else
 		{
-		    int sn;
 		    char *sname = fread_word(fp);
 
 		    if ( (sn=skill_lookup(sname)) < 0 )
@@ -1181,7 +1179,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		ch->perm_con = x5;
 		ch->perm_cha = x6;
 		ch->perm_lck = x7;
-		if (!x7 || x7 == 0)
+		if (x7 == 0)
 		  ch->perm_lck = 13;
 		fMatch = TRUE;
 		break;
@@ -1206,7 +1204,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		&&   ch->pcdata->clan_name[0] != '\0'
 		&& ( ch->pcdata->clan = get_clan( ch->pcdata->clan_name )) == NULL )
 		{
-		  sprintf( buf, "Warning: the organization %s no longer exists, and therefore you no longer\n\rbelong to that organization.\n\r",
+		  SPRINTF( buf, "Warning: the organization %s no longer exists, and therefore you no longer\n\rbelong to that organization.\n\r",
 		           ch->pcdata->clan_name );
 		  send_to_char( buf, ch );
 		  STRFREE( ch->pcdata->clan_name );
@@ -1290,7 +1288,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		&&   ch->pcdata->clan_name[0] != '\0'
 		&& ( ch->pcdata->clan = get_clan( ch->pcdata->clan_name )) == NULL )
 		{
-		  sprintf( buf, "Warning: the organization %s no longer exists, and therefore you no longer\n\rbelong to that organization.\n\r",
+		  SPRINTF( buf, "Warning: the organization %s no longer exists, and therefore you no longer\n\rbelong to that organization.\n\r",
 		           ch->pcdata->clan_name );
 		  send_to_char( buf, ch );
 		  STRFREE( ch->pcdata->clan_name );
@@ -1507,7 +1505,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	    {
 		if ( !preload )
 		{
-		  sprintf( buf, "Last connected from: %s\n\r", fread_word( fp ) );
+		  SPRINTF( buf, "Last connected from: %s\n\r", fread_word( fp ) );
 		  send_to_char( buf, ch );
 		}
 		else
@@ -1546,7 +1544,6 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 
 	    if ( !str_cmp( word, "Spell" ) )
 	    {
-		int sn;
 		int value;
 
 		if ( preload )
@@ -1657,7 +1654,6 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	    KEY( "Toplevel",	ch->top_level,		fread_number( fp ) );
 	    if ( !str_cmp( word, "Tongue" ) )
 	    {
-		int sn;
 		int value;
 
 		if ( preload )
@@ -1688,7 +1684,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		if ( isalpha(ch->pcdata->title[0])
 		||   isdigit(ch->pcdata->title[0]) )
 		{
-		    sprintf( buf, " %s", ch->pcdata->title );
+		    SPRINTF( buf, " %s", ch->pcdata->title );
 		    if ( ch->pcdata->title )
 		      STRFREE( ch->pcdata->title );
 		    ch->pcdata->title = STRALLOC( buf );
@@ -1712,7 +1708,6 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	case 'W':
 	    if ( !str_cmp( word, "Weapon" ) )
 	    {
-		int sn;
 		int value;
 
 		if ( preload )
@@ -1741,8 +1736,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 
 	if ( !fMatch )
 	{
-	    sprintf( buf, "Fread_char: no match: %s", word );
-	    bug( buf, 0 );
+	    bug( buf, "Fread_char: no match: %s", word );
 	}
     }
 }
@@ -2096,12 +2090,12 @@ void do_last( CHAR_DATA *ch, char *argument )
 	send_to_char( "Usage: last <playername>\n\r", ch );
 	return;
     }
-    strcpy( name, capitalize(arg) );
-    sprintf( buf, "%s%c/%s", PLAYER_DIR, tolower(arg[0]), name );
+    SPRINTF( name, "%s", capitalize(arg) );
+    SPRINTF( buf, "%s%c/%s", PLAYER_DIR, tolower(arg[0]), name );
     if ( stat( buf, &fst ) != -1 )
-      sprintf( buf, "%s was last on: %s\r", name, ctime( &fst.st_mtime ) );
+      SPRINTF( buf, "%s was last on: %s\r", name, ctime( &fst.st_mtime ) );
     else
-      sprintf( buf, "%s was not found.\n\r", name );
+      SPRINTF( buf, "%s was not found.\n\r", name );
    send_to_char( buf, ch );
 }
 
@@ -2129,7 +2123,7 @@ void write_corpses( CHAR_DATA *ch, char *name )
       {
         char buf[127];
         
-        sprintf(buf, "%s%s", CORPSE_DIR, capitalize(name));
+        SPRINTF(buf, "%s%s", CORPSE_DIR, capitalize(name));
         if ( !(fp = fopen(buf, "w")) )
         {
           bug( "Write_corpses: Cannot open file.", 0 );
@@ -2148,7 +2142,7 @@ void write_corpses( CHAR_DATA *ch, char *name )
   {
     char buf[127];
     
-    sprintf(buf, "%s%s", CORPSE_DIR, capitalize(name));
+    SPRINTF(buf, "%s%s", CORPSE_DIR, capitalize(name));
     remove(buf);
   }
   return;
@@ -2174,7 +2168,7 @@ void load_corpses( void )
   {
     if ( de->d_name[0] != '.' )
     {
-      sprintf(strArea, "%s%s", CORPSE_DIR, de->d_name );
+      SPRINTF(strArea, "%s%s", CORPSE_DIR, de->d_name );
       fprintf(stderr, "Corpse -> %s\n", strArea);
       if ( !(fpArea = fopen(strArea, "r")) )
       {
@@ -2214,7 +2208,7 @@ void load_corpses( void )
     }
   }
   fpArea = NULL;
-  strcpy(strArea, "$");
+  SPRINTF(strArea, "$");
   closedir(dp);
   falling = 0;
   return;
@@ -2246,7 +2240,7 @@ if ( !(dp = opendir(STOREROOM_DIR)) )
 	    OBJ_DATA *tobj, *tobj_next;
 	    ROOM_INDEX_DATA *storeroom;
 
-      sprintf(strArea, "%s%s", STOREROOM_DIR, de->d_name );
+      SPRINTF(strArea, "%s%s", STOREROOM_DIR, de->d_name );
       fprintf(stderr, "STOREROOM -> %s\n", strArea);
       if ( !(fpArea = fopen(strArea, "r")) )
       {
@@ -2260,7 +2254,7 @@ if ( !(dp = opendir(STOREROOM_DIR)) )
   	    
 	    if ( !IS_SET( storeroom->room_flags, ROOM_CLANSTOREROOM ) )
 	    {
-              sprintf( buf, "%s%d", STOREROOM_DIR, storeroom->vnum );
+              SPRINTF( buf, "%s%d", STOREROOM_DIR, storeroom->vnum );
               remove( buf );
             }
   	    
@@ -2319,7 +2313,7 @@ if ( !(dp = opendir(STOREROOM_DIR)) )
     }
 
   fpArea = NULL;
-  strcpy(strArea, "$");
+  SPRINTF(strArea, "$");
   closedir(dp);
   falling = 0;
   return;
@@ -2337,7 +2331,7 @@ void save_storeroom( ROOM_INDEX_DATA *room )
 	return;
     }
 
-    sprintf( strsave, "%s%d",STOREROOM_DIR, room->vnum );
+    SPRINTF( strsave, "%s%d",STOREROOM_DIR, room->vnum );
 
     if ( ( fp = fopen( strsave, "w" ) ) == NULL )
     {
@@ -2383,7 +2377,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
   {
     if ( de->d_name[0] != '.' )
     {
-      sprintf(strArea, "%s%s", VENDOR_DIR, de->d_name );
+      SPRINTF(strArea, "%s%s", VENDOR_DIR, de->d_name );
       fprintf(stderr, "Vendor -> %s\n", strArea);
       if ( !(fpArea = fopen(strArea, "r")) )
       {
@@ -2418,7 +2412,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
     }
   }
   fpArea = NULL;
-  strcpy(strArea, "$");
+  SPRINTF(strArea, "$");
   closedir(dp);
   falling = 0;
   return;
@@ -2573,9 +2567,8 @@ if ( !(dp = opendir(VENDOR_DIR)) )
    FCLOSE( fpReserve );
    if ( (fp = fopen( argument, "w")) == NULL )
    {
- 	sprintf(buf, "Write_char_mobile: couldn't open %s for writing!\n\r", 
+ 	bug(buf, "Write_char_mobile: couldn't open %s for writing!\n\r", 
  		argument );
- 	bug(buf, 0 );
  	fpReserve = fopen( NULL_FILE, "r" );
  	return;
    }
@@ -2599,9 +2592,8 @@ if ( !(dp = opendir(VENDOR_DIR)) )
    FCLOSE( fpReserve );
    if ( (fp = fopen( argument, "r")) == NULL )
    {
- 	sprintf(buf, "Read_char_mobile: couldn't open %s for reading!\n\r", 
+ 	bug(buf, "Read_char_mobile: couldn't open %s for reading!\n\r", 
  		argument );
- 	bug(buf, 0 );
  	fpReserve = fopen( NULL_FILE, "r" );
  	return;
    }

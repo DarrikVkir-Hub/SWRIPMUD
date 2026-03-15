@@ -31,11 +31,18 @@
 #include <stdarg.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/select.h>
+#include <unistd.h>
 
 #include "mud.h"
 #ifdef DNS_SLAVE /* DNS Slave stuff */
 #include "dns_slave.h"
 #endif
+
+#ifndef isascii
+#define isascii(c) (((unsigned char)(c)) <= 127)
+#endif
+
 
 /*
  * Socket and TCP/IP stuff.
@@ -172,7 +179,7 @@ int main( int argc, char **argv )
     current_time = (time_t) now_time.tv_sec;
 /*  gettimeofday( &boot_time, NULL);   okay, so it's kludgy, sue me :) */
     boot_time = time(0);         /*  <-- I think this is what you wanted */
-    strcpy( str_boot_time, ctime( &current_time ) );
+    SPRINTF( str_boot_time, "%s", ctime( &current_time ) );
 
     /*
      * Init boot time.
@@ -240,9 +247,8 @@ int main( int argc, char **argv )
     /*
      * Run the game.
      */
-    sprintf(log_buf,"PID: %d",getpid());
+    log_printf("PID: %d",getpid());
     bootup = TRUE;
-    log_string(log_buf);
     log_string("Booting Database");
     boot_db( );
     log_string("Initializing socket");
@@ -250,8 +256,7 @@ int main( int argc, char **argv )
     control2 = init_socket( port+1 );
     conclient= init_socket( port+10);
     conjava  = init_socket( port+20);
-    sprintf( log_buf, "Rise in Power ready on port %d.", port );
-    log_string( log_buf );
+    log_printf( "Rise in Power ready on port %d.", port );
     bootup = FALSE;
     game_loop( );
     close( control  );
@@ -347,9 +352,8 @@ static void SegVio()
   log_string( lastplayercmd );
   for ( ch = first_char; ch; ch = ch->next )
   {
-    sprintf( buf, "%cPC: %-20s room: %d", IS_NPC(ch) ? 'N' : ' ',
+    log_printf( "%cPC: %-20s room: %d", IS_NPC(ch) ? 'N' : ' ',
     		ch->name, ch->in_room->vnum );
-    log_string( buf );  
   }
   exit(0);
 }
@@ -362,7 +366,7 @@ static void caught_alarm()
 {
     char buf[MAX_STRING_LENGTH];
     bug( "ALARM CLOCK!" );
-    strcpy( buf, "Alas, the hideous mandalorian entity known only as 'Lag' rises once more!\n\r" );
+    SPRINTF( buf, "Alas, the hideous mandalorian entity known only as 'Lag' rises once more!\n\r" );
     echo_to_all( AT_IMMORT, buf, ECHOTAR_ALL );
     if ( newdesc )
     {
@@ -581,7 +585,7 @@ void game_loop( )
 			d->fcommand	= TRUE;
 			stop_idling( d->character );
 
-			strcpy( cmdline, d->incomm );
+			SPRINTF( cmdline, "%s", d->incomm );
 			d->incomm[0] = '\0';
 			
 			if ( d->character )
@@ -740,8 +744,7 @@ void new_descriptor( int new_desc )
     if ( ( desc = accept( new_desc, (struct sockaddr *) &sock, (socklen_t *)&size) ) < 0 )
     {
 	perror( "New_descriptor: accept");
-/*	sprintf(bugbuf, "[*****] BUG: New_descriptor: accept");
-	log_string_plus( bugbuf, LOG_COMM, sysdata.log_level ); */
+/*	log_printf("[*****] BUG: New_descriptor: accept"); */
 	set_alarm( 0 );
 	return;
     }
@@ -784,7 +787,7 @@ void new_descriptor( int new_desc )
 
     CREATE( dnew->outbuf, char, dnew->outsize );
 
-    strcpy( buf, inet_ntoa( sock.sin_addr ) );
+    SPRINTF( buf, "%s", inet_ntoa( sock.sin_addr ) );
 
     dnew->host = STRALLOC( buf );
 
@@ -810,10 +813,9 @@ void new_descriptor( int new_desc )
     if ( !str_prefix( dnew->host, "172.1" ) )
     {
 //    log_string_plus( "AOL Ping!", LOG_COMM, sysdata.log_level );
-      strcpy( buf, inet_ntoa( sock.sin_addr ) );
-      sprintf( log_buf, "Sock.sinaddr: AOL Ping! %s, port %hd.",
+      SPRINTF( buf, inet_ntoa( sock.sin_addr ) );
+      log_printf_plus( LOG_COMM, sysdata.log_level, "Sock.sinaddr: AOL Ping! %s, port %hd.",
 		buf, dnew->port );
-      log_string_plus( log_buf, LOG_COMM, sysdata.log_level );
       
       write_to_descriptor( desc,
       "AOL users have been banned from this site.  We apologize for the inconvenience.\n\r", 0 );
@@ -841,9 +843,8 @@ void new_descriptor( int new_desc )
 	}
     }
 
-    strcpy( buf, inet_ntoa( sock.sin_addr ) );
-    sprintf( log_buf, "Sock.sinaddr:  %s, port %d.",	buf, dnew->port );
-    log_string_plus( log_buf, LOG_COMM, sysdata.log_level );
+    SPRINTF( buf, "%s", inet_ntoa( sock.sin_addr ) );
+    log_printf_plus( LOG_COMM, sysdata.log_level, "Sock.sinaddr:  %s, port %d.",	buf, dnew->port );
 
     if ( !sysdata.NO_NAME_RESOLVING )
     {
@@ -891,12 +892,12 @@ void new_descriptor( int new_desc )
     {
       if ( sysdata.time_of_max )
         DISPOSE(sysdata.time_of_max);
-      sprintf(buf, "%24.24s", ctime(&current_time));
+      SPRINTF(buf, "%24.24s", ctime(&current_time));
       sysdata.time_of_max = str_dup(buf);
       sysdata.alltimemax = sysdata.maxplayers;
-      sprintf( log_buf, "Broke all-time maximum player record: %d", sysdata.alltimemax );
-      log_string_plus( log_buf, LOG_COMM, sysdata.log_level );
-      to_channel( log_buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
+      SPRINTF( buf, "Broke all-time maximum player record: %d", sysdata.alltimemax );
+      log_string_plus( buf, LOG_COMM, sysdata.log_level );
+      to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
       save_sysdata( sysdata );
     }
     set_alarm(0);
@@ -1013,12 +1014,7 @@ void close_socket( DESCRIPTOR_DATA *dclose, bool force )
 
     if ( dclose->character )
     {
-	sprintf( log_buf, "Closing link to %s.", ch->name );
-	log_string_plus( log_buf, LOG_COMM, UMAX( sysdata.log_level, ch->top_level ) );
-/*
-	if ( ch->top_level < LEVEL_DEMI )
-	  to_channel( log_buf, CHANNEL_MONITOR, "Monitor", ch->top_level );
-*/
+	log_printf_plus( LOG_COMM, UMAX( sysdata.log_level, ch->top_level ), "Closing link to %s.", ch->name );
 	if ( dclose->connected == CON_PLAYING
 	||   dclose->connected == CON_EDITING )
 	{
@@ -1072,8 +1068,7 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
     iStart = strlen(d->inbuf);
     if ( iStart >= sizeof(d->inbuf) - 10 )
     {
-	sprintf( log_buf, "%s input overflow!", d->host );
-	log_string( log_buf );
+	log_printf( "%s input overflow!", d->host );
 	write_to_descriptor( d->descriptor,
 	    "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
 	return FALSE;
@@ -1169,7 +1164,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
             iac = 0;
 //            char buf[MAX_STRING_LENGTH];
             
-//            sprintf( buf, "C: %d, %c (%c %c) %d", d->compressing, d->inbuf[i-1], (signed char)DO, (signed char)DONT, d->inbuf[i] );
+//            SPRINTF( buf, "C: %d, %c (%c %c) %d", d->compressing, d->inbuf[i-1], (signed char)DO, (signed char)DONT, d->inbuf[i] );
 //            bug( buf );
             if ( d->inbuf[i] == (signed char)TELOPT_COMPRESS )
             {
@@ -1222,8 +1217,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 	{
 	    if ( ++d->repeat >= 100 )
 	    {
-/*		sprintf( log_buf, "%s input spamming!", d->host );
-		log_string( log_buf );
+/*		log_printf( "%s input spamming!", d->host );
 */
 		write_to_descriptor( d->descriptor,
 		    "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
@@ -1235,9 +1229,9 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
      * Do '!' substitution.
      */
     if ( d->incomm[0] == '!' )
-	strcpy( d->incomm, d->inlast );
+	SPRINTF( d->incomm, "%s", d->inlast );
     else
-	strcpy( d->inlast, d->incomm );
+	SPRINTF( d->inlast, "%s", d->incomm );
 
     /*
      * Shift the input buffer.
@@ -1280,9 +1274,9 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
 	    if ( d->character && d->character->name )
 	    {
 		if (d->original && d->original->name)
-		    sprintf( snoopbuf, "%s (%s)", d->character->name, d->original->name );
+		    SPRINTF( snoopbuf, "%s (%s)", d->character->name, d->original->name );
 		else          
-		    sprintf( snoopbuf, "%s", d->character->name);
+		    SPRINTF( snoopbuf, "%s", d->character->name);
 		write_to_buffer( d->snoop_by, snoopbuf, 0);
 	    }
 	    write_to_buffer( d->snoop_by, "% ", 2 );
@@ -1328,9 +1322,9 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
 	{
 	    /* Show original snooped names. -- Altrag */
 	    if ( d->original && d->original->name )
-		sprintf( buf, "%s (%s)", d->character->name, d->original->name );
+		SPRINTF( buf, "%s (%s)", d->character->name, d->original->name );
 	    else
-		sprintf( buf, "%s", d->character->name);
+		SPRINTF( buf, "%s", d->character->name);
 	    write_to_buffer( d->snoop_by, buf, 0);
 	}
 	write_to_buffer( d->snoop_by, "% ", 2 );
@@ -1606,15 +1600,15 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
               /* Don't allow new players if DENY_NEW_PLAYERS is true */
       	      if (sysdata.DENY_NEW_PLAYERS == TRUE)
       	      {
-                sprintf( buf, "The mud is currently preparing for a reboot.\n\r" );
+                SPRINTF( buf, "The mud is currently preparing for a reboot.\n\r" );
                 write_to_buffer( d, buf, 0 );
-                sprintf( buf, "New players are not accepted during this time.\n\r" );
+                SPRINTF( buf, "New players are not accepted during this time.\n\r" );
                 write_to_buffer( d, buf, 0 );
-                sprintf( buf, "Please try again in a few minutes.\n\r" );
+                SPRINTF( buf, "Please try again in a few minutes.\n\r" );
                 write_to_buffer( d, buf, 0 );
                 close_socket( d, FALSE );
               }
-              sprintf( buf, "\n\rChoosing a name is one of the most important parts of this game...\n\r"
+              SPRINTF( buf, "\n\rChoosing a name is one of the most important parts of this game...\n\r"
               			"Make sure to pick a name appropriate to the character you are going\n\r"
                			"to role play, and be sure that it suits our Star Wars theme.\n\r"
                			"If the name you select is not acceptable, you will be asked to choose\n\r"
@@ -1640,8 +1634,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	fOld = load_char_obj( d, argument, TRUE );
 	if ( !d->character )
 	{
-	    sprintf( log_buf, "Bad player file %s@%s.", argument, d->host );
-	    log_string( log_buf );
+	    log_printf( "Bad player file %s@%s.", argument, d->host );
 	    write_to_buffer( d, "Your playerfile is corrupt...Please notify the admins.\n\r", 0 );
 	    close_socket( d, FALSE );
 	    return;
@@ -1663,8 +1656,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
         }
 	if ( IS_SET(ch->act, PLR_DENY) )
 	{
-	    sprintf( log_buf, "Denying access to %s@%s.", argument, d->host );
-	    log_string_plus( log_buf, LOG_COMM, sysdata.log_level );
+	    log_printf_plus( LOG_COMM, sysdata.log_level, "Denying access to %s@%s.", argument, d->host );
 	    if (d->newstate != 0)
 	    {
               write_to_buffer( d, "That name is already taken.  Please choose another: ", 0 );
@@ -1718,7 +1710,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
        return;
      }
             write_to_buffer( d, "\n\rI don't recognize your name, you must be new here.\n\r\n\r", 0 );
-            sprintf( buf, "Did I get that right, %s (Y/N)? ", argument );
+            SPRINTF( buf, "Did I get that right, %s (Y/N)? ", argument );
             write_to_buffer( d, buf, 0 );
             d->connected = CON_CONFIRM_NEW_NAME;
 	    return;
@@ -1771,20 +1763,19 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
             return;
         }
         
-	sprintf( buf, ch->name );
+	SPRINTF( buf, "%s", ch->name );
 	d->character->desc = NULL;
 	free_char( d->character );
 	fOld = load_char_obj( d, buf, FALSE );
 	ch = d->character;
-	sprintf( log_buf, "%s@%s(%s) has connected.", ch->name, d->host,
-                 d->user );
+
 	if ( ch->top_level < LEVEL_DEMI )
 	{
-	  /*to_channel( log_buf, CHANNEL_MONITOR, "Monitor", ch->top_level );*/
-	  log_string_plus( log_buf, LOG_COMM, sysdata.log_level );
+	  log_printf_plus( LOG_COMM, sysdata.log_level, "%s@%s(%s) has connected.", ch->name, d->host, d->user );    
 	}
 	else
-	  log_string_plus( log_buf, LOG_COMM, ch->top_level );
+	  log_printf_plus( LOG_COMM, ch->top_level, "%s@%s(%s) has connected.", ch->name, d->host, d->user );    
+
 	show_title(d);
 	if ( ch->pcdata->area )
 		do_loadarea (ch , "" );
@@ -1796,7 +1787,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	switch ( *argument )
 	{
 	case 'y': case 'Y':
-	    sprintf( buf, "\n\rMake sure to use a password that won't be easily guessed by someone else."
+	    SPRINTF( buf, "\n\rMake sure to use a password that won't be easily guessed by someone else."
 	    		  "\n\rPick a good password for %s: %s",
 		ch->name, echo_off_str );
 	    write_to_buffer( d, buf, 0 );
@@ -1908,21 +1899,21 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
 	   continue;
          if (race_table[iRace].race_name[0] != '\0')
          {
-          sprintf( buf2, "%-20s", race_table[iRace].race_name );
-          strcat( buf, buf2 );
-          sprintf( buf2, "%-20s", race_table[iRace+halfmax].race_name );
-          strcat( buf, buf2 );
+          SPRINTF( buf2, "%-20s", race_table[iRace].race_name );
+          STRAPP( buf, "%s", buf2 );
+          SPRINTF( buf2, "%-20s", race_table[iRace+halfmax].race_name );
+          STRAPP( buf, "%s", buf2 );
           if( iRace + (halfmax*2) < MAX_RACE )
           {
-            sprintf( buf2, "%s", race_table[iRace+(halfmax*2)].race_name );
-            strcat( buf, buf2 );
+            SPRINTF( buf2, "%s", race_table[iRace+(halfmax*2)].race_name );
+            STRAPP( buf, "%s", buf2 );
 	  }
-          strcat( buf, "\n\r" );
+          STRAPP( buf, "\n\r" );
           write_to_buffer( d, buf, 0 );
           buf[0] = '\0';
          }
         }
-	strcat( buf, ": " );
+	STRAPP( buf, ": " );
 	write_to_buffer( d, buf, 0 );
 	d->connected = CON_GET_NEW_RACE;
 	break;
@@ -1975,19 +1966,19 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
 	{
 	 if (ability_name[iClass] && ability_name[iClass][0] != '\0')
 	 {
-          sprintf( buf2, "%-20s", ability_name[iClass] );
-          strcat( buf, buf2 );
+          SPRINTF( buf2, "%-20s", ability_name[iClass] );
+          STRAPP( buf, "%s", buf2 );
           if( iClass + halfmax < MAX_ABILITY )
           {
-            sprintf( buf2, "%s", ability_name[iClass+halfmax] );
-            strcat( buf, buf2 );
+            SPRINTF( buf2, "%s", ability_name[iClass+halfmax] );
+            STRAPP( buf, "%s", buf2 );
 	  }
-          strcat( buf, "\n\r" );
+          STRAPP( buf, "\n\r" );
           write_to_buffer( d, buf, 0 );
           buf[0] = '\0';
          }
         }
-	strcat( buf, ": " );
+	STRAPP( buf, ": " );
 	write_to_buffer( d, buf, 0 );
 	d->connected = CON_GET_NEW_CLASS;
 	break;
@@ -2038,7 +2029,7 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
 	    ch->perm_con	 += race_table[ch->race].con_plus;
 	    ch->perm_cha	 += race_table[ch->race].cha_plus;
 	
-	sprintf( buf, "\n\rSTR: %d  INT: %d  WIS: %d  DEX: %d  CON: %d  CHA: %d\n\r" ,
+	SPRINTF( buf, "\n\rSTR: %d  INT: %d  WIS: %d  DEX: %d  CON: %d  CHA: %d\n\r" ,
 	    ch->perm_str, ch->perm_int, ch->perm_wis, 
 	    ch->perm_dex, ch->perm_con, ch->perm_cha) ;
          
@@ -2067,7 +2058,7 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
 	    ch->perm_con	 += race_table[ch->race].con_plus;
 	    ch->perm_cha	 += race_table[ch->race].cha_plus;
 	
-	    sprintf( buf, "\n\rSTR: %d  INT: %d  WIS: %d  DEX: %d  CON: %d  CHA: %d\n\r" ,
+	    SPRINTF( buf, "\n\rSTR: %d  INT: %d  WIS: %d  DEX: %d  CON: %d  CHA: %d\n\r" ,
 	    ch->perm_str, ch->perm_int, ch->perm_wis, 
 	    ch->perm_dex, ch->perm_con, ch->perm_cha) ;
          
@@ -2109,10 +2100,10 @@ case CON_GET_MSP:
 /*
 	if ( !sysdata.WAIT_FOR_AUTH )
 	{
-*/	    sprintf( log_buf, "%s@%s new %s.", ch->name, d->host,
+*/	    SPRINTF( buf, "%s@%s new %s.", ch->name, d->host,
 				race_table[ch->race].race_name);
-	    log_string_plus( log_buf, LOG_COMM, sysdata.log_level);
-	    to_channel( log_buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
+	    log_string_plus( buf, LOG_COMM, sysdata.log_level);
+	    to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
 	    write_to_buffer( d, "Press [ENTER] ", 0 );
 	    show_title(d);
 	    {
@@ -2129,31 +2120,31 @@ case CON_GET_MSP:
 /*	}
 
 	write_to_buffer( d, "\n\rYou now have to wait for a god to authorize you... please be patient...\n\r", 0 );
-	sprintf( log_buf, "(1) %s@%s new %s applying for authorization...",
+	SPRINTF( buf, "(1) %s@%s new %s applying for authorization...",
 				ch->name, d->host,
 				race_table[ch->race].race_name);
-	log_string( log_buf );
-	to_channel( log_buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
+	log_string( buf );
+	to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
 	d->connected = CON_WAIT_1;
 	break;
 
      case CON_WAIT_1:
 	write_to_buffer( d, "\n\rTwo more tries... please be patient...\n\r", 0 );
-	sprintf( log_buf, "(2) %s@%s new %s applying for authorization...",
+	SPRINTF( buf, "(2) %s@%s new %s applying for authorization...",
 				ch->name, d->host,
 				race_table[ch->race].race_name);
-	log_string( log_buf );
-	to_channel( log_buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
+	log_string( buf );
+	to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
 	d->connected = CON_WAIT_2;
 	break;
 
      case CON_WAIT_2:
 	write_to_buffer( d, "\n\rThis is your last try...\n\r", 0 );
-	sprintf( log_buf, "(3) %s@%s new %s applying for authorization...",
+	SPRINTF( buf, "(3) %s@%s new %s applying for authorization...",
 				ch->name, d->host,
 				race_table[ch->race].race_name);
-	log_string( log_buf );
-	to_channel( log_buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
+	log_string( buf );
+	to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
 	d->connected = CON_WAIT_3;
 	break;
 
@@ -2165,10 +2156,10 @@ case CON_GET_MSP:
 
     case CON_ACCEPTED:
 
-	sprintf( log_buf, "%s@%s new %s.", ch->name, d->host,
+	SPRINTF( buf, "%s@%s new %s.", ch->name, d->host,
 				race_table[ch->race].race_name);
-	log_string_plus( log_buf, LOG_COMM, sysdata.log_level );
-	to_channel( log_buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
+	log_string_plus( buf, LOG_COMM, sysdata.log_level );
+	to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
 	write_to_buffer( d, "\n\r", 2 );
 	show_title(d);
 	    {
@@ -2314,7 +2305,7 @@ case CON_GET_MSP:
 	         ch->max_mana = 0;
             ch->max_mana += race_table[ch->race].mana;
 	    ch->mana	= ch->max_mana;
-	    sprintf( buf, "%s the %s",ch->name,
+	    SPRINTF( buf, "%s the %s",ch->name,
 		race_table[ch->race].race_name );
 	    set_title( ch, buf );
 
@@ -2426,7 +2417,7 @@ case CON_GET_MSP:
 	    extract_obj( obj );
 	 }
 
-	 sprintf( filename, "%s%c/%s.home", PLAYER_DIR, tolower(ch->name[0]),
+	 SPRINTF( filename, "%s%c/%s.home", PLAYER_DIR, tolower(ch->name[0]),
 				 capitalize( ch->name ) );
 	 if ( ( fph = fopen( filename, "r" ) ) != NULL )
 	 {
@@ -2529,7 +2520,7 @@ case CON_GET_MSP:
  */
 bool check_parse_name( char *name )
 {
-//    sprintf(log_buf,"Check_parse_name: %s",name);  
+//    log_printf("Check_parse_name: %s",name);  
     /*
      * Reserved words.
      */
@@ -2619,12 +2610,8 @@ short check_reconnect( DESCRIPTOR_DATA *d, char *name, bool fConn )
 		ch->timer	 = 0;
 		send_to_char( "Reconnecting.\n\r", ch );
 		act( AT_ACTION, "$n has reconnected.", ch, NULL, NULL, TO_ROOM );
-		sprintf( log_buf, "%s@%s(%s) reconnected.", ch->name, d->host, d->user );
-		log_string_plus( log_buf, LOG_COMM, UMAX( sysdata.log_level, ch->top_level ) );
-/*
-		if ( ch->top_level < LEVEL_SAVIOR )
-		  to_channel( log_buf, CHANNEL_MONITOR, "Monitor", ch->top_level );
-*/
+		log_printf_plus( LOG_COMM, UMAX( sysdata.log_level, ch->top_level ), "%s@%s(%s) reconnected.", ch->name, d->host, d->user );
+
 		d->connected = CON_PLAYING;
 	    }
 	    return TRUE;
@@ -2676,8 +2663,8 @@ bool check_multi( DESCRIPTOR_DATA *d , char *name )
 	           return FALSE;
 */
 		write_to_buffer( d, "Sorry multi-playing is not allowed ... have you other character quit first.\n\r", 0 );
-		sprintf( log_buf, "%s attempting to multiplay with %s.", dold->original ? dold->original->name : dold->character->name , d->character->name );
-		log_string_plus( log_buf, LOG_COMM, sysdata.log_level );	
+		log_printf_plus( LOG_COMM, sysdata.log_level, "%s attempting to multiplay with %s.", dold->original ? dold->original->name : dold->character->name , d->character->name );
+
 	        d->character = NULL;
 	        free_char( d->character );
 	        return TRUE;
@@ -2707,10 +2694,9 @@ short check_playing( DESCRIPTOR_DATA *d, char *name, bool kick )
 	    if ( !ch->name
 	    || ( cstate != CON_PLAYING && cstate != CON_EDITING ) )
 	    {
-		write_to_buffer( d, "Already connected - try again.\n\r", 0 );
-		sprintf( log_buf, "%s already connected.", ch->name );
-		log_string_plus( log_buf, LOG_COMM, sysdata.log_level );
-		return BERR;
+        write_to_buffer( d, "Already connected - try again.\n\r", 0 );
+        log_printf_plus( LOG_COMM, sysdata.log_level, "%s already connected.", ch->name );
+        return BERR;
 	    }
 	    if ( !kick )
 	      return TRUE;
@@ -2729,13 +2715,8 @@ short check_playing( DESCRIPTOR_DATA *d, char *name, bool kick )
 	    send_to_char( "Reconnecting.\n\r", ch );
 	    act( AT_ACTION, "$n has reconnected, kicking off old link.",
 	         ch, NULL, NULL, TO_ROOM );
-	    sprintf( log_buf, "%s@%s reconnected, kicking off old link.",
+	    log_printf_plus( LOG_COMM, UMAX( sysdata.log_level, ch->top_level ), "%s@%s reconnected, kicking off old link.",
 	             ch->name, d->host );
-	    log_string_plus( log_buf, LOG_COMM, UMAX( sysdata.log_level, ch->top_level ) );
-/*
-	    if ( ch->top_level < LEVEL_SAVIOR )
-	      to_channel( log_buf, CHANNEL_MONITOR, "Monitor", ch->top_level );
-*/
 	    d->connected = cstate;
 	    return TRUE;
 	}
@@ -2895,7 +2876,7 @@ void send_to_pager_color( const char *txt, CHAR_DATA *ch )
   DESCRIPTOR_DATA *d;
   char *colstr;
   const char *prevstr = txt;
-  char colbuf[20];
+  char colbuf[MAX_INPUT_LENGTH];
   int ln;
   
   if ( !ch )
@@ -2946,9 +2927,9 @@ void set_char_color( sh_int AType, CHAR_DATA *ch )
     if ( !IS_NPC(och) && IS_SET(och->act, PLR_ANSI) )
     {
 	if ( AType == 7 )
-	  strcpy( buf, "\033[m" );
+	  SPRINTF( buf, "\033[m" );
 	else
-	  sprintf(buf, "\033[0;%d;%s%dm", (AType & 8) == 8,
+	  SPRINTF(buf, "\033[0;%d;%s%dm", (AType & 8) == 8,
 	        (AType > 15 ? "5;" : ""), (AType & 7)+30);
 	write_to_buffer( ch->desc, buf, strlen(buf) );
     }
@@ -2967,9 +2948,9 @@ void set_pager_color( sh_int AType, CHAR_DATA *ch )
     if ( !IS_NPC(och) && IS_SET(och->act, PLR_ANSI) )
     {
 	if ( AType == 7 )
-	  strcpy( buf, "\033[m" );
+	  SPRINTF( buf, "\033[m" );
 	else
-	  sprintf(buf, "\033[0;%d;%s%dm", (AType & 8) == 8,
+	  SPRINTF(buf, "\033[0;%d;%s%dm", (AType & 8) == 8,
 	        (AType > 15 ? "5;" : ""), (AType & 7)+30);
 	send_to_pager( buf, ch );
 	ch->desc->pagecolor = AType;
@@ -2981,25 +2962,28 @@ void set_pager_color( sh_int AType, CHAR_DATA *ch )
 /* source: EOD, by John Booth <???> */
 void ch_printf(CHAR_DATA *ch, const char *fmt, ...)
 {
-    char buf[MAX_STRING_LENGTH*2];	/* better safe than sorry */
+    char buf[MAX_STRING_LENGTH * 2];
     va_list args;
 
     va_start(args, fmt);
-    vsprintf(buf, fmt, args);
+    vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
-	
+
     send_to_char(buf, ch);
 }
 
 void pager_printf(CHAR_DATA *ch, const char *fmt, ...)
 {
-    char buf[MAX_STRING_LENGTH*2];
+    char buf[MAX_STRING_LENGTH * 2];
     va_list args;
 
+    if (!ch)
+        return;
+
     va_start(args, fmt);
-    vsprintf(buf, fmt, args);
+    vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
-	
+
     send_to_pager(buf, ch);
 }
 
@@ -3011,8 +2995,8 @@ char *obj_short( OBJ_DATA *obj )
 
     if ( obj->count > 1 )
     {
-	sprintf( buf, "%s (%d)", obj->short_descr, obj->count );
-	return buf;
+      SPRINTF( buf, "%s (%d)", obj->short_descr, obj->count );
+      return buf;
     }
     return obj->short_descr;
 }
@@ -3022,231 +3006,448 @@ char *obj_short( OBJ_DATA *obj )
  */
 /* Major overhaul. -- Alty */
 #define NAME(ch)	(IS_NPC(ch) ? ch->short_descr : ch->name)
-char *act_string(const char *format, CHAR_DATA *to, CHAR_DATA *ch,
-		 const void *arg1, const void *arg2)
-{
-  static char * const he_she  [] = { "it",  "he",  "she" };
-  static char * const him_her [] = { "it",  "him", "her" };
-  static char * const his_her [] = { "its", "his", "her" };
-  static char buf[MAX_STRING_LENGTH];
-  char fname[MAX_INPUT_LENGTH];
-  char *point = buf;
-  const char *str = format;
-  const char *i;
-  CHAR_DATA *vch = (CHAR_DATA *) arg2;
-  OBJ_DATA *obj1 = (OBJ_DATA  *) arg1;
-  OBJ_DATA *obj2 = (OBJ_DATA  *) arg2;
 
-  while ( *str != '\0' )
-  {
-    if ( *str != '$' )
+/*
+ * act_string()
+ *
+ * Expands the $ codes used by act() into readable text.
+ *
+ * Example format string:
+ *
+ *   "$n gives $p to $N."
+ *
+ * Which might become:
+ *
+ *   "Bob gives a sword to Alice."
+ *
+ * Parameters:
+ *
+ *   format  : original format string containing $ tokens
+ *   to      : character receiving the message
+ *   ch      : acting character
+ *   arg1    : usually object or string ($p or $t)
+ *   arg2    : usually victim or string ($N or $T)
+ *
+ * Returns:
+ *
+ *   pointer to static buffer containing formatted message
+ *
+ * Safety improvements:
+ *
+ *   • Prevents buffer overflow
+ *   • Protects against NULL pointers
+ *   • Handles missing arg1/arg2 safely
+ *   • Limits writes to MAX_STRING_LENGTH
+ */
+
+static const char *he_she[]  = { "it",  "he",  "she" };
+static const char *him_her[] = { "it",  "him", "her" };
+static const char *his_her[] = { "its", "his", "her" };
+
+char *act_string(const char *format, CHAR_DATA *to, CHAR_DATA *ch,
+                 const void *arg1, const void *arg2)
+{
+    /* Output buffer for the final formatted string */
+    thread_local static char buf[MAX_STRING_LENGTH];
+
+    /* Temporary buffer used by some tokens (ex: $d) */
+    char fname[MAX_INPUT_LENGTH];
+
+    /* Write pointer into buf */
+    char *point = buf;
+
+    /*
+     * Pointer to the last safe write position.
+     * We reserve 3 bytes for:
+     *
+     *   "\n\r\0"
+     */
+    char *end = buf + sizeof(buf) - 3;
+
+    /* Pointer to current position in format string */
+    const char *str = format;
+
+    /* Pointer to the string we will append */
+    const char *i = NULL;
+
+    /*
+     * Interpret arg1 and arg2 in common ways.
+     *
+     * arg1 -> often object
+     * arg2 -> often character
+     */
+    CHAR_DATA *vch = (CHAR_DATA *)arg2;
+    OBJ_DATA *obj1 = (OBJ_DATA *)arg1;
+    OBJ_DATA *obj2 = (OBJ_DATA *)arg2;
+
+    /* Defensive checks */
+    if (!format || !ch)
+        return "";
+
+    /*
+     * Walk through the format string one character at a time
+     */
+    while (*str && point < end)
     {
-      *point++ = *str++;
-      continue;
-    }
-    ++str;
-    if ( !arg2 && *str >= 'A' && *str <= 'Z' )
-    {
-      bug( "Act: missing arg2 for code %c:", *str );
-      bug( format );
-      i = " <@@@> ";
-    }
-    else
-    {
-      switch ( *str )
-      {
-      default:  bug( "Act: bad code %c.", *str );
-		i = " <@@@> ";						break;
-      case 't': i = (char *) arg1;					break;
-      case 'T': i = (char *) arg2;					break;
-      case 'n': i = (to ? PERS( ch, to) : NAME( ch));			break;
-      case 'N': i = (to ? PERS(vch, to) : NAME(vch));			break;
-      case 'e': if (ch->sex > 2 || ch->sex < 0)
-		{
-		  bug("act_string: player %s has sex set at %d!", ch->name,
-		      ch->sex);
-		  i = "it";
-		}
-		else
-		  i = he_she [URANGE(0,  ch->sex, 2)];
-		break;
-      case 'E': if (vch->sex > 2 || vch->sex < 0)
-		{
-		  bug("act_string: player %s has sex set at %d!", vch->name,
-		      vch->sex);
-		  i = "it";
-		}
-		else
-		  i = he_she [URANGE(0, vch->sex, 2)];
-		break;
-      case 'l': i = lang_string(ch, to);
-      		break;
-      case 'm': if (ch->sex > 2 || ch->sex < 0)
-		{
-		  bug("act_string: player %s has sex set at %d!", ch->name,
-		      ch->sex);
-		  i = "it";
-		}
-		else
-		  i = him_her[URANGE(0,  ch->sex, 2)];
-		break;
-      case 'M': if (vch->sex > 2 || vch->sex < 0)
-		{
-		  bug("act_string: player %s has sex set at %d!", vch->name,
-		      vch->sex);
-		  i = "it";
-		}
-		else
-		  i = him_her[URANGE(0, vch->sex, 2)];
-		break;
-      case 's': if (ch->sex > 2 || ch->sex < 0)
-		{
-		  bug("act_string: player %s has sex set at %d!", ch->name,
-		      ch->sex);
-		  i = "its";
-		}
-		else
-		  i = his_her[URANGE(0,  ch->sex, 2)];
-		break;
-      case 'S': if (vch->sex > 2 || vch->sex < 0)
-		{
-		  bug("act_string: player %s has sex set at %d!", vch->name,
-		      vch->sex);
-		  i = "its";
-		}
-		else
-		  i = his_her[URANGE(0, vch->sex, 2)];
-		break;
-      case 'q': i = (to == ch) ? "" : "s";				break;
-      case 'Q': i = (to == ch) ? "your" :
-		    his_her[URANGE(0,  ch->sex, 2)];			break;
-      case 'p': i = (!to || can_see_obj(to, obj1)
-		  ? obj_short(obj1) : "something");			break;
-      case 'P': i = (!to || can_see_obj(to, obj2)
-		  ? obj_short(obj2) : "something");			break;
-      case 'd':
-        if ( !arg2 || ((char *) arg2)[0] == '\0' )
-          i = "door";
+        //If this is not a '$' token, just copy it directly
+        if (*str != '$')
+        {
+            *point++ = *str++;
+            continue;
+        }
+
+         //Skip the '$'
+        str++;
+
+         //If format string ended after '$', stop safely
+        if (!*str)
+            break;
+
+         /* If a token requires arg2 but it was not provided,
+         *  log a bug and insert a placeholder. */
+        if (!arg2 && *str >= 'A' && *str <= 'Z')
+        {
+            bug("act_string: missing arg2 for code %c", *str);
+            i = "<@@@>";
+        }
         else
         {
-          one_argument((char *) arg2, fname);
-          i = fname;
+            /*
+             * Interpret token following '$'
+             */
+            switch (*str)
+            {
+            default:
+                bug("act_string: bad code %c", *str);
+                i = "<@@@>";
+                break;
+
+             //$t = string from arg1
+            case 't':
+                i = arg1 ? (char *)arg1 : "";
+                break;
+
+            // $T = string from arg2
+            case 'T':
+                i = arg2 ? (char *)arg2 : "";
+                break;
+
+            // $n = actor name (seen by 'to')
+            case 'n':
+                i = (to ? PERS(ch,to) : NAME(ch));
+                break;
+
+            // $N = victim name
+            case 'N':
+                i = vch ? (to ? PERS(vch,to) : NAME(vch)) : "someone";
+                break;
+
+            // $e / $E = he/she/it - CHAR
+            case 'e':
+                i = he_she[URANGE(0, ch->sex, 2)];
+                break;
+            // $e / $E = he/she/it - VICT
+            case 'E':
+                i = vch ? he_she[URANGE(0, vch->sex, 2)] : "it";
+                break;
+
+            // $m / $M = him/her/it - CHAR
+            case 'm':
+                i = him_her[URANGE(0, ch->sex, 2)];
+                break;
+            // $m / $M = him/her/it - VICT
+            case 'M':
+                i = vch ? him_her[URANGE(0, vch->sex, 2)] : "it";
+                break;
+
+            // $s / $S = his/her/its - CHAR
+            case 's':
+                i = his_her[URANGE(0, ch->sex, 2)];
+                break;
+            // $s / $S = his/her/its - VICT
+            case 'S':
+                i = vch ? his_her[URANGE(0, vch->sex, 2)] : "its";
+                break;
+
+            /*
+             * $q = plural suffix
+             * Used for messages like:
+             *   "$n drop$q $p."
+             * Which becomes:
+             *   "Bob drops sword."
+             *   "You drop sword."
+             */
+            case 'q':
+                i = (to == ch) ? "" : "s";
+                break;
+
+            // $Q = possessive pronoun
+            case 'Q':
+                i = (to == ch) ? "your"
+                               : his_her[URANGE(0, ch->sex, 2)];
+                break;
+
+            // $p = object short description
+            case 'p':
+                i = (!obj1 ? "something" :
+                     (!to || can_see_obj(to,obj1)
+                      ? obj_short(obj1) : "something"));
+                break;
+
+            // $P = second object
+            case 'P':
+                i = (!obj2 ? "something" :
+                     (!to || can_see_obj(to,obj2)
+                      ? obj_short(obj2) : "something"));
+                break;
+
+            /*
+             * $d = door direction
+             * Extracts first word from arg2.
+             */
+            case 'd':
+                if (!arg2 || ((char *)arg2)[0] == '\0')
+                    i = "door";
+                else
+                {
+                    one_argument((char *)arg2, fname);
+                    i = fname;
+                }
+                break;
+
+            // $l = language string
+            case 'l':
+                i = lang_string(ch, to);
+                break;
+            }
         }
-        break;
-      }
+
+        /* Move past token */
+        str++;
+
+        if (!i)
+            i = "";
+
+        /*
+         * Safely append i into the output buffer.
+         * This prevents writing past MAX_STRING_LENGTH.
+         */
+        while (*i && point < end)
+            *point++ = *i++;
     }
-    ++str;
-    while ( (*point = *i) != '\0' )
-      ++point, ++i;
-  }
-  strcpy(point, "\n\r");
-  buf[0] = UPPER(buf[0]);
-  return buf;
+
+    // Terminate message with newline/carriage return
+    *point++ = '\n';
+    *point++ = '\r';
+    *point   = '\0';
+
+    // Capitalize the first character
+    if (buf[0])
+        buf[0] = UPPER(buf[0]);
+
+    return buf;
 }
 #undef NAME
   
-void act( sh_int AType, const char *format, CHAR_DATA *ch, const void *arg1, const void *arg2, int type )
+/*
+ * act() - Cleaned up Act - AI/DV 3-15-26
+ *
+ * Sends formatted action messages to characters depending on the
+ * message target type (TO_CHAR, TO_ROOM, TO_VICT, etc).
+ *
+ * The format string can contain special tokens like:
+ *   $n - acting character name
+ *   $N - victim name
+ *   $p - object name
+ *   $t - string argument
+ *
+ * These tokens are expanded by act_string().
+ *
+ * Parameters:
+ *   AType  - color code for the message
+ *   format - format string containing tokens
+ *   ch     - character performing the action
+ *   arg1   - optional object or string argument
+ *   arg2   - optional victim character
+ *   type   - target audience (TO_CHAR, TO_ROOM, etc)
+ */
+void act( sh_int AType, const char *format, CHAR_DATA *ch,
+          const void *arg1, const void *arg2, int type )
 {
-    char *txt;
-    CHAR_DATA *to;
-    CHAR_DATA *vch = (CHAR_DATA *)arg2;
+    char *txt;                     /* Final expanded message string */
+    CHAR_DATA *to;                 /* Character receiving the message */
+    CHAR_DATA *vch = (CHAR_DATA *)arg2; /* Victim character (if applicable) */
 
     /*
-     * Discard null and zero-length messages.
+     * Ignore null or empty messages.
      */
     if ( !format || format[0] == '\0' )
-	return;
-
-    if ( !ch )
-    {
-	bug( "Act: null ch. (%s)", format );
-	return;
-    }
-
-    if ( !ch->in_room )
-      to = NULL;
-    else if ( type == TO_CHAR )
-      to = ch;
-    else
-      to = ch->in_room->first_person;
+        return;
 
     /*
-     * ACT_SECRETIVE handling
+     * Acting character must exist.
+     */
+    if ( !ch )
+    {
+        bug( "Act: null ch. (%s)", format );
+        return;
+    }
+
+    /*
+     * Determine who the initial recipient should be.
+     *
+     * TO_CHAR  -> message only to the acting character
+     * otherwise -> start iterating through room occupants
+     */
+    if ( !ch->in_room )
+        to = NULL;
+    else if ( type == TO_CHAR )
+        to = ch;
+    else
+        to = ch->in_room->first_person;
+
+    /*
+     * ACT_SECRETIVE mobs do not broadcast actions to the room.
+     * Only the mob itself should see the message.
      */
     if ( IS_NPC(ch) && IS_SET(ch->act, ACT_SECRETIVE) && type != TO_CHAR )
-	return;
+        return;
 
+    /*
+     * Handle victim-targeted messages.
+     *
+     * Example:
+     *   "$n hits you!"  (TO_VICT)
+     */
     if ( type == TO_VICT )
     {
-	if ( !vch )
-	{
-	    bug( "Act: null vch with TO_VICT." );
-	    bug( "%s (%s)", ch->name, format );
-	    return;
-	}
-	if ( !vch->in_room )
-	{
-	    bug( "Act: vch in NULL room!" );
-	    bug( "%s -> %s (%s)", ch->name, vch->name, format );
-	    return;
-	}
-	to = vch;
-/*	to = vch->in_room->first_person;*/
+        if ( !vch )
+        {
+            bug( "Act: null vch with TO_VICT." );
+            bug( "%s (%s)", ch->name, format );
+            return;
+        }
+
+        if ( !vch->in_room )
+        {
+            bug( "Act: vch in NULL room!" );
+            bug( "%s -> %s (%s)", ch->name, vch->name, format );
+            return;
+        }
+
+        /* Send message directly to the victim */
+        to = vch;
     }
 
+    /*
+     * Trigger room and object ACT_PROG scripts if applicable.
+     *
+     * These triggers allow rooms and objects to react to
+     * player actions described by act() messages.
+     */
     if ( MOBtrigger && type != TO_CHAR && type != TO_VICT && to )
     {
-      OBJ_DATA *to_obj;
-      
-      txt = act_string(format, NULL, ch, arg1, arg2);
-      if ( IS_SET(to->in_room->progtypes, ACT_PROG) )
-        rprog_act_trigger(txt, to->in_room, ch, (OBJ_DATA *)arg1, (void *)arg2);
-      for ( to_obj = to->in_room->first_content; to_obj;
-            to_obj = to_obj->next_content )
-        if ( IS_SET(to_obj->pIndexData->progtypes, ACT_PROG) )
-          oprog_act_trigger(txt, to_obj, ch, (OBJ_DATA *)arg1, (void *)arg2);
+        OBJ_DATA *to_obj;
+
+        /* Generate the message text without ANSI colors */
+        txt = act_string(format, NULL, ch, arg1, arg2);
+
+        /*
+         * Room ACT trigger
+         */
+        if ( IS_SET(to->in_room->progtypes, ACT_PROG) )
+            rprog_act_trigger(txt, to->in_room, ch,
+                              (OBJ_DATA *)arg1, (void *)arg2);
+
+        /*
+         * Object ACT triggers for all objects in the room
+         */
+        for ( to_obj = to->in_room->first_content;
+              to_obj;
+              to_obj = to_obj->next_content )
+        {
+            if ( IS_SET(to_obj->pIndexData->progtypes, ACT_PROG) )
+                oprog_act_trigger(txt, to_obj, ch,
+                                  (OBJ_DATA *)arg1, (void *)arg2);
+        }
     }
 
-    /* Anyone feel like telling me the point of looping through the whole
-       room when we're only sending to one char anyways..? -- Alty */
+    /*
+     * Send the message to appropriate characters.
+     *
+     * If TO_CHAR or TO_VICT, the loop runs once.
+     * Otherwise we iterate through everyone in the room.
+     */
     for ( ; to; to = (type == TO_CHAR || type == TO_VICT)
                      ? NULL : to->next_in_room )
     {
-	if (((!to || !to->desc) 
-	&& (  IS_NPC(to) && !IS_SET(to->pIndexData->progtypes, ACT_PROG) ))
-	||   !IS_AWAKE(to) )
-	    continue;
 
+        if (!to)
+            continue;      
+        /*
+         * Skip characters that should not receive the message.
+         *
+         * Conditions:
+         *  - no descriptor (player not connected)
+         *  - sleeping
+         *  - NPC without relevant programs
+         */
+        if (((!to || !to->desc)
+             && (IS_NPC(to) && !IS_SET(to->pIndexData->progtypes, ACT_PROG)))
+            || !IS_AWAKE(to))
+            continue;
 
-        if(!can_see(to, ch) && type != TO_VICT )
-          continue;
+        /*
+         * Skip characters who cannot see the acting character.
+         */
+        if (!can_see(to, ch) && type != TO_VICT)
+            continue;
 
-	if ( type == TO_CHAR && to != ch )
-	    continue;
-	if ( type == TO_VICT && ( to != vch || to == ch ) )
-	    continue;
-	if ( type == TO_ROOM && to == ch )
-	    continue;
-	if ( type == TO_NOTVICT && (to == ch || to == vch) )
-	    continue;
+        /*
+         * Filter recipients based on target type.
+         */
+        if ( type == TO_CHAR && to != ch )
+            continue;
 
-        if(!can_see(to, ch) && type != TO_VICT )
-          continue;
+        if ( type == TO_VICT && ( to != vch || to == ch ) )
+            continue;
 
-	txt = act_string(format, to, ch, arg1, arg2);
-	if (to && to->desc)
-	{
-	  set_char_color(AType, to);
-	  send_to_char_color( txt, to );
-	}
-	if (MOBtrigger)
+        if ( type == TO_ROOM && to == ch )
+            continue;
+
+        if ( type == TO_NOTVICT && (to == ch || to == vch) )
+            continue;
+
+        /*
+         * Expand the format string into the final message.
+         */
+        txt = act_string(format, to, ch, arg1, arg2);
+
+        /*
+         * Send message to player with color.
+         */
+        if (to && to->desc)
         {
-          /* Note: use original string, not string with ANSI. -- Alty */
-	  mprog_act_trigger( txt, to, ch, (OBJ_DATA *)arg1, (void *)arg2 );
+            set_char_color(AType, to);
+            send_to_char_color(txt, to);
+        }
+
+        /*
+         * Mob ACT trigger.
+         *
+         * Allows mobs to respond to actions happening nearby.
+         */
+        if (MOBtrigger)
+        {
+            mprog_act_trigger(txt, to, ch,
+                              (OBJ_DATA *)arg1, (void *)arg2);
         }
     }
+
+    /*
+     * Ensure mob triggers remain enabled.
+     */
     MOBtrigger = TRUE;
-    return;
 }
 
 void do_name( CHAR_DATA *ch, char *argument )
@@ -3288,7 +3489,7 @@ void do_name( CHAR_DATA *ch, char *argument )
     return;
   }
 
-  sprintf( fname, "%s%c/%s", PLAYER_DIR, tolower(argument[0]),
+  SPRINTF( fname, "%s%c/%s", PLAYER_DIR, tolower(argument[0]),
                         capitalize( argument ) );
   if ( stat( fname, &fst ) != -1 )
   {
@@ -3298,7 +3499,7 @@ void do_name( CHAR_DATA *ch, char *argument )
 
   STRFREE( ch->name );
   ch->name = STRALLOC( argument );
-  sprintf( buf, "%s the %s",ch->name,
+  SPRINTF( buf, "%s the %s",ch->name,
     race_table[ch->race].race_name );
   set_title( ch, buf );
   
@@ -3310,11 +3511,11 @@ void do_name( CHAR_DATA *ch, char *argument )
 char *default_prompt( CHAR_DATA *ch )
 {
   static char buf[MAX_STRING_LENGTH];
-  strcpy( buf,"" );
+  buf[0] = '\0';
   if (ch->skill_level[FORCE_ABILITY] > 1 || get_trust(ch) >= LEVEL_IMMORTAL )
-    strcat(buf, "&pForce:&P%m/&p%M  &pAlign:&P%a\n\r");      
-  strcat(buf, "&BHealth:&C%h&B/%H  &BMovement:&C%v&B/%V");
-  strcat(buf, "&C >&w");
+    STRAPP_RAW(buf, "&pForce:&P%m/&p%M  &pAlign:&P%a\n\r");
+  STRAPP_RAW(buf, "&BHealth:&C%h&B/%H  &BMovement:&C%v&B/%V");
+  STRAPP_RAW(buf, "&C >&w");
   return buf;
 }
 
@@ -3356,7 +3557,7 @@ void display_prompt( DESCRIPTOR_DATA *d )
 
   if ( ansi )
   {
-    strcpy(pbuf, "\033[m");
+    memmove(pbuf, "\033[m", sizeof("\033[m"));
     d->prevcolor = 0x07;
     pbuf += 3;
   }
@@ -3409,11 +3610,11 @@ void display_prompt( DESCRIPTOR_DATA *d )
 	if ( ch->top_level >= 10 )
 	  stat = ch->alignment;
 	else if ( IS_GOOD(ch) )
-	  strcpy(pbuf, "good");
+    memmove(pbuf, "good", sizeof("good"));
 	else if ( IS_EVIL(ch) )
-	  strcpy(pbuf, "evil");
+	  memmove(pbuf, "evil", sizeof("evil"));
 	else
-	  strcpy(pbuf, "neutral");
+	  memmove(pbuf, "neutral", sizeof("neutral"));
 	break;
       case 'h':
 	stat = ch->hit;
@@ -3435,50 +3636,50 @@ void display_prompt( DESCRIPTOR_DATA *d )
 	break;
       case 'p':
         if ( ch->position == POS_RESTING )
-          strcpy(pbuf, "resting");
+          memmove(pbuf, "resting", sizeof("resting"));
         else if ( ch->position == POS_SLEEPING )
-          strcpy(pbuf, "sleeping");
+          memmove(pbuf, "sleeping", sizeof("sleeping"));
         else if ( ch->position == POS_SITTING )
-          strcpy(pbuf, "sitting");
+          memmove(pbuf, "sitting", sizeof("sitting"));
         break;
       case 'u':
-	stat = num_descriptors;
-	break;
+        stat = num_descriptors;
+        break;
       case 'U':
-	stat = sysdata.maxplayers;
-	break;
+        stat = sysdata.maxplayers;
+        break;
       case 'v':
-	stat = ch->move;
-	break;
+        stat = ch->move;
+        break;
       case 'V':
-	stat = ch->max_move;
-	break;
+        stat = ch->max_move;
+        break;
       case 'g':
-	stat = ch->gold;
-	break;
+        stat = ch->gold;
+        break;
       case 'r':
-	if ( IS_IMMORTAL(och) )
-	  stat = ch->in_room->vnum;
-	break;
+        if ( IS_IMMORTAL(och) )
+          stat = ch->in_room->vnum;
+        break;
       case 'R':
-	if ( IS_SET(och->act, PLR_ROOMVNUM) )
-	  sprintf(pbuf, "<#%d> ", ch->in_room->vnum);
-	break;
+        if ( IS_SET(och->act, PLR_ROOMVNUM) )
+            snprintf( pbuf, MAX_STRING_LENGTH, "<#%d> ", ch->in_room->vnum );
+        break;
       case 'i':
-	if ( (!IS_NPC(ch) && IS_SET(ch->act, PLR_WIZINVIS)) ||
-	      (IS_NPC(ch) && IS_SET(ch->act, ACT_MOBINVIS)) )
-	  sprintf(pbuf, "(Invis %d) ", (IS_NPC(ch) ? ch->mobinvis : ch->pcdata->wizinvis));
-	else
-	if ( IS_AFFECTED(ch, AFF_INVISIBLE) )
-	  sprintf(pbuf, "(Invis) " );
-	break;
+        if ( (!IS_NPC(ch) && IS_SET(ch->act, PLR_WIZINVIS)) ||
+              (IS_NPC(ch) && IS_SET(ch->act, ACT_MOBINVIS)) )
+          snprintf( pbuf, MAX_STRING_LENGTH, "(Invis %d) ", ( IS_NPC( ch ) ? ch->mobinvis : ch->pcdata->wizinvis ) );
+          else
+          if ( IS_AFFECTED(ch, AFF_INVISIBLE) )
+            snprintf( pbuf, MAX_STRING_LENGTH, "(Invis) ");
+          break;
       case 'I':
-	stat = (IS_NPC(ch) ? (IS_SET(ch->act, ACT_MOBINVIS) ? ch->mobinvis : 0)
-	     : (IS_SET(ch->act, PLR_WIZINVIS) ? ch->pcdata->wizinvis : 0));
-	break;
+          stat = (IS_NPC(ch) ? (IS_SET(ch->act, ACT_MOBINVIS) ? ch->mobinvis : 0)
+              : (IS_SET(ch->act, PLR_WIZINVIS) ? ch->pcdata->wizinvis : 0));
+          break;
       }
       if ( stat != (int) 0x80000000 )
-	sprintf(pbuf, "%d", stat);
+        snprintf( pbuf, MAX_STRING_LENGTH, "%d", stat );
       pbuf += strlen(pbuf);
       break;
     }
@@ -3550,28 +3751,31 @@ int make_color_sequence(const char *col, char *buf, DESCRIPTOR_DATA *d)
         ln = 0;
         break;
       }
-      strcpy(buf, "\033[");
-      if ( (cl & 0x88) != (d->prevcolor & 0x88) )
+      memmove(buf, "\033[", sizeof("\033["));
+      ln = sizeof("\033[") - 1;
+
+      if ((cl & 0x88) != (d->prevcolor & 0x88))
       {
-        strcat(buf, "m\033[");
-        if ( (cl & 0x08) )
-          strcat(buf, "1;");
-        if ( (cl & 0x80) )
-          strcat(buf, "5;");
-        d->prevcolor = 0x07 | (cl & 0x88);
-        ln = strlen(buf);
+          ln += snprintf(buf + ln, MAX_STRING_LENGTH - ln, "m\033[");
+
+          if (cl & 0x08)
+              ln += snprintf(buf + ln, MAX_STRING_LENGTH - ln, "1;");
+
+          if (cl & 0x80)
+              ln += snprintf(buf + ln, MAX_STRING_LENGTH - ln, "5;");
+
+          d->prevcolor = 0x07 | (cl & 0x88);
       }
       else
         ln = 2;
-      if ( (cl & 0x07) != (d->prevcolor & 0x07) )
+      if ((cl & 0x07) != (d->prevcolor & 0x07))
       {
-        sprintf(buf+ln, "3%d;", cl & 0x07);
-        ln += 3;
+          ln += snprintf(buf + ln, MAX_STRING_LENGTH - ln, "3%d;", cl & 0x07);
       }
-      if ( (cl & 0x70) != (d->prevcolor & 0x70) )
+
+      if ((cl & 0x70) != (d->prevcolor & 0x70))
       {
-        sprintf(buf+ln, "4%d;", (cl & 0x70) >> 4);
-        ln += 3;
+          ln += snprintf(buf + ln, MAX_STRING_LENGTH - ln, "4%d;", (cl & 0x70) >> 4);
       }
       if ( buf[ln-1] == ';' )
         buf[ln-1] = 'm';
@@ -3671,9 +3875,9 @@ bool pager_output( DESCRIPTOR_DATA *d )
       char buf[32];
 
       if ( d->pagecolor == 7 )
-	strcpy( buf, "\033[m" );
+	memmove( buf, "\033[m", sizeof("\033[m") );
       else
-	sprintf(buf, "\033[0;%d;%s%dm", (d->pagecolor & 8) == 8,
+	SPRINTF(buf, "\033[0;%d;%s%dm", (d->pagecolor & 8) == 8,
 		(d->pagecolor > 15 ? "5;" : ""), (d->pagecolor & 7)+30);
       ret = write_to_descriptor( d->descriptor, buf, 0 );
   }
@@ -3691,9 +3895,9 @@ void whocount(struct tm tmdata)
   DESCRIPTOR_DATA *d;
 
   count = 0;
-  sprintf(datebuf,"%d/%d/%d",
+  SPRINTF(datebuf,"%d/%d/%d",
 	      tmdata.tm_mon+1, tmdata.tm_mday, 1900+tmdata.tm_year);
-  sprintf(timebuf,"%d:%d",tmdata.tm_hour, tmdata.tm_min);
+  SPRINTF(timebuf,"%d:%d",tmdata.tm_hour, tmdata.tm_min);
   for ( d = last_descriptor; d; d = d->prev ) {
     count++;
     if (d->character) {

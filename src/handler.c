@@ -88,12 +88,12 @@ void  explode( OBJ_DATA *obj )
 
     	                      if( !held )
 			      {
-				  sprintf( buf, "%s EXPLODES!\n\r", objcont->short_descr );
+				  SPRINTF( buf, "%s EXPLODES!\n\r", objcont->short_descr );
 				  echo_to_room( AT_BLOOD, room, buf );
 			      }
 			      else
 			      {
-				  sprintf( buf, "%s EXLODES in %s'shands!\n\r", objcont->short_descr, xch->name );
+				  SPRINTF( buf, "%s EXLODES in %s'shands!\n\r", objcont->short_descr, xch->name );
 				  echo_to_room( AT_BLOOD, room, buf );
 			      }
 	                      room_explode( obj , xch, room );
@@ -1087,8 +1087,8 @@ void char_to_room( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex )
     }
 
 //    tRoomCheck = get_room_index( pRoomIndex->vnum );
-    if( !pRoomIndex )
-//    if( !pRoomIndex || !get_room_index( pRoomIndex->vnum ) )
+//  if( !pRoomIndex || !get_room_index( pRoomIndex->vnum ) )
+    if( !pRoomIndex )    
     {
         bug( "%s: %s -> NULL room!  Putting char in limbo (%d)", __FUNCTION__, ch->name, ROOM_VNUM_LIMBO );
         /*
@@ -1669,7 +1669,7 @@ void extract_char( CHAR_DATA *ch, bool fPull )
 
     if ( char_died(ch) )
     {
-	sprintf( buf, "extract_char: %s already died!", ch->name );
+	SPRINTF( buf, "extract_char: %s already died!", ch->name );
 	bug( buf, 0 );
 	return;
     }
@@ -2639,41 +2639,41 @@ char *affect_bit_name( int vector )
     static char buf[512];
 
     buf[0] = '\0';
-    if ( vector & AFF_BLIND         ) strcat( buf, " blind"         );
-    if ( vector & AFF_INVISIBLE     ) strcat( buf, " invisible"     );
-    if ( vector & AFF_DETECT_EVIL   ) strcat( buf, " detect_evil"   );
-    if ( vector & AFF_DETECT_INVIS  ) strcat( buf, " detect_invis"  );
-    if ( vector & AFF_DETECT_MAGIC  ) strcat( buf, " detect_magic"  );
-    if ( vector & AFF_DETECT_HIDDEN ) strcat( buf, " detect_hidden" );
-    if ( vector & AFF_WEAKEN        ) strcat( buf, " weaken"        );
-    if ( vector & AFF_SANCTUARY     ) strcat( buf, " sanctuary"     );
-    if ( vector & AFF_FAERIE_FIRE   ) strcat( buf, " faerie_fire"   );
-    if ( vector & AFF_INFRARED      ) strcat( buf, " infrared"      );
-    if ( vector & AFF_CURSE         ) strcat( buf, " curse"         );
+    if ( vector & AFF_BLIND         ) STRAPP( buf, " blind"         );
+    if ( vector & AFF_INVISIBLE     ) STRAPP( buf, " invisible"     );
+    if ( vector & AFF_DETECT_EVIL   ) STRAPP( buf, " detect_evil"   );
+    if ( vector & AFF_DETECT_INVIS  ) STRAPP( buf, " detect_invis"  );
+    if ( vector & AFF_DETECT_MAGIC  ) STRAPP( buf, " detect_magic"  );
+    if ( vector & AFF_DETECT_HIDDEN ) STRAPP( buf, " detect_hidden" );
+    if ( vector & AFF_WEAKEN        ) STRAPP( buf, " weaken"        );
+    if ( vector & AFF_SANCTUARY     ) STRAPP( buf, " sanctuary"     );
+    if ( vector & AFF_FAERIE_FIRE   ) STRAPP( buf, " faerie_fire"   );
+    if ( vector & AFF_INFRARED      ) STRAPP( buf, " infrared"      );
+    if ( vector & AFF_CURSE         ) STRAPP( buf, " curse"         );
 	// Johnson ( Michael Shattuck ) 4/28 Start - Added 5-15-04 - DV
-	//if ( vector & AFF_FLAMING       ) strcat( buf, " flaming"       );
-	if ( vector & AFF_ENDURANCE		) strcat( buf, " endurance"		);
+	//if ( vector & AFF_FLAMING       ) STRAPP( buf, " flaming"       );
+	if ( vector & AFF_ENDURANCE		) STRAPP( buf, " endurance"		);
 	// Shattuck 4/28 End
-    if ( vector & AFF_POISON        ) strcat( buf, " poison"        );
-    if ( vector & AFF_PROTECT       ) strcat( buf, " protect"       );
-    if ( vector & AFF_PARALYSIS     ) strcat( buf, " paralysis"     );
-    if ( vector & AFF_SLEEP         ) strcat( buf, " sleep"         );
-    if ( vector & AFF_SNEAK         ) strcat( buf, " sneak"         );
-    if ( vector & AFF_HIDE          ) strcat( buf, " stealth"          );
-    if ( vector & AFF_CHARM         ) strcat( buf, " charm"         );
-    if ( vector & AFF_POSSESS       ) strcat( buf, " possess"       );
-    if ( vector & AFF_FLYING        ) strcat( buf, " flying"        );
-    if ( vector & AFF_PASS_DOOR     ) strcat( buf, " pass_door"     );
-    if ( vector & AFF_FLOATING      ) strcat( buf, " floating"      );
-    if ( vector & AFF_TRUESIGHT     ) strcat( buf, " true_sight"    );
-    if ( vector & AFF_DETECTTRAPS   ) strcat( buf, " detect_traps"  );
-    if ( vector & AFF_SCRYING       ) strcat( buf, " scrying"       );
-    if ( vector & AFF_FIRESHIELD    ) strcat( buf, " fireshield"    );
-    if ( vector & AFF_SHOCKSHIELD   ) strcat( buf, " shockshield"   );
-    if ( vector & AFF_ICESHIELD     ) strcat( buf, " iceshield"     );
-    if ( vector & AFF_POSSESS       ) strcat( buf, " possess"       );
-    if ( vector & AFF_BERSERK       ) strcat( buf, " berserk"       );
-    if ( vector & AFF_AQUA_BREATH   ) strcat( buf, " aqua_breath"   );
+    if ( vector & AFF_POISON        ) STRAPP( buf, " poison"        );
+    if ( vector & AFF_PROTECT       ) STRAPP( buf, " protect"       );
+    if ( vector & AFF_PARALYSIS     ) STRAPP( buf, " paralysis"     );
+    if ( vector & AFF_SLEEP         ) STRAPP( buf, " sleep"         );
+    if ( vector & AFF_SNEAK         ) STRAPP( buf, " sneak"         );
+    if ( vector & AFF_HIDE          ) STRAPP( buf, " stealth"          );
+    if ( vector & AFF_CHARM         ) STRAPP( buf, " charm"         );
+    if ( vector & AFF_POSSESS       ) STRAPP( buf, " possess"       );
+    if ( vector & AFF_FLYING        ) STRAPP( buf, " flying"        );
+    if ( vector & AFF_PASS_DOOR     ) STRAPP( buf, " pass_door"     );
+    if ( vector & AFF_FLOATING      ) STRAPP( buf, " floating"      );
+    if ( vector & AFF_TRUESIGHT     ) STRAPP( buf, " true_sight"    );
+    if ( vector & AFF_DETECTTRAPS   ) STRAPP( buf, " detect_traps"  );
+    if ( vector & AFF_SCRYING       ) STRAPP( buf, " scrying"       );
+    if ( vector & AFF_FIRESHIELD    ) STRAPP( buf, " fireshield"    );
+    if ( vector & AFF_SHOCKSHIELD   ) STRAPP( buf, " shockshield"   );
+    if ( vector & AFF_ICESHIELD     ) STRAPP( buf, " iceshield"     );
+    if ( vector & AFF_POSSESS       ) STRAPP( buf, " possess"       );
+    if ( vector & AFF_BERSERK       ) STRAPP( buf, " berserk"       );
+    if ( vector & AFF_AQUA_BREATH   ) STRAPP( buf, " aqua_breath"   );
     return ( buf[0] != '\0' ) ? buf+1 : (char *) "none";
 }
 
@@ -2687,34 +2687,34 @@ char *extra_bit_name( int extra_flags )
     static char buf[512];
 
     buf[0] = '\0';
-    if ( extra_flags & ITEM_GLOW         ) strcat( buf, " glow"         );
-    if ( extra_flags & ITEM_HUM          ) strcat( buf, " hum"          );
-    if ( extra_flags & ITEM_DARK         ) strcat( buf, " dark"         );
-    if ( extra_flags & ITEM_HUTT_SIZE    ) strcat( buf, " hutt_size"    );
-    if ( extra_flags & ITEM_CONTRABAND   ) strcat( buf, " contraband"   );
-    if ( extra_flags & ITEM_INVIS        ) strcat( buf, " invis"        );
-    if ( extra_flags & ITEM_MAGIC        ) strcat( buf, " magic"        );
-    if ( extra_flags & ITEM_NODROP       ) strcat( buf, " nodrop"       );
-    if ( extra_flags & ITEM_BLESS        ) strcat( buf, " bless"        );
-    if ( extra_flags & ITEM_ANTI_GOOD    ) strcat( buf, " anti-good"    );
-    if ( extra_flags & ITEM_ANTI_EVIL    ) strcat( buf, " anti-evil"    );
-    if ( extra_flags & ITEM_ANTI_NEUTRAL ) strcat( buf, " anti-neutral" );
-    if ( extra_flags & ITEM_NOREMOVE     ) strcat( buf, " noremove"     );
-    if ( extra_flags & ITEM_INVENTORY    ) strcat( buf, " inventory"    );
-    if ( extra_flags & ITEM_DEATHROT	 ) strcat( buf, " deathrot"	);
-    if ( extra_flags & ITEM_ANTI_SOLDIER ) strcat( buf, " anti-soldier" );
-    if ( extra_flags & ITEM_TWO_HANDS    ) strcat( buf, " two-hands"    );
-    if ( extra_flags & ITEM_ANTI_HUNTER  ) strcat( buf, " anti-hunter"  );
-    if ( extra_flags & ITEM_ANTI_JEDI    ) strcat( buf, " anti-jedi"    );
-    if ( extra_flags & ITEM_ANTI_SITH    ) strcat( buf, " anti-sith"    );
-    if ( extra_flags & ITEM_ANTI_PILOT   ) strcat( buf, " anti-pilot"   );
-    if ( extra_flags & ITEM_SMALL_SIZE   ) strcat( buf, " small_size"   );
-    if ( extra_flags & ITEM_LARGE_SIZE   ) strcat( buf, " large_size"   );
-    if ( extra_flags & ITEM_DONATION     ) strcat( buf, " donation"     );
-    if ( extra_flags & ITEM_CLANOBJECT   ) strcat( buf, " clan"         );
-    if ( extra_flags & ITEM_ANTI_CITIZEN ) strcat( buf, " anti-citizen" );
-    if ( extra_flags & ITEM_PROTOTYPE    ) strcat( buf, " prototype"    );
-    if ( extra_flags & ITEM_HUMAN_SIZE   ) strcat( buf, " human_size"   );
+    if ( extra_flags & ITEM_GLOW         ) STRAPP( buf, " glow"         );
+    if ( extra_flags & ITEM_HUM          ) STRAPP( buf, " hum"          );
+    if ( extra_flags & ITEM_DARK         ) STRAPP( buf, " dark"         );
+    if ( extra_flags & ITEM_HUTT_SIZE    ) STRAPP( buf, " hutt_size"    );
+    if ( extra_flags & ITEM_CONTRABAND   ) STRAPP( buf, " contraband"   );
+    if ( extra_flags & ITEM_INVIS        ) STRAPP( buf, " invis"        );
+    if ( extra_flags & ITEM_MAGIC        ) STRAPP( buf, " magic"        );
+    if ( extra_flags & ITEM_NODROP       ) STRAPP( buf, " nodrop"       );
+    if ( extra_flags & ITEM_BLESS        ) STRAPP( buf, " bless"        );
+    if ( extra_flags & ITEM_ANTI_GOOD    ) STRAPP( buf, " anti-good"    );
+    if ( extra_flags & ITEM_ANTI_EVIL    ) STRAPP( buf, " anti-evil"    );
+    if ( extra_flags & ITEM_ANTI_NEUTRAL ) STRAPP( buf, " anti-neutral" );
+    if ( extra_flags & ITEM_NOREMOVE     ) STRAPP( buf, " noremove"     );
+    if ( extra_flags & ITEM_INVENTORY    ) STRAPP( buf, " inventory"    );
+    if ( extra_flags & ITEM_DEATHROT	 ) STRAPP( buf, " deathrot"	);
+    if ( extra_flags & ITEM_ANTI_SOLDIER ) STRAPP( buf, " anti-soldier" );
+    if ( extra_flags & ITEM_TWO_HANDS    ) STRAPP( buf, " two-hands"    );
+    if ( extra_flags & ITEM_ANTI_HUNTER  ) STRAPP( buf, " anti-hunter"  );
+    if ( extra_flags & ITEM_ANTI_JEDI    ) STRAPP( buf, " anti-jedi"    );
+    if ( extra_flags & ITEM_ANTI_SITH    ) STRAPP( buf, " anti-sith"    );
+    if ( extra_flags & ITEM_ANTI_PILOT   ) STRAPP( buf, " anti-pilot"   );
+    if ( extra_flags & ITEM_SMALL_SIZE   ) STRAPP( buf, " small_size"   );
+    if ( extra_flags & ITEM_LARGE_SIZE   ) STRAPP( buf, " large_size"   );
+    if ( extra_flags & ITEM_DONATION     ) STRAPP( buf, " donation"     );
+    if ( extra_flags & ITEM_CLANOBJECT   ) STRAPP( buf, " clan"         );
+    if ( extra_flags & ITEM_ANTI_CITIZEN ) STRAPP( buf, " anti-citizen" );
+    if ( extra_flags & ITEM_PROTOTYPE    ) STRAPP( buf, " prototype"    );
+    if ( extra_flags & ITEM_HUMAN_SIZE   ) STRAPP( buf, " human_size"   );
     return ( buf[0] != '\0' ) ? buf+1 : (char* )"none";
 }
 
@@ -2726,7 +2726,7 @@ char *magic_bit_name( int magic_flags )
     static char buf[512];
 
     buf[0] = '\0';
-    if ( magic_flags & ITEM_RETURNING     ) strcat( buf, " returning"     );
+    if ( magic_flags & ITEM_RETURNING     ) STRAPP( buf, " returning"     );
     return ( buf[0] != '\0' ) ? buf+1 : (char *) "none";
 }
 
@@ -2780,9 +2780,9 @@ ch_ret spring_trap( CHAR_DATA *ch, OBJ_DATA *obj )
       }
 
       dam = number_range( obj->value[2], obj->value[2] * 2);
-      sprintf( buf, "You are %s!", txt );
+      SPRINTF( buf, "You are %s!", txt );
       act( AT_HITME, buf, ch, NULL, NULL, TO_CHAR );
-      sprintf( buf, "$n is %s.", txt );
+      SPRINTF( buf, "$n is %s.", txt );
       act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
       --obj->value[0];
       if ( obj->value[0] <= 0 )
@@ -3163,39 +3163,39 @@ void showaffect( CHAR_DATA *ch, AFFECT_DATA *paf )
 	    switch( paf->location )
 	    {
 	      default:
-		sprintf( buf, "Affects %s by %d.\n\r",
+		SPRINTF( buf, "Affects %s by %d.\n\r",
 		  affect_loc_name( paf->location ), paf->modifier );
 		break;
 	      case APPLY_AFFECT:
-		sprintf( buf, "Affects %s by",
+		SPRINTF( buf, "Affects %s by",
 		  affect_loc_name( paf->location ) );
 		for ( x = 0; x < 32 ; x++ )
 		if ( IS_SET( paf->modifier, 1 << x ) )
 		{
-		  strcat( buf, " " );
-		  strcat( buf, a_flags[x] );
+		  STRAPP( buf, " " );
+		  STRAPP( buf, "%s", a_flags[x] );
 		}
-		strcat( buf, "\n\r" );
+		STRAPP( buf, "\n\r" );
 		break;
 	      case APPLY_WEAPONSPELL:
 	      case APPLY_WEARSPELL:
 	      case APPLY_REMOVESPELL:
-		sprintf( buf, "Casts spell '%s'\n\r",
+		SPRINTF( buf, "Casts spell '%s'\n\r",
 			IS_VALID_SN(paf->modifier) ? skill_table[paf->modifier]->name
 						   : "unknown" );
 		break;
 	      case APPLY_RESISTANT:
 	      case APPLY_IMMUNE:
 	      case APPLY_SUSCEPTIBLE:
-		sprintf( buf, "Affects %s by",
+		SPRINTF( buf, "Affects %s by",
 		  affect_loc_name( paf->location ) );
 		for ( x = 0; x < 32 ; x++ )
 		if ( IS_SET( paf->modifier, 1 << x ) )
 		{
-		  strcat( buf, " " );
-		  strcat( buf, ris_flags[x] );
+		  STRAPP( buf, " " );
+		  STRAPP( buf, "%s", ris_flags[x] );
 		}
-		strcat( buf, "\n\r" );
+		STRAPP( buf, "\n\r" );
 		break;
 	    }
 	    send_to_char( buf, ch );
