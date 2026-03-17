@@ -4347,7 +4347,7 @@ void do_whois( CHAR_DATA *ch, char *argument)
 
   STRAPP(buf, "0.");
   STRAPP(buf, "%s", argument);
-  if( ( ( victim = get_char_world(ch, buf) ) == NULL ))
+  if( ( victim = get_char_world(ch, buf) ) == NULL )
   {
     send_to_char("No such player online.\n\r", ch);
     return;

@@ -274,13 +274,13 @@ void interpret( CHAR_DATA *ch, char *argument )
 	 */
 	SPRINTF( logline, "%s", argument );
 
-  	if( ch->desc && (index(argument, '|')))
+    if (ch->desc && strchr(argument, '|'))
 	  argument = get_multi_command( ch->desc, argument ); 
 
 
         if ( !IS_NPC(ch) && ch->pcdata && ch->pcdata->target )
          if ( ch->pcdata->target[0] != '\0' )
-          if( index(argument, '$'))
+          if( strchr(argument, '$'))
             argument = parse_target(ch, argument);
  
 	if ( !isalpha(argument[0]) && !isdigit(argument[0]) )

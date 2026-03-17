@@ -2598,7 +2598,7 @@ void do_capture ( CHAR_DATA *ch , char *argument )
    PLANET_DATA *planet;
    PLANET_DATA *cPlanet;
    float support = 0.0;
-   int pCount = 0;   
+// int pCount = 0;   
    char buf[MAX_STRING_LENGTH];
    
    if ( !ch->in_room || !ch->in_room->area)
@@ -2686,7 +2686,7 @@ void do_capture ( CHAR_DATA *ch , char *argument )
    for ( cPlanet = first_planet ; cPlanet ; cPlanet = cPlanet->next )
         if ( clan == cPlanet->governed_by )
         {
-            pCount++;
+//          pCount++;
             support += cPlanet->pop_support;
         }
    

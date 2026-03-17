@@ -492,7 +492,7 @@ int rd_parse(CHAR_DATA *ch, int level, char *exp)
     return 0;
 
   /* get rid of brackets if they surround the entire expresion */
-    if( ( *exp == '(' ) && exp[strlen( exp ) - 1] == ')' )
+  if( ( *exp == '(' ) && exp[strlen( exp ) - 1] == ')' )
   {
     exp[strlen(exp)-1] = '\0';
     exp++;

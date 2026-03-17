@@ -18,6 +18,8 @@
 *		     Character saving and loading module		   *
 ****************************************************************************/
 
+#define _POSIX_C_SOURCE 200809L
+
 #include <sys/types.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -25,7 +27,9 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <sys/dir.h>
+#include <dirent.h>
+#include <signal.h>
+#include <fcntl.h>
 #include "mud.h"
 
 /*
@@ -2071,7 +2075,8 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 
 void set_alarm( long seconds )
 {
-    alarm( seconds );
+//    alarm( seconds );
+	return;
 }
 
 /*
@@ -2151,7 +2156,7 @@ void write_corpses( CHAR_DATA *ch, char *name )
 void load_corpses( void )
 {
   DIR *dp;
-  struct direct *de;
+  struct dirent *de;
   extern FILE *fpArea;
   extern char strArea[MAX_INPUT_LENGTH];
   extern int falling;
@@ -2335,20 +2340,20 @@ void save_storeroom( ROOM_INDEX_DATA *room )
 
     if ( ( fp = fopen( strsave, "w" ) ) == NULL )
     {
-	perror( strsave );
-	bug( "Save_storeroom: fopen", 0 );
-	bug( strsave, 0 );
+		perror( strsave );
+		bug( "Save_storeroom: fopen", 0 );
+		bug( strsave, 0 );
 	
     }
     else
     {
-	fchmod(fileno(fp), S_IRUSR|S_IWUSR | S_IRGRP|S_IWGRP | S_IROTH|S_IWOTH);
+		chmod(strsave, S_IRUSR|S_IWUSR | S_IRGRP|S_IWGRP | S_IROTH|S_IWOTH);
 
        	contents = room->last_content;
        	if (contents)
-  	  fwrite_obj(NULL, contents, fp, 0, OS_CARRY );
-	fprintf( fp, "#END\n" );
-	FCLOSE( fp );
+  	  		fwrite_obj(NULL, contents, fp, 0, OS_CARRY );
+		fprintf( fp, "#END\n" );
+		FCLOSE( fp );
 
     }
 

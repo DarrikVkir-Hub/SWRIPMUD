@@ -30,8 +30,6 @@
 #include <signal.h>
 #include <stdarg.h>
 #include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/select.h>
 #include <unistd.h>
 
 #include "mud.h"
@@ -47,7 +45,10 @@
 /*
  * Socket and TCP/IP stuff.
  */
-#include <unistd.h>
+
+#ifndef _WIN32
+#include <sys/wait.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -55,6 +56,8 @@
 #include <arpa/inet.h>
 #include <arpa/telnet.h>
 #include <netdb.h>
+#endif
+
 
 #define MAX_NEST	100
 
@@ -2768,7 +2771,7 @@ void send_to_char( const char *txt, CHAR_DATA *ch )
 void send_to_char_color( const char *txt, CHAR_DATA *ch )
 {
   DESCRIPTOR_DATA *d;
-  char *colstr;
+  const char *colstr;
   const char *prevstr = txt;
   char colbuf[20];
   int ln;
@@ -2874,7 +2877,7 @@ void send_to_pager( const char *txt, CHAR_DATA *ch )
 void send_to_pager_color( const char *txt, CHAR_DATA *ch )
 {
   DESCRIPTOR_DATA *d;
-  char *colstr;
+  const char *colstr;
   const char *prevstr = txt;
   char colbuf[MAX_INPUT_LENGTH];
   int ln;
@@ -3937,10 +3940,12 @@ void cron()
   //Enters once during the minute
   if (thisTM.tm_min != lastTM.tm_min) {
 
+#ifndef _WIN32    
     //clean up dead children every 5 minutes
     if (thisTM.tm_min % 5 == 0) {
       while(waitpid(-1,&status,WNOHANG) >= 0);
     }
+#endif  
   }
   //Check the hour, range 0-23 
   //Enters once during the hour

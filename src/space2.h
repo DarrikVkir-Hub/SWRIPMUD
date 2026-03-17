@@ -28,7 +28,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
-#include <sys/dir.h>
+#include <dirent.h>
 #include "mud.h"
 #define MAX_TEMPLATETYPE 38
 

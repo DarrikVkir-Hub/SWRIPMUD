@@ -532,8 +532,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
 		      ship->tractored->tractoredby = NULL;
 		      if( ship->tractored->location )
 		        ship->tractored->shipstate = SHIP_LANDED;
-		      else if ( ship->tractored->shipstate != SHIP_DOCKED || 
-		                ship->tractored->shipstate != SHIP_DISABLED )
+		      else if ( ship->tractored->shipstate != SHIP_DOCKED && ship->tractored->shipstate != SHIP_DISABLED )
 		        ship->tractored->shipstate = SHIP_READY;
 		      
 		    }
@@ -544,12 +543,11 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
 		if( ship->tractored )
     	        {
     	            send_to_char("&RReleasing previous target.\n\r",ch);
-		      ship->tractored->tractoredby = NULL;
-		      if( ship->tractored->location )
-		        ship->tractored->shipstate = SHIP_LANDED;
-		      else if ( ship->tractored->shipstate != SHIP_DOCKED || 
-		                ship->tractored->shipstate != SHIP_DISABLED )
-		        ship->tractored->shipstate = SHIP_READY;
+                  ship->tractored->tractoredby = NULL;
+                  if( ship->tractored->location )
+                    ship->tractored->shipstate = SHIP_LANDED;
+                  else if ( ship->tractored->shipstate != SHIP_DOCKED && ship->tractored->shipstate != SHIP_DISABLED )
+                    ship->tractored->shipstate = SHIP_READY;
     	        }
 		  
 
@@ -1943,7 +1941,7 @@ void do_refuel(CHAR_DATA *ch, char *argument )
 
 void do_fuel(CHAR_DATA *ch, char *argument )
 {
-  SHIP_DATA *ship, *eShip;
+  SHIP_DATA *ship, *eShip = NULL;
   int amount = 0;
   char arg1[MAX_INPUT_LENGTH];
   char buf[MAX_STRING_LENGTH];
@@ -2262,16 +2260,16 @@ int get_extmodule_count( SHIP_DATA *ship )
 {
   MODULE_DATA *module;
   int external = 0;
-  int internal = 0;
+//int internal = 0;
   
   for ( module = ship->first_module; module; module = module->next )
     {
       if( module->type == MOD_HULL )
         continue;
       else if( is_external_mod( module->type ) )
-	external += module->size;
+	      external += module->size;
       else if( is_internal_mod( module->type ) )
-	internal += module->size;
+      	continue;
     }
 
 return external;
@@ -2281,7 +2279,7 @@ return external;
 int get_intmodule_count( SHIP_DATA *ship )
 {
   MODULE_DATA *module;
-  int external = 0;
+//int external = 0;
   int internal = 0;
   
   for ( module = ship->first_module; module; module = module->next )
@@ -2289,9 +2287,9 @@ int get_intmodule_count( SHIP_DATA *ship )
       if( module->type == MOD_HULL )
         continue;
       else if( is_external_mod( module->type ) )
-	external += module->size;
+	      continue;
       else if( is_internal_mod( module->type ) )
-	internal += module->size;
+	      internal += module->size;
     }
 
 return internal;

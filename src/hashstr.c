@@ -38,7 +38,7 @@
 
 const bool TRUE = true;
 const bool FALSE = false;
-const short BERR = 255;
+//const short BERR = 255;
 
 #define STR_HASH_SIZE	1024
 

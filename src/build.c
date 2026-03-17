@@ -86,13 +86,13 @@ char *	const	o_flags	[] =
 "donation", "clanobject", "anticitizen", "antisith", "antipilot", 
 "hidden", "poisoned", "covering", "deathrot", "burried", "prototype", "human_size"
 };
-
+/*
 char *	const	mag_flags	[] =
 {
 "returning", "backstabber", "bane", "loyal", "haste", "drain", 
 "lightning_blade" 
 };
-
+*/
 char *	const	w_flags	[] =
 {
 "take", "finger", "neck", "body", "head", "legs", "feet", "hands", "arms",
@@ -4908,9 +4908,9 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	    else
 	      rxit = NULL;
 	}
-	int n = snprintf( tmpcmd, MAX_STRING_LENGTH, "exit %s %s %s", arg2, arg3, argument );
+	int n = snprintf( tmpcmd, MAX_INPUT_LENGTH, "exit %s %s %s", arg2, arg3, argument );
 	if ( n < 0 || n >= MAX_STRING_LENGTH )
-	    tmpcmd[MAX_STRING_LENGTH-1] = '\0';
+	    tmpcmd[MAX_INPUT_LENGTH-1] = '\0';
 	do_redit( ch, tmpcmd );
 	if ( numnotdir )
 	  xit = get_exit_num(tmploc, exnum);
@@ -4928,13 +4928,13 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	}
 	if ( vnum )
 	{
-	    n = snprintf( tmpcmd, MAX_STRING_LENGTH, "%d redit exit %d %s %s",
+	    n = snprintf( tmpcmd, MAX_INPUT_LENGTH, "%d redit exit %d %s %s",
 				vnum,
 				rev_dir[edir],
 				rvnum,
 				argument );
 	    if ( n < 0 || n >= MAX_STRING_LENGTH )
-		tmpcmd[MAX_STRING_LENGTH-1] = '\0';
+		tmpcmd[MAX_INPUT_LENGTH-1] = '\0';
 	    do_at( ch, tmpcmd );
 	}
 	return;

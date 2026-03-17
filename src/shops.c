@@ -2275,7 +2275,7 @@ void save_vendor( CHAR_DATA *ch )
     {
 	bool ferr;
 
-	fchmod(fileno(fp), S_IRUSR|S_IWUSR | S_IRGRP|S_IWGRP | S_IROTH|S_IWOTH);
+	chmod(strsave, S_IRUSR|S_IWUSR | S_IRGRP|S_IWGRP | S_IROTH|S_IWOTH);
 	fprintf( fp, "#VENDOR\n"		);
 	fwrite_vendor( fp, ch );
 

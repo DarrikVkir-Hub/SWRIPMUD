@@ -5003,7 +5003,7 @@ void do_bribe ( CHAR_DATA *ch , char *argument )
     
     if ( clan == planet->governed_by )
     {
-      planet->pop_support += URANGE( 0.1 , amount/1000 , 2 );
+      planet->pop_support += urange_float(0.1f, amount / 1000.0f, 2.0f); 
       send_to_char( "Popular support for your organization increases slightly.\n\r", ch );
 
       amount = UMIN( amount ,( exp_level(ch->skill_level[DIPLOMACY_ABILITY]+1) - exp_level(ch->skill_level[DIPLOMACY_ABILITY]) ) );
@@ -5206,7 +5206,7 @@ void do_gather_intelligence ( CHAR_DATA *ch , char *argument )
   WAIT_STATE( ch, skill_table[gsn_gather_intelligence]->beats );
 
 
-  if( ( ( victim = get_char_world(ch, buf) ) == NULL ))
+  if( ( victim = get_char_world(ch, buf) ) == NULL )
 
   {
 

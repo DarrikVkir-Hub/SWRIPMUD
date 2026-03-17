@@ -30,7 +30,7 @@
 #include <math.h>
 #include "mud.h"
 
-extern	int	_filbuf		args( (FILE *) );
+//extern	int	_filbuf		args( (FILE *) );
 
 #if defined(KEY)
 #undef KEY

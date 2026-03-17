@@ -26,7 +26,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <sys/dir.h>
+#include <dirent.h>
 #include "mud.h"
 
 SHIP_DATA * first_ship;
@@ -143,7 +143,7 @@ char *  const   station_name [MAX_STATION] =
    "College Station" , "Holographic Zoo of Extinct Animals" ,
    "Dometown Station " , "Monument Plaza"
 };
-
+/*
 int     const   bus_vnum [MAX_BUS_STOP] =
 {
     201 ,  21100 , 29001 , 28038 , 31872 , 822 , 6264, 28613 , 3060 , 28247, 32297, 2065, 10500, 11206
@@ -157,16 +157,16 @@ char *  const   bus_stop [MAX_BUS_STOP+1] =
 {
    "Coruscant",
    "Mon Calamari", "Adari", "Gamorr", "Tatooine" , "Ryloth", "Bespin",
-   "Kashyyyk", "Endor", "Byss", "Cloning Facilities", "Kuat", "Corellia", "Hoth", "Coruscant"  /* last should always be same as first */
+   "Kashyyyk", "Endor", "Byss", "Cloning Facilities", "Kuat", "Corellia", "Hoth", "Coruscant"  // last should always be same as first 
 };
 
 char *  const bus_stoprev [MAX_BUS_STOP+1] =
 {
    "Coruscant",
    "Hoth", "Corellia", "Kuat", "Cloning Facilities" , "Byss" , "Endor", "Kashyyyk",
-   "Bespin", "Ryloth", "Tatooine", "Gamorr", "Adari", "Mon Calamari", "Coruscant"  /* last should always be same as first */
+   "Bespin", "Ryloth", "Tatooine", "Gamorr", "Adari", "Mon Calamari", "Coruscant"  // last should always be same as first
 };
-
+*/
 RENTAL_DATA rentals[MAX_RENTALS] =
 {
   {
@@ -319,7 +319,7 @@ bool is_bus_stop( int vnum )
   int bus, stop;
 
   for ( bus = 0; bus < MAX_BUS; bus++ )
-    for( stop = 0; ( stop < 12 || serin[bus].bus_vnum[stop] != '\0') ; stop++ )
+    for ( stop = 0; stop < 12 && serin[bus].bus_vnum[stop] != 0; stop++ )    
       if ( vnum == serin[bus].bus_vnum[stop] )
         return TRUE;
   return FALSE;
@@ -9102,7 +9102,7 @@ void do_fire(CHAR_DATA *ch, char *argument )
     char buf[MAX_STRING_LENGTH];
     bool isturret = FALSE;    
     TURRET_DATA *turret;
-    bool destroyed;
+    bool destroyed = FALSE;
     
         if (  (ship = ship_from_turret(ch->in_room->vnum))  == NULL )
         {
@@ -11827,6 +11827,7 @@ void do_rent( CHAR_DATA *ch, char *argument )
   sh_int rentnum;
   
   if ( !argument || argument[0] == '\0' )
+  {
     for( rentnum = 0; rentnum < MAX_RENTALS; rentnum++ )
     {
       ship = ship_from_cockpit( rentals[rentnum].templatevnum );
@@ -11834,8 +11835,10 @@ void do_rent( CHAR_DATA *ch, char *argument )
         ch_printf( ch, "[%d] ERROR-Non-existent ship\n\r", rentnum );
       else
         ch_printf( ch, "[%d] %.50s %d to rent.\n\r", rentnum, ship->name, (get_ship_value(ship)/100) );
-      return;
+//    return;
     }
+    return;
+  }
 
   if ( !IS_SET( ch->in_room->room_flags, ROOM_CAN_LAND ) )
   {

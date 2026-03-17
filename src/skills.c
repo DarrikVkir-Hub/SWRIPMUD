@@ -1370,7 +1370,7 @@ void do_detrap( CHAR_DATA *ch, char *argument )
     OBJ_DATA *obj;
     OBJ_DATA *trap;
     int percent;
-    bool found;
+    bool found = FALSE;
 
     switch( ch->substate )
     {
@@ -1408,8 +1408,8 @@ void do_detrap( CHAR_DATA *ch, char *argument )
 	    {
 	       if ( can_see_obj( ch, obj ) && nifty_is_name( arg, obj->name ) )
 	       {
-		  found = TRUE;
-		  break;
+		  		found = TRUE;
+		  		break;
 	       }
 	    }
 	    if ( !found )
@@ -1451,8 +1451,8 @@ void do_detrap( CHAR_DATA *ch, char *argument )
     {
        if ( can_see_obj( ch, obj ) && nifty_is_name( arg, obj->name ) )
        {
-	  found = TRUE;
-	  break;
+	  		found = TRUE;
+	  		break;
        }
     }
     if ( !found )

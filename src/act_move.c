@@ -264,7 +264,7 @@ char *wordwrap( char *txt, sh_int wrap )
         char *ptr, *p;
         int ln, x;
 
-	++bufp;
+		++bufp;
         line[0] = '\0';
         ptr = txt;
         while ( *ptr )
@@ -273,7 +273,7 @@ char *wordwrap( char *txt, sh_int wrap )
           ln = strlen( line );  x = strlen( temp );
           if ( (ln + x + 1) < wrap )
           {
-	    if ( line[ln-1] == '.' )
+		if ( ln > 0 && line[ln-1] == '.' )
               STRAPP( line, "  " );
 	    else
               STRAPP( line, " " );

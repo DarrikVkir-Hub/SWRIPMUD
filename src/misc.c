@@ -3138,7 +3138,7 @@ void do_bank( CHAR_DATA *ch, char *argument )
     }
     else if ( !str_prefix( arg1 , "transfer" ) )
     {
-      if( ( ( victim = get_char_world(ch, arg3) ) == NULL ))
+      if( ( victim = get_char_world(ch, arg3) ) == NULL )
       {
         send_to_char("No such player online.\n\r", ch);
         return;

@@ -109,7 +109,7 @@ void get_obj( CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container )
 		if( obj->in_obj )
 		{
 			OBJ_DATA *tobj = obj->in_obj;
-			int inobj = 1;
+//			int inobj = 1;
 			bool checkweight = FALSE;
 
 			/* need to make it check weight if its in a magic container */
@@ -119,7 +119,7 @@ void get_obj( CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container )
 			while( tobj->in_obj )
 			{
 				tobj = tobj->in_obj;
-				inobj++;
+//				inobj++;
 
 				/* need to make it check weight if its in a magic container */
 				if( tobj->item_type == ITEM_CONTAINER && IS_OBJ_STAT( tobj, ITEM_MAGIC ) )

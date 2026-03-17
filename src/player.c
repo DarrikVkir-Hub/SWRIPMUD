@@ -433,7 +433,7 @@ void do_oldscore( CHAR_DATA *ch, char *argument )
     ch->mobinvis);
 
     
-      ch_printf( ch,
+    ch_printf( ch,
 	"You have %d/%d hit, %d/%d movement.\n\r",
 	ch->hit,  ch->max_hit,
 	ch->move, ch->max_move);

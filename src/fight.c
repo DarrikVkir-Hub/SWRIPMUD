@@ -25,7 +25,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <sys/dir.h>
+#include <dirent.h>
 #include <errno.h>
 #include "mud.h"
 
@@ -224,12 +224,12 @@ void violence_update( void )
 	if ( !ch->in_room || !ch->name )
 	{
 	    log_string( "violence_update: bad ch record!  (Shortcutting.)" );
-	    log_printf( "ch: %ld  ch->in_room: %ld  ch->prev: %ld  ch->next: %ld",
-	    	(long) ch, (long) ch->in_room, (long) ch->prev, (long) ch->next );
+	    log_printf( "ch: %p  ch->in_room: %p  ch->prev: %p  ch->next: %p",
+	    	ch, ch->in_room, ch->prev, ch->next );
 	    log_string( lastplayercmd );
 	    if ( lst_ch )
-	      log_printf( "lst_ch: %ld  lst_ch->prev: %ld  lst_ch->next: %ld",
-	      		(long) lst_ch, (long) lst_ch->prev, (long) lst_ch->next );
+	      log_printf( "lst_ch: %p  lst_ch->prev: %p  lst_ch->next: %p",
+	      		lst_ch, lst_ch->prev, lst_ch->next );
 	    else
 	      log_printf( "lst_ch: NULL" );
 	    gch_prev = NULL;
@@ -1593,7 +1593,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
     {
        OBJ_DATA *obj;
        OBJ_DATA *obj_next;
-       int cnt=0;
+//     int cnt=0;
     
 //     REMOVE_BIT( victim->act, PLR_ATTACKER ); Removed to add PLR_DONTAUTOFUEL
        
@@ -1618,7 +1618,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
 	    {
 		if ( obj->pIndexData->progtypes & DROP_PROG && obj->count > 1 ) 
 		{
-		   ++cnt;
+//		   ++cnt;
 		   separate_obj( obj );
 		   obj_from_char( obj );
 		   if ( !obj_next )
@@ -1626,7 +1626,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
 		}
 		else
 		{
-		   cnt += obj->count;
+//		   cnt += obj->count;
 		   obj_from_char( obj );
 		}
 		act( AT_ACTION, "$n drops $p.", victim, obj, NULL, TO_ROOM );

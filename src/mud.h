@@ -216,7 +216,7 @@ typedef ch_ret	SPELL_FUN	args( ( int sn, int level, CHAR_DATA *ch, void *vo ) );
  */
 #define MAX_KEY_HASH		 2048
 #define MAX_STRING_LENGTH	 4096  /* buf */
-#define MAX_INPUT_LENGTH	 900  /* arg */
+#define MAX_INPUT_LENGTH	 1024  /* arg */
 #define MAX_INBUF_SIZE		 1024
 
 #define HASHSTR			 /* use string hashing */
@@ -3306,6 +3306,15 @@ static inline int umax(int check, int ncheck)
 }
 
 static inline int urange(int mincheck, int check, int maxcheck)
+{
+    if (check < mincheck)
+        return mincheck;
+    if (check > maxcheck)
+        return maxcheck;
+    return check;
+}
+ 
+static inline float urange_float(float  mincheck, float check, float maxcheck)
 {
     if (check < mincheck)
         return mincheck;

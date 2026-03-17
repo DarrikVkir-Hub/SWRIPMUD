@@ -623,7 +623,7 @@ void gain_addiction( CHAR_DATA *ch )
 void gain_condition( CHAR_DATA *ch, int iCond, int value )
 {
     int condition;
-    ch_ret retcode;
+ 	ch_ret retcode = rNONE;
 
     if ( value == 0 || IS_NPC(ch) || get_trust(ch) >= LEVEL_IMMORTAL || is_droid(ch) || NOT_AUTHED(ch))
 	return;
@@ -633,42 +633,42 @@ void gain_condition( CHAR_DATA *ch, int iCond, int value )
 
     if ( ch->pcdata->condition[iCond] == 0 )
     {
-	switch ( iCond )
-	{
-/*	case COND_FULL:
-          if ( ch->top_level <= LEVEL_AVATAR )
-          {
-            set_char_color( AT_HUNGRY, ch );
-	    send_to_char( "You are STARVING!\n\r",  ch );
-//          act( AT_HUNGRY, "$n is starved half to death!", ch, NULL, NULL, TO_ROOM);
-	    worsen_mental_state( ch, 1 );
-	    retcode = damage(ch, ch, 5, TYPE_UNDEFINED);
-          }
-          break;
+		switch ( iCond )
+		{
+		/*	case COND_FULL:
+				if ( ch->top_level <= LEVEL_AVATAR )
+				{
+					set_char_color( AT_HUNGRY, ch );
+				send_to_char( "You are STARVING!\n\r",  ch );
+		//          act( AT_HUNGRY, "$n is starved half to death!", ch, NULL, NULL, TO_ROOM);
+				worsen_mental_state( ch, 1 );
+				retcode = damage(ch, ch, 5, TYPE_UNDEFINED);
+				}
+				break;
 
-	case COND_THIRST:
-          if ( ch->top_level <= LEVEL_AVATAR )
-          {
-            set_char_color( AT_THIRSTY, ch );
-	    send_to_char( "You are DYING of THIRST!\n\r", ch );
-//          act( AT_THIRSTY, "$n is dying of thirst!", ch, NULL, NULL, TO_ROOM);
-	    worsen_mental_state( ch, 2 );
-	    retcode = damage(ch, ch, 5, TYPE_UNDEFINED);
-          }
-          break;
-*/
-	case COND_DRUNK:
-	    if ( condition != 0 ) {
-                set_char_color( AT_SOBER, ch );
-		send_to_char( "You are sober.\n\r", ch );
-	    }
-	    retcode = rNONE;
-	    break;
-	default:
-	    bug( "Gain_condition: invalid condition type %d", iCond );
-	    retcode = rNONE;
-	    break;
-	}
+			case COND_THIRST:
+				if ( ch->top_level <= LEVEL_AVATAR )
+				{
+					set_char_color( AT_THIRSTY, ch );
+				send_to_char( "You are DYING of THIRST!\n\r", ch );
+		//          act( AT_THIRSTY, "$n is dying of thirst!", ch, NULL, NULL, TO_ROOM);
+				worsen_mental_state( ch, 2 );
+				retcode = damage(ch, ch, 5, TYPE_UNDEFINED);
+				}
+				break;
+		*/
+			case COND_DRUNK:
+				if ( condition != 0 ) {
+						set_char_color( AT_SOBER, ch );
+				send_to_char( "You are sober.\n\r", ch );
+				}
+				retcode = rNONE;
+				break;
+			default:
+				bug( "Gain_condition: invalid condition type %d", iCond );
+				retcode = rNONE;
+				break;
+		}
     }
 
     if ( retcode != rNONE )
@@ -2082,7 +2082,7 @@ void aggr_update( void )
 
 	for ( wch = ch->in_room->first_person; wch; wch = ch_next )
 	{
-	    int count;
+	    int count = 0;
 
 	    ch_next	= wch->next_in_room;
 
