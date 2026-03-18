@@ -590,37 +590,72 @@ void game_loop( )
 			--d->character->wait;
 			continue;
 		}
+        /*
+        * ============================================================
+        * MULTI-COMMAND PROCESSING LOOP 
+        * ============================================================
+        */
+        int cmd_count = 0;
 
-		read_from_buffer( d );
-		if ( d->incomm[0] != '\0' )
-		{
-			d->fcommand	= TRUE;
-			stop_idling( d->character );
+        while ( d->inbuf_len > 0 )
+        {
+            /* Stop if a command is already pending */
+            if ( d->incomm[0] != '\0' )
+                break;
 
-			SPRINTF( cmdline, "%s", d->incomm );
-			d->incomm[0] = '\0';
-			
-			if ( d->character )
-			  set_cur_char( d->character );
+            read_from_buffer( d );
 
-			if ( d->pagepoint )
-			  set_pager_input(d, cmdline);
-			else
-			  switch( d->connected )
-			  {
-			   default:
- 				nanny( d, cmdline );
-				break;
-			   case CON_PLAYING:
-                                d->character->cmd_recurse = 0;
-     				interpret( d->character, cmdline );
-				break;
-			   case CON_EDITING:
-				edit_buffer( d->character, cmdline );
-				break;
-			  }
-		}
-	    }
+            /* No full command ready */
+            if ( d->incomm[0] == '\0' )
+                break;
+
+            d->fcommand = TRUE;
+            stop_idling( d->character );
+
+            SPRINTF( cmdline, "%s", d->incomm );
+            d->incomm[0] = '\0';
+
+            if ( d->character )
+                set_cur_char( d->character );
+
+            /*
+                * 🔥 EXECUTE immediately (instead of delaying a tick)
+                */
+            if ( d->pagepoint )
+                set_pager_input(d, cmdline);
+            else
+            {
+                switch( d->connected )
+                {
+                    default:
+                        nanny( d, cmdline );
+                        break;
+
+                    case CON_PLAYING:
+                        d->character->cmd_recurse = 0;
+                        interpret( d->character, cmdline );
+                        break;
+
+                    case CON_EDITING:
+                        edit_buffer( d->character, cmdline );
+                        break;
+                }
+            }
+
+            /*
+                * 🔥 SAFETY: prevent CPU abuse
+                */
+            if ( ++cmd_count >= MAX_COMMANDS_PER_TICK )
+            {
+                write_to_descriptor(d->descriptor,
+                    "\n\r*** Command limit per tick reached ***\n\r", 0);
+                break;
+            }
+        }
+        /*
+            * ================= END MULTI-COMMAND BLOCK ==================
+            */
+    }
 	    if ( d == last_descriptor )
 	      break;
 	}
@@ -1071,117 +1106,14 @@ int readd( int handle, char *buffer, int length )
   return read( handle, buffer, length );
 }
 
-bool read_from_descriptor( DESCRIPTOR_DATA *d )
+int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, unsigned char *out, int out_max )
 {
-    unsigned int iStart;
+    int i, out_len = 0;
 
-    /* Hold horses if pending command already. */
-    if ( d->incomm[0] != '\0' )
-	return TRUE;
-
-    /* Check for overflow. */
-    iStart = d->inbuf_len;
-    if ( iStart >= sizeof(d->inbuf) - 10 )
-        {
-        log_printf( "%s input overflow!", d->host );
-        write_to_descriptor( d->descriptor,
-            "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
-        return FALSE;
-    }
-
-    for ( ; ; )
+    for (i = 0; i < in_len; i++)
     {
-        int nRead;
-
-        nRead = read( d->descriptor, d->inbuf + iStart,
-            sizeof(d->inbuf) - 10 - iStart );
-// Debug
-/*
-        if (nRead <= 0)
-            break;
-        for (int x = 0; x < nRead; x++)
-        {
-            unsigned char c = (unsigned char)d->inbuf[iStart + x];
-            log_printf("RAW: %03d (0x%02X) %c",
-                c, c, isprint(c) ? c : '.');
-        }
-*/
-        if ( nRead > 0 )
-        {
-            for (int x = 0; x < nRead; x++)
-            {
-//              unsigned char c = (unsigned char)d->inbuf[iStart + x];
-//              bug("RAW BYTE (pre-anything): %d", c);
-            }            
-            iStart += nRead;
-            d->inbuf_len += nRead;
-            if ( d->inbuf[iStart-1] == '\n' || d->inbuf[iStart-1] == '\r' )
-            break;
-        }
-        else if ( nRead == 0 )
-        {
-            log_string_plus( "EOF encountered on read.", LOG_COMM, sysdata.log_level );
-            return FALSE;
-        }
-        else if ( errno == EWOULDBLOCK )
-            break;
-        else
-        {
-            perror( "Read_from_descriptor" );
-            return FALSE;
-        }
-    }
-
-//  bug("---- INBUF DUMP START ----");
-    for (unsigned int x = 0; x < iStart; x++)
-    {
-//      bug("INBUF[%d]=%d", x, (unsigned char)d->inbuf[x]);
-    }
-//  bug("---- INBUF DUMP END ----");
-
-    d->inbuf[d->inbuf_len] = '\0';  // safe terminator AFTER binary data
-
-    return TRUE;
-}
-
-
-
-/*
- * Transfer one line from input buffer to input line.
- */
-void read_from_buffer( DESCRIPTOR_DATA *d )
-{
-    int i, j, k;
-
-    /* Hold horses if pending command already. */
-    if ( d->incomm[0] != '\0' )
-        return;
-
-    /* Look for at least one new line. */
-    for ( i = 0; i < d->inbuf_len; i++ )
-    {
-        if ( d->inbuf[i] == '\n' || d->inbuf[i] == '\r' )
-            break;
-    }
-
-    if ( i >= d->inbuf_len )
-        return;
-
-    /* Canonical input processing. */
-    for ( i = 0, k = 0; i < d->inbuf_len; i++ )
-    {
-        if ( k >= 254 )
-        {
-            write_to_descriptor( d->descriptor, "Line too long.\n\r", 0 );
-            d->inbuf[i]   = '\n';
-            d->inbuf[i+1] = '\0';
-            break;
-        }
-
-        unsigned char c = (unsigned char)d->inbuf[i];
+        unsigned char c = in[i];
         bool process_char = true;
-//TELNET Byte LOG     
-//      bug("FSM BYTE: state=%d char=%d", d->telstate, (unsigned char)c);
 
         switch (d->telstate)
         {
@@ -1226,13 +1158,10 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
                     case SB:
                         /* Only allow SB if NAWS enabled */
                         if (!d->naws_enabled)
-                        {
                             d->telstate = TS_DATA;
-                        }
                         else
-                        {
                             d->telstate = TS_SB;
-                        }
+
                         process_char = false;
                         break;
 
@@ -1246,7 +1175,6 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
             case TS_WILL:
                 if (c == TELOPT_NAWS)
                 {
-                    /* Accept NAWS */
                     const unsigned char do_naws[] = { IAC, DO, TELOPT_NAWS };
                     write_to_descriptor(d->descriptor, (char *)do_naws, 3);
 
@@ -1265,17 +1193,17 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
                 break;
 
             case TS_DO:
-#ifdef MCCP  
-                    d->mccp_pending = true;
+#ifdef MCCP
+                d->mccp_pending = true;
 #endif
-               if (c == TELOPT_NAWS)
+                if (c == TELOPT_NAWS)
                 {
                     const unsigned char do_naws[] = { IAC, WILL, TELOPT_NAWS };
-                    write_to_descriptor(d->descriptor,
-                        (char *)(do_naws), 3);
+                    write_to_descriptor(d->descriptor, (char *)do_naws, 3);
 
                     d->naws_enabled = true;
                 }
+
                 d->telstate = TS_DATA;
                 process_char = false;
                 break;
@@ -1292,7 +1220,6 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
                 break;
 
             case TS_SB:
-            {
                 d->sb_option = c;
                 d->sb_len = 0;
 
@@ -1302,59 +1229,35 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
                 }
                 else
                 {
-                    /* INVALID SB → DROP IMMEDIATELY */
+                    /* INVALID SB → DROP */
                     d->telstate = TS_DATA;
                     d->sb_len = 0;
                 }
 
                 process_char = false;
                 break;
-            }
 
-        case TS_SB_DATA:
-/*
-            if (d->telstate == TS_SB_DATA)
-            {
-                bug("SB_DATA byte: %d (%c)", c, isprint(c) ? c : '.');
-            }
-*/
-            /* DEBUG: confirm we REALLY see IAC */
-/*
-            if (c == 255)
-                bug("!!! RAW IAC SEEN IN SB_DATA !!!");
+            case TS_SB_DATA:
+                if (c == IAC)
+                {
+                    d->telstate = TS_SB_IAC;
+                    process_char = false;
+                    break;
+                }
 
-            if ( (unsigned char)c == IAC )
-            {
-                bug("!!! IAC DETECTED INSIDE TS_SB_DATA !!!");
-            }
-*/
-            if (c == IAC)
-            {
-//              bug("Switching to SB_IAC");
-                d->telstate = TS_SB_IAC;
+                if (d->sb_option != TELOPT_NAWS)
+                {
+                    process_char = false;
+                    break;
+                }
+
+                if (d->sb_len < 4)
+                    d->sb_buf[d->sb_len++] = c;
+
                 process_char = false;
                 break;
-            }
-
-            if (d->sb_option != TELOPT_NAWS)
-            {
-                process_char = false;
-                break;
-            }
-
-            if (d->sb_len < 4)
-                d->sb_buf[d->sb_len++] = c;
-
-            process_char = false;
-            break;
 
             case TS_SB_IAC:
-/*
-                if ( (unsigned char)c == SE )
-                {
-                    bug("TS_SB_IAC → TS_DATA (SE detected)");
-                }
-*/
                 if (c == SE)
                 {
                     if (d->sb_option == TELOPT_NAWS && d->sb_len == 4)
@@ -1364,22 +1267,13 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
                         d->term_width  = width;
                         d->term_height = height;
-/*
-                        bug("Set W:%d H:%d for descriptor %d",
-                            d->term_width, d->term_height, d->descriptor);
-
-                        log_printf("NAWS: %s %dx%d",
-                            d->character ? d->character->name : "unknown",
-                            width, height);
-*/                      
                     }
 
                     d->telstate = TS_DATA;
-                    d->sb_len = 0;   // reset buffer
+                    d->sb_len = 0;
                 }
                 else if (c == IAC)
                 {
-                    /* Escaped 255 inside SB */
                     if (d->sb_len < 4)
                         d->sb_buf[d->sb_len++] = IAC;
 
@@ -1387,7 +1281,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
                 }
                 else
                 {
-                    /* INVALID SB TERMINATION → HARD RESET */
+                    /* INVALID SB TERMINATION → RESET */
                     d->telstate = TS_DATA;
                     d->sb_len = 0;
                 }
@@ -1396,17 +1290,182 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
                 break;
         }
 
-        if (!process_char)
+        /* Emit only real data bytes */
+        if (process_char)
         {
-//          bug("SKIP CHAR: state=%d char=%d", d->telstate, c);
-            continue;
+            if (out_len < out_max)
+                out[out_len++] = c;
         }
+    }
 
-        if (!process_char)
-            continue;
+    return out_len;
+}
 
-        if (d->telstate == TS_DATA && (c == '\n' || c == '\r'))
+bool read_from_descriptor( DESCRIPTOR_DATA *d )
+{
+    unsigned int iStart;
+
+    /* Hold horses if pending command already. */
+    if ( d->incomm[0] != '\0' )
+	return TRUE;
+
+    /* Check for overflow. */
+    iStart = d->inbuf_len;
+    if ( iStart >= sizeof(d->inbuf) - 10 )
+        {
+        log_printf( "%s input overflow!", d->host );
+        write_to_descriptor( d->descriptor,
+            "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
+        return FALSE;
+    }
+
+    /*
+     * Per-second flood window reset
+     *
+     * WHY:
+     * - We track bytes/sec instead of strlen()
+     * - Reset counters once per second
+     */
+    time_t now = current_time;
+
+    if ( now != d->in_time )
+    {
+        d->in_time = now;
+        d->in_bytes = 0;
+        d->in_commands = 0;
+    }
+
+    for ( ; ; )
+    {
+        int nRead;
+
+        nRead = read( d->descriptor, d->inbuf + iStart,
+            sizeof(d->inbuf) - 10 - iStart );
+// Debug
+/*
+        if (nRead <= 0)
             break;
+        for (int x = 0; x < nRead; x++)
+        {
+            unsigned char c = (unsigned char)d->inbuf[iStart + x];
+            log_printf("RAW: %03d (0x%02X) %c",
+                c, c, isprint(c) ? c : '.');
+        }
+*/
+        if ( nRead > 0 )
+        {
+            /*
+             * Count RAW bytes (pre-telnet, pre-filter)
+             * This is the ONLY correct place to measure input volume
+             */
+            d->in_bytes += nRead;
+
+            if ( d->in_bytes > 4096 )  /* tune as needed */
+            {
+                bug("FLOOD: %s (%d bytes/sec)",
+                    d->character ? d->character->name : d->host,
+                    d->in_bytes);
+
+                write_to_descriptor( d->descriptor,
+                    "\n\r*** DISCONNECT: Input flood detected ***\n\r", 0 );
+
+                return FALSE;
+            }
+
+            for (int x = 0; x < nRead; x++)
+            {
+//              unsigned char c = (unsigned char)d->inbuf[iStart + x];
+//              bug("RAW BYTE (pre-anything): %d", c);
+            }            
+            iStart += nRead;
+            d->inbuf_len += nRead;
+            if ( d->inbuf[iStart-1] == '\n' || d->inbuf[iStart-1] == '\r' )
+            break;
+        }
+        else if ( nRead == 0 )
+        {
+            log_string_plus( "EOF encountered on read.", LOG_COMM, sysdata.log_level );
+            return FALSE;
+        }
+        else if ( errno == EWOULDBLOCK )
+            break;
+        else
+        {
+            perror( "Read_from_descriptor" );
+            return FALSE;
+        }
+    }
+
+//  bug("---- INBUF DUMP START ----");
+    for (unsigned int x = 0; x < iStart; x++)
+    {
+//      bug("INBUF[%d]=%d", x, (unsigned char)d->inbuf[x]);
+    }
+//  bug("---- INBUF DUMP END ----");
+
+    d->inbuf[d->inbuf_len] = '\0';  // safe terminator AFTER binary data
+
+    return TRUE;
+}
+
+
+
+/*
+ * Transfer one line from input buffer to input line.
+ */
+void read_from_buffer( DESCRIPTOR_DATA *d )
+{
+    int i, k;
+
+    /* Don't process if command already pending */
+    if ( d->incomm[0] != '\0' )
+        return;
+
+    /*
+     * STEP 1: Run TELNET FILTER
+     *
+     * Converts raw input into clean text (no IAC sequences)
+     * Does NOT modify d->inbuf
+     */
+    unsigned char clean[MAX_INBUF_SIZE];
+
+    int clean_len = telnet_process(
+        d,
+        (unsigned char *)d->inbuf,
+        d->inbuf_len,
+        clean,
+        sizeof(clean)
+    );
+
+    /*
+     * STEP 2: Find end-of-line in CLEAN buffer
+     */
+    int line_end = -1;
+
+    for ( i = 0; i < clean_len; i++ )
+    {
+        if ( clean[i] == '\n' || clean[i] == '\r' )
+        {
+            line_end = i;
+            break;
+        }
+    }
+
+    if ( line_end == -1 )
+        return; /* No full command yet */
+
+    /*
+     * STEP 3: Build command (incomm)
+     */
+    for ( i = 0, k = 0; i < line_end; i++ )
+    {
+        unsigned char c = clean[i];
+
+        if ( k >= 254 )
+        {
+            write_to_descriptor( d->descriptor, "Line too long.\n\r", 0 );
+            break;
+        }
 
         if ( (c == '\b' || c == 127) && k > 0 )
             --k;
@@ -1414,42 +1473,82 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
             d->incomm[k++] = (char)c;
     }
 
-    /* Finish off the line. */
+    /*
+     * STEP 4: Null terminate (ONLY safe place to use '\0')
+     */
     if ( k == 0 )
         d->incomm[k++] = ' ';
+
     d->incomm[k] = '\0';
 
-    /* Deal with #repeat abuse */
+ /*
+     * Command rate tracking
+     * Command rate limit (soft throttle)
+     * WHY:
+     * - Prevent macro spam / triggers
+     * - Complements byte flood protection
+     */
+    d->in_commands++;
+
+    if ( d->in_commands > 20 )  /* tune */
+    {
+        write_to_descriptor( d->descriptor,
+            "\n\r*** SLOW DOWN ***\n\r", 0 );
+
+        return; /* drop command, don't disconnect */
+    }
+
+    /*
+     * STEP 5: Repeat logic (unchanged)
+     */
     if ( k > 1 || d->incomm[0] == '!' )
     {
         if ( d->incomm[0] != '!' && strcmp( d->incomm, d->inlast ) )
-        {
             d->repeat = 0;
-        }
-        else
-        {
-            if ( ++d->repeat >= 100 )
-            {
-                write_to_descriptor( d->descriptor,
-                    "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
-            }
-        }
+        else if ( ++d->repeat >= 100 )
+            write_to_descriptor( d->descriptor,
+                "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
     }
 
-    /* '!' substitution */
     if ( d->incomm[0] == '!' )
         SPRINTF( d->incomm, "%s", d->inlast );
     else
         SPRINTF( d->inlast, "%s", d->incomm );
 
-    /* Shift the input buffer */
-    while ( d->inbuf[i] == '\n' || d->inbuf[i] == '\r' )
-        i++;
+    /*
+     * STEP 6: SHIFT RAW BUFFER (IMPORTANT)
+     *
+     * We MUST shift d->inbuf (not clean buffer!)
+     */
+    int shift = 0;
+    int seen_newline = 0;
 
-    for ( j = 0; ( d->inbuf[j] = d->inbuf[i+j] ) != '\0'; j++ )
-        ;
+    for ( i = 0; i < d->inbuf_len; i++ )
+    {
+        if (!seen_newline)
+        {
+            if ( d->inbuf[i] == '\n' || d->inbuf[i] == '\r' )
+                seen_newline = 1;
+        }
+        else
+        {
+            if ( d->inbuf[i] != '\n' && d->inbuf[i] != '\r' )
+            {
+                shift = i;
+                break;
+            }
+        }
+    }
 
-    d->inbuf_len = strlen(d->inbuf);
+    if ( i >= d->inbuf_len )
+        shift = d->inbuf_len;
+
+    int remaining = d->inbuf_len - shift;
+
+    if ( remaining > 0 )
+        memmove( d->inbuf, d->inbuf + shift, remaining );
+
+    d->inbuf_len = remaining;
 
     return;
 }

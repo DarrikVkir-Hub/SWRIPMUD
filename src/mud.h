@@ -229,6 +229,8 @@ typedef ch_ret	SPELL_FUN	args( ( int sn, int level, CHAR_DATA *ch, void *vo ) );
 
 #define MAX_KILLTRACK		20	/* track mob vnums killed */
 
+#define MAX_COMMANDS_PER_TICK 10
+
 /*
  * Game parameters.
  * Increase the max'es if you add more of something.
@@ -541,6 +543,11 @@ struct	descriptor_data
 
     int term_width = 80;
     int term_height = 24;
+
+    /* Input flood protection */
+    int in_bytes;          /* bytes received this window */
+    int in_commands;       /* commands this window */
+    time_t in_time;        /* window start */
 
 };
 
@@ -5023,6 +5030,7 @@ void do_makeinternaltracker( CHAR_DATA *ch, char *argument );
 int parse_ship_template(char *string, SHIP_DATA *ship);
 
 /* comm.c */
+int telnet_process      args( ( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, unsigned char *out, int out_max) );
 void	close_socket	args( ( DESCRIPTOR_DATA *dclose, bool force ) );
 void	write_to_buffer	args( ( DESCRIPTOR_DATA *d, const char *txt, int length ) );
 void	write_to_pager	args( ( DESCRIPTOR_DATA *d, const char *txt, int length ) );
