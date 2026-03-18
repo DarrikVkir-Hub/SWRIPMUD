@@ -70,6 +70,8 @@ const	unsigned char	echo_on_str	[] = { IAC, WONT, TELOPT_ECHO, '\0' };
 const	unsigned char 	go_ahead_str	[] = { IAC, GA, '\0' };
 
 #ifdef MCCP
+#define COMPRESS_BUF_SIZE 1024
+
 #define TELOPT_COMPRESS 85
 #define TELOPT_COMPRESS2 86
 const   unsigned char    eor_on_str      [] = { IAC, WILL, TELOPT_EOR, '\0' };
@@ -134,6 +136,7 @@ bool	read_from_descriptor	args( ( DESCRIPTOR_DATA *d ) );
 /*
  * Other local functions (OS-independent).
  */
+bool process_compressed(DESCRIPTOR_DATA *d);
 bool	check_parse_name	args( ( char *name ) );
 short	check_reconnect		args( ( DESCRIPTOR_DATA *d, char *name,
 				    bool fConn ) );
@@ -519,7 +522,7 @@ void game_loop( )
 	    {
 	      if( (d->character && d->character->in_room) ? d->character->top_level <= LEVEL_IMMORTAL : FALSE)
 	      {
-		write_to_descriptor( d->descriptor,
+		write_to_buffer( d,
 		 "Idle 30 Minutes. Activating AFK Flag\n\r", 0 );
 		SET_BIT(d->character->act, PLR_AFK);
 		act(AT_GREY,"$n is now afk due to idle time.", d->character, NULL, NULL, TO_ROOM);
@@ -534,7 +537,7 @@ void game_loop( )
 	    {
 	      if( d->character ? d->character->top_level <= LEVEL_IMMORTAL : TRUE)
 	      {
-		write_to_descriptor( d->descriptor,
+		write_to_buffer( d,
 		 "Idle timeout... disconnecting.\n\r", 0 );
 		d->outtop	= 0;
 		close_socket( d, TRUE );
@@ -647,7 +650,7 @@ void game_loop( )
                 */
             if ( ++cmd_count >= MAX_COMMANDS_PER_TICK )
             {
-                write_to_descriptor(d->descriptor,
+                write_to_buffer(d,
                     "\n\r*** Command limit per tick reached ***\n\r", 0);
                 break;
             }
@@ -842,7 +845,7 @@ void new_descriptor( int new_desc )
     //Watchdog code -- Kre
     /*
     if (strcmp(dnew->host,"127.0.0.1")==0) {
-      write_to_descriptor( desc,"@", 0 );
+      write_to_buffer( dnew,"@", 0 );
       free_desc(dnew);
       set_alarm( 0 );
       return;
@@ -865,8 +868,9 @@ void new_descriptor( int new_desc )
       log_printf_plus( LOG_COMM, sysdata.log_level, "Sock.sinaddr: AOL Ping! %s, port %hd.",
 		buf, dnew->port );
       
-      write_to_descriptor( desc,
+      write_to_buffer( dnew,
       "AOL users have been banned from this site.  We apologize for the inconvenience.\n\r", 0 );
+      flush_buffer(d, TRUE);
       free_desc( dnew );
       set_alarm( 0 );
       return;
@@ -883,8 +887,9 @@ void new_descriptor( int new_desc )
 	  &&  pban->level >= LEVEL_SUPREME 
 	)
 	{
-	    write_to_descriptor( desc,
+	    write_to_buffer( dnew,
 		    "Your site has been banned from this Mud.\n\r", 0 );
+        flush_buffer(dnew, FALSE);
 	    free_desc( dnew );
 	    set_alarm( 0 );
 	    return;
@@ -983,7 +988,7 @@ void close_socket( DESCRIPTOR_DATA *dclose, bool force )
 
     /* flush outbuf */
     if ( !force && dclose->outtop > 0 )
-	flush_buffer( dclose, FALSE );
+	    flush_buffer( dclose, FALSE );
 
     /* say bye to whoever's snooping this descriptor */
     if ( dclose->snoop_by )
@@ -1177,7 +1182,8 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 if (c == TELOPT_NAWS)
                 {
                     const unsigned char do_naws[] = { IAC, DO, TELOPT_NAWS };
-                    write_to_descriptor(d->descriptor, (char *)do_naws, 3);
+                    write_to_buffer(d, (char *)do_naws, 3);
+                    flush_buffer(d, FALSE);
 
                     d->naws_enabled = true;
 
@@ -1198,7 +1204,8 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 if (c == TELOPT_COMPRESS2)
                 {
                     const unsigned char will_comp[] = { IAC, WILL, TELOPT_COMPRESS2 };
-                    write_to_descriptor(d->descriptor, (char *)will_comp, 3);
+                    write_to_buffer(d, (char *)will_comp, 3);
+                    flush_buffer(d, FALSE);
 
                     /*
                     * DO NOT start compression yet
@@ -1212,7 +1219,8 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 if (c == TELOPT_NAWS)
                 {
                     const unsigned char do_naws[] = { IAC, WILL, TELOPT_NAWS };
-                    write_to_descriptor(d->descriptor, (char *)do_naws, 3);
+                    write_to_buffer(d, (char *)do_naws, 3);
+                    flush_buffer(d, FALSE);
 
                     d->naws_enabled = true;
                 }
@@ -1327,8 +1335,9 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
     if ( iStart >= sizeof(d->inbuf) - 10 )
         {
         log_printf( "%s input overflow!", d->host );
-        write_to_descriptor( d->descriptor,
+        write_to_buffer( d,
             "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
+        flush_buffer(d, TRUE);
         return FALSE;
     }
 
@@ -1379,7 +1388,7 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
                     d->character ? d->character->name : d->host,
                     d->in_bytes);
 
-                write_to_descriptor( d->descriptor,
+                write_to_buffer( d,
                     "\n\r*** DISCONNECT: Input flood detected ***\n\r", 0 );
 
                 return FALSE;
@@ -1494,7 +1503,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
         if ( k >= 254 )
         {
-            write_to_descriptor( d->descriptor, "Line too long.\n\r", 0 );
+            write_to_buffer( d, "Line too long.\n\r", 0 );
             break;
         }
 
@@ -1518,7 +1527,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     if ( d->in_commands > 20 )
     {
-        write_to_descriptor( d->descriptor,
+        write_to_buffer( d,
             "\n\r*** SLOW DOWN ***\n\r", 0 );
         return;
     }
@@ -1533,7 +1542,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
         if ( d->incomm[0] != '!' && strcmp( d->incomm, d->inlast ) )
             d->repeat = 0;
         else if ( ++d->repeat >= 100 )
-            write_to_descriptor( d->descriptor,
+            write_to_buffer( d,
                 "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
     }
 
@@ -1642,26 +1651,76 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
             write_to_buffer( d->snoop_by, buf, 0);
         }
         write_to_buffer( d->snoop_by, "% ", 2 );
-        write_to_buffer( d->snoop_by, d->outbuf, d->outtop );
+        if (d->snoop_by != d)
+            write_to_buffer(d->snoop_by, d->outbuf, d->outtop);
     }   
-    
-    if ( !write_to_descriptor( d->descriptor, d->outbuf, d->outtop ) )
+    #ifdef MCCP
+    /*
+     * === COMPRESSED PATH ===
+     */
+    if (d->out_compress)
     {
+        d->out_compress->next_in  = (unsigned char *)d->outbuf;
+        d->out_compress->avail_in = d->outtop;
+
+        while (d->out_compress->avail_in > 0)
+        {
+            d->out_compress->avail_out =
+                COMPRESS_BUF_SIZE -
+                (d->out_compress->next_out - d->out_compress_buf);
+
+            if (d->out_compress->avail_out == 0)
+            {
+                if (!process_compressed(d))
+                    return FALSE;
+                continue;
+            }
+
+            if (deflate(d->out_compress, Z_SYNC_FLUSH) != Z_OK)
+                return FALSE;
+        }
+
         d->outtop = 0;
+
+        return process_compressed(d);
+    }
+#endif
+
+    /*
+     * === NORMAL NON-BLOCKING WRITE ===
+     */
+    int max_chunk = 4096;
+    int to_write = d->outtop > max_chunk ? max_chunk : d->outtop;
+
+    int written = write(d->descriptor, d->outbuf, to_write);
+
+    if (written < 0)
+    {
+        if (errno == EWOULDBLOCK || errno == EAGAIN)
+            return TRUE;
+
         return FALSE;
     }
 
-    /* Everything was handed off (compressed or not) */
-    d->outtop = 0;
+    if (written == 0)
+        return FALSE;
+
+    if (written < d->outtop)
+    {
+        memmove(d->outbuf,
+                d->outbuf + written,
+                d->outtop - written);
+    }
+
+    d->outtop -= written;
 
     /*
-     *  Slow client protection
+     * Slow client protection
      */
-    if ( d->outtop > 16000 )
+    if (d->outtop > 16000)
     {
         bug("flush_buffer: slow client overflow (%s)",
             d->character ? d->character->name : d->host);
-
         return FALSE;
     }
 
@@ -1679,15 +1738,6 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
     {
         bug( "Write_to_buffer: NULL descriptor" );
         return;
-    }
-    if (d->compressing)
-    {            
-        if (count++ == 0)
-        {
-//            bug("BUFFER WRITE: desc=%d len=%d compressing=%d",
-//            d->descriptor, length, (unsigned int)(d->compressing));    
-        }
-        count--;
     }
     if ( !d->outbuf )
     	return;
@@ -1764,104 +1814,10 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
 #ifdef MCCP
 #define COMPRESS_BUF_SIZE 1024
 
-bool write_to_descriptor( int desc, char *txt, int length )
+bool write_to_descriptor(int desc, char *txt, int length)
 {
-    DESCRIPTOR_DATA *d;
-    int     iStart = 0;
-    int     nWrite = 0;
-    int     nBlock;
-    int     len;
-
-    if (length <= 0)
-        length = strlen(txt);
-
-    for (d = first_descriptor; d; d = d->next)
-        if (d->descriptor == desc)
-            break;
-
-    if ( !d )
-      return FALSE;
-
-
-    if (d->compressing)
-    {            
-        static int count = 0;
-        if (count++ == 0)
-//            bug("SOCKET WRITE: desc=%d len=%d compressing=%c",
-//            d->descriptor, length, (unsigned int)d->compressing);
-        count--;
-/*
-        int dump = length > 8 ? 8 : length;
-
-        char hex[64];
-        char *p = hex;
-
-        for (int i = 0; i < dump; i++)
-            p += sprintf(p, "%02X ", (unsigned char)txt[i]);
-
-        bug("SOCKET DATA: %s", hex);    
-*/
-    }
-
-    if (d->descriptor != desc)
-        d = NULL;
-
-    if (d && d->out_compress)
-    {
-        d->out_compress->next_in = (unsigned char *)txt;
-        d->out_compress->avail_in = length;
-
-        while (d->out_compress->avail_in)
-        {
-            d->out_compress->avail_out = COMPRESS_BUF_SIZE - (d->out_compress->next_out - d->out_compress_buf);
-
-            if (d->out_compress->avail_out)
-            {
-                int status = deflate(d->out_compress, Z_SYNC_FLUSH);
-
-                if (status != Z_OK)
-                    return FALSE;
-            }
-
-            len = d->out_compress->next_out - d->out_compress_buf;
-            if (len > 0)
-            {
-                for (iStart = 0; iStart < len; iStart += nWrite)
-                {
-                    nBlock = UMIN (len - iStart, 4096);
-                    if ((nWrite = write(d->descriptor, d->out_compress_buf + iStart, nBlock)) < 0)
-                    {
-                        perror( "Write_to_descriptor: compressed" );
-                        return FALSE;
-                    }
-
-                    if (!nWrite)
-                        break;
-                }
-
-                if (!iStart)
-                    break;
-
-                if (iStart < len)
-                    memmove(d->out_compress_buf, d->out_compress_buf+iStart, len - iStart);
-
-                d->out_compress->next_out = d->out_compress_buf + len - iStart;
-            }
-        }
-        return TRUE;
-    }
-
-    for (iStart = 0; iStart < length; iStart += nWrite)
-    {
-        nBlock = UMIN (length - iStart, 4096);
-        if ((nWrite = write(desc, txt + iStart, nBlock)) < 0)
-        {
-            perror( "Write_to_descriptor" );
-            return FALSE;
-        }
-    }
-
-    return TRUE;
+    bug("write_to_descriptor: deprecated path used!");
+    return FALSE;
 }
 #else
 
@@ -1873,24 +1829,10 @@ bool write_to_descriptor( int desc, char *txt, int length )
  */
 bool write_to_descriptor( int desc, char *txt, int length )
 {
-    int iStart;
-    int nWrite;
-    int nBlock;
-
-    if ( length <= 0 )
-	length = strlen(txt);
-
-    bug("SOCKET WRITE: desc=%d len=%d compressing=%d",
-    d->descriptor, length, d->compressing);
-
-    for ( iStart = 0; iStart < length; iStart += nWrite )
-    {
-	nBlock = UMIN( length - iStart, 4096 );
-	if ( ( nWrite = write( desc, txt + iStart, nBlock ) ) < 0 )
-	    { perror( "Write_to_descriptor" ); return FALSE; }
-    }
-
-    return TRUE;
+{
+    bug("write_to_descriptor: deprecated path used!");
+    return FALSE;
+}
 }
 
 #endif
@@ -4175,7 +4117,7 @@ bool pager_output( DESCRIPTOR_DATA *d )
     CHAR_DATA *ch;
     int pclines;
     int lines;
-    bool ret;
+//  bool ret;
 
     if ( !d || !d->pagepoint || d->pagecmd == -1 )
         return TRUE;
@@ -4230,9 +4172,8 @@ bool pager_output( DESCRIPTOR_DATA *d )
         ++last;
     if ( last != d->pagepoint )
     {
-        if ( !write_to_descriptor(d->descriptor, d->pagepoint,
-            (last-d->pagepoint)) )
-        return FALSE;
+        write_to_buffer(d, d->pagepoint,
+            (last-d->pagepoint));
         d->pagepoint = last;
     }
     while ( isspace(*last) )
@@ -4248,11 +4189,8 @@ bool pager_output( DESCRIPTOR_DATA *d )
     }
     d->pagecmd = -1;
     if ( IS_SET( ch->act, PLR_ANSI ) )
-        if ( write_to_descriptor(d->descriptor, "\033[1;36m", 7) == FALSE )
-        return FALSE;
-    if ( (ret=write_to_descriptor(d->descriptor,
-        "(C)ontinue, (R)efresh, (B)ack, (Q)uit: [C] ", 0)) == FALSE )
-        return FALSE;
+        write_to_buffer(d, "\033[1;36m", 7);
+    write_to_buffer(d,"(C)ontinue, (R)efresh, (B)ack, (Q)uit: [C] ", 0);
     if ( IS_SET( ch->act, PLR_ANSI ) )
     {
         char buf[32];
@@ -4262,9 +4200,9 @@ bool pager_output( DESCRIPTOR_DATA *d )
         else
         SPRINTF(buf, "\033[0;%d;%s%dm", (d->pagecolor & 8) == 8,
             (d->pagecolor > 15 ? "5;" : ""), (d->pagecolor & 7)+30);
-        ret = write_to_descriptor( d->descriptor, buf, 0 );
+        write_to_buffer( d, buf, 0 );
     }
-    return ret;
+    return TRUE;
 }
 
 void whocount(struct tm tmdata)
@@ -4402,8 +4340,7 @@ bool process_compressed(DESCRIPTOR_DATA *d)
             nBlock = UMIN (len - iStart, 4096);
             if ((nWrite = write(d->descriptor, d->out_compress_buf + iStart, nBlock)) < 0)
             {
-                if (errno == EAGAIN ||
-                    errno == ENOSR)
+                if (errno == EAGAIN || errno == EWOULDBLOCK || errno == ENOSR)
                     break;
 
                 return FALSE;
@@ -4466,12 +4403,12 @@ bool compressStart(DESCRIPTOR_DATA *d, unsigned char telopt)
     }
 
     if (telopt == TELOPT_COMPRESS)
-        write_to_descriptor(d->descriptor, enable_compress, 0);
+        write_to_buffer(d, enable_compress, 0);
     else if (telopt == TELOPT_COMPRESS2)
-        write_to_descriptor(d->descriptor, enable_compress2, 0);
+        write_to_buffer(d, enable_compress2, 0);
     else
         bug("compressStart: bad TELOPT passed");
-
+    flush_buffer(d, FALSE);
     d->compressing = telopt;
     d->out_compress = s;
 

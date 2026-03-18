@@ -252,7 +252,6 @@ void dumpship( SHIP_DATA *ship, int destination );
 void shipdelete( SHIP_DATA *ship, bool shiplist );
 void storeship( SHIP_DATA *ship );
 /* from comm.c */
-bool    write_to_descriptor     args( ( int desc, char *txt, int length ) );
 
 ROOM_INDEX_DATA *generate_exit( ROOM_INDEX_DATA *in_room, EXIT_DATA **pexit );
 

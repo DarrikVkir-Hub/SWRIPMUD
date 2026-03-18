@@ -47,7 +47,7 @@ void  nonblock     args( ( int s ) );
 void  start_auth   args( ( struct descriptor_data *d ) );
 void  read_auth    args( ( struct descriptor_data *d ) );
 void  send_auth    args( ( struct descriptor_data *d ) );
-
+bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt );
 /*
  * Initiate an IDENT commention
  */
@@ -112,7 +112,8 @@ void  send_auth( struct descriptor_data *d )
 	(unsigned int)ntohs(them.sin_port),
 	(unsigned int)ntohs(us.sin_port));
 
-	z = write_to_descriptor( d->auth_fd, authbuf, strlen(authbuf) );
+	write_to_buffer( d, authbuf, strlen(authbuf) );
+  flush_buffer(d,FALSE);
   
 //    z = write( d->auth_fd, authbuf, strlen( authbuf ) ); - Removed for C++.
   
@@ -222,7 +223,7 @@ int workaround( struct descriptor_data *d )
      if ( !match( tmp->user, nicknamehost ) )
      {
        FREE( nicknamehost );
-       write_to_descriptor( d->descriptor, "NCSA telnet patch loaded.\n" );
+       write_to_buffer( d, "NCSA telnet patch loaded.\n" );
        return 1;
      }
    }
