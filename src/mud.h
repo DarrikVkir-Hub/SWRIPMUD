@@ -534,7 +534,7 @@ struct	descriptor_data
 
     TelnetState telstate = TS_DATA;
     bool naws_enabled = false;
-    bool mccp_pending = false;
+    sh_int mccp_pending = 0;
     int inbuf_len = 0;
     
     unsigned char sb_option = 0;
@@ -549,6 +549,11 @@ struct	descriptor_data
     int in_commands;       /* commands this window */
     time_t in_time;        /* window start */
 
+    /* Output buffering */
+    int out_bytes;       /* bytes sent this tick */
+    time_t out_time;     /* last reset */    
+
+    int telnet_pos;
 };
 
 

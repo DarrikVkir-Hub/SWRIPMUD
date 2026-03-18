@@ -494,7 +494,7 @@ void game_loop( )
 	    }
  	    d_next = d->next;   
 
-        if (d->mccp_pending && d->connected == CON_PLAYING)
+        if (d->mccp_pending == 1 && d->connected == CON_PLAYING)
         {
             compressStart(d, TELOPT_COMPRESS2);
             d->mccp_pending = false;
@@ -831,6 +831,7 @@ void new_descriptor( int new_desc )
     dnew->prevcolor	= 0x07;
     dnew->original      = NULL;
     dnew->character     = NULL;
+    dnew->telnet_pos = 0;
 
     CREATE( dnew->outbuf, char, dnew->outsize );
 
@@ -1193,9 +1194,21 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 break;
 
             case TS_DO:
-#ifdef MCCP
-                d->mccp_pending = true;
-#endif
+            #ifdef MCCP
+                if (c == TELOPT_COMPRESS2)
+                {
+                    const unsigned char will_comp[] = { IAC, WILL, TELOPT_COMPRESS2 };
+                    write_to_descriptor(d->descriptor, (char *)will_comp, 3);
+
+                    /*
+                    * DO NOT start compression yet
+                    * Wait for client to acknowledge
+                    */
+                    d->mccp_pending = 1;  /* NEW STATE: awaiting confirmation */
+
+                    bug("MCCP: client DO COMPRESS2 -> will start compression when playing");
+                }
+            #endif
                 if (c == TELOPT_NAWS)
                 {
                     const unsigned char do_naws[] = { IAC, WILL, TELOPT_NAWS };
@@ -1417,28 +1430,44 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 {
     int i, k;
 
-    /* Don't process if command already pending */
     if ( d->incomm[0] != '\0' )
         return;
 
     /*
-     * STEP 1: Run TELNET FILTER
+     * ============================================================
+     * STEP 1: PROCESS ONLY NEW DATA (CRITICAL FIX)
+     * ============================================================
      *
-     * Converts raw input into clean text (no IAC sequences)
-     * Does NOT modify d->inbuf
+     * BEFORE:
+     *   You processed entire inbuf every time ❌
+     *
+     * NOW:
+     *   Only process unprocessed bytes ✅
      */
     unsigned char clean[MAX_INBUF_SIZE];
 
+    int new_bytes = d->inbuf_len - d->telnet_pos;  /* NEW */
+
+    if ( new_bytes <= 0 )
+        return;
+
     int clean_len = telnet_process(
         d,
-        (unsigned char *)d->inbuf,
-        d->inbuf_len,
+        (unsigned char *)d->inbuf + d->telnet_pos,  /* NEW OFFSET */
+        new_bytes,
         clean,
         sizeof(clean)
     );
 
+    d->telnet_pos += new_bytes;  /* MARK AS PROCESSED */
+
+//  bug("TELNET: clean_len=%d new_bytes=%d inbuf_len=%d",
+//      clean_len, new_bytes, d->inbuf_len);
+
     /*
-     * STEP 2: Find end-of-line in CLEAN buffer
+     * ============================================================
+     * STEP 2: FIND NEWLINE
+     * ============================================================
      */
     int line_end = -1;
 
@@ -1452,10 +1481,12 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
     }
 
     if ( line_end == -1 )
-        return; /* No full command yet */
+        return;
 
     /*
-     * STEP 3: Build command (incomm)
+     * ============================================================
+     * STEP 3: BUILD COMMAND
+     * ============================================================
      */
     for ( i = 0, k = 0; i < line_end; i++ )
     {
@@ -1473,33 +1504,29 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
             d->incomm[k++] = (char)c;
     }
 
-    /*
-     * STEP 4: Null terminate (ONLY safe place to use '\0')
-     */
     if ( k == 0 )
         d->incomm[k++] = ' ';
 
     d->incomm[k] = '\0';
 
- /*
-     * Command rate tracking
-     * Command rate limit (soft throttle)
-     * WHY:
-     * - Prevent macro spam / triggers
-     * - Complements byte flood protection
+    /*
+     * ============================================================
+     * STEP 4: COMMAND RATE LIMIT
+     * ============================================================
      */
     d->in_commands++;
 
-    if ( d->in_commands > 20 )  /* tune */
+    if ( d->in_commands > 20 )
     {
         write_to_descriptor( d->descriptor,
             "\n\r*** SLOW DOWN ***\n\r", 0 );
-
-        return; /* drop command, don't disconnect */
+        return;
     }
 
     /*
-     * STEP 5: Repeat logic (unchanged)
+     * ============================================================
+     * STEP 5: HISTORY (!! support)
+     * ============================================================
      */
     if ( k > 1 || d->incomm[0] == '!' )
     {
@@ -1516,9 +1543,13 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
         SPRINTF( d->inlast, "%s", d->incomm );
 
     /*
-     * STEP 6: SHIFT RAW BUFFER (IMPORTANT)
+     * ============================================================
+     * STEP 6: SHIFT RAW BUFFER (FIXED)
+     * ============================================================
      *
-     * We MUST shift d->inbuf (not clean buffer!)
+     * IMPORTANT:
+     * - We must ALSO reset telnet_pos
+     * - Otherwise it points into garbage after memmove
      */
     int shift = 0;
     int seen_newline = 0;
@@ -1550,9 +1581,14 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     d->inbuf_len = remaining;
 
+    /*
+     * 🔥 CRITICAL FIX:
+     * Reset telnet position after buffer shift
+     */
+    d->telnet_pos = 0;
+
     return;
 }
-
 
 
 /*
@@ -1568,38 +1604,6 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
     if( ch && ch->fighting && ch->fighting->who )
          show_condition( ch, ch->fighting->who );
 
-    /*
-     * If buffer has more than 4K inside, spit out .5K at a time   -Thoric
-     */
-    if ( !mud_down && d->outtop > 4096 )
-    {
-        memcpy( buf, d->outbuf, 512 );
-        memmove( d->outbuf, d->outbuf + 512, d->outtop - 512 );
-        d->outtop -= 512;
-	if ( d->snoop_by )
-	{
-	    char snoopbuf[MAX_INPUT_LENGTH];
-
-	    buf[512] = '\0';
-	    if ( d->character && d->character->name )
-	    {
-		if (d->original && d->original->name)
-		    SPRINTF( snoopbuf, "%s (%s)", d->character->name, d->original->name );
-		else          
-		    SPRINTF( snoopbuf, "%s", d->character->name);
-		write_to_buffer( d->snoop_by, snoopbuf, 0);
-	    }
-	    write_to_buffer( d->snoop_by, "% ", 2 );
-	    write_to_buffer( d->snoop_by, buf, 0 );
-	}
-        if ( !write_to_descriptor( d->descriptor, buf, 512 ) )
-        {
-	    d->outtop = 0;
-	    return FALSE;
-        }
-        return TRUE;
-    }
-                                                                                        
 
     /*
      * Bust a prompt.
@@ -1620,7 +1624,7 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
      * Short-circuit if nothing to write.
      */
     if ( d->outtop == 0 )
-	return TRUE;
+    	return TRUE;
 
     /*
      * Snoop-o-rama.
@@ -1628,34 +1632,41 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
     if ( d->snoop_by )
     {
         /* without check, 'force mortal quit' while snooped caused crash, -h */
-	if ( d->character && d->character->name )
-	{
-	    /* Show original snooped names. -- Altrag */
-	    if ( d->original && d->original->name )
-		SPRINTF( buf, "%s (%s)", d->character->name, d->original->name );
-	    else
-		SPRINTF( buf, "%s", d->character->name);
-	    write_to_buffer( d->snoop_by, buf, 0);
-	}
-	write_to_buffer( d->snoop_by, "% ", 2 );
-	write_to_buffer( d->snoop_by, d->outbuf, d->outtop );
-    }
-
-    /*
-     * OS-dependent output.
-     */
+        if ( d->character && d->character->name )
+        {
+            /* Show original snooped names. -- Altrag */
+            if ( d->original && d->original->name )
+            SPRINTF( buf, "%s (%s)", d->character->name, d->original->name );
+            else
+            SPRINTF( buf, "%s", d->character->name);
+            write_to_buffer( d->snoop_by, buf, 0);
+        }
+        write_to_buffer( d->snoop_by, "% ", 2 );
+        write_to_buffer( d->snoop_by, d->outbuf, d->outtop );
+    }   
+    
     if ( !write_to_descriptor( d->descriptor, d->outbuf, d->outtop ) )
     {
-	d->outtop = 0;
-	return FALSE;
+        d->outtop = 0;
+        return FALSE;
     }
-    else
-    {
-	d->outtop = 0;
-	return TRUE;
-    }
-}
 
+    /* Everything was handed off (compressed or not) */
+    d->outtop = 0;
+
+    /*
+     *  Slow client protection
+     */
+    if ( d->outtop > 16000 )
+    {
+        bug("flush_buffer: slow client overflow (%s)",
+            d->character ? d->character->name : d->host);
+
+        return FALSE;
+    }
+
+    return TRUE;
+}
 
 
 /*
@@ -1663,63 +1674,87 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
  */
 void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
 {
+    static int count = 0;
     if ( !d )
     {
-	bug( "Write_to_buffer: NULL descriptor" );
-	return;
+        bug( "Write_to_buffer: NULL descriptor" );
+        return;
     }
-
-    /*
-     * Normally a bug... but can happen if loadup is used.
-     */
+    if (d->compressing)
+    {            
+        if (count++ == 0)
+        {
+//            bug("BUFFER WRITE: desc=%d len=%d compressing=%d",
+//            d->descriptor, length, (unsigned int)(d->compressing));    
+        }
+        count--;
+    }
     if ( !d->outbuf )
     	return;
 
-    /*
-     * Find length in case caller didn't.
-     */
+    // Find length in case caller didn't.
     if ( length <= 0 )
-	length = strlen(txt);
-
-/* Uncomment if debugging or something
-    if ( length != strlen(txt) )
     {
-	bug( "Write_to_buffer: length(%d) != strlen(txt)!", length );
-	length = strlen(txt);
+        if ( !txt )
+            return;
+        length = strlen(txt);  /* fallback only */
     }
-*/
 
-    /*
-     * Initial \n\r if needed.
-     */
+    if ( length <= 0 )
+        return;
+
+    // Initial \n\r if needed.
     if ( d->outtop == 0 && !d->fcommand )
     {
-	d->outbuf[0]	= '\n';
-	d->outbuf[1]	= '\r';
-	d->outtop	= 2;
+        d->outbuf[0]	= '\n';
+        d->outbuf[1]	= '\r';
+        d->outtop	= 2;
     }
 
     /*
-     * Expand the buffer as needed.
+     * HARD CAP (slow client protection)
+     * WHY:
+     * - Prevent infinite growth if client isn't reading
+     * - Protects server from output flooding
      */
+    if ( d->outtop + length > 16000 )  /* tune this */
+    {
+        if ( count == 0 )
+        {
+            bug("write_to_buffer: overflow (%s) [%d bytes queued]",
+                d->character ? d->character->name : d->host,
+                d->outtop);
+
+        /*
+         * Option A: disconnect (strict)
+         */
+        close_socket(d, TRUE);
+
+        /*
+         * Option B (softer): drop output instead
+         * d->outtop = 0;
+         */
+        }
+        return;
+    }
+
+    // Expand the buffer as needed.
     while ( d->outtop + (unsigned int ) length >= d->outsize )
     {
-        if (d->outsize > 32000)
-	{
-	    /* empty buffer */
-	    d->outtop = 0;
-	    close_socket(d, TRUE);
-	    bug("Buffer overflow. Closing (%s).", d->character ? d->character->name : "???" );
-	    return;
- 	}
-	d->outsize *= 2;
-	RECREATE( d->outbuf, char, d->outsize );
+        if (d->outsize > 16384)
+        {
+            /* empty buffer */
+            d->outtop = 0;
+            bug("write_to_buffer: max buffer exceeded (%s)", d->character ? d->character->name : "???" );
+            close_socket(d, TRUE);
+            return;
+        }
+        d->outsize *= 2;
+        RECREATE( d->outbuf, char, d->outsize );
     }
 
-    /*
-     * Copy.
-     */
-    strncpy( d->outbuf + d->outtop, (char *) txt, length );
+     // Copy.
+    memcpy( d->outbuf + d->outtop, txt, length );
     d->outtop += length;
     d->outbuf[d->outtop] = '\0';
     return;
@@ -1746,6 +1781,27 @@ bool write_to_descriptor( int desc, char *txt, int length )
 
     if ( !d )
       return FALSE;
+
+
+    if (d->compressing)
+    {            
+        static int count = 0;
+        if (count++ == 0)
+//            bug("SOCKET WRITE: desc=%d len=%d compressing=%c",
+//            d->descriptor, length, (unsigned int)d->compressing);
+        count--;
+/*
+        int dump = length > 8 ? 8 : length;
+
+        char hex[64];
+        char *p = hex;
+
+        for (int i = 0; i < dump; i++)
+            p += sprintf(p, "%02X ", (unsigned char)txt[i]);
+
+        bug("SOCKET DATA: %s", hex);    
+*/
+    }
 
     if (d->descriptor != desc)
         d = NULL;
@@ -1823,6 +1879,9 @@ bool write_to_descriptor( int desc, char *txt, int length )
 
     if ( length <= 0 )
 	length = strlen(txt);
+
+    bug("SOCKET WRITE: desc=%d len=%d compressing=%d",
+    d->descriptor, length, d->compressing);
 
     for ( iStart = 0; iStart < length; iStart += nWrite )
     {
@@ -4384,6 +4443,7 @@ bool compressStart(DESCRIPTOR_DATA *d, unsigned char telopt)
         return TRUE;
 
     bug("Starting compression for descriptor %d", d->descriptor);
+    bug("MCCP START BYTES: sending IAC SB COMPRESS2 IAC SE");    
 
     CREATE(s, z_stream, 1);
     CREATE(d->out_compress_buf, unsigned char, COMPRESS_BUF_SIZE);
