@@ -41,6 +41,9 @@
 #define isascii(c) (((unsigned char)(c)) <= 127)
 #endif
 
+#ifndef TELOPT_MAX
+#define TELOPT_MAX 256
+#endif
 
 /*
  * Socket and TCP/IP stuff.
@@ -491,6 +494,12 @@ void game_loop( )
 	    }
  	    d_next = d->next;   
 
+        if (d->mccp_pending && d->connected == CON_PLAYING)
+        {
+            compressStart(d, TELOPT_COMPRESS2);
+            d->mccp_pending = false;
+        }      
+
 	    d->idle++;	/* make it so a descriptor can idle out */
 	    if ( FD_ISSET( d->descriptor, &exc_set ) )
 	    {
@@ -872,10 +881,13 @@ void new_descriptor( int new_desc )
     LINK( dnew, first_descriptor, last_descriptor, next, prev );
 
 #ifdef MCCP
-    write_to_buffer(dnew, eor_on_str, 0);
-    write_to_buffer(dnew, compress2_on_str, 0);
-    write_to_buffer(dnew, compress_on_str, 0);
+    write_to_buffer(dnew, (const char *)eor_on_str, 0);
+    write_to_buffer(dnew, (const char *)compress2_on_str, 0);
+    write_to_buffer(dnew, (const char *)compress_on_str, 0);
 #endif
+
+    const unsigned char will_naws[] = { IAC, DO, TELOPT_NAWS };
+    write_to_buffer(dnew,(const char *)(will_naws), 3);
 
     /*
      * Send the greeting.
@@ -1068,42 +1080,67 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
 	return TRUE;
 
     /* Check for overflow. */
-    iStart = strlen(d->inbuf);
+    iStart = d->inbuf_len;
     if ( iStart >= sizeof(d->inbuf) - 10 )
-    {
-	log_printf( "%s input overflow!", d->host );
-	write_to_descriptor( d->descriptor,
-	    "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
-	return FALSE;
+        {
+        log_printf( "%s input overflow!", d->host );
+        write_to_descriptor( d->descriptor,
+            "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
+        return FALSE;
     }
 
     for ( ; ; )
     {
-	int nRead;
+        int nRead;
 
-	nRead = read( d->descriptor, d->inbuf + iStart,
-	    sizeof(d->inbuf) - 10 - iStart );
-	if ( nRead > 0 )
-	{
-	    iStart += nRead;
-	    if ( d->inbuf[iStart-1] == '\n' || d->inbuf[iStart-1] == '\r' )
-		break;
-	}
-	else if ( nRead == 0 )
-	{
-	    log_string_plus( "EOF encountered on read.", LOG_COMM, sysdata.log_level );
-	    return FALSE;
-	}
-	else if ( errno == EWOULDBLOCK )
-	    break;
-	else
-	{
-	    perror( "Read_from_descriptor" );
-	    return FALSE;
-	}
+        nRead = read( d->descriptor, d->inbuf + iStart,
+            sizeof(d->inbuf) - 10 - iStart );
+// Debug
+/*
+        if (nRead <= 0)
+            break;
+        for (int x = 0; x < nRead; x++)
+        {
+            unsigned char c = (unsigned char)d->inbuf[iStart + x];
+            log_printf("RAW: %03d (0x%02X) %c",
+                c, c, isprint(c) ? c : '.');
+        }
+*/
+        if ( nRead > 0 )
+        {
+            for (int x = 0; x < nRead; x++)
+            {
+//              unsigned char c = (unsigned char)d->inbuf[iStart + x];
+//              bug("RAW BYTE (pre-anything): %d", c);
+            }            
+            iStart += nRead;
+            d->inbuf_len += nRead;
+            if ( d->inbuf[iStart-1] == '\n' || d->inbuf[iStart-1] == '\r' )
+            break;
+        }
+        else if ( nRead == 0 )
+        {
+            log_string_plus( "EOF encountered on read.", LOG_COMM, sysdata.log_level );
+            return FALSE;
+        }
+        else if ( errno == EWOULDBLOCK )
+            break;
+        else
+        {
+            perror( "Read_from_descriptor" );
+            return FALSE;
+        }
     }
 
-    d->inbuf[iStart] = '\0';
+//  bug("---- INBUF DUMP START ----");
+    for (unsigned int x = 0; x < iStart; x++)
+    {
+//      bug("INBUF[%d]=%d", x, (unsigned char)d->inbuf[x]);
+    }
+//  bug("---- INBUF DUMP END ----");
+
+    d->inbuf[d->inbuf_len] = '\0';  // safe terminator AFTER binary data
+
     return TRUE;
 }
 
@@ -1115,134 +1152,305 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
 void read_from_buffer( DESCRIPTOR_DATA *d )
 {
     int i, j, k;
-#ifdef MCCP
-    int iac = 0;
-#endif
 
-    /*
-     * Hold horses if pending command already.
-     */
+    /* Hold horses if pending command already. */
     if ( d->incomm[0] != '\0' )
-	return;
+        return;
 
-    /*
-     * Look for at least one new line.
-     */
-    for ( i = 0; d->inbuf[i] != '\n' && d->inbuf[i] != '\r' && i<MAX_INBUF_SIZE;
-	  i++ )
+    /* Look for at least one new line. */
+    for ( i = 0; i < d->inbuf_len; i++ )
     {
-	if ( d->inbuf[i] == '\0' )
-	    return;
+        if ( d->inbuf[i] == '\n' || d->inbuf[i] == '\r' )
+            break;
     }
 
-    /*
-     * Canonical input processing.
-     */
-    for ( i = 0, k = 0; d->inbuf[i] != '\n' && d->inbuf[i] != '\r'; i++ )
+    if ( i >= d->inbuf_len )
+        return;
+
+    /* Canonical input processing. */
+    for ( i = 0, k = 0; i < d->inbuf_len; i++ )
     {
-	if ( k >= 254 )
-	{
-	    write_to_descriptor( d->descriptor, "Line too long.\n\r", 0 );
-
-	    /* skip the rest of the line */
-	    /*
-	    for ( ; d->inbuf[i] != '\0' || i>= MAX_INBUF_SIZE ; i++ )
-	    {
-		if ( d->inbuf[i] == '\n' || d->inbuf[i] == '\r' )
-		    break;
-	    }
-	    */
-	    d->inbuf[i]   = '\n';
-	    d->inbuf[i+1] = '\0';
-	    break;
-	}
-
-#ifdef MCCP
-        if ( d->inbuf[i] == (signed char)IAC )
-            iac=1;
-        else if ( iac==1 && (d->inbuf[i] == (signed char)DO || d->inbuf[i] == (signed char)DONT) )
-            iac=2;
-        else if ( iac==2 )
+        if ( k >= 254 )
         {
-            iac = 0;
-//            char buf[MAX_STRING_LENGTH];
-            
-//            SPRINTF( buf, "C: %d, %c (%c %c) %d", d->compressing, d->inbuf[i-1], (signed char)DO, (signed char)DONT, d->inbuf[i] );
-//            bug( buf );
-            if ( d->inbuf[i] == (signed char)TELOPT_COMPRESS )
-            {
-                if ( d->inbuf[i-1] == (signed char)DO )
-                    compressStart(d, TELOPT_COMPRESS);
-                else if ( d->inbuf[i-1] == (signed char)DONT )
-                {
-                    if( d->compressing == TELOPT_COMPRESS )
-                      compressEnd(d);
-                }
-            }
-            else if ( d->inbuf[i] == (signed char)TELOPT_COMPRESS2 )
-            {
-                if ( d->inbuf[i-1] == (signed char)DO )
-                    compressStart(d, TELOPT_COMPRESS2);
-                else if ( d->inbuf[i-1] == (signed char)DONT )
-                {
-                    if( d->compressing == TELOPT_COMPRESS2 )
-                      compressEnd(d);
-                }
-            }
+            write_to_descriptor( d->descriptor, "Line too long.\n\r", 0 );
+            d->inbuf[i]   = '\n';
+            d->inbuf[i+1] = '\0';
+            break;
         }
-        else
+
+        unsigned char c = (unsigned char)d->inbuf[i];
+        bool process_char = true;
+//TELNET Byte LOG     
+//      bug("FSM BYTE: state=%d char=%d", d->telstate, (unsigned char)c);
+
+        switch (d->telstate)
+        {
+            case TS_DATA:
+                if (c == IAC)
+                {
+                    d->telstate = TS_IAC;
+                    process_char = false;
+                }
+                break;
+
+            case TS_IAC:
+                switch (c)
+                {
+                    case IAC:
+                        /* Escaped 255 -> treat as data */
+                        d->telstate = TS_DATA;
+                        process_char = true;
+                        c = IAC;
+                        break;
+
+                    case WILL:
+                        d->telstate = TS_WILL;
+                        process_char = false;
+                        break;
+
+                    case WONT:
+                        d->telstate = TS_WONT;
+                        process_char = false;
+                        break;
+
+                    case DO:
+                        d->telstate = TS_DO;
+                        process_char = false;
+                        break;
+
+                    case DONT:
+                        d->telstate = TS_DONT;
+                        process_char = false;
+                        break;
+
+                    case SB:
+                        /* Only allow SB if NAWS enabled */
+                        if (!d->naws_enabled)
+                        {
+                            d->telstate = TS_DATA;
+                        }
+                        else
+                        {
+                            d->telstate = TS_SB;
+                        }
+                        process_char = false;
+                        break;
+
+                    default:
+                        d->telstate = TS_DATA;
+                        process_char = false;
+                        break;
+                }
+                break;
+
+            case TS_WILL:
+                if (c == TELOPT_NAWS)
+                {
+                    /* Accept NAWS */
+                    const unsigned char do_naws[] = { IAC, DO, TELOPT_NAWS };
+                    write_to_descriptor(d->descriptor, (char *)do_naws, 3);
+
+                    d->naws_enabled = true;
+
+                    bug("NAWS enabled (client WILL)");
+                }
+
+                d->telstate = TS_DATA;
+                process_char = false;
+                break;
+
+            case TS_WONT:
+                d->telstate = TS_DATA;
+                process_char = false;
+                break;
+
+            case TS_DO:
+#ifdef MCCP  
+                    d->mccp_pending = true;
 #endif
+               if (c == TELOPT_NAWS)
+                {
+                    const unsigned char do_naws[] = { IAC, WILL, TELOPT_NAWS };
+                    write_to_descriptor(d->descriptor,
+                        (char *)(do_naws), 3);
 
+                    d->naws_enabled = true;
+                }
+                d->telstate = TS_DATA;
+                process_char = false;
+                break;
 
-	if ( d->inbuf[i] == '\b' && k > 0 )
-	    --k;
-	else if ( isascii(d->inbuf[i]) && isprint(d->inbuf[i]) )
-	    d->incomm[k++] = d->inbuf[i];
+            case TS_DONT:
+#ifdef MCCP
+                if (c == TELOPT_COMPRESS && d->compressing == TELOPT_COMPRESS)
+                    compressEnd(d);
+                else if (c == TELOPT_COMPRESS2 && d->compressing == TELOPT_COMPRESS2)
+                    compressEnd(d);
+#endif
+                d->telstate = TS_DATA;
+                process_char = false;
+                break;
+
+            case TS_SB:
+            {
+                d->sb_option = c;
+                d->sb_len = 0;
+
+                if (c == TELOPT_NAWS && d->naws_enabled)
+                {
+                    d->telstate = TS_SB_DATA;
+                }
+                else
+                {
+                    /* INVALID SB → DROP IMMEDIATELY */
+                    d->telstate = TS_DATA;
+                    d->sb_len = 0;
+                }
+
+                process_char = false;
+                break;
+            }
+
+        case TS_SB_DATA:
+/*
+            if (d->telstate == TS_SB_DATA)
+            {
+                bug("SB_DATA byte: %d (%c)", c, isprint(c) ? c : '.');
+            }
+*/
+            /* DEBUG: confirm we REALLY see IAC */
+/*
+            if (c == 255)
+                bug("!!! RAW IAC SEEN IN SB_DATA !!!");
+
+            if ( (unsigned char)c == IAC )
+            {
+                bug("!!! IAC DETECTED INSIDE TS_SB_DATA !!!");
+            }
+*/
+            if (c == IAC)
+            {
+//              bug("Switching to SB_IAC");
+                d->telstate = TS_SB_IAC;
+                process_char = false;
+                break;
+            }
+
+            if (d->sb_option != TELOPT_NAWS)
+            {
+                process_char = false;
+                break;
+            }
+
+            if (d->sb_len < 4)
+                d->sb_buf[d->sb_len++] = c;
+
+            process_char = false;
+            break;
+
+            case TS_SB_IAC:
+/*
+                if ( (unsigned char)c == SE )
+                {
+                    bug("TS_SB_IAC → TS_DATA (SE detected)");
+                }
+*/
+                if (c == SE)
+                {
+                    if (d->sb_option == TELOPT_NAWS && d->sb_len == 4)
+                    {
+                        int width  = (d->sb_buf[0] << 8) | d->sb_buf[1];
+                        int height = (d->sb_buf[2] << 8) | d->sb_buf[3];
+
+                        d->term_width  = width;
+                        d->term_height = height;
+/*
+                        bug("Set W:%d H:%d for descriptor %d",
+                            d->term_width, d->term_height, d->descriptor);
+
+                        log_printf("NAWS: %s %dx%d",
+                            d->character ? d->character->name : "unknown",
+                            width, height);
+*/                      
+                    }
+
+                    d->telstate = TS_DATA;
+                    d->sb_len = 0;   // reset buffer
+                }
+                else if (c == IAC)
+                {
+                    /* Escaped 255 inside SB */
+                    if (d->sb_len < 4)
+                        d->sb_buf[d->sb_len++] = IAC;
+
+                    d->telstate = TS_SB_DATA;
+                }
+                else
+                {
+                    /* INVALID SB TERMINATION → HARD RESET */
+                    d->telstate = TS_DATA;
+                    d->sb_len = 0;
+                }
+
+                process_char = false;
+                break;
+        }
+
+        if (!process_char)
+        {
+//          bug("SKIP CHAR: state=%d char=%d", d->telstate, c);
+            continue;
+        }
+
+        if (!process_char)
+            continue;
+
+        if (d->telstate == TS_DATA && (c == '\n' || c == '\r'))
+            break;
+
+        if ( (c == '\b' || c == 127) && k > 0 )
+            --k;
+        else if ( isprint(c) )
+            d->incomm[k++] = (char)c;
     }
 
-    /*
-     * Finish off the line.
-     */
+    /* Finish off the line. */
     if ( k == 0 )
-	d->incomm[k++] = ' ';
+        d->incomm[k++] = ' ';
     d->incomm[k] = '\0';
 
-    /*
-     * Deal with bozos with #repeat 1000 ...
-     */
+    /* Deal with #repeat abuse */
     if ( k > 1 || d->incomm[0] == '!' )
     {
-	if ( d->incomm[0] != '!' && strcmp( d->incomm, d->inlast ) )
-	{
-	    d->repeat = 0;
-	}
-	else
-	{
-	    if ( ++d->repeat >= 100 )
-	    {
-/*		log_printf( "%s input spamming!", d->host );
-*/
-		write_to_descriptor( d->descriptor,
-		    "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
-	    }
-	}
+        if ( d->incomm[0] != '!' && strcmp( d->incomm, d->inlast ) )
+        {
+            d->repeat = 0;
+        }
+        else
+        {
+            if ( ++d->repeat >= 100 )
+            {
+                write_to_descriptor( d->descriptor,
+                    "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
+            }
+        }
     }
 
-    /*
-     * Do '!' substitution.
-     */
+    /* '!' substitution */
     if ( d->incomm[0] == '!' )
-	SPRINTF( d->incomm, "%s", d->inlast );
+        SPRINTF( d->incomm, "%s", d->inlast );
     else
-	SPRINTF( d->inlast, "%s", d->incomm );
+        SPRINTF( d->inlast, "%s", d->incomm );
 
-    /*
-     * Shift the input buffer.
-     */
+    /* Shift the input buffer */
     while ( d->inbuf[i] == '\n' || d->inbuf[i] == '\r' )
-	i++;
+        i++;
+
     for ( j = 0; ( d->inbuf[j] = d->inbuf[i+j] ) != '\0'; j++ )
-	;
+        ;
+
+    d->inbuf_len = strlen(d->inbuf);
+
     return;
 }
 
@@ -3805,86 +4013,100 @@ void set_pager_input( DESCRIPTOR_DATA *d, char *argument )
 
 bool pager_output( DESCRIPTOR_DATA *d )
 {
-  char *last;
-  CHAR_DATA *ch;
-  int pclines;
-  int lines;
-  bool ret;
+    char *last;
+    CHAR_DATA *ch;
+    int pclines;
+    int lines;
+    bool ret;
 
-  if ( !d || !d->pagepoint || d->pagecmd == -1 )
-    return TRUE;
-  ch = d->original ? d->original : d->character;
-  pclines = UMAX(ch->pcdata->pagerlen, 5) - 1;
-  switch(LOWER(d->pagecmd))
-  {
-  default:
-    lines = 0;
-    break;
-  case 'b':
-    lines = -1-(pclines*2);
-    break;
-  case 'r':
-    lines = -1-pclines;
-    break;
-  case 'q':
-    d->pagetop = 0;
-    d->pagepoint = NULL;
-    flush_buffer(d, TRUE);
-    DISPOSE(d->pagebuf);
-    d->pagesize = MAX_STRING_LENGTH;
-    return TRUE;
-  }
-  while ( lines < 0 && d->pagepoint >= d->pagebuf )
-    if ( *(--d->pagepoint) == '\n' )
-      ++lines;
-  if ( *d->pagepoint == '\n' && *(++d->pagepoint) == '\r' )
-      ++d->pagepoint;
-  if ( d->pagepoint < d->pagebuf )
-    d->pagepoint = d->pagebuf;
-  for ( lines = 0, last = d->pagepoint; lines < pclines; ++last )
+    if ( !d || !d->pagepoint || d->pagecmd == -1 )
+        return TRUE;
+    ch = d->original ? d->original : d->character;
+
+    int term_lines = 0;
+
+    if (d->term_height > 0)
+        term_lines = d->term_height - 2;  // leave room for prompt
+    else
+        term_lines = 24;                 // sane fallback
+
+    pclines = UMAX(ch->pcdata->pagerlen, 5);
+
+    /* Use the smaller of user setting vs terminal size */
+    if (term_lines > 0)
+        pclines = UMIN(pclines, term_lines);
+
+    pclines = UMAX(pclines - 1, 3);
+    switch(LOWER(d->pagecmd))
+    {
+    default:
+        lines = 0;
+        break;
+    case 'b':
+        lines = -1-(pclines*2);
+        break;
+    case 'r':
+        lines = -1-pclines;
+        break;
+    case 'q':
+        d->pagetop = 0;
+        d->pagepoint = NULL;
+        flush_buffer(d, TRUE);
+        DISPOSE(d->pagebuf);
+        d->pagesize = MAX_STRING_LENGTH;
+        return TRUE;
+    }
+    while ( lines < 0 && d->pagepoint >= d->pagebuf )
+        if ( *(--d->pagepoint) == '\n' )
+        ++lines;
+    if ( *d->pagepoint == '\n' && *(++d->pagepoint) == '\r' )
+        ++d->pagepoint;
+    if ( d->pagepoint < d->pagebuf )
+        d->pagepoint = d->pagebuf;
+    for ( lines = 0, last = d->pagepoint; lines < pclines; ++last )
+        if ( !*last )
+        break;
+        else if ( *last == '\n' )
+        ++lines;
+    if ( *last == '\r' )
+        ++last;
+    if ( last != d->pagepoint )
+    {
+        if ( !write_to_descriptor(d->descriptor, d->pagepoint,
+            (last-d->pagepoint)) )
+        return FALSE;
+        d->pagepoint = last;
+    }
+    while ( isspace(*last) )
+        ++last;
     if ( !*last )
-      break;
-    else if ( *last == '\n' )
-      ++lines;
-  if ( *last == '\r' )
-    ++last;
-  if ( last != d->pagepoint )
-  {
-    if ( !write_to_descriptor(d->descriptor, d->pagepoint,
-          (last-d->pagepoint)) )
-      return FALSE;
-    d->pagepoint = last;
-  }
-  while ( isspace(*last) )
-    ++last;
-  if ( !*last )
-  {
-    d->pagetop = 0;
-    d->pagepoint = NULL;
-    flush_buffer(d, TRUE);
-    DISPOSE(d->pagebuf);
-    d->pagesize = MAX_STRING_LENGTH;
-    return TRUE;
-  }
-  d->pagecmd = -1;
-  if ( IS_SET( ch->act, PLR_ANSI ) )
-      if ( write_to_descriptor(d->descriptor, "\033[1;36m", 7) == FALSE )
-	return FALSE;
-  if ( (ret=write_to_descriptor(d->descriptor,
-	"(C)ontinue, (R)efresh, (B)ack, (Q)uit: [C] ", 0)) == FALSE )
-	return FALSE;
-  if ( IS_SET( ch->act, PLR_ANSI ) )
-  {
-      char buf[32];
+    {
+        d->pagetop = 0;
+        d->pagepoint = NULL;
+        flush_buffer(d, TRUE);
+        DISPOSE(d->pagebuf);
+        d->pagesize = MAX_STRING_LENGTH;
+        return TRUE;
+    }
+    d->pagecmd = -1;
+    if ( IS_SET( ch->act, PLR_ANSI ) )
+        if ( write_to_descriptor(d->descriptor, "\033[1;36m", 7) == FALSE )
+        return FALSE;
+    if ( (ret=write_to_descriptor(d->descriptor,
+        "(C)ontinue, (R)efresh, (B)ack, (Q)uit: [C] ", 0)) == FALSE )
+        return FALSE;
+    if ( IS_SET( ch->act, PLR_ANSI ) )
+    {
+        char buf[32];
 
-      if ( d->pagecolor == 7 )
-	memmove( buf, "\033[m", sizeof("\033[m") );
-      else
-	SPRINTF(buf, "\033[0;%d;%s%dm", (d->pagecolor & 8) == 8,
-		(d->pagecolor > 15 ? "5;" : ""), (d->pagecolor & 7)+30);
-      ret = write_to_descriptor( d->descriptor, buf, 0 );
-  }
-  return ret;
+        if ( d->pagecolor == 7 )
+        memmove( buf, "\033[m", sizeof("\033[m") );
+        else
+        SPRINTF(buf, "\033[0;%d;%s%dm", (d->pagecolor & 8) == 8,
+            (d->pagecolor > 15 ? "5;" : ""), (d->pagecolor & 7)+30);
+        ret = write_to_descriptor( d->descriptor, buf, 0 );
+    }
+    return ret;
 }
 
 void whocount(struct tm tmdata)
@@ -4048,11 +4270,11 @@ bool process_compressed(DESCRIPTOR_DATA *d)
 
 char enable_compress[] =
 {
-    IAC, SB, TELOPT_COMPRESS, WILL, SE, 0
+    (char)IAC, (char)SB, (char)TELOPT_COMPRESS, (char)WILL, (char)SE, 0
 };
 char enable_compress2[] =
 {
-    IAC, SB, TELOPT_COMPRESS2, IAC, SE, 0
+    (char)IAC, (char)SB, (char)TELOPT_COMPRESS2, (char)IAC, (char)SE, 0
 };
 
 bool compressStart(DESCRIPTOR_DATA *d, unsigned char telopt)
@@ -4129,8 +4351,8 @@ void do_compress( CHAR_DATA *ch, char *argument )
 
     if (!ch->desc->out_compress) {
         send_to_char("Initiating compression.\n\r", ch);
-        write_to_buffer( ch->desc, compress2_on_str, 0 );
-        write_to_buffer( ch->desc, compress_on_str, 0 );
+        write_to_buffer( ch->desc, (const char *)compress2_on_str, 0 );
+        write_to_buffer( ch->desc, (const char *)compress_on_str, 0 );
     } else {
         send_to_char("Terminating compression.\n\r", ch);
         compressEnd(ch->desc);

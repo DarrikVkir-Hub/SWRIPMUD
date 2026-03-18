@@ -27,6 +27,9 @@
 #include <cstdarg>
 #include <cstdio>   // for snprintf
 #include <cstddef>  // for size_t
+
+#define MCCP
+
 #ifdef MCCP
 #include <zlib.h>
 #endif
@@ -469,6 +472,19 @@ typedef enum
   SUB_TIMER_DO_ABORT = 128, SUB_TIMER_CANT_ABORT
 } char_substates;
 
+enum TelnetState
+{
+    TS_DATA,
+    TS_IAC,
+    TS_WILL,
+    TS_WONT,
+    TS_DO,
+    TS_DONT,
+    TS_SB,
+    TS_SB_DATA,
+    TS_SB_IAC
+};
+
 /*
  * Descriptor (channel) structure.
  */
@@ -513,6 +529,19 @@ struct	descriptor_data
     z_stream *          out_compress;
     unsigned char *     out_compress_buf;
 #endif      
+
+    TelnetState telstate = TS_DATA;
+    bool naws_enabled = false;
+    bool mccp_pending = false;
+    int inbuf_len = 0;
+    
+    unsigned char sb_option = 0;
+    unsigned char sb_buf[64];
+    int sb_len = 0;
+
+    int term_width = 80;
+    int term_height = 24;
+
 };
 
 
