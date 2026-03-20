@@ -4196,7 +4196,7 @@ void buffer_printf( DESCRIPTOR_DATA * d, const char *fmt, ... )
     vsnprintf( buf, sizeof(buf), fmt, args );
     va_end( args );
 
-    write_to_buffer( d, buf, strlen( buf ) );
+    write_to_buffer( d, buf, strnlen( buf, MAX_STRING_LENGTH ) );
 }
 
 void log_channelf(int channel, const char *channel_name, int level,

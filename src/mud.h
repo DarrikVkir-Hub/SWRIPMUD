@@ -511,11 +511,12 @@ struct	descriptor_data
     int			repeat;
     char *		outbuf;
     unsigned long	outsize;
-    int			outtop;
+    size_t			outtop;
     char *		pagebuf;
     unsigned long	pagesize;
+    size_t      pagelen;     
     int			pagetop;
-    char *		pagepoint;
+    size_t		pagepoint;
     char		pagecmd;
     char		pagecolor;
     int			auth_inc;
@@ -3335,6 +3336,19 @@ extern  sh_int			gsn_yevethan;
 /*
  * Utility macros.
  */
+static inline char *find_any(const char *buf, size_t len,
+                             const char *set, size_t setlen)
+{
+    for (size_t i = 0; i < len; i++)
+    {
+        for (size_t j = 0; j < setlen; j++)
+        {
+            if (buf[i] == set[j])
+                return (char *)(buf + i);
+        }
+    }
+    return NULL;
+}
 
 static inline int umin( int check, int ncheck )
 {
@@ -3373,6 +3387,10 @@ static inline float urange_float(float  mincheck, float check, float maxcheck)
 #define SET_BIT(var, bit)	((var) |= (bit))
 #define REMOVE_BIT(var, bit)	((var) &= ~(bit))
 #define TOGGLE_BIT(var, bit)	((var) ^= (bit))
+/* safe Dynamic memory string helpers */
+//
+//
+
 
 /* Safe string helpers */
 #define SAFE_APPEND(dst, src, end) \
@@ -4847,10 +4865,17 @@ extern "C" char *crypt(const char *key, const char *salt);
 #define SK	SKILLTYPE
 #define SH      SHIP_DATA
 
+#define WRAP_NONE              0
+#define WRAP_NO_COLOR          BV01  /* treat ANSI as normal text */
+#define WRAP_PRESERVE_LINES    BV02  /* don't reflow existing lines */
+#define WRAP_INDENT            BV03  /* indent every line */
+#define WRAP_HANGING_INDENT    BV04  /* indent all lines except first */
+#define WRAP_NO_WRAP           BV05  /* disable wrapping entirely */
+
 /* act_comm.c */
 int     closed          args( ( int d ) );
 int readd               args( ( int handle, char *buffer, int length ) );
-bool	write_to_descriptor	args( ( int desc, char *txt, int length ) );
+bool	write_to_descriptor_depreciated	args( ( int desc, char *txt, int length ) );
 const char *  lang_string( CHAR_DATA *ch, CHAR_DATA *vch );
 void    sound_to_room( ROOM_INDEX_DATA *room , char *argument );
 bool	circle_follow	args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );

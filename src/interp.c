@@ -356,9 +356,9 @@ void interpret( CHAR_DATA *ch, char *argument )
     if ( ch->desc && ch->desc->snoop_by )
     {
   	SPRINTF( logname, "%s", ch->name);
-	write_to_buffer( ch->desc->snoop_by, logname, 0 );
+	write_to_buffer( ch->desc->snoop_by, logname, strnlen(logname, MAX_INPUT_LENGTH) );
 	write_to_buffer( ch->desc->snoop_by, "% ",    2 );
-	write_to_buffer( ch->desc->snoop_by, logline, 0 );
+	write_to_buffer( ch->desc->snoop_by, logline, strnlen(logline, MAX_INPUT_LENGTH) );
 	write_to_buffer( ch->desc->snoop_by, "\n\r",  2 );
     }
 

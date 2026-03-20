@@ -61,9 +61,7 @@
 #include <netdb.h>
 #endif
 
-
-#define MAX_NEST	100
-
+#define PAGEPOINT_NULL ((size_t)-1) 
 
 const	unsigned char	echo_off_str	[] = { IAC, WILL, TELOPT_ECHO, '\0' };
 const	unsigned char	echo_on_str	[] = { IAC, WONT, TELOPT_ECHO, '\0' };
@@ -136,6 +134,15 @@ bool	read_from_descriptor	args( ( DESCRIPTOR_DATA *d ) );
 /*
  * Other local functions (OS-independent).
  */
+void write_to_buffer_str(DESCRIPTOR_DATA *d, const char *txt);
+static void append_str(char **buf, size_t *len, size_t *cap, const char *src);
+char *wrap_text_smart(const char *txt, int width);
+bool is_structured_line(const char *line);
+bool looks_preformatted(const char *txt);
+int visible_length(const char *txt);
+int visible_length_ex(const char *txt, int flags);
+char *wrap_text(const char *txt, int width);
+char *wrap_text_ex(const char *txt, int width, int flags, int indent);
 bool process_compressed(DESCRIPTOR_DATA *d);
 bool	check_parse_name	args( ( char *name ) );
 short	check_reconnect		args( ( DESCRIPTOR_DATA *d, char *name,
@@ -423,9 +430,13 @@ void accept_new( int ctrl )
 	FD_SET( ctrl, &in_set );
 	maxdesc	= ctrl;
 	newdesc = 0;
-	for ( d = first_descriptor; d; d = d->next )
+	for ( d = first_descriptor; d; d = d_next )
 	{
-	    maxdesc = UMAX( maxdesc, d->descriptor );
+        d_next = d->next;
+        if (d->descriptor < 0)
+            continue;
+
+        maxdesc = UMAX( maxdesc, d->descriptor );
 	    FD_SET( d->descriptor, &in_set  );
 	    FD_SET( d->descriptor, &out_set );
 	    FD_SET( d->descriptor, &exc_set );
@@ -522,8 +533,8 @@ void game_loop( )
 	    {
 	      if( (d->character && d->character->in_room) ? d->character->top_level <= LEVEL_IMMORTAL : FALSE)
 	      {
-		write_to_buffer( d,
-		 "Idle 30 Minutes. Activating AFK Flag\n\r", 0 );
+            write_to_buffer_str( d,
+            "Idle 30 Minutes. Activating AFK Flag\n\r");
 		SET_BIT(d->character->act, PLR_AFK);
 		act(AT_GREY,"$n is now afk due to idle time.", d->character, NULL, NULL, TO_ROOM);
 		continue;
@@ -537,8 +548,8 @@ void game_loop( )
 	    {
 	      if( d->character ? d->character->top_level <= LEVEL_IMMORTAL : TRUE)
 	      {
-		write_to_buffer( d,
-		 "Idle timeout... disconnecting.\n\r", 0 );
+		write_to_buffer_str( d,
+		 "Idle timeout... disconnecting.\n\r");
 		d->outtop	= 0;
 		close_socket( d, TRUE );
 		continue;
@@ -624,7 +635,7 @@ void game_loop( )
             /*
                 * 🔥 EXECUTE immediately (instead of delaying a tick)
                 */
-            if ( d->pagepoint )
+            if ( d->pagepoint != PAGEPOINT_NULL)
                 set_pager_input(d, cmdline);
             else
             {
@@ -642,16 +653,20 @@ void game_loop( )
                     case CON_EDITING:
                         edit_buffer( d->character, cmdline );
                         break;
+                        
                 }
             }
-
+            if ( d->descriptor < 0 )   /* CLOSED inside interpret/nanny */
+            {
+                break;
+            }
             /*
                 * 🔥 SAFETY: prevent CPU abuse
                 */
             if ( ++cmd_count >= MAX_COMMANDS_PER_TICK )
             {
-                write_to_buffer(d,
-                    "\n\r*** Command limit per tick reached ***\n\r", 0);
+                write_to_buffer_str(d,
+                    "\n\r*** Command limit per tick reached ***\n\r");
                 break;
             }
         }
@@ -659,8 +674,13 @@ void game_loop( )
             * ================= END MULTI-COMMAND BLOCK ==================
             */
     }
-	    if ( d == last_descriptor )
-	      break;
+        if ( d->descriptor < 0 )   /* CLOSED inside interpret/nanny */
+        {
+            DISPOSE(d);
+            break;    
+        }
+	   if ( d == last_descriptor )
+	        break;
 	}
 
 	/*
@@ -680,10 +700,16 @@ void game_loop( )
 	{
 	    d_next = d->next;   
 
-	    if ( ( d->fcommand || d->outtop > 0 )
+        if ( d->descriptor < 0 )
+        {
+            DISPOSE(d);
+            continue;
+        }
+
+       if ( ( d->fcommand || d->outtop > 0 )
 	    &&   FD_ISSET(d->descriptor, &out_set) )
 	    {
-	        if ( d->pagepoint )
+	        if ( d->pagepoint != PAGEPOINT_NULL )
 	        {
 	          if ( !pager_output(d) )
 	          {
@@ -835,6 +861,7 @@ void new_descriptor( int new_desc )
     dnew->original      = NULL;
     dnew->character     = NULL;
     dnew->telnet_pos = 0;
+    dnew->pagepoint = PAGEPOINT_NULL;
 
     CREATE( dnew->outbuf, char, dnew->outsize );
 
@@ -845,7 +872,7 @@ void new_descriptor( int new_desc )
     //Watchdog code -- Kre
     /*
     if (strcmp(dnew->host,"127.0.0.1")==0) {
-      write_to_buffer( dnew,"@", 0 );
+      write_to_buffer_str( dnew,"@" );
       free_desc(dnew);
       set_alarm( 0 );
       return;
@@ -868,8 +895,8 @@ void new_descriptor( int new_desc )
       log_printf_plus( LOG_COMM, sysdata.log_level, "Sock.sinaddr: AOL Ping! %s, port %hd.",
 		buf, dnew->port );
       
-      write_to_buffer( dnew,
-      "AOL users have been banned from this site.  We apologize for the inconvenience.\n\r", 0 );
+      write_to_buffer_str( dnew,
+      "AOL users have been banned from this site.  We apologize for the inconvenience.\n\r");
       flush_buffer(d, TRUE);
       free_desc( dnew );
       set_alarm( 0 );
@@ -887,8 +914,8 @@ void new_descriptor( int new_desc )
 	  &&  pban->level >= LEVEL_SUPREME 
 	)
 	{
-	    write_to_buffer( dnew,
-		    "Your site has been banned from this Mud.\n\r", 0 );
+	    write_to_buffer_str( dnew,
+		    "Your site has been banned from this Mud.\n\r" );
         flush_buffer(dnew, FALSE);
 	    free_desc( dnew );
 	    set_alarm( 0 );
@@ -922,9 +949,9 @@ void new_descriptor( int new_desc )
     LINK( dnew, first_descriptor, last_descriptor, next, prev );
 
 #ifdef MCCP
-    write_to_buffer(dnew, (const char *)eor_on_str, 0);
-    write_to_buffer(dnew, (const char *)compress2_on_str, 0);
-    write_to_buffer(dnew, (const char *)compress_on_str, 0);
+    write_to_buffer_str(dnew, (const char *)eor_on_str);
+    write_to_buffer_str(dnew, (const char *)compress2_on_str);
+    write_to_buffer_str(dnew, (const char *)compress_on_str);
 #endif
 
     const unsigned char will_naws[] = { IAC, DO, TELOPT_NAWS };
@@ -936,9 +963,9 @@ void new_descriptor( int new_desc )
     {
     extern char * help_greeting;
     if ( help_greeting[0] == '.' )
-	    write_to_buffer( dnew, help_greeting+1, 0 );
+	    write_to_buffer_str( dnew, help_greeting+1);
 	else
-	    write_to_buffer( dnew, help_greeting  , 0 );
+	    write_to_buffer_str( dnew, help_greeting );
     }
     start_auth( dnew ); /* Start username authorization */
 
@@ -963,6 +990,7 @@ void new_descriptor( int new_desc )
 void free_desc( DESCRIPTOR_DATA *d )
 {
     close( d->descriptor );
+    d->descriptor = -1;
     STRFREE( d->host );
     DISPOSE( d->outbuf );
     STRFREE( d->user );    /* identd */
@@ -975,7 +1003,6 @@ void free_desc( DESCRIPTOR_DATA *d )
 
     if ( d->pagebuf )
 	    DISPOSE( d->pagebuf );
-    DISPOSE( d );
     --num_descriptors;
     return;
 }
@@ -992,8 +1019,8 @@ void close_socket( DESCRIPTOR_DATA *dclose, bool force )
 
     /* say bye to whoever's snooping this descriptor */
     if ( dclose->snoop_by )
-	write_to_buffer( dclose->snoop_by,
-	    "Your victim has left the game.\n\r", 0 );
+	write_to_buffer_str( dclose->snoop_by,
+	    "Your victim has left the game.\n\r" );
 
     /* stop snooping everyone else */
     for ( d = first_descriptor; d; d = d->next )
@@ -1286,6 +1313,9 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                         int width  = (d->sb_buf[0] << 8) | d->sb_buf[1];
                         int height = (d->sb_buf[2] << 8) | d->sb_buf[3];
 
+                        if (width < 20 || width > 500)
+                            width = 80;
+
                         d->term_width  = width;
                         d->term_height = height;
                     }
@@ -1335,8 +1365,8 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
     if ( iStart >= sizeof(d->inbuf) - 10 )
         {
         log_printf( "%s input overflow!", d->host );
-        write_to_buffer( d,
-            "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
+        write_to_buffer_str( d,
+            "\n\r*** PUT A LID ON IT!!! ***\n\r");
         flush_buffer(d, TRUE);
         return FALSE;
     }
@@ -1388,8 +1418,8 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
                     d->character ? d->character->name : d->host,
                     d->in_bytes);
 
-                write_to_buffer( d,
-                    "\n\r*** DISCONNECT: Input flood detected ***\n\r", 0 );
+                write_to_buffer_str( d,
+                    "\n\r*** DISCONNECT: Input flood detected ***\n\r");
 
                 return FALSE;
             }
@@ -1503,7 +1533,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
         if ( k >= 254 )
         {
-            write_to_buffer( d, "Line too long.\n\r", 0 );
+            write_to_buffer_str( d, "Line too long.\n\r" );
             break;
         }
 
@@ -1527,8 +1557,8 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     if ( d->in_commands > 20 )
     {
-        write_to_buffer( d,
-            "\n\r*** SLOW DOWN ***\n\r", 0 );
+        write_to_buffer_str( d,
+            "\n\r*** SLOW DOWN ***\n\r" );
         return;
     }
 
@@ -1542,8 +1572,8 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
         if ( d->incomm[0] != '!' && strcmp( d->incomm, d->inlast ) )
             d->repeat = 0;
         else if ( ++d->repeat >= 100 )
-            write_to_buffer( d,
-                "\n\r*** PUT A LID ON IT!!! ***\n\r", 0 );
+            write_to_buffer_str( d,
+                "\n\r*** PUT A LID ON IT!!! ***\n\r" );
     }
 
     if ( d->incomm[0] == '!' )
@@ -1621,12 +1651,12 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
     {
 	ch = d->original ? d->original : d->character;
 	if ( IS_SET(ch->act, PLR_BLANK) )
-	    write_to_buffer( d, "\n\r", 2 );
+	    write_to_buffer_str( d, "\n\r" );
 
 	if ( IS_SET(ch->act, PLR_PROMPT) )
 	    display_prompt(d);
 	if ( IS_SET(ch->act, PLR_TELNET_GA) )
-	    write_to_buffer( d, (const char *) go_ahead_str, 0 );
+	    write_to_buffer_str( d, (const char *) go_ahead_str );
     }
 
     /*
@@ -1648,11 +1678,11 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
             SPRINTF( buf, "%s (%s)", d->character->name, d->original->name );
             else
             SPRINTF( buf, "%s", d->character->name);
-            write_to_buffer( d->snoop_by, buf, 0);
+            write_to_buffer_str( d->snoop_by, buf );
         }
-        write_to_buffer( d->snoop_by, "% ", 2 );
+        write_to_buffer_str( d->snoop_by, "% " );
         if (d->snoop_by != d)
-            write_to_buffer(d->snoop_by, d->outbuf, d->outtop);
+            write_to_buffer_str(d->snoop_by, d->outbuf);
     }   
     #ifdef MCCP
     /*
@@ -1689,30 +1719,39 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
     /*
      * === NORMAL NON-BLOCKING WRITE ===
      */
-    int max_chunk = 4096;
-    int to_write = d->outtop > max_chunk ? max_chunk : d->outtop;
+    size_t max_chunk = 32768;
 
-    int written = write(d->descriptor, d->outbuf, to_write);
+    size_t total_written = 0;
 
-    if (written < 0)
+    while (d->outtop > 0)
     {
-        if (errno == EWOULDBLOCK || errno == EAGAIN)
-            return TRUE;
+        size_t chunk = d->outtop > max_chunk ? max_chunk : d->outtop;
 
-        return FALSE;
+        ssize_t n = write(d->descriptor, d->outbuf, chunk);
+
+        if (n > 0)
+        {
+            total_written += n;
+
+            if ((size_t)n < d->outtop)
+            {
+                memmove(d->outbuf, d->outbuf + n, d->outtop - n);
+            }
+
+            d->outtop -= n;
+        }
+        else if (n == 0)
+        {
+            return FALSE;
+        }
+        else
+        {
+            if (errno == EWOULDBLOCK || errno == EAGAIN)
+                break;
+
+            return FALSE;
+        }
     }
-
-    if (written == 0)
-        return FALSE;
-
-    if (written < d->outtop)
-    {
-        memmove(d->outbuf,
-                d->outbuf + written,
-                d->outtop - written);
-    }
-
-    d->outtop -= written;
 
     /*
      * Slow client protection
@@ -1727,6 +1766,11 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
     return TRUE;
 }
 
+
+void write_to_buffer_str(DESCRIPTOR_DATA *d, const char *txt)
+{
+    write_to_buffer(d, txt, strnlen(txt, MAX_STRING_LENGTH));
+}
 
 /*
  * Append onto an output buffer.
@@ -1775,15 +1819,7 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
                 d->character ? d->character->name : d->host,
                 d->outtop);
 
-        /*
-         * Option A: disconnect (strict)
-         */
-        close_socket(d, TRUE);
-
-        /*
-         * Option B (softer): drop output instead
-         * d->outtop = 0;
-         */
+            close_socket(d, TRUE);
         }
         return;
     }
@@ -1791,7 +1827,7 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
     // Expand the buffer as needed.
     while ( d->outtop + (unsigned int ) length >= d->outsize )
     {
-        if (d->outsize > 16384)
+        if (d->outsize > 65536)
         {
             /* empty buffer */
             d->outtop = 0;
@@ -1803,9 +1839,94 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
         RECREATE( d->outbuf, char, d->outsize );
     }
 
-     // Copy.
-    memcpy( d->outbuf + d->outtop, txt, length );
-    d->outtop += length;
+    /* =========================
+    * COLOR-AWARE COPY
+    * ========================= */
+    const char *ptr = txt;         
+    const char *end = txt + length;
+    char colbuf[64];
+    int ln;
+
+    while ( ptr < end )                         /* CHANGED */
+    {
+        const char *colstr = NULL;              /* CHANGED */
+
+        /* CHANGED: manual scan instead of strpbrk */
+        for ( const char *p = ptr; p < end; ++p )
+        {
+            if ( *p == '&' || *p == '^' )
+            {
+                colstr = p;
+                break;
+            }
+        }
+
+        if ( !colstr )                          /* CHANGED */
+            break;
+
+        /* copy text before color */
+        size_t seglen = (size_t)(colstr - ptr); /* CHANGED */
+
+        if ( seglen > 0 )
+        {
+            while ( d->outtop + seglen >= d->outsize )
+            {
+                d->outsize *= 2;
+                RECREATE( d->outbuf, char, d->outsize );
+            }
+
+            memcpy( d->outbuf + d->outtop, ptr, seglen );
+            d->outtop += seglen;
+        }
+
+        /* CHANGED: bounds check for &X */
+        if ( colstr + 1 >= end )
+        {
+            ptr = colstr;
+            break;
+        }
+
+        /* convert color */
+        ln = make_color_sequence( colstr, colbuf, d );
+
+        if ( ln < 0 )
+        {
+            ptr = colstr + 1;                  /* CHANGED */
+            continue;
+        }
+
+        if ( ln > 0 )
+        {
+            while ( d->outtop + (size_t)ln >= d->outsize )
+            {
+                d->outsize *= 2;
+                RECREATE( d->outbuf, char, d->outsize );
+            }
+
+            memcpy( d->outbuf + d->outtop, colbuf, (size_t)ln );
+            d->outtop += (size_t)ln;
+        }
+
+        ptr = colstr + 2;                      /* CHANGED */
+    }
+
+    /* =========================
+     * CHANGED: remainder copy (length-safe)
+     * ========================= */
+    if ( ptr < end )
+    {
+        size_t rem = (size_t)(end - ptr);
+
+        while ( d->outtop + rem >= d->outsize )
+        {
+            d->outsize *= 2;
+            RECREATE( d->outbuf, char, d->outsize );
+        }
+
+        memcpy( d->outbuf + d->outtop, ptr, rem );
+        d->outtop += rem;
+    }
+
     d->outbuf[d->outtop] = '\0';
     return;
 }
@@ -1814,7 +1935,7 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
 #ifdef MCCP
 #define COMPRESS_BUF_SIZE 1024
 
-bool write_to_descriptor(int desc, char *txt, int length)
+bool write_to_descriptor_depreciated(int desc, char *txt, int length)
 {
     bug("write_to_descriptor: deprecated path used!");
     return FALSE;
@@ -1827,7 +1948,7 @@ bool write_to_descriptor(int desc, char *txt, int length)
  * If this gives errors on very long blocks (like 'ofind all'),
  *   try lowering the max block size.
  */
-bool write_to_descriptor( int desc, char *txt, int length )
+bool write_to_descriptor_depreciated( int desc, char *txt, int length )
 {
 {
     bug("write_to_descriptor: deprecated path used!");
@@ -1852,7 +1973,7 @@ void show_title( DESCRIPTOR_DATA *d )
     }
     else
     {
-      write_to_buffer( d, "Press enter...\n\r", 0 );
+      write_to_buffer_str( d, "Press enter...\n\r" );
     }
     d->connected = CON_PRESS_ENTER;
 }
@@ -1899,7 +2020,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	argument[0] = UPPER(argument[0]);
 	if ( !check_parse_name( argument ) )
 	{
-	    write_to_buffer( d, "Illegal name, try another.\n\rName: ", 0 );
+	    write_to_buffer_str( d, "Illegal name, try another.\n\rName: " );
 	    return;
 	}
 
@@ -1912,11 +2033,11 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
       	      if (sysdata.DENY_NEW_PLAYERS == TRUE)
       	      {
                 SPRINTF( buf, "The mud is currently preparing for a reboot.\n\r" );
-                write_to_buffer( d, buf, 0 );
+                write_to_buffer_str( d, buf );
                 SPRINTF( buf, "New players are not accepted during this time.\n\r" );
-                write_to_buffer( d, buf, 0 );
+                write_to_buffer_str( d, buf );
                 SPRINTF( buf, "Please try again in a few minutes.\n\r" );
-                write_to_buffer( d, buf, 0 );
+                write_to_buffer_str( d, buf );
                 close_socket( d, FALSE );
               }
               SPRINTF( buf, "\n\rChoosing a name is one of the most important parts of this game...\n\r"
@@ -1924,21 +2045,21 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
                			"to role play, and be sure that it suits our Star Wars theme.\n\r"
                			"If the name you select is not acceptable, you will be asked to choose\n\r"
                			"another one.\n\r\n\rPlease choose a name for your character: ");
-              write_to_buffer( d, buf, 0 );
+              write_to_buffer_str( d, buf );
 	      d->newstate++;
 	      d->connected = CON_GET_NAME;
 	      return;
 	    }
 	    else
    	    {
-	      write_to_buffer(d, "Illegal name, try another.\n\rName: ", 0);
+	      write_to_buffer_str(d, "Illegal name, try another.\n\rName: " );
 	      return;
 	    }
 	}
 
 	if ( check_playing( d, argument, FALSE ) == BERR )
 	{
-	    write_to_buffer( d, "Name: ", 0 );
+	    write_to_buffer_str( d, "Name: " );
 	    return;
 	}
 
@@ -1946,7 +2067,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	if ( !d->character )
 	{
 	    log_printf( "Bad player file %s@%s.", argument, d->host );
-	    write_to_buffer( d, "Your playerfile is corrupt...Please notify the admins.\n\r", 0 );
+	    write_to_buffer_str( d, "Your playerfile is corrupt...Please notify the admins.\n\r" );
 	    close_socket( d, FALSE );
 	    return;
 	}
@@ -1959,8 +2080,8 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	    || !str_suffix( pban->name, d->host ) )
 	  && pban->level >= ch->top_level )
           {
-            write_to_buffer( d,
-              "Your site has been banned from this Mud.\n\r", 0 );
+            write_to_buffer_str( d,
+              "Your site has been banned from this Mud.\n\r" );
             close_socket( d, FALSE );
 	    return;
 	  }
@@ -1970,11 +2091,11 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	    log_printf_plus( LOG_COMM, sysdata.log_level, "Denying access to %s@%s.", argument, d->host );
 	    if (d->newstate != 0)
 	    {
-              write_to_buffer( d, "That name is already taken.  Please choose another: ", 0 );
+              write_to_buffer_str( d, "That name is already taken.  Please choose another: " );
 	      d->connected = CON_GET_NAME;
 	      return;
 	    }
-	    write_to_buffer( d, "You are denied access.\n\r", 0 );
+	    write_to_buffer_str( d, "You are denied access.\n\r" );
 	    close_socket( d, FALSE );
 	    return;
 	}
@@ -1991,8 +2112,8 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	{
 	    if ( wizlock && !IS_IMMORTAL(ch) )
 	    {
-		write_to_buffer( d, "The game is wizlocked.  Only immortals can connect now.\n\r", 0 );
-		write_to_buffer( d, "Please try back later.\n\r", 0 );
+		write_to_buffer_str( d, "The game is wizlocked.  Only immortals can connect now.\n\r" );
+		write_to_buffer_str( d, "Please try back later.\n\r" );
 		close_socket( d, FALSE );
 		return;
 	    }
@@ -2002,41 +2123,41 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	{
 	    if (d->newstate != 0)
 	    {
-	      write_to_buffer( d, "That name is already taken.  Please choose another: ", 0 );
+	      write_to_buffer_str( d, "That name is already taken.  Please choose another: " );
 	      d->connected = CON_GET_NAME;
 	      return;
 	    }
 	    /* Old player */
-	    write_to_buffer( d, "Password: ", 0 );
-	    write_to_buffer( d, (const char *)echo_off_str, 0 );
+	    write_to_buffer_str( d, "Password: " );
+	    write_to_buffer_str( d, (const char *)echo_off_str );
 	    d->connected = CON_GET_OLD_PASSWORD;
 	    return;
 	}
 	else
 	{
      if (check_bad_name(ch->name)) {
-       write_to_buffer( d, "\n\rThat name is unacceptable, please choose another.\n\r", 0);
-       write_to_buffer( d, "Name: ",0);
+       write_to_buffer_str( d, "\n\rThat name is unacceptable, please choose another.\n\r");
+       write_to_buffer_str( d, "Name: ");
        d->connected = CON_GET_NAME;
        return;
      }
-            write_to_buffer( d, "\n\rI don't recognize your name, you must be new here.\n\r\n\r", 0 );
+            write_to_buffer_str( d, "\n\rI don't recognize your name, you must be new here.\n\r\n\r" );
             SPRINTF( buf, "Did I get that right, %s (Y/N)? ", argument );
-            write_to_buffer( d, buf, 0 );
+            write_to_buffer_str( d, buf );
             d->connected = CON_CONFIRM_NEW_NAME;
 	    return;
 	}
 	break;
 
     case CON_GET_OLD_PASSWORD:
-	write_to_buffer( d, "\n\r", 2 );
+	write_to_buffer_str( d, "\n\r" );
 //New SHA-256 password checking - AI/DV 3-12-26
   char pwdhash[65];
   sha256_hash(argument, pwdhash);
 
   if (strcmp(pwdhash, ch->pcdata->pwd))
   {
-      write_to_buffer(d, "Wrong password.\n\r", 0);
+      write_to_buffer_str(d, "Wrong password.\n\r");
 	    // clear descriptor pointer to get rid of bug message in log      
       d->character->desc = NULL;
       close_socket(d, FALSE);
@@ -2045,14 +2166,14 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 /*
 	if ( strcmp( crypt( argument, ch->pcdata->pwd ), ch->pcdata->pwd ) )
 	{
-	    write_to_buffer( d, "Wrong password.\n\r", 0 );
+	    write_to_buffer_str( d, "Wrong password.\n\r" );
 	    // clear descriptor pointer to get rid of bug message in log
 	    d->character->desc = NULL;
 	    close_socket( d, FALSE );
 	    return;
 	}
 */
-	write_to_buffer( d, (const char*) echo_on_str, 0 );
+	write_to_buffer_str( d, (const char*) echo_on_str );
 
 	if ( check_playing( d, ch->name, TRUE ) )
 	    return;
@@ -2101,12 +2222,12 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	    SPRINTF( buf, "\n\rMake sure to use a password that won't be easily guessed by someone else."
 	    		  "\n\rPick a good password for %s: %s",
 		ch->name, echo_off_str );
-	    write_to_buffer( d, buf, 0 );
+	    write_to_buffer_str( d, buf );
 	    d->connected = CON_GET_NEW_PASSWORD;
 	    break;
 
 	case 'n': case 'N':
-	    write_to_buffer( d, "Ok, what IS it, then? ", 0 );
+	    write_to_buffer_str( d, "Ok, what IS it, then? " );
 	    /* clear descriptor pointer to get rid of bug message in log */
 	    d->character->desc = NULL;
 	    free_char( d->character );
@@ -2115,19 +2236,18 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	    break;
 
 	default:
-	    write_to_buffer( d, "Please type Yes or No. ", 0 );
+	    write_to_buffer_str( d, "Please type Yes or No. " );
 	    break;
 	}
 	break;
 
     case CON_GET_NEW_PASSWORD:
-	write_to_buffer( d, "\n\r", 2 );
+	write_to_buffer_str( d, "\n\r" );
 
-	if ( strlen(argument) < 5 )
+	if ( visible_length(argument) < 5 )
 	{
-	    write_to_buffer( d,
-		"Password must be at least five characters long.\n\rPassword: ",
-		0 );
+	    write_to_buffer_str( d,
+		"Password must be at least five characters long.\n\rPassword: " );
 	    return;
 	}
 
@@ -2141,21 +2261,20 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 	{
 	    if ( *p == '~' )
 	    {
-		write_to_buffer( d,
-		    "New password not acceptable, try again.\n\rPassword: ",
-		    0 );
+		write_to_buffer_str( d,
+		    "New password not acceptable, try again.\n\rPassword: " );
 		return;
 	    }
 	}
 
 	DISPOSE( ch->pcdata->pwd );
 	ch->pcdata->pwd	= str_dup( pwdnew );
-	write_to_buffer( d, "\n\rPlease retype the password to confirm: ", 0 );
+	write_to_buffer_str( d, "\n\rPlease retype the password to confirm: " );
 	d->connected = CON_CONFIRM_NEW_PASSWORD;
 	break;
 
     case CON_CONFIRM_NEW_PASSWORD:
-	write_to_buffer( d, "\n\r", 2 );
+	write_to_buffer_str( d, "\n\r" );
   
 // New SHA-256 password checking - AI/DV 3-12-26
 sha256_hash(argument, pwdnewhash);
@@ -2164,9 +2283,8 @@ for (p = pwdnewhash; *p != '\0'; p++)
 {
     if (*p == '~')
     {
-        write_to_buffer(d,
-            "New password not acceptable, try again.\n\rPassword: ",
-            0);
+        write_to_buffer_str(d,
+            "New password not acceptable, try again.\n\rPassword: " );
         return;
     }
 }
@@ -2177,14 +2295,13 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
 
 	if ( strcmp( crypt( argument, ch->pcdata->pwd ), ch->pcdata->pwd ) )
 	{
-	    write_to_buffer( d, "Passwords don't match.\n\rRetype password: ",
-		0 );
+	    write_to_buffer_str( d, "Passwords don't match.\n\rRetype password: " );
 	    d->connected = CON_GET_NEW_PASSWORD;
 	    return;
 	}
 */
-	write_to_buffer( d, (const char*) echo_on_str, 0 );
-	write_to_buffer( d, "\n\rWhat is your sex (M/F/N)? ", 0 );
+	write_to_buffer_str( d, (const char*) echo_on_str );
+	write_to_buffer_str( d, "\n\rWhat is your sex (M/F/N)? " );
 	d->connected = CON_GET_NEW_SEX;
 	break;
 
@@ -2195,12 +2312,12 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
 	case 'f': case 'F': ch->sex = SEX_FEMALE;  break;
 	case 'n': case 'N': ch->sex = SEX_NEUTRAL; break;
 	default:
-	    write_to_buffer( d, "That's not a sex.\n\rWhat IS your sex? ", 0 );
+	    write_to_buffer_str( d, "That's not a sex.\n\rWhat IS your sex? " );
 	    return;
 	}
 
 
-	write_to_buffer( d, "\n\rYou may choose from the following races, or type showstat [race] to learn more:\n\r", 0 );
+	write_to_buffer_str( d, "\n\rYou may choose from the following races, or type showstat [race] to learn more:\n\r" );
 	buf[0] = '\0';
 	buf2[0] = '\0';
 	halfmax = (MAX_RACE/3) + 1;
@@ -2220,12 +2337,12 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
             STRAPP( buf, "%s", buf2 );
 	  }
           STRAPP( buf, "\n\r" );
-          write_to_buffer( d, buf, 0 );
+          write_to_buffer_str( d, buf );
           buf[0] = '\0';
          }
         }
 	STRAPP( buf, ": " );
-	write_to_buffer( d, buf, 0 );
+	write_to_buffer_str( d, buf );
 	d->connected = CON_GET_NEW_RACE;
 	break;
 
@@ -2234,13 +2351,13 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
         if (!str_cmp( arg, "help") )
         {
 	      do_help(ch, argument);
-      	      write_to_buffer( d, "Please choose a race: ", 0);
+      	      write_to_buffer_str( d, "Please choose a race: ");
 	      return;
 	}
         if (!str_cmp( arg, "showstat") )
         {
 	      do_showstatistic(ch, argument);
-      	      write_to_buffer( d, "Please choose a race: ", 0);
+      	      write_to_buffer_str( d, "Please choose a race: ");
 	      return;
 	}
 	
@@ -2255,8 +2372,8 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
 	 }
     if ( iRace == RACE_ASSASSIN_DROID || iRace == RACE_YEVETHA || iRace == RACE_TOGARIAN )
 	{
-	    write_to_buffer( d,
-		"Do to too many people choosing this race, it now must be applied for.\n\rWhat IS your race? ", 0 );
+	    write_to_buffer_str( d,
+		"Do to too many people choosing this race, it now must be applied for.\n\rWhat IS your race? " );
 	    return;
 	}
     
@@ -2264,12 +2381,12 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
     if ( iRace == MAX_RACE || iRace == RACE_GOD
     ||  race_table[iRace].race_name[0] == '\0')
 	{
-	    write_to_buffer( d,
-		"That's not a race.\n\rWhat IS your race? ", 0 );
+	    write_to_buffer_str( d,
+		"That's not a race.\n\rWhat IS your race? " );
 	    return;
 	}
 
-	write_to_buffer( d, "\n\rPlease choose a main ability from the folowing classes:\n\r", 0 );
+	write_to_buffer_str( d, "\n\rPlease choose a main ability from the folowing classes:\n\r" );
 	buf[0] = '\0';
 	buf2[0] = '\0';
 	halfmax = (MAX_ABILITY/2) + 1;
@@ -2285,12 +2402,12 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
             STRAPP( buf, "%s", buf2 );
 	  }
           STRAPP( buf, "\n\r" );
-          write_to_buffer( d, buf, 0 );
+          write_to_buffer_str( d, buf );
           buf[0] = '\0';
          }
         }
 	STRAPP( buf, ": " );
-	write_to_buffer( d, buf, 0 );
+	write_to_buffer_str( d, buf );
 	d->connected = CON_GET_NEW_CLASS;
 	break;
 
@@ -2299,7 +2416,7 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
         if (!str_cmp( arg, "help") )
         {
 	      do_help(ch, argument);
-      	      write_to_buffer( d, "Please choose an ability class: ", 0);
+      	      write_to_buffer_str( d, "Please choose an ability class: ");
 	      return;
 	}
 	
@@ -2317,12 +2434,12 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
     if ( iClass == MAX_ABILITY || iClass == 7 
     ||  !ability_name[iClass] || ability_name[iClass][0] == '\0')
 	{
-	    write_to_buffer( d,
-		"That's not a skill class.\n\rWhat IS it going to be? ", 0 );
+	    write_to_buffer_str( d,
+		"That's not a skill class.\n\rWhat IS it going to be? " );
 	    return;
 	}
 
-	write_to_buffer( d, "\n\rRolling stats....\n\r", 0 );
+	write_to_buffer_str( d, "\n\rRolling stats....\n\r" );
 
     case CON_ROLL_STATS:
 
@@ -2344,8 +2461,8 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
 	    ch->perm_str, ch->perm_int, ch->perm_wis, 
 	    ch->perm_dex, ch->perm_con, ch->perm_cha) ;
          
-        write_to_buffer( d, buf, 0 );
-        write_to_buffer( d, "\n\rAre these stats OK?. ", 0 );
+        write_to_buffer_str( d, buf );
+        write_to_buffer_str( d, "\n\rAre these stats OK?. " );
 	d->connected = CON_STATS_OK;
         break;
 	
@@ -2373,15 +2490,15 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
 	    ch->perm_str, ch->perm_int, ch->perm_wis, 
 	    ch->perm_dex, ch->perm_con, ch->perm_cha) ;
          
-            write_to_buffer( d, buf, 0 );
-            write_to_buffer( d, "\n\rOK?. ", 0 );
+            write_to_buffer_str( d, buf );
+            write_to_buffer_str( d, "\n\rOK?. " );
 	    return;
 	default:
-	    write_to_buffer( d, "Invalid selection.\n\rYES or NO? ", 0 );
+	    write_to_buffer_str( d, "Invalid selection.\n\rYES or NO? " );
 	    return;
 	}
 
-	write_to_buffer( d, "\n\rWould you like ANSI or no graphic/color support, (R/A/N)? ", 0 );
+	write_to_buffer_str( d, "\n\rWould you like ANSI or no graphic/color support, (R/A/N)? " );
 	d->connected = CON_GET_WANT_RIPANSI;
         break;
         
@@ -2391,10 +2508,10 @@ ch->pcdata->pwd = str_dup(pwdnewhash);
 	case 'a': case 'A': SET_BIT(ch->act,PLR_ANSI);  break;
 	case 'n': case 'N': break;
 	default:
-	    write_to_buffer( d, "Invalid selection.\n\rANSI or NONE? ", 0 );
+	    write_to_buffer_str( d, "Invalid selection.\n\rANSI or NONE? " );
 	    return;
 	}
-        write_to_buffer( d, "Does your mud client have the Mud Sound Protocol? ", 0 );
+        write_to_buffer_str( d, "Does your mud client have the Mud Sound Protocol? " );
 	d->connected = CON_GET_MSP; 
 	 break;
           
@@ -2405,7 +2522,7 @@ case CON_GET_MSP:
 	case 'y': case 'Y': SET_BIT(ch->act,PLR_SOUND);  break;
 	case 'n': case 'N': break;
 	default:
-	    write_to_buffer( d, "Invalid selection.\n\rYES or NO? ", 0 );
+	    write_to_buffer_str( d, "Invalid selection.\n\rYES or NO? " );
 	    return;
 	}
 /*
@@ -2415,7 +2532,7 @@ case CON_GET_MSP:
 				race_table[ch->race].race_name);
 	    log_string_plus( buf, LOG_COMM, sysdata.log_level);
 	    to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
-	    write_to_buffer( d, "Press [ENTER] ", 0 );
+	    write_to_buffer_str( d, "Press [ENTER] " );
 	    show_title(d);
 	    {
 	       int ability;
@@ -2430,7 +2547,7 @@ case CON_GET_MSP:
 	    break;
 /*	}
 
-	write_to_buffer( d, "\n\rYou now have to wait for a god to authorize you... please be patient...\n\r", 0 );
+	write_to_buffer_str( d, "\n\rYou now have to wait for a god to authorize you... please be patient...\n\r" );
 	SPRINTF( buf, "(1) %s@%s new %s applying for authorization...",
 				ch->name, d->host,
 				race_table[ch->race].race_name);
@@ -2440,7 +2557,7 @@ case CON_GET_MSP:
 	break;
 
      case CON_WAIT_1:
-	write_to_buffer( d, "\n\rTwo more tries... please be patient...\n\r", 0 );
+	write_to_buffer_str( d, "\n\rTwo more tries... please be patient...\n\r" );
 	SPRINTF( buf, "(2) %s@%s new %s applying for authorization...",
 				ch->name, d->host,
 				race_table[ch->race].race_name);
@@ -2450,7 +2567,7 @@ case CON_GET_MSP:
 	break;
 
      case CON_WAIT_2:
-	write_to_buffer( d, "\n\rThis is your last try...\n\r", 0 );
+	write_to_buffer_str( d, "\n\rThis is your last try...\n\r" );
 	SPRINTF( buf, "(3) %s@%s new %s applying for authorization...",
 				ch->name, d->host,
 				race_table[ch->race].race_name);
@@ -2460,7 +2577,7 @@ case CON_GET_MSP:
 	break;
 
     case CON_WAIT_3:
-	write_to_buffer( d, "Sorry... try again later.\n\r", 0 );
+	write_to_buffer_str( d, "Sorry... try again later.\n\r" );
 	close_socket( d, FALSE );
 	return;
 	break;
@@ -2471,7 +2588,7 @@ case CON_GET_MSP:
 				race_table[ch->race].race_name);
 	log_string_plus( buf, LOG_COMM, sysdata.log_level );
 	to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
-	write_to_buffer( d, "\n\r", 2 );
+	write_to_buffer_str( d, "\n\r" );
 	show_title(d);
 	    {
 	       int ability;
@@ -2511,7 +2628,7 @@ case CON_GET_MSP:
         break;
 
     case CON_READ_MOTD:
-	write_to_buffer( d, "\n\rWelcome to Rise in Power...\n\r\n\r", 0 );
+	write_to_buffer_str( d, "\n\rWelcome to Rise in Power...\n\r\n\r" );
 	add_char( ch );
 	d->connected	= CON_PLAYING;
         
@@ -2816,8 +2933,8 @@ case CON_GET_MSP:
 				return;
 			}
 	set_char_color( AT_SAY, ch );
-	write_to_buffer( d, "You may not learn that language.  Please choose another.\n\r"
-				  "New language: ", 0 );
+	write_to_buffer_str( d, "You may not learn that language.  Please choose another.\n\r"
+				  "New language: " );
 	break;*/
     }
 
@@ -2841,11 +2958,11 @@ bool check_parse_name( char *name )
     /*
      * Length restrictions.
      */
-    if ( strlen(name) <  3 )
-	return FALSE;
+    if ( visible_length(name) <  3 )
+	    return FALSE;
 
-    if ( strlen(name) > 12 )
-	return FALSE;
+    if ( visible_length(name) > 20 )
+	    return FALSE;
 
     /*
      * Alphanumerics only.
@@ -2895,7 +3012,7 @@ short check_reconnect( DESCRIPTOR_DATA *d, char *name, bool fConn )
 	{
 	    if ( fConn && ch->switched )
 	    {
-	      write_to_buffer( d, "Already playing.\n\rName: ", 0 );
+	      write_to_buffer_str( d, "Already playing.\n\rName: " );
 	      d->connected = CON_GET_NAME;
 	      if ( d->character )
 	      {
@@ -2973,7 +3090,7 @@ bool check_multi( DESCRIPTOR_DATA *d , char *name )
 	        if ( iloop >= 10 )
 	           return FALSE;
 */
-		write_to_buffer( d, "Sorry multi-playing is not allowed ... have you other character quit first.\n\r", 0 );
+		write_to_buffer_str( d, "Sorry multi-playing is not allowed ... have you other character quit first.\n\r" );
 		log_printf_plus( LOG_COMM, sysdata.log_level, "%s attempting to multiplay with %s.", dold->original ? dold->original->name : dold->character->name , d->character->name );
 
 	        d->character = NULL;
@@ -3005,14 +3122,14 @@ short check_playing( DESCRIPTOR_DATA *d, char *name, bool kick )
 	    if ( !ch->name
 	    || ( cstate != CON_PLAYING && cstate != CON_EDITING ) )
 	    {
-        write_to_buffer( d, "Already connected - try again.\n\r", 0 );
+        write_to_buffer_str( d, "Already connected - try again.\n\r" );
         log_printf_plus( LOG_COMM, sysdata.log_level, "%s already connected.", ch->name );
         return BERR;
 	    }
 	    if ( !kick )
 	      return TRUE;
-	    write_to_buffer( d, "Already playing... Kicking off old connection.\n\r", 0 );
-	    write_to_buffer( dold, "Kicking off old connection... bye!\n\r", 0 );
+	    write_to_buffer_str( d, "Already playing... Kicking off old connection.\n\r" );
+	    write_to_buffer_str( dold, "Kicking off old connection... bye!\n\r" );
 	    close_socket( dold, FALSE );
 	    /* clear descriptor pointer to get rid of bug message in log */
 	    d->character->desc = NULL;
@@ -3068,7 +3185,7 @@ void send_to_char( const char *txt, CHAR_DATA *ch )
       return;
     }
     if ( txt && ch->desc )
-	write_to_buffer( ch->desc, txt, strlen(txt) );
+	write_to_buffer_str( ch->desc, txt );
     return;
 }
 */
@@ -3078,39 +3195,99 @@ void send_to_char( const char *txt, CHAR_DATA *ch )
  */
 void send_to_char_color( const char *txt, CHAR_DATA *ch )
 {
-  DESCRIPTOR_DATA *d;
-  const char *colstr;
-  const char *prevstr = txt;
-  char colbuf[20];
-  int ln;
-  
-  if ( !ch )
-  {
-    bug( "Send_to_char_color: NULL *ch" );
-    return;
-  }
-  if ( !txt || !ch->desc )
-    return;
-  d = ch->desc;
-  /* Clear out old color stuff */
-/*  make_color_sequence(NULL, NULL, NULL);*/
-  while ( d && ((colstr = strpbrk(prevstr, "&^")) != NULL ))
-  {
-    if (colstr > prevstr)
-       write_to_buffer(d, prevstr, (colstr-prevstr));
-    ln = make_color_sequence(colstr, colbuf, d);
-    if ( ln < 0 )
+    DESCRIPTOR_DATA *d;
+    const char *colstr;
+    const char *prevstr;
+    char colbuf[20];
+    int ln;
+
+    if ( !ch )
     {
-      prevstr = colstr+1;
-      break;
+        bug( "Send_to_char_color: NULL *ch" );
+        return;
     }
-    else if ( ln > 0 )
-      write_to_buffer(d, colbuf, ln);
-    prevstr = colstr+2;
-  }
-  if ( *prevstr )
-    write_to_buffer(d, prevstr, 0);
-  return;
+
+    if ( !txt || !(d = ch->desc) )
+        return;
+
+    prevstr = txt;
+
+    /*
+     * ============================================
+     * STEP 1: Build fully colorized string FIRST
+     * ============================================
+     */
+    int outsize = strlen(txt) * 4 + 1;  // generous buffer
+    char *out = (char *)malloc(outsize);
+    int outpos = 0;
+
+    while ( (colstr = strpbrk(prevstr, "&^")) != NULL )
+    {
+        /* copy text before color code */
+        int seglen = colstr - prevstr;
+        if (seglen > 0)
+        {
+            memcpy(out + outpos, prevstr, seglen);
+            outpos += seglen;
+        }
+
+        /* convert color code */
+        ln = make_color_sequence(colstr, colbuf, d);
+
+        if ( ln < 0 )
+        {
+            prevstr = colstr + 1;
+            continue;
+        }
+
+        if ( ln > 0 )
+        {
+            memcpy(out + outpos, colbuf, ln);
+            outpos += ln;
+        }
+
+        prevstr = colstr + 2;
+    }
+
+    /* copy remaining text */
+    if ( *prevstr )
+    {
+        int len = strlen(prevstr);
+        memcpy(out + outpos, prevstr, len);
+        outpos += len;
+    }
+
+    out[outpos] = '\0';
+
+    /*
+     * ============================================
+     * STEP 2: Apply wrapping (AFTER colors)
+     * ============================================
+     */
+    int width = (d->term_width > 0) ? d->term_width : 80;
+
+    char *wrapped;
+
+    /* Only wrap if actually needed */
+    if (visible_length(out) > width)
+        wrapped = wrap_text_smart(txt, width);
+    else
+        wrapped = str_dup(out);
+
+    /*
+     * ============================================
+     * STEP 3: Send to output buffer ONCE
+     * ============================================
+     */
+    write_to_buffer_str(d, wrapped);
+
+    /*
+     * ============================================
+     * STEP 4: Cleanup (CRITICAL)
+     * ============================================
+     */
+    DISPOSE(out);
+    DISPOSE(wrapped);
 }
 
 void write_to_pager( DESCRIPTOR_DATA *d, const char *txt, int length )
@@ -3123,26 +3300,27 @@ void write_to_pager( DESCRIPTOR_DATA *d, const char *txt, int length )
   {
     d->pagesize = MAX_STRING_LENGTH;
     CREATE( d->pagebuf, char, d->pagesize );
+    d->pagelen = 0;
   }
-  if ( !d->pagepoint )
+  if ( d->pagepoint == PAGEPOINT_NULL)
   {
-    d->pagepoint = d->pagebuf;
-    d->pagetop = 0;
+    d->pagepoint = 0;
+    d->pagelen = 0;
     d->pagecmd = '\0';
   }
-  if ( d->pagetop == 0 && !d->fcommand )
+  if ( d->pagelen == 0 && !d->fcommand )
   {
     d->pagebuf[0] = '\n';
     d->pagebuf[1] = '\r';
-    d->pagetop = 2;
+    d->pagelen = 2;
   }
-  while ( d->pagetop + (unsigned int) length >= d->pagesize )
+  while ( d->pagelen + (size_t)length + 1 >= d->pagesize )
   {
     if ( d->pagesize > 32000 )
     {
       bug( "Pager overflow.  Ignoring.\n\r" );
-      d->pagetop = 0;
-      d->pagepoint = NULL;
+      d->pagelen = 0;
+      d->pagepoint = PAGEPOINT_NULL;
       DISPOSE(d->pagebuf);
       d->pagesize = MAX_STRING_LENGTH;
       return;
@@ -3150,9 +3328,10 @@ void write_to_pager( DESCRIPTOR_DATA *d, const char *txt, int length )
     d->pagesize *= 2;
     RECREATE(d->pagebuf, char, d->pagesize);
   }
-  strncpy(d->pagebuf+d->pagetop, txt, length);
-  d->pagetop += length;
-  d->pagebuf[d->pagetop] = '\0';
+    memcpy(d->pagebuf + d->pagelen, txt, length);  
+
+    d->pagelen += length;                          
+    d->pagebuf[d->pagelen] = '\0';   
   return;
 }
 
@@ -3197,32 +3376,48 @@ void send_to_pager_color( const char *txt, CHAR_DATA *ch )
   }
   if ( !txt || !ch->desc )
     return;
+
   d = ch->desc;
   ch = d->original ? d->original : d->character;
+
   if ( IS_NPC(ch) || !IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
   {
     send_to_char_color(txt, d->character);
     return;
   }
-  /* Clear out old color stuff */
-/*  make_color_sequence(NULL, NULL, NULL);*/
-  while ( (colstr = strpbrk(prevstr, "&^")) != NULL )
-  {
-    if ( colstr > prevstr )
-      write_to_pager(d, prevstr, (colstr-prevstr));
-    ln = make_color_sequence(colstr, colbuf, d);
-    if ( ln < 0 )
+
+    int width = (d->term_width > 0) ? d->term_width : 80;
+
+    char *wrapped = wrap_text_smart(txt, width);
+
+    prevstr = wrapped;
+
+    while ( (colstr = strpbrk(prevstr, "&^")) != NULL )
     {
-      prevstr = colstr+1;
-      break;
+        if ( colstr > prevstr )
+            write_to_pager(d, prevstr, (colstr - prevstr));
+
+        ln = make_color_sequence(colstr, colbuf, d);
+
+        if ( ln < 0 )
+        {
+            prevstr = colstr + 1;
+            break;
+        }
+        else if ( ln > 0 )
+        {
+            write_to_pager(d, colbuf, ln);
+        }
+
+        prevstr = colstr + 2;
     }
-    else if ( ln > 0 )
-      write_to_pager(d, colbuf, ln);
-    prevstr = colstr+2;
-  }
-  if ( *prevstr )
-    write_to_pager(d, prevstr, 0);
-  return;
+
+    if ( *prevstr )
+        write_to_pager(d, prevstr, 0);
+
+    DISPOSE(wrapped);
+
+    return;
 }
 
 
@@ -3242,7 +3437,7 @@ void set_char_color( sh_int AType, CHAR_DATA *ch )
 	else
 	  SPRINTF(buf, "\033[0;%d;%s%dm", (AType & 8) == 8,
 	        (AType > 15 ? "5;" : ""), (AType & 7)+30);
-	write_to_buffer( ch->desc, buf, strlen(buf) );
+	write_to_buffer_str( ch->desc, buf );
     }
     return;
 }
@@ -3996,7 +4191,7 @@ void display_prompt( DESCRIPTOR_DATA *d )
     }
   }
   *pbuf = '\0';
-  write_to_buffer(d, buf, (pbuf-buf));
+  write_to_buffer_str(d, buf);
   return;
 }
 
@@ -4113,14 +4308,15 @@ void set_pager_input( DESCRIPTOR_DATA *d, char *argument )
 
 bool pager_output( DESCRIPTOR_DATA *d )
 {
-    char *last;
+    size_t last; 
     CHAR_DATA *ch;
     int pclines;
     int lines;
 //  bool ret;
 
-    if ( !d || !d->pagepoint || d->pagecmd == -1 )
+    if ( !d || d->pagepoint == PAGEPOINT_NULL || d->pagecmd == -1 )
         return TRUE;
+
     ch = d->original ? d->original : d->character;
 
     int term_lines = 0;
@@ -4137,6 +4333,7 @@ bool pager_output( DESCRIPTOR_DATA *d )
         pclines = UMIN(pclines, term_lines);
 
     pclines = UMAX(pclines - 1, 3);
+    
     switch(LOWER(d->pagecmd))
     {
     default:
@@ -4149,48 +4346,81 @@ bool pager_output( DESCRIPTOR_DATA *d )
         lines = -1-pclines;
         break;
     case 'q':
-        d->pagetop = 0;
-        d->pagepoint = NULL;
+        d->pagelen = 0;
+        d->pagepoint = PAGEPOINT_NULL;
         flush_buffer(d, TRUE);
         DISPOSE(d->pagebuf);
         d->pagesize = MAX_STRING_LENGTH;
         return TRUE;
     }
-    while ( lines < 0 && d->pagepoint >= d->pagebuf )
-        if ( *(--d->pagepoint) == '\n' )
-        ++lines;
-    if ( *d->pagepoint == '\n' && *(++d->pagepoint) == '\r' )
-        ++d->pagepoint;
-    if ( d->pagepoint < d->pagebuf )
-        d->pagepoint = d->pagebuf;
+    /* =========================
+     * BACKWARD SCAN
+     * ========================= */
+    while ( lines < 0 && d->pagepoint > 0 )
+    {
+        d->pagepoint--;
+
+        if ( d->pagebuf[d->pagepoint] == '\n' ) 
+            ++lines;
+    }
+
+    /* =========================
+     * HANDLE \n\r
+     * ========================= */
+    if ( d->pagepoint < d->pagelen &&
+         d->pagebuf[d->pagepoint] == '\n' )
+    {
+        if ( d->pagepoint + 1 < d->pagelen &&
+             d->pagebuf[d->pagepoint + 1] == '\r' )
+        {
+            d->pagepoint += 2;
+        }
+    }
+
+    /* =========================
+     * FORWARD SCAN
+     * ========================= */
     for ( lines = 0, last = d->pagepoint; lines < pclines; ++last )
-        if ( !*last )
-        break;
-        else if ( *last == '\n' )
-        ++lines;
-    if ( *last == '\r' )
+    {
+        if ( last >= d->pagelen ) 
+            break;
+        else if ( d->pagebuf[last] == '\n' )
+            ++lines;
+    }
+    
+    if ( last < d->pagelen && d->pagebuf[last] == '\r' )
         ++last;
+
+    /* =========================
+     * OUTPUT CHUNK
+     * ========================= */
     if ( last != d->pagepoint )
     {
-        write_to_buffer(d, d->pagepoint,
-            (last-d->pagepoint));
+        write_to_buffer(d, d->pagebuf + d->pagepoint, last - d->pagepoint);
         d->pagepoint = last;
     }
-    while ( isspace(*last) )
+
+    /* =========================
+     * SKIP WHITESPACE
+     * ========================= */
+    while ( last < d->pagelen &&
+            (d->pagebuf[last] == ' ' || d->pagebuf[last] == '\t') )
         ++last;
-    if ( !*last )
+
+    if ( last >= d->pagelen )
     {
-        d->pagetop = 0;
-        d->pagepoint = NULL;
+        d->pagelen = 0;
+        d->pagepoint = PAGEPOINT_NULL;
         flush_buffer(d, TRUE);
         DISPOSE(d->pagebuf);
         d->pagesize = MAX_STRING_LENGTH;
         return TRUE;
     }
+
     d->pagecmd = -1;
     if ( IS_SET( ch->act, PLR_ANSI ) )
-        write_to_buffer(d, "\033[1;36m", 7);
-    write_to_buffer(d,"(C)ontinue, (R)efresh, (B)ack, (Q)uit: [C] ", 0);
+        write_to_buffer_str(d, "\033[1;36m");
+    write_to_buffer_str(d,"(C)ontinue, (R)efresh, (B)ack, (Q)uit: [C] ");
     if ( IS_SET( ch->act, PLR_ANSI ) )
     {
         char buf[32];
@@ -4200,8 +4430,9 @@ bool pager_output( DESCRIPTOR_DATA *d )
         else
         SPRINTF(buf, "\033[0;%d;%s%dm", (d->pagecolor & 8) == 8,
             (d->pagecolor > 15 ? "5;" : ""), (d->pagecolor & 7)+30);
-        write_to_buffer( d, buf, 0 );
+        write_to_buffer_str( d, buf );
     }
+    flush_buffer(d, FALSE);    
     return TRUE;
 }
 
@@ -4337,7 +4568,7 @@ bool process_compressed(DESCRIPTOR_DATA *d)
         // we have some data to write
         for (iStart = 0; iStart < len; iStart += nWrite)
         {
-            nBlock = UMIN (len - iStart, 4096);
+            nBlock = UMIN (len - iStart, 16384);
             if ((nWrite = write(d->descriptor, d->out_compress_buf + iStart, nBlock)) < 0)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK || errno == ENOSR)
@@ -4403,9 +4634,9 @@ bool compressStart(DESCRIPTOR_DATA *d, unsigned char telopt)
     }
 
     if (telopt == TELOPT_COMPRESS)
-        write_to_buffer(d, enable_compress, 0);
+        write_to_buffer_str(d, enable_compress);
     else if (telopt == TELOPT_COMPRESS2)
-        write_to_buffer(d, enable_compress2, 0);
+        write_to_buffer_str(d, enable_compress2);
     else
         bug("compressStart: bad TELOPT passed");
     flush_buffer(d, FALSE);
@@ -4447,8 +4678,8 @@ void do_compress( CHAR_DATA *ch, char *argument )
 
     if (!ch->desc->out_compress) {
         send_to_char("Initiating compression.\n\r", ch);
-        write_to_buffer( ch->desc, (const char *)compress2_on_str, 0 );
-        write_to_buffer( ch->desc, (const char *)compress_on_str, 0 );
+        write_to_buffer_str( ch->desc, (const char *)compress2_on_str );
+        write_to_buffer_str( ch->desc, (const char *)compress_on_str );
     } else {
         send_to_char("Terminating compression.\n\r", ch);
         compressEnd(ch->desc);
@@ -4456,4 +4687,794 @@ void do_compress( CHAR_DATA *ch, char *argument )
 
 }
 #endif
+
+static bool is_divider_line(const char *s)
+{
+    int count = 0;
+
+    for (; *s; s++)
+    {
+        if (*s == '-' || *s == '=' || *s == '_')
+            count++;
+        else if (!isspace(*s) && *s != '&') /* allow color codes */
+            return FALSE;
+    }
+
+    return count >= 10; /* long enough to be a divider */
+}
+
+static char *format_divider_line(const char *src, int width)
+{
+    char fill = '-';
+
+    /* detect fill character */
+    for (const char *p = src; *p; p++)
+    {
+        if (*p == '-' || *p == '=' || *p == '_')
+        {
+            fill = *p;
+            break;
+        }
+    }
+
+    /* preserve leading color codes like &C */
+    char prefix[32] = "";
+    int pi = 0;
+
+    const char *p = src;
+    while (*p == '&' && *(p+1))
+    {
+        if (pi < (int)sizeof(prefix) - 2)
+        {
+            prefix[pi++] = *p++;
+            prefix[pi++] = *p++;
+        }
+        else break;
+    }
+    prefix[pi] = '\0';
+
+    int prefix_len = strlen(prefix);
+
+    /* allocate output */
+    int total = width + prefix_len + 3;
+    char *out = (char *)malloc(total);
+
+    int o = 0;
+
+    /* copy prefix */
+    for (int i = 0; i < prefix_len; i++)
+        out[o++] = prefix[i];
+
+    /* fill line */
+    for (int i = 0; i < width; i++)
+        out[o++] = fill;
+
+    out[o++] = '\n';
+    out[o++] = '\r';
+    out[o] = '\0';
+
+    return out;
+}
+
+char *wrap_text(const char *txt, int width)
+{
+    if (!txt || width <= 0)
+        return str_dup(txt ? txt : "");
+
+    int len = strlen(txt);
+    int outsize = len * 4 + 1;
+    char *out = (char *)malloc(outsize);
+
+    int o = 0;              /* output index */
+    int col = 0;            /* visible column */
+
+    int last_space_out = -1; /* output index of last space */
+    int last_space_col = -1; /* column at last space */
+
+    for (int i = 0; txt[i] != '\0'; i++)
+    {
+        /* Ensure space */
+        if (o >= outsize - 16)
+        {
+            outsize *= 2;
+            out = (char *)realloc(out, outsize);
+        }
+
+        /* =========================
+         * ANSI SEQUENCE
+         * ========================= */
+        if (txt[i] == '\x1b')
+        {
+            out[o++] = txt[i++];
+
+            while (txt[i] && txt[i] != 'm')
+                out[o++] = txt[i++];
+
+            if (txt[i])
+                out[o++] = txt[i];
+
+            continue; /* no column impact */
+        }
+
+        /* =========================
+         * NEWLINES
+         * ========================= */
+        if (txt[i] == '\n' || txt[i] == '\r')
+        {
+            out[o++] = txt[i];
+            col = 0;
+
+            last_space_out = -1;
+            last_space_col = -1;
+            continue;
+        }
+
+        /* =========================
+         * TRACK SPACES
+         * ========================= */
+        if (txt[i] == ' ')
+        {
+            last_space_out = o;
+            last_space_col = col;
+        }
+
+        /* =========================
+         * WRAP BEFORE OVERFLOW
+         * ========================= */
+        if (col >= width)
+        {
+            if (last_space_out != -1)
+            {
+                /*
+                 * Replace last space with newline
+                 */
+                out[last_space_out] = '\n';
+                out[last_space_out + 1] = '\r';
+
+                /*
+                 * Move remainder forward
+                 */
+                int shift = o - (last_space_out + 1);
+                memmove(out + last_space_out + 2,
+                        out + last_space_out + 1,
+                        shift);
+
+                o++; /* account for extra char */
+
+                col = col - last_space_col - 1;
+
+                last_space_out = -1;
+                last_space_col = -1;
+            }
+            else
+            {
+                /*
+                 * Hard wrap (long word case)
+                 */
+                out[o++] = '\n';
+                out[o++] = '\r';
+                col = 0;
+            }
+        }
+
+        /* =========================
+         * NORMAL CHAR
+         * ========================= */
+        out[o++] = txt[i];
+        col++;
+    }
+
+    out[o] = '\0';
+    return out;
+}
+
+char *wrap_text_ex(const char *txt, int width, int flags, int indent)
+{
+    if (!txt)
+        return str_dup("");
+
+    if (width <= 0 || (flags & WRAP_NO_WRAP))
+        return str_dup(txt);
+
+    int len = strlen(txt);
+    int outsize = len * 4 + 1;
+    char *out = (char *)malloc(outsize);
+
+    int o = 0;
+    int col = 0;
+
+    int last_space_out = -1;
+    int last_space_col = -1;
+
+    int line = 0;
+
+    /* helper: apply indent */
+    #define APPLY_INDENT() \
+        if ((flags & WRAP_INDENT) || \
+           ((flags & WRAP_HANGING_INDENT) && line > 0)) \
+        { \
+            for (int k = 0; k < indent; k++) \
+            { \
+                if (o >= outsize - 8) \
+                { \
+                    outsize *= 2; \
+                    out = (char *)realloc(out, outsize); \
+                } \
+                out[o++] = ' '; \
+                col++; \
+            } \
+        }
+
+    APPLY_INDENT();
+
+    for (int i = 0; i < len; i++)  
+    {
+        /* ensure space */
+        if (o >= outsize - 16)
+        {
+            outsize *= 2;
+            char *tmp = (char *)realloc(out, outsize);  
+            if (!tmp) { free(out); return str_dup(""); }
+            out = tmp;
+        }
+
+        /* =========================
+         * ANSI handling
+         * ========================= */
+        if (txt[i] == '\x1b')
+        {
+            if (i + 1 >= len)
+            {
+                bug("wrap_text_ex: truncated ANSI at end of string");
+                break;  // or continue
+            }
+        }  
+        if (!(flags & WRAP_NO_COLOR) && txt[i] == '\x1b')
+        {
+            /* write ESC */
+            if (o >= outsize - 2)
+            {
+                outsize *= 2;
+                out = (char *)realloc(out, outsize);
+            }
+            out[o++] = txt[i];
+
+            i++;  /* move past ESC safely */
+
+            /* consume ANSI sequence */
+            while (i < len && txt[i] != 'm')
+            {
+                if (o >= outsize - 2)
+                {
+                    outsize *= 2;
+                    char *tmp = (char *)realloc(out, outsize);
+                    if (!tmp) { free(out); return str_dup(""); }
+                    out = tmp;
+                }
+
+                out[o++] = txt[i++];
+            }
+
+            /* if we stopped at 'm', include it */
+            if (txt[i] == 'm')
+            {
+                if (o >= outsize - 2)
+                {
+                    outsize *= 2;
+                    out = (char *)realloc(out, outsize);
+                }
+
+                out[o++] = txt[i];
+            }
+
+            continue;
+        }
+
+        /* =========================
+         * NEW: SMAUG color handling (&X)
+         * ========================= */
+        if (!(flags & WRAP_NO_COLOR) && txt[i] == '&' && txt[i+1] != '\0')
+        {
+            /* NEW: handle escaped && (prints literal &) */
+            if (txt[i+1] == '&')
+            {
+                if (o >= outsize - 2)
+                {
+                    outsize *= 2;
+                    out = (char *)realloc(out, outsize);
+                }
+
+                out[o++] = '&';
+                i++;        /* skip second & */
+                col++;      /* visible char */
+                continue;
+            }
+
+            /* NEW: normal color code (&X) */
+            if (o >= outsize - 3)
+            {
+                outsize *= 2;
+                out = (char *)realloc(out, outsize);
+            }
+
+            out[o++] = txt[i++]; /* '&' */
+            out[o++] = txt[i];   /* color code */
+
+            /* IMPORTANT: DO NOT increment col */
+            continue;
+        }        
+
+        /* =========================
+         * newline handling
+         * ========================= */
+        if (txt[i] == '\n' || txt[i] == '\r')
+        {
+            if (o >= outsize - 2)
+            {
+                outsize *= 2;
+                out = (char *)realloc(out, outsize);
+            }            
+            out[o++] = txt[i];
+            col = 0;
+
+            last_space_out = -1;
+            last_space_col = -1;
+
+            if (txt[i] == '\n')
+            {
+                line++;
+                APPLY_INDENT();
+            }
+
+            continue;
+        }
+
+        /* =========================
+         * preserve lines mode
+         * ========================= */
+        if (flags & WRAP_PRESERVE_LINES)
+        {
+            if (o >= outsize - 2)
+            {
+                outsize *= 2;
+                out = (char *)realloc(out, outsize);
+            }            
+            out[o++] = txt[i];
+            col++;
+            continue;
+        }
+
+        /* =========================
+         * wrap before overflow
+         * ========================= */
+        if (col >= width)
+        {
+            if (last_space_out != -1)
+            {
+                /* ensure room for extra char */
+                if (o + 3 >= outsize)
+                {
+                    outsize *= 2;
+                    out = (char *)realloc(out, outsize);
+                }
+
+                int shift = o - (last_space_out + 1);
+
+                if (shift < 0 || last_space_out < 0 || last_space_out >= o)
+                {
+                    bug("wrap_text_ex: invalid shift=%d o=%d last_space_out=%d",
+                        shift, o, last_space_out);
+
+                    /* fallback: hard wrap instead */
+                    out[o++] = '\n';
+                    out[o++] = '\r';
+                    col = 0;
+
+                    line++;
+                    last_space_out = -1;
+                    last_space_col = -1;
+
+                    APPLY_INDENT();
+                    continue;
+                }
+                if (shift > 0)
+                {
+                    memmove(out + last_space_out + 2,
+                            out + last_space_out + 1,
+                            shift);
+                }
+
+                out[last_space_out] = '\n';
+                out[last_space_out + 1] = '\r';
+
+                o++;
+                col = col - last_space_col - 1;
+
+                line++;
+                last_space_out = -1;
+                last_space_col = -1;
+
+                APPLY_INDENT();
+            }
+            else
+            {
+                if (o >= outsize - 3)
+                {
+                    outsize *= 2;
+                    out = (char *)realloc(out, outsize);
+                }                
+                out[o++] = '\n';
+                out[o++] = '\r';
+                col = 0;
+
+                line++;
+                APPLY_INDENT();
+            }
+        }
+
+        /* =========================
+         * normal char
+         * ========================= */
+        if (o >= outsize - 2)
+        {
+            outsize *= 2;
+            out = (char *)realloc(out, outsize);
+        }        
+        out[o++] = txt[i];
+        col++;
+
+        /* =========================
+         * track spaces
+         * ========================= */
+        if (txt[i] == ' ')
+        {
+            last_space_out = o - 1;
+            last_space_col = col - 1;
+        }        
+    }
+
+    out[o] = '\0';
+    return out;
+}
+
+static inline bool is_smaug_color(char c)
+{
+    return isalnum((unsigned char)c);
+}
+
+int visible_length(const char *txt)
+{
+    if (!txt)
+        return 0;
+
+    int len = 0;
+
+    for (int i = 0; txt[i] != '\0'; i++)
+    {
+        /* =========================
+         * ANSI escape sequence
+         * ========================= */
+        if (txt[i] == '\x1b')
+        {
+            i++; /* skip ESC */
+
+            /* Skip until 'm' (end of SGR sequence) */
+            while (txt[i] && txt[i] != 'm')
+                i++;
+
+            continue;
+        }
+        /* =========================
+         * SMAUG color codes (&x, ^x)
+         * ========================= */
+        if ((txt[i] == '&' || txt[i] == '^'))
+        {
+            if (txt[i + 1] == '\0')
+                break;  // nothing to look ahead to
+
+            if (is_smaug_color(txt[i + 1]))
+            {
+                i++;  // skip color code
+                continue;
+            }
+        }
+
+        /* =========================
+         * Normal visible character
+         * ========================= */
+        len++;
+    }
+
+    return len;
+}
+
+int visible_length_ex(const char *txt, int flags)
+{
+    if (!txt)
+        return 0;
+
+    int len = 0;
+    const char *p = txt;
+
+    while (*p)
+    {
+        /* ANSI escape */
+        if (!(flags & WRAP_NO_COLOR) && *p == '\x1b')
+        {
+            p++;
+
+            if (!*p)
+                break;
+
+            while (*p && *p != 'm')
+                p++;
+
+            if (!*p)
+                break;
+
+            p++;  // skip 'm'
+            continue;
+        }
+
+        /* SMAUG color */
+        if (!(flags & WRAP_NO_COLOR) && (*p == '&' || *p == '^'))
+        {
+            if (!*(p + 1))
+                break;
+
+            if (is_smaug_color(*(p + 1)))
+            {
+                p += 2;
+                continue;
+            }
+        }
+
+        len++;
+        p++;
+    }
+
+    return len;
+}
+
+bool looks_preformatted(const char *txt)
+{
+    if (!txt || !*txt)
+        return FALSE;
+
+    int lines = 0;
+    int short_lines = 0;
+    int long_lines = 0;
+    int indented_lines = 0;
+
+    const char *p = txt;
+    const char *line_start = p;
+
+    while (*p)
+    {
+        if (*p == '\n')
+        {
+            int len = visible_length_ex(line_start, 0);
+
+            lines++;
+
+            if (len < 60)
+                short_lines++;
+
+            if (len > 90)
+                long_lines++;
+
+            /* Detect indentation (spaces at start) */
+            if (*line_start == ' ' || *line_start == '\t')
+                indented_lines++;
+
+            line_start = p + 1;
+        }
+
+        p++;
+    }
+
+    /* Handle last line (no trailing newline) */
+    if (line_start != p)
+    {
+        int len = visible_length_ex(line_start, 0);
+        lines++;
+
+        if (len < 60)
+            short_lines++;
+
+        if (len > 90)
+            long_lines++;
+
+        if (*line_start == ' ' || *line_start == '\t')
+            indented_lines++;
+    }
+
+    /*
+     * ============================================================
+     * Heuristics
+     * ============================================================
+     */
+
+    if (lines <= 1)
+        return FALSE;
+
+    /*
+     * Strong signal: lots of short lines
+     */
+    if (short_lines > lines / 2)
+        return TRUE;
+
+    /*
+     * Strong signal: indentation present (helps, lists)
+     */
+    if (indented_lines > 0 && lines > 3)
+        return TRUE;
+
+    /*
+     * Mixed lengths (manual formatting)
+     */
+    if (short_lines > 0 && long_lines > 0)
+        return TRUE;
+
+    return FALSE;
+}
+
+bool is_structured_line(const char *line)
+{
+    if (!line || !*line)
+        return FALSE;
+
+    /* Indentation */
+    if (*line == ' ' || *line == '\t')
+        return TRUE;
+
+    /* Bullets */
+    if (*line == '-' || *line == '*' || *line == '+')
+        return TRUE;
+
+    /* Table-ish */
+    if (strchr(line, '|'))
+        return TRUE;
+
+    return FALSE;
+}
+
+char *wrap_text_smart(const char *txt, int width)
+{
+    if (!txt)
+        return strdup("");
+
+    size_t cap = strlen(txt) + 1;
+    size_t len = 0;
+    char *out = (char *)malloc(cap);
+    out[0] = '\0';
+
+    const char *p = txt;
+
+    while (*p)
+    {
+        /* Find paragraph */
+        const char *start = p;
+        const char *end = strstr(p, "\n\n");
+
+        if (!end)
+            end = p + strlen(p);
+
+        size_t plen = (size_t)(end - start);
+
+        if (plen == 0)
+        {
+            p = (*end) ? end + 2 : end;
+            continue;
+        }
+
+        char *para = (char *)malloc(plen + 1);
+        memcpy(para, start, plen);
+        para[plen] = '\0';
+
+        /* SAFETY: verify null termination */
+        if (!memchr(para, '\0', plen + 1))
+        {
+            bug("wrap_text_smart: para not null terminated!");
+        }        
+        para[plen] = '\0';
+
+        char *processed = NULL;
+        bool free_processed = FALSE;
+
+        /*
+        * Decide formatting mode
+        */
+        if (is_divider_line(para))
+        {
+            processed = format_divider_line(para, width);
+            free_processed = TRUE;
+        }
+        else if (is_structured_line(para) || looks_preformatted(para))
+        {
+            processed = para;
+            free_processed = FALSE;
+        }
+        else
+        {
+            if (!memchr(para, '\0', plen + 1))
+            {
+                bug("BAD STRING: para missing null terminator");
+            }
+
+            if (strlen(para) != plen)
+            {
+                bug("LENGTH MISMATCH: strlen != plen");
+            }            
+            processed = wrap_text_ex(para, width, WRAP_NONE, 0);
+
+            if (processed != para)
+            {
+                DISPOSE(para);
+                free_processed = TRUE;   // processed is new allocation
+            }
+            else
+            {
+                /* wrap_text_ex returned same pointer */
+                free_processed = FALSE;
+            }
+        }
+
+        /*
+        * Append safely
+        */
+        append_str(&out, &len, &cap, processed);
+
+        /*
+        * Free correctly
+        */
+        if (free_processed)
+            DISPOSE(processed);
+        else
+            DISPOSE(para);
+        /*
+         * Add paragraph spacing
+         */
+        if (*end)
+        {
+            append_str(&out, &len, &cap, "\n\n");
+            p = end + 2;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return out;
+}
+
+static void append_str(char **buf, size_t *len, size_t *cap, const char *src)
+{
+    if (!src)
+        return;
+
+    size_t slen = strlen(src);
+
+    if (*len + slen + 1 > *cap)
+    {
+        size_t newcap = (*cap) * 2;
+        while (*len + slen + 1 > newcap)
+            newcap *= 2;
+
+        char *tmp = (char *)realloc(*buf, newcap);
+        if (!tmp)
+        {
+            bug("append_str: realloc failed");
+            return;
+        }
+
+        *buf = tmp;
+        *cap = newcap;
+    }
+
+    memcpy(*buf + *len, src, slen);
+    *len += slen;
+    (*buf)[*len] = '\0';
+}
 

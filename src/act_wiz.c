@@ -2432,7 +2432,7 @@ void do_snoop( CHAR_DATA *ch, char *argument )
 
 /*  Snoop notification for higher imms, if desired, uncomment this
     if ( get_trust(victim) > LEVEL_GOD && get_trust(ch) < LEVEL_SUPREME )
-      write_to_buffer( victim->desc, "\n\rYou feel like someone is watching your every move...\n\r", 0 );
+      send_to_char( victim, "\n\rYou feel like someone is watching your every move...\n\r", 0 );
 */
     victim->desc->snoop_by = ch->desc;
     send_to_char( "Ok.\n\r", ch );
