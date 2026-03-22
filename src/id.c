@@ -96,7 +96,7 @@ void  send_auth( struct descriptor_data *d )
     struct  sockaddr_in  us, them;
     char    authbuf[32];
     int     ulen, tlen;
-    bool    z;
+    bool    z = FALSE;
     
     tlen = ulen = sizeof( us );
   
@@ -108,7 +108,7 @@ void  send_auth( struct descriptor_data *d )
     }
   
     /* compose request */
-    SPRINTF( authbuf, "%u , %u\r\n", 
+    SPRINTF( authbuf, "%u , %u\n", 
 	(unsigned int)ntohs(them.sin_port),
 	(unsigned int)ntohs(us.sin_port));
 

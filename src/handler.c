@@ -88,12 +88,12 @@ void  explode( OBJ_DATA *obj )
 
     	                      if( !held )
 			      {
-				  SPRINTF( buf, "%s EXPLODES!\n\r", objcont->short_descr );
+				  SPRINTF( buf, "%s EXPLODES!\n", objcont->short_descr );
 				  echo_to_room( AT_BLOOD, room, buf );
 			      }
 			      else
 			      {
-				  SPRINTF( buf, "%s EXLODES in %s'shands!\n\r", objcont->short_descr, xch->name );
+				  SPRINTF( buf, "%s EXLODES in %s'shands!\n", objcont->short_descr, xch->name );
 				  echo_to_room( AT_BLOOD, room, buf );
 			      }
 	                      room_explode( obj , xch, room );
@@ -2199,26 +2199,26 @@ bool ms_find_obj( CHAR_DATA *ch )
 	switch( number_range( UMAX(1, (ms/5-15)), (ms+4) / 5 ) )
 	{
 	    default:
-	    case  1: t="As you reach for it, you forgot what it was...\n\r";					break;
-	    case  2: t="As you reach for it, something inside stops you...\n\r";				break;
-	    case  3: t="As you reach for it, it seems to move out of the way...\n\r";				break;
-	    case  4: t="You grab frantically for it, but can't seem to get a hold of it...\n\r";		break;
-	    case  5: t="It disappears as soon as you touch it!\n\r";						break;
-	    case  6: t="You would if it would stay still!\n\r";							break;
-	    case  7: t="Whoa!  It's covered in blood!  Ack!  Ick!\n\r";						break;
-	    case  8: t="Wow... trails!\n\r";									break;
-	    case  9: t="You reach for it, then notice the back of your hand is growing something!\n\r";		break;
-	    case 10: t="As you grasp it, it shatters into tiny shards which bite into your flesh!\n\r";		break;
-	    case 11: t="What about that huge dragon flying over your head?!?!?\n\r";				break;
-	    case 12: t="You stratch yourself instead...\n\r";							break;
-	    case 13: t="You hold the universe in the palm of your hand!\n\r";					break;
-	    case 14: t="You're too scared.\n\r";								break;
-	    case 15: t="Your mother smacks your hand... 'NO!'\n\r";						break;
-	    case 16: t="Your hand grasps the worse pile of revoltingness than you could ever imagine!\n\r";	break;
-	    case 17: t="You stop reaching for it as it screams out at you in pain!\n\r";			break;
-	    case 18: t="What about the millions of burrow-maggots feasting on your arm?!?!\n\r";		break;
-	    case 19: t="That doesn't matter anymore... you've found the true answer to everything!\n\r";	break;
-	    case 20: t="A supreme entity has no need for that.\n\r";						break;
+	    case  1: t="As you reach for it, you forgot what it was...\n";					break;
+	    case  2: t="As you reach for it, something inside stops you...\n";				break;
+	    case  3: t="As you reach for it, it seems to move out of the way...\n";				break;
+	    case  4: t="You grab frantically for it, but can't seem to get a hold of it...\n";		break;
+	    case  5: t="It disappears as soon as you touch it!\n";						break;
+	    case  6: t="You would if it would stay still!\n";							break;
+	    case  7: t="Whoa!  It's covered in blood!  Ack!  Ick!\n";						break;
+	    case  8: t="Wow... trails!\n";									break;
+	    case  9: t="You reach for it, then notice the back of your hand is growing something!\n";		break;
+	    case 10: t="As you grasp it, it shatters into tiny shards which bite into your flesh!\n";		break;
+	    case 11: t="What about that huge dragon flying over your head?!?!?\n";				break;
+	    case 12: t="You stratch yourself instead...\n";							break;
+	    case 13: t="You hold the universe in the palm of your hand!\n";					break;
+	    case 14: t="You're too scared.\n";								break;
+	    case 15: t="Your mother smacks your hand... 'NO!'\n";						break;
+	    case 16: t="Your hand grasps the worse pile of revoltingness than you could ever imagine!\n";	break;
+	    case 17: t="You stop reaching for it as it screams out at you in pain!\n";			break;
+	    case 18: t="What about the millions of burrow-maggots feasting on your arm?!?!\n";		break;
+	    case 19: t="That doesn't matter anymore... you've found the true answer to everything!\n";	break;
+	    case 20: t="A supreme entity has no need for that.\n";						break;
 	}
     else
     {
@@ -2226,12 +2226,12 @@ bool ms_find_obj( CHAR_DATA *ch )
 	switch( number_range( 1, sub/10 ) )
 	{
 	    default:
-	    case  1: t="In just a second...\n\r";				break;
-	    case  2: t="You can't find that...\n\r";					break;
-	    case  3: t="It's just beyond your grasp...\n\r";				break;
-	    case  4: t="...but it's under a pile of other stuff...\n\r";		break;
-	    case  5: t="You go to reach for it, but pick your nose instead.\n\r";	break;
-	    case  6: t="Which one?!?  I see two... no three...\n\r";			break;
+	    case  1: t="In just a second...\n";				break;
+	    case  2: t="You can't find that...\n";					break;
+	    case  3: t="It's just beyond your grasp...\n";				break;
+	    case  4: t="...but it's under a pile of other stuff...\n";		break;
+	    case  5: t="You go to reach for it, but pick your nose instead.\n";	break;
+	    case  6: t="Which one?!?  I see two... no three...\n";			break;
 	}
     }
     send_to_char( t, ch );
@@ -2260,7 +2260,7 @@ OBJ_DATA *find_obj( CHAR_DATA *ch, char *argument, bool carryonly )
     {
 	if ( carryonly && ( obj = get_obj_carry( ch, arg1 ) ) == NULL )
 	{
-	    send_to_char( "You do not have that item.\n\r", ch );
+	    send_to_char( "You do not have that item.\n", ch );
 	    return NULL;
 	}
 	else
@@ -2279,7 +2279,7 @@ OBJ_DATA *find_obj( CHAR_DATA *ch, char *argument, bool carryonly )
 	&& ( container = get_obj_carry( ch, arg2 ) ) == NULL
 	&& ( container = get_obj_wear( ch, arg2 ) ) == NULL )
 	{
-	    send_to_char( "You do not have that item.\n\r", ch );
+	    send_to_char( "You do not have that item.\n", ch );
 	    return NULL;
 	}
 	if ( !carryonly && ( container = get_obj_here( ch, arg2 ) ) == NULL )
@@ -3163,7 +3163,7 @@ void showaffect( CHAR_DATA *ch, AFFECT_DATA *paf )
 	    switch( paf->location )
 	    {
 	      default:
-		SPRINTF( buf, "Affects %s by %d.\n\r",
+		SPRINTF( buf, "Affects %s by %d.\n",
 		  affect_loc_name( paf->location ), paf->modifier );
 		break;
 	      case APPLY_AFFECT:
@@ -3175,12 +3175,12 @@ void showaffect( CHAR_DATA *ch, AFFECT_DATA *paf )
 		  STRAPP( buf, " " );
 		  STRAPP( buf, "%s", a_flags[x] );
 		}
-		STRAPP( buf, "\n\r" );
+		STRAPP( buf, "\n" );
 		break;
 	      case APPLY_WEAPONSPELL:
 	      case APPLY_WEARSPELL:
 	      case APPLY_REMOVESPELL:
-		SPRINTF( buf, "Casts spell '%s'\n\r",
+		SPRINTF( buf, "Casts spell '%s'\n",
 			IS_VALID_SN(paf->modifier) ? skill_table[paf->modifier]->name
 						   : "unknown" );
 		break;
@@ -3195,7 +3195,7 @@ void showaffect( CHAR_DATA *ch, AFFECT_DATA *paf )
 		  STRAPP( buf, " " );
 		  STRAPP( buf, "%s", ris_flags[x] );
 		}
-		STRAPP( buf, "\n\r" );
+		STRAPP( buf, "\n" );
 		break;
 	    }
 	    send_to_char( buf, ch );
@@ -3998,7 +3998,7 @@ void check_switch( CHAR_DATA *ch, bool possess )
    if( !possess )
    {
       set_char_color( AT_BLUE, ch->switched );
-      send_to_char( "You suddenly forfeit the power to switch!\n\r", ch->switched );
+      send_to_char( "You suddenly forfeit the power to switch!\n", ch->switched );
    }
    do_return( ch->switched, "" );
 }

@@ -3664,7 +3664,7 @@ do								\
 {								\
     if ( (ch)->substate == SUB_RESTRICTED )			\
     {								\
-	send_to_char( "You cannot use this command from within another command.\n\r", ch );	\
+	send_to_char( "You cannot use this command from within another command.\n", ch );	\
 	return;							\
     }								\
 } while(0)

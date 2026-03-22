@@ -60,7 +60,7 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
              
              if ( arg[0] == '\0' )
                 {
-                  send_to_char( "&RUsage: Makeblade <name>\n\r&w", ch);
+                  send_to_char( "&RUsage: Makeblade <name>\n&w", ch);
                   return;   
                 }
  
@@ -71,7 +71,7 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
         
                 if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n\r", ch);
+                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
                 }
                 
@@ -90,25 +90,25 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
                 
                 if ( !checktool )
                 {
-                   send_to_char( "&RYou need toolkit to make a vibro-blade.\n\r", ch);
+                   send_to_char( "&RYou need toolkit to make a vibro-blade.\n", ch);
                    return;
                 }
  
                 if ( !checkdura )
                 {
-                   send_to_char( "&RYou need something to make it out of.\n\r", ch);
+                   send_to_char( "&RYou need something to make it out of.\n", ch);
                    return;
                 }
 
                 if ( !checkbatt )
                 {
-                   send_to_char( "&RYou need a power source for your blade.\n\r", ch);
+                   send_to_char( "&RYou need a power source for your blade.\n", ch);
                    return;
                 }
                 
                 if ( !checkoven )
                 {
-                   send_to_char( "&RYou need a small furnace to heat the metal.\n\r", ch);
+                   send_to_char( "&RYou need a small furnace to heat the metal.\n", ch);
                    return;
                 }
  
@@ -116,14 +116,14 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_makeblade]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of crafting a vibroblade.\n\r", ch);
+         send_to_char( "&GYou begin the long process of crafting a vibroblade.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and a small oven and begins to work on something.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 25 , do_makeblade , 1 );
          ch->dest_buf = str_dup(arg);
          return;
          }
-         send_to_char("&RYou can't figure out how to fit the parts together.\n\r",ch);
+         send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
          learn_from_failure( ch, gsn_makeblade );
          return; 
      
@@ -137,7 +137,7 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n\r", ch);
+             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
     }
     
@@ -148,7 +148,7 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
     
     if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
     {
-         send_to_char( "&RThe item you are trying to create is missing from the database.\n\rPlease inform the administration of this error.\n\r", ch );
+         send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
          return;
     }
 
@@ -194,9 +194,9 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
                 
     if ( number_percent( ) > chance*2  || ( !checktool ) || ( !checkdura ) || ( !checkbatt ) || ( !checkoven ) )
     {
-       send_to_char( "&RYou activate your newly created vibroblade.\n\r", ch);
-       send_to_char( "&RIt hums softly for a few seconds then begins to shake violently.\n\r", ch);
-       send_to_char( "&RIt finally shatters breaking apart into a dozen pieces.\n\r", ch);
+       send_to_char( "&RYou activate your newly created vibroblade.\n", ch);
+       send_to_char( "&RIt hums softly for a few seconds then begins to shake violently.\n", ch);
+       send_to_char( "&RIt finally shatters breaking apart into a dozen pieces.\n", ch);
        learn_from_failure( ch, gsn_makeblade );
        return;
     }
@@ -258,7 +258,7 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
                                                                     
     obj = obj_to_char( obj, ch );
                                                             
-    send_to_char( "&GYou finish your work and hold up your newly created blade.&w\n\r", ch);
+    send_to_char( "&GYou finish your work and hold up your newly created blade.&w\n", ch);
     act( AT_PLAIN, "$n finishes crafting a blade.", ch,
          NULL, argument , TO_ROOM );
     
@@ -292,7 +292,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
      default:
              if ( arg[0] == '\0' )
                 {
-                  send_to_char( "&RUsage: Makeblaster <name>\n\r&w", ch);
+                  send_to_char( "&RUsage: Makeblaster <name>\n&w", ch);
                   return;   
                 }
 
@@ -305,7 +305,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
   checkscope = FALSE;
                 if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n\r", ch);
+                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
                 }
                 
@@ -327,38 +327,38 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
                 
                 if ( !checktool )
                 {
-                   send_to_char( "&RYou need toolkit to make a blaster.\n\r", ch);
+                   send_to_char( "&RYou need toolkit to make a blaster.\n", ch);
                    return;
 
                 }
  
                 if ( !checkdura )
                 {
-                   send_to_char( "&RYou need something to make it out of.\n\r", ch);
+                   send_to_char( "&RYou need something to make it out of.\n", ch);
                    return;
                 }
 
                 if ( !checkbatt )
                 {
-                   send_to_char( "&RYou need a power source for your blaster.\n\r", ch);
+                   send_to_char( "&RYou need a power source for your blaster.\n", ch);
                    return;
                 }
                 
                 if ( !checkoven )
                 {
-                   send_to_char( "&RYou need a small furnace to heat the plastics.\n\r", ch);
+                   send_to_char( "&RYou need a small furnace to heat the plastics.\n", ch);
                    return;
                 }
                 
                 if ( !checkcirc )
                 {
-                   send_to_char( "&RYou need a small circuit board to control the firing mechanism.\n\r", ch);
+                   send_to_char( "&RYou need a small circuit board to control the firing mechanism.\n", ch);
                    return;
                 }
                 
                 if ( !checkcond )
                 {
-                   send_to_char( "&RYou still need a small superconductor.\n\r", ch);
+                   send_to_char( "&RYou still need a small superconductor.\n", ch);
                    return;
                 }
  
@@ -366,14 +366,14 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_makeblaster]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of making a blaster.\n\r", ch);
+         send_to_char( "&GYou begin the long process of making a blaster.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and a small oven and begins to work on something.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 25 , do_makeblaster , 1 );
          ch->dest_buf   = str_dup(arg);
          return;
          }
-         send_to_char("&RYou can't figure out how to fit the parts together.\n\r",ch);
+         send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
          learn_from_failure( ch, gsn_makeblaster );
          return; 
      
@@ -388,7 +388,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
 
-             send_to_char("&RYou are interupted and fail to finish your work.\n\r", ch);
+             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
     }
     
@@ -399,7 +399,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
     
     if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
     {
-         send_to_char( "&RThe item you are trying to create is missing from the database.\n\rPlease inform the administration of this error.\n\r", ch );
+         send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
          return;
     }
 
@@ -481,9 +481,9 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
                 
     if ( number_percent( ) > chance*2  || ( !checktool ) || ( !checkdura ) || ( !checkbatt ) || ( !checkoven )  || ( !checkcond ) || ( !checkcirc) )
     {
-       send_to_char( "&RYou hold up your new blaster and aim at a leftover piece of plastic.\n\r", ch);
-       send_to_char( "&RYou slowly squeeze the trigger hoping for the best...\n\r", ch);
-       send_to_char( "&RYour blaster backfires destroying your weapon and burning your hand.\n\r", ch);
+       send_to_char( "&RYou hold up your new blaster and aim at a leftover piece of plastic.\n", ch);
+       send_to_char( "&RYou slowly squeeze the trigger hoping for the best...\n", ch);
+       send_to_char( "&RYour blaster backfires destroying your weapon and burning your hand.\n", ch);
        learn_from_failure( ch, gsn_makeblaster );
        return;
     }
@@ -548,7 +548,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
                                                                    
     obj = obj_to_char( obj, ch );
                                                             
-    send_to_char( "&GYou finish your work and hold up your newly created blaster.&w\n\r", ch);
+    send_to_char( "&GYou finish your work and hold up your newly created blaster.&w\n", ch);
     act( AT_PLAIN, "$n finishes making $s new blaster.", ch,
          NULL, argument , TO_ROOM );
     
@@ -582,7 +582,7 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
      default:
              if ( arg[0] == '\0' )
                 {
-                  send_to_char( "&RUsage: Makelightsaber <name>\n\r&w", ch);
+                  send_to_char( "&RUsage: Makelightsaber <name>\n&w", ch);
                   return;   
                 }
 
@@ -598,7 +598,7 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
 
                 if ( !IS_SET( ch->in_room->room_flags, ROOM_SAFE ) || !IS_SET( ch->in_room->room_flags, ROOM_SILENCE ))
                 {
-                   send_to_char( "&RYou need to be in a quiet peaceful place to craft a lightsaber.\n\r", ch);
+                   send_to_char( "&RYou need to be in a quiet peaceful place to craft a lightsaber.\n", ch);
                    return;
                 }
                 
@@ -626,55 +626,55 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
                 
                 if ( !checktool )
                 {
-                   send_to_char( "&RYou need toolkit to make a lightsaber.\n\r", ch);
+                   send_to_char( "&RYou need toolkit to make a lightsaber.\n", ch);
                    return;
                 }
  
                 if ( !checkdura )
                 {
-                   send_to_char( "&RYou need something to make it out of.\n\r", ch);
+                   send_to_char( "&RYou need something to make it out of.\n", ch);
                    return;
                 }
 
                 if ( !checkbatt )
                 {
-                   send_to_char( "&RYou need a power source for your lightsaber.\n\r", ch);
+                   send_to_char( "&RYou need a power source for your lightsaber.\n", ch);
                    return;
                 }
                 
                 if ( !checkoven )
                 {
-                   send_to_char( "&RYou need a small furnace to heat and shape the components.\n\r", ch);
+                   send_to_char( "&RYou need a small furnace to heat and shape the components.\n", ch);
                    return;
                 }
                 
                 if ( !checkcirc )
                 {
-                   send_to_char( "&RYou need a small circuit board.\n\r", ch);
+                   send_to_char( "&RYou need a small circuit board.\n", ch);
                    return;
                 }
                 
                 if ( !checkcond )
                 {
-                   send_to_char( "&RYou still need a small superconductor for your lightsaber.\n\r", ch);
+                   send_to_char( "&RYou still need a small superconductor for your lightsaber.\n", ch);
                    return;
                 }
                 
                 if ( !checklens )
                 {
-                   send_to_char( "&RYou still need a lens to focus the beam.\n\r", ch);
+                   send_to_char( "&RYou still need a lens to focus the beam.\n", ch);
                    return;
                 }
                 
                 if ( !checkgems )
                 {
-                   send_to_char( "&RLightsabers require 1 to 3 gems to work properly.\n\r", ch);
+                   send_to_char( "&RLightsabers require 1 to 3 gems to work properly.\n", ch);
                    return;
                 }
                 
                 if ( !checkmirr )
                 {
-                   send_to_char( "&RYou need a high intesity reflective cup to create a lightsaber.\n\r", ch);
+                   send_to_char( "&RYou need a high intesity reflective cup to create a lightsaber.\n", ch);
                    return;
                 }
  
@@ -682,14 +682,14 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_lightsaber_crafting]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of crafting a lightsaber.\n\r", ch);
+         send_to_char( "&GYou begin the long process of crafting a lightsaber.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and a small oven and begins to work on something.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 25 , do_makelightsaber , 1 );
          ch->dest_buf = str_dup(arg);
          return;
          }
-         send_to_char("&RYou can't figure out how to fit the parts together.\n\r",ch);
+         send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
          learn_from_failure( ch, gsn_lightsaber_crafting );
          return; 
      
@@ -703,7 +703,7 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n\r", ch);
+             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
     }
     
@@ -714,7 +714,7 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
     
     if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
     {
-         send_to_char( "&RThe item you are trying to create is missing from the database.\n\rPlease inform the administration of this error.\n\r", ch );
+         send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
          return;
     }
 
@@ -806,9 +806,9 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
                                        || ( !checkmirr ) || ( !checklens ) || ( !checkgems ) || ( !checkcond ) || ( !checkcirc) )
     
     {
-       send_to_char( "&RYou hold up your new lightsaber and press the switch hoping for the best.\n\r", ch);
-       send_to_char( "&RInstead of a blade of light, smoke starts pouring from the handle.\n\r", ch);
-       send_to_char( "&RYou drop the hot handle and watch as it melts on away on the floor.\n\r", ch);
+       send_to_char( "&RYou hold up your new lightsaber and press the switch hoping for the best.\n", ch);
+       send_to_char( "&RInstead of a blade of light, smoke starts pouring from the handle.\n", ch);
+       send_to_char( "&RYou drop the hot handle and watch as it melts on away on the floor.\n", ch);
        learn_from_failure( ch, gsn_lightsaber_crafting );
        return;
     }
@@ -865,7 +865,7 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
                                                                     
     obj = obj_to_char( obj, ch );
                                                             
-    send_to_char( "&GYou finish your work and hold up your newly created lightsaber.&w\n\r", ch);
+    send_to_char( "&GYou finish your work and hold up your newly created lightsaber.&w\n", ch);
     act( AT_PLAIN, "$n finishes making $s new lightsaber.", ch,
          NULL, argument , TO_ROOM );
     
@@ -894,13 +894,13 @@ void do_makespice( CHAR_DATA *ch, char *argument )
              
              if ( arg[0] == '\0' )
                 {
-                  send_to_char( "&RFrom what?\n\r&w", ch);
+                  send_to_char( "&RFrom what?\n&w", ch);
                   return;   
                 }
              
              if ( !IS_SET( ch->in_room->room_flags, ROOM_REFINERY ) )
                 {
-                   send_to_char( "&RYou need to be in a refinery to create drugs from spice.\n\r", ch);
+                   send_to_char( "&RYou need to be in a refinery to create drugs from spice.\n", ch);
                    return;
                 }
                 
@@ -909,13 +909,13 @@ void do_makespice( CHAR_DATA *ch, char *argument )
                 
                 if ( ( obj = get_obj_carry( ch, arg ) ) == NULL )
                 {
-                        send_to_char( "&RYou do not have that item.\n\r&w", ch );
+                        send_to_char( "&RYou do not have that item.\n&w", ch );
                         return;
                 }                                                            
                 
                 if ( obj->item_type != ITEM_RAWSPICE )
                 {
-                       send_to_char( "&RYou can't make a drug out of that\n\r&w",ch);
+                       send_to_char( "&RYou can't make a drug out of that\n&w",ch);
                        return;
                 }
                 
@@ -923,14 +923,14 @@ void do_makespice( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_spice_refining]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of refining spice into a drug.\n\r", ch);
+         send_to_char( "&GYou begin the long process of refining spice into a drug.\n", ch);
          act( AT_PLAIN, "$n begins working on something.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 10 , do_makespice , 1 );
          ch->dest_buf = str_dup(arg);
          return;
          }
-         send_to_char("&RYou can't figure out what to do with the stuff.\n\r",ch);
+         send_to_char("&RYou can't figure out what to do with the stuff.\n",ch);
          learn_from_failure( ch, gsn_spice_refining );
          return; 
      
@@ -944,7 +944,7 @@ void do_makespice( CHAR_DATA *ch, char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are distracted and are unable to finish your work.\n\r&w", ch);
+             send_to_char("&RYou are distracted and are unable to finish your work.\n&w", ch);
              return;
     }
     
@@ -952,12 +952,12 @@ void do_makespice( CHAR_DATA *ch, char *argument )
     
     if ( ( obj = get_obj_carry( ch, arg ) ) == NULL )
     {
-           send_to_char( "You seem to have lost your spice!\n\r", ch );
+           send_to_char( "You seem to have lost your spice!\n", ch );
            return;
     }                                                            
     if ( obj->item_type != ITEM_RAWSPICE )
     {
-          send_to_char( "&RYou get your tools mixed up and can't finish your work.\n\r&w",ch);
+          send_to_char( "&RYou get your tools mixed up and can't finish your work.\n&w",ch);
           return;
     }
     
@@ -976,7 +976,7 @@ void do_makespice( CHAR_DATA *ch, char *argument )
     obj->description = STRALLOC( buf ); 
     obj->item_type = ITEM_SPICE;
     
-    send_to_char( "&GYou finish your work.\n\r", ch);
+    send_to_char( "&GYou finish your work.\n", ch);
     act( AT_PLAIN, "$n finishes $s work.", ch,
          NULL, argument , TO_ROOM );
     
@@ -1012,7 +1012,7 @@ void do_improve_module( CHAR_DATA *ch, char *argument )
              
              if ( arg[0] == '\0' )
                 {
-                  send_to_char( "&RImprove what module?\n\r&w", ch);
+                  send_to_char( "&RImprove what module?\n&w", ch);
                   return;   
                 }
 
@@ -1026,7 +1026,7 @@ void do_improve_module( CHAR_DATA *ch, char *argument )
                 
                 if ( !checktool )
                 {
-                   send_to_char( "&RYou need toolkit to make a grenade.\n\r", ch);
+                   send_to_char( "&RYou need toolkit to make a grenade.\n", ch);
                    return;
                 }
              
@@ -1035,14 +1035,14 @@ void do_improve_module( CHAR_DATA *ch, char *argument )
                 
                 if ( ( obj = get_obj_carry( ch, arg ) ) == NULL )
                 {
-                        send_to_char( "&RYou do not have that item.\n\r&w", ch );
+                        send_to_char( "&RYou do not have that item.\n&w", ch );
                         return;
                 }                                                            
                 
                 if ( obj->item_type != ITEM_FIGHTERCOMP && obj->item_type != ITEM_MIDCOMP 
                   && obj->item_type != ITEM_CAPITALCOMP  )
                 {
-                       send_to_char( "&RYou can only improve ship modules.\n\r&w",ch);
+                       send_to_char( "&RYou can only improve ship modules.\n&w",ch);
                        return;
                 }
                 
@@ -1053,14 +1053,14 @@ void do_improve_module( CHAR_DATA *ch, char *argument )
 
                if ( number_percent( ) < chance )
                {
-                 send_to_char( "&GYou begin the process of improving this module.\n\r", ch);
+                 send_to_char( "&GYou begin the process of improving this module.\n", ch);
                  act( AT_PLAIN, "$n begins working on something.", ch,
                    NULL, argument , TO_ROOM );
                  add_timer ( ch , TIMER_DO_FUN , 50 , do_improve_module, 1 );
                  ch->dest_buf = str_dup(arg);
                  return;
                }
-         send_to_char("&RYou can't determine what you should be doing.\n\r",ch);
+         send_to_char("&RYou can't determine what you should be doing.\n",ch);
          learn_from_failure( ch, gsn_shipmaintenance );
          return; 
      
@@ -1074,7 +1074,7 @@ void do_improve_module( CHAR_DATA *ch, char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are distracted and are unable to finish your work.\n\r&w", ch);
+             send_to_char("&RYou are distracted and are unable to finish your work.\n&w", ch);
              return;
     }
     
@@ -1084,7 +1084,7 @@ void do_improve_module( CHAR_DATA *ch, char *argument )
     
     if ( ( obj = get_obj_carry( ch, arg ) ) == NULL )
     {
-           send_to_char( "You seem to have lost the module you were working on!\n\r", ch );
+           send_to_char( "You seem to have lost the module you were working on!\n", ch );
            return;
     }                                                            
     
@@ -1099,7 +1099,7 @@ void do_improve_module( CHAR_DATA *ch, char *argument )
       obj->value[0] = UMIN( obj->value[0], 105 );
     }
     
-    send_to_char( "&GYou finish your work.\n\r", ch);
+    send_to_char( "&GYou finish your work.\n", ch);
     act( AT_PLAIN, "$n finishes $s work.", ch,
          NULL, argument , TO_ROOM );
     
@@ -1133,7 +1133,7 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
      default:
              if ( arg[0] == '\0' )
                 {
-                  send_to_char( "&RUsage: Makegrenade <name>\n\r&w", ch);
+                  send_to_char( "&RUsage: Makegrenade <name>\n&w", ch);
                   return;   
                 }
 
@@ -1145,7 +1145,7 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
 
                 if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n\r", ch);
+                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
                 }
                 
@@ -1165,31 +1165,31 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
                 
                 if ( !checktool )
                 {
-                   send_to_char( "&RYou need toolkit to make a grenade.\n\r", ch);
+                   send_to_char( "&RYou need toolkit to make a grenade.\n", ch);
                    return;
                 }
  
                 if ( !checkdrink )
                 {
-                   send_to_char( "&RYou will need an empty drink container to mix and hold the chemicals.\n\r", ch);
+                   send_to_char( "&RYou will need an empty drink container to mix and hold the chemicals.\n", ch);
                    return;
                 }
 
                 if ( !checkbatt )
                 {
-                   send_to_char( "&RYou need a small battery for the timer.\n\r", ch);
+                   send_to_char( "&RYou need a small battery for the timer.\n", ch);
                    return;
                 }
                 
                 if ( !checkcirc )
                 {
-                   send_to_char( "&RYou need a small circuit for the timer.\n\r", ch);
+                   send_to_char( "&RYou need a small circuit for the timer.\n", ch);
                    return;
                 }
                 
                 if ( !checkchem )
                 {
-                   send_to_char( "&RSome explosive chemicals would come in handy!\n\r", ch);
+                   send_to_char( "&RSome explosive chemicals would come in handy!\n", ch);
                    return;
                 }
  
@@ -1197,14 +1197,14 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_makegrenade]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of making a grenade.\n\r", ch);
+         send_to_char( "&GYou begin the long process of making a grenade.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and a drink container and begins to work on something.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 25 , do_makegrenade , 1 );
          ch->dest_buf   = str_dup(arg);
          return;
          }
-         send_to_char("&RYou can't figure out how to fit the parts together.\n\r",ch);
+         send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
          learn_from_failure( ch, gsn_makegrenade );
          return; 
      
@@ -1218,7 +1218,7 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n\r", ch);
+             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
     }
     
@@ -1229,7 +1229,7 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
     
     if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
     {
-         send_to_char( "&RThe item you are trying to create is missing from the database.\n\rPlease inform the administration of this error.\n\r", ch );
+         send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
          return;
     }
 
@@ -1280,7 +1280,7 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
                 
     if ( number_percent( ) > chance*2  || ( !checktool ) || ( !checkdrink ) || ( !checkbatt ) || ( !checkchem ) || ( !checkcirc) )
     {
-       send_to_char( "&RJust as you are about to finish your work,\n\ryour newly created grenade explodes in your hands...doh!\n\r", ch);
+       send_to_char( "&RJust as you are about to finish your work,\nyour newly created grenade explodes in your hands...doh!\n", ch);
        learn_from_failure( ch, gsn_makegrenade );
        return;
     }
@@ -1308,7 +1308,7 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
                                                                    
     obj = obj_to_char( obj, ch );
                                                             
-    send_to_char( "&GYou finish your work and hold up your newly created grenade.&w\n\r", ch);
+    send_to_char( "&GYou finish your work and hold up your newly created grenade.&w\n", ch);
     act( AT_PLAIN, "$n finishes making $s new grenade.", ch,
          NULL, argument , TO_ROOM );
     
@@ -1339,7 +1339,7 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
      default:
              if ( arg[0] == '\0' )
                 {
-                  send_to_char( "&RUsage: Makelandmine <name>\n\r&w", ch);
+                  send_to_char( "&RUsage: Makelandmine <name>\n&w", ch);
                   return;   
                 }
 
@@ -1351,7 +1351,7 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
 
                 if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n\r", ch);
+                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
                 }
                 
@@ -1371,31 +1371,31 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
                 
                 if ( !checktool )
                 {
-                   send_to_char( "&RYou need toolkit to make a landmine.\n\r", ch);
+                   send_to_char( "&RYou need toolkit to make a landmine.\n", ch);
                    return;
                 }
  
                 if ( !checkdrink )
                 {
-                   send_to_char( "&RYou will need an empty drink container to mix and hold the chemicals.\n\r", ch);
+                   send_to_char( "&RYou will need an empty drink container to mix and hold the chemicals.\n", ch);
                    return;
                 }
 
                 if ( !checkbatt )
                 {
-                   send_to_char( "&RYou need a small battery for the detonator.\n\r", ch);
+                   send_to_char( "&RYou need a small battery for the detonator.\n", ch);
                    return;
                 }
                 
                 if ( !checkcirc )
                 {
-                   send_to_char( "&RYou need a small circuit for the detonator.\n\r", ch);
+                   send_to_char( "&RYou need a small circuit for the detonator.\n", ch);
                    return;
                 }
                 
                 if ( !checkchem )
                 {
-                   send_to_char( "&RSome explosive chemicals would come in handy!\n\r", ch);
+                   send_to_char( "&RSome explosive chemicals would come in handy!\n", ch);
                    return;
                 }
  
@@ -1403,14 +1403,14 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_makelandmine]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of making a landmine.\n\r", ch);
+         send_to_char( "&GYou begin the long process of making a landmine.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and a drink container and begins to work on something.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 25 , do_makelandmine , 1 );
          ch->dest_buf   = str_dup(arg);
          return;
          }
-         send_to_char("&RYou can't figure out how to fit the parts together.\n\r",ch);
+         send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
          learn_from_failure( ch, gsn_makelandmine );
          return; 
      
@@ -1424,7 +1424,7 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n\r", ch);
+             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
     }
     
@@ -1435,7 +1435,7 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
     
     if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
     {
-         send_to_char( "&RThe item you are trying to create is missing from the database.\n\rPlease inform the administration of this error.\n\r", ch );
+         send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
          return;
     }
 
@@ -1486,7 +1486,7 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
                 
     if ( number_percent( ) > chance*2  || ( !checktool ) || ( !checkdrink ) || ( !checkbatt ) || ( !checkchem ) || ( !checkcirc) )
     {
-       send_to_char( "&RJust as you are about to finish your work,\n\ryour newly created landmine explodes in your hands...doh!\n\r", ch);
+       send_to_char( "&RJust as you are about to finish your work,\nyour newly created landmine explodes in your hands...doh!\n", ch);
        learn_from_failure( ch, gsn_makelandmine );
        return;
     }
@@ -1514,7 +1514,7 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
                                                                    
     obj = obj_to_char( obj, ch );
                                                             
-    send_to_char( "&GYou finish your work and hold up your newly created landmine.&w\n\r", ch);
+    send_to_char( "&GYou finish your work and hold up your newly created landmine.&w\n", ch);
     act( AT_PLAIN, "$n finishes making $s new landmine.", ch,
          NULL, argument , TO_ROOM );
     
@@ -1544,7 +1544,7 @@ void do_makelight( CHAR_DATA *ch, char *argument )
      default:
              if ( arg[0] == '\0' )
                 {
-                  send_to_char( "&RUsage: Makeflashlight <name>\n\r&w", ch);
+                  send_to_char( "&RUsage: Makeflashlight <name>\n&w", ch);
                   return;   
                 }
 
@@ -1556,7 +1556,7 @@ void do_makelight( CHAR_DATA *ch, char *argument )
 
                 if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n\r", ch);
+                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
                 }
                 
@@ -1576,31 +1576,31 @@ void do_makelight( CHAR_DATA *ch, char *argument )
                 
                 if ( !checktool )
                 {
-                   send_to_char( "&RYou need toolkit to make a light.\n\r", ch);
+                   send_to_char( "&RYou need toolkit to make a light.\n", ch);
                    return;
                 }
                 
                 if ( !checklens )
                 {
-                   send_to_char( "&RYou need a lens to make a light.\n\r", ch);
+                   send_to_char( "&RYou need a lens to make a light.\n", ch);
                    return;
                 }
  
                 if ( !checkbatt )
                 {
-                   send_to_char( "&RYou need a battery for the light to work.\n\r", ch);
+                   send_to_char( "&RYou need a battery for the light to work.\n", ch);
                    return;
                 }
                 
                 if ( !checkcirc )
                 {
-                   send_to_char( "&RYou need a small circuit.\n\r", ch);
+                   send_to_char( "&RYou need a small circuit.\n", ch);
                    return;
                 }
                 
                 if ( !checkchem )
                 {
-                   send_to_char( "&RSome chemicals to light would come in handy!\n\r", ch);
+                   send_to_char( "&RSome chemicals to light would come in handy!\n", ch);
                    return;
                 }
  
@@ -1608,14 +1608,14 @@ void do_makelight( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_makelight]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of making a light.\n\r", ch);
+         send_to_char( "&GYou begin the long process of making a light.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and begins to work on something.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 10 , do_makelight , 1 );
          ch->dest_buf   = str_dup(arg);
          return;
          }
-         send_to_char("&RYou can't figure out how to fit the parts together.\n\r",ch);
+         send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
          learn_from_failure( ch, gsn_makelight );
          return; 
      
@@ -1629,7 +1629,7 @@ void do_makelight( CHAR_DATA *ch, char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n\r", ch);
+             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
     }
     
@@ -1640,7 +1640,7 @@ void do_makelight( CHAR_DATA *ch, char *argument )
     
     if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
     {
-         send_to_char( "&RThe item you are trying to create is missing from the database.\n\rPlease inform the administration of this error.\n\r", ch );
+         send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
          return;
     }
 
@@ -1690,7 +1690,7 @@ void do_makelight( CHAR_DATA *ch, char *argument )
                 
     if ( number_percent( ) > chance*2  || ( !checktool ) || ( !checklens ) || ( !checkbatt ) || ( !checkchem ) || ( !checkcirc) )
     {
-       send_to_char( "&RJust as you are about to finish your work,\n\ryour newly created light explodes in your hands...doh!\n\r", ch);
+       send_to_char( "&RJust as you are about to finish your work,\nyour newly created light explodes in your hands...doh!\n", ch);
        learn_from_failure( ch, gsn_makelight );
        return;
     }
@@ -1716,7 +1716,7 @@ void do_makelight( CHAR_DATA *ch, char *argument )
                                                                    
     obj = obj_to_char( obj, ch );
                                                             
-    send_to_char( "&GYou finish your work and hold up your newly created light.&w\n\r", ch);
+    send_to_char( "&GYou finish your work and hold up your newly created light.&w\n", ch);
     act( AT_PLAIN, "$n finishes making $s new light.", ch,
          NULL, argument , TO_ROOM );
     
@@ -1756,20 +1756,20 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
     || !str_cmp( arg, "floating" )
     || !str_cmp( arg, "hands" ) )
     {
-        send_to_char( "&RYou cannot make jewelry for that body part.\n\r&w", ch);
-        send_to_char( "&RTry MAKEARMOR.\n\r&w", ch);
+        send_to_char( "&RYou cannot make jewelry for that body part.\n&w", ch);
+        send_to_char( "&RTry MAKEARMOR.\n&w", ch);
         return;
     }
     if ( !str_cmp( arg, "shield" ) )
     {
-        send_to_char( "&RYou cannot make jewelry worn as a shield.\n\r&w", ch);
-        send_to_char( "&RTry MAKESHIELD.\n\r&w", ch);
+        send_to_char( "&RYou cannot make jewelry worn as a shield.\n&w", ch);
+        send_to_char( "&RTry MAKESHIELD.\n&w", ch);
         return;
     }
     if ( !str_cmp( arg, "wield" ) )
     {
-        send_to_char( "&RAre you going to fight with your jewelry?\n\r&w", ch);
-        send_to_char( "&RTry MAKEBLADE...\n\r&w", ch);
+        send_to_char( "&RAre you going to fight with your jewelry?\n&w", ch);
+        send_to_char( "&RTry MAKEBLADE...\n&w", ch);
         return;
     }
     
@@ -1779,7 +1779,7 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
              
              if ( arg2[0] == '\0' )
                 {
-                  send_to_char( "&RUsage: Makejewelry <wearloc> <name>\n\r&w", ch);
+                  send_to_char( "&RUsage: Makejewelry <wearloc> <name>\n&w", ch);
                   return;
                 }
  
@@ -1789,7 +1789,7 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
         
                 if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n\r", ch);
+                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
                 }
                 
@@ -1805,19 +1805,19 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
                 
                 if ( !checktool )
                 {
-                   send_to_char( "&RYou need a toolkit.\n\r", ch);
+                   send_to_char( "&RYou need a toolkit.\n", ch);
                    return;
                 }
  
                 if ( !checkoven )
                 {
-                   send_to_char( "&RYou need an oven.\n\r", ch);
+                   send_to_char( "&RYou need an oven.\n", ch);
                    return;
                 }
                 
                 if ( !checkmetal )
                 {
-                   send_to_char( "&RYou need some precious metal.\n\r", ch);
+                   send_to_char( "&RYou need some precious metal.\n", ch);
                    return;
                 }
 
@@ -1825,7 +1825,7 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_makejewelry]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of creating some jewelry.\n\r", ch);
+         send_to_char( "&GYou begin the long process of creating some jewelry.\n", ch);
          act( AT_PLAIN, "$n takes $s toolkit and some metal and begins to work.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 15 , do_makejewelry , 1 );
@@ -1833,7 +1833,7 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
          ch->dest_buf_2 = str_dup(arg2);
          return;
          }
-         send_to_char("&RYou can't figure out what to do.\n\r",ch);
+         send_to_char("&RYou can't figure out what to do.\n",ch);
          learn_from_failure( ch, gsn_makejewelry );
          return;
 
@@ -1852,7 +1852,7 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
       DISPOSE( ch->dest_buf );
       DISPOSE( ch->dest_buf_2 );
       ch->substate = SUB_NONE;
-             send_to_char("&RYou are interupted and fail to finish your work.\n\r", ch);
+             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
     }
 
@@ -1893,9 +1893,9 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
                 
     if ( number_percent( ) > chance*2  || ( !checkoven ) || ( !checktool ) || ( !checkmetal ) )
     {
-       send_to_char( "&RYou hold up your newly created jewelry.\n\r", ch);
-       send_to_char( "&RIt suddenly dawns upon you that you have created the most useless\n\r", ch);
-       send_to_char( "&Rpiece of junk you've ever seen. You quickly hide your mistake...\n\r", ch);
+       send_to_char( "&RYou hold up your newly created jewelry.\n", ch);
+       send_to_char( "&RIt suddenly dawns upon you that you have created the most useless\n", ch);
+       send_to_char( "&Rpiece of junk you've ever seen. You quickly hide your mistake...\n", ch);
        learn_from_failure( ch, gsn_makejewelry );
        return;
     }
@@ -1925,7 +1925,7 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
                                                                     
     obj = obj_to_char( obj, ch );
                                                             
-    send_to_char( "&GYou finish your work and hold up your newly created jewelry.&w\n\r", ch);
+    send_to_char( "&GYou finish your work and hold up your newly created jewelry.&w\n", ch);
     act( AT_PLAIN, "$n finishes sewing some new jewelry.", ch,
          NULL, argument , TO_ROOM );
     
@@ -1961,20 +1961,20 @@ void do_makearmor( CHAR_DATA *ch, char *argument )
     || !str_cmp( arg, "floating" )
     || !str_cmp( arg, "wrist" ) )
     {
-        send_to_char( "&RYou cannot make clothing for that body part.\n\r&w", ch);
-        send_to_char( "&RTry MAKEJEWELRY.\n\r&w", ch);
+        send_to_char( "&RYou cannot make clothing for that body part.\n&w", ch);
+        send_to_char( "&RTry MAKEJEWELRY.\n&w", ch);
         return;
     }
     if ( !str_cmp( arg, "shield" ) )
     {
-        send_to_char( "&RYou cannot make clothing worn as a shield.\n\r&w", ch);
-        send_to_char( "&RTry MAKESHIELD.\n\r&w", ch);
+        send_to_char( "&RYou cannot make clothing worn as a shield.\n&w", ch);
+        send_to_char( "&RTry MAKESHIELD.\n&w", ch);
         return;
     }
     if ( !str_cmp( arg, "wield" ) )
     {
-        send_to_char( "&RAre you going to fight with your clothing?\n\r&w", ch);
-        send_to_char( "&RTry MAKEBLADE...\n\r&w", ch);
+        send_to_char( "&RAre you going to fight with your clothing?\n&w", ch);
+        send_to_char( "&RTry MAKEBLADE...\n&w", ch);
         return;
     }
     
@@ -1984,7 +1984,7 @@ void do_makearmor( CHAR_DATA *ch, char *argument )
              
              if ( arg2[0] == '\0' )
                 {
-                  send_to_char( "&RUsage: Makearmor <wearloc> <name>\n\r&w", ch);
+                  send_to_char( "&RUsage: Makearmor <wearloc> <name>\n&w", ch);
                   return;   
                 }
  
@@ -1993,7 +1993,7 @@ void do_makearmor( CHAR_DATA *ch, char *argument )
         
                 if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n\r", ch);
+                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
                 }
                 
@@ -2007,13 +2007,13 @@ void do_makearmor( CHAR_DATA *ch, char *argument )
                 
                 if ( !checkfab )
                 {
-                   send_to_char( "&RYou need some sort of fabric or material.\n\r", ch);
+                   send_to_char( "&RYou need some sort of fabric or material.\n", ch);
                    return;
                 }
 
                 if ( !checksew )
                 {
-                   send_to_char( "&RYou need a needle and some thread.\n\r", ch);
+                   send_to_char( "&RYou need a needle and some thread.\n", ch);
                    return;
                 }
 
@@ -2021,7 +2021,7 @@ void do_makearmor( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_makearmor]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of creating some armor.\n\r", ch);
+         send_to_char( "&GYou begin the long process of creating some armor.\n", ch);
          act( AT_PLAIN, "$n takes $s sewing kit and some material and begins to work.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 15 , do_makearmor , 1 );
@@ -2029,7 +2029,7 @@ void do_makearmor( CHAR_DATA *ch, char *argument )
          ch->dest_buf_2 = str_dup(arg2);
          return;
          }
-         send_to_char("&RYou can't figure out what to do.\n\r",ch);
+         send_to_char("&RYou can't figure out what to do.\n",ch);
          learn_from_failure( ch, gsn_makearmor );
          return; 
      
@@ -2048,7 +2048,7 @@ void do_makearmor( CHAR_DATA *ch, char *argument )
       DISPOSE( ch->dest_buf );
       DISPOSE( ch->dest_buf_2 );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n\r", ch);
+             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
     }
     
@@ -2077,9 +2077,9 @@ void do_makearmor( CHAR_DATA *ch, char *argument )
                 
     if ( number_percent( ) > chance*2  || ( !checkfab ) || ( !checksew ) )
     {
-       send_to_char( "&RYou hold up your newly created armor.\n\r", ch);
-       send_to_char( "&RIt suddenly dawns upon you that you have created the most useless\n\r", ch);
-       send_to_char( "&Rgarment you've ever seen. You quickly hide your mistake...\n\r", ch);
+       send_to_char( "&RYou hold up your newly created armor.\n", ch);
+       send_to_char( "&RIt suddenly dawns upon you that you have created the most useless\n", ch);
+       send_to_char( "&Rgarment you've ever seen. You quickly hide your mistake...\n", ch);
        learn_from_failure( ch, gsn_makearmor );
        return;
     }
@@ -2108,7 +2108,7 @@ void do_makearmor( CHAR_DATA *ch, char *argument )
 
     obj = obj_to_char( obj, ch );
                                                             
-    send_to_char( "&GYou finish your work and hold up your newly created garment.&w\n\r", ch);
+    send_to_char( "&GYou finish your work and hold up your newly created garment.&w\n", ch);
     act( AT_PLAIN, "$n finishes sewing some new armor.", ch,
          NULL, argument , TO_ROOM );
     
@@ -2149,18 +2149,18 @@ void do_makecomlink( CHAR_DATA *ch, char *argument )
     || !str_cmp( arg, "feet" )
     || !str_cmp( arg, "hands" ) )
     {
-        send_to_char( "&RYou cannot make a comlink for that body part.\n\r&w", ch);
+        send_to_char( "&RYou cannot make a comlink for that body part.\n&w", ch);
         return;
     }
     if ( !str_cmp( arg, "shield" ) )
     {
-        send_to_char( "&RYou cannot make a comlink worn as a shield.\n\r&w", ch);
-        send_to_char( "&RTry MAKESHIELD.\n\r&w", ch);
+        send_to_char( "&RYou cannot make a comlink worn as a shield.\n&w", ch);
+        send_to_char( "&RTry MAKESHIELD.\n&w", ch);
         return;
     }
     if ( !str_cmp( arg, "wield" ) )
     {
-        send_to_char( "&RAre you going to fight with your comlink?\n\r&w", ch);
+        send_to_char( "&RAre you going to fight with your comlink?\n&w", ch);
         return;
     }
 
@@ -2169,7 +2169,7 @@ void do_makecomlink( CHAR_DATA *ch, char *argument )
      default:
              if ( arg2[0] == '\0' )
                 {
-                  send_to_char( "&RUsage: Makecomlink <wearloc> <name>\n\r&w", ch);
+                  send_to_char( "&RUsage: Makecomlink <wearloc> <name>\n&w", ch);
                   return;   
                 }
  
@@ -2180,7 +2180,7 @@ void do_makecomlink( CHAR_DATA *ch, char *argument )
         
                 if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n\r", ch);
+                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
                 }
                 
@@ -2198,25 +2198,25 @@ void do_makecomlink( CHAR_DATA *ch, char *argument )
                 
                 if ( !checktool )
                 {
-                   send_to_char( "&RYou need toolkit to make a comlink.\n\r", ch);
+                   send_to_char( "&RYou need toolkit to make a comlink.\n", ch);
                    return;
                 }
  
                 if ( !checkgem )
                 {
-                   send_to_char( "&RYou need a small crystal.\n\r", ch);
+                   send_to_char( "&RYou need a small crystal.\n", ch);
                    return;
                 }
 
                 if ( !checkbatt )
                 {
-                   send_to_char( "&RYou need a power source for your comlink.\n\r", ch);
+                   send_to_char( "&RYou need a power source for your comlink.\n", ch);
                    return;
                 }
                 
                 if ( !checkcirc )
                 {
-                   send_to_char( "&RYou need a small circuit.\n\r", ch);
+                   send_to_char( "&RYou need a small circuit.\n", ch);
                    return;
                 }
 
@@ -2224,7 +2224,7 @@ void do_makecomlink( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_makecomlink]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of making a comlink.\n\r", ch);
+         send_to_char( "&GYou begin the long process of making a comlink.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and begins to work on something.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 10 , do_makecomlink , 1 );
@@ -2232,7 +2232,7 @@ void do_makecomlink( CHAR_DATA *ch, char *argument )
             ch->dest_buf_2 = str_dup(arg2);
          return;
          }
-         send_to_char("&RYou can't figure out how to fit the parts together.\n\r",ch);
+         send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
          learn_from_failure( ch, gsn_makecomlink );
          return;
 
@@ -2249,7 +2249,7 @@ void do_makecomlink( CHAR_DATA *ch, char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n\r", ch);
+             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
     }
 
@@ -2259,7 +2259,7 @@ void do_makecomlink( CHAR_DATA *ch, char *argument )
 
     if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
     {
-         send_to_char( "&RThe item you are trying to create is missing from the database.\n\rPlease inform the administration of this error.\n\r", ch );
+         send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
          return;
     }
     
@@ -2300,8 +2300,8 @@ void do_makecomlink( CHAR_DATA *ch, char *argument )
 
     if ( number_percent( ) > chance*2  || ( !checktool ) || ( !checkcirc ) || ( !checkbatt ) || ( !checkgem ) )
     {
-       send_to_char( "&RYou hold up your newly created comlink....\n\r", ch);
-       send_to_char( "&Rand it falls apart in your hands.\n\r", ch);
+       send_to_char( "&RYou hold up your newly created comlink....\n", ch);
+       send_to_char( "&Rand it falls apart in your hands.\n", ch);
        learn_from_failure( ch, gsn_makecomlink );
        return;
     }
@@ -2330,7 +2330,7 @@ void do_makecomlink( CHAR_DATA *ch, char *argument )
 
     obj = obj_to_char( obj, ch );
                                                             
-    send_to_char( "&GYou finish your work and hold up your newly created comlink.&w\n\r", ch);
+    send_to_char( "&GYou finish your work and hold up your newly created comlink.&w\n", ch);
     act( AT_PLAIN, "$n finishes crafting a comlink.", ch,
          NULL, argument , TO_ROOM );
     
@@ -2362,7 +2362,7 @@ void do_makeshield( CHAR_DATA *ch, char *argument )
      default:
              if ( arg[0] == '\0' )
                 {
-                  send_to_char( "&RUsage: Makeshield <name>\n\r&w", ch);
+                  send_to_char( "&RUsage: Makeshield <name>\n&w", ch);
                   return;   
                 }
 
@@ -2374,7 +2374,7 @@ void do_makeshield( CHAR_DATA *ch, char *argument )
 
                 if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
-                   send_to_char( "&RYou need to be in a workshop.\n\r", ch);
+                   send_to_char( "&RYou need to be in a workshop.\n", ch);
                    return;
                 }
                 
@@ -2394,31 +2394,31 @@ void do_makeshield( CHAR_DATA *ch, char *argument )
                 
                 if ( !checktool )
                 {
-                   send_to_char( "&RYou need toolkit to make an energy shield.\n\r", ch);
+                   send_to_char( "&RYou need toolkit to make an energy shield.\n", ch);
                    return;
                 }
  
                 if ( !checkbatt )
                 {
-                   send_to_char( "&RYou need a power source for your energy shield.\n\r", ch);
+                   send_to_char( "&RYou need a power source for your energy shield.\n", ch);
                    return;
                 }
                 
                 if ( !checkcirc )
                 {
-                   send_to_char( "&RYou need a small circuit board.\n\r", ch);
+                   send_to_char( "&RYou need a small circuit board.\n", ch);
                    return;
                 }
                 
                 if ( !checkcond )
                 {
-                   send_to_char( "&RYou still need a small superconductor for your energy shield.\n\r", ch);
+                   send_to_char( "&RYou still need a small superconductor for your energy shield.\n", ch);
                    return;
                 }
                 
                 if ( !checkgems )
                 {
-                   send_to_char( "&RYou need a small crystal.\n\r", ch);
+                   send_to_char( "&RYou need a small crystal.\n", ch);
                    return;
                 }
                 
@@ -2426,14 +2426,14 @@ void do_makeshield( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_makeshield]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of crafting an energy shield.\n\r", ch);
+         send_to_char( "&GYou begin the long process of crafting an energy shield.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and begins to work on something.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 20 , do_makeshield , 1 );
          ch->dest_buf = str_dup(arg);
          return;
          }
-         send_to_char("&RYou can't figure out how to fit the parts together.\n\r",ch);
+         send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
          learn_from_failure( ch, gsn_makeshield );
          return; 
      
@@ -2447,7 +2447,7 @@ void do_makeshield( CHAR_DATA *ch, char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n\r", ch);
+             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
     }
     
@@ -2458,7 +2458,7 @@ void do_makeshield( CHAR_DATA *ch, char *argument )
     
     if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
     {
-         send_to_char( "&RThe item you are trying to create is missing from the database.\n\rPlease inform the administration of this error.\n\r", ch );
+         send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
          return;
     }
 
@@ -2513,9 +2513,9 @@ void do_makeshield( CHAR_DATA *ch, char *argument )
                                        || ( !checkgems ) || ( !checkcond ) || ( !checkcirc) )
     
     {
-       send_to_char( "&RYou hold up your new energy shield and press the switch hoping for the best.\n\r", ch);
-       send_to_char( "&RInstead of a field of energy being created, smoke starts pouring from the device.\n\r", ch);
-       send_to_char( "&RYou drop the hot device and watch as it melts on away on the floor.\n\r", ch);
+       send_to_char( "&RYou hold up your new energy shield and press the switch hoping for the best.\n", ch);
+       send_to_char( "&RInstead of a field of energy being created, smoke starts pouring from the device.\n", ch);
+       send_to_char( "&RYou drop the hot device and watch as it melts on away on the floor.\n", ch);
        learn_from_failure( ch, gsn_makeshield );
        return;
     }
@@ -2543,7 +2543,7 @@ void do_makeshield( CHAR_DATA *ch, char *argument )
                                                                     
     obj = obj_to_char( obj, ch );
                                                             
-    send_to_char( "&GYou finish your work and hold up your newly created energy shield.&w\n\r", ch);
+    send_to_char( "&GYou finish your work and hold up your newly created energy shield.&w\n", ch);
     act( AT_PLAIN, "$n finishes making $s new energy shield.", ch,
          NULL, argument , TO_ROOM );
     
@@ -2580,27 +2580,27 @@ void do_makecontainer( CHAR_DATA *ch, char *argument )
     || !str_cmp( arg, "over" )
     || !str_cmp( arg, "wrist" ) )
     {
-        send_to_char( "&RYou cannot make a container for that body part.\n\r&w", ch);
-        send_to_char( "&RTry MAKEJEWELRY.\n\r&w", ch);
+        send_to_char( "&RYou cannot make a container for that body part.\n&w", ch);
+        send_to_char( "&RTry MAKEJEWELRY.\n&w", ch);
         return;
     }
     if ( !str_cmp( arg, "feet" ) 
     || !str_cmp( arg, "hands" ) )
     {
-        send_to_char( "&RYou cannot make a container for that body part.\n\r&w", ch);
-        send_to_char( "&RTry MAKEARMOR.\n\r&w", ch);
+        send_to_char( "&RYou cannot make a container for that body part.\n&w", ch);
+        send_to_char( "&RTry MAKEARMOR.\n&w", ch);
         return;
     }
     if ( !str_cmp( arg, "shield" ) )
     {
-        send_to_char( "&RYou cannot make a container a shield.\n\r&w", ch);
-        send_to_char( "&RTry MAKESHIELD.\n\r&w", ch);
+        send_to_char( "&RYou cannot make a container a shield.\n&w", ch);
+        send_to_char( "&RTry MAKESHIELD.\n&w", ch);
         return;
     }
     if ( !str_cmp( arg, "wield" ) )
     {
-        send_to_char( "&RAre you going to fight with a container?\n\r&w", ch);
-        send_to_char( "&RTry MAKEBLADE...\n\r&w", ch);
+        send_to_char( "&RAre you going to fight with a container?\n&w", ch);
+        send_to_char( "&RTry MAKEBLADE...\n&w", ch);
         return;
     }
     
@@ -2611,7 +2611,7 @@ void do_makecontainer( CHAR_DATA *ch, char *argument )
              
              if ( arg2[0] == '\0' )
                 {
-                  send_to_char( "&RUsage: Makecontainer <wearloc> <name>\n\r&w", ch);
+                  send_to_char( "&RUsage: Makecontainer <wearloc> <name>\n&w", ch);
                   return;   
                 }
  
@@ -2620,7 +2620,7 @@ void do_makecontainer( CHAR_DATA *ch, char *argument )
         
                 if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n\r", ch);
+                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
                 }
                 
@@ -2634,13 +2634,13 @@ void do_makecontainer( CHAR_DATA *ch, char *argument )
                 
                 if ( !checkfab )
                 {
-                   send_to_char( "&RYou need some sort of fabric or material.\n\r", ch);
+                   send_to_char( "&RYou need some sort of fabric or material.\n", ch);
                    return;
                 }
  
                 if ( !checksew )
                 {
-                   send_to_char( "&RYou need a needle and some thread.\n\r", ch);
+                   send_to_char( "&RYou need a needle and some thread.\n", ch);
                    return;
                 }
 
@@ -2648,7 +2648,7 @@ void do_makecontainer( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_makecontainer]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of creating a bag.\n\r", ch);
+         send_to_char( "&GYou begin the long process of creating a bag.\n", ch);
          act( AT_PLAIN, "$n takes $s sewing kit and some material and begins to work.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 10 , do_makecontainer , 1 );
@@ -2656,7 +2656,7 @@ void do_makecontainer( CHAR_DATA *ch, char *argument )
          ch->dest_buf_2 = str_dup(arg2);
          return;
          }
-         send_to_char("&RYou can't figure out what to do.\n\r",ch);
+         send_to_char("&RYou can't figure out what to do.\n",ch);
          learn_from_failure( ch, gsn_makecontainer );
          return; 
      
@@ -2675,7 +2675,7 @@ void do_makecontainer( CHAR_DATA *ch, char *argument )
       DISPOSE( ch->dest_buf );
       DISPOSE( ch->dest_buf_2 );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n\r", ch);
+             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
     }
     
@@ -2704,9 +2704,9 @@ void do_makecontainer( CHAR_DATA *ch, char *argument )
                 
     if ( number_percent( ) > chance*2  || ( !checkfab ) || ( !checksew ) )
     {
-       send_to_char( "&RYou hold up your newly created container.\n\r", ch);
-       send_to_char( "&RIt suddenly dawns upon you that you have created the most useless\n\r", ch);
-       send_to_char( "&Rcontainer you've ever seen. You quickly hide your mistake...\n\r", ch);
+       send_to_char( "&RYou hold up your newly created container.\n", ch);
+       send_to_char( "&RIt suddenly dawns upon you that you have created the most useless\n", ch);
+       send_to_char( "&Rcontainer you've ever seen. You quickly hide your mistake...\n", ch);
        learn_from_failure( ch, gsn_makecontainer );
        return;
     }
@@ -2738,7 +2738,7 @@ void do_makecontainer( CHAR_DATA *ch, char *argument )
                                                                     
     obj = obj_to_char( obj, ch );
                                                             
-    send_to_char( "&GYou finish your work and hold up your newly created container.&w\n\r", ch);
+    send_to_char( "&GYou finish your work and hold up your newly created container.&w\n", ch);
     act( AT_PLAIN, "$n finishes sewing a new container.", ch,
          NULL, argument , TO_ROOM );
     
@@ -2755,12 +2755,12 @@ void do_makecontainer( CHAR_DATA *ch, char *argument )
 void do_makemissile( CHAR_DATA *ch, char *argument )
 {
     /* don't think we really need this */
-    send_to_char( "&RSorry, this skill isn't finished yet :(\n\r", ch);
+    send_to_char( "&RSorry, this skill isn't finished yet :(\n", ch);
 }
 
 void do_gemcutting( CHAR_DATA *ch, char *argument )
 {
-     send_to_char( "&RSorry, this skill isn't finished yet :(\n\r", ch);
+     send_to_char( "&RSorry, this skill isn't finished yet :(\n", ch);
 }
 
 void do_reinforcements( CHAR_DATA *ch, char *argument )
@@ -2778,33 +2778,33 @@ void do_reinforcements( CHAR_DATA *ch, char *argument )
      default:
              if ( ch->backup_wait )
              {
-                 send_to_char( "&RYour reinforcements are already on the way.\n\r", ch );
+                 send_to_char( "&RYour reinforcements are already on the way.\n", ch );
                  return;
              }
              
              if ( !ch->pcdata->clan )
              {
-                 send_to_char( "&RYou need to be a member of an organization before you can call for reinforcements.\n\r", ch );
+                 send_to_char( "&RYou need to be a member of an organization before you can call for reinforcements.\n", ch );
                  return;
              }    
              
              if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 50 )
              {
-                 ch_printf( ch, "&RYou dont have enough credits to send for reinforcements.\n\r" );
+                 ch_printf( ch, "&RYou dont have enough credits to send for reinforcements.\n" );
                  return;
              }    
              
              chance = (int) (ch->pcdata->learned[gsn_reinforcements]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin making the call for reinforcements.\n\r", ch);
+         send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
          act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 1 , do_reinforcements , 1 );
          ch->dest_buf = str_dup(arg);
          return;
          }
-         send_to_char("&RYou call for reinforcements but nobody answers.\n\r",ch);
+         send_to_char("&RYou call for reinforcements but nobody answers.\n",ch);
          learn_from_failure( ch, gsn_reinforcements );
          return; 
      
@@ -2818,15 +2818,15 @@ void do_reinforcements( CHAR_DATA *ch, char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted before you can finish your call.\n\r", ch);
+             send_to_char("&RYou are interupted before you can finish your call.\n", ch);
              return;
     }
     
     ch->substate = SUB_NONE;
     
-    send_to_char( "&GYour reinforcements are on the way.\n\r", ch);
+    send_to_char( "&GYour reinforcements are on the way.\n", ch);
     credits = ch->skill_level[LEADERSHIP_ABILITY] * 50;
-    ch_printf( ch, "It cost you %d credits.\n\r", credits);
+    ch_printf( ch, "It cost you %d credits.\n", credits);
     ch->gold -= UMIN( credits , ch->gold );
              
     learn_from_success( ch, gsn_reinforcements );
@@ -2857,33 +2857,33 @@ void do_postguard( CHAR_DATA *ch, char *argument )
      default:
              if ( ch->backup_wait )
              {
-                 send_to_char( "&RYou already have backup coming.\n\r", ch );
+                 send_to_char( "&RYou already have backup coming.\n", ch );
                  return;
              }
              
              if ( !ch->pcdata->clan )
              {
-                 send_to_char( "&RYou need to be a member of an organization before you can call for a guard.\n\r", ch );
+                 send_to_char( "&RYou need to be a member of an organization before you can call for a guard.\n", ch );
                  return;
              }    
              
              if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 30 )
              {
-                 send_to_char( "&RYou dont have enough credits.\r\n", ch );
+                 send_to_char( "&RYou dont have enough credits.\n", ch );
                  return;
              }    
              
              chance = (int) (ch->pcdata->learned[gsn_postguard]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin making the call for reinforcements.\n\r", ch);
+         send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
          act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 1 , do_postguard , 1 );
          ch->dest_buf = str_dup(arg);
          return;
          }
-         send_to_char("&RYou call for a guard but nobody answers.\n\r",ch);
+         send_to_char("&RYou call for a guard but nobody answers.\n",ch);
          learn_from_failure( ch, gsn_postguard );
          return; 
      
@@ -2897,16 +2897,16 @@ void do_postguard( CHAR_DATA *ch, char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted before you can finish your call.\n\r", ch);
+             send_to_char("&RYou are interupted before you can finish your call.\n", ch);
              return;
     }
     
     ch->substate = SUB_NONE;
     
-    send_to_char( "&GYour guard is on the way.\n\r", ch);
+    send_to_char( "&GYour guard is on the way.\n", ch);
     
     credits = ch->skill_level[LEADERSHIP_ABILITY] * 30;
-    ch_printf( ch, "It cost you %d credits.\n\r", credits);
+    ch_printf( ch, "It cost you %d credits.\n", credits);
     ch->gold -= UMIN( credits , ch->gold );
 
     learn_from_success( ch, gsn_postguard );
@@ -2954,7 +2954,7 @@ void add_reinforcements( CHAR_DATA *ch )
          { multiplier = 2; }
 
 
-        send_to_char( "Your reinforcements have arrived.\n\r", ch );
+        send_to_char( "Your reinforcements have arrived.\n", ch );
         for ( mob_cnt = 0 ; mob_cnt < 3 ; mob_cnt++ )
         {
             int ability;
@@ -3005,7 +3005,7 @@ void add_reinforcements( CHAR_DATA *ch )
           mob->long_descr = STRALLOC( tmpbuf );
         }
         act( AT_IMMORT, "$N has arrived.", ch, NULL, mob, TO_ROOM );
-        send_to_char( "Your guard has arrived.\n\r", ch );
+        send_to_char( "Your guard has arrived.\n", ch );
         mob->top_level = multiplier * ch->skill_level[LEADERSHIP_ABILITY] / 2;
         for ( ability = 0 ; ability < MAX_ABILITY ; ability++ )
             mob->skill_level[ability] = mob->top_level;
@@ -3041,13 +3041,13 @@ void do_torture( CHAR_DATA *ch, char *argument )
     &&  ch->pcdata->learned[gsn_torture] <= 0  )
     {
  send_to_char(
-     "Your mind races as you realize you have no idea how to do that.\n\r", ch );
+     "Your mind races as you realize you have no idea how to do that.\n", ch );
  return;
     }
 
     if ( IS_NPC(ch) && IS_AFFECTED( ch, AFF_CHARM ) )
     {
- send_to_char( "You can't do that right now.\n\r", ch );
+ send_to_char( "You can't do that right now.\n", ch );
  return;
     }
 
@@ -3055,31 +3055,31 @@ void do_torture( CHAR_DATA *ch, char *argument )
 
     if ( ch->mount )
     {
- send_to_char( "You can't get close enough while mounted.\n\r", ch );
+ send_to_char( "You can't get close enough while mounted.\n", ch );
  return;
     }
 
     if ( arg[0] == '\0' )
     {
- send_to_char( "Torture whom?\n\r", ch );
+ send_to_char( "Torture whom?\n", ch );
  return;
     }
 
     if ( ( victim = get_char_room( ch, arg ) ) == NULL )
     {
- send_to_char( "They aren't here.\n\r", ch );
+ send_to_char( "They aren't here.\n", ch );
  return;
     }
 
     if ( victim == ch )
     {
- send_to_char( "Are you masacistic or what...\n\r", ch );
+ send_to_char( "Are you masacistic or what...\n", ch );
  return;
     }
     
     if ( !IS_AWAKE(victim) )
     {
- send_to_char( "You need to wake them first.\n\r", ch );
+ send_to_char( "You need to wake them first.\n", ch );
  return;
     }
 
@@ -3088,7 +3088,7 @@ void do_torture( CHAR_DATA *ch, char *argument )
 
     if ( victim->fighting )
     {
- send_to_char( "You can't torture someone whos in combat.\n\r", ch );
+ send_to_char( "You can't torture someone whos in combat.\n", ch );
  return;
     }
     
@@ -3150,7 +3150,7 @@ void do_disguise( CHAR_DATA *ch, char *argument )
 
     if ( IS_SET( ch->pcdata->flags, PCFLAG_NOTITLE ))
     {
-        send_to_char( "You try but the Force resists you.\n\r", ch );
+        send_to_char( "You try but the Force resists you.\n", ch );
         return;
     }
 
@@ -3163,7 +3163,7 @@ void do_disguise( CHAR_DATA *ch, char *argument )
 
     if ( argument[0] == '\0' )
     {
-      send_to_char( "Change your title to what?\n\r", ch );
+      send_to_char( "Change your title to what?\n", ch );
       return;
     }
 
@@ -3171,7 +3171,7 @@ void do_disguise( CHAR_DATA *ch, char *argument )
 
     if ( number_percent( ) > chance )
     {
-        send_to_char( "You try to disguise yourself but fail.\n\r", ch );
+        send_to_char( "You try to disguise yourself but fail.\n", ch );
         return;
     }
 
@@ -3181,7 +3181,7 @@ void do_disguise( CHAR_DATA *ch, char *argument )
     smash_tilde( argument );
     set_title( ch, argument );
     learn_from_success( ch, gsn );
-    send_to_char( "Ok.\n\r", ch );
+    send_to_char( "Ok.\n", ch );
 }
 
 void do_mine( CHAR_DATA *ch, char *argument )
@@ -3193,7 +3193,7 @@ void do_mine( CHAR_DATA *ch, char *argument )
 
    if ( ch->pcdata->learned[gsn_mine] <= 0 )
     {
-      ch_printf( ch, "You have no idea how to do that.\n\r" );
+      ch_printf( ch, "You have no idea how to do that.\n" );
       return;
     }
 
@@ -3201,7 +3201,7 @@ void do_mine( CHAR_DATA *ch, char *argument )
 
     if ( arg[0] == '\0' )
     {
-        send_to_char( "And what will you mine the room with?\n\r", ch );
+        send_to_char( "And what will you mine the room with?\n", ch );
         return;
     }
 
@@ -3219,7 +3219,7 @@ void do_mine( CHAR_DATA *ch, char *argument )
     obj = get_obj_list_rev( ch, arg, ch->in_room->last_content );
     if ( !obj )
     {
-        send_to_char( "You don't see on here.\n\r", ch );
+        send_to_char( "You don't see on here.\n", ch );
         return;
     }
 
@@ -3240,22 +3240,22 @@ void do_mine( CHAR_DATA *ch, char *argument )
     {
  case SECT_CITY:
  case SECT_INSIDE:
-     send_to_char( "The floor is too hard to dig through.\n\r", ch );
+     send_to_char( "The floor is too hard to dig through.\n", ch );
      return;
  case SECT_WATER_SWIM:
  case SECT_WATER_NOSWIM:
  case SECT_UNDERWATER:
-     send_to_char( "You cannot bury a mine in the water.\n\r", ch );
+     send_to_char( "You cannot bury a mine in the water.\n", ch );
      return;
  case SECT_AIR:
-     send_to_char( "What?  Bury a mine in the air?!\n\r", ch );
+     send_to_char( "What?  Bury a mine in the air?!\n", ch );
      return;
     }
 
     if ( obj->weight > (UMAX(5, (can_carry_w(ch) / 10)))
     &&  !shovel )
     {
- send_to_char( "You'd need a shovel to bury something that big.\n\r", ch );
+ send_to_char( "You'd need a shovel to bury something that big.\n", ch );
  return;
     }
 
@@ -3263,7 +3263,7 @@ void do_mine( CHAR_DATA *ch, char *argument )
     move = URANGE( 2, move, 1000 );
     if ( move > ch->move )
     {
- send_to_char( "You don't have the energy to bury something of that size.\n\r", ch );
+ send_to_char( "You don't have the energy to bury something of that size.\n", ch );
  return;
     }
     ch->move -= move;
@@ -3274,7 +3274,7 @@ void do_mine( CHAR_DATA *ch, char *argument )
     STRFREE ( obj->armed_by );
     obj->armed_by = STRALLOC ( ch->name );
 
-    ch_printf( ch, "You arm and bury %s.\n\r", obj->short_descr );
+    ch_printf( ch, "You arm and bury %s.\n", obj->short_descr );
     act( AT_PLAIN, "$n arms and buries $p.", ch, obj, NULL, TO_ROOM );
 
     learn_from_success( ch, gsn_mine );
@@ -3291,20 +3291,20 @@ void do_first_aid( CHAR_DATA *ch, char *argument )
 
    if ( ch->position == POS_FIGHTING )
    {
-         send_to_char( "You can't do that while fighting!\n\r",ch );
+         send_to_char( "You can't do that while fighting!\n",ch );
          return;
    }
    
    medpac = get_eq_char( ch, WEAR_HOLD );
    if ( !medpac || medpac->item_type != ITEM_MEDPAC )
    {
-         send_to_char( "You need to be holding a medpac.\n\r",ch );
+         send_to_char( "You need to be holding a medpac.\n",ch );
          return;
    }  
 
    if ( medpac->value[0] <= 0 )
    {
-         send_to_char( "Your medpac seems to be empty.\n\r",ch );
+         send_to_char( "Your medpac seems to be empty.\n",ch );
          return;         
    }
    
@@ -3315,7 +3315,7 @@ void do_first_aid( CHAR_DATA *ch, char *argument )
             
    if ( !victim )
    {
-       ch_printf( ch, "I don't see any %s here...\n\r" , argument );     
+       ch_printf( ch, "I don't see any %s here...\n" , argument );     
        return;
    }
    
@@ -3323,14 +3323,14 @@ void do_first_aid( CHAR_DATA *ch, char *argument )
    
    if ( heal > ch->pcdata->learned[gsn_first_aid]*2 )
    {
-       ch_printf( ch, "You fail in your attempt at first aid.\n\r");     
+       ch_printf( ch, "You fail in your attempt at first aid.\n");     
        learn_from_failure( ch , gsn_first_aid );
        return;
    } 
       
    if ( victim == ch )
    {
-       ch_printf( ch, "You tend to your wounds.\n\r");
+       ch_printf( ch, "You tend to your wounds.\n");
        SPRINTF( buf , "$n uses %s to help heal $s wounds." , medpac->short_descr );        
        act( AT_ACTION, buf, ch, NULL, victim, TO_ROOM );  
    }
@@ -3369,7 +3369,7 @@ void do_snipe( CHAR_DATA *ch, char *argument )
    if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
- send_to_char( "You'll have to do that elswhere.\n\r", ch );
+ send_to_char( "You'll have to do that elswhere.\n", ch );
  return;
     }
      
@@ -3395,19 +3395,19 @@ void do_snipe( CHAR_DATA *ch, char *argument )
    
    if ( ( dir = get_door( arg ) ) == -1 || arg2[0] == '\0' )
    {
-     send_to_char( "Usage: snipe <dir> <target>\n\r", ch );
+     send_to_char( "Usage: snipe <dir> <target>\n", ch );
      return;
    }
  
    if ( ( pexit = get_exit( ch->in_room, dir ) ) == NULL )
    {
-     send_to_char( "Are you expecting to fire through a wall!?\n\r", ch );
+     send_to_char( "Are you expecting to fire through a wall!?\n", ch );
      return;
    }
 
    if ( IS_SET( pexit->exit_info, EX_CLOSED ) )
    {
-     send_to_char( "Are you expecting to fire through a door!?\n\r", ch );
+     send_to_char( "Are you expecting to fire through a door!?\n", ch );
      return;
    }
 
@@ -3454,7 +3454,7 @@ void do_snipe( CHAR_DATA *ch, char *argument )
        
    if ( !pfound )
    {
-       ch_printf( ch, "You don't see that person to the %s!\n\r", dir_name[dir] );
+       ch_printf( ch, "You don't see that person to the %s!\n", dir_name[dir] );
        char_from_room( ch );
        char_to_room( ch, was_in_room );    
        return;
@@ -3462,14 +3462,14 @@ void do_snipe( CHAR_DATA *ch, char *argument )
    
     if ( victim == ch )
     {
- send_to_char( "Shoot yourself ... really?\n\r", ch );
+ send_to_char( "Shoot yourself ... really?\n", ch );
  return;
     }
     
     if ( IS_SET( victim->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
- send_to_char( "You can't shoot them there.\n\r", ch );
+ send_to_char( "You can't shoot them there.\n", ch );
  return;
     }
  
@@ -3484,13 +3484,13 @@ void do_snipe( CHAR_DATA *ch, char *argument )
 
     if ( ch->position == POS_FIGHTING )
     {
- send_to_char( "You do the best you can!\n\r", ch );
+ send_to_char( "You do the best you can!\n", ch );
  return;
     }
     
     if ( !IS_NPC( victim ) && IS_SET( ch->act, PLR_NICE ) )
     {
-      send_to_char( "You feel too nice to do that!\n\r", ch );
+      send_to_char( "You feel too nice to do that!\n", ch );
       return;
     }
     
@@ -3620,7 +3620,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
       
    if ( arg[0] == '\0' )
    {
-     send_to_char( "Usage: throw <object> [direction] [target]\n\r", ch );
+     send_to_char( "Usage: throw <object> [direction] [target]\n", ch );
      return;
    }
 
@@ -3642,7 +3642,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
       obj = get_eq_char( ch, WEAR_DUAL_WIELD );
    if ( !obj || !nifty_is_name_prefix( arg, obj->name ) )
    {
-         ch_printf( ch, "You don't seem to be holding or wielding %s.\n\r", arg );
+         ch_printf( ch, "You don't seem to be holding or wielding %s.\n", arg );
          return;
    }  
 
@@ -3665,7 +3665,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
    {
        SPRINTF( buf, "$n throws %s at the floor." , obj->short_descr );
        act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );  
-       ch_printf( ch, "You throw %s at the floor.\n\r", obj->short_descr );
+       ch_printf( ch, "You throw %s at the floor.\n", obj->short_descr );
        
        victim = NULL;
    }
@@ -3673,14 +3673,14 @@ void do_throw( CHAR_DATA *ch, char *argument )
    {
       if ( ( pexit = get_exit( ch->in_room, dir ) ) == NULL )
       {
-         send_to_char( "Are you expecting to throw it through a wall!?\n\r", ch );
+         send_to_char( "Are you expecting to throw it through a wall!?\n", ch );
          return;
       }
 
       
       if ( IS_SET( pexit->exit_info, EX_CLOSED ) )
       {
-          send_to_char( "Are you expecting to throw it  through a door!?\n\r", ch );
+          send_to_char( "Are you expecting to throw it  through a door!?\n", ch );
           return;
       }
       
@@ -3737,7 +3737,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
     
         if ( !IS_NPC( victim ) && IS_SET( ch->act, PLR_NICE ) )
         {
-        send_to_char( "You feel too nice to do that!\n\r", ch );
+        send_to_char( "You feel too nice to do that!\n", ch );
         return;
         }
     
@@ -3748,7 +3748,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
         if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
         {
             set_char_color( AT_MAGIC, ch );
-            send_to_char( "You'll have to do that elswhere.\n\r", ch );
+            send_to_char( "You'll have to do that elswhere.\n", ch );
             return;
         }
        
@@ -3777,7 +3777,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
       }
       else
       {
-         ch_printf( ch, "You throw %s %s.\r\n", obj->short_descr, dir_name[get_dir( arg2 )] );
+         ch_printf( ch, "You throw %s %s.\n", obj->short_descr, dir_name[get_dir( arg2 )] );
          char_from_room( ch );
          char_to_room( ch, was_in_room );
          SPRINTF( buf, "$n throws %s to the %s.", obj->short_descr, dir_name[get_dir(arg2)] );
@@ -3801,14 +3801,14 @@ void do_throw( CHAR_DATA *ch, char *argument )
     
         if ( !IS_NPC( victim ) && IS_SET( ch->act, PLR_NICE ) )
         {
-        send_to_char( "You feel too nice to do that!\n\r", ch );
+        send_to_char( "You feel too nice to do that!\n", ch );
         return;
         }
 
    }
    else
    {
-       ch_printf( ch, "They don't seem to be here!\n\r");
+       ch_printf( ch, "They don't seem to be here!\n");
        return;         
    }
 
@@ -3886,13 +3886,13 @@ void do_beg( CHAR_DATA *ch, char *argument )
 
     if ( ch->mount )
     {
- send_to_char( "You can't do that while mounted.\n\r", ch );
+ send_to_char( "You can't do that while mounted.\n", ch );
  return;
     }
 
     if ( arg1[0] == '\0' )
     {
- send_to_char( "Beg fo money from whom?\n\r", ch );
+ send_to_char( "Beg fo money from whom?\n", ch );
  return;
     }
 
@@ -3901,52 +3901,52 @@ void do_beg( CHAR_DATA *ch, char *argument )
 
     if ( ( victim = get_char_room( ch, arg1 ) ) == NULL )
     {
- send_to_char( "They aren't here.\n\r", ch );
+ send_to_char( "They aren't here.\n", ch );
  return;
     }
 
     if ( victim == ch )
     {
- send_to_char( "That's pointless.\n\r", ch );
+ send_to_char( "That's pointless.\n", ch );
  return;
     }
 
     if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
- send_to_char( "This isn't a good place to do that.\n\r", ch );
+ send_to_char( "This isn't a good place to do that.\n", ch );
  return;
     }
 
     if ( ch->position == POS_FIGHTING )
     {
-        send_to_char( "Interesting combat technique.\n\r" , ch );
+        send_to_char( "Interesting combat technique.\n" , ch );
         return;
     }
     
     if ( victim->position == POS_FIGHTING )
     {
-        send_to_char( "They're a little busy right now.\n\r" , ch );
+        send_to_char( "They're a little busy right now.\n" , ch );
         return;
     }
     
     if ( ch->position <= POS_SLEEPING )
     {
-        send_to_char( "In your dreams or what?\n\r" , ch );
+        send_to_char( "In your dreams or what?\n" , ch );
         return;
     }
     
     if ( victim->position <= POS_SLEEPING )
     {
-        send_to_char( "You might want to wake them first...\n\r" , ch );
+        send_to_char( "You might want to wake them first...\n" , ch );
         return;
     }
 
     if ( !IS_NPC( victim ) )
     {
- send_to_char( "You beg them for money.\n\r", ch );
- act( AT_ACTION, "$n begs you to give $s some change.\n\r", ch, NULL, victim, TO_VICT    );
- act( AT_ACTION, "$n begs $N for change.\n\r",  ch, NULL, victim, TO_NOTVICT );
+ send_to_char( "You beg them for money.\n", ch );
+ act( AT_ACTION, "$n begs you to give $s some change.\n", ch, NULL, victim, TO_VICT    );
+ act( AT_ACTION, "$n begs $N for change.\n",  ch, NULL, victim, TO_NOTVICT );
  return;
     }
     
@@ -3958,9 +3958,9 @@ void do_beg( CHAR_DATA *ch, char *argument )
  /*
   * Failure.
   */
- send_to_char( "You beg them for money but don't get any!\n\r", ch );
- act( AT_ACTION, "$n is really getting on your nerves with all this begging!\n\r", ch, NULL, victim, TO_VICT    );
- act( AT_ACTION, "$n begs $N for money.\n\r",  ch, NULL, victim, TO_NOTVICT );
+ send_to_char( "You beg them for money but don't get any!\n", ch );
+ act( AT_ACTION, "$n is really getting on your nerves with all this begging!\n", ch, NULL, victim, TO_VICT    );
+ act( AT_ACTION, "$n begs $N for money.\n",  ch, NULL, victim, TO_NOTVICT );
 
         if ( victim->alignment < 0 && victim->top_level >= ch->top_level+5 )
  {
@@ -3975,28 +3975,28 @@ void do_beg( CHAR_DATA *ch, char *argument )
     }
 
     
-    act( AT_ACTION, "$n begs $N for money.\n\r",  ch, NULL, victim, TO_NOTVICT );
-    act( AT_ACTION, "$n begs you for money!\n\r", ch, NULL, victim, TO_VICT    );
+    act( AT_ACTION, "$n begs $N for money.\n",  ch, NULL, victim, TO_NOTVICT );
+    act( AT_ACTION, "$n begs you for money!\n", ch, NULL, victim, TO_VICT    );
 
     amount = UMIN( victim->gold , number_range(1, 10) );
     if ( amount <= 0 )
     {
         do_look( victim , ch->name );
- do_say( victim , "Sorry I have nothing to spare.\n\r" );
+ do_say( victim , "Sorry I have nothing to spare.\n" );
  learn_from_failure( ch, gsn_beg );
  return;
     }
 
  ch->gold     += amount;
  victim->gold -= amount;
- ch_printf( ch, "%s gives you %d credits.\n\r", victim->short_descr , amount );
+ ch_printf( ch, "%s gives you %d credits.\n", victim->short_descr , amount );
  learn_from_success( ch, gsn_beg );
  xp = UMIN( amount*10 , ( exp_level( ch->skill_level[SMUGGLING_ABILITY]+1) - exp_level( ch->skill_level[SMUGGLING_ABILITY])  )  );    
         xp = UMIN( xp , xp_compute( ch, victim ) );
         gain_exp( ch, xp, SMUGGLING_ABILITY );  
-        ch_printf( ch, "&WYou gain %d smuggling experience points!\n\r", xp );
-        act( AT_ACTION, "$N gives $n some money.\n\r",  ch, NULL, victim, TO_NOTVICT );
-        act( AT_ACTION, "You give $n some money.\n\r", ch, NULL, victim, TO_VICT    );
+        ch_printf( ch, "&WYou gain %d smuggling experience points!\n", xp );
+        act( AT_ACTION, "$N gives $n some money.\n",  ch, NULL, victim, TO_NOTVICT );
+        act( AT_ACTION, "You give $n some money.\n", ch, NULL, victim, TO_VICT    );
 
  return;
 
@@ -4018,55 +4018,55 @@ void do_hijack( CHAR_DATA *ch, char *argument )
 
              if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
              {
-                 send_to_char("&RYou must be in the cockpit of a ship to do that!\n\r",ch);
+                 send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
                  return;
              }
 
              if ( ship->shipclass > SHIP_PLATFORM )
              {
-                 send_to_char("&RThis isn't a spacecraft!\n\r",ch);
+                 send_to_char("&RThis isn't a spacecraft!\n",ch);
                  return;
              }
              
              if ( (ship = ship_from_pilotseat(ch->in_room->vnum)) == NULL )  
              {
-                 send_to_char("&RYou don't seem to be in the pilot seat!\n\r",ch);
+                 send_to_char("&RYou don't seem to be in the pilot seat!\n",ch);
                  return;
              }
              
              if ( check_pilot( ch , ship ) )
              {
-                 send_to_char("&RWhat would be the point of that!\n\r",ch);
+                 send_to_char("&RWhat would be the point of that!\n",ch);
                  return;
              }
 
              if ( ship->type == MOB_SHIP && get_trust(ch) < 102 )
              {
-                 send_to_char("&RThis ship isn't pilotable by mortals at this point in time...\n\r",ch);
+                 send_to_char("&RThis ship isn't pilotable by mortals at this point in time...\n",ch);
                  return;
              }
              
                 if  ( ship->shipclass == SHIP_PLATFORM )
                 {
-                   send_to_char( "You can't do that here.\n\r" , ch );
+                   send_to_char( "You can't do that here.\n" , ch );
                    return;
                 }
     
              if ( ship->lastdoc != ship->location )
                 {
-                     send_to_char("&rYou don't seem to be docked right now.\n\r",ch);
+                     send_to_char("&rYou don't seem to be docked right now.\n",ch);
                      return;
                 }
     
              if ( ship->shipstate != SHIP_LANDED && ship->shipstate != SHIP_DISABLED )
              {
-                 send_to_char("The ship is not docked right now.\n\r",ch);
+                 send_to_char("The ship is not docked right now.\n",ch);
                  return;
              }
                 
                 if ( ship->shipstate == SHIP_DISABLED )
              {
-                 send_to_char("The ships drive is disabled .\n\r",ch);
+                 send_to_char("The ships drive is disabled .\n",ch);
                  return;
              }
                 
@@ -4074,7 +4074,7 @@ void do_hijack( CHAR_DATA *ch, char *argument )
                   : (int)  (ch->pcdata->learned[gsn_hijack]) ;
                 if ( number_percent( ) > chance )
       {  
-          send_to_char("You fail to figure out the correct launch code.\n\r",ch);
+          send_to_char("You fail to figure out the correct launch code.\n",ch);
                    learn_from_failure( ch, gsn_hijack );
                  return;
                 }
@@ -4099,7 +4099,7 @@ void do_hijack( CHAR_DATA *ch, char *argument )
                      echo_to_room( AT_YELLOW , get_room_index(ship->entrance) , "The hatch slides shut." );
                    }
          set_char_color( AT_GREEN, ch );
-         send_to_char( "Launch sequence initiated.\n\r", ch);
+         send_to_char( "Launch sequence initiated.\n", ch);
          act( AT_PLAIN, "$n starts up the ship and begins the launch sequence.", ch,
           NULL, argument , TO_ROOM );
      echo_to_ship( AT_YELLOW , ship , "The ship hums as it lifts off the ground.");
@@ -4123,7 +4123,7 @@ void do_hijack( CHAR_DATA *ch, char *argument )
    if (!IS_NPC(p) && get_trust(p) >= LEVEL_GOD)
                         {
                           SPRINTF( buf2, "%s(%s)", ship->name, ship->personalname );
-                          ch_printf(p, "&R[alarm] %s has been hijacked by %s!\n\r", buf2, ch->name);
+                          ch_printf(p, "&R[alarm] %s has been hijacked by %s!\n", buf2, ch->name);
                         }
         }
 
@@ -4156,14 +4156,14 @@ void do_hijack( CHAR_DATA *ch, char *argument )
                 if ( !IS_AWAKE(victim) || IS_SET(victim->in_room->room_flags,ROOM_SILENCE) )
                     continue;
 
-                ch_printf(victim,"&R[alarm] %s has been hijacked!\n\r",ship->name);
+                ch_printf(victim,"&R[alarm] %s has been hijacked!\n",ship->name);
 
             }
 
                    return;
                 }
                 set_char_color( AT_RED, ch );
-         send_to_char("You fail to work the controls properly!\n\r",ch);
+         send_to_char("You fail to work the controls properly!\n",ch);
          if ( ship->shipclass == FIGHTER_SHIP )
                     learn_from_failure( ch, gsn_starfighters );
                 if ( ship->shipclass == MIDSIZE_SHIP )
@@ -4189,33 +4189,33 @@ void do_add_patrol ( CHAR_DATA *ch , char *argument )
      default:
              if ( ch->backup_wait )
              {
-                 send_to_char( "&RYou already have backup coming.\n\r", ch );
+                 send_to_char( "&RYou already have backup coming.\n", ch );
                  return;
              }
              
              if ( !ch->pcdata->clan )
              {
-                 send_to_char( "&RYou need to be a member of an organization before you can call for a guard.\n\r", ch );
+                 send_to_char( "&RYou need to be a member of an organization before you can call for a guard.\n", ch );
                  return;
              }    
              
              if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 30 )
              {
-                 ch_printf( ch, "&RYou dont have enough credits.\n\r", ch );
+                 ch_printf( ch, "&RYou dont have enough credits.\n", ch );
                  return;
              }    
              
              chance = (int) (ch->pcdata->learned[gsn_addpatrol]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin making the call for reinforcements.\n\r", ch);
+         send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
          act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 1 , do_add_patrol , 1 );
          ch->dest_buf = str_dup(arg);
          return;
          }
-         send_to_char("&RYou call for a guard but nobody answers.\n\r",ch);
+         send_to_char("&RYou call for a guard but nobody answers.\n",ch);
          learn_from_failure( ch, gsn_addpatrol );
          return;
      
@@ -4229,16 +4229,16 @@ void do_add_patrol ( CHAR_DATA *ch , char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted before you can finish your call.\n\r", ch);
+             send_to_char("&RYou are interupted before you can finish your call.\n", ch);
              return;
     }
     
     ch->substate = SUB_NONE;
     
-    send_to_char( "&GYour guard is on the way.\n\r", ch);
+    send_to_char( "&GYour guard is on the way.\n", ch);
     
     credits = ch->skill_level[LEADERSHIP_ABILITY] * 30;
-    ch_printf( ch, "It cost you %d credits.\n\r", credits);
+    ch_printf( ch, "It cost you %d credits.\n", credits);
     ch->gold -= UMIN( credits , ch->gold );
 
     learn_from_success( ch, gsn_addpatrol );
@@ -4270,33 +4270,33 @@ void do_special_forces ( CHAR_DATA *ch , char *argument )
      default:
              if ( ch->backup_wait )
              {
-                 send_to_char( "&RYour reinforcements are already on the way.\n\r", ch );
+                 send_to_char( "&RYour reinforcements are already on the way.\n", ch );
                  return;
              }
 
              if ( !ch->pcdata->clan )
              {
-                 send_to_char( "&RYou need to be a member of an organization before you can call for reinforcements.\n\r", ch );
+                 send_to_char( "&RYou need to be a member of an organization before you can call for reinforcements.\n", ch );
                  return;
              }
 
              if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 350 )
              {
-                 ch_printf( ch, "&RYou dont have enough credits to send for reinforcements.\n\r" );
+                 ch_printf( ch, "&RYou dont have enough credits to send for reinforcements.\n" );
                  return;
              }
 
              chance = (int) (ch->pcdata->learned[gsn_specialforces]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin making the call for reinforcements.\n\r", ch);
+         send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
          act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 1 , do_special_forces , 1 );
          ch->dest_buf = str_dup(arg);
          return;
          }
-         send_to_char("&RYou call for reinforcements but nobody answers.\n\r",ch);
+         send_to_char("&RYou call for reinforcements but nobody answers.\n",ch);
          learn_from_failure( ch, gsn_specialforces );
          return;
 
@@ -4310,15 +4310,15 @@ void do_special_forces ( CHAR_DATA *ch , char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;
-             send_to_char("&RYou are interupted before you can finish your call.\n\r", ch);
+             send_to_char("&RYou are interupted before you can finish your call.\n", ch);
              return;
     }
 
     ch->substate = SUB_NONE;
 
-    send_to_char( "&GYour reinforcements are on the way.\n\r", ch);
+    send_to_char( "&GYour reinforcements are on the way.\n", ch);
     credits = ch->skill_level[LEADERSHIP_ABILITY] * 350;
-    ch_printf( ch, "It cost you %d credits.\n\r", credits);
+    ch_printf( ch, "It cost you %d credits.\n", credits);
     ch->gold -= UMIN( credits , ch->gold );
 
     learn_from_success( ch, gsn_specialforces );
@@ -4350,33 +4350,33 @@ void do_elite_guard ( CHAR_DATA *ch , char *argument )
      default:
              if ( ch->backup_wait )
              {
-                 send_to_char( "&RYou already have backup coming.\n\r", ch );
+                 send_to_char( "&RYou already have backup coming.\n", ch );
                  return;
              }
 
              if ( !ch->pcdata->clan )
              {
-                 send_to_char( "&RYou need to be a member of an organization before you can call for a guard.\n\r", ch );
+                 send_to_char( "&RYou need to be a member of an organization before you can call for a guard.\n", ch );
                  return;
              }
 
              if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 200 )
              {
-                 ch_printf( ch, "&RYou dont have enough credits.\n\r", ch );
+                 ch_printf( ch, "&RYou dont have enough credits.\n", ch );
                  return;
              }
 
              chance = (int) (ch->pcdata->learned[gsn_eliteguard]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin making the call for reinforcements.\n\r", ch);
+         send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
          act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 1 , do_elite_guard , 1 );
          ch->dest_buf = str_dup(arg);
          return;
          }
-         send_to_char("&RYou call for a guard but nobody answers.\n\r",ch);
+         send_to_char("&RYou call for a guard but nobody answers.\n",ch);
          learn_from_failure( ch, gsn_eliteguard );
          return;
 
@@ -4390,16 +4390,16 @@ void do_elite_guard ( CHAR_DATA *ch , char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;
-             send_to_char("&RYou are interupted before you can finish your call.\n\r", ch);
+             send_to_char("&RYou are interupted before you can finish your call.\n", ch);
              return;
     }
 
     ch->substate = SUB_NONE;
 
-    send_to_char( "&GYour guard is on the way.\n\r", ch);
+    send_to_char( "&GYour guard is on the way.\n", ch);
 
     credits = ch->skill_level[LEADERSHIP_ABILITY] * 200;
-    ch_printf( ch, "It cost you %d credits.\n\r", credits);
+    ch_printf( ch, "It cost you %d credits.\n", credits);
     ch->gold -= UMIN( credits , ch->gold );
 
     learn_from_success( ch, gsn_eliteguard );
@@ -4425,47 +4425,47 @@ void do_unjail ( CHAR_DATA *ch , char *argument )
     
     if ( ( victim = get_char_room( ch, arg ) ) == NULL )
     {
- send_to_char( "They aren't here.\n\r", ch );
+ send_to_char( "They aren't here.\n", ch );
  return;
     }
     
     if ( victim == ch )
     {
- send_to_char( "That's pointless.\n\r", ch );
+ send_to_char( "That's pointless.\n", ch );
  return;
     }
 
     if ( IS_NPC(victim) )
     {
- send_to_char( "That would be a waste of time.\n\r", ch );
+ send_to_char( "That would be a waste of time.\n", ch );
  return;
     }
 
     if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
- send_to_char( "This isn't a good place to do that.\n\r", ch );
+ send_to_char( "This isn't a good place to do that.\n", ch );
  return;
     }
 
     if ( ch->position == POS_FIGHTING )
     {
-        send_to_char( "Interesting combat technique.\n\r" , ch );
+        send_to_char( "Interesting combat technique.\n" , ch );
         return;
     }
     
     if ( ch->position <= POS_SLEEPING )
     {
-        send_to_char( "In your dreams or what?\n\r" , ch );
+        send_to_char( "In your dreams or what?\n" , ch );
         return;
     }
 
     if ( victim->in_room->vnum == 6)
     {
-      send_to_char( "Only an immortal can unhell someone.\n\r", ch );
+      send_to_char( "Only an immortal can unhell someone.\n", ch );
       return;
     }   
-    send_to_char( "Jail restrictions released.\n\r", ch );
+    send_to_char( "Jail restrictions released.\n", ch );
     victim->pcdata->jail_vnum = 0;
     victim->pcdata->release_date = 0;
     return;
@@ -4486,7 +4486,7 @@ void do_jail ( CHAR_DATA *ch , char *argument )
     
     if ( !ch->pcdata || ( clan = ch->pcdata->clan ) == NULL )
     {
- send_to_char( "Only members of organizations can jail their enemies.\n\r", ch );
+ send_to_char( "Only members of organizations can jail their enemies.\n", ch );
  return;
     }
 
@@ -4496,7 +4496,7 @@ void do_jail ( CHAR_DATA *ch , char *argument )
     
     if ( !jail )
     {
- send_to_char( "Your orginization does not have a suitable prison.\n\r", ch );
+ send_to_char( "Your orginization does not have a suitable prison.\n", ch );
  return;
     }
 
@@ -4504,76 +4504,76 @@ void do_jail ( CHAR_DATA *ch , char *argument )
     && jail->area != ch->in_room->area &&
     ( !jail->area->planet || jail->area->planet != ch->in_room->area->planet ) )
     {
-         send_to_char( "Your organizations prison is to far away.\n\r", ch );
+         send_to_char( "Your organizations prison is to far away.\n", ch );
   return;
     }
         
     if ( ch->mount )
     {
- send_to_char( "You can't do that while mounted.\n\r", ch );
+ send_to_char( "You can't do that while mounted.\n", ch );
  return;
     }
 
     if ( arg[0] == '\0' )
     {
- send_to_char( "Jail who?\n\r", ch );
+ send_to_char( "Jail who?\n", ch );
  return;
     }
 
     if ( ( victim = get_char_room( ch, arg ) ) == NULL )
     {
- send_to_char( "They aren't here.\n\r", ch );
+ send_to_char( "They aren't here.\n", ch );
  return;
     }
 
     if ( victim == ch )
     {
- send_to_char( "That's pointless.\n\r", ch );
+ send_to_char( "That's pointless.\n", ch );
  return;
     }
 
     if ( IS_NPC(victim) )
     {
- send_to_char( "That would be a waste of time.\n\r", ch );
+ send_to_char( "That would be a waste of time.\n", ch );
  return;
     }
 
     if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
- send_to_char( "This isn't a good place to do that.\n\r", ch );
+ send_to_char( "This isn't a good place to do that.\n", ch );
  return;
     }
 
     if ( ch->position == POS_FIGHTING )
     {
-        send_to_char( "Interesting combat technique.\n\r" , ch );
+        send_to_char( "Interesting combat technique.\n" , ch );
         return;
     }
     
     if ( ch->position <= POS_SLEEPING )
     {
-        send_to_char( "In your dreams or what?\n\r" , ch );
+        send_to_char( "In your dreams or what?\n" , ch );
         return;
     }
     
   argument = one_argument(argument, arg);
   if ( !*arg || !is_number(arg) )
   {
-    send_to_char( "Jail them for how long?\n\r", ch );
+    send_to_char( "Jail them for how long?\n", ch );
     return;
   }
 
   time = atoi(arg);
   if ( time < 0 )
   {
-    send_to_char( "You cannot hell for negative time.\n\r", ch );
+    send_to_char( "You cannot hell for negative time.\n", ch );
     return;
   }
   time = atoi(arg);
   if ( time == 0 && victim->in_room->vnum != 6)
   {
-    send_to_char( "Jail restrictions released.\n\r", ch );
+    send_to_char( "Jail restrictions released.\n", ch );
     victim->pcdata->jail_vnum = 0;
     victim->pcdata->release_date = 0;
     return;
@@ -4581,7 +4581,7 @@ void do_jail ( CHAR_DATA *ch , char *argument )
 
   if ( victim->position >= POS_SLEEPING )
   {
-      send_to_char( "You will have to stun them first.\n\r" , ch );
+      send_to_char( "You will have to stun them first.\n" , ch );
       return;
   }
 
@@ -4591,12 +4591,12 @@ void do_jail ( CHAR_DATA *ch , char *argument )
     h_d = TRUE;
   else if ( str_prefix(arg, "days") )
   {
-    send_to_char( "Is that value in hours or days?\n\r", ch );
+    send_to_char( "Is that value in hours or days?\n", ch );
     return;
   }
   else if ( time > 30 )
   {
-    send_to_char( "You may not hell a person for more than 30 days at a time.\n\r", ch );
+    send_to_char( "You may not hell a person for more than 30 days at a time.\n", ch );
     return;
   }
   tms = localtime(&current_time);
@@ -4607,15 +4607,15 @@ void do_jail ( CHAR_DATA *ch , char *argument )
   victim->pcdata->release_date = mktime(tms);
   victim->pcdata->helled_by = STRALLOC(ch->name);
   victim->pcdata->jail_vnum = jail->vnum;
-  ch_printf(ch, "%s will be released from jail at %24.24s.\n\r", victim->name,
+  ch_printf(ch, "%s will be released from jail at %24.24s.\n", victim->name,
           ctime(&victim->pcdata->release_date));
   act(AT_MAGIC, "$n is dragged away.", victim, NULL, ch, TO_NOTVICT);
   char_from_room(victim);
     char_to_room ( victim , jail );
   act(AT_MAGIC, "$n is dragged in.", victim, NULL, ch, TO_NOTVICT);
   do_look(victim, "auto");
-  ch_printf(victim, "Whoops. You broke too many laws.\n\r"
-          "You shall remain in jail for %d %s%s.\n\r", time,
+  ch_printf(victim, "Whoops. You broke too many laws.\n"
+          "You shall remain in jail for %d %s%s.\n", time,
           (h_d ? "hour" : "day"), (time == 1 ? "" : "s"));
   save_char_obj(victim); /* used to save ch, fixed by Thoric 09/17/96 */
 
@@ -4635,70 +4635,70 @@ void do_smalltalk ( CHAR_DATA *ch , char *argument )
     
    if ( IS_NPC(ch) || !ch->pcdata )
    {
-       send_to_char( "What would be the point of that.\n\r", ch );
+       send_to_char( "What would be the point of that.\n", ch );
    }
     
     argument = one_argument( argument, arg1 );
 
     if ( ch->mount )
     {
- send_to_char( "You can't do that while mounted.\n\r", ch );
+ send_to_char( "You can't do that while mounted.\n", ch );
  return;
     }
 
     if ( arg1[0] == '\0' )
     {
- send_to_char( "Create smalltalk with whom?\n\r", ch );
+ send_to_char( "Create smalltalk with whom?\n", ch );
  return;
     }
 
     if ( ( victim = get_char_room( ch, arg1 ) ) == NULL )
     {
- send_to_char( "They aren't here.\n\r", ch );
+ send_to_char( "They aren't here.\n", ch );
  return;
     }
 
     if ( victim == ch )
     {
- send_to_char( "That's pointless.\n\r", ch );
+ send_to_char( "That's pointless.\n", ch );
  return;
     }
 
     if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
- send_to_char( "This isn't a good place to do that.\n\r", ch );
+ send_to_char( "This isn't a good place to do that.\n", ch );
  return;
     }
 
     if ( ch->position == POS_FIGHTING )
     {
-        send_to_char( "Interesting combat technique.\n\r" , ch );
+        send_to_char( "Interesting combat technique.\n" , ch );
         return;
     }
     
     if ( victim->position == POS_FIGHTING )
     {
-        send_to_char( "They're a little busy right now.\n\r" , ch );
+        send_to_char( "They're a little busy right now.\n" , ch );
         return;
     }
     
 
     if ( !IS_NPC(victim) || victim->vip_flags == 0 )
     {
-        send_to_char( "Diplomacy would be wasted on them.\n\r" , ch );
+        send_to_char( "Diplomacy would be wasted on them.\n" , ch );
         return;
     }
     
     if ( ch->position <= POS_SLEEPING )
     {
-        send_to_char( "In your dreams or what?\n\r" , ch );
+        send_to_char( "In your dreams or what?\n" , ch );
         return;
     }
     
     if ( victim->position <= POS_SLEEPING )
     {
-        send_to_char( "You might want to wake them first...\n\r" , ch );
+        send_to_char( "You might want to wake them first...\n" , ch );
         return;
     }
 
@@ -4709,9 +4709,9 @@ void do_smalltalk ( CHAR_DATA *ch , char *argument )
  /*
   * Failure.
   */
- send_to_char( "You attempt to make smalltalk with them.. but are ignored.\n\r", ch );
- act( AT_ACTION, "$n is really getting on your nerves with all this chatter!\n\r", ch, NULL, victim, TO_VICT    );
- act( AT_ACTION, "$n asks $N about the weather but is ignored.\n\r",  ch, NULL, victim, TO_NOTVICT );
+ send_to_char( "You attempt to make smalltalk with them.. but are ignored.\n", ch );
+ act( AT_ACTION, "$n is really getting on your nerves with all this chatter!\n", ch, NULL, victim, TO_VICT    );
+ act( AT_ACTION, "$n asks $N about the weather but is ignored.\n",  ch, NULL, victim, TO_NOTVICT );
 
         if ( victim->alignment < -500 && victim->top_level >= ch->top_level+5 )
  {
@@ -4723,9 +4723,9 @@ void do_smalltalk ( CHAR_DATA *ch , char *argument )
  return;
     }
     
-    send_to_char( "You strike up a short conversation with them.\n\r", ch );
-    act( AT_ACTION, "$n smiles at you and says, 'hello'.\n\r", ch, NULL, victim, TO_VICT    );
-    act( AT_ACTION, "$n chats briefly with $N.\n\r",  ch, NULL, victim, TO_NOTVICT );
+    send_to_char( "You strike up a short conversation with them.\n", ch );
+    act( AT_ACTION, "$n smiles at you and says, 'hello'.\n", ch, NULL, victim, TO_VICT    );
+    act( AT_ACTION, "$n chats briefly with $N.\n",  ch, NULL, victim, TO_NOTVICT );
     
     if ( IS_NPC(ch) || !ch->pcdata || !ch->pcdata->clan || !ch->in_room->area || !ch->in_room->area->planet )
       return;
@@ -4739,10 +4739,10 @@ void do_smalltalk ( CHAR_DATA *ch , char *argument )
        return;
 
     planet->pop_support += 0.2;
-    send_to_char( "Popular support for your organization increases slightly.\n\r", ch );
+    send_to_char( "Popular support for your organization increases slightly.\n", ch );
 
     gain_exp(ch, victim->top_level*10, DIPLOMACY_ABILITY);
-    ch_printf( ch , "You gain %d diplomacy experience.\n\r", victim->top_level*10 );
+    ch_printf( ch , "You gain %d diplomacy experience.\n", victim->top_level*10 );
 
     learn_from_success( ch, gsn_smalltalk );
         
@@ -4760,7 +4760,7 @@ void do_propeganda ( CHAR_DATA *ch , char *argument )
 
    if ( IS_NPC(ch) || !ch->pcdata || !ch->in_room->area || !ch->in_room->area->planet || !ch->pcdata->clan)
    {
-       send_to_char( "What would be the point of that.\n\r", ch );
+       send_to_char( "What would be the point of that.\n", ch );
        return;
    }
 
@@ -4768,63 +4768,63 @@ void do_propeganda ( CHAR_DATA *ch , char *argument )
 
     if ( ch->mount )
     {
- send_to_char( "You can't do that while mounted.\n\r", ch );
+ send_to_char( "You can't do that while mounted.\n", ch );
  return;
     }
 
     if ( arg1[0] == '\0' )
     {
- send_to_char( "Spread propeganda to who?\n\r", ch );
+ send_to_char( "Spread propeganda to who?\n", ch );
  return;
     }
 
     if ( ( victim = get_char_room( ch, arg1 ) ) == NULL )
     {
- send_to_char( "They aren't here.\n\r", ch );
+ send_to_char( "They aren't here.\n", ch );
  return;
     }
 
     if ( victim == ch )
     {
- send_to_char( "That's pointless.\n\r", ch );
+ send_to_char( "That's pointless.\n", ch );
  return;
     }
 
     if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
- send_to_char( "This isn't a good place to do that.\n\r", ch );
+ send_to_char( "This isn't a good place to do that.\n", ch );
  return;
     }
 
     if ( ch->position == POS_FIGHTING )
     {
-        send_to_char( "Interesting combat technique.\n\r" , ch );
+        send_to_char( "Interesting combat technique.\n" , ch );
         return;
     }
 
     if ( victim->position == POS_FIGHTING )
     {
-        send_to_char( "They're a little busy right now.\n\r" , ch );
+        send_to_char( "They're a little busy right now.\n" , ch );
         return;
     }
 
 
     if ( victim->vip_flags == 0 )
     {
-        send_to_char( "Diplomacy would be wasted on them.\n\r" , ch );
+        send_to_char( "Diplomacy would be wasted on them.\n" , ch );
         return;
     }
 
     if ( ch->position <= POS_SLEEPING )
     {
-        send_to_char( "In your dreams or what?\n\r" , ch );
+        send_to_char( "In your dreams or what?\n" , ch );
         return;
     }
 
     if ( victim->position <= POS_SLEEPING )
     {
-        send_to_char( "You might want to wake them first...\n\r" , ch );
+        send_to_char( "You might want to wake them first...\n" , ch );
         return;
     }
 
@@ -4834,8 +4834,8 @@ void do_propeganda ( CHAR_DATA *ch , char *argument )
     {
     SPRINTF( buf, "You speak to them about the evils of %s" , planet->governed_by ? planet->governed_by->name : "their current leaders" );
     ch_printf( ch, buf );
-    act( AT_ACTION, "$n speaks about the planets organization.\n\r", ch, NULL, victim, TO_VICT    );
-    act( AT_ACTION, "$n tells $N about the evils of their organization.\n\r",  ch, NULL, victim, TO_NOTVICT );
+    act( AT_ACTION, "$n speaks about the planets organization.\n", ch, NULL, victim, TO_VICT    );
+    act( AT_ACTION, "$n tells $N about the evils of their organization.\n",  ch, NULL, victim, TO_NOTVICT );
     }
    if ( ch->pcdata->clan )
    {
@@ -4845,10 +4845,10 @@ void do_propeganda ( CHAR_DATA *ch , char *argument )
 
 
     SPRINTF( buf, ", and the evils of %s" , planet->governed_by ? planet->governed_by->name : "their current leaders" );
-    ch_printf( ch, "You speak to them about the benifits of the %s%s.\n\r", ch->pcdata->clan->name,
+    ch_printf( ch, "You speak to them about the benifits of the %s%s.\n", ch->pcdata->clan->name,
         planet->governed_by == clan ? "" : buf );
-    act( AT_ACTION, "$n speaks about his organization.\n\r", ch, NULL, victim, TO_VICT    );
-    act( AT_ACTION, "$n tells $N about their organization.\n\r",  ch, NULL, victim, TO_NOTVICT );
+    act( AT_ACTION, "$n speaks about his organization.\n", ch, NULL, victim, TO_VICT    );
+    act( AT_ACTION, "$n tells $N about their organization.\n",  ch, NULL, victim, TO_NOTVICT );
    }
     WAIT_STATE( ch, skill_table[gsn_propeganda]->beats );
 
@@ -4868,16 +4868,16 @@ void do_propeganda ( CHAR_DATA *ch , char *argument )
     if ( planet->governed_by == clan )
     {
        planet->pop_support += .5 + ch->top_level/50;
-       send_to_char( "Popular support for your organization increases.\n\r", ch );
+       send_to_char( "Popular support for your organization increases.\n", ch );
     }
     else
     {
        planet->pop_support -= ch->top_level/50;
-       send_to_char( "Popular support for the current government decreases.\n\r", ch );
+       send_to_char( "Popular support for the current government decreases.\n", ch );
     }
 
     gain_exp(ch, victim->top_level*100, DIPLOMACY_ABILITY);
-    ch_printf( ch , "You gain %d diplomacy experience.\n\r", victim->top_level*100 );
+    ch_printf( ch , "You gain %d diplomacy experience.\n", victim->top_level*100 );
 
     learn_from_success( ch, gsn_propeganda );
 
@@ -4899,7 +4899,7 @@ void do_bribe ( CHAR_DATA *ch , char *argument )
 
     if ( IS_NPC(ch) || !ch->pcdata || !ch->pcdata->clan || !ch->in_room->area || !ch->in_room->area->planet )
     {
-      send_to_char( "What would be the point of that.\n\r", ch );
+      send_to_char( "What would be the point of that.\n", ch );
       return;
     }
     
@@ -4907,13 +4907,13 @@ void do_bribe ( CHAR_DATA *ch , char *argument )
 
     if ( ch->mount )
     {
-      send_to_char( "You can't do that while mounted.\n\r", ch );
+      send_to_char( "You can't do that while mounted.\n", ch );
       return;
     }
 
     if ( argument[0] == '\0' )
     {
-      send_to_char( "Bribe who how much?\n\r", ch );
+      send_to_char( "Bribe who how much?\n", ch );
       return;
     }
 
@@ -4921,71 +4921,71 @@ void do_bribe ( CHAR_DATA *ch , char *argument )
 
     if ( ( victim = get_char_room( ch, arg1 ) ) == NULL )
     {
-      send_to_char( "They aren't here.\n\r", ch );
+      send_to_char( "They aren't here.\n", ch );
       return;
     }
 
     if ( victim == ch )
     {
-      send_to_char( "That's pointless.\n\r", ch );
+      send_to_char( "That's pointless.\n", ch );
       return;
     }
 
     if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
       set_char_color( AT_MAGIC, ch );
-      send_to_char( "This isn't a good place to do that.\n\r", ch );
+      send_to_char( "This isn't a good place to do that.\n", ch );
       return;
     }
 
     if ( amount <= 0 )
     {
-      send_to_char( "A little bit more money would be a good plan.\n\r", ch );
+      send_to_char( "A little bit more money would be a good plan.\n", ch );
       return;
     }
     
     if ( ch->gold < amount )
     {
-        send_to_char( "Try getting that amount first.\n\r" , ch );
+        send_to_char( "Try getting that amount first.\n" , ch );
     return;
     }
 
     if ( ch->position == POS_FIGHTING )
     {
-        send_to_char( "Interesting combat technique.\n\r" , ch );
+        send_to_char( "Interesting combat technique.\n" , ch );
         return;
     }
     
     if ( victim->position == POS_FIGHTING )
     {
-        send_to_char( "They're a little busy right now.\n\r" , ch );
+        send_to_char( "They're a little busy right now.\n" , ch );
         return;
     }
     
     if ( ch->position <= POS_SLEEPING )
     {
-        send_to_char( "In your dreams or what?\n\r" , ch );
+        send_to_char( "In your dreams or what?\n" , ch );
         return;
     }
     
     if ( victim->position <= POS_SLEEPING )
     {
-        send_to_char( "You might want to wake them first...\n\r" , ch );
+        send_to_char( "You might want to wake them first...\n" , ch );
         return;
     }
 
     if ( victim->vip_flags == 0 )
     {
-        send_to_char( "Diplomacy would be wasted on them.\n\r" , ch );
+        send_to_char( "Diplomacy would be wasted on them.\n" , ch );
         return;
     }
     
     ch->gold -= amount;
     victim->gold += amount;
 
-    ch_printf( ch, "You give them a small gift on behalf of %s.\n\r", ch->pcdata->clan->name );
-    act( AT_ACTION, "$n offers you a small bribe.\n\r", ch, NULL, victim, TO_VICT    );
-    act( AT_ACTION, "$n gives $N some money.\n\r",  ch, NULL, victim, TO_NOTVICT );
+    ch_printf( ch, "You give them a small gift on behalf of %s.\n", ch->pcdata->clan->name );
+    act( AT_ACTION, "$n offers you a small bribe.\n", ch, NULL, victim, TO_VICT    );
+    act( AT_ACTION, "$n gives $N some money.\n",  ch, NULL, victim, TO_NOTVICT );
 
     if ( !IS_NPC( victim ) )
        return;
@@ -5004,12 +5004,12 @@ void do_bribe ( CHAR_DATA *ch , char *argument )
     if ( clan == planet->governed_by )
     {
       planet->pop_support += urange_float(0.1f, amount / 1000.0f, 2.0f); 
-      send_to_char( "Popular support for your organization increases slightly.\n\r", ch );
+      send_to_char( "Popular support for your organization increases slightly.\n", ch );
 
       amount = UMIN( amount ,( exp_level(ch->skill_level[DIPLOMACY_ABILITY]+1) - exp_level(ch->skill_level[DIPLOMACY_ABILITY]) ) );
 
       gain_exp(ch, amount , DIPLOMACY_ABILITY);
-      ch_printf( ch , "You gain %d diplomacy experience.\n\r", amount );
+      ch_printf( ch , "You gain %d diplomacy experience.\n", amount );
 
       learn_from_success( ch, gsn_bribe );
     }
@@ -5028,13 +5028,13 @@ void do_seduce ( CHAR_DATA *ch , char *argument )
 
   if ( arg[0] == '\0' )
   {
-  send_to_char( "Seduce whom?\n\r", ch );
+  send_to_char( "Seduce whom?\n", ch );
   return;
   }
 
   if ( ( victim = get_char_room( ch, arg ) ) == NULL )
   {
-  send_to_char( "They aren't here.\n\r", ch );
+  send_to_char( "They aren't here.\n", ch );
   return;
   }
 
@@ -5047,7 +5047,7 @@ void do_seduce ( CHAR_DATA *ch , char *argument )
 
       if ( circle_follow( victim, ch ) )
     {
- send_to_char( "Following in loops is not allowed... sorry.\n\r", ch );
+ send_to_char( "Following in loops is not allowed... sorry.\n", ch );
  return;
     }
 
@@ -5056,7 +5056,7 @@ void do_seduce ( CHAR_DATA *ch , char *argument )
 
     if ( victim->top_level - get_curr_cha(ch) > ch->pcdata->learned[gsn_seduce] )
     {
-      send_to_char("You failed.\n\r", ch);
+      send_to_char("You failed.\n", ch);
       SPRINTF(buf, "%s failed to seduce you.", ch->name);
       send_to_char(buf, victim);
       global_retcode = multi_hit( victim, ch, TYPE_UNDEFINED );
@@ -5084,32 +5084,32 @@ void do_mass_propeganda ( CHAR_DATA *ch , char *argument )
 
     if ( IS_NPC(ch) || !ch->pcdata || !ch->pcdata->clan || !ch->in_room->area || !ch->in_room->area->planet )
     {
-        send_to_char( "What would be the point of that.\n\r", ch );
+        send_to_char( "What would be the point of that.\n", ch );
         return;
     }
         
     if ( ch->mount )
     {
-        send_to_char( "You can't do that while mounted.\n\r", ch );
+        send_to_char( "You can't do that while mounted.\n", ch );
         return;
     }
 
     if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
         set_char_color( AT_MAGIC, ch );
-        send_to_char( "This isn't a good place to do that.\n\r", ch );
+        send_to_char( "This isn't a good place to do that.\n", ch );
         return;
     }
 
     if ( ch->position == POS_FIGHTING )
     {
-        send_to_char( "Interesting combat technique.\n\r" , ch );
+        send_to_char( "Interesting combat technique.\n" , ch );
         return;
     }
     
     if ( ch->position <= POS_SLEEPING )
     {
-        send_to_char( "In your dreams or what?\n\r" , ch );
+        send_to_char( "In your dreams or what?\n" , ch );
         return;
     }
     
@@ -5119,9 +5119,9 @@ void do_mass_propeganda ( CHAR_DATA *ch , char *argument )
     planet = ch->in_room->area->planet;
         
     SPRINTF( buf, ", and the evils of %s" , planet->governed_by ? planet->governed_by->name : "their current leaders" );
-    ch_printf( ch, "You speak to the people about the benifits of the %s%s.\n\r", ch->pcdata->clan->name,
+    ch_printf( ch, "You speak to the people about the benifits of the %s%s.\n", ch->pcdata->clan->name,
         planet->governed_by == clan ? "" : buf );
-    act( AT_ACTION, "$n speaks about his organization.\n\r", ch, NULL, NULL, TO_ROOM    );
+    act( AT_ACTION, "$n speaks about his organization.\n", ch, NULL, NULL, TO_ROOM    );
 
     WAIT_STATE( ch, skill_table[gsn_masspropeganda]->beats );
 
@@ -5147,16 +5147,16 @@ void do_mass_propeganda ( CHAR_DATA *ch , char *argument )
         if ( planet->governed_by == clan )
         { 
             planet->pop_support += (.5 + ch->top_level/10)*victims;
-            send_to_char( "Popular support for your organization increases.\n\r", ch );
+            send_to_char( "Popular support for your organization increases.\n", ch );
         }     
         else
         {
             planet->pop_support -= (ch->top_level/10)*victims;
-            send_to_char( "Popular support for the current government decreases.\n\r", ch );
+            send_to_char( "Popular support for the current government decreases.\n", ch );
         }
     
         gain_exp(ch, ch->top_level*100, DIPLOMACY_ABILITY);
-        ch_printf( ch , "You gain %d political experience.\n\r", ch->top_level*100 );
+        ch_printf( ch , "You gain %d political experience.\n", ch->top_level*100 );
     
         learn_from_success( ch, gsn_masspropeganda );
         
@@ -5169,7 +5169,7 @@ void do_mass_propeganda ( CHAR_DATA *ch , char *argument )
     }
     else
     {
-        send_to_char("They don't even seem interested in what you have to say.\n\r",ch);
+        send_to_char("They don't even seem interested in what you have to say.\n",ch);
         return;
     }
     return;
@@ -5192,7 +5192,7 @@ void do_gather_intelligence ( CHAR_DATA *ch , char *argument )
 
   {
 
-    send_to_char("You must input a name.\n\r", ch);
+    send_to_char("You must input a name.\n", ch);
 
     return;
 
@@ -5210,7 +5210,7 @@ void do_gather_intelligence ( CHAR_DATA *ch , char *argument )
 
   {
 
-    send_to_char("You fail to gather information on that individual.\n\r", ch);
+    send_to_char("You fail to gather information on that individual.\n", ch);
 
     return;
 
@@ -5221,7 +5221,7 @@ void do_gather_intelligence ( CHAR_DATA *ch , char *argument )
   if(IS_NPC(victim))
 
   {
-    send_to_char("This person has not made much of a name for himself!\n\r", ch);
+    send_to_char("This person has not made much of a name for himself!\n", ch);
     return;
   }
 
@@ -5374,19 +5374,19 @@ void do_bind ( CHAR_DATA *ch , char *argument )
   
     if ( argument[0] == '\0' )
     {
- send_to_char( "Bind whom?\n\r", ch );
+ send_to_char( "Bind whom?\n", ch );
  return;
     }
 
     if ( ( victim = get_char_room( ch, argument ) ) == NULL )
     {
- send_to_char( "They aren't here.\n\r", ch );
+ send_to_char( "They aren't here.\n", ch );
  return;
     }
 
     if ( victim == ch )
     {
- send_to_char( "Suicide is a mortal sin.\n\r", ch );
+ send_to_char( "Suicide is a mortal sin.\n", ch );
  return;
     }
 
@@ -5409,7 +5409,7 @@ void do_bind ( CHAR_DATA *ch , char *argument )
 
     if ( ch->position == POS_FIGHTING )
     {
- send_to_char( "You are a little busy!\n\r", ch );
+ send_to_char( "You are a little busy!\n", ch );
  return;
     }
 
@@ -5419,7 +5419,7 @@ void do_bind ( CHAR_DATA *ch , char *argument )
 
     if ( IS_NPC(victim) || number_percent( ) > ch->pcdata->learned[gsn_bind] )
     {
- send_to_char( "You fail.\n\r", ch );
+ send_to_char( "You fail.\n", ch );
  return;
     }
 
@@ -5471,7 +5471,7 @@ void do_cutdoor( CHAR_DATA *ch, char *argument )
    if ( ( wield = get_eq_char( ch, WEAR_WIELD ) ) == NULL ||
             ( ( wield->value[3] != WEAPON_LIGHTSABER ) && ( wield->value[3] != WEAPON_FORCE_PIKE ) ) )
  {
-     send_to_char( "You need a lightsaber for that!\n\r", ch );
+     send_to_char( "You need a lightsaber for that!\n", ch );
      return;
  }
 
@@ -5482,7 +5482,7 @@ void do_cutdoor( CHAR_DATA *ch, char *argument )
  if ( !IS_NPC( ch )
  && ( (whichweap ? ch->pcdata->learned[gsn_lightsabers] <= 0 : ch->pcdata->learned[gsn_force_pikes] <= 0) || ch->pcdata->learned[gsn_cutdoor] <= 0 ))
  {
-     send_to_char( "You can not use it well enough to cut a door open.\n\r", ch );
+     send_to_char( "You can not use it well enough to cut a door open.\n", ch );
      return;
  }
 
@@ -5490,13 +5490,13 @@ void do_cutdoor( CHAR_DATA *ch, char *argument )
 
  if ( arg[0] == '\0' )
  {
-     send_to_char( "Cut what?\n\r", ch );
+     send_to_char( "Cut what?\n", ch );
      return;
  }
 
  if ( ch->fighting )
  {
-     send_to_char( "You can't break off your fight.\n\r", ch );
+     send_to_char( "You can't break off your fight.\n", ch );
      return;
  }
 
@@ -5509,7 +5509,7 @@ void do_cutdoor( CHAR_DATA *ch, char *argument )
 
      if ( !IS_SET( pexit->exit_info, EX_CLOSED ) )
      {
-  send_to_char( "It is already open.\n\r", ch );
+  send_to_char( "It is already open.\n", ch );
   return;
      }
 
@@ -5609,13 +5609,13 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
      default:
       if ( ch->race != RACE_WOOKIEE )
                 {
-                  send_to_char( "&ROnly wookiees have the knowledge to craft bowcasters.\n\r&w", ch);
+                  send_to_char( "&ROnly wookiees have the knowledge to craft bowcasters.\n&w", ch);
                   return;   
                 }
       
              if ( arg[0] == '\0' )
                 {
-                  send_to_char( "&RUsage: Makebowcaster <name>\n\r&w", ch);
+                  send_to_char( "&RUsage: Makebowcaster <name>\n&w", ch);
                   return;   
                 }
 
@@ -5628,7 +5628,7 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
 
                 if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n\r", ch);
+                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
                 }
                 
@@ -5650,37 +5650,37 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
                 
                 if ( !checktool )
                 {
-                   send_to_char( "&RYou need toolkit to make a blaster.\n\r", ch);
+                   send_to_char( "&RYou need toolkit to make a blaster.\n", ch);
                    return;
                 }
  
                 if ( !checkdura )
                 {
-                   send_to_char( "&RYou need something to make it out of.\n\r", ch);
+                   send_to_char( "&RYou need something to make it out of.\n", ch);
                    return;
                 }
 
                 if ( !checkoil )
                 {
-                   send_to_char( "&RYou need something to greeze the wood with.\n\r", ch);
+                   send_to_char( "&RYou need something to greeze the wood with.\n", ch);
                    return;
                 }
                 
                 if ( !checkoven )
                 {
-                   send_to_char( "&RYou need a small furnace to heat the plastics.\n\r", ch);
+                   send_to_char( "&RYou need a small furnace to heat the plastics.\n", ch);
                    return;
                 }
                 
                 if ( !checkbow )
                 {
-                   send_to_char( "&RYou need a crossbow to start with.\n\r", ch);
+                   send_to_char( "&RYou need a crossbow to start with.\n", ch);
                    return;
                 }
                 
                 if ( !checktinder )
                 {
-                   send_to_char( "&RYou need wood to complete your bowcaster.\n\r", ch);
+                   send_to_char( "&RYou need wood to complete your bowcaster.\n", ch);
                    return;
                 }
  
@@ -5688,14 +5688,14 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_makebowcaster]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of making a bowcaster.\n\r", ch);
+         send_to_char( "&GYou begin the long process of making a bowcaster.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and a small oven and begins to work on something.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 25 , do_makebowcaster , 1 );
          ch->dest_buf   = str_dup(arg);
          return;
          }
-         send_to_char("&RYou can't figure out how to fit the parts together.\n\r",ch);
+         send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
          learn_from_failure( ch, gsn_makebowcaster );
          return; 
      
@@ -5709,7 +5709,7 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n\r", ch);
+             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
     }
     
@@ -5720,7 +5720,7 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
     
     if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
     {
-         send_to_char( "&RThe item you are trying to create is missing from the database.\n\rPlease inform the administration of this error.\n\r", ch );
+         send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
          return;
     }
 
@@ -5792,9 +5792,9 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
                 
     if ( number_percent( ) > chance*2  || ( !checktool ) || ( !checkdura ) || ( !checkoil ) || ( !checkoven )  || ( !checktinder ) || ( !checkbow) )
     {
-       send_to_char( "&RYou hold up your new bowcaster and aim at a leftover piece of plastic.\n\r", ch);
-       send_to_char( "&RYou slowly draw back the bolt and squeeze the trigger hoping for the best...\n\r", ch);
-       send_to_char( "&RYour bowcaster backfires destroying the firing mechanism and ruining your work.\n\r", ch);
+       send_to_char( "&RYou hold up your new bowcaster and aim at a leftover piece of plastic.\n", ch);
+       send_to_char( "&RYou slowly draw back the bolt and squeeze the trigger hoping for the best...\n", ch);
+       send_to_char( "&RYour bowcaster backfires destroying the firing mechanism and ruining your work.\n", ch);
        learn_from_failure( ch, gsn_makebowcaster );
        return;
     }
@@ -5844,7 +5844,7 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
                                                                    
     obj = obj_to_char( obj, ch );
                                                             
-    send_to_char( "&GYou finish your work and hold up your newest bowcaster.&w\n\r", ch);
+    send_to_char( "&GYou finish your work and hold up your newest bowcaster.&w\n", ch);
     act( AT_PLAIN, "$n finishes making $s new bowcaster.", ch,
          NULL, argument , TO_ROOM );
     
@@ -5883,7 +5883,7 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
 
              if ( !argument || argument[0] == '\0' || arg2[0] == '\0' || arg1[0] == '\0' )
                 {
-                  send_to_char( "&RUsage: Makedisguise <sex> <race> <name>\n\r&w", ch);
+                  send_to_char( "&RUsage: Makedisguise <sex> <race> <name>\n&w", ch);
                   return;   
                 }
 
@@ -5893,7 +5893,7 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
                 
                 if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n\r", ch);
+                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
                 }
                 
@@ -5909,30 +5909,30 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
                 
                 if( (sex = atoi(arg1)) > 2 || sex < 0 )
                 {
-                   send_to_char( "&RSex choices: 0 neutral, 1 male, 2 female.\n\r", ch);
+                   send_to_char( "&RSex choices: 0 neutral, 1 male, 2 female.\n", ch);
                    return;
                 }
                 if( (race = atoi(arg2)) > 33 || sex < 0 )
                 {
-                   send_to_char( "&RIncorrect race: Help race for options, from 0 to 33.\n\r", ch);
+                   send_to_char( "&RIncorrect race: Help race for options, from 0 to 33.\n", ch);
                    return;
                 }
                 
                 if ( !checkneedle )
                 {
-                   send_to_char( "&RYou need need and thread to make a blaster.\n\r", ch);
+                   send_to_char( "&RYou need need and thread to make a blaster.\n", ch);
                    return;
                 }
  
                 if ( !checkfabric )
                 {
-                   send_to_char( "&RYou need something to make it out of.\n\r", ch);
+                   send_to_char( "&RYou need something to make it out of.\n", ch);
                    return;
                 }
 
 //                if ( !checkhair )
 //                {
-//                   send_to_char( "&RYou need a power source for your blaster.\n\r", ch);
+//                   send_to_char( "&RYou need a power source for your blaster.\n", ch);
 //                   return;
 //                }
                 
@@ -5941,7 +5941,7 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
                   : (int) (ch->pcdata->learned[gsn_disguise]);
                 if ( number_percent( ) < chance )
       {
-         send_to_char( "&GYou begin the long process of making a disguise.\n\r", ch);
+         send_to_char( "&GYou begin the long process of making a disguise.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and a small oven and begins to work on something.", ch,
           NULL, argument , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 25 , do_makedisguise , 1 );
@@ -5949,7 +5949,7 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
          ch->dest_buf_2   = str_dup(argument);
          return;
          }
-         send_to_char("&RYou can't figure out how to fit the parts together.\n\r",ch);
+         send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
          learn_from_failure( ch, gsn_disguise );
          return; 
      
@@ -5965,7 +5965,7 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
      case SUB_TIMER_DO_ABORT:
       DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n\r", ch);
+             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
     }
     
@@ -5980,7 +5980,7 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
     
     if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
     {
-         send_to_char( "&RThe item you are trying to create is missing from the database.\n\rPlease inform the administration of this error.\n\r", ch );
+         send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
          return;
     }
 
@@ -6014,9 +6014,9 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
                 
     if ( number_percent( ) > chance*2  || ( !checkneedle ) || ( !checkfabric ) )
     {
-//     send_to_char( "&RYou hold up your new blaster and aim at a leftover piece of plastic.\n\r", ch);
-//     send_to_char( "&RYou slowly squeeze the trigger hoping for the best...\n\r", ch);
-       send_to_char( "&RYour blaster backfires destroying your weapon and burning your hand.\n\r", ch);
+//     send_to_char( "&RYou hold up your new blaster and aim at a leftover piece of plastic.\n", ch);
+//     send_to_char( "&RYou slowly squeeze the trigger hoping for the best...\n", ch);
+       send_to_char( "&RYour blaster backfires destroying your weapon and burning your hand.\n", ch);
        learn_from_failure( ch, gsn_disguise );
        return;
     }
@@ -6046,7 +6046,7 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
                                                                    
     obj = obj_to_char( obj, ch );
                                                             
-    send_to_char( "&GYou finish your work and hold up your newly created disguise.&w\n\r", ch);
+    send_to_char( "&GYou finish your work and hold up your newly created disguise.&w\n", ch);
     act( AT_PLAIN, "$n finishes making $s new disguise.", ch,
          NULL, argument , TO_ROOM );
     
@@ -6070,7 +6070,7 @@ void do_makemedpac( CHAR_DATA *ch, char *argument )
 
     if( !IS_NPC(ch) && ch->pcdata->learned[gsn_makemedpac] == 0 )
     {
- send_to_char("Huh?\n\r",ch);
+ send_to_char("Huh?\n",ch);
  return;
     }
 
@@ -6080,7 +6080,7 @@ void do_makemedpac( CHAR_DATA *ch, char *argument )
     case 0:
  if( argument[0] == '\0' )
  {
-     send_to_char("Syntax: makemedpac <medpac name>\n\r",ch);
+     send_to_char("Syntax: makemedpac <medpac name>\n",ch);
      return;
  }
 
@@ -6105,19 +6105,19 @@ void do_makemedpac( CHAR_DATA *ch, char *argument )
 
  if( !checkcont )
  {
-     send_to_char("You need an empty container.\n\r",ch);
+     send_to_char("You need an empty container.\n",ch);
      return;
  }
 
  if( !checkchem )
  {
-     send_to_char("You need some chemicals.\n\r",ch);
+     send_to_char("You need some chemicals.\n",ch);
     return;
  }
 
  if( !checktool )
  {
-    send_to_char("You need a toolkit.\n\r",ch);
+    send_to_char("You need a toolkit.\n",ch);
     return;
  }
 
@@ -6125,13 +6125,13 @@ void do_makemedpac( CHAR_DATA *ch, char *argument )
 
  if( number_percent() <= chance )
  {
-    send_to_char("You being making a medpac.\n\r",ch);
+    send_to_char("You being making a medpac.\n",ch);
     act( AT_PLAIN, "$n beings making a medpac.", ch, NULL, NULL, TO_ROOM );
     ch->dest_buf = str_dup(argument);
     add_timer( ch, TIMER_DO_FUN, 10, do_makemedpac, 1 );
     return;
  }
- send_to_char("&RYou can't figure out how to fit the parts together.\n\r",ch);
+ send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
  return;
 
     case 1:
@@ -6142,7 +6142,7 @@ void do_makemedpac( CHAR_DATA *ch, char *argument )
 
     case SUB_TIMER_DO_ABORT:
  DISPOSE( ch->dest_buf );
- send_to_char("&RYour work is interrupted and you fail to complete your work.\n\r",ch);
+ send_to_char("&RYour work is interrupted and you fail to complete your work.\n",ch);
         return;
     }
 
@@ -6174,8 +6174,8 @@ void do_makemedpac( CHAR_DATA *ch, char *argument )
 
     if( number_percent() > chance || !checkcont || !checkchem || !checktool )
     {
- send_to_char("&RYou hold your newly created medpac.\n\r",ch);
- send_to_char("&RThen you suddently realize you forgot to add the healing formula...\n\r",ch);
+ send_to_char("&RYou hold your newly created medpac.\n",ch);
+ send_to_char("&RThen you suddently realize you forgot to add the healing formula...\n",ch);
  return;
     }
 
@@ -6192,13 +6192,13 @@ void do_makemedpac( CHAR_DATA *ch, char *argument )
     if( !CAN_WEAR( cont, 1 << wearbit ) )
  SET_BIT( cont->wear_flags, 1 << wearbit );
 
-    send_to_char("&GYou hold up your newly created medpac!\n\r",ch);
+    send_to_char("&GYou hold up your newly created medpac!\n",ch);
     act( AT_PLAIN, "$n finished their newly created medpac.",ch,NULL,NULL,TO_ROOM);
 
     {
  long xpgain = UMIN( cont->value[0] * 5000,exp_level(ch->skill_level[ENGINEERING_ABILITY]+1) - exp_level(ch->skill_level[ENGINEERING_ABILITY]));
  gain_exp( ch, xpgain, ENGINEERING_ABILITY );
- ch_printf( ch, "You gain %ld engineering experience.\n\r", xpgain );
+ ch_printf( ch, "You gain %ld engineering experience.\n", xpgain );
     }
 
     learn_from_success( ch, gsn_makemedpac );
@@ -6238,7 +6238,7 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 
 	if( !IS_NPC(ch) && ch->pcdata->learned[gsn_makefurniture] == 0 )
 	{
-		send_to_char("Huh?\n\r",ch);
+		send_to_char("Huh?\n",ch);
 		return;
 	}
 
@@ -6247,8 +6247,8 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 	case 0:
 		if( argument[0] == '\0' )
 		{
-			send_to_char("Syntax: makefurntiure <type> <name>\n\r",ch);
-			send_to_char("Available types are: chair, couch\n\r",ch);
+			send_to_char("Syntax: makefurntiure <type> <name>\n",ch);
+			send_to_char("Available types are: chair, couch\n",ch);
 			return;
 		}
 
@@ -6262,7 +6262,7 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 
 		if( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
 		{
-			send_to_char("You need to be in a factory to do that!\n\r",ch);
+			send_to_char("You need to be in a factory to do that!\n",ch);
 			return;
 		}
 
@@ -6348,54 +6348,54 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 
 			if( material == 'k' && !checkkat )
 			{
-				send_to_char("You need some metal.\n\r",ch);
+				send_to_char("You need some metal.\n",ch);
 				return;
 			}
 			else if( material == 's' && !checkscrap )
 			{
-				send_to_char("You need some scraps of durasteel.\n\r",ch);
+				send_to_char("You need some scraps of durasteel.\n",ch);
 				return;
 			}
 			else if ( material == 'b' && !checkmesh )
 			{
-				send_to_char("You need some bonthan mesh.\n\r",ch);
+				send_to_char("You need some bonthan mesh.\n",ch);
 				return;
 			}
 			else if( material == 'y' && !checksyn )
 			{
-				send_to_char("You need some synthafabric.\n\r",ch);
+				send_to_char("You need some synthafabric.\n",ch);
 				return;
 			}
 			else if( material == 'c' && !checkcupa )
 			{
-				send_to_char("You need some cu-pa hide.\n\r",ch);
+				send_to_char("You need some cu-pa hide.\n",ch);
 				return;
 			}
 			else if( material == 'h' && !checkbantha )
 			{
-				send_to_char("You need some bantha hide.\n\r",ch);
+				send_to_char("You need some bantha hide.\n",ch);
 				return;
 			}
 			else if( material == 'p' && !checkplast )
 			{
-				send_to_char("You need some duraplast tubing.\n\r",ch);
+				send_to_char("You need some duraplast tubing.\n",ch);
 				return;
 			}
 			else if( material == 'd' && !checksteel )
 			{
-				send_to_char("You need some durasteel plating.\n\r",ch);
+				send_to_char("You need some durasteel plating.\n",ch);
 				return;
 			}
 		}
 
 		if( !checkneedle )
 		{
-			send_to_char("You need a needle and thread.\n\r",ch);
+			send_to_char("You need a needle and thread.\n",ch);
 			return;
 		}
 		else if( !checktool )
 		{
-			send_to_char("You need a toolkit.\n\r",ch);
+			send_to_char("You need a toolkit.\n",ch);
 			return;
 		}
 
@@ -6403,12 +6403,12 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 
 		if( number_percent() > chance )
 		{
-			send_to_char("&RYou can't figure out how to put the parts together.&x\n\r",ch);
+			send_to_char("&RYou can't figure out how to put the parts together.&x\n",ch);
 			learn_from_failure( ch, gsn_makefurniture );
 			return;
 		}
 
-		send_to_char("You begin on assembling your furniture.\n\r",ch);
+		send_to_char("You begin on assembling your furniture.\n",ch);
 		act( AT_PLAIN, "$n begins assembling their furniture piece.", ch, NULL, NULL, TO_ROOM );
 		add_timer( ch, TIMER_DO_FUN, 25, do_makefurniture, 1 );
 		ch->dest_buf = str_dup( arg );
@@ -6423,7 +6423,7 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 		DISPOSE( ch->dest_buf_2 );
 		break;
 	case SUB_TIMER_DO_ABORT:
-		send_to_char("&RYou're interrupted and fail to complete your work.\n\r",ch);
+		send_to_char("&RYou're interrupted and fail to complete your work.\n",ch);
 		DISPOSE( ch->dest_buf );
 		DISPOSE( ch->dest_buf_2 );
 		return;
@@ -6437,7 +6437,7 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 
 	if( furn_table[i].name[0] == '\0' )
 	{
-		send_to_char("Some type of bug in the system, report to Terin.\n\r",ch);
+		send_to_char("Some type of bug in the system, report to Terin.\n",ch);
 		return;
 	}
 	
@@ -6559,8 +6559,8 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 
 		if( number_percent() > chance || !success )
 		{
-			send_to_char("&RYou quickly step away from your new piece of furniture to admire your work.\n\r",ch);
-			send_to_char("&RThen it falls all apart...\n\r",ch);
+			send_to_char("&RYou quickly step away from your new piece of furniture to admire your work.\n",ch);
+			send_to_char("&RThen it falls all apart...\n",ch);
 			learn_from_failure( ch, gsn_makefurniture );
 			return;
 		}
@@ -6581,14 +6581,14 @@ furn_table[i].name );*/
 		obj->description = STRALLOC( arg2 );
 		obj_to_char( obj, ch );
 
-		send_to_char("You complete your new piece of furniture!\n\r",ch);
+		send_to_char("You complete your new piece of furniture!\n",ch);
 		act( AT_PLAIN, "$n finishes thier new piece of furniture.", ch, NULL, NULL, TO_ROOM );
 
 		{
 			long xpgain = UMIN( (chance * 100)*2, exp_level( ch->skill_level[ENGINEERING_ABILITY]+1 ) - exp_level( ch->skill_level[ENGINEERING_ABILITY] ) );
 
 			gain_exp( ch, xpgain, ENGINEERING_ABILITY);
-			ch_printf( ch, "You gain %ld engineering experience points!\n\r", xpgain );
+			ch_printf( ch, "You gain %ld engineering experience points!\n", xpgain );
 		}
 
 		learn_from_success( ch, gsn_makefurniture );

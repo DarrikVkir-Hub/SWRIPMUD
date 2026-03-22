@@ -96,12 +96,12 @@ return *(int*)i - *(int*)j;
  */
 void rgrub_help (CHAR_DATA *ch)
 {
-send_to_char( "Syntax:\n\r", ch);
-send_to_char( "rgrub st n lo hi - sector type search.\n\r"
-   "   list room vnums between lo and hi that match n.\n\r", ch );
-send_to_char( "   e.g. rgrub st 6 901 969 - list all rooms in Olympus\n\r"
-   "      that are sectortype 6.\n\r", ch );
-send_to_char( "   e.g. rgrub st 2 - list all rooms sectortype 2.\n\r", ch );
+send_to_char( "Syntax:\n", ch);
+send_to_char( "rgrub st n lo hi - sector type search.\n"
+   "   list room vnums between lo and hi that match n.\n", ch );
+send_to_char( "   e.g. rgrub st 6 901 969 - list all rooms in Olympus\n"
+   "      that are sectortype 6.\n", ch );
+send_to_char( "   e.g. rgrub st 2 - list all rooms sectortype 2.\n", ch );
 }
 
 void do_rgrub (CHAR_DATA *ch, char *argument)
@@ -134,7 +134,7 @@ if (!str_cmp(arg1, "st"))
    lo = (*arg3) ? atoi (arg3) : 0;
    hi = (*arg4) ? atoi (arg4) : 32767;
 
-   ch_printf (ch, "\n\rRoom Vnums\n\r");
+   ch_printf (ch, "\nRoom Vnums\n");
    for (cou = 0; cou < MAX_KEY_HASH; cou++)
    {
       if ( room_index_hash[cou] )
@@ -149,7 +149,7 @@ if (!str_cmp(arg1, "st"))
    }
    qsort(vnum, hit_cou, sizeof(int), rgrub_int_comp);      /* sort vnums    */
    for (cou=0; cou<hit_cou; cou++)
-       ch_printf (ch, "%5d %6d\n\r", cou+1, vnum[cou]);   /* display vnums */
+       ch_printf (ch, "%5d %6d\n", cou+1, vnum[cou]);   /* display vnums */
    return;
 }
 else
@@ -382,14 +382,14 @@ void display_operand_table (CHAR_DATA *ch, int op_num)
   int cou;
   char opn[7][3] = {"eq", "ne", "su", "ge", "gt", "le", "lt"};
 
-  pager_printf (ch, "OPERAND TABLE\n\r");
+  pager_printf (ch, "OPERAND TABLE\n");
   for(cou=0; cou < op_num; cou++)
      if ( go_op[cou].num)
         pager_printf (ch,
-        "%2d %-7s %2s %10ld\n\r", cou+1, go_fd[go_op[cou].field].nam,
+        "%2d %-7s %2s %10ld\n", cou+1, go_fd[go_op[cou].field].nam,
            opn[go_op[cou].op], go_op[cou].nval);
      else
-        pager_printf (ch, "%2d %-7s %2s %s\n\r",
+        pager_printf (ch, "%2d %-7s %2s %s\n",
         cou+1, go_fd[go_op[cou].field].nam,
            opn[go_op[cou].op], go_op[cou].sval);
 }
@@ -414,13 +414,13 @@ bool go_parse_operator (CHAR_DATA *ch, char *pch, int *op_num)
          break;
          }
   if ( go_op[*op_num].op < 0 )
-     {pager_printf(ch, "Invalid operator: %s\n\r", pch); return FALSE;}
+     {pager_printf(ch, "Invalid operator: %s\n", pch); return FALSE;}
   if ( go_op[*op_num].op==EQ || go_op[*op_num].op==GT
   ||   go_op[*op_num].op==LT )
      pch++;
   else pch+=2;                              /* advance to operand value */
   if ( *pch=='\0' )
-     {pager_printf(ch, "Value is missing from operand.\n\r"); return FALSE;}
+     {pager_printf(ch, "Value is missing from operand.\n"); return FALSE;}
 
   if ( go_fd[ go_op[ *op_num ].field ].num )
   {
@@ -440,7 +440,7 @@ bool go_parse_operator (CHAR_DATA *ch, char *pch, int *op_num)
 
      if ( strlen(pch) > MAX_FIELD_LENGTH )
      {
-        pager_printf(ch, "Char string is too long:%s\n\r", pch);
+        pager_printf(ch, "Char string is too long:%s\n", pch);
         return FALSE;
      }
      SPRINTF ( go_op[*op_num].sval, "%s", pch );      /* store str value in table */
@@ -472,13 +472,13 @@ bool go_parse_operand (CHAR_DATA *ch, char *arg, int *op_num, int *sor_ind,
      pch = arg + 1;
      if ( pch[0] == '\0')
         {
-        pager_printf(ch, "Sorry. Missing sort field: %s\n\r", arg);
+        pager_printf(ch, "Sorry. Missing sort field: %s\n", arg);
         return FALSE;
         }
 
      if ( (*sor_ind = go_fnam_to_num(pch)) == -1 )
         {
-        pager_printf(ch, "Sorry. Invalid sort field: %s\n\r", arg);
+        pager_printf(ch, "Sorry. Invalid sort field: %s\n", arg);
         return FALSE;
         }
      return TRUE;
@@ -494,7 +494,7 @@ bool go_parse_operand (CHAR_DATA *ch, char *arg, int *op_num, int *sor_ind,
             return FALSE;
          return TRUE;
       }
-  pager_printf(ch, "Sorry. Invalid field name: %s\n\r", arg);
+  pager_printf(ch, "Sorry. Invalid field name: %s\n", arg);
   return FALSE;
 }
 
@@ -619,14 +619,14 @@ void go_display( CHAR_DATA *ch, int dis_num, int tot_match, bool d2_sw,
   {
   if ( !d2_sw )
       pager_printf(ch,
-         "\n\r%-12s%3s %5s %2s %-12s %2s %2s %2s %2s %2s %3s %3s %3s "
-         "%11s\n\r",
+         "\n%-12s%3s %5s %2s %-12s %2s %2s %2s %2s %2s %3s %3s %3s "
+         "%11s\n",
          "Character", "Cou", "OVnum", "Lv", "OName", "Ty", "We",
          "Av", "Hr", "Dr", "Hp", "Mp", "AC", "S D C W I L");
   else
       pager_printf(ch,
-         "\n\r%-12s%3s %5s %2s %-12s %2s %2s %2s %2s %2s %3s %3s %2s "
-         "%2s %2s %2s %2s\n\r",
+         "\n%-12s%3s %5s %2s %-12s %2s %2s %2s %2s %2s %3s %3s %2s "
+         "%2s %2s %2s %2s\n",
          "Character", "Cou", "OVnum", "Lv", "OName", "Ty", "We",
          "Av", "Hr", "Dr", "Hp", "Mp", "S0", "S1", "S2", "S3", "S4");
    }
@@ -642,7 +642,7 @@ void go_display( CHAR_DATA *ch, int dis_num, int tot_match, bool d2_sw,
       if ( !d2_sw )
          pager_printf(ch,
             "%-12s%3d %5d%3d %-12s %2s %2s%3d%3d%3d%4d%4d%4d"
-            "%2d%2d%2d%2d%2d%2d\n\r", 
+            "%2d%2d%2d%2d%2d%2d\n", 
             pri_cname, r.n[OCOUNT], r.n[OVNUM], r.n[OLEVEL],
             pri_oname, go_otype_to_disp( r.n[OTYPE] ),
             owear_to_disp( r.n[OWEAR] ),
@@ -652,7 +652,7 @@ void go_display( CHAR_DATA *ch, int dis_num, int tot_match, bool d2_sw,
       else
          pager_printf(ch,
             "%-12s%3d %5d%3d %-12s %2s %2s%3d%3d%3d%4d%4d%3d"
-            "%3d%3d%3d%3d\n\r", 
+            "%3d%3d%3d%3d\n", 
             pri_cname, r.n[OCOUNT], r.n[OVNUM], r.n[OLEVEL],
             pri_oname, go_otype_to_disp( r.n[OTYPE] ),
             owear_to_disp( r.n[OWEAR] ),
@@ -661,9 +661,9 @@ void go_display( CHAR_DATA *ch, int dis_num, int tot_match, bool d2_sw,
             r.n[OSAV3], r.n[OSAV4]);
   }
   if (tot_match == 0 )
-     pager_printf(ch, "Zero matches were found.\n\r");
+     pager_printf(ch, "Zero matches were found.\n");
   else pager_printf(ch,
-    "%5d matches in total.\n\r", tot_match);
+    "%5d matches in total.\n", tot_match);
 }
 
 /*
@@ -796,14 +796,14 @@ bool go_read( CHAR_DATA *ch, int dis_num, int op_num, int sor_ind,
   if (!a)
   {
      pager_printf(ch, "Sorry. There is currently insufficient memory avail"
-     " to service your request. Try later or speak to a coder.\n\r");
+     " to service your request. Try later or speak to a coder.\n");
      return FALSE;
   }
   p = (GO_STRUCT **) calloc( UMIN(dis_num, MAX_DISPLAY_LINES), sizeof *p);
   if (!p)
   {
      pager_printf(ch, "Sorry. There is currently insufficient memory avail"
-     " to service your request. Try later or speak to a coder.\n\r");
+     " to service your request. Try later or speak to a coder.\n");
      return FALSE;
   }
   free(p); free(a);
@@ -830,20 +830,20 @@ void do_ogrub (CHAR_DATA *ch, char *argument)
   argument = one_argument (argument, arg1);
   if ( !*arg1 )
   {
-     pager_printf(ch, "Syntax: ogrub <num of lines> <sort order> [keywords] [operands].\n\r");
+     pager_printf(ch, "Syntax: ogrub <num of lines> <sort order> [keywords] [operands].\n");
      return;
   }
   if ( isdigit(*arg1) )        /* first arg is number of display lines   */
      dis_num = atoi(arg1);
   else
   {
-     pager_printf(ch, "You did not specify the number of display lines.\n\r");
+     pager_printf(ch, "You did not specify the number of display lines.\n");
      return;
   }
   if ( dis_num > MAX_DISPLAY_LINES )
   {
      pager_printf(ch, "Sorry. You have requested more than %d display " 
-                      "lines.\n\r", MAX_DISPLAY_LINES);
+                      "lines.\n", MAX_DISPLAY_LINES);
      return;
   }
 
@@ -852,7 +852,7 @@ void do_ogrub (CHAR_DATA *ch, char *argument)
   {
      if ( op_num >= MAX_NUM_OPS )
      {
-        pager_printf(ch, "Sorry. You have entered more than %d operands.\n\r",
+        pager_printf(ch, "Sorry. You have entered more than %d operands.\n",
            MAX_NUM_OPS, MAX_NUM_OPS );
         return;
      }
@@ -863,7 +863,7 @@ void do_ogrub (CHAR_DATA *ch, char *argument)
   }
   if (op_num <= 0)
   {
-     pager_printf(ch, "Sorry. You did not include any valid operands.\n\r");
+     pager_printf(ch, "Sorry. You did not include any valid operands.\n");
      return;
   }
   if ( do_sw ) 
@@ -1041,7 +1041,7 @@ bool gr_parse_operator (CHAR_DATA *ch, char *pch, int *op_num)
          }
 
   if ( gr_op[*op_num].op < 0 )
-   {ch_printf(ch, "Invalid operator: %s\n\r", pch); return FALSE;}
+   {ch_printf(ch, "Invalid operator: %s\n", pch); return FALSE;}
 
   if ( gr_op[*op_num].op==EQ || gr_op[*op_num].op==LT
   || gr_op[*op_num].op==GT )
@@ -1049,7 +1049,7 @@ bool gr_parse_operator (CHAR_DATA *ch, char *pch, int *op_num)
   else pch+=2;                               /* advance to operand value */
 
   if ( *pch=='\0' )
-     {ch_printf(ch, "Value is missing from operand.\n\r"); return FALSE;}
+     {ch_printf(ch, "Value is missing from operand.\n"); return FALSE;}
 
   if ( gr_fd[gr_op[*op_num].field].num )
   {
@@ -1059,7 +1059,7 @@ bool gr_parse_operator (CHAR_DATA *ch, char *pch, int *op_num)
   else
   {
      if ( strlen(pch) > MAX_FIELD_LENGTH )
-        {ch_printf(ch, "Char string is too long:%s\n\r", pch); return FALSE;}
+        {ch_printf(ch, "Char string is too long:%s\n", pch); return FALSE;}
      gr_op[*op_num].num  = FALSE;
      SPRINTF (gr_op[*op_num].sval, "%s", pch);  /* store str operand value in table */
   }
@@ -1086,7 +1086,7 @@ bool gr_parse_operand (CHAR_DATA *ch, char *arg, bool *or_sw, int *op_num)
             return FALSE;
          return TRUE;
       }
-  ch_printf(ch, "Sorry. Invalid field name: %s\n\r", arg);
+  ch_printf(ch, "Sorry. Invalid field name: %s\n", arg);
   return FALSE;
 }
 
@@ -1131,14 +1131,14 @@ void gr_read (
         if ( !title_sw && dis_num > 0 )     /* print title if applicable */
         {
            ch_printf(ch,
-           "\n\r%-12s %-2s %1s %-2s %1s %3s %3s %5s %11s %-15s %-6s %s\n\r",
+           "\n%-12s %-2s %1s %-2s %1s %3s %3s %5s %11s %-15s %-6s %s\n",
            "Name", "Lv", "S", "R", "C", "Cln", "Cou", "Room", "Gold",
            "Site", "Last", "Pk");
            title_sw = TRUE;
         }
         if ( tot_match <= dis_num )         /* print record if applicable */
            ch_printf(ch,
-  "%-12s %2hd %c %2s %c %3s %3s %5hd %11ld %-15s %6lu %c\n\r", 
+  "%-12s %2hd %c %2s %c %3s %3s %5hd %11ld %-15s %6lu %c\n", 
               r.name, r.level, sex[(unsigned char) r.sex],
               race[(unsigned char) r.race], plrclass[(unsigned char) r.plrclass],
               clan[(unsigned char) r.clan],
@@ -1149,8 +1149,8 @@ void gr_read (
   }
   FCLOSE (fp);
   if (tot_match == 0 )
-     ch_printf(ch, "Zero matches were found.\n\r");
-  else ch_printf(ch, "%5d matches in total\n\r", tot_match);
+     ch_printf(ch, "Zero matches were found.\n");
+  else ch_printf(ch, "%5d matches in total\n", tot_match);
 }
 
 /*
@@ -1180,14 +1180,14 @@ void do_grub (CHAR_DATA *ch, char *argument)
   argument = one_argument (argument, arg1);
   if ( !*arg1 )
   {
-     ch_printf(ch, "Syntax <max results> [keywords] [operands].\n\r");
+     ch_printf(ch, "Syntax <max results> [keywords] [operands].\n");
      return;
   }
   if ( isdigit(*arg1) )        /* first argument is number of display lines */
      dis_num = atoi( arg1 );
   else
   {
-     ch_printf(ch, "You did not specify the number of display lines.\n\r");
+     ch_printf(ch, "You did not specify the number of display lines.\n");
      return;
   }
 
@@ -1224,20 +1224,20 @@ argument = one_argument (argument, arg1);
 
 if ( !*arg1 )
 {
-send_to_char( "Syntax:\n\r", ch);
-send_to_char( "showlayers n  -  display maximum of n lines.\n\r", ch);
+send_to_char( "Syntax:\n", ch);
+send_to_char( "showlayers n  -  display maximum of n lines.\n", ch);
 return;
 }
 
 display_limit = atoi(arg1);
-pager_printf(ch, "      Vnum      Wear Layer   Description \n\r");
+pager_printf(ch, "      Vnum      Wear Layer   Description \n");
 for (hash = 0; hash < MAX_KEY_HASH; hash++) /* loop thru obj_index_hash */
   if ( obj_index_hash[hash] )
      for (pObj=obj_index_hash[hash]; pObj; pObj=pObj->next)
          if (pObj->layers > 0)
          {
             if (++cou <= display_limit)
-            pager_printf(ch, "%4d&R&w %5d&R&w %9d&R&w %5d&R&w   %s&R&w\n\r",
+            pager_printf(ch, "%4d&R&w %5d&R&w %9d&R&w %5d&R&w   %s&R&w\n",
               cou, pObj->vnum, pObj->wear_flags, pObj->layers,
               pObj->short_descr);
           }
@@ -1266,7 +1266,7 @@ if (i < right) zero_sort (vnums, count, i, right);
 
 void diag_visit_obj( CHAR_DATA *ch, OBJ_DATA *obj )
 {
-   pager_printf(ch, "***obj=%s\n\r", obj->name );
+   pager_printf(ch, "***obj=%s\n", obj->name );
    if ( obj->first_content )
    {
       diag_visit_obj( ch, obj->first_content );
@@ -1294,19 +1294,19 @@ return *(int*)i - *(int*)j;
  */
 void diagnose_help (CHAR_DATA *ch)
 {
-send_to_char( "Syntax:\n\r", ch);
-send_to_char( "diagnose of n  -  object frequency top n objects\n\r", ch );
-send_to_char( "diagnose zero  -  count objects with zero weight\n\r", ch );
-send_to_char( "diagnose zero n - list n objects with zero weight\n\r", ch );
-send_to_char( "diagnose rf n lo hi - room flag search.\n\r"
-   "   list room vnums between lo and hi that match n.\n\r", ch );
-send_to_char( "   e.g. diagnose rf 6 901 969 - list all rooms in Olympus\n\r"
-   "      that are nomob and deathtraps.\n\r", ch );
-send_to_char( "   e.g. diagnose rf 2 - list all deathtraps.\n\r", ch );
-send_to_char( "diagnose mrc num racevnum1 vnum2 - mobs/race/class\n\r"
-   "   display all mobs of a particular race/class combo.\n\r"
+send_to_char( "Syntax:\n", ch);
+send_to_char( "diagnose of n  -  object frequency top n objects\n", ch );
+send_to_char( "diagnose zero  -  count objects with zero weight\n", ch );
+send_to_char( "diagnose zero n - list n objects with zero weight\n", ch );
+send_to_char( "diagnose rf n lo hi - room flag search.\n"
+   "   list room vnums between lo and hi that match n.\n", ch );
+send_to_char( "   e.g. diagnose rf 6 901 969 - list all rooms in Olympus\n"
+   "      that are nomob and deathtraps.\n", ch );
+send_to_char( "   e.g. diagnose rf 2 - list all deathtraps.\n", ch );
+send_to_char( "diagnose mrc num racevnum1 vnum2 - mobs/race/class\n"
+   "   display all mobs of a particular race/class combo.\n"
    "   e.g. diagnose mrc 50 0 3 7500 7534 - show 50 human warriors "
-   " in Edo.\n\r", ch);
+   " in Edo.\n", ch);
 
 }
 
@@ -1372,7 +1372,7 @@ if ( !str_cmp(arg1, "time") )
 {
 struct tm *t = localtime(&current_time);
 
-pager_printf( ch, "mon=%d day=%d hh=%d mm=%d\n\r", 
+pager_printf( ch, "mon=%d day=%d hh=%d mm=%d\n", 
    t->tm_mon+1, t->tm_mday, t->tm_hour, t->tm_min);
 return;
 }
@@ -1394,7 +1394,7 @@ if (!str_cmp(arg1, "rf"))
    lo = (*arg3) ? atoi (arg3) : 0;
    hi = (*arg4) ? atoi (arg4) : 32767;
 
-   ch_printf (ch, "\n\rRoom Vnums\n\r");
+   ch_printf (ch, "\nRoom Vnums\n");
    for (cou = 0; cou < MAX_KEY_HASH; cou++)
    {
       if ( room_index_hash[cou] )
@@ -1410,7 +1410,7 @@ if (!str_cmp(arg1, "rf"))
    }
    qsort(vnum, hit_cou, sizeof(int), diag_int_comp);      /* sort vnums    */
    for (cou=0; cou<hit_cou; cou++)
-       ch_printf (ch, "%5d %6d\n\r", cou+1, vnum[cou]);   /* display vnums */
+       ch_printf (ch, "%5d %6d\n", cou+1, vnum[cou]);   /* display vnums */
    return;
 }
 
@@ -1430,9 +1430,9 @@ if (!str_cmp(arg1, "of")) {
                pObj; pObj=pObj->next)
                diag_ins (pObj, num, freq, ch);    /* insert pointer into list */
        }
-   ch_printf (ch, "\n\rObject Frequencies\n\r");  /* send results to char */
+   ch_printf (ch, "\nObject Frequencies\n");  /* send results to char */
    for (cou = 0; cou < num && freq[cou]; cou++)
-       ch_printf(ch, "%3d%8d%8d\n\r", cou+1,freq[cou]->vnum,freq[cou]->count);
+       ch_printf(ch, "%3d%8d%8d\n", cou+1,freq[cou]->vnum,freq[cou]->count);
    DISPOSE(freq);
    return;
    }
@@ -1449,19 +1449,19 @@ if (!str_cmp(arg1, "mm")) {
 
    if ( ( victim = get_char_world( ch, arg2 ) ) == NULL )
       {
-      send_to_char( "Not here.\n\r", ch );
+      send_to_char( "Not here.\n", ch );
       return;
       }
 
    if ( !victim->desc )
       {
-      send_to_char( "No descriptor.\n\r", ch );
+      send_to_char( "No descriptor.\n", ch );
       return;
       }
 
    if ( victim == ch )
       {
-      send_to_char( "Cancelling.\n\r", ch );
+      send_to_char( "Cancelling.\n", ch );
       for ( d = first_descriptor; d; d = d->next )
           if ( d->snoop_by == ch->desc )
              d->snoop_by = NULL;
@@ -1470,18 +1470,18 @@ if (!str_cmp(arg1, "mm")) {
 
    if ( victim->desc->snoop_by )
       {
-      send_to_char( "Busy.\n\r", ch );
+      send_to_char( "Busy.\n", ch );
       return;
       }
 
    if ( get_trust( victim ) >= get_trust( ch ) )
       {
-       send_to_char( "Busy.\n\r", ch );
+       send_to_char( "Busy.\n", ch );
        return;
        }
 
    victim->desc->snoop_by = ch->desc;
-   send_to_char( "Ok.\n\r", ch );
+   send_to_char( "Ok.\n", ch );
    return;
    }
 
@@ -1512,10 +1512,10 @@ if (!str_cmp(arg1, "zero"))
       zero_num = UMIN (zero_num, ZERO_MAX);
       zero_num = UMIN (zero_num, zero_obj_ind);
       for (cou=0; cou<zero_num; cou++)
-          ch_printf (ch, "%6d %6d %6d\n\r",
+          ch_printf (ch, "%6d %6d %6d\n",
                      cou+1, vnums[cou], count[cou]);
       }
-   ch_printf (ch, "%6d %6d\n\r", zero_obj_ind, zero_obj);
+   ch_printf (ch, "%6d %6d\n", zero_obj_ind, zero_obj);
    return;
 }
 
@@ -1535,16 +1535,16 @@ int            i=0;
 char           buf[MAX_STRING_LENGTH];
 
 //pa=NULL;
-ch_printf(ch, "CHAR name=%s \n\r", ch->name);
+ch_printf(ch, "CHAR name=%s \n", ch->name);
 SPRINTF(buf, "%s", ch->first_carrying ? ch->first_carrying->name : "NULL");
-ch_printf(ch, "   first_carry=%s\n\r", buf);
+ch_printf(ch, "   first_carry=%s\n", buf);
 SPRINTF(buf, "%s", ch->last_carrying ? ch->last_carrying->name : "NULL");
-ch_printf(ch, "   last_carry=%s\n\r", buf);
+ch_printf(ch, "   last_carry=%s\n", buf);
 
 /*
 for (pa=ch->first_affect; pa; pa=pa->next)
    ch_printf(ch,
-   "   type=%d duration=%d location=%d modifier=%d bitvector=%d\n\r",
+   "   type=%d duration=%d location=%d modifier=%d bitvector=%d\n",
    pa->type, pa->duration, pa->location, pa->modifier, pa->bitvector);
  */
 
@@ -1562,47 +1562,47 @@ for (po=first_object; po; po=po->next)
     if ( ch==po->carried_by || (pt && ch==pt->carried_by) )
     {
 //       px = po->pIndexData;
-       ch_printf(ch, "\n\r%d OBJ name=%s \n\r", i, po->name);
+       ch_printf(ch, "\n%d OBJ name=%s \n", i, po->name);
        SPRINTF(buf, "%s", po->next_content ? po->next_content->name : "NULL");
-       ch_printf(ch, "   next_content=%s\n\r", buf);
+       ch_printf(ch, "   next_content=%s\n", buf);
        SPRINTF(buf, "%s", po->prev_content ? po->prev_content->name : "NULL");
-       ch_printf(ch, "   prev_content=%s\n\r", buf);
+       ch_printf(ch, "   prev_content=%s\n", buf);
        SPRINTF(buf, "%s", po->first_content ? po->first_content->name : "NULL");
-       ch_printf(ch, "   first_content=%s\n\r", buf);
+       ch_printf(ch, "   first_content=%s\n", buf);
        SPRINTF(buf, "%s", po->last_content ? po->last_content->name : "NULL");
-       ch_printf(ch, "   last_content=%s\n\r", buf);
+       ch_printf(ch, "   last_content=%s\n", buf);
 
 /*  
      ch_printf(ch, 
-       "\n\rINDEX_DATA vnum=%d name=%s level=%d extra_flags=%d\n\r",
+       "\nINDEX_DATA vnum=%d name=%s level=%d extra_flags=%d\n",
        px->vnum, px->name, px->level, px->extra_flags);
 
        ch_printf(ch,
-       "v0=%d v1=%d v2=%d v3=%d v4=%d v5=%d item_type=%d\n\r",
+       "v0=%d v1=%d v2=%d v3=%d v4=%d v5=%d item_type=%d\n",
        px->value[0], px->value[1], px->value[2], px->value[3],
        px->value[4], px->value[5], px->item_type);
 */
 /*
        for (pa=px->first_affect; pa; pa=pa->next)
            ch_printf(ch,
-           "   type=%d duration=%d location=%d modifier=%d bitvector=%d\n\r",
+           "   type=%d duration=%d location=%d modifier=%d bitvector=%d\n",
            pa->type, pa->duration, pa->location, pa->modifier, pa->bitvector);
 */
 /*
       ch_printf(ch,
-      "\n\rOBJECT_DATA %d name=%s level=%d wear_flags=%d wear_loc=%d\n\r",
+      "\nOBJECT_DATA %d name=%s level=%d wear_flags=%d wear_loc=%d\n",
       i, po->name, po->level, po->wear_flags, po->wear_loc);
 */
 /*
       ch_printf(ch,
-      "v0=%d v1=%d v2=%d v3=%d v4=%d v5=%d item_type=%d\n\r",
+      "v0=%d v1=%d v2=%d v3=%d v4=%d v5=%d item_type=%d\n",
        po->value[0], po->value[1], po->value[2], po->value[3],
        po->value[4], po->value[5], po->item_type);
 */
 /*
        for (pa=po->first_affect; pa; pa=pa->next)
            ch_printf(ch,
-           "   type=%d duration=%d location=%d modifier=%d bitvector=%d\n\r",
+           "   type=%d duration=%d location=%d modifier=%d bitvector=%d\n",
            pa->type, pa->duration, pa->location, pa->modifier, pa->bitvector);
 */
 
@@ -1620,7 +1620,7 @@ if (!str_cmp(arg1, "mrc"))
    ||  !isdigit(*arg2) || !isdigit(*arg3) || !isdigit(*arg4)
    ||  !isdigit(*arg5))
    {
-      send_to_char( "Sorry. Invalid format.\n\r\n\r", ch);
+      send_to_char( "Sorry. Invalid format.\n\n", ch);
       diagnose_help(ch);
       return;
    }
@@ -1629,7 +1629,7 @@ if (!str_cmp(arg1, "mrc"))
    vnum1    = atoi (arg4);
    vnum2    = atoi (arg5);
 
-   send_to_char("\n\r", ch);
+   send_to_char("\n", ch);
 
    for (cou = 0; cou < MAX_KEY_HASH; cou++)
    {
@@ -1638,7 +1638,7 @@ if (!str_cmp(arg1, "mrc"))
          {
             if ( pm->vnum >= vnum1 && pm->vnum <= vnum2
             &&   pm->race==race && dis_cou++ < dis_num )
-                pager_printf( ch, "%5d %s\n\r", pm->vnum, pm->player_name );
+                pager_printf( ch, "%5d %s\n", pm->vnum, pm->player_name );
          }
    }
    return;

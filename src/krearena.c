@@ -105,7 +105,7 @@ void do_bet(CHAR_DATA *ch, char *argument)
            
    if (IS_NPC(ch))
    {
-      send_to_char("Mobs cant bet on the arena.\r\n",ch);
+      send_to_char("Mobs cant bet on the arena.\n",ch);
       return;
    }
 
@@ -117,47 +117,47 @@ void do_bet(CHAR_DATA *ch, char *argument)
                     
    if(arg[0]=='\0')
    {
-      send_to_char("Usage: bet <player> <amt>\r\n",ch);
+      send_to_char("Usage: bet <player> <amt>\n",ch);
       return;
    }
    else if(!in_start_arena && !ppl_challenged)
    {
-      send_to_char("Sorry the arena is closed, wait until it opens up to bet.\r\n", ch);
+      send_to_char("Sorry the arena is closed, wait until it opens up to bet.\n", ch);
       return;
    }
    else if(num_gladiators > 0 && !in_start_arena)
    {
-      send_to_char("Sorry Arena has already started, no more bets.\r\n", ch);
+      send_to_char("Sorry Arena has already started, no more bets.\n", ch);
       return;
    }
    else if (!(ch->betted_on = get_char_world(ch, arg)))
       send_to_char("No such person exists in the galaxy.", ch);
    else if (ch->betted_on == ch)
-      send_to_char("That doesn't make much sense, does it?\r\n", ch);
+      send_to_char("That doesn't make much sense, does it?\n", ch);
    else if(ch->in_room && !(IS_SET(ch->betted_on->in_room->room_flags, ROOM_ARENA)))
-      send_to_char("Sorry that person is not in the arena.\r\n", ch);
+      send_to_char("Sorry that person is not in the arena.\n", ch);
    else
       {
          if(GET_BET_AMT(ch) > 0)
          {
-           send_to_char("Sorry you have already bet.\r\n", ch);
+           send_to_char("Sorry you have already bet.\n", ch);
            return;
          }
          GET_BETTED_ON(ch) = ch->betted_on;
          newbet=parsebet(bet_pot,buf1); 
          if(newbet == 0)
          {
-            send_to_char("Bet some gold why dont you!\r\n", ch);
+            send_to_char("Bet some gold why dont you!\n", ch);
             return;
          }
          if (newbet > ch->gold)
          {
-            send_to_char("You don't have that much money!\n\r",ch);
+            send_to_char("You don't have that much money!\n",ch);
             return;
          }
          if(newbet > ARENA_MAXBET)
          {
-            send_to_char("Sorry the house will not accept that much.\r\n", ch);
+            send_to_char("Sorry the house will not accept that much.\n", ch);
             return;
          }
        
@@ -165,7 +165,7 @@ void do_bet(CHAR_DATA *ch, char *argument)
          arena_pot += (newbet / 2);
          bet_pot += (newbet / 2);
          GET_BET_AMT(ch) = newbet;
-         SPRINTF(buf, "You place %d credits on %s.\r\n", newbet, ch->betted_on->name);
+         SPRINTF(buf, "You place %d credits on %s.\n", newbet, ch->betted_on->name);
          send_to_char(buf, ch);
          SPRINTF(buf,"%s has placed %d credits on %s.", ch->name,
          newbet, ch->betted_on->name);
@@ -179,32 +179,32 @@ void do_arena(CHAR_DATA *ch, char *argument)
  struct struct_gladiator *gladiator_node;
  if (IS_NPC(ch))
  {
-   send_to_char("Mobs cant play in the arena.\r\n",ch);
+   send_to_char("Mobs cant play in the arena.\n",ch);
    return;
  }
 
  if(!in_start_arena)
  {
-   send_to_char("The killing fields are closed right now.\r\n", ch);
+   send_to_char("The killing fields are closed right now.\n", ch);
    return;
  }
  
  if(ch->top_level < lo_lim)
  {
-   SPRINTF(buf, "Sorry but you must be at least level %d to enter this arena.\r\n", lo_lim);
+   SPRINTF(buf, "Sorry but you must be at least level %d to enter this arena.\n", lo_lim);
    send_to_char(buf, ch);
    return;	
  }
  
  if( ch->top_level > hi_lim)
  {
-    send_to_char("This arena is for lower level characters.\n\r", ch);
+    send_to_char("This arena is for lower level characters.\n", ch);
     return;
  } 
  
  if(IS_SET(ch->in_room->room_flags, ROOM_ARENA))
  { 
-    send_to_char("You are in the arena already\r\n",ch);
+    send_to_char("You are in the arena already\n",ch);
     return;
  }	
  else
@@ -214,7 +214,7 @@ void do_arena(CHAR_DATA *ch, char *argument)
     char_from_room(ch);
     char_to_room(ch, get_room_index(PREP_START)); 
     act(AT_WHITE,"$n is dropped from the sky.", ch, NULL, NULL, TO_ROOM);
-    send_to_char("You have been taken to the killing fields\r\n",ch);
+    send_to_char("You have been taken to the killing fields\n",ch);
     do_look(ch, "auto");
     SPRINTF(buf, "%s has joined the blood bath.", ch->name);
     to_channel(buf,CHANNEL_ARENA,"&RArena&W",5);
@@ -241,44 +241,44 @@ void do_marena(CHAR_DATA *ch, char *argument)
 
  one_argument( argument, arg );
  if ( arg[0] == '\0' ) {
-   send_to_char( "marena whom?\n\r", ch );
+   send_to_char( "marena whom?\n", ch );
    return;
  }
  if ( arg[0] != '\'' && arg[0] != '"' && strlen(argument) > strlen(arg) )
    SPRINTF( arg, "%s", argument );
 
  if ( ( mob = get_char_world( ch, arg ) ) == NULL ) {
-        send_to_char( "They aren't here.\n\r", ch );
+        send_to_char( "They aren't here.\n", ch );
         return;
  }
 
  if (!IS_NPC(mob)) {
-   send_to_char("You can not marena a player.\n\r",ch);
+   send_to_char("You can not marena a player.\n",ch);
    return;
  }
 
  if(!in_start_arena)
  {
-   send_to_char("The killing fields are closed right now.\r\n", ch);
+   send_to_char("The killing fields are closed right now.\n", ch);
    return;
  }
 
  if(IS_SET(ch->in_room->room_flags, ROOM_ARENA))
  {
-    send_to_char("You are in the arena already\r\n",ch);
+    send_to_char("You are in the arena already\n",ch);
     return;
  }
  else
  {
     act(AT_RED, "$n has been whisked away to the killing fields.", mob, NULL, NULL, TO_ROOM);
-    SPRINTF(buf,"%s has been whisked away to the killing fields.\n\r",mob->name);
+    SPRINTF(buf,"%s has been whisked away to the killing fields.\n",mob->name);
     send_to_char(buf,ch);
   
     mob->retran = mob->in_room->vnum;
     char_from_room(mob);
     char_to_room(mob, get_room_index(PREP_START));
     act(AT_WHITE,"$n is dropped from the sky.", mob, NULL, NULL, TO_ROOM);
-    send_to_char("You have been taken to the killing fields\r\n",mob);
+    send_to_char("You have been taken to the killing fields\n",mob);
     do_look(mob, "auto");
     SPRINTF(buf, "%s has joined the blood bath.", mob->name);
     to_channel(buf,CHANNEL_ARENA,"&RArena&W",5);
@@ -315,13 +315,13 @@ void do_chaos(CHAR_DATA *ch, char *argument)
   one_argument(argument, purse);
   arena_pot = atoi(purse);
                                  
-  SPRINTF(buf,"LowLim %d HiLim %d Delay %d Length %d\n\r", lo_lim,
+  SPRINTF(buf,"LowLim %d HiLim %d Delay %d Length %d\n", lo_lim,
          hi_lim, start_time, game_length);
   send_to_char(buf,ch);
       
   if(hi_lim >= LEVEL_IMPLEMENTOR +1)
   {
-     send_to_char("Please choose a hi_lim under the Imps level\r\n", ch);
+     send_to_char("Please choose a hi_lim under the Imps level\n", ch);
      return;
   }
   
@@ -333,24 +333,24 @@ void do_chaos(CHAR_DATA *ch, char *argument)
 
   if (lo_lim >= hi_lim)
   {
-    send_to_char("Ya that just might be smart.\r\n", ch);
+    send_to_char("Ya that just might be smart.\n", ch);
     return;
   }
                               
   if ((lo_lim < 0 || hi_lim < 0 || game_length < 0))
   {
-    send_to_char("I like positive numbers thank you.\r\n", ch);
+    send_to_char("I like positive numbers thank you.\n", ch);
     return;
   }
                                             
   if ( start_time <= 0)
   {
-    send_to_char("Lets at least give them a chance to enter!\r\n", ch);
+    send_to_char("Lets at least give them a chance to enter!\n", ch);
     return;
   }
   
   if (num_gladiators > 0 || in_start_arena) {
-    send_to_char("The arena is already in use!\n\r",ch);
+    send_to_char("The arena is already in use!\n",ch);
     return;
   }
   num_gladiators = 0;
@@ -384,11 +384,11 @@ void start_arena()
 
             // Killing Fields message
             SPRINTF(buf1, 
-                     "&WThe Killing Fields are open to levels &R%d &Wthru &R%d\r\n",
+                     "&WThe Killing Fields are open to levels &R%d &Wthru &R%d\n",
                      lo_lim, hi_lim);
             buf1[sizeof(buf1) - 1] = '\0';
 
-            SPRINTF(buf2, "The killing fields are open.\n\r");
+            SPRINTF(buf2, "The killing fields are open.\n");
             buf2[sizeof(buf2) - 1] = '\0';
 
             // Append time-to-start
@@ -397,20 +397,20 @@ void start_arena()
 
             if (time_to_start > 1)
             {
-                snprintf(buf1 + len1, sizeof(buf1) - len1, "%d &Whours to start\r\n", time_to_start);
-                snprintf(buf2 + len2, sizeof(buf2) - len2, "&R%d &Whour to start\n\r", time_to_start);
+                snprintf(buf1 + len1, sizeof(buf1) - len1, "%d &Whours to start\n", time_to_start);
+                snprintf(buf2 + len2, sizeof(buf2) - len2, "&R%d &Whour to start\n", time_to_start);
             }
             else
             {
-                snprintf(buf1 + len1, sizeof(buf1) - len1, "1 &Whour to start\r\n");
-                snprintf(buf2 + len2, sizeof(buf2) - len2, "&R1 &Whour to start\n\r");
+                snprintf(buf1 + len1, sizeof(buf1) - len1, "1 &Whour to start\n");
+                snprintf(buf2 + len2, sizeof(buf2) - len2, "&R1 &Whour to start\n");
             }
 
             // Final instructions / betting
             len1 = strlen(buf1);
             len2 = strlen(buf2);
-            snprintf(buf1 + len1, sizeof(buf1) - len1, "Type &Rarena &Wto enter.\r\n");
-            snprintf(buf2 + len2, sizeof(buf2) - len2, "Place your bets!!!\n\r");
+            snprintf(buf1 + len1, sizeof(buf1) - len1, "Type &Rarena &Wto enter.\n");
+            snprintf(buf2 + len2, sizeof(buf2) - len2, "Place your bets!!!\n");
 
             to_channel(buf2, CHANNEL_ARENA, "&RArena&W", 5);
             // echo_to_all(AT_WHITE, buf1, ECHOTAR_ALL);  // optional broadcast
@@ -448,7 +448,7 @@ void start_game()
       continue;
     if (1==1)  {  //yea, I know this is true all the time.  Bite me.     
       if (g->ch->in_room && IS_SET(g->ch->in_room->room_flags, ROOM_ARENA)) {
-        send_to_char("\r\nThe floor falls out from below, dropping you in the arena.\r\n", g->ch);
+        send_to_char("\nThe floor falls out from below, dropping you in the arena.\n", g->ch);
         char_from_room(g->ch);
         char_to_room(g->ch, get_room_index( ARENA_START));
         do_look(g->ch,"auto");
@@ -530,7 +530,7 @@ void find_game_winner()
                to_channel(buf,CHANNEL_ARENA,"&RArena&W",5);
       }
 
-      SPRINTF(buf, "You have been awarded %d credits for winning the arena\r\n",
+      SPRINTF(buf, "You have been awarded %d credits for winning the arena\n",
              (arena_pot/2));
       i->gold += (arena_pot/2);
       send_to_char(buf, i);
@@ -564,10 +564,10 @@ void show_jack_pot()
   char buf1[MAX_INPUT_LENGTH];
   char buf2[MAX_INPUT_LENGTH];
   char buf3[MAX_INPUT_LENGTH];    
-  SPRINTF(buf1, "\r\nLets get ready to RUMBLE!!!!!!!!\r\n");
-  SPRINTF(buf2, "%.40sThe jack pot for this arena is %.60d credits\r\n",
+  SPRINTF(buf1, "\nLets get ready to RUMBLE!!!!!!!!\n");
+  SPRINTF(buf2, "%.40sThe jack pot for this arena is %.60d credits\n",
   buf1, arena_pot);
-  SPRINTF(buf3, "%.120s%.60d credits have been bet on this arena.\r\n",buf2, bet_pot);
+  SPRINTF(buf3, "%.120s%.60d credits have been bet on this arena.\n",buf2, bet_pot);
   to_channel(buf3,CHANNEL_ARENA,"&RArena&W",5);
                     
 }
@@ -633,7 +633,7 @@ void do_end_game()
   char buf1[MAX_INPUT_LENGTH];
   DESCRIPTOR_DATA *i;
         
-  SPRINTF(buf1, "&R[Arena] &W%s\r\n", argument);
+  SPRINTF(buf1, "&R[Arena] &W%s\n", argument);
             
   for (i = first_descriptor; i; i = i->next)
   {
@@ -653,28 +653,28 @@ void do_awho(CHAR_DATA *ch, char *argument)
           
   if(num==0 && ppl_challenged == 0)
   {
-     send_to_char("There is noone in the arena right now.\r\n", ch);
+     send_to_char("There is noone in the arena right now.\n", ch);
      return;
   }
   
-  send_to_char("&W  Players in the &BRise in Power&W Arena\r\n", ch);
+  send_to_char("&W  Players in the &BRise in Power&W Arena\n", ch);
   send_to_char("-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-", ch);  
-  send_to_char("&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-\r\n", ch);  
+  send_to_char("&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-\n", ch);  
 
-  SPRINTF(buf,"Game Length = &R%-3d   &WTime To Start &R%-3d\r\n", game_length, time_to_start);
+  SPRINTF(buf,"Game Length = &R%-3d   &WTime To Start &R%-3d\n", game_length, time_to_start);
   send_to_char(buf, ch);
-  SPRINTF(buf,"&WLevel Limits &R%d &Wto &R%d\r\n", lo_lim, hi_lim);
+  SPRINTF(buf,"&WLevel Limits &R%d &Wto &R%d\n", lo_lim, hi_lim);
   send_to_char(buf, ch);
-  SPRINTF(buf,"         &WJackpot = &R%d\r\n",arena_pot);
+  SPRINTF(buf,"         &WJackpot = &R%d\n",arena_pot);
   send_to_char(buf, ch);
   send_to_char("&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B", ch);
-  send_to_char("-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B\r\n", ch);
+  send_to_char("-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B-&W-&B\n", ch);
   send_to_char(buf, ch);
 
  
   for(g = gladiators; g; g=g->next)
     if (g->ch && g->place == 0) {
-      SPRINTF(buf2, "&W%s\n\r", g->ch->name);
+      SPRINTF(buf2, "&W%s\n", g->ch->name);
       send_to_char(buf2,ch);
     }
   return;
@@ -691,27 +691,27 @@ void do_ahall(CHAR_DATA *ch, char *argument)
           
   if (!fame_list)
   {
-     send_to_char("No-one is in the Hall of Fame.\r\n", ch);
+     send_to_char("No-one is in the Hall of Fame.\n", ch);
      return;
   }
                                   
-     SPRINTF(buf2, "&B|---------------------------------------|\r\n");
-     STRAPP(buf2, "| &WPast Winners of The Rise in Power Arena&B  |\r\n");
-     STRAPP(buf2, "|---------------------------------------|\r\n\r\n"); 
+     SPRINTF(buf2, "&B|---------------------------------------|\n");
+     STRAPP(buf2, "| &WPast Winners of The Rise in Power Arena&B  |\n");
+     STRAPP(buf2, "|---------------------------------------|\n\n"); 
 
      send_to_char(buf2, ch);
-     SPRINTF(buf, "%-25.25s  %-10.10s  %-16.16s\r\n",
+     SPRINTF(buf, "%-25.25s  %-10.10s  %-16.16s\n",
       "&RName",
       "&RDate",
       "&RAward Amt");
      send_to_char(buf, ch);
-     SPRINTF(buf, "%-25.25s  %-10.10s  %-16.16s\r\n",
+     SPRINTF(buf, "%-25.25s  %-10.10s  %-16.16s\n",
         "&B---------------------------------",
         "&B---------------------------------",
         "&B---------------------------------");
  
      send_to_char(buf, ch);
-//   SPRINTF(format2, "&W%-25.25s  &R%-10.10s  &Y%-16d\r\n");
+//   SPRINTF(format2, "&W%-25.25s  &R%-10.10s  &Y%-16d\n");
      for (fame_node = fame_list; fame_node; fame_node = fame_node->next)
      {
         if (fame_node->date)
@@ -722,7 +722,7 @@ void do_ahall(CHAR_DATA *ch, char *argument)
         }
      else
         SPRINTF(site, "Unknown");
-     SPRINTF(buf, "&W%-25.25s  &R%-10.10s  &Y%-16d\r\n", fame_node->name, site, fame_node->award);
+     SPRINTF(buf, "&W%-25.25s  &R%-10.10s  &Y%-16d\n", fame_node->name, site, fame_node->award);
      send_to_char(buf, ch);
      }
      return;
@@ -797,7 +797,7 @@ void find_bet_winners(CHAR_DATA *winner)
        
        if ((!IS_NPC(wch)) && (GET_BET_AMT(wch) > 0) && (GET_BETTED_ON(wch) == winner))
        {
-          SPRINTF(buf1, "You have won %d credits on your bet.\r\n",(GET_BET_AMT(wch))*2);
+          SPRINTF(buf1, "You have won %d credits on your bet.\n",(GET_BET_AMT(wch))*2);
           send_to_char(buf1, wch);
           wch->gold += GET_BET_AMT(wch)*2;
           GET_BETTED_ON(wch) = NULL;
@@ -812,24 +812,24 @@ void do_challenge(CHAR_DATA *ch, char *argument)
  char buf[MAX_INPUT_LENGTH];
    
  if ( ch->challenged != NULL) {
-   send_to_char("&WSomeone has challenged YOU already.\n\r",ch);
+   send_to_char("&WSomeone has challenged YOU already.\n",ch);
    return;
  }
  if ( ( victim = get_char_world( ch, argument ) ) == NULL)
  {
-    send_to_char("&WThat character is not of these realms!\n\r",ch);  
+    send_to_char("&WThat character is not of these realms!\n",ch);  
     return;
  }
  
  if (IS_IMMORTAL(ch) || IS_IMMORTAL(victim))
  { 
-    send_to_char("Sorry, Immortals are not allowed to participate in the arena.\n\r",ch);
+    send_to_char("Sorry, Immortals are not allowed to participate in the arena.\n",ch);
     return;
  }
       
  if (IS_NPC(victim))
  {
-    send_to_char("&WYou cannot challenge mobiles!\n\r",ch);
+    send_to_char("&WYou cannot challenge mobiles!\n",ch);
     return;
  }
  
@@ -841,43 +841,43 @@ void do_challenge(CHAR_DATA *ch, char *argument)
  
  if (victim->top_level<5)
  {
-   send_to_char("&WThat character is too young.\n\r",ch);
+   send_to_char("&WThat character is too young.\n",ch);
    return;
  }
  
  if ((!(ch->top_level-15<victim->top_level))||(!(ch->top_level+15>victim->top_level)))
  {
-   send_to_char("&WThat character is out of your level range.\n\r",ch);
+   send_to_char("&WThat character is out of your level range.\n",ch);
    return;
  }
  
  if (get_timer(victim,TIMER_PKILLED)>0)
  {
-   send_to_char("&WThat player has died within the last 5 minutes and cannot be challenged!\n\r",ch);
+   send_to_char("&WThat player has died within the last 5 minutes and cannot be challenged!\n",ch);
    return;
  }
  
  if ( victim->top_level < 5 )
  {
-   send_to_char("You are too young to die.\n\r",ch);
+   send_to_char("You are too young to die.\n",ch);
    return;
  }
  
  if (get_timer(ch,TIMER_PKILLED)>0)
  {
-   send_to_char("&WYou have died within the last 5 minutes and cannot challenge anyone.\n\r",ch);
+   send_to_char("&WYou have died within the last 5 minutes and cannot challenge anyone.\n",ch);
    return;
  }        
  
  if (num_gladiators>0 || in_start_arena)
  {
-    send_to_char("&WSomeone is already in the arena!\n\r",ch);
+    send_to_char("&WSomeone is already in the arena!\n",ch);
     return;
  }
- SPRINTF(buf,"&R%s &Whas challenged you to a duel!\n\r",ch->name);
+ SPRINTF(buf,"&R%s &Whas challenged you to a duel!\n",ch->name);
  send_to_char(buf,victim);
- send_to_char("&WPlease either accept or decline the challenge.\n\r\n\r",victim);
- SPRINTF(buf,"%s has challenged %s to a duel!!\n\r",ch->name,victim->name);
+ send_to_char("&WPlease either accept or decline the challenge.\n\n",victim);
+ SPRINTF(buf,"%s has challenged %s to a duel!!\n",ch->name,victim->name);
  to_channel(buf,CHANNEL_ARENA,"&RArena&W",5);
  victim->challenged = ch;
 }
@@ -891,30 +891,30 @@ void do_mchallenge(CHAR_DATA *ch, char *argument)
 
  argument = one_argument( argument, arg );
  if ( arg[0] == '\0' ) {
-   send_to_char( "mchallenge <mob> <player>\n\r", ch );
+   send_to_char( "mchallenge <mob> <player>\n", ch );
    return;
  }
 
  if ( ( mob = get_char_world( ch, arg ) ) == NULL ) {
-        send_to_char( "They are not here.\n\r", ch );
+        send_to_char( "They are not here.\n", ch );
         return;
  }
 
  if ( ( victim = get_char_world( ch, argument ) ) == NULL)
  {
-    send_to_char("&WThat character is not of these realms!\n\r",ch);
+    send_to_char("&WThat character is not of these realms!\n",ch);
     return;
  }
 
  if (!IS_NPC(mob))
  {
-    send_to_char("&WYou must mchallenge with mobiles!\n\r",ch);
+    send_to_char("&WYou must mchallenge with mobiles!\n",ch);
     return;
  }
 
  if (IS_NPC(victim))
  {
-    send_to_char("&WYou cannot challenge mobiles!\n\r",ch);
+    send_to_char("&WYou cannot challenge mobiles!\n",ch);
     return;
  }
 
@@ -926,24 +926,24 @@ void do_mchallenge(CHAR_DATA *ch, char *argument)
 
  if (victim->top_level<5)
  {
-   send_to_char("&WThat character is too young.\n\r",ch);
+   send_to_char("&WThat character is too young.\n",ch);
    return;
  }
 
  if (get_timer(victim,TIMER_PKILLED)>0)
  {
-   send_to_char("&WThat player has died within the last 5 minutes and cannot be challenged!\n\r",ch);
+   send_to_char("&WThat player has died within the last 5 minutes and cannot be challenged!\n",ch);
    return;
  }
 
  if (num_gladiators>0) {
-    send_to_char("&WSomeone is already in the arena!\n\r",ch);
+    send_to_char("&WSomeone is already in the arena!\n",ch);
     return;
  }
- SPRINTF(buf,"&R%s &Whas challenged you to a duel!\n\r",mob->name);
+ SPRINTF(buf,"&R%s &Whas challenged you to a duel!\n",mob->name);
  send_to_char(buf,victim);
- send_to_char("&WPlease either accept or decline the challenge.\n\r\n\r",victim);
- SPRINTF(buf,"%s has challenged %s to a duel!!\n\r",mob->name,victim->name);
+ send_to_char("&WPlease either accept or decline the challenge.\n\n",victim);
+ SPRINTF(buf,"%s has challenged %s to a duel!!\n",mob->name,victim->name);
  to_channel(buf,CHANNEL_ARENA,"&RArena&W",5);
  victim->challenged = mob;
 }
@@ -955,13 +955,13 @@ void do_accept(CHAR_DATA *ch, char *argument)
   struct struct_gladiator *gladiator_node;        
   if (num_gladiators>0)
   {
-   send_to_char("Please wait until the current arena is closed before you accept.\n\r",ch);
+   send_to_char("Please wait until the current arena is closed before you accept.\n",ch);
    return;
   }
   
   if (!(ch->challenged))
   {
-    send_to_char("You have not been challenged!\n\r",ch);
+    send_to_char("You have not been challenged!\n",ch);
     return;
   }
   else
@@ -974,16 +974,16 @@ void do_accept(CHAR_DATA *ch, char *argument)
       
     if ( dch->in_room == ch->in_room )
     {
-      send_to_char("You must be in a different room as your challenger.\n\r",ch);
+      send_to_char("You must be in a different room as your challenger.\n",ch);
     }
       
     if ( dch->in_room == ch->in_room )
     {
-      send_to_char("You must be in a different room as your challenger.\n\r",ch);
+      send_to_char("You must be in a different room as your challenger.\n",ch);
       return;
     }
     
-    SPRINTF(buf,"%s has accepted %ss challenge!\n\r",ch->name,dch->name);
+    SPRINTF(buf,"%s has accepted %ss challenge!\n",ch->name,dch->name);
     to_channel(buf,CHANNEL_ARENA,"&RArena&W",5);
     ch->challenged = NULL;
     ch->retran = ch->in_room->vnum;
@@ -1027,14 +1027,14 @@ void do_decline(CHAR_DATA *ch, char *argument)
  
  if (ch->challenged)
  {
-   SPRINTF(buf,"%s has DECLINED %ss challenge! WHAT A WUSS!!!\n\r",ch->name,ch->challenged->name);
+   SPRINTF(buf,"%s has DECLINED %ss challenge! WHAT A WUSS!!!\n",ch->name,ch->challenged->name);
    to_channel(buf,CHANNEL_ARENA,"&RArena&W",5);
    ch->challenged=NULL;
    return;
  }
  else 
  {
-   send_to_char("You have not been challenged!\n\r",ch);
+   send_to_char("You have not been challenged!\n",ch);
    return;
  }
 }                                                                                                                                                                                                 

@@ -48,7 +48,7 @@ void save_disintigrations()
     fpout = fopen( filename, "w" );
     if ( !fpout )
     {
-         bug( "FATAL: cannot open disintigration.lst for writing!\n\r", 0 );
+         bug( "FATAL: cannot open disintigration.lst for writing!\n", 0 );
          return;
     }
     for ( tbounty = first_disintigration; tbounty; tbounty = tbounty->next )
@@ -138,22 +138,22 @@ void do_bounties( CHAR_DATA *ch, char *argument )
 
     int count = 0;
     if ( ( get_trust(ch) < LEVEL_IMMORTAL) && (!ch->pcdata || !ch->pcdata->clan || ( str_cmp(ch->pcdata->clan->name, "the hunters guild") && str_cmp(ch->pcdata->clan->name, "the assassins guild") ) ))
-    {    send_to_char( "\n\rOnly hunters can access that information!\n\r", ch );
+    {    send_to_char( "\nOnly hunters can access that information!\n", ch );
         return;
     }
     set_char_color( AT_WHITE, ch );
-    send_to_char( "\n\rBounty                      Amount          Poster\n\r", ch );
+    send_to_char( "\nBounty                      Amount          Poster\n", ch );
     for ( bounty = first_disintigration; bounty; bounty = bounty->next )
     {
         set_char_color( AT_RED, ch );
-        ch_printf( ch, "%-26s %-14ld %-20s\n\r", bounty->target, bounty->amount, bounty->poster );
+        ch_printf( ch, "%-26s %-14ld %-20s\n", bounty->target, bounty->amount, bounty->poster );
         count++;
     }
 
     if ( !count )
     {
         set_char_color( AT_GREY, ch );
-        send_to_char( "There are no bounties set at this time.\n\r", ch );
+        send_to_char( "There are no bounties set at this time.\n", ch );
 	return;
     }
 }
@@ -189,7 +189,7 @@ void disintigration ( CHAR_DATA *ch , CHAR_DATA *victim , long amount )
     bounty->amount      = bounty->amount + amount;
     save_disintigrations();
 
-    SPRINTF( buf, "&R%s has added %ld credits to the bounty on %s.\r\n", ch->name, amount , victim->name );
+    SPRINTF( buf, "&R%s has added %ld credits to the bounty on %s.\n", ch->name, amount , victim->name );
     send_to_char(buf, ch);
 
     for (p = last_char; p ; p = p_prev )
@@ -201,7 +201,7 @@ void disintigration ( CHAR_DATA *ch , CHAR_DATA *victim , long amount )
       else if (!IS_NPC(p) && get_trust(p) >= LEVEL_IMMORTAL)
         ch_printf(p, buf);
       if (victim == p)
-        ch_printf(p, "&RSomeone has added %ld credits to the bounty on you!\r\n", amount );
+        ch_printf(p, "&RSomeone has added %ld credits to the bounty on you!\n", amount );
     }
 }
 
@@ -221,7 +221,7 @@ void do_addbounty( CHAR_DATA *ch, char *argument )
     
     if (argument[0] == '\0' )
     {
-    	send_to_char( "Usage: Addbounty <target> <amount>\n\r", ch );
+    	send_to_char( "Usage: Addbounty <target> <amount>\n", ch );
     	return;
     }
 
@@ -245,36 +245,36 @@ void do_addbounty( CHAR_DATA *ch, char *argument )
 
      if ( amount < 5000 )
      {
-    	send_to_char( "A bounty should be at least 5000 credits.\n\r", ch );
+    	send_to_char( "A bounty should be at least 5000 credits.\n", ch );
     	return;
     }
 
     if ( !(victim = get_char_world( ch, arg )) )
     {
-        send_to_char( "They don't appear to be here .. wait til they log in.\n\r", ch );
+        send_to_char( "They don't appear to be here .. wait til they log in.\n", ch );
         return;
     }
 
     if ( IS_NPC(victim) )
     {
-    	send_to_char( "You can only set bounties on other players .. not mobs!\n\r", ch );
+    	send_to_char( "You can only set bounties on other players .. not mobs!\n", ch );
 	return;
     }
     if ( victim->pcdata && victim->pcdata->clan && !str_cmp(victim->pcdata->clan->name, "the hunters guild"))
     {
-      send_to_char( "&RYou can not post bounties on bounty hunters!\r\n", ch);
+      send_to_char( "&RYou can not post bounties on bounty hunters!\n", ch);
       return;
     }
 
     if (amount <= 0)
     {
-        send_to_char( "Nice try! How about 1 or more credits instead...\n\r", ch );
+        send_to_char( "Nice try! How about 1 or more credits instead...\n", ch );
         return;
     }
 
     if (ch->gold < amount)
     {
-    	send_to_char( "You don't have that many credits!\n\r", ch );
+    	send_to_char( "You don't have that many credits!\n", ch );
     	return;
     }
     ch->gold = ch->gold - amount;
@@ -324,12 +324,12 @@ void claim_disintigration( CHAR_DATA *ch , CHAR_DATA *victim )
 	       exp = URANGE(1, xp_compute(ch, victim) , ( exp_level(ch->skill_level[HUNTING_ABILITY]+1) - exp_level(ch->skill_level[HUNTING_ABILITY]) ));	
 	       gain_exp( ch , exp , HUNTING_ABILITY );
 	       set_char_color( AT_BLOOD, ch );
-	       ch_printf( ch, "You receive %ld hunting experience for executing a wanted killer.\n\r", exp );
+	       ch_printf( ch, "You receive %ld hunting experience for executing a wanted killer.\n", exp );
 	     }
 	     else if ( !IS_NPC(ch) ) 
 	     {
 	        SET_BIT(ch->act, PLR_KILLER );
-	        ch_printf( ch, "You are now wanted for the murder of %s.\n\r", victim->name );
+	        ch_printf( ch, "You are now wanted for the murder of %s.\n", victim->name );
 	     }
 /*	     SPRINTF( buf, "%s is Dead!", victim->name );
              echo_to_all ( AT_RED , buf, 0 );
@@ -344,7 +344,7 @@ void claim_disintigration( CHAR_DATA *ch , CHAR_DATA *victim )
 	gain_exp( ch , exp , HUNTING_ABILITY );
         	
 	set_char_color( AT_BLOOD, ch );
-	ch_printf( ch, "You receive %ld experience and %ld credits,\n\r from the bounty on %s\n\r", exp, bounty->amount, bounty->target );
+	ch_printf( ch, "You receive %ld experience and %ld credits,\n from the bounty on %s\n", exp, bounty->amount, bounty->target );
 	
 	SPRINTF( buf, "The disintigration bounty on %s has been claimed!",victim->name );
 	echo_to_all ( AT_RED , buf, 0 );

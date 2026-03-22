@@ -115,7 +115,7 @@ ROOM_INDEX_DATA *make_template_room(int rtype, SHIP_DATA *ship, int roomnum)
     
     if ( !templateroom )
     {
-      bug( "make_template_room: no template room exists.\n\r", 0 );
+      bug( "make_template_room: no template room exists.\n", 0 );
       return NULL;
     }
     
@@ -128,7 +128,7 @@ ROOM_INDEX_DATA *make_template_room(int rtype, SHIP_DATA *ship, int roomnum)
     room->tunnel 	= templateroom->tunnel;
     if ( !setroomtoship( ship, room, strtype ) )
     {
-      bug( "make_template_room: setroomtoship failed.\n\r", 0 );
+      bug( "make_template_room: setroomtoship failed.\n", 0 );
       return NULL;
     }
 
@@ -230,7 +230,7 @@ int join_template_rooms(int room1, ROOM_INDEX_DATA *room2, int exitType)
 	default: return 1;
     }
     
-//  bug( "Room1: %d Room2: %d exitType: %d\n\r", room1, room2->vnum, exitType );
+//  bug( "Room1: %d Room2: %d exitType: %d\n", room1, room2->vnum, exitType );
 
     
     if( twoway )
@@ -365,7 +365,7 @@ int parse_ship_template(char *string, SHIP_DATA *ship)
 
 /*  for( i = 0; i < roomCount; i++ )
     {
-    	bug("Rooms: Tmp#: %d Vnum: %d\n\r", roomArray[i], vnumArray[i]->vnum );
+    	bug("Rooms: Tmp#: %d Vnum: %d\n", roomArray[i], vnumArray[i]->vnum );
     }
 */
 
@@ -382,14 +382,14 @@ int parse_ship_template(char *string, SHIP_DATA *ship)
 	    for(j = 0; j < roomCount; j++) {
 		if ( ( roomArray[j] == room ) && vnumArray[j] ) 
 		{
-//		    bug("Tmp#: %d Vnum: %d\n\r", room, vnumArray[j]->vnum );
+//		    bug("Tmp#: %d Vnum: %d\n", room, vnumArray[j]->vnum );
 		    room = vnumArray[j]->vnum;
 		    bindex = 0;
 		    break;
 		}
 	    }
 	    if (j == roomCount) {
-	    	bug( "No room found for exit.\n\r", 0 );
+	    	bug( "No room found for exit.\n", 0 );
 		destroy_vnums(vnumArray,roomCount);
 //		free(vnumArray);
 		free(roomArray);
@@ -422,7 +422,7 @@ int parse_ship_template(char *string, SHIP_DATA *ship)
 	    }
 	    buf[j] = '\0';
 	    room2 = atoi((char*)buf+j+1);
-//	    bug("Buf: %s Room2: %d\n\r", buf, room2 );
+//	    bug("Buf: %s Room2: %d\n", buf, room2 );
 	    for(j = 0; j < roomCount; j++) {
 		if (roomArray[j] == room2) {
 		    if (join_template_rooms(room,vnumArray[j],atoi(buf))) {

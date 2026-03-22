@@ -1208,7 +1208,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		&&   ch->pcdata->clan_name[0] != '\0'
 		&& ( ch->pcdata->clan = get_clan( ch->pcdata->clan_name )) == NULL )
 		{
-		  SPRINTF( buf, "Warning: the organization %s no longer exists, and therefore you no longer\n\rbelong to that organization.\n\r",
+		  SPRINTF( buf, "Warning: the organization %s no longer exists, and therefore you no longer\nbelong to that organization.\n",
 		           ch->pcdata->clan_name );
 		  send_to_char( buf, ch );
 		  STRFREE( ch->pcdata->clan_name );
@@ -1292,7 +1292,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		&&   ch->pcdata->clan_name[0] != '\0'
 		&& ( ch->pcdata->clan = get_clan( ch->pcdata->clan_name )) == NULL )
 		{
-		  SPRINTF( buf, "Warning: the organization %s no longer exists, and therefore you no longer\n\rbelong to that organization.\n\r",
+		  SPRINTF( buf, "Warning: the organization %s no longer exists, and therefore you no longer\nbelong to that organization.\n",
 		           ch->pcdata->clan_name );
 		  send_to_char( buf, ch );
 		  STRFREE( ch->pcdata->clan_name );
@@ -1509,7 +1509,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	    {
 		if ( !preload )
 		{
-		  SPRINTF( buf, "Last connected from: %s\n\r", fread_word( fp ) );
+		  SPRINTF( buf, "Last connected from: %s\n", fread_word( fp ) );
 		  send_to_char( buf, ch );
 		}
 		else
@@ -2092,7 +2092,7 @@ void do_last( CHAR_DATA *ch, char *argument )
     one_argument( argument, arg );
     if ( arg[0] == '\0' )
     {
-	send_to_char( "Usage: last <playername>\n\r", ch );
+	send_to_char( "Usage: last <playername>\n", ch );
 	return;
     }
     SPRINTF( name, "%s", capitalize(arg) );
@@ -2100,7 +2100,7 @@ void do_last( CHAR_DATA *ch, char *argument )
     if ( stat( buf, &fst ) != -1 )
       SPRINTF( buf, "%s was last on: %s\r", name, ctime( &fst.st_mtime ) );
     else
-      SPRINTF( buf, "%s was not found.\n\r", name );
+      SPRINTF( buf, "%s was not found.\n", name );
    send_to_char( buf, ch );
 }
 
@@ -2572,7 +2572,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
    FCLOSE( fpReserve );
    if ( (fp = fopen( argument, "w")) == NULL )
    {
- 	bug(buf, "Write_char_mobile: couldn't open %s for writing!\n\r", 
+ 	bug(buf, "Write_char_mobile: couldn't open %s for writing!\n", 
  		argument );
  	fpReserve = fopen( NULL_FILE, "r" );
  	return;
@@ -2597,7 +2597,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
    FCLOSE( fpReserve );
    if ( (fp = fopen( argument, "r")) == NULL )
    {
- 	bug(buf, "Read_char_mobile: couldn't open %s for reading!\n\r", 
+ 	bug(buf, "Read_char_mobile: couldn't open %s for reading!\n", 
  		argument );
  	fpReserve = fopen( NULL_FILE, "r" );
  	return;

@@ -2342,9 +2342,9 @@ void area_update( void )
 
 	    /* Rennard */
 	    if ( pArea->resetmsg )
-			SPRINTF( buf, "%s\n\r", pArea->resetmsg );
+			SPRINTF( buf, "%s\n", pArea->resetmsg );
 	    else
-			SPRINTF( buf, "You hear some squeaking sounds...\n\r" );
+			SPRINTF( buf, "You hear some squeaking sounds...\n" );
 	    for ( pch = first_char; pch; pch = pch->next )
 	    {
 		if ( !IS_NPC(pch)
@@ -2962,7 +2962,7 @@ char fread_letter( FILE *fp )
     {
         if ( feof(fp) )
         {
-          bug("fread_letter: EOF encountered on read.\n\r");
+          bug("fread_letter: EOF encountered on read.\n");
           if ( fBootDb )
             exit(1);
           return '\0';
@@ -3075,7 +3075,7 @@ int fread_number( FILE *fp )
     {
         if ( feof(fp) )
         {
-          bug("fread_number: EOF encountered on read.\n\r");
+          bug("fread_number: EOF encountered on read.\n");
           if ( fBootDb )
             exit(1);
           return 0;
@@ -3109,7 +3109,7 @@ int fread_number( FILE *fp )
     {
         if ( feof(fp) )
         {
-          bug("fread_number: EOF encountered on read.\n\r");
+          bug("fread_number: EOF encountered on read.\n");
           if ( fBootDb )
             exit(1);
           return number;
@@ -3158,16 +3158,16 @@ bool is_valid_filename( CHAR_DATA *ch, const char *direct, const char *filename 
    if( !filename || filename[0] == '\0' || strlen( filename ) < 3 )
    {
       if( !filename || !str_cmp( filename, "" ) )
-         send_to_char( "Empty filename is not valid.\r\n", ch );
+         send_to_char( "Empty filename is not valid.\n", ch );
       else
-         ch_printf( ch, "%s: Filename is too short.\r\n", filename );
+         ch_printf( ch, "%s: Filename is too short.\n", filename );
       return FALSE;
    }
 
    /* Illegal characters */
    if( strstr( filename, ".." ) || strstr( filename, "/" ) || strstr( filename, "\\" ) )
    {
-      send_to_char( "A filename may not contain a '..', '/', or '\\' in it.\r\n", ch );
+      send_to_char( "A filename may not contain a '..', '/', or '\\' in it.\n", ch );
       return FALSE;
    }
 
@@ -3175,7 +3175,7 @@ bool is_valid_filename( CHAR_DATA *ch, const char *direct, const char *filename 
    snprintf( newfilename, sizeof( newfilename ), "%s%s", direct, filename );
    if( stat( newfilename, &fst ) != -1 )
    {
-      ch_printf( ch, "%s is already an existing filename.\r\n", newfilename );
+      ch_printf( ch, "%s is already an existing filename.\n", newfilename );
       return FALSE;
    }
 
@@ -3205,7 +3205,7 @@ char *fread_string( FILE *fp )
     {
 	if ( feof(fp) )
 	{
-	    bug("fread_string: EOF encountered on read.\n\r");
+	    bug("fread_string: EOF encountered on read.\n");
 	    if ( fBootDb )
 		exit(1);
 	    return STRALLOC("");
@@ -3276,7 +3276,7 @@ char *fread_string_nohash( FILE *fp )
     {
 	if ( feof(fp) )
 	{
-	    bug("fread_string_no_hash: EOF encountered on read.\n\r");
+	    bug("fread_string_no_hash: EOF encountered on read.\n");
 	    if ( fBootDb )
 		exit(1);
 	    return str_dup("");
@@ -3338,7 +3338,7 @@ void fread_to_eol( FILE *fp )
     {
 	if ( feof(fp) )
 	{
-	    bug("fread_to_eol: EOF encountered on read.\n\r");
+	    bug("fread_to_eol: EOF encountered on read.\n");
 	    if ( fBootDb )
 		exit(1);
 	    return;
@@ -3379,7 +3379,7 @@ char *fread_line( FILE *fp )
     {
 	if ( feof(fp) )
 	{
-	    bug("fread_line: EOF encountered on read.\n\r");
+	    bug("fread_line: EOF encountered on read.\n");
 	    if ( fBootDb )
 			exit(1);
 		line[0] = '\0';
@@ -3394,7 +3394,7 @@ char *fread_line( FILE *fp )
     {
 	if ( feof(fp) )
 	{
-	    bug("fread_line: EOF encountered on read.\n\r");
+	    bug("fread_line: EOF encountered on read.\n");
 	    if ( fBootDb )
 		exit(1);
 	    *pline = '\0';
@@ -3436,7 +3436,7 @@ char *fread_word( FILE *fp )
     {
 	if ( feof(fp) )
 	{
-	    bug("fread_word: EOF encountered on read.\n\r");
+	    bug("fread_word: EOF encountered on read.\n");
 	    if ( fBootDb )
 		exit(1);
 	    word[0] = '\0';
@@ -3461,7 +3461,7 @@ char *fread_word( FILE *fp )
     {
 	if ( feof(fp) )
 	{
-	    bug("fread_word: EOF encountered on read.\n\r");
+	    bug("fread_word: EOF encountered on read.\n");
 	    if ( fBootDb )
 		exit(1);
 	    *pword = '\0';
@@ -3489,23 +3489,23 @@ void do_memory( CHAR_DATA *ch, char *argument )
     int hash;
 
     argument = one_argument( argument, arg );
-    ch_printf( ch, "Affects %5d    Areas   %5d\n\r",  top_affect, top_area   );
-    ch_printf( ch, "ExtDes  %5d    Exits   %5d\n\r", top_ed,	 top_exit   );
-    ch_printf( ch, "Helps   %5d    Resets  %5d\n\r", top_help,   top_reset  );
-    ch_printf( ch, "IdxMobs %5d    Mobs    %5d\n\r", top_mob_index, nummobsloaded );
-    ch_printf( ch, "IdxObjs %5d    Objs    %5d (%d)\n\r", top_obj_index, numobjsloaded, physicalobjects );
-    ch_printf( ch, "Rooms   %5d    VRooms  %5d\n\r", top_room,   top_vroom   );
-    ch_printf( ch, "Shops   %5d    RepShps %5d\n\r", top_shop,   top_repair );
-    ch_printf( ch, "CurOq's %5d    CurCq's %5d\n\r", cur_qobjs,  cur_qchars );
-    ch_printf( ch, "Players %5d    Maxplrs %5d\n\r", num_descriptors, sysdata.maxplayers );
-    ch_printf( ch, "MaxEver %5d    Topsn   %5d (%d)\n\r", sysdata.alltimemax, top_sn, MAX_SKILL );
-    ch_printf( ch, "MaxEver time recorded at:   %s\n\r", sysdata.time_of_max );
+    ch_printf( ch, "Affects %5d    Areas   %5d\n",  top_affect, top_area   );
+    ch_printf( ch, "ExtDes  %5d    Exits   %5d\n", top_ed,	 top_exit   );
+    ch_printf( ch, "Helps   %5d    Resets  %5d\n", top_help,   top_reset  );
+    ch_printf( ch, "IdxMobs %5d    Mobs    %5d\n", top_mob_index, nummobsloaded );
+    ch_printf( ch, "IdxObjs %5d    Objs    %5d (%d)\n", top_obj_index, numobjsloaded, physicalobjects );
+    ch_printf( ch, "Rooms   %5d    VRooms  %5d\n", top_room,   top_vroom   );
+    ch_printf( ch, "Shops   %5d    RepShps %5d\n", top_shop,   top_repair );
+    ch_printf( ch, "CurOq's %5d    CurCq's %5d\n", cur_qobjs,  cur_qchars );
+    ch_printf( ch, "Players %5d    Maxplrs %5d\n", num_descriptors, sysdata.maxplayers );
+    ch_printf( ch, "MaxEver %5d    Topsn   %5d (%d)\n", sysdata.alltimemax, top_sn, MAX_SKILL );
+    ch_printf( ch, "MaxEver time recorded at:   %s\n", sysdata.time_of_max );
     if ( !str_cmp( arg, "check" ) )
     {
 #ifdef HASHSTR
 	send_to_char( check_hash(argument), ch );
 #else
-	send_to_char( "Hash strings not enabled.\n\r", ch );
+	send_to_char( "Hash strings not enabled.\n", ch );
 #endif
 	return;
     }
@@ -3514,7 +3514,7 @@ void do_memory( CHAR_DATA *ch, char *argument )
 #ifdef HASHSTR
 	show_high_hash( atoi(argument) );
 #else
-	send_to_char( "Hash strings not enabled.\n\r", ch );
+	send_to_char( "Hash strings not enabled.\n", ch );
 #endif
 	return;
     }
@@ -3525,11 +3525,11 @@ void do_memory( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg, "hash" ) )
     {
 #ifdef HASHSTR
-	ch_printf( ch, "Hash statistics:\n\r%s", hash_stats() );
+	ch_printf( ch, "Hash statistics:\n%s", hash_stats() );
 	if ( hash != -1 )
 	  hash_dump( hash );
 #else
-	send_to_char( "Hash strings not enabled.\n\r", ch );
+	send_to_char( "Hash strings not enabled.\n", ch );
 #endif
     }
     return;
@@ -4044,7 +4044,7 @@ void append_file( CHAR_DATA *ch, char *file, char *str )
     FCLOSE( fpLOG );
     if ( ( fp = fopen( file, "a" ) ) == NULL )
     {
-	send_to_char( "Could not open the file!\n\r", ch );
+	send_to_char( "Could not open the file!\n", ch );
     }
     else
     {
@@ -4292,7 +4292,7 @@ void log_string_plus( const char *str, sh_int log_type, sh_int level )
 	  set_char_color( AT_LOG, vch );
 	  send_to_char( "Log: ", vch );
 	  send_to_char( str+offset, vch );
-	  send_to_char( "&R&w\n\r", vch );
+	  send_to_char( "&R&w\n", vch );
 	}
     }
 
@@ -4321,7 +4321,7 @@ void towizfile( const char *line )
       STRAPP( outline, " " );
     STRAPP( outline, "%s", line );
   }
-  STRAPP( outline, "\n\r" );
+  STRAPP( outline, "\n" );
   wfp = fopen( WIZLIST_FILE, "a" );
   if ( wfp )
   {
@@ -5367,7 +5367,7 @@ MOB_INDEX_DATA *make_mobile( sh_int vnum, sh_int cvnum, char *name )
 	{
 	  SPRINTF( buf, "A newly created %s", name );
 	  pMobIndex->short_descr	= STRALLOC( buf  );
-	  SPRINTF( buf, "Some god abandoned a newly created %s here.\n\r", name );
+	  SPRINTF( buf, "Some god abandoned a newly created %s here.\n", name );
 	  pMobIndex->long_descr		= STRALLOC( buf );
 	  pMobIndex->description	= STRALLOC( "" );
 	  pMobIndex->short_descr[0]	= LOWER(pMobIndex->short_descr[0]);
@@ -5893,7 +5893,7 @@ void show_vnums( CHAR_DATA *ch, int low, int high, bool proto, bool shownl,
 	if ( !shownl )
 	   continue;
 	pager_printf(ch, "%-15s| Rooms: %5d - %-5d"
-		     " Objs: %5d - %-5d Mobs: %5d - %-5d%s\n\r",
+		     " Objs: %5d - %-5d Mobs: %5d - %-5d%s\n",
 		(pArea->filename ? pArea->filename : "(invalid)"),
 		pArea->low_r_vnum, pArea->hi_r_vnum,
 		pArea->low_o_vnum, pArea->hi_o_vnum,
@@ -5901,7 +5901,7 @@ void show_vnums( CHAR_DATA *ch, int low, int high, bool proto, bool shownl,
 		IS_SET(pArea->status, AREA_LOADED) ? loadst : notloadst );
 	count++;
     }
-    pager_printf( ch, "Areas listed: %d  Loaded: %d\n\r", count, loaded );
+    pager_printf( ch, "Areas listed: %d  Loaded: %d\n", count, loaded );
     return;
 }
 
@@ -6255,7 +6255,7 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
 
     if (arg1[0] == '\0')
     {
-      send_to_char("Please specify room, mob, object, or all as your first argument.\n\r", ch);
+      send_to_char("Please specify room, mob, object, or all as your first argument.\n", ch);
       return;
     }
 
@@ -6272,19 +6272,19 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
       all = TRUE;
     else 
     {
-      send_to_char("Please specify room, mob, or object as your first argument.\n\r", ch);
+      send_to_char("Please specify room, mob, or object as your first argument.\n", ch);
       return;
     }
 
     if(arg2[0] == '\0')
     {
-      send_to_char("Please specify the low end of the range to be searched.\n\r", ch);
+      send_to_char("Please specify the low end of the range to be searched.\n", ch);
       return;
     }
 
     if(argument[0] == '\0')
     {
-      send_to_char("Please specify the high end of the range to be searched.\n\r", ch);
+      send_to_char("Please specify the high end of the range to be searched.\n", ch);
       return;
     }
 
@@ -6293,19 +6293,19 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
 
     if (low_range < 1 || low_range > 32767 )
     {
-      send_to_char("Invalid argument for bottom of range.\n\r", ch);
+      send_to_char("Invalid argument for bottom of range.\n", ch);
       return;
     }
 
     if (high_range < 1 || high_range > 32767 )
     {
-      send_to_char("Invalid argument for top of range.\n\r", ch);
+      send_to_char("Invalid argument for top of range.\n", ch);
       return;
     }
       
     if (high_range < low_range)
     {
-      send_to_char("Bottom of range must be below top of range.\n\r", ch);
+      send_to_char("Bottom of range must be below top of range.\n", ch);
       return;
     }
     
@@ -6382,13 +6382,13 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
 	SPRINTF(buf, "Conflict:%-15s| ",
 		(pArea->filename ? pArea->filename : "(invalid)"));
         if(room)
-          SPRINTF( buf2, "Rooms: %5d - %-5d\n\r", pArea->low_r_vnum, 
+          SPRINTF( buf2, "Rooms: %5d - %-5d\n", pArea->low_r_vnum, 
           pArea->hi_r_vnum);
         if(mob)
-          SPRINTF( buf2, "Mobs: %5d - %-5d\n\r", pArea->low_m_vnum, 
+          SPRINTF( buf2, "Mobs: %5d - %-5d\n", pArea->low_m_vnum, 
           pArea->hi_m_vnum);
         if(obj)
-          SPRINTF( buf2, "Objects: %5d - %-5d\n\r", pArea->low_o_vnum, 
+          SPRINTF( buf2, "Objects: %5d - %-5d\n", pArea->low_o_vnum, 
           pArea->hi_o_vnum);
         
         STRAPP( buf, "%s", buf2 );
@@ -6456,13 +6456,13 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
 	SPRINTF(buf, "Conflict:%-15s| ",
 		(pArea->filename ? pArea->filename : "(invalid)"));
         if(room)
-          SPRINTF( buf2, "Rooms: %5d - %-5d\n\r", pArea->low_r_vnum, 
+          SPRINTF( buf2, "Rooms: %5d - %-5d\n", pArea->low_r_vnum, 
           pArea->hi_r_vnum);
         if(mob)
-          SPRINTF( buf2, "Mobs: %5d - %-5d\n\r", pArea->low_m_vnum, 
+          SPRINTF( buf2, "Mobs: %5d - %-5d\n", pArea->low_m_vnum, 
           pArea->hi_m_vnum);
         if(obj)
-          SPRINTF( buf2, "Objects: %5d - %-5d\n\r", pArea->low_o_vnum, 
+          SPRINTF( buf2, "Objects: %5d - %-5d\n", pArea->low_o_vnum, 
           pArea->hi_o_vnum);
         
         STRAPP( buf, "%s", buf2 );
@@ -6494,7 +6494,7 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
 
 	if (area_conflict)
 	  ch_printf(ch, "Conflict:%-15s| Rooms: %5d - %-5d"
-		     " Objs: %5d - %-5d Mobs: %5d - %-5d\n\r",
+		     " Objs: %5d - %-5d Mobs: %5d - %-5d\n",
 		(pArea->filename ? pArea->filename : "(invalid)"),
 		pArea->low_r_vnum, pArea->hi_r_vnum,
 		pArea->low_o_vnum, pArea->hi_o_vnum,
@@ -6524,7 +6524,7 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
 
 	if (area_conflict)
 	  SPRINTF(ch, "Conflict:%-15s| Rooms: %5d - %-5d"
-		     " Objs: %5d - %-5d Mobs: %5d - %-5d\n\r",
+		     " Objs: %5d - %-5d Mobs: %5d - %-5d\n",
 		(pArea->filename ? pArea->filename : "(invalid)"),
 		pArea->low_r_vnum, pArea->hi_r_vnum,
 		pArea->low_o_vnum, pArea->hi_o_vnum,

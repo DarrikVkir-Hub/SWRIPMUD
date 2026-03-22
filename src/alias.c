@@ -59,12 +59,12 @@ void do_alias( CHAR_DATA *ch, char *argument )
     {
         if (!ch->pcdata->first_alias)
         {
-            send_to_char("You have no aliases defined!\n\r", ch);
+            send_to_char("You have no aliases defined!\n", ch);
             return;
         }
-        pager_printf( ch, "%-20s What it does\n\r", "Alias" );
+        pager_printf( ch, "%-20s What it does\n", "Alias" );
         for (pal=ch->pcdata->first_alias;pal;pal=pal->next)
-            pager_printf( ch, "%-20s %s\n\r",
+            pager_printf( ch, "%-20s %s\n",
                           pal->name, pal->cmd );
         return;
     }
@@ -77,10 +77,10 @@ void do_alias( CHAR_DATA *ch, char *argument )
             DISPOSE(pal->cmd);
             UNLINK(pal, ch->pcdata->first_alias, ch->pcdata->last_alias, next, prev);
             DISPOSE(pal);
-            send_to_char("Deleted Alias.\n\r", ch);
+            send_to_char("Deleted Alias.\n", ch);
         } 
 	  else
-            send_to_char("That alias does not exist.\n\r", ch);
+            send_to_char("That alias does not exist.\n", ch);
         return;
     }
     
@@ -90,14 +90,14 @@ void do_alias( CHAR_DATA *ch, char *argument )
         pal->name = str_dup(arg);
         pal->cmd  = str_dup(argument);
         LINK(pal, ch->pcdata->first_alias, ch->pcdata->last_alias, next, prev);
-        send_to_char("Created Alias.\n\r", ch);
+        send_to_char("Created Alias.\n", ch);
     } 
     else 
     {
         if (pal->cmd)
             DISPOSE(pal->cmd);
         pal->cmd  = str_dup(argument);
-        send_to_char("Modified Alias.\n\r", ch);
+        send_to_char("Modified Alias.\n", ch);
     }
 }
 
@@ -140,7 +140,7 @@ bool check_alias( CHAR_DATA *ch, char *command, char *argument )
     {
 	if (ch->cmd_recurse!=-1)
 	{
-	    send_to_char("Unable to further process command, recurses too much.\n\r", ch);
+	    send_to_char("Unable to further process command, recurses too much.\n", ch);
 	    ch->cmd_recurse=-1;
 	}
 	return FALSE;
@@ -154,7 +154,7 @@ bool check_alias( CHAR_DATA *ch, char *command, char *argument )
 
     if ( (alias=find_alias(ch,arg)) != NULL )
     {
-	SPRINTF(arg, "Your alias '%s' calls another alias and cannot be executed.\n\r", buf);
+	SPRINTF(arg, "Your alias '%s' calls another alias and cannot be executed.\n", buf);
 	send_to_char(arg, ch);
 	return TRUE;
     }

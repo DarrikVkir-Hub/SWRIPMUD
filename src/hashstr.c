@@ -207,7 +207,7 @@ void hash_dump( int hash )
 
     if ( hash > STR_HASH_SIZE || hash < 0 )
     {
-	fprintf( stderr, "hash_dump: invalid hash size\n\r" );
+	fprintf( stderr, "hash_dump: invalid hash size\n" );
 	return;
     }
 //  psize = sizeof(struct hashstr_data);
@@ -216,10 +216,10 @@ void hash_dump( int hash )
 // Pointer arithmetic is cleaner and more portable than casting to int and back, and it works on 64-bit systems without modification. AI&DV 3-12-26
 //	str = (char *) (((int) ptr) + psize);
     str = (char *)(ptr + 1);
-	fprintf( stderr, "Len:%4d Lnks:%5d Str: %s\n\r",
+	fprintf( stderr, "Len:%4d Lnks:%5d Str: %s\n",
 	  ptr->length, ptr->links, str );
     }
-    fprintf( stderr, "Total strings in hash %d: %d\n\r", hash, c );
+    fprintf( stderr, "Total strings in hash %d: %d\n", hash, c );
 }
 
 char *check_hash( char *str )
@@ -239,10 +239,10 @@ char *check_hash( char *str )
 	p = c+1;
      }
    if ( fnd )
-     SPRINTF( buf, "Hash info on string: %s\n\rLinks: %d  Position: %d/%d  Hash: %d  Length: %d\n\r",
+     SPRINTF( buf, "Hash info on string: %s\nLinks: %d  Position: %d/%d  Hash: %d  Length: %d\n",
 	  str, fnd->links, p, c, hash, fnd->length );
    else
-     SPRINTF( buf, "%s not found.\n\r", str );
+     SPRINTF( buf, "%s not found.\n", str );
    return buf;
 }
 
@@ -267,7 +267,7 @@ char *hash_stats( void )
        wouldhave += ( ( ptr->links * sizeof(struct hashstr_data) ) + ( ptr->links * ( ptr->length + 1 ) ) );
 	}
     }
-    SPRINTF( buf, "Hash strings allocated:%8d  Total links  : %d\n\rString bytes allocated:%8d  Bytes saved  : %d\n\rUnique (wasted) links :%8d  Hi-Link count: %d\n\r",
+    SPRINTF( buf, "Hash strings allocated:%8d  Total links  : %d\nString bytes allocated:%8d  Bytes saved  : %d\nUnique (wasted) links :%8d  Hi-Link count: %d\n",
 	total, totlinks, bytesused, wouldhave - bytesused, unique, hilink );
     return buf;
 }
@@ -286,7 +286,7 @@ void show_high_hash( int top )
     // Pointer arithmetic is cleaner and more portable than casting to int and back, and it works on 64-bit systems without modification. AI&DV 3-12-26
     //	str = (char *) (((int) ptr) + psize);
     str = (char *)(ptr + 1);         
- 	     fprintf( stderr, "Links: %5d  String: >%s<\n\r", ptr->links, str );
+ 	     fprintf( stderr, "Links: %5d  String: >%s<\n", ptr->links, str );
 	  }
 }
 

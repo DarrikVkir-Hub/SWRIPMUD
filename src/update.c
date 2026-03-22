@@ -373,7 +373,7 @@ void gain_exp( CHAR_DATA *ch, int gain , int ability )
 
     if (NOT_AUTHED(ch) && ch->experience[ability] >= exp_level(ch->skill_level[ability]+1))
     {
-		send_to_char("You can not ascend to a higher level until you are authorized.\n\r", ch);
+		send_to_char("You can not ascend to a higher level until you are authorized.\n", ch);
 		ch->experience[ability] = (exp_level( ch->skill_level[ability]+1 ) - 1);
 		return;
     }
@@ -386,7 +386,7 @@ void gain_exp( CHAR_DATA *ch, int gain , int ability )
 	  return;
         }
 	set_char_color( AT_WHITE + AT_BLINK, ch );
-	ch_printf( ch, "You have now obtained %s level %d!\n\r", ability_name[ability], ++ch->skill_level[ability] );
+	ch_printf( ch, "You have now obtained %s level %d!\n", ability_name[ability], ++ch->skill_level[ability] );
 	advance_level( ch , ability);
     }
 
@@ -585,28 +585,28 @@ void gain_addiction( CHAR_DATA *ch )
   
        if ( ch->pcdata->addiction[drug] > ch->pcdata->drug_level[drug]+200 )
        {      
-           ch_printf ( ch, "You feel like you are going to die. You NEED %s\n\r.",   spice_table[drug] );
+           ch_printf ( ch, "You feel like you are going to die. You NEED %s\n.",   spice_table[drug] );
            worsen_mental_state( ch, 2 );
            damage(ch, ch, 5, TYPE_UNDEFINED);
        }
        else if ( ch->pcdata->addiction[drug] > ch->pcdata->drug_level[drug]+100 )
        {      
-           ch_printf ( ch, "You need some %s.\n\r",   spice_table[drug] );
+           ch_printf ( ch, "You need some %s.\n",   spice_table[drug] );
            worsen_mental_state( ch, 2 );
        }
        else if ( ch->pcdata->addiction[drug] > ch->pcdata->drug_level[drug]+50 )
        {      
-           ch_printf ( ch, "You really crave some %s.\n\r",   spice_table[drug] );
+           ch_printf ( ch, "You really crave some %s.\n",   spice_table[drug] );
            worsen_mental_state( ch, 1 );
        }
        else if ( ch->pcdata->addiction[drug] > ch->pcdata->drug_level[drug]+25 )
        {      
-           ch_printf ( ch, "Some more %s would feel quite nice.\n\r",   spice_table[drug] );
+           ch_printf ( ch, "Some more %s would feel quite nice.\n",   spice_table[drug] );
        }
        else if ( ch->pcdata->addiction[drug] < ch->pcdata->drug_level[drug]-50 )
        {       
-           act( AT_POISON, "$n bends over and vomits.\n\r", ch, NULL, NULL, TO_ROOM );
-	   act( AT_POISON, "You vomit.\n\r", ch, NULL, NULL, TO_CHAR );
+           act( AT_POISON, "$n bends over and vomits.\n", ch, NULL, NULL, TO_ROOM );
+	   act( AT_POISON, "You vomit.\n", ch, NULL, NULL, TO_CHAR );
            ch->pcdata->drug_level[drug] -=10;
        }
        
@@ -639,7 +639,7 @@ void gain_condition( CHAR_DATA *ch, int iCond, int value )
 				if ( ch->top_level <= LEVEL_AVATAR )
 				{
 					set_char_color( AT_HUNGRY, ch );
-				send_to_char( "You are STARVING!\n\r",  ch );
+				send_to_char( "You are STARVING!\n",  ch );
 		//          act( AT_HUNGRY, "$n is starved half to death!", ch, NULL, NULL, TO_ROOM);
 				worsen_mental_state( ch, 1 );
 				retcode = damage(ch, ch, 5, TYPE_UNDEFINED);
@@ -650,7 +650,7 @@ void gain_condition( CHAR_DATA *ch, int iCond, int value )
 				if ( ch->top_level <= LEVEL_AVATAR )
 				{
 					set_char_color( AT_THIRSTY, ch );
-				send_to_char( "You are DYING of THIRST!\n\r", ch );
+				send_to_char( "You are DYING of THIRST!\n", ch );
 		//          act( AT_THIRSTY, "$n is dying of thirst!", ch, NULL, NULL, TO_ROOM);
 				worsen_mental_state( ch, 2 );
 				retcode = damage(ch, ch, 5, TYPE_UNDEFINED);
@@ -660,7 +660,7 @@ void gain_condition( CHAR_DATA *ch, int iCond, int value )
 			case COND_DRUNK:
 				if ( condition != 0 ) {
 						set_char_color( AT_SOBER, ch );
-				send_to_char( "You are sober.\n\r", ch );
+				send_to_char( "You are sober.\n", ch );
 				}
 				retcode = rNONE;
 				break;
@@ -682,7 +682,7 @@ void gain_condition( CHAR_DATA *ch, int iCond, int value )
           if ( ch->top_level <= LEVEL_AVATAR )
           {
             set_char_color( AT_HUNGRY, ch );
-	    send_to_char( "You are really hungry.\n\r",  ch );
+	    send_to_char( "You are really hungry.\n",  ch );
 //          act( AT_HUNGRY, "You can hear $n's stomach growling.", ch, NULL, NULL, TO_ROOM);
 	    if ( number_bits(1) == 0 )
 		worsen_mental_state( ch, 1 );
@@ -693,7 +693,7 @@ void gain_condition( CHAR_DATA *ch, int iCond, int value )
           if ( ch->top_level <= LEVEL_AVATAR  )
           {
             set_char_color( AT_THIRSTY, ch );
-	    send_to_char( "You are really thirsty.\n\r", ch );
+	    send_to_char( "You are really thirsty.\n", ch );
 	    worsen_mental_state( ch, 1 );
 //          act( AT_THIRSTY, "$n looks a little parched.", ch, NULL, NULL, TO_ROOM);
           } 
@@ -702,7 +702,7 @@ void gain_condition( CHAR_DATA *ch, int iCond, int value )
 	case COND_DRUNK:
 	    if ( condition != 0 ) {
                 set_char_color( AT_SOBER, ch );
-		send_to_char( "You are feeling a little less light headed.\n\r", ch );
+		send_to_char( "You are feeling a little less light headed.\n", ch );
             }
 	    break;
 	}
@@ -717,7 +717,7 @@ void gain_condition( CHAR_DATA *ch, int iCond, int value )
           if ( ch->top_level <= LEVEL_AVATAR )
           {
             set_char_color( AT_HUNGRY, ch );
-	    send_to_char( "You are hungry.\n\r",  ch );
+	    send_to_char( "You are hungry.\n",  ch );
           } 
 	  break;
 
@@ -725,7 +725,7 @@ void gain_condition( CHAR_DATA *ch, int iCond, int value )
           if ( ch->top_level <= LEVEL_AVATAR )
           {
             set_char_color( AT_THIRSTY, ch );
-	    send_to_char( "You are thirsty.\n\r", ch );
+	    send_to_char( "You are thirsty.\n", ch );
           } 
 	  break;
 
@@ -740,7 +740,7 @@ void gain_condition( CHAR_DATA *ch, int iCond, int value )
           if ( ch->top_level <= LEVEL_AVATAR )
           {
             set_char_color( AT_HUNGRY, ch );
-	    send_to_char( "You are a mite peckish.\n\r",  ch );
+	    send_to_char( "You are a mite peckish.\n",  ch );
           } 
 	  break;
 
@@ -748,7 +748,7 @@ void gain_condition( CHAR_DATA *ch, int iCond, int value )
           if ( ch->top_level <= LEVEL_AVATAR )
           {
             set_char_color( AT_THIRSTY, ch );
-	    send_to_char( "You could use a sip of something refreshing.\n\r", ch );
+	    send_to_char( "You could use a sip of something refreshing.\n", ch );
           } 
 	  break;
 
@@ -1325,7 +1325,7 @@ void char_update( void )
              ch->skill_level[FORCE_ABILITY] == 1) {
 	   ch->skill_level[FORCE_ABILITY] = 2;
 	   ch->pcdata->learned[skill_lookup( "meditate" )] = 20;
-	   send_to_char("The universe suddenly feels very different to you.\n\r",ch);
+	   send_to_char("The universe suddenly feels very different to you.\n",ch);
 	 }        
 
 	/*
@@ -1462,35 +1462,35 @@ void char_update( void )
 		switch( (ch->mental_state+5) / 10 )
 		{
 		    case  3:
-		    	send_to_char( "You feel feverish.\n\r", ch );
+		    	send_to_char( "You feel feverish.\n", ch );
 			act( AT_ACTION, "$n looks kind of out of it.", ch, NULL, NULL, TO_ROOM );
 		    	break;
 		    case  4:
-		    	send_to_char( "You do not feel well at all.\n\r", ch );
+		    	send_to_char( "You do not feel well at all.\n", ch );
 			act( AT_ACTION, "$n doesn't look too good.", ch, NULL, NULL, TO_ROOM );
 		    	break;
 		    case  5:
-		    	send_to_char( "You need help!\n\r", ch );
+		    	send_to_char( "You need help!\n", ch );
 			act( AT_ACTION, "$n looks like $e could use your help.", ch, NULL, NULL, TO_ROOM );
 		    	break;
 		    case  6:
-		    	send_to_char( "Seekest thou a cleric.\n\r", ch );
+		    	send_to_char( "Seekest thou a cleric.\n", ch );
 			act( AT_ACTION, "Someone should fetch a healer for $n.", ch, NULL, NULL, TO_ROOM );
 		    	break;
 		    case  7:
-		    	send_to_char( "You feel reality slipping away...\n\r", ch );
+		    	send_to_char( "You feel reality slipping away...\n", ch );
 			act( AT_ACTION, "$n doesn't appear to be aware of what's going on.", ch, NULL, NULL, TO_ROOM );
 		    	break;
 		    case  8:
-		    	send_to_char( "You begin to understand... everything.\n\r", ch );
+		    	send_to_char( "You begin to understand... everything.\n", ch );
 			act( AT_ACTION, "$n starts ranting like a madman!", ch, NULL, NULL, TO_ROOM );
 		    	break;
 		    case  9:
-		    	send_to_char( "You are ONE with the universe.\n\r", ch );
+		    	send_to_char( "You are ONE with the universe.\n", ch );
 			act( AT_ACTION, "$n is ranting on about 'the answer', 'ONE' and other mumbo-jumbo...", ch, NULL, NULL, TO_ROOM );
 		    	break;
 		    case 10:
-		    	send_to_char( "You feel the end is near.\n\r", ch );
+		    	send_to_char( "You feel the end is near.\n", ch );
 			act( AT_ACTION, "$n is muttering and ranting in tongues...", ch, NULL, NULL, TO_ROOM );
 		    	break;
 		}
@@ -1505,7 +1505,7 @@ void char_update( void )
 			   &&    number_percent()+10 < abs(ch->mental_state) )
 				do_sleep( ch, "" );
 			   else
-				send_to_char( "You're barely conscious.\n\r", ch );
+				send_to_char( "You're barely conscious.\n", ch );
 			}
 			break;
 		    case   9:
@@ -1516,7 +1516,7 @@ void char_update( void )
 			   &&   (number_percent()+20) < abs(ch->mental_state) )
 				do_sleep( ch, "" );
 			   else
-				send_to_char( "You can barely keep your eyes open.\n\r", ch );
+				send_to_char( "You can barely keep your eyes open.\n", ch );
 			}
 			break;
 		    case   8:
@@ -1526,28 +1526,28 @@ void char_update( void )
 			   &&  (number_percent()+30) < abs(ch->mental_state) )
 				do_sleep( ch, "" );
 			   else
-				send_to_char( "You're extremely drowsy.\n\r", ch );
+				send_to_char( "You're extremely drowsy.\n", ch );
 			}
 			break;
 		    case   7:
 			if ( ch->position > POS_RESTING )
-			   send_to_char( "You feel very unmotivated.\n\r", ch );
+			   send_to_char( "You feel very unmotivated.\n", ch );
 			break;
 		    case   6:
 			if ( ch->position > POS_RESTING )
-			   send_to_char( "You feel sedated.\n\r", ch );
+			   send_to_char( "You feel sedated.\n", ch );
 			break;
 		    case   5:
 			if ( ch->position > POS_RESTING )
-			   send_to_char( "You feel sleepy.\n\r", ch );
+			   send_to_char( "You feel sleepy.\n", ch );
 			break;
 		    case   4:
 			if ( ch->position > POS_RESTING )
-			   send_to_char( "You feel tired.\n\r", ch );
+			   send_to_char( "You feel tired.\n", ch );
 			break;
 		    case   3:
 			if ( ch->position > POS_RESTING )
-			   send_to_char( "You could use a rest.\n\r", ch );
+			   send_to_char( "You could use a rest.\n", ch );
 			break;
 		}
 	    
@@ -1916,7 +1916,7 @@ void char_check( void )
 		REMOVE_BIT( ch->mount->act, ACT_MOUNTED );
 		ch->mount = NULL;
 		ch->position = POS_STANDING;
-		send_to_char( "No longer upon your mount, you fall to the ground...\n\rOUCH!\n\r", ch );
+		send_to_char( "No longer upon your mount, you fall to the ground...\nOUCH!\n", ch );
 	    }
 
 	    if ( ( ch->in_room && ch->in_room->sector_type == SECT_UNDERWATER )
@@ -1934,7 +1934,7 @@ void char_check( void )
 			if(  ch->hit <= 0 )
 			    dam = UMIN( 10, dam );
 			if ( number_bits(3) == 0 )
-			  send_to_char( "You cough and choke as you try to breathe water!\n\r", ch );
+			  send_to_char( "You cough and choke as you try to breathe water!\n", ch );
 			damage( ch, ch, dam, TYPE_UNDEFINED );
 		    }
 		}
@@ -1965,7 +1965,7 @@ void char_check( void )
 				if(  ch->hit <= 0 )
 			           dam = UMIN( 10, dam );
 				if ( number_bits(3) == 0 )
-				   send_to_char( "Struggling with exhaustion, you choke on a mouthful of water.\n\r", ch );
+				   send_to_char( "Struggling with exhaustion, you choke on a mouthful of water.\n", ch );
 				damage( ch, ch, dam, TYPE_UNDEFINED );
 			    }
           	      }
@@ -2204,26 +2204,26 @@ void halucinations( CHAR_DATA *ch )
 	switch( number_range( 1, UMIN(20, (ch->mental_state+5) / 5)) )
 	{
 	    default:
-	    case  1: t = "You feel very restless... you can't sit still.\n\r";		break;
-	    case  2: t = "You're tingling all over.\n\r";				break;
-	    case  3: t = "Your skin is crawling.\n\r";					break;
-	    case  4: t = "You suddenly feel that something is terribly wrong.\n\r";	break;
-	    case  5: t = "Those damn little fairies keep laughing at you!\n\r";		break;
-	    case  6: t = "You can hear your mother crying...\n\r";			break;
-	    case  7: t = "Have you been here before, or not?  You're not sure...\n\r";	break;
-	    case  8: t = "Painful childhood memories flash through your mind.\n\r";	break;
-	    case  9: t = "You hear someone call your name in the distance...\n\r";	break;
-	    case 10: t = "Your head is pulsating... you can't think straight.\n\r";	break;
-	    case 11: t = "The ground... seems to be squirming...\n\r";			break;
-	    case 12: t = "You're not quite sure what is real anymore.\n\r";		break;
-	    case 13: t = "It's all a dream... or is it?\n\r";				break;
-	    case 14: t = "They're coming to get you... coming to take you away...\n\r";	break;
-	    case 15: t = "You begin to feel all powerful!\n\r";				break;
-	    case 16: t = "You're light as air... the heavens are yours for the taking.\n\r";	break;
-	    case 17: t = "Your whole life flashes by... and your future...\n\r";	break;
-	    case 18: t = "You are everywhere and everything... you know all and are all!\n\r";	break;
-	    case 19: t = "You feel immortal!\n\r";					break;
-	    case 20: t = "Ahh... the power of a Supreme Entity... what to do...\n\r";	break;
+	    case  1: t = "You feel very restless... you can't sit still.\n";		break;
+	    case  2: t = "You're tingling all over.\n";				break;
+	    case  3: t = "Your skin is crawling.\n";					break;
+	    case  4: t = "You suddenly feel that something is terribly wrong.\n";	break;
+	    case  5: t = "Those damn little fairies keep laughing at you!\n";		break;
+	    case  6: t = "You can hear your mother crying...\n";			break;
+	    case  7: t = "Have you been here before, or not?  You're not sure...\n";	break;
+	    case  8: t = "Painful childhood memories flash through your mind.\n";	break;
+	    case  9: t = "You hear someone call your name in the distance...\n";	break;
+	    case 10: t = "Your head is pulsating... you can't think straight.\n";	break;
+	    case 11: t = "The ground... seems to be squirming...\n";			break;
+	    case 12: t = "You're not quite sure what is real anymore.\n";		break;
+	    case 13: t = "It's all a dream... or is it?\n";				break;
+	    case 14: t = "They're coming to get you... coming to take you away...\n";	break;
+	    case 15: t = "You begin to feel all powerful!\n";				break;
+	    case 16: t = "You're light as air... the heavens are yours for the taking.\n";	break;
+	    case 17: t = "Your whole life flashes by... and your future...\n";	break;
+	    case 18: t = "You are everywhere and everything... you know all and are all!\n";	break;
+	    case 19: t = "You feel immortal!\n";					break;
+	    case 20: t = "Ahh... the power of a Supreme Entity... what to do...\n";	break;
 	}
 	send_to_char( t, ch );
     }
@@ -2277,7 +2277,7 @@ void update_handler( void )
     if ( timechar )
     {
       set_char_color(AT_PLAIN, timechar);
-      send_to_char( "Starting update timer.\n\r", timechar );
+      send_to_char( "Starting update timer.\n", timechar );
       gettimeofday(&stime, NULL);
     }
     
@@ -2378,9 +2378,9 @@ void update_handler( void )
     {
       gettimeofday(&etime, NULL);
       set_char_color(AT_PLAIN, timechar);
-      send_to_char( "Update timing complete.\n\r", timechar );
+      send_to_char( "Update timing complete.\n", timechar );
       subtract_times(&etime, &stime);
-      ch_printf( timechar, "Timing took %ld.%06ld seconds.\n\r",
+      ch_printf( timechar, "Timing took %ld.%06ld seconds.\n",
           etime.tv_sec, etime.tv_usec );
       timechar = NULL;
     }
@@ -2499,11 +2499,11 @@ void reboot_check( time_t reset )
       if ( auction->buyer && auction->buyer != auction->seller )
       {
         auction->buyer->gold += auction->bet;
-        send_to_char("Your money has been returned.\n\r", auction->buyer);
+        send_to_char("Your money has been returned.\n", auction->buyer);
       }
     }
     echo_to_all(AT_YELLOW, "You are forced from these realms by a strong "
-        "presence\n\ras life here is reconstructed.", ECHOTAR_ALL);
+        "presence\nas life here is reconstructed.", ECHOTAR_ALL);
     
     for ( vch = first_char; vch; vch = vch->next )
       if ( !IS_NPC(vch) )
@@ -2597,7 +2597,7 @@ if ((current_time % 1800) == 0)
         if (auction->buyer != NULL && auction->seller != auction->buyer) /* return money to the buyer */
         {
             auction->buyer->gold += auction->bet;
-            send_to_char ("Your money has been returned.\n\r",auction->buyer);
+            send_to_char ("Your money has been returned.\n",auction->buyer);
         }
        }      
 
@@ -2780,7 +2780,7 @@ void auction_update (void)
 		tax = (int) (auction->bet * 0.1 );
 		boost_economy( auction->seller->in_room->area, tax );
                 auction->seller->gold += pay; /* give him the money, tax 10 % */
-		SPRINTF(buf, "The auctioneer pays you %d gold, charging an auction fee of %d.\n\r", pay, tax);
+		SPRINTF(buf, "The auctioneer pays you %d gold, charging an auction fee of %d.\n", pay, tax);
 		send_to_char(buf, auction->seller);
                 auction->item = NULL; /* reset item */
 		if ( IS_SET( sysdata.save_flags, SV_AUCTION ) )
@@ -2791,7 +2791,7 @@ void auction_update (void)
             }
             else /* not sold */
             {
-                SPRINTF (buf, "No bids received for %s - object has been removed from auction\n\r.",auction->item->short_descr);
+                SPRINTF (buf, "No bids received for %s - object has been removed from auction\n.",auction->item->short_descr);
                 talk_auction(buf);
                 act (AT_ACTION, "The auctioneer appears before you to return $p to you.",
                       auction->seller,auction->item,NULL,TO_CHAR);
@@ -2813,7 +2813,7 @@ void auction_update (void)
 		    obj_to_char (auction->item,auction->seller);
 		tax = (int) ( auction->item->cost * 0.05 );
 		boost_economy( auction->seller->in_room->area, tax );
-		SPRINTF(buf, "The auctioneer charges you an auction fee of %d.\n\r", tax );
+		SPRINTF(buf, "The auctioneer charges you an auction fee of %d.\n", tax );
 		send_to_char(buf, auction->seller);
 		if ((auction->seller->gold - tax) < 0)
 		  auction->seller->gold = 0;

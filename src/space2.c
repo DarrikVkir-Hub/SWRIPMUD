@@ -60,37 +60,37 @@ void do_jumpvector( CHAR_DATA *ch, char *argument )
     randnum = 1.0/(float) num;
     if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
     {
-         send_to_char("&RYou must be in the cockpit, turret or engineroom of a ship to do that!\n\r",ch);
+         send_to_char("&RYou must be in the cockpit, turret or engineroom of a ship to do that!\n",ch);
          return;
     }
     
     if ( !ship->spaceobject )
     {
-    	send_to_char("&RYou have to be in realspace to do that!\n\r", ch);
+    	send_to_char("&RYou have to be in realspace to do that!\n", ch);
     	return;
     }
     
     target = get_ship( argument );
     if ( !target )
     {
-	send_to_char( "No such ship.\n\r", ch );
+	send_to_char( "No such ship.\n", ch );
 	return;
     }
     
     if ( target == ship )
     {
-	send_to_char( "You can figure out where you are going on your own.\n\r", ch );
+	send_to_char( "You can figure out where you are going on your own.\n", ch );
 	return;
     }
     
     if (!ship_was_in_range( ship, target ))
     {
-    	send_to_char( "No log for that ship.\n\r", ch);
+    	send_to_char( "No log for that ship.\n", ch);
     	return;
     }
     if (target->shipstate == SHIP_LANDED)
     {
-    	send_to_char( "No log for that ship.\n\r", ch);
+    	send_to_char( "No log for that ship.\n", ch);
     	return;
     }
 
@@ -98,7 +98,7 @@ void do_jumpvector( CHAR_DATA *ch, char *argument )
         : (int)  (ch->pcdata->learned[gsn_jumpvector]) ;
     if ( number_percent( ) > chance )
     {
-        send_to_char("&RYou cant figure out the course vectors correctly.\n\r",ch);
+        send_to_char("&RYou cant figure out the course vectors correctly.\n",ch);
         learn_from_failure( ch, gsn_shipsystems );
         return;	
     }	
@@ -110,7 +110,7 @@ void do_jumpvector( CHAR_DATA *ch, char *argument )
       ty = (target->vy - target->oy)*randnum;
       tz = (target->vz - target->oz)*randnum;
       
-      send_to_char("After some deliberation, you figure out its projected course.\n\r", ch);
+      send_to_char("After some deliberation, you figure out its projected course.\n", ch);
       SPRINTF(buf, "%s Heading: %.0f, %.0f, %.0f", target->name, tx, ty, tz );
       echo_to_cockpit( AT_BLOOD, ship , buf );
       learn_from_success( ch, gsn_jumpvector );
@@ -121,7 +121,7 @@ void do_jumpvector( CHAR_DATA *ch, char *argument )
       ty = (target->cy - target->oy)*randnum;
       tz = (target->cz - target->oz)*randnum;
 
-      send_to_char("After some deliberation, you figure out its projected course.\n\r", ch);
+      send_to_char("After some deliberation, you figure out its projected course.\n", ch);
       SPRINTF(buf, "%s Heading: %.0f, %.0f, %.0f", target->name, tx, ty, tz  );
       echo_to_cockpit( AT_BLOOD, ship , buf );
       learn_from_success( ch, gsn_jumpvector );
@@ -144,7 +144,7 @@ void do_reload( CHAR_DATA *ch, char *argument )
 
   if (arg[0] == '\0')
   {
-    send_to_char("&RYou need to specify a target!\n\r",ch);
+    send_to_char("&RYou need to specify a target!\n",ch);
     return;
   }
 
@@ -165,23 +165,23 @@ void do_reload( CHAR_DATA *ch, char *argument )
   {
     if ( ch->pcdata->clan->funds < price )
     {
-      ch_printf(ch, "&R%s doesn't have enough funds to prepare this ship for launch.\n\r", ch->pcdata->clan->name );
+      ch_printf(ch, "&R%s doesn't have enough funds to prepare this ship for launch.\n", ch->pcdata->clan->name );
       return;
     }
 
     ch->pcdata->clan->funds -= price;
-    ch_printf(ch, "&GIt costs %s %ld credits to ready this ship for launch.\n\r", ch->pcdata->clan->name, price );
+    ch_printf(ch, "&GIt costs %s %ld credits to ready this ship for launch.\n", ch->pcdata->clan->name, price );
   }
   else if ( str_cmp( ship->owner , "Public" ) )
   {
     if ( ch->gold < price )
     {
-      ch_printf(ch, "&RYou don't have enough funds to prepare this ship for launch.\n\r");
+      ch_printf(ch, "&RYou don't have enough funds to prepare this ship for launch.\n");
       return;
     }
 
     ch->gold -= price;
-    ch_printf(ch, "&GYou pay %ld credits to ready the ship for launch.\n\r", price );
+    ch_printf(ch, "&GYou pay %ld credits to ready the ship for launch.\n", price );
   }
 
   ship->energy = ship->mod->maxenergy;
@@ -207,7 +207,7 @@ void do_openbay( CHAR_DATA *ch, char *argument )
    if ( ship_from_pilotseat(ch->in_room->vnum) == NULL
    && ship_from_hanger(ch->in_room->vnum) == NULL )
    {
-        send_to_char("&RYou aren't in the pilots chair or hanger of a ship!\n\r",ch);
+        send_to_char("&RYou aren't in the pilots chair or hanger of a ship!\n",ch);
         return;
    }
 
@@ -218,7 +218,7 @@ void do_openbay( CHAR_DATA *ch, char *argument )
 
    if ( ship->hanger == 0 )
    {
-      send_to_char("&RThis ship has no hanger!\n\r",ch);
+      send_to_char("&RThis ship has no hanger!\n",ch);
       return;
    }
 
@@ -246,7 +246,7 @@ void do_closebay( CHAR_DATA *ch, char *argument )
       if ( ship_from_pilotseat(ch->in_room->vnum) == NULL
    && ship_from_hanger(ch->in_room->vnum) == NULL )
    {
-        send_to_char("&RYou aren't in the pilots chair or hanger of a ship!\n\r",ch);
+        send_to_char("&RYou aren't in the pilots chair or hanger of a ship!\n",ch);
         return;
    }
 
@@ -257,7 +257,7 @@ void do_closebay( CHAR_DATA *ch, char *argument )
 
    if ( ship->hanger == 0 )
    {
-      send_to_char("&RThis ship has no hanger!\n\r",ch);
+      send_to_char("&RThis ship has no hanger!\n",ch);
       return;
    }
 
@@ -292,65 +292,65 @@ void do_tractorbeam( CHAR_DATA *ch, char *argument )
 
 	if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
 	{
-		send_to_char("&RYou must be in the cockpit of a ship to do that!\n\r",ch);
+		send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
 		return;
 	}
 
 	if ( ship->shipclass > SHIP_PLATFORM )
 	{
-		send_to_char("&RThis isn't a spacecraft!\n\r",ch);
+		send_to_char("&RThis isn't a spacecraft!\n",ch);
 		return;
 	}
 
 
 	if ( !check_pilot( ch , ship ) )
 	{
-		send_to_char("This isn't your ship!\n\r" , ch );
+		send_to_char("This isn't your ship!\n" , ch );
 		return;
 	}
 
 	if ( ship->mod->tractorbeam == 0 )
 	{
-		send_to_char("You might want to install a tractorbeam!\n\r" , ch );
+		send_to_char("You might want to install a tractorbeam!\n" , ch );
 		return;
 	}
 
 	if ( ship->hanger == 0 )
 	{
-		send_to_char("No hanger available.\n\r",ch);
+		send_to_char("No hanger available.\n",ch);
 		return;
 	}
 
 	if ( !ship->bayopen )
 	{
-		send_to_char("Your hanger is closed.\n\r",ch);
+		send_to_char("Your hanger is closed.\n",ch);
 		return;
 	}
 
 
 	if ( (ship = ship_from_pilotseat(ch->in_room->vnum)) == NULL )
 	{
-		send_to_char("&RYou need to be in the pilot seat!\n\r",ch);
+		send_to_char("&RYou need to be in the pilot seat!\n",ch);
 		return;
 	}
 
 
 	if (ship->shipstate == SHIP_DISABLED)
 	{
-		send_to_char("&RThe ships drive is disabled. No power available.\n\r",ch);
+		send_to_char("&RThe ships drive is disabled. No power available.\n",ch);
 		return;
 	}
 
 	if (ship->shipstate == SHIP_HYPERSPACE)
 	{
 
-		send_to_char("&RYou can only do that in realspace!\n\r",ch);
+		send_to_char("&RYou can only do that in realspace!\n",ch);
 		return;
 	}
 
 	if (ship->shipstate != SHIP_READY)
 	{
-		send_to_char("&RPlease wait until the ship has finished its current manouver.\n\r",ch);
+		send_to_char("&RPlease wait until the ship has finished its current manouver.\n",ch);
 		return;
 	}
 
@@ -359,7 +359,7 @@ void do_tractorbeam( CHAR_DATA *ch, char *argument )
 
 	if ( argument[0] == '\0' )
 	{
-		send_to_char("&RCapture what?\n\r",ch);
+		send_to_char("&RCapture what?\n",ch);
 		return;
 	}
 
@@ -367,18 +367,18 @@ void do_tractorbeam( CHAR_DATA *ch, char *argument )
 
 	if ( target == NULL )
 	{
-		send_to_char("&RI don't see that here.\n\r",ch);
+		send_to_char("&RI don't see that here.\n",ch);
 		return;
 	}
 
    if ( target->docked != NULL )
    {
-      send_to_char("&RThat ship is docked!\n\r",ch);
+      send_to_char("&RThat ship is docked!\n",ch);
       return;
    }
 	if ( target == ship )
 	{
-		send_to_char("&RYou can't capture yourself!\n\r",ch);
+		send_to_char("&RYou can't capture yourself!\n",ch);
 		return;
 	}
 
@@ -386,32 +386,32 @@ void do_tractorbeam( CHAR_DATA *ch, char *argument )
 	   (abs(target->vy - ship->vy) >= (100+ship->mod->tractorbeam*2)) ||
 	   (abs(target->vz - ship->vz) >= (100+ship->mod->tractorbeam*2) ) )
 	{
-		send_to_char("&R That ship is too far away! You'll have to fly a litlle closer.\n\r",ch);
+		send_to_char("&R That ship is too far away! You'll have to fly a litlle closer.\n",ch);
 		return;
 	}
 
 	if (ship->shipclass != SHIP_DEBRIS && ship->shipclass <= target->shipclass)
 	{
-		send_to_char("&RThat ship is too big for your hanger.\n\r",ch);
+		send_to_char("&RThat ship is too big for your hanger.\n",ch);
 		return;
 	}
 
 	if  ( target->shipclass == SHIP_PLATFORM )
 	{
-		send_to_char( "&RYou can't capture platforms.\n\r" , ch );
+		send_to_char( "&RYou can't capture platforms.\n" , ch );
 		return;
 	}
 
 	if ( target->shipclass == CAPITAL_SHIP)
 	{
-		send_to_char("&RYou can't capture capital ships.\n\r",ch);
+		send_to_char("&RYou can't capture capital ships.\n",ch);
 		return;
 	}
 
 
 	if ( ship->energy < (25 + 25*target->shipclass) )
 	{
-		send_to_char("&RTheres not enough fuel!\n\r",ch);
+		send_to_char("&RTheres not enough fuel!\n",ch);
 		return;
 	}
 
@@ -428,7 +428,7 @@ void do_tractorbeam( CHAR_DATA *ch, char *argument )
 	if ( number_percent( ) < chance )
 	{
 		set_char_color( AT_GREEN, ch );
-		send_to_char( "Capture sequence initiated.\n\r", ch);
+		send_to_char( "Capture sequence initiated.\n", ch);
 		act( AT_PLAIN, "$n begins the capture sequence.", ch,
 			NULL, argument , TO_ROOM );
 		echo_to_ship( AT_YELLOW , ship , "ALERT: Ship is being captured, all hands to docking bay." );
@@ -449,7 +449,7 @@ void do_tractorbeam( CHAR_DATA *ch, char *argument )
 		return;
 
 	}
-	send_to_char("You fail to work the controls properly.\n\r",ch);
+	send_to_char("You fail to work the controls properly.\n",ch);
    	echo_to_ship( AT_YELLOW , target , "The ship shudders and then stops as a tractorbeam attemps to lock on and fails." );
 	SPRINTF( buf , "The %s attempted to capture your ship!" , ship->name);
 	echo_to_cockpit( AT_BLOOD , target , buf );
@@ -478,18 +478,18 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
     	default:
     	        if (  (ship = ship_from_coseat(ch->in_room->vnum))  == NULL )
     	        {
-    	            send_to_char("&RYou must be in the copilot's seat of a ship to do that!\n\r",ch);
+    	            send_to_char("&RYou must be in the copilot's seat of a ship to do that!\n",ch);
     	            return;
     	        }
 
                 if ( ship->shipclass > SHIP_PLATFORM )
     	        {
-    	            send_to_char("&RThis isn't a spacecraft!\n\r",ch);
+    	            send_to_char("&RThis isn't a spacecraft!\n",ch);
     	            return;
     	        }
                 if ( ship->mod->tractorbeam == 0 )
     	        {
-    	            send_to_char("&RThis craft does not have a tractorbeam!\n\r",ch);
+    	            send_to_char("&RThis craft does not have a tractorbeam!\n",ch);
     	            return;
     	        }
 
@@ -497,36 +497,36 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
 
                 if (ship->shipstate == SHIP_HYPERSPACE || !ship->spaceobject )
                 {
-                  send_to_char("&RYou can only do that in realspace!\n\r",ch);
+                  send_to_char("&RYou can only do that in realspace!\n",ch);
                   return;
                 }
 		
                 if (ship->docking != SHIP_READY )
                 {
-                    send_to_char("&RThe ship structure can not tolerate pressure from both tractorbeam and docking port.\n\r",ch);
+                    send_to_char("&RThe ship structure can not tolerate pressure from both tractorbeam and docking port.\n",ch);
                     return;
                 }
                 if (ship->shipstate == SHIP_TRACTORED)
                 {
-                    send_to_char("&RYou can not move in a tractorbeam!\n\r",ch);
+                    send_to_char("&RYou can not move in a tractorbeam!\n",ch);
                     return;
                 }
 
                 if ( autofly(ship) )
     	        {
-    	            send_to_char("&RYou'll have to turn off the ships autopilot first....\n\r",ch);
+    	            send_to_char("&RYou'll have to turn off the ships autopilot first....\n",ch);
     	            return;
     	        }
 
                 if (arg[0] == '\0')
     	        {
-    	            send_to_char("&RYou need to specify a target!\n\r",ch);
+    	            send_to_char("&RYou need to specify a target!\n",ch);
     	            return;
     	        }
 
                 if ( !str_cmp( arg, "none") )
     	        {
-    	            send_to_char("&GTractorbeam set to no target.\n\r",ch);
+    	            send_to_char("&GTractorbeam set to no target.\n",ch);
 		    if( ship->tractored && ship->tractored->tractoredby == ship )
 		    {
 		      ship->tractored->tractoredby = NULL;
@@ -542,7 +542,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
 
 		if( ship->tractored )
     	        {
-    	            send_to_char("&RReleasing previous target.\n\r",ch);
+    	            send_to_char("&RReleasing previous target.\n",ch);
                   ship->tractored->tractoredby = NULL;
                   if( ship->tractored->location )
                     ship->tractored->shipstate = SHIP_LANDED;
@@ -556,30 +556,30 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
 
                 if (  target == NULL )
                 {
-                    send_to_char("&RThat ship isn't here!\n\r",ch);
+                    send_to_char("&RThat ship isn't here!\n",ch);
                     return;
                 }
 
                 if (  target == ship )
                 {
-                    send_to_char("&RYou can't tractor your own ship!\n\r",ch);
+                    send_to_char("&RYou can't tractor your own ship!\n",ch);
                     return;
                 }
 
                 if ( !str_cmp(ship->owner, "Trainer") && str_cmp(target->owner, "Trainer") )
                 {
-                    send_to_char("&RTrainers can only target other trainers!!\n\r",ch);
+                    send_to_char("&RTrainers can only target other trainers!!\n",ch);
                     return;
                 }
                 if ( str_cmp(ship->owner, "Trainer") && !str_cmp(target->owner, "Trainer") )
                 {
-                    send_to_char("&ROnly trainers can target other trainers!!\n\r",ch);
+                    send_to_char("&ROnly trainers can target other trainers!!\n",ch);
                     return;
                 }
 
 		if ( ship->energy < (25 + 25*target->shipclass) )
 		{
-			send_to_char("&RTheres not enough fuel!\n\r",ch);
+			send_to_char("&RTheres not enough fuel!\n",ch);
 			return;
 		}
                if( ship->shipclass <= SHIP_PLATFORM)
@@ -588,7 +588,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
                      abs( (int) ( ship->vy-target->vy )) > 100+ship->mod->tractorbeam ||
                      abs( (int) ( ship->vz-target->vz )) > 100+ship->mod->tractorbeam )
                 {
-                    send_to_char("&RThat ship is too far away to tractor.\n\r",ch);
+                    send_to_char("&RThat ship is too far away to tractor.\n",ch);
                     return;
                 }
                }
@@ -598,14 +598,14 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
 
                 if ( number_percent( ) < chance )
     		{
-    		   send_to_char( "&GTracking target.\n\r", ch);
+    		   send_to_char( "&GTracking target.\n", ch);
     		   act( AT_PLAIN, "$n makes some adjustments on the targeting computer.", ch,
 		        NULL, argument , TO_ROOM );
     		   add_timer ( ch , TIMER_DO_FUN , 1 , do_tractorbeam , 1 );
     		   ch->dest_buf = str_dup(arg);
     		   return;
 	        }
-	        send_to_char("&RYou fail to work the controls properly.\n\r",ch);
+	        send_to_char("&RYou fail to work the controls properly.\n",ch);
 	        learn_from_failure( ch, gsn_tractorbeams );
     	   	return;
 
@@ -621,7 +621,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
     		ch->substate = SUB_NONE;
     		if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
     		      return;
-    	        send_to_char("&RYour concentration is broken. You fail to lock onto your target.\n\r", ch);
+    	        send_to_char("&RYour concentration is broken. You fail to lock onto your target.\n", ch);
     		return;
     }
 
@@ -635,7 +635,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
 
     if (  target == NULL || target == ship)
     {
-           send_to_char("&RThe ship has left the starsytem. Targeting aborted.\n\r",ch);
+           send_to_char("&RThe ship has left the starsytem. Targeting aborted.\n",ch);
            return;
     }
                 chance = IS_NPC(ch) ? ch->top_level
@@ -656,7 +656,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
 
                 if ( number_percent( ) >= chance )
     		{
-	        send_to_char("&RYou fail to work the controls properly.\n\r",ch);
+	        send_to_char("&RYou fail to work the controls properly.\n",ch);
 	        learn_from_failure( ch, gsn_tractorbeams );
     	   	return;
 	        }
@@ -683,7 +683,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
 	    ship->hz = target->vz - ship->vz;
      }
           
-    send_to_char( "&GTarget Locked.\n\r", ch);
+    send_to_char( "&GTarget Locked.\n", ch);
     SPRINTF( buf , "You have been locked in a tractor beam by %s." , ship->name);  
     echo_to_cockpit( AT_BLOOD , target , buf );
 
@@ -709,7 +709,7 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
     
   if (  (ship = ship_from_coseat(ch->in_room->vnum))  == NULL )
   {
-    send_to_char("&RYou must be in the copilot's seat of a ship to do that!\n\r",ch);
+    send_to_char("&RYou must be in the copilot's seat of a ship to do that!\n",ch);
     return;
   }
 
@@ -717,7 +717,7 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
   {
     if ( ship->tractored && ship->tractored->tractoredby != ship )
       ship->tractored = NULL;
-    send_to_char("&RYour tractor beam is not trained on a ship.\n\r",ch);
+    send_to_char("&RYour tractor beam is not trained on a ship.\n",ch);
     return;
   }
     
@@ -726,16 +726,16 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
   {
     SPRINTF( buf, "&RCurrent tractor beam settings: ");
     if( ship->statettractor == SHIP_DISABLED )
-      STRAPP( buf, "Disabled.\n\r" );
+      STRAPP( buf, "Disabled.\n" );
     if( ship->tractored == NULL )
-      STRAPP( buf, "Deactivated.\n\r" );
+      STRAPP( buf, "Deactivated.\n" );
     if( ship->tractored && ship->tractored->shipstate == SHIP_TRACTORED )
-      STRAPP( buf, "Pulling Target.\n\r" );
+      STRAPP( buf, "Pulling Target.\n" );
     if( ship->tractored && ship->tractored->shipstate >= SHIP_DOCKED )
-      STRAPP( buf, "Docking Port Approach.\n\r" );
+      STRAPP( buf, "Docking Port Approach.\n" );
     if( ship->tractored && ( ship->tractored->shipstate == SHIP_LAND_2 || ship->tractored->shipstate == SHIP_LAND ) )
-      STRAPP( buf, "Hanger Approach.\n\r" );
-    ch_printf(ch, "&RCurrent tractor beam settings: %s\n\r", buf);
+      STRAPP( buf, "Hanger Approach.\n" );
+    ch_printf(ch, "&RCurrent tractor beam settings: %s\n", buf);
     return;
   }
 
@@ -746,26 +746,26 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
 
   if( str_cmp( arg, "undock" ) && eShip->docked && eShip->docked != ship)
   {
-    echo_to_cockpit( AT_YELLOW, ship, "Tractor Beam set on docked ship. Undock it first.\n\r" );
+    echo_to_cockpit( AT_YELLOW, ship, "Tractor Beam set on docked ship. Undock it first.\n" );
     return;
   }
   
   if( eShip->shipclass >= ship->shipclass && eShip->shipclass != SHIP_DEBRIS )
   {
-    echo_to_cockpit( AT_YELLOW, ship, "Tractor Beam set on ship of a greater or equal mass as our own. It will not move.\n\r" );
+    echo_to_cockpit( AT_YELLOW, ship, "Tractor Beam set on ship of a greater or equal mass as our own. It will not move.\n" );
     return;
   }
 
   if ( !eShip->spaceobject )
   {
-    echo_to_cockpit( AT_YELLOW, ship, "Target is on the ground. There is no need to adjust the tractor beam.\n\r" );
+    echo_to_cockpit( AT_YELLOW, ship, "Target is on the ground. There is no need to adjust the tractor beam.\n" );
     return;
   }
   
   
   if ( !str_cmp( arg, "pull") || !str_cmp( arg, "none" ) )
   {
-    echo_to_cockpit( AT_YELLOW, ship, "Tractor Beam set to pull target.\n\r" );
+    echo_to_cockpit( AT_YELLOW, ship, "Tractor Beam set to pull target.\n" );
     eShip->shipstate = SHIP_TRACTORED;
     eShip->docked = NULL;
     eShip->docking = SHIP_READY;
@@ -774,7 +774,7 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
   }
   if ( !str_cmp( arg, "abort" ) )
   {
-    echo_to_cockpit( AT_YELLOW, ship, "Manuever aborted. Tractor beam returned to default setting.\n\r" );
+    echo_to_cockpit( AT_YELLOW, ship, "Manuever aborted. Tractor beam returned to default setting.\n" );
     eShip->shipstate = SHIP_TRACTORED;
     eShip->docked = NULL;
     eShip->docking = SHIP_READY;
@@ -788,16 +788,16 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
          abs( (int) ( ship->vy-eShip->vy )) > 100 ||
          abs( (int) ( ship->vz-eShip->vz )) > 100 )
     {
-      send_to_char("&RYou aren't close enough to dock target.\n\r",ch);
+      send_to_char("&RYou aren't close enough to dock target.\n",ch);
       return;
     }
     if ( !candock( eShip ) || !candock( ship ) )
     {
-      send_to_char("&RYou have no empty docking port.\n\r",ch);
+      send_to_char("&RYou have no empty docking port.\n",ch);
       return;
     }
     
-    echo_to_cockpit( AT_YELLOW, ship, "Tractor Beam set to dock target.\n\r" );
+    echo_to_cockpit( AT_YELLOW, ship, "Tractor Beam set to dock target.\n" );
     eShip->docking = SHIP_DOCK;
     eShip->docked = ship;
     return;
@@ -808,27 +808,27 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
          abs( (int) ( ship->vy-eShip->vy )) > 100 ||
          abs( (int) ( ship->vz-eShip->vz )) > 100 )
     {
-      send_to_char("&RYou aren't close enough to the target to pull it into your hanger.\n\r",ch);
+      send_to_char("&RYou aren't close enough to the target to pull it into your hanger.\n",ch);
       return;
     }
     if ( !ship->hanger )
     {
-      send_to_char("&RYou have no hanger!\n\r",ch);
+      send_to_char("&RYou have no hanger!\n",ch);
       return;
     }
     if( !ship->bayopen )
     {
-      send_to_char("&RThe bay is not open.\n\r",ch);
+      send_to_char("&RThe bay is not open.\n",ch);
       return;
     }
     if( ship->shipclass < eShip->shipclass || eShip->shipclass == SHIP_PLATFORM || eShip->shipclass == CAPITAL_SHIP )
     {
-      send_to_char("&RThat ship can not land in your bay.\n\r",ch);
+      send_to_char("&RThat ship can not land in your bay.\n",ch);
       return;
     }
     
     
-    echo_to_cockpit( AT_YELLOW, ship, "Tractor Beam set to land target.\n\r" );
+    echo_to_cockpit( AT_YELLOW, ship, "Tractor Beam set to land target.\n" );
     eShip->shipstate = SHIP_LAND;
     eShip->dest = STRALLOC(ship->name);
     return;
@@ -840,15 +840,15 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
          abs( (int) ( ship->vy-eShip->vy )) > 100 ||
          abs( (int) ( ship->vz-eShip->vz )) > 100 )
     {
-      send_to_char("&RYou aren't close enough to the target to pull it off its position.\n\r",ch);
+      send_to_char("&RYou aren't close enough to the target to pull it off its position.\n",ch);
       return;
     }
     if ( !eShip->docked )  
     {
-      send_to_char("&RYour target is not docked.\n\r",ch);
+      send_to_char("&RYour target is not docked.\n",ch);
       return;
     }
-    echo_to_cockpit( AT_YELLOW, ship, "Tractor beam set to undock target.\n\r" );
+    echo_to_cockpit( AT_YELLOW, ship, "Tractor beam set to undock target.\n" );
     eShip->shipstate = SHIP_TRACTORED;
     eShip->docked->statettractor = SHIP_DISABLED;
     eShip->statettractor = SHIP_DISABLED;
@@ -872,48 +872,48 @@ void do_undock(CHAR_DATA *ch, char *argument)
         
         if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
         {
-            send_to_char("&RYou must be in the cockpit of a ship to do that!\n\r",ch);
+            send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
             return;
         }
 
         if ( ship->shipclass > SHIP_PLATFORM )
                 {
-                    send_to_char("&RThis isn't a spacecraft!\n\r",ch);
+                    send_to_char("&RThis isn't a spacecraft!\n",ch);
                     return;
                 }
     
         if (  (ship = ship_from_pilotseat(ch->in_room->vnum))  == NULL )
         {
-            send_to_char("&RYou aren't in the pilots seat.\n\r",ch);
+            send_to_char("&RYou aren't in the pilots seat.\n",ch);
             return;
         }
 
         if ( (ship->autopilot || ship->type == MOB_SHIP)  )
                 {
-                    send_to_char("&RYou'll have to turn off the ships autopilot first.\n\r",ch);
+                    send_to_char("&RYou'll have to turn off the ships autopilot first.\n",ch);
                     return;
                }
 
                 if  ( ship->shipclass == SHIP_PLATFORM )
                 {
-                   send_to_char( "&RPlatforms can't move!\n\r" , ch );
+                   send_to_char( "&RPlatforms can't move!\n" , ch );
                    return;
                 }
                 if (ship->shipstate == SHIP_HYPERSPACE)
                {
-                  send_to_char("&RYou can only do that in realspace!\n\r",ch);
+                  send_to_char("&RYou can only do that in realspace!\n",ch);
                   return;
                }
                 if ( ship->docked && ship->tractoredby &&
                     ship->docked != ship->tractoredby )
                 {
-                    send_to_char("&RYou can not do that in a tractor beam!\n\r",ch);
+                    send_to_char("&RYou can not do that in a tractor beam!\n",ch);
                     return;
                 }
                  
                 if (ship->docked == NULL && ship->docking == SHIP_READY)
                 {
-                    send_to_char("&RYou aren't docked!\n\r",ch);
+                    send_to_char("&RYou aren't docked!\n",ch);
                     return;
                 }
 		eShip = ship->docked;
@@ -929,7 +929,7 @@ void do_undock(CHAR_DATA *ch, char *argument)
                  : (int) (ch->pcdata->learned[gsn_capitalships]);
         if ( number_percent( ) > chance )
         {
-            send_to_char("&RYou can't figure out which lever to use.\n\r",ch);
+            send_to_char("&RYou can't figure out which lever to use.\n",ch);
             if ( ship->shipclass == FIGHTER_SHIP )
                 {
                 learn_from_failure( ch, gsn_starfighters );
@@ -1030,102 +1030,102 @@ void do_dock(CHAR_DATA *ch, char *argument)
 
         if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
         {
-            send_to_char("&RYou must be in the cockpit of a ship to do that!\n\r",ch);
+            send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
             return;
         }
 
         if ( ship->shipclass > SHIP_PLATFORM )
                 {
-                    send_to_char("&RThis isn't a spacecraft!\n\r",ch);
+                    send_to_char("&RThis isn't a spacecraft!\n",ch);
                     return;
                 }
 
 
     	        if (! ship->spaceobject )
     	        {
-    	            send_to_char("&RYou can't do that until you've finished launching!\n\r",ch);
+    	            send_to_char("&RYou can't do that until you've finished launching!\n",ch);
     	            return;
     	        }
 
         if (  (ship = ship_from_pilotseat(ch->in_room->vnum))  == NULL )
         {
-            send_to_char("&RYou aren't in the pilots seat.\n\r",ch);
+            send_to_char("&RYou aren't in the pilots seat.\n",ch);
             return;
         }
 
         if ( (ship->autopilot || ship->type == MOB_SHIP)  )
                 {
-                    send_to_char("&RYou'll have to turn off the ships autopilot first.\n\r",ch);
+                    send_to_char("&RYou'll have to turn off the ships autopilot first.\n",ch);
                     return;
                }
 
                 if  ( ship->shipclass == SHIP_PLATFORM )
                 {
-                   send_to_char( "&RPlatforms can't move!\n\r" , ch );
+                   send_to_char( "&RPlatforms can't move!\n" , ch );
                    return;
                 }
                 if (ship->shipstate == SHIP_HYPERSPACE)
                {
-                  send_to_char("&RYou can only do that in realspace!\n\r",ch);
+                  send_to_char("&RYou can only do that in realspace!\n",ch);
                   return;
                }
 
                 if (ship->shipstate == SHIP_DISABLED)
                 {
-                    send_to_char("&RThe ships drive is disabled. Unable to manuever.\n\r",ch);
+                    send_to_char("&RThe ships drive is disabled. Unable to manuever.\n",ch);
                     return;
                 }
                 if (ship->statetdocking == SHIP_DISABLED)
                 {
-                    send_to_char("&RYour docking port is damaged. Get it repaired!\n\r",ch);
+                    send_to_char("&RYour docking port is damaged. Get it repaired!\n",ch);
                     return;
                 }
 
     	        if (ship->docking == SHIP_DOCKED)
     	        {
-    	            send_to_char("&RTry undocking first!\n\r",ch);
+    	            send_to_char("&RTry undocking first!\n",ch);
     	            return;
     	        }
     	        if (!candock(ship))
     	        {
-    	            send_to_char("&RTry undocking first!\n\r",ch);
+    	            send_to_char("&RTry undocking first!\n",ch);
     	            return;
     	        }
                 if (ship->shipstate == SHIP_LANDED)
                 {
-                    send_to_char("&RYou are already docked!\n\r",ch);
+                    send_to_char("&RYou are already docked!\n",ch);
                     return;
                 }
                 if (ship->shipstate == SHIP_TRACTORED && ship->tractoredby && ship->tractoredby->shipclass >= ship->shipclass )
                 {
-                    send_to_char("&RYou can not move in a tractorbeam!\n\r",ch);
+                    send_to_char("&RYou can not move in a tractorbeam!\n",ch);
                     return;
                 }
                 if (ship->tractored )
                 {
-                    send_to_char("&RThe ship structure can not tolerate stresses from both tractorbeam and docking port simultaneously.\n\r",ch);
+                    send_to_char("&RThe ship structure can not tolerate stresses from both tractorbeam and docking port simultaneously.\n",ch);
                     return;
                 }
                 if (ship->shipstate != SHIP_READY)
                 {
-                    send_to_char("&RPlease wait until the ship has finished its current manouver.\n\r",ch);
+                    send_to_char("&RPlease wait until the ship has finished its current manouver.\n",ch);
                     return;
                 }
 
         if ( ship->currspeed < 1 )
         {
-              send_to_char("&RYou need to speed up a little first!\n\r",ch);
+              send_to_char("&RYou need to speed up a little first!\n",ch);
               return;
         }
         if ( ship->currspeed > 120 )
         {
-              send_to_char("&RYou need to slow down first!\n\r",ch);
+              send_to_char("&RYou need to slow down first!\n",ch);
               return;
         }
 
                if (arg[0] == '\0')
     	        {
-    	            send_to_char("&RDock where?\n\r",ch);
+    	            send_to_char("&RDock where?\n",ch);
     	            return;
     	        }
 
@@ -1133,37 +1133,37 @@ void do_dock(CHAR_DATA *ch, char *argument)
 
                 if (  eShip == NULL )
                 {
-                    send_to_char("&RThat ship isn't here!\n\r",ch);
+                    send_to_char("&RThat ship isn't here!\n",ch);
                     return;
                 }
                 if (  eShip == ship )
                 {
-                    send_to_char("&RYou can't dock with your own ship!\n\r",ch);
+                    send_to_char("&RYou can't dock with your own ship!\n",ch);
                     return;
                 }
 	if( ship->shipclass > eShip->shipclass )
                 {
-                    send_to_char("&RYou can not dock with a ship smaller than yours. Have them dock to you.\n\r",ch);
+                    send_to_char("&RYou can not dock with a ship smaller than yours. Have them dock to you.\n",ch);
                     return;
                 }
 	
 
 	if (!candock(eShip))
     	{
-    	  send_to_char("&RYou can not seem to find an open docking port.\n\r",ch);
+    	  send_to_char("&RYou can not seem to find an open docking port.\n",ch);
 	  return;
 	}
 
 
        if ( eShip->currspeed >0 )
         {
-              send_to_char("&RThey need to be at a dead halt for the docking maneuver to begin.\n\r",ch);
+              send_to_char("&RThey need to be at a dead halt for the docking maneuver to begin.\n",ch);
               return;
         }
 
        if ( autofly(eShip)  )
                 {
-                    send_to_char("&RThe other ship needs to turn their autopilot off.\n\r",ch);
+                    send_to_char("&RThe other ship needs to turn their autopilot off.\n",ch);
                     return;
                }
 
@@ -1171,7 +1171,7 @@ void do_dock(CHAR_DATA *ch, char *argument)
                      abs( (int) ( ship->vy-eShip->vy )) > 100 ||
                      abs( (int) ( ship->vz-eShip->vz )) > 100 )
                 {
-                    send_to_char("&RYou aren't close enough to dock.  Get a little closer first then try again.\n\r",ch);
+                    send_to_char("&RYou aren't close enough to dock.  Get a little closer first then try again.\n",ch);
                     return;
                 }
 
@@ -1188,7 +1188,7 @@ void do_dock(CHAR_DATA *ch, char *argument)
                  : (int) (ch->pcdata->learned[gsn_capitalships]);
         if ( number_percent( ) > chance )
         {
-            send_to_char("&RYou can't figure out which lever to use.\n\r",ch);
+            send_to_char("&RYou can't figure out which lever to use.\n",ch);
             if ( ship->shipclass == FIGHTER_SHIP )
                 {
                 learn_from_failure( ch, gsn_starfighters );
@@ -1224,7 +1224,7 @@ void do_dock(CHAR_DATA *ch, char *argument)
     		DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
 		ship->docked = NULL;
-    	        send_to_char("&RDocking maneuver aborted.\n\r", ch);
+    	        send_to_char("&RDocking maneuver aborted.\n", ch);
     		return;
     }
 
@@ -1292,7 +1292,7 @@ void do_request(CHAR_DATA *ch, char *argument)
 
     if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
     {
-        send_to_char("&RYou must be in the cockpit of a ship to do that!\n\r",ch);
+        send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
         return;
     }
 
@@ -1304,19 +1304,19 @@ void do_request(CHAR_DATA *ch, char *argument)
 
     if ( !ship->spaceobject )
     {
-        send_to_char("&RYou can't do that until you've finished launching!\n\r",ch);
+        send_to_char("&RYou can't do that until you've finished launching!\n",ch);
         return;
     }
 
     if (ship->shipstate == SHIP_HYPERSPACE )
     {
-        send_to_char("&RYou can only do that in realspace!\n\r",ch);
+        send_to_char("&RYou can only do that in realspace!\n",ch);
         return;
     }
 
     if ( arg[0] == '\0' )
     {
-        send_to_char("&RRequest the opening of the baydoors of what ship?\n\r",ch);
+        send_to_char("&RRequest the opening of the baydoors of what ship?\n",ch);
         return;
     }
 
@@ -1324,13 +1324,13 @@ void do_request(CHAR_DATA *ch, char *argument)
 
     if ( eShip == NULL )
     {
-        send_to_char("&RThat ship isn't here!\n\r",ch);
+        send_to_char("&RThat ship isn't here!\n",ch);
         return;
     }
 
     if ( eShip == ship )
     {
-        send_to_char("&RIf you have bay doors, why not open them yourself?\n\r",ch);
+        send_to_char("&RIf you have bay doors, why not open them yourself?\n",ch);
         return;
     }
 
@@ -1342,7 +1342,7 @@ void do_request(CHAR_DATA *ch, char *argument)
 
     if ( !autofly(eShip) )
     {
-        send_to_char("&RThe other ship needs to have its autopilot turned on.\n\r",ch);
+        send_to_char("&RThe other ship needs to have its autopilot turned on.\n",ch);
         return;
     }
     if ( abs( (int) ( eShip->vx - ship->vx )) > 100*((ship->mod->comm)+(eShip->mod->comm)+20) ||
@@ -1350,7 +1350,7 @@ void do_request(CHAR_DATA *ch, char *argument)
     abs( (int) ( eShip->vz - ship->vz )) > 100*((ship->mod->comm)+(eShip->mod->comm)+20) )
 
     {
-      send_to_char("&RThat ship is out of the range of your comm system.\n\r&w", ch);
+      send_to_char("&RThat ship is out of the range of your comm system.\n&w", ch);
       return;
     }
 
@@ -1358,7 +1358,7 @@ void do_request(CHAR_DATA *ch, char *argument)
     abs( (int) ( eShip->vy - ship->vy )) > 100*(ship->mod->sensor+10)*((eShip->shipclass)+1) ||
     abs( (int) ( eShip->vz - ship->vz )) > 100*(ship->mod->sensor+10)*((eShip->shipclass)+1) )
     {
-      send_to_char("&RThat ship is too far away to remotely open bay doors.\n\r",ch);
+      send_to_char("&RThat ship is too far away to remotely open bay doors.\n",ch);
       return;
     }
 
@@ -1372,7 +1372,7 @@ void do_request(CHAR_DATA *ch, char *argument)
 
     if ( eShip->bayopen == TRUE )
     {
-        send_to_char("&RThat ship's bay doors are already open!\n\r",ch);
+        send_to_char("&RThat ship's bay doors are already open!\n",ch);
         return;
     }
     if ( chance && !check_pilot(ch, eShip) )
@@ -1404,7 +1404,7 @@ void do_shiptrack( CHAR_DATA *ch, char *argument)
   
     if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
     {
-        send_to_char("&RYou must be in the cockpit of a ship to do that!\n\r",ch);
+        send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
         return;
     }
 
@@ -1416,14 +1416,14 @@ void do_shiptrack( CHAR_DATA *ch, char *argument)
 
     if ( !ship->spaceobject )
     {
-        send_to_char("&RYou can only do that in space!\n\r",ch);
+        send_to_char("&RYou can only do that in space!\n",ch);
         return;
     }
 
   if( !str_cmp( arg, "dist" ) )
   {
     ship->tcount = atoi(arg1);
-    send_to_char("&RJump distance set!\n\r",ch);
+    send_to_char("&RJump distance set!\n",ch);
     return;
   }
     
@@ -1431,13 +1431,13 @@ void do_shiptrack( CHAR_DATA *ch, char *argument)
   {
     if (ship->shipstate == SHIP_HYPERSPACE )
     {
-        send_to_char("&RYou can only do that in realspace!\n\r",ch);
+        send_to_char("&RYou can only do that in realspace!\n",ch);
         return;
     }
 
     if( !is_number(arg1) || !is_number(arg2) || !is_number(arg3) )
     {
-      send_to_char( "Syntax: shiptrack set <X Heading> <Y Heading> <Z Heading>.\n\r", ch);
+      send_to_char( "Syntax: shiptrack set <X Heading> <Y Heading> <Z Heading>.\n", ch);
       return;
     }
     
@@ -1501,14 +1501,14 @@ void do_shiptrack( CHAR_DATA *ch, char *argument)
 
     ship->orighyperdistance = ship->hyperdistance;
 
-    send_to_char( "Course laid in. Beginning tracking program.\n\r", ch);
+    send_to_char( "Course laid in. Beginning tracking program.\n", ch);
 
     return;
   }
   if( !str_cmp( arg, "stop" ) || !str_cmp( arg, "halt" ))
   {
     ship->tracking = FALSE;
-    send_to_char( "Tracking program cancelled.\n\r", ch);
+    send_to_char( "Tracking program cancelled.\n", ch);
     if( ship->shipstate == SHIP_HYPERSPACE )
       do_hyperspace( ch, "off" );
   }
@@ -1523,7 +1523,7 @@ void do_transship(CHAR_DATA *ch, char *argument)
     
     if ( IS_NPC( ch ) )
     {
-	send_to_char( "Huh?\n\r", ch );
+	send_to_char( "Huh?\n", ch );
 	return;
     }
 
@@ -1533,7 +1533,7 @@ void do_transship(CHAR_DATA *ch, char *argument)
     ship = get_ship( arg1 );
 	if ( !ship )
     {
-	send_to_char( "No such ship.\n\r", ch );
+	send_to_char( "No such ship.\n", ch );
 	return;
     }
 
@@ -1541,7 +1541,7 @@ void do_transship(CHAR_DATA *ch, char *argument)
 	
 	 if ( arg1[0] == '\0' || arg2[0] == '\0' || arg1[0] == '\0' )
     {
-	send_to_char( "Usage: transship <ship> <vnum>\n\r", ch );
+	send_to_char( "Usage: transship <ship> <vnum>\n", ch );
 	return;
     }
 
@@ -1571,7 +1571,7 @@ void do_transship(CHAR_DATA *ch, char *argument)
      
      save_ship(ship);              
       
-     send_to_char( "Ship Transfered.\n\r", ch );
+     send_to_char( "Ship Transfered.\n", ch );
 }
 
 void transship(SHIP_DATA *ship, int destination)
@@ -1615,7 +1615,7 @@ void do_override(CHAR_DATA *ch, char *argument)
 
     if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
     {
-        send_to_char("&RYou must be in the cockpit of a ship to do that!\n\r",ch);
+        send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
         return;
     }
 
@@ -1627,19 +1627,19 @@ void do_override(CHAR_DATA *ch, char *argument)
 
     if ( !ship->spaceobject )
     {
-        send_to_char("&RYou can't do that until you've finished launching!\n\r",ch);
+        send_to_char("&RYou can't do that until you've finished launching!\n",ch);
         return;
     }
 
     if (ship->shipstate == SHIP_HYPERSPACE )
     {
-        send_to_char("&RYou can only do that in realspace!\n\r",ch);
+        send_to_char("&RYou can only do that in realspace!\n",ch);
         return;
     }
 
     if ( arg[0] == '\0' )
     {
-        send_to_char("&ROverride the controls of what ship?\n\r", ch);
+        send_to_char("&ROverride the controls of what ship?\n", ch);
         return;
     }
 
@@ -1647,13 +1647,13 @@ void do_override(CHAR_DATA *ch, char *argument)
 
     if ( eShip == NULL )
     {
-        send_to_char("&RThat ship isn't here!\n\r",ch);
+        send_to_char("&RThat ship isn't here!\n",ch);
         return;
     }
 
     if ( eShip == ship )
     {
-        send_to_char("&RYou are in the cockpit, just hit the controls!\n\r", ch);
+        send_to_char("&RYou are in the cockpit, just hit the controls!\n", ch);
         return;
     }
 
@@ -1662,7 +1662,7 @@ void do_override(CHAR_DATA *ch, char *argument)
     abs( (int) ( eShip->vz - ship->vz )) > 100*((ship->mod->comm)+(eShip->mod->comm)+20) )
 
     {
-      send_to_char("&RThat ship is out of the range of your comm system.\n\r&w", ch);
+      send_to_char("&RThat ship is out of the range of your comm system.\n&w", ch);
       return;
     }
 
@@ -1678,7 +1678,7 @@ void do_override(CHAR_DATA *ch, char *argument)
       if( eShip->shield == 0 )
       {
         eShip->autorecharge=TRUE;
-        send_to_char( "&GShields on. Confirmed.\n\r", ch);
+        send_to_char( "&GShields on. Confirmed.\n", ch);
         echo_to_cockpit( AT_YELLOW , eShip , "Shields ON. Autorecharge ON.");
         return;
       }
@@ -1693,7 +1693,7 @@ void do_override(CHAR_DATA *ch, char *argument)
     if ( !strcmp( arg2, "closebay" ) )
     {
         eShip->bayopen=FALSE;
-        send_to_char( "&GBays Close. Confirmed.\n\r", ch);
+        send_to_char( "&GBays Close. Confirmed.\n", ch);
         echo_to_cockpit( AT_YELLOW , eShip , "Bays Open");
         SPRINTF( buf ,"%s's bay doors close." , eShip->name );
         echo_to_system( AT_YELLOW, eShip, buf , NULL );
@@ -1704,7 +1704,7 @@ void do_override(CHAR_DATA *ch, char *argument)
     {
     	eShip->goalspeed = 0;	
     	eShip->accel = get_acceleration(eShip);
-        send_to_char( "&GBraking Thrusters. Confirmed.\n\r", ch);
+        send_to_char( "&GBraking Thrusters. Confirmed.\n", ch);
         echo_to_cockpit( AT_GREY , eShip , "Braking thrusters fire and the ship stops");
         SPRINTF( buf ,"%s decelerates." , eShip->name );
         echo_to_system( AT_GREY, eShip, buf , NULL );
@@ -1716,14 +1716,14 @@ void do_override(CHAR_DATA *ch, char *argument)
     	if ( ship->autopilot )
         {
            eShip->autopilot=FALSE;
-           send_to_char( "&GYou toggle the autopilot.\n\r", ch);
+           send_to_char( "&GYou toggle the autopilot.\n", ch);
            echo_to_cockpit( AT_YELLOW , eShip , "Autopilot OFF.");
            return;
     	}      
         else if ( !ship->autopilot )
         {
            eShip->autopilot=TRUE;
-           send_to_char( "&GYou toggle the autopilot.\n\r", ch);
+           send_to_char( "&GYou toggle the autopilot.\n", ch);
            echo_to_cockpit( AT_YELLOW , eShip , "Autopilot ON.");
            return;
     	}
@@ -1739,8 +1739,8 @@ void do_override(CHAR_DATA *ch, char *argument)
     return;
    }
    
-   send_to_char("Choices: shields - Toggle shields   autopilot - Toggle autopilot\n\r", ch);
-   send_to_char("         openbay   closebay  stop  \n\r", ch);
+   send_to_char("Choices: shields - Toggle shields   autopilot - Toggle autopilot\n", ch);
+   send_to_char("         openbay   closebay  stop  \n", ch);
    return;
 }
 
@@ -1752,19 +1752,19 @@ void do_guard( CHAR_DATA *ch, char *argument )
 
         if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
         {
-            send_to_char("&RYou must be in the cockpit of a ship to do that!\n\r",ch);
+            send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
             return;
         }
         
         if (  (ship = ship_from_pilotseat(ch->in_room->vnum))  == NULL )
         {
-            send_to_char("&RYou must be in the pilots seat!\n\r",ch);
+            send_to_char("&RYou must be in the pilots seat!\n",ch);
             return;
         }
         
         if ( ship->shipclass != CAPITAL_SHIP  && ship->shipclass != SHIP_PLATFORM )
     	        {
-    	            send_to_char("&ROnly capital-class vessels and platforms have this feature.\n\r",ch);
+    	            send_to_char("&ROnly capital-class vessels and platforms have this feature.\n",ch);
     	            return;
     	        }
     	        
@@ -1772,7 +1772,7 @@ void do_guard( CHAR_DATA *ch, char *argument )
              : (int)  (ch->pcdata->learned[gsn_shipsystems]) ;
         if ( number_percent( ) > chance )
         {
-           send_to_char("&RYou fail to work the controls properly.\n\r",ch);
+           send_to_char("&RYou fail to work the controls properly.\n",ch);
            learn_from_failure( ch, gsn_shipsystems );
            return;	
         }
@@ -1783,7 +1783,7 @@ void do_guard( CHAR_DATA *ch, char *argument )
     if ( !str_cmp(argument,"on" ) )
     {
         ship->guard=TRUE;
-        send_to_char( "&GYou activate the guard system.\n\r", ch);
+        send_to_char( "&GYou activate the guard system.\n", ch);
         echo_to_cockpit( AT_YELLOW , ship , "Guard System: ACTIVATED.");
         ship->goalspeed = 0;
         ship->accel = get_acceleration( ship );
@@ -1791,7 +1791,7 @@ void do_guard( CHAR_DATA *ch, char *argument )
     else if ( !str_cmp(argument,"off" ) )
     {
         ship->guard=FALSE;
-        send_to_char( "&GYou shutdown the guard system.\n\r", ch);
+        send_to_char( "&GYou shutdown the guard system.\n", ch);
         echo_to_cockpit( AT_YELLOW , ship , "Guard System: DEACTIVATED.");
     }
     else
@@ -1799,13 +1799,13 @@ void do_guard( CHAR_DATA *ch, char *argument )
         if (ship->guard == TRUE)
         {
           ship->guard=FALSE;
-          send_to_char( "&GYou shutdown the guard system.\n\r", ch);
+          send_to_char( "&GYou shutdown the guard system.\n", ch);
           echo_to_cockpit( AT_YELLOW , ship , "Guard System: DEACTIVATED.");
         }
         else
         {
           ship->guard=TRUE;
-          send_to_char( "&GYou activate the guard system.\n\r", ch);
+          send_to_char( "&GYou activate the guard system.\n", ch);
           echo_to_cockpit( AT_YELLOW , ship , "Guard System: ACTIVATED.");
           ship->goalspeed = 0;
           ship->accel = get_acceleration( ship );
@@ -1830,7 +1830,7 @@ void do_sabotage(CHAR_DATA *ch, char *argument )
     	default:
     	        if (  (ship = ship_from_engine(ch->in_room->vnum))  == NULL )
     	        {
-    	            send_to_char("&RYou must be in the engine room of a ship to do that!\n\r",ch);
+    	            send_to_char("&RYou must be in the engine room of a ship to do that!\n",ch);
     	            return;
     	        }
 
@@ -1838,8 +1838,8 @@ void do_sabotage(CHAR_DATA *ch, char *argument )
                      str_cmp( argument , "launcher" ) && str_cmp( argument , "laser" ) &&
                      str_cmp( argument , "docking" ) && str_cmp( argument , "tractor" ) )
                 {
-                   send_to_char("&RYou need to specify something to sabotage:\n\r",ch);
-                   send_to_char("&rTry: hull, drive, launcher, laser, docking, or tractor.\n\r",ch);
+                   send_to_char("&RYou need to specify something to sabotage:\n",ch);
+                   send_to_char("&rTry: hull, drive, launcher, laser, docking, or tractor.\n",ch);
                    return;
                 }
 
@@ -1847,7 +1847,7 @@ void do_sabotage(CHAR_DATA *ch, char *argument )
 	                 : (int) (ch->pcdata->learned[gsn_sabotage]);
                 if ( number_percent( ) < chance )
     		{
-    		   send_to_char( "&GYou begin your work.\n\r", ch);
+    		   send_to_char( "&GYou begin your work.\n", ch);
     		   act( AT_PLAIN, "$n begins working on the ship's $T.", ch,
 		        NULL, argument , TO_ROOM );
     		   if ( !str_cmp(arg,"hull") )
@@ -1857,7 +1857,7 @@ void do_sabotage(CHAR_DATA *ch, char *argument )
     		   ch->dest_buf = str_dup(arg);
     		   return;
 	        }
-	        send_to_char("&RYou fail to figure out where to start.\n\r",ch);
+	        send_to_char("&RYou fail to figure out where to start.\n",ch);
 	        learn_from_failure( ch, gsn_sabotage );
     	   	return;
 
@@ -1873,7 +1873,7 @@ void do_sabotage(CHAR_DATA *ch, char *argument )
     		ch->substate = SUB_NONE;
     		if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
     		      return;
-    	        send_to_char("&RYou are distracted and fail to finish your work.\n\r", ch);
+    	        send_to_char("&RYou are distracted and fail to finish your work.\n", ch);
     		return;
     }
 
@@ -1890,7 +1890,7 @@ void do_sabotage(CHAR_DATA *ch, char *argument )
                          number_range( (int) ( ch->pcdata->learned[gsn_sabotage] / 2 ) , (int) (ch->pcdata->learned[gsn_sabotage]) ),
                          ( ship->hull ) );
         ship->hull -= change;
-        ch_printf( ch, "&GSabotage complete.. Hull strength decreased by %d points.\n\r", change );
+        ch_printf( ch, "&GSabotage complete.. Hull strength decreased by %d points.\n", change );
     }
     
     if ( !str_cmp(arg,"drive") )
@@ -1898,32 +1898,32 @@ void do_sabotage(CHAR_DATA *ch, char *argument )
        if (ship->location == ship->lastdoc)
           ship->shipstate = SHIP_DISABLED;
        else if ( ship->shipstate == SHIP_HYPERSPACE )
-         send_to_char("You realize after working that it would be a bad idea to do this while in hyperspace.\n\r", ch);		
+         send_to_char("You realize after working that it would be a bad idea to do this while in hyperspace.\n", ch);		
        else     
          ship->shipstate = SHIP_DISABLED;
-       send_to_char("&GShips drive damaged.\n\r", ch);		
+       send_to_char("&GShips drive damaged.\n", ch);		
     }
 
     if ( !str_cmp(arg,"docking") )
     {  
        ship->statetdocking = SHIP_DISABLED;
-       send_to_char("&GDocking bay sabotaged.\n\r", ch);
+       send_to_char("&GDocking bay sabotaged.\n", ch);
     }
     if ( !str_cmp(arg,"tractor") )
     {  
        ship->statettractor = SHIP_DISABLED;
-       send_to_char("&GTractorbeam sabotaged.\n\r", ch);
+       send_to_char("&GTractorbeam sabotaged.\n", ch);
     }
     if ( !str_cmp(arg,"launcher") )
     {  
        ship->missilestate = MISSILE_DAMAGED;
-       send_to_char("&GMissile launcher sabotaged.\n\r", ch);
+       send_to_char("&GMissile launcher sabotaged.\n", ch);
     }
     
     if ( !str_cmp(arg,"laser") )
     {  
        ship->statet0 = LASER_DAMAGED;
-       send_to_char("&GMain laser sabotaged.\n\r", ch);
+       send_to_char("&GMain laser sabotaged.\n", ch);
     }
 
     act( AT_PLAIN, "$n finishes the work.", ch,
@@ -1953,7 +1953,7 @@ void do_fuel(CHAR_DATA *ch, char *argument )
   {
     if ( (ship = ship_from_entrance(ch->in_room->vnum)) == NULL )
     {
-      send_to_char("&RYou must be in the hanger or the entrance of a ship to do that!\n\r",ch);
+      send_to_char("&RYou must be in the hanger or the entrance of a ship to do that!\n",ch);
       return;
     }
   }
@@ -1998,13 +1998,13 @@ void do_fuel(CHAR_DATA *ch, char *argument )
     
     if( amount >= ship->energy )
     {
-      send_to_char( "&RError: Ordered energy over current stock. Sending everything but 1 unit.\n\r", ch );
+      send_to_char( "&RError: Ordered energy over current stock. Sending everything but 1 unit.\n", ch );
       amount = ship->energy - 1;
     }
     
     if( amount + eShip->energy > eShip->mod->maxenergy )
     {
-      send_to_char( "&rError: Ordered energy over target capacity. Filling tanks.\n\r", ch );
+      send_to_char( "&rError: Ordered energy over target capacity. Filling tanks.\n", ch );
       amount = eShip->mod->maxenergy - eShip->energy;
     }
      
@@ -2013,10 +2013,10 @@ void do_fuel(CHAR_DATA *ch, char *argument )
 
     eShip->energy += amount;
     
-    SPRINTF( buf, "&YFuel order filled: &O%s: %d\n\r", eShip->name, amount );
+    SPRINTF( buf, "&YFuel order filled: &O%s: %d\n", eShip->name, amount );
     echo_to_cockpit( AT_YELLOW, ship, buf );
     send_to_char( buf, ch );
-    SPRINTF( buf, "&YFuel remaining: %d\n\r", ship->energy );
+    SPRINTF( buf, "&YFuel remaining: %d\n", ship->energy );
     echo_to_cockpit( AT_YELLOW, ship, buf );
     send_to_char( buf, ch );      
     
@@ -2029,32 +2029,32 @@ void do_renameship( CHAR_DATA *ch, char *argument )
    CLAN_DATA *clan;
       if ( (ship = ship_from_cockpit( ch->in_room->vnum ) ) == NULL)
       {            
-           send_to_char( "You must be in the cockpit of a ship to do that!\n\r", ch);
+           send_to_char( "You must be in the cockpit of a ship to do that!\n", ch);
            return;
       }
       
       if( ( (clan = get_clan(ship->owner)) == NULL ) || str_cmp( clan->leader, ch->name ) )
         if( str_cmp( ship->owner, ch->name ) )
         {            
-           send_to_char( "&RImperial Database: &WYou do not own this ship.\n\r", ch);
+           send_to_char( "&RImperial Database: &WYou do not own this ship.\n", ch);
            return;
         }
 
       if( get_ship( argument ) != NULL )
         {            
-           send_to_char( "&RImperial Database: &WA ship already exists of that name.\n\r", ch);
+           send_to_char( "&RImperial Database: &WA ship already exists of that name.\n", ch);
            return;
         }
       
       if( strchr( argument, '&' ) != NULL )
         {            
-           send_to_char( "&RColors may not be used in a ship's name.\n\r", ch);
+           send_to_char( "&RColors may not be used in a ship's name.\n", ch);
            return;
         }
       
       if( ch->gold < 50000 )
       {            
-           send_to_char( "&RImperial Database: &WYou do not have enough credits for this request.\n\r", ch);
+           send_to_char( "&RImperial Database: &WYou do not have enough credits for this request.\n", ch);
            return;
       }
         
@@ -2415,13 +2415,13 @@ void do_install_module( CHAR_DATA *ch, char *argument )
 
     if( chance <= 0 )
     {
-	send_to_char( "You do not know how to install a module.\n\r", ch );
+	send_to_char( "You do not know how to install a module.\n", ch );
 	return;
     }
     
     if ( arg1[0] == '\0' )
     {
-	send_to_char( "Install what?\n\r", ch );
+	send_to_char( "Install what?\n", ch );
 	return;
     }
 
@@ -2430,7 +2430,7 @@ void do_install_module( CHAR_DATA *ch, char *argument )
 
 	if ( ( obj = get_obj_carry( ch, arg1 ) ) == NULL )
 	{
-	    send_to_char( "You do not have that item.\n\r", ch );
+	    send_to_char( "You do not have that item.\n", ch );
 	    return;
 	}
 
@@ -2438,14 +2438,14 @@ void do_install_module( CHAR_DATA *ch, char *argument )
 	if ( !( obj->item_type==ITEM_FIGHTERCOMP || obj->item_type==ITEM_MIDCOMP
 		|| obj->item_type==ITEM_CAPITALCOMP ) )
 	{
-		send_to_char("That isn't a ship module.\n\r",ch);
+		send_to_char("That isn't a ship module.\n",ch);
 		return;
 	}
 
 
 	if ( !can_drop_obj( ch, obj ) )
 	{
-	    send_to_char( "You can't let go of it.\n\r", ch );
+	    send_to_char( "You can't let go of it.\n", ch );
 	    return;
 	}
 
@@ -2453,14 +2453,14 @@ void do_install_module( CHAR_DATA *ch, char *argument )
     {
       if ( (ship = ship_from_room( ch->in_room->vnum )) == NULL )
       {
-	send_to_char( "You need to be in the room you want to install this item!\n\r", ch );
+	send_to_char( "You need to be in the room you want to install this item!\n", ch );
 	return;
       }
       
       if ( obj->value[3] >= MAXMODFLAG )
       {
-	send_to_char( "That module can not be installed!  Contact an administrator.\n\r", ch );
-	bug( "Module's flag is set beyond the array limits! Char: %s Module vnum: %d\n\r",
+	send_to_char( "That module can not be installed!  Contact an administrator.\n", ch );
+	bug( "Module's flag is set beyond the array limits! Char: %s Module vnum: %d\n",
 			ch->name, obj->pIndexData->vnum);
 	return;
       }
@@ -2474,7 +2474,7 @@ void do_install_module( CHAR_DATA *ch, char *argument )
     {
       if( ( ship = ship_from_engine( ch->in_room->vnum ) ) == NULL )
       {
-	send_to_char( "Install what in what?\n\r", ch );
+	send_to_char( "Install what in what?\n", ch );
 	return;
       }
     }
@@ -2488,46 +2488,46 @@ void do_install_module( CHAR_DATA *ch, char *argument )
 		return;       
     }
 
-//	SPRINTF( buf, "Ship: %s\n\r", ship->personalname );
+//	SPRINTF( buf, "Ship: %s\n", ship->personalname );
 //	send_to_char( buf, ch );
 
       if ( obj->value[1] != MOD_FLAG )
       {
 	if ( obj->item_type==ITEM_FIGHTERCOMP && ship->shipclass != FIGHTER_SHIP )
 	{
-		send_to_char( "That module is designed for a fighter.\n\r",ch);
+		send_to_char( "That module is designed for a fighter.\n",ch);
 		return;
 	}
 
 	if ( obj->item_type==ITEM_MIDCOMP && ship->shipclass != MIDSIZE_SHIP )
 	{
-		send_to_char( "That module is designed for a midship.\n\r",ch);
+		send_to_char( "That module is designed for a midship.\n",ch);
 		return;
 	}
 
 	if ( obj->item_type==ITEM_CAPITALCOMP && ship->shipclass != CAPITAL_SHIP )
 	{
-		send_to_char( "That module is designed for a capital ship.\n\r",ch);
+		send_to_char( "That module is designed for a capital ship.\n",ch);
 		return;
 	}
       }
   if ( obj->value[1] == MOD_FLAG )
     if ( ship == ship_from_cockpit( ch->in_room->vnum ) )
     {
-      send_to_char( "You can not place this in a control room of a ship.\n\r",ch);
+      send_to_char( "You can not place this in a control room of a ship.\n",ch);
       return;
     }
         
       
 	if ( !IS_GOD(ch) && ( ship->shipclass != SHIP_DEBRIS ) && ( !check_pilot( ch , ship ) || !str_cmp( ship->owner , "Public" ) ) )
 	{    
-		send_to_char("&RHey, thats not your ship!\n\r",ch);    	
+		send_to_char("&RHey, thats not your ship!\n",ch);    	
 		return;    	
 	}
 
 	if ( module_type_install(obj, ship) )
 	{
-		send_to_char( "There is no room for that part!\n\r", ch);
+		send_to_char( "There is no room for that part!\n", ch);
 		return;
 	}
 
@@ -2535,14 +2535,14 @@ void do_install_module( CHAR_DATA *ch, char *argument )
 	{
           if ( IS_SET( ch->in_room->room_flags, modflags[obj->value[3]] ) )
           {
-            send_to_char( "&RThis item is already placed here.\n\r", ch);
+            send_to_char( "&RThis item is already placed here.\n", ch);
             return;
           }
         }
 
         if ( number_percent( ) > chance )
 	{
-	  send_to_char( "You fail to figure out how to install this module.\n\r", ch );
+	  send_to_char( "You fail to figure out how to install this module.\n", ch );
 	  return;
     	}
 
@@ -2764,7 +2764,7 @@ bool module_type_install(OBJ_DATA *obj, SHIP_DATA *ship)
 		if( is_internal_mod( module->type ) )
 		  internal += module->size;
 		  
-//	log_printf( "Ext: %d, Int: %d\n\r", external, internal );
+//	log_printf( "Ext: %d, Int: %d\n", external, internal );
 
 	  
 	}
@@ -2806,7 +2806,7 @@ bool module_type_install(OBJ_DATA *obj, SHIP_DATA *ship)
 	  }
 	}
 
-//	log_printf( buf, "Ext: %d, Int: %d\n\r", external, internal );
+//	log_printf( buf, "Ext: %d, Int: %d\n", external, internal );
 	  
 	if( is_external_mod( obj->value[1] ) && (external+obj->value[2]) > ship->maxextmodules)
 	  return TRUE;
@@ -2837,13 +2837,13 @@ void do_remove_module( CHAR_DATA *ch, char *argument )
 
     if( chance <= 0 )
     {
-	send_to_char( "You do not know how to install a module.\n\r", ch );
+	send_to_char( "You do not know how to install a module.\n", ch );
 	return;
     }
  
    if ( arg1[0] == '\0' || !is_number( arg1 ) )
     {
-		send_to_char( "Remove what?\n\r", ch );
+		send_to_char( "Remove what?\n", ch );
 		return;
     }
 
@@ -2851,7 +2851,7 @@ void do_remove_module( CHAR_DATA *ch, char *argument )
     {
       if( ( ship = ship_from_engine( ch->in_room->vnum ) ) == NULL )
       {
-	send_to_char( "Remove what from what ship?\n\r", ch );
+	send_to_char( "Remove what from what ship?\n", ch );
 	return;
       }
     }
@@ -2865,13 +2865,13 @@ void do_remove_module( CHAR_DATA *ch, char *argument )
 
 	if ( !IS_GOD(ch) && ( ship->shipclass != SHIP_DEBRIS ) && ( !check_pilot( ch , ship ) || !str_cmp( ship->owner , "Public" ) || !str_cmp( ship->owner , "Trainer" ) ) )
 	{    
-		send_to_char("&RHey, thats not your ship!\n\r",ch);    	
+		send_to_char("&RHey, thats not your ship!\n",ch);    	
 		return;    	
 	}
 
         if ( number_percent( ) > chance )
 	{
-	  send_to_char( "You fail to figure out how to install this module.\n\r", ch );
+	  send_to_char( "You fail to figure out how to install this module.\n", ch );
 	  return;
     	}
 
@@ -2886,7 +2886,7 @@ void do_remove_module( CHAR_DATA *ch, char *argument )
         
         if( module->type == MOD_CARGO )
         {
-          send_to_char("Use unloadcargo or transfercargo to remove cargo.\n\r",ch);
+          send_to_char("Use unloadcargo or transfercargo to remove cargo.\n",ch);
           return;
         }
         
@@ -2930,7 +2930,7 @@ void do_remove_module( CHAR_DATA *ch, char *argument )
         return;
       }
     }
-	  send_to_char("No such module installed\n\r",ch);
+	  send_to_char("No such module installed\n",ch);
 	  return;
 }
 
@@ -2958,7 +2958,7 @@ void do_show_modules( CHAR_DATA *ch, char *argument )
 */        
 	if ( ship && ( ship->shipclass != SHIP_DEBRIS ) && !check_pilot( ch , ship ) && !IS_GOD(ch) ) 
 	{    
-		send_to_char("&RHey, thats not your ship!\n\r",ch);    	
+		send_to_char("&RHey, thats not your ship!\n",ch);    	
 		return;    	
 	}
     }
@@ -2970,29 +2970,29 @@ void do_show_modules( CHAR_DATA *ch, char *argument )
         
     if( !ship )
     {
-    	send_to_char( "Show the modules on what ship?\n\r", ch );
+    	send_to_char( "Show the modules on what ship?\n", ch );
     	return;
     }
 	
     modtype = shipsearch ? (show_mod_type3( argument )) : (show_mod_type3( arg ) );
     
-    SPRINTF( buf, "Modules installed on %s:\n\r\n\r", ship->name );
+    SPRINTF( buf, "Modules installed on %s:\n\n", ship->name );
 	send_to_char(buf,ch);
 	for ( module = ship->first_module; module; modcounter++, module = module->next )
 	{
 		if ( modtype != -1 )
 		  if ( module->type != modtype )
 		    continue;
-		SPRINTF(buf,"%d) Name: %s\n\r\tType: %s Condition: %d Size: %d Mod: %d\n\r", 
+		SPRINTF(buf,"%d) Name: %s\n\tType: %s Condition: %d Size: %d Mod: %d\n", 
 		        modcounter, module->name, show_mod_type( module ), module->condition, module->size, module->modification );
 		send_to_char(buf,ch);
 	}
 	if (!ship->modules)
 	{
-		send_to_char( "No Modules installed.\n\r",ch);
+		send_to_char( "No Modules installed.\n",ch);
 		return;
 	}
-	ch_printf(ch,"Installed: External %d/%d  Internal %d/%d.\n\r", 
+	ch_printf(ch,"Installed: External %d/%d  Internal %d/%d.\n", 
 	          get_extmodule_count(ship), ship->maxextmodules, get_intmodule_count(ship), ship->maxintmodules );
 	
 	
@@ -3154,7 +3154,7 @@ void affectshipcargo( SHIP_DATA *ship, int typeCargo, int amount )
 
 void do_unload( CHAR_DATA *ch, char *argument )
 {
-send_to_char( "This is not implemented yet!\n\r", ch);
+send_to_char( "This is not implemented yet!\n", ch);
 return;
 }
 
@@ -3178,7 +3178,7 @@ void do_gravityprojector(CHAR_DATA * ch, char *argument)
 
     if(!argument || argument[0] == '\0' )
     {
-      send_to_char("Syntax: gravityprojector <on/off/amt>\n\r",ch);
+      send_to_char("Syntax: gravityprojector <on/off/amt>\n",ch);
       return;
     }
     
@@ -3187,45 +3187,45 @@ void do_gravityprojector(CHAR_DATA * ch, char *argument)
 
   if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
   {
-    send_to_char("&RYou must be in the cockpit of a ship to do that!\n\r",ch);
+    send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
     return;
   }
 
   if ( ship->shipclass > SHIP_PLATFORM )
   {
-    send_to_char("&RThis isn't a spacecraft!\n\r",ch);
+    send_to_char("&RThis isn't a spacecraft!\n",ch);
     return;
   }
 
 
   if (autofly (ship))
   {
-    send_to_char("The security system will not allow you to activate a gravity well with the autopilot online.\n\r" , ch );
+    send_to_char("The security system will not allow you to activate a gravity well with the autopilot online.\n" , ch );
     return;
   }
 
   if ( ship->mod->gravitypower == 0 )
   {
-    send_to_char("There are no gravity well projectors installed in this craft.\n\r" , ch );
+    send_to_char("There are no gravity well projectors installed in this craft.\n" , ch );
     return;
   }
 
   if ( (ship = ship_from_coseat(ch->in_room->vnum)) == NULL )
   {
-    send_to_char("&RYou need to be in the pilot seat!\n\r",ch);
+    send_to_char("&RYou need to be in the pilot seat!\n",ch);
     return;
   }
 
   if (ship->shipstate == SHIP_DISABLED)
   {
-    send_to_char("&RThe ships drive is disabled. No power available.\n\r",ch);
+    send_to_char("&RThe ships drive is disabled. No power available.\n",ch);
     return;
   }
 
   if (ship->shipstate == SHIP_LANDED)
   {
 
-    send_to_char("&ROne needs to take off first!\n\r",ch);
+    send_to_char("&ROne needs to take off first!\n",ch);
     return;
   }
 
@@ -3233,13 +3233,13 @@ void do_gravityprojector(CHAR_DATA * ch, char *argument)
   if (ship->shipstate == SHIP_HYPERSPACE)
   {
 
-    send_to_char("&RYou can only do that in realspace!\n\r",ch);
+    send_to_char("&RYou can only do that in realspace!\n",ch);
     return;
   }
 
   if (ship->shipstate != SHIP_READY)
   {
-    send_to_char("&RPlease wait until the ship has finished its current manouver.\n\r",ch);
+    send_to_char("&RPlease wait until the ship has finished its current manouver.\n",ch);
     return;
   }
 
@@ -3248,7 +3248,7 @@ void do_gravityprojector(CHAR_DATA * ch, char *argument)
   if (nifty_is_name_prefix (arg, "on"))
   {
     ship->mod->gravproj = ship->mod->gravitypower;
-    send_to_char("You activate the gravity projectors at full power.\n\r",ch);
+    send_to_char("You activate the gravity projectors at full power.\n",ch);
     echo_to_system (AT_PLAIN, ship, buf, NULL);
     return;
   }    
@@ -3258,7 +3258,7 @@ void do_gravityprojector(CHAR_DATA * ch, char *argument)
   if (nifty_is_name_prefix (arg, "off"))
   {
     ship->mod->gravproj = 0;
-    send_to_char("You deactivate the gravity projectors.\n\r",ch);
+    send_to_char("You deactivate the gravity projectors.\n",ch);
     echo_to_system (AT_PLAIN, ship, buf, NULL);
     return;
   }    
@@ -3268,9 +3268,9 @@ void do_gravityprojector(CHAR_DATA * ch, char *argument)
     gravpower = atoi(arg);
     ship->mod->gravproj = UMIN(gravpower, ship->mod->gravitypower);
     if( ship->mod->gravproj < ship->mod->gravitypower )
-      send_to_char("You activate the gravity projectors at partial power.\n\r",ch);
+      send_to_char("You activate the gravity projectors at partial power.\n",ch);
     else
-      send_to_char("You activate the gravity projectors at full power.\n\r",ch);
+      send_to_char("You activate the gravity projectors at full power.\n",ch);
     echo_to_system (AT_PLAIN, ship, buf, NULL);
     return;
   }
@@ -3328,7 +3328,7 @@ char * get_template_string( int templatetype )
   	  SPRINTF( buf, "1] 10;" );
   	  templatestring = STRALLOC( buf );
   	  break;
-  	default: send_to_char( "Template not found.\n\r", ch );return; break;
+  	default: send_to_char( "Template not found.\n", ch );return; break;
   }
 */
 
@@ -3350,19 +3350,19 @@ void do_maketemplateship(CHAR_DATA * ch, char *argument)
 
   if ( !argument || argument[0] == '\0' )
   {
-    send_to_char( "Usage: maketemplateship <templatetype> <filename> <newshipname>\n\r", ch );
+    send_to_char( "Usage: maketemplateship <templatetype> <filename> <newshipname>\n", ch );
     return;
   }
   
   if( !is_number( arg ) )
   {
-    send_to_char( "Template type must be a number.\n\r", ch );
+    send_to_char( "Template type must be a number.\n", ch );
     return;
   }
  
   if( arg2[0] == '\0' || !argument || argument[0] == '\0' )
   {
-    send_to_char( "Usage: maketemplateship <templatetype> <filename> <newshipname>\n\r", ch );
+    send_to_char( "Usage: maketemplateship <templatetype> <filename> <newshipname>\n", ch );
     return;
   }
 
@@ -3374,7 +3374,7 @@ void do_maketemplateship(CHAR_DATA * ch, char *argument)
   {
     for ( i = 0; i < MAX_TEMPLATETYPE; i++ )
     {
-        ch_printf( ch, "Num: %d Name: %s MaxExt: %d MaxInt: %d\n\r   Desc: %50s\n\r",
+        ch_printf( ch, "Num: %d Name: %s MaxExt: %d MaxInt: %d\n   Desc: %50s\n",
       		  templatetypes[i].type, templatetypes[i].name, 
       		  templatetypes[i].maxextmodules, templatetypes[i].maxintmodules,
       		  templatetypes[i].desc );
@@ -3455,7 +3455,7 @@ void do_maketemplateship(CHAR_DATA * ch, char *argument)
 
   if ( parse_ship_template(templatestring, ship) )
     {
-      bug( "maketemplateship: parse_ship_template failed.\n\r", 0 );
+      bug( "maketemplateship: parse_ship_template failed.\n", 0 );
       shipdelete(ship, FALSE);
       return;
     }
@@ -3485,16 +3485,16 @@ void do_ordership( CHAR_DATA *ch, char *argument )
 
   if ( ch->in_room->vnum != 5993 && ch->in_room->vnum != 32000 && ch->in_room->vnum != 1900 && ch->in_room->vnum != 1102 && ch->in_room->vnum != 100 && ch->in_room->vnum != 32050 )
   {
-    send_to_char( "This is not one of the operational shipyards.\n\r", ch );
+    send_to_char( "This is not one of the operational shipyards.\n", ch );
     return;
   }
   
   if( !is_number( arg ) )
   {
-    send_to_char( "Template type must be a number.\n\r", ch );
+    send_to_char( "Template type must be a number.\n", ch );
     for ( i = 0; i < MAX_TEMPLATETYPE; i++ )
     {
-        ch_printf( ch, "Num: %d Name: %s MaxExt: %d MaxInt: %d Price: %d\n\r   Desc: %50s\n\r",
+        ch_printf( ch, "Num: %d Name: %s MaxExt: %d MaxInt: %d Price: %d\n   Desc: %50s\n",
       		  templatetypes[i].type, templatetypes[i].name, 
       		  templatetypes[i].maxextmodules, templatetypes[i].maxintmodules,
       		  get_template_price(i),
@@ -3505,13 +3505,13 @@ void do_ordership( CHAR_DATA *ch, char *argument )
  
   if ( !argument || argument[0] == '\0' )
   {
-    send_to_char( "Usage: ordership <templatetype> <newshipname>\n\r", ch );
+    send_to_char( "Usage: ordership <templatetype> <newshipname>\n", ch );
     return;
   }
   
   if( !argument || argument[0] == '\0' )
   {
-    send_to_char( "Usage: ordership <templatetype> <newshipname>\n\r", ch );
+    send_to_char( "Usage: ordership <templatetype> <newshipname>\n", ch );
     return;
   }
 
@@ -3523,7 +3523,7 @@ void do_ordership( CHAR_DATA *ch, char *argument )
   {
     for ( i = 0; i < MAX_TEMPLATETYPE; i++ )
     {
-        ch_printf( ch, "Num: %d Name: %s MaxExt: %d MaxInt: %d Price: %d\n\r   Desc: %50s\n\r",
+        ch_printf( ch, "Num: %d Name: %s MaxExt: %d MaxInt: %d Price: %d\n   Desc: %50s\n",
       		  templatetypes[i].type, templatetypes[i].name, 
       		  templatetypes[i].maxextmodules, templatetypes[i].maxintmodules,
       		  get_template_price(i),
@@ -3536,21 +3536,21 @@ void do_ordership( CHAR_DATA *ch, char *argument )
   shiptype = ((int)templatetypes[templatetype].shipclass/10);
 
 #if 0
-  ch_printf( ch, "Shipclass: %d\n\r", shipclass);
-  ch_printf( ch, "Shiptype: %d\n\r", shiptype);
+  ch_printf( ch, "Shipclass: %d\n", shipclass);
+  ch_printf( ch, "Shiptype: %d\n", shiptype);
 #endif
 
   if( shiptype == 2 )
     if ( ch->in_room->vnum != 32000 )
     {
-      send_to_char( "This ship can only be built on an imperial shipyard.\n\r", ch );
+      send_to_char( "This ship can only be built on an imperial shipyard.\n", ch );
       return;
     }
 
   if( shiptype == 1 )
     if ( ch->in_room->vnum != 1900 )
     {
-      send_to_char( "This ship can only be built on an rebel shipyard.\n\r", ch );
+      send_to_char( "This ship can only be built on an rebel shipyard.\n", ch );
       return;
     }
   
@@ -3558,19 +3558,19 @@ void do_ordership( CHAR_DATA *ch, char *argument )
 
   if ( ch->gold < shipprice )
   {
-    ch_printf(ch, "&RYou don't have enough credits to purchase this ship.\n\r");
+    ch_printf(ch, "&RYou don't have enough credits to purchase this ship.\n");
     return;
   }
 
   if ( get_ship( argument ) )
   {
-    ch_printf(ch, "&RA ship already exists by that name.\n\r");
+    ch_printf(ch, "&RA ship already exists by that name.\n");
     return;
   }
   
   if( strchr( argument, '&' ) != NULL )
   {            
-    send_to_char( "&RColors may not be used in a ship's name.\n\r", ch);
+    send_to_char( "&RColors may not be used in a ship's name.\n", ch);
     return;
   }
 
@@ -3658,7 +3658,7 @@ void do_ordership( CHAR_DATA *ch, char *argument )
 
   if ( parse_ship_template(templatestring, ship) )
     {
-      bug( "maketemplateship: parse_ship_template failed.\n\r", 0 );
+      bug( "maketemplateship: parse_ship_template failed.\n", 0 );
       shipdelete(ship, FALSE);
       return;
     }
@@ -3679,7 +3679,7 @@ void do_shipdelete( CHAR_DATA *ch, char *argument )
   
   if ( ( ship = get_ship( argument ) ) == NULL )
   {
-    ch_printf(ch, "&RNo ship exists with that name.\n\r");
+    ch_printf(ch, "&RNo ship exists with that name.\n");
     return;
   }
   
@@ -3697,7 +3697,7 @@ void do_transferownership( CHAR_DATA *ch, char *argument )
     
   if ( !argument || argument[0] == '\0' )
   {
-    ch_printf(ch, "&RSyntax: transferownership '<new owner>' <ship name>.\n\r");
+    ch_printf(ch, "&RSyntax: transferownership '<new owner>' <ship name>.\n");
     return;
   }
   
@@ -3705,26 +3705,26 @@ void do_transferownership( CHAR_DATA *ch, char *argument )
   
   if ( arg[0] == '\0' || !argument || argument[0] == '\0' )
   {
-    ch_printf(ch, "&RSyntax: transferownership <new owner> <ship name>.\n\r");
+    ch_printf(ch, "&RSyntax: transferownership <new owner> <ship name>.\n");
     return;
   }
   
   if ( ( ship = get_ship( argument ) ) == NULL )
   {
-    ch_printf(ch, "&RNo ship exists with that name.\n\r");
+    ch_printf(ch, "&RNo ship exists with that name.\n");
     return;
   }
   
   if ( !ship->owner || ship->owner[0] == '\0' )
   {
-    ch_printf(ch, "&RYou must be the owner of this ship to transfer ownership.\n\r");
+    ch_printf(ch, "&RYou must be the owner of this ship to transfer ownership.\n");
     return;
   }
   
   
   if ( strcmp(ship->owner, ch->name ) )
   {
-    ch_printf(ch, "&RYou must be the owner of this ship to transfer ownership.\n\r");
+    ch_printf(ch, "&RYou must be the owner of this ship to transfer ownership.\n");
     return;
   }
   
@@ -3735,7 +3735,7 @@ void do_transferownership( CHAR_DATA *ch, char *argument )
 
   save_ship( ship );
 
-  ch_printf(ch, "&ROwnership transferred.\n\r");
+  ch_printf(ch, "&ROwnership transferred.\n");
   
   log_printf( "%s transferred ship ownership to %s./n/r", ch->name, arg );
   
@@ -3826,7 +3826,7 @@ void remove_cargo( SHIP_DATA *ship, int cargotype, int nummod )
 	
   if ( !check_cargo( ship, cargotype, nummod ) )
   {
-    log_printf( "remove_cargo: Ship %s failed check_cargo check\n\r", ship->personalname );
+    log_printf( "remove_cargo: Ship %s failed check_cargo check\n", ship->personalname );
     return;
   }
 
@@ -3894,7 +3894,7 @@ void do_loadcargo( CHAR_DATA *ch, char *argument )
 
   if ( !is_number( arg1 ) || !argument || !is_number( argument ) )
   {
-    send_to_char( "Syntax: loadcargo <type #> <amount>\n\r", ch );
+    send_to_char( "Syntax: loadcargo <type #> <amount>\n", ch );
     return;
   }
   
@@ -3903,19 +3903,19 @@ void do_loadcargo( CHAR_DATA *ch, char *argument )
   
   if ( ( ship = ship_from_cockpit( ch->in_room->vnum ) ) == NULL )
   {
-    send_to_char( "You must be in a ship's cockpit for that!\n\r", ch );
+    send_to_char( "You must be in a ship's cockpit for that!\n", ch );
     return;
   }
 
   if ( module_type_install2(MOD_CARGO, ship, nummod) )
   {
-    send_to_char( "There is no room for that much more cargo!\n\r", ch);
+    send_to_char( "There is no room for that much more cargo!\n", ch);
     return;
   }
 
   if ( cargotype > MAX_CARGO_NAMES )
   {
-    send_to_char( "No such cargo!\n\r", ch );
+    send_to_char( "No such cargo!\n", ch );
     return;
   }
   
@@ -3923,13 +3923,13 @@ void do_loadcargo( CHAR_DATA *ch, char *argument )
   
   if( !spaceobject )
   {
-    send_to_char( "You need to be on a planet landing pad to buy cargo!\n\r", ch);
+    send_to_char( "You need to be on a planet landing pad to buy cargo!\n", ch);
     return;
   }
   
   if( !spaceobject->first_cargo )
   {
-    send_to_char( "There is no cargo available here.\n\r", ch);
+    send_to_char( "There is no cargo available here.\n", ch);
     return;
   }
 
@@ -3941,7 +3941,7 @@ void do_loadcargo( CHAR_DATA *ch, char *argument )
   
   if ( !cargolist )
   {
-    send_to_char( "That type of cargo is not available here.\n\r", ch);
+    send_to_char( "That type of cargo is not available here.\n", ch);
     return;
   }
   
@@ -3949,13 +3949,13 @@ void do_loadcargo( CHAR_DATA *ch, char *argument )
   
   if ( nummod <= 0 )
   {
-    send_to_char( "A positive <amount> needs to be entered.\n\r", ch );
+    send_to_char( "A positive <amount> needs to be entered.\n", ch );
     return;
   }
 
   if ( ch->gold < nummod*cargoprice )
   {
-    ch_printf( ch, "You need %d credits to purchase %d units of this cargo.\n\r", nummod*cargoprice, nummod );
+    ch_printf( ch, "You need %d credits to purchase %d units of this cargo.\n", nummod*cargoprice, nummod );
     return;
   }
   
@@ -3983,7 +3983,7 @@ void do_loadcargo( CHAR_DATA *ch, char *argument )
 
   add_cargo( ship, cargotype, nummod );
   
-  send_to_char( "Your displays show your cargo request has been delivered.\n\r", ch );
+  send_to_char( "Your displays show your cargo request has been delivered.\n", ch );
   
   ch->gold -= nummod*cargoprice;
   
@@ -3998,7 +3998,7 @@ void do_checkcargo( CHAR_DATA *ch, char *argument )
   int defprice;
   if ( ( ship = ship_from_cockpit( ch->in_room->vnum ) ) == NULL )
   {
-    send_to_char( "You must be in a ship's cockpit to access that information.\n\r", ch );
+    send_to_char( "You must be in a ship's cockpit to access that information.\n", ch );
     return;
   }
 
@@ -4006,18 +4006,18 @@ void do_checkcargo( CHAR_DATA *ch, char *argument )
   
   if( !spaceobject )
   {
-    send_to_char( "You need to be on a planet landing pad to buy cargo!\n\r", ch);
+    send_to_char( "You need to be on a planet landing pad to buy cargo!\n", ch);
     return;
   }
   
   if( !spaceobject->first_cargo )
   {
-    send_to_char( "There is no cargo available here.\n\r", ch);
+    send_to_char( "There is no cargo available here.\n", ch);
     return;
   }
   else
   {
-    send_to_char( "\n\rCargo name    Cargo type#  Price   (compare).\n\r", ch);
+    send_to_char( "\nCargo name    Cargo type#  Price   (compare).\n", ch);
   }
   
 
@@ -4027,7 +4027,7 @@ void do_checkcargo( CHAR_DATA *ch, char *argument )
     if ( cargolist->cargo )
     {
       defprice = cargodefaults[cargolist->cargo->cargotype].price;
-      ch_printf( ch, "%12s  %11d  %5d   (%s)\n\r", get_cargo_name(cargolist->cargo->cargotype), 
+      ch_printf( ch, "%12s  %11d  %5d   (%s)\n", get_cargo_name(cargolist->cargo->cargotype), 
       cargolist->cargo->cargotype, cargolist->cargo->price, 
       (cargolist->cargo->price > defprice + (int) sqrt(defprice)/4 ? "High" :
       (cargolist->cargo->price < defprice - (int) sqrt(defprice)/4 ? "Low" : "Medium" )));
@@ -4051,7 +4051,7 @@ void do_transfercargo( CHAR_DATA *ch, char *argument )
 
   if ( arg1[0] == '\0' || !is_number( arg1 ) || arg2[0] == '\0' || !is_number( arg2 ) )
   {
-    send_to_char( "Syntax: transfercargo <type #> <amount> <ship>\n\r", ch );
+    send_to_char( "Syntax: transfercargo <type #> <amount> <ship>\n", ch );
     return;
   }
 
@@ -4060,32 +4060,32 @@ void do_transfercargo( CHAR_DATA *ch, char *argument )
   
   if ( ( ship = ship_from_cockpit( ch->in_room->vnum ) ) == NULL )
   {
-    send_to_char( "You must be in your ship's cockpit for that!\n\r", ch );
+    send_to_char( "You must be in your ship's cockpit for that!\n", ch );
     return;
   }
   
   if ( !check_pilot( ch , ship ) )
     {
-      send_to_char("&RYou need to have pilot status to transfer cargo on this ship.\n\r",ch);
+      send_to_char("&RYou need to have pilot status to transfer cargo on this ship.\n",ch);
       return;
     }
   
   if ( cargotype > MAX_CARGO_NAMES )
   {
-    send_to_char( "No such cargo!\n\r", ch );
+    send_to_char( "No such cargo!\n", ch );
     return;
   }
 
   if ( nummod <= 0 )
   {
-    send_to_char( "A positive <amount> needs to be entered.\n\r", ch );
+    send_to_char( "A positive <amount> needs to be entered.\n", ch );
     return;
   }
 
   if ( !check_cargo( ship, cargotype, nummod ) )
   {
     SPRINTF( cargoname, "%s", get_cargo_name(cargotype) );  
-    ch_printf( ch, "An error is displayed: Not that much cargo of %s.\n\r", cargoname );
+    ch_printf( ch, "An error is displayed: Not that much cargo of %s.\n", cargoname );
     return;
   }
   
@@ -4105,7 +4105,7 @@ void do_transfercargo( CHAR_DATA *ch, char *argument )
   if ( eShip == ship )
     eShip = NULL;
     
-//ch_printf( ch, "Ship: %d, eShip: %d\n\r", (int) ship, (int) eShip );  
+//ch_printf( ch, "Ship: %d, eShip: %d\n", (int) ship, (int) eShip );  
     
   if ( !eShip )
   {
@@ -4115,16 +4115,16 @@ void do_transfercargo( CHAR_DATA *ch, char *argument )
 
   if ( module_type_install2(MOD_CARGO, eShip, nummod) )
   {
-    send_to_char( "There is no room on the destination ship for that much more cargo!\n\r", ch);
+    send_to_char( "There is no room on the destination ship for that much more cargo!\n", ch);
     return;
   }
 
-//ch_printf( ch, "Ship: %d eShip: %d Argument: '%s'.\n\r", (int) ship, (int) eShip, argument );
+//ch_printf( ch, "Ship: %d eShip: %d Argument: '%s'.\n", (int) ship, (int) eShip, argument );
   
   remove_cargo( ship, cargotype, nummod );
   add_cargo( eShip, cargotype, nummod );
   
-  send_to_char( "Your display shows your cargo has been transferred.\n\r", ch );
+  send_to_char( "Your display shows your cargo has been transferred.\n", ch );
   
   
 }
@@ -4143,7 +4143,7 @@ void do_unloadcargo( CHAR_DATA *ch, char *argument )
 
   if ( !is_number( arg1 ) || !argument || !is_number( argument ) )
   {
-    send_to_char( "Syntax: unloadcargo <type #> <amount>\n\r", ch );
+    send_to_char( "Syntax: unloadcargo <type #> <amount>\n", ch );
     return;
   }
   
@@ -4152,19 +4152,19 @@ void do_unloadcargo( CHAR_DATA *ch, char *argument )
   
   if ( ( ship = ship_from_cockpit( ch->in_room->vnum ) ) == NULL )
   {
-    send_to_char( "You must be in a ship's cockpit for that!\n\r", ch );
+    send_to_char( "You must be in a ship's cockpit for that!\n", ch );
     return;
   }
   
   if ( !check_pilot( ch , ship ) )
     {
-      send_to_char("&RYou need to have pilot status to unload cargo on this ship.\n\r",ch);
+      send_to_char("&RYou need to have pilot status to unload cargo on this ship.\n",ch);
       return;
     }
   
   if ( cargotype > MAX_CARGO_NAMES )
   {
-    send_to_char( "No such cargo!\n\r", ch );
+    send_to_char( "No such cargo!\n", ch );
     return;
   }
   
@@ -4172,13 +4172,13 @@ void do_unloadcargo( CHAR_DATA *ch, char *argument )
   
   if( !spaceobject )
   {
-    send_to_char( "You need to be on a planet landing pad to sell cargo!\n\r", ch);
+    send_to_char( "You need to be on a planet landing pad to sell cargo!\n", ch);
     return;
   }
   
   if( !spaceobject->first_cargo )
   {
-    send_to_char( "You can not sell cargo here.\n\r", ch);
+    send_to_char( "You can not sell cargo here.\n", ch);
     return;
   }
 
@@ -4190,7 +4190,7 @@ void do_unloadcargo( CHAR_DATA *ch, char *argument )
   
   if ( !cargolist )
   {
-    send_to_char( "That type of cargo is not available to be sold here.\n\r", ch);
+    send_to_char( "That type of cargo is not available to be sold here.\n", ch);
     return;
   }
   
@@ -4198,20 +4198,20 @@ void do_unloadcargo( CHAR_DATA *ch, char *argument )
   
   if ( nummod <= 0 )
   {
-    send_to_char( "A positive <amount> needs to be entered.\n\r", ch );
+    send_to_char( "A positive <amount> needs to be entered.\n", ch );
     return;
   }
 
   if ( !check_cargo( ship, cargotype, nummod ) )
   {
     SPRINTF( cargoname, "%s", get_cargo_name(cargotype) );  
-    ch_printf( ch, "An error is displayed: Not that much cargo of %s.\n\r", cargoname );
+    ch_printf( ch, "An error is displayed: Not that much cargo of %s.\n", cargoname );
     return;
   }
   
   remove_cargo( ship, cargotype, nummod );
   
-  send_to_char( "Your displays show your cargo request has been delivered.\n\r", ch );
+  send_to_char( "Your displays show your cargo request has been delivered.\n", ch );
   
   ch->gold += nummod*cargoprice;
   
@@ -4230,7 +4230,7 @@ void do_restoreship( CHAR_DATA *ch, char *argument )
   
 /*if ( !stat( buf, &fst ) )
   {
-    send_to_char( "File not found.\n\r", ch );
+    send_to_char( "File not found.\n", ch );
     return;
   }
 */  
@@ -4238,7 +4238,7 @@ void do_restoreship( CHAR_DATA *ch, char *argument )
 
   if (!load_ship_file( argument ) )
   {
-    send_to_char( "Error loading file.\n\r", ch );
+    send_to_char( "Error loading file.\n", ch );
     return;
   }
 
@@ -4389,11 +4389,11 @@ void do_cargo( CHAR_DATA *ch, char *argument )
 
   if ( !argument || argument[0] == '\0')
   {
-    send_to_char( "\n\rSyntax: loadcargo <argument> <argument>...\n\r", ch );
-    send_to_char( "Arguments: planet <spaceobjectname> <argument>..., search\n\r", ch );
-    send_to_char( "Planet arguments: randomize, set <#list> <argument> <number>, stats\n\r", ch );
-    send_to_char( "Planet set arguments: type <type#>, price <amount>\n\r", ch );
-    send_to_char( "search arguments: overprice, underprice, cargotype <type#>\n\r", ch );
+    send_to_char( "\nSyntax: loadcargo <argument> <argument>...\n", ch );
+    send_to_char( "Arguments: planet <spaceobjectname> <argument>..., search\n", ch );
+    send_to_char( "Planet arguments: randomize, set <#list> <argument> <number>, stats\n", ch );
+    send_to_char( "Planet set arguments: type <type#>, price <amount>\n", ch );
+    send_to_char( "search arguments: overprice, underprice, cargotype <type#>\n", ch );
     return;
   }
 
@@ -4402,11 +4402,11 @@ void do_cargo( CHAR_DATA *ch, char *argument )
 
   if ( arg1[0] == '\0' || arg2[0] == '\0' )
   {
-    send_to_char( "\n\rSyntax: cargo <argument> <argument>...\n\r", ch );
-    send_to_char( "Arguments: planet <spaceobjectname> <argument>..., search\n\r", ch );
-    send_to_char( "Planet arguments: randomize, set <#list> <argument> <number>, stats\n\r", ch );
-    send_to_char( "Planet set arguments: type <type#>, price <amount>\n\r", ch );
-    send_to_char( "search arguments: overprice, underprice, cargotype <type#>\n\r", ch );
+    send_to_char( "\nSyntax: cargo <argument> <argument>...\n", ch );
+    send_to_char( "Arguments: planet <spaceobjectname> <argument>..., search\n", ch );
+    send_to_char( "Planet arguments: randomize, set <#list> <argument> <number>, stats\n", ch );
+    send_to_char( "Planet set arguments: type <type#>, price <amount>\n", ch );
+    send_to_char( "search arguments: overprice, underprice, cargotype <type#>\n", ch );
     return;
   }
   
@@ -4414,7 +4414,7 @@ void do_cargo( CHAR_DATA *ch, char *argument )
   {
     if ( !argument || argument[0] == '\0' )
     {
-      send_to_char( "No argument: cargo planet <spaceobjname> <argument>...\n\r", ch );
+      send_to_char( "No argument: cargo planet <spaceobjname> <argument>...\n", ch );
       return;
     }
       
@@ -4422,15 +4422,15 @@ void do_cargo( CHAR_DATA *ch, char *argument )
     spaceobject = spaceobject_from_name( arg2 );
     if ( !spaceobject )
     {
-      ch_printf( ch, "Starsystem %s not found.\n\r", arg2 );
+      ch_printf( ch, "Starsystem %s not found.\n", arg2 );
       return;
     }
     
     if ( !str_cmp( arg3, "randomize" ) )
     {
       if ( !randomize_spaceobject_cargo( spaceobject ) )
-      	send_to_char( "Error encountered in randomizing cargo.\n\r", ch );
-      ch_printf( ch, "Cargo data on planet %s randomized.\n\r", spaceobject->name );
+      	send_to_char( "Error encountered in randomizing cargo.\n", ch );
+      ch_printf( ch, "Cargo data on planet %s randomized.\n", spaceobject->name );
       save_spaceobject( spaceobject );
 
       return;
@@ -4439,16 +4439,16 @@ void do_cargo( CHAR_DATA *ch, char *argument )
     {
       if ( !spaceobject->first_cargo )
       {
-      	send_to_char( "This spaceobject has no cargo set.\n\r", ch );
+      	send_to_char( "This spaceobject has no cargo set.\n", ch );
       	return;
       }
-      ch_printf( ch, "Cargo Data: Spaceobject %s.\n\r", spaceobject->name );
+      ch_printf( ch, "Cargo Data: Spaceobject %s.\n", spaceobject->name );
       for( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
       {
       	cargocount++;
       	if ( !cargolist->cargo )
         {
-       	  ch_printf( ch, "Error: cargolist->cargo does not exist on spaceobject %s.\n\r", spaceobject->name );
+       	  ch_printf( ch, "Error: cargolist->cargo does not exist on spaceobject %s.\n", spaceobject->name );
       	  return;
         }
 	
@@ -4461,7 +4461,7 @@ void do_cargo( CHAR_DATA *ch, char *argument )
         else
 	  SPRINTF( hilow, "Med" );
         
-        ch_printf( ch, "%d) Cargo: %.12s Price: %d (%s).\n\r", 
+        ch_printf( ch, "%d) Cargo: %.12s Price: %d (%s).\n", 
         cargocount, get_cargo_name( cargolist->cargo->cargotype ), 
         cargolist->cargo->price,
         hilow );
@@ -4473,12 +4473,12 @@ void do_cargo( CHAR_DATA *ch, char *argument )
     {
       if ( !spaceobject->first_cargo )
       {
-      	send_to_char( "This spaceobject has no cargo set.\n\r", ch );
+      	send_to_char( "This spaceobject has no cargo set.\n", ch );
       	return;
       }
       if ( !argument || argument[0] == '\0')
       {
-        send_to_char( "Missing #list and beyond.&R&w\n\r", ch );
+        send_to_char( "Missing #list and beyond.&R&w\n", ch );
         return;
       }
     
@@ -4486,23 +4486,23 @@ void do_cargo( CHAR_DATA *ch, char *argument )
 
       if ( !is_number( arg4 ) )
       {
-        send_to_char( "#list needs to be a number.\n\r", ch );
+        send_to_char( "#list needs to be a number.\n", ch );
         return;
       }
       if ( !argument || argument[0] == '\0')
       {
-        send_to_char( "Missing set field: <argument> and beyond.\n\r", ch );
+        send_to_char( "Missing set field: <argument> and beyond.\n", ch );
         return;
       }
       argument = one_argument( argument, arg5 );
       if ( !argument || argument[0] == '\0')
       {
-        send_to_char( "Missing set field: <type>/<amount>.\n\r", ch );
+        send_to_char( "Missing set field: <type>/<amount>.\n", ch );
         return;
       }
       if ( !is_number( argument ) )
       {
-        send_to_char( "<type>/<amount> needs to be a number.\n\r", ch );
+        send_to_char( "<type>/<amount> needs to be a number.\n", ch );
         return;
       }
       cargolistnum = atoi(arg4);
@@ -4514,34 +4514,34 @@ void do_cargo( CHAR_DATA *ch, char *argument )
 
       	if ( !cargolist->cargo )
         {
-       	  ch_printf( ch, "Error: cargolist->cargo does not exist on spaceobject %s.\n\r", spaceobject->name );
+       	  ch_printf( ch, "Error: cargolist->cargo does not exist on spaceobject %s.\n", spaceobject->name );
       	  return;
         }
 	cargolist = cargolist->next;
       }
       if ( !cargolist )
       {
-        ch_printf( ch, "Not that many cargo items on spaceobject %s.\n\r", spaceobject->name );
+        ch_printf( ch, "Not that many cargo items on spaceobject %s.\n", spaceobject->name );
         return;
       }
       if ( !str_cmp( arg5, "type" ) )
       {
       	cargolist->cargo->cargotype = atoi(argument);
-      	send_to_char( "Done.\n\r", ch );
+      	send_to_char( "Done.\n", ch );
       	save_spaceobject( spaceobject );
       	return;
       }      
       if ( !str_cmp( arg5, "price" ) )
       {
       	cargolist->cargo->price = atoi(argument);
-      	send_to_char( "Done.\n\r", ch );
+      	send_to_char( "Done.\n", ch );
       	save_spaceobject( spaceobject );
       	return;
       }
-      	send_to_char( "No such option.  Options: type, price.\n\r", ch );
+      	send_to_char( "No such option.  Options: type, price.\n", ch );
       	return;
     }
-    send_to_char( "No such option.  Options: randomize, set, stats.\n\r", ch );
+    send_to_char( "No such option.  Options: randomize, set, stats.\n", ch );
     return;
 
   }
@@ -4553,30 +4553,30 @@ void do_cargo( CHAR_DATA *ch, char *argument )
   {
     if ( !argument || argument[0] == '\0' || !is_number(argument) )
     {
-      send_to_char( "No cargotype value: cargo search cargotype <cargotype#>\n\r", ch );
+      send_to_char( "No cargotype value: cargo search cargotype <cargotype#>\n", ch );
       return;
     }
     
     cargotype = atoi(argument);
-    ch_printf( ch, "Results for cargo type %s\n\r", get_cargo_name( cargotype ) );
+    ch_printf( ch, "Results for cargo type %s\n", get_cargo_name( cargotype ) );
     for ( spaceobject = first_spaceobject; spaceobject; spaceobject = spaceobject->next )
       if ( spaceobject->first_cargo )
         for ( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
           if ( cargolist->cargo->cargotype == cargotype )
-            ch_printf( ch, "%s: Price: %d\n\r", spaceobject->name, cargolist->cargo->price );
+            ch_printf( ch, "%s: Price: %d\n", spaceobject->name, cargolist->cargo->price );
     return;            
 
   }    
-    send_to_char( "Not yet implemented.\n\r", ch );
+    send_to_char( "Not yet implemented.\n", ch );
     return;
     
   }
 
-  send_to_char( "\n\rSyntax: cargo <argument> <argument>...\n\r", ch );
-  send_to_char( "Arguments: planet <spaceobjectname> <argument>..., search\n\r", ch );
-  send_to_char( "Planet arguments: randomize, set <#list> <argument> <number>, stats\n\r", ch );
-  send_to_char( "Planet set arguments: type <type#>, price <amount>\n\r", ch );
-  send_to_char( "search arguments: overprice, underprice, cargotype <type#>\n\r", ch );
+  send_to_char( "\nSyntax: cargo <argument> <argument>...\n", ch );
+  send_to_char( "Arguments: planet <spaceobjectname> <argument>..., search\n", ch );
+  send_to_char( "Planet arguments: randomize, set <#list> <argument> <number>, stats\n", ch );
+  send_to_char( "Planet set arguments: type <type#>, price <amount>\n", ch );
+  send_to_char( "search arguments: overprice, underprice, cargotype <type#>\n", ch );
   return;
   
   
@@ -4600,7 +4600,7 @@ void do_repair_module ( CHAR_DATA *ch, char *argument ) // Coded by Johnson ( Mi
 
 				if( chance <= 0 )
 				{
-				send_to_char( "You do not know how to repair a module.\n\r", ch );
+				send_to_char( "You do not know how to repair a module.\n", ch );
 				return;
 				}
 
@@ -4609,14 +4609,14 @@ void do_repair_module ( CHAR_DATA *ch, char *argument ) // Coded by Johnson ( Mi
 
 				if ( ( obj = get_obj_carry( ch, arg ) ) == NULL )
 				{
-					send_to_char( "You do not have that item.\n\r", ch );
+					send_to_char( "You do not have that item.\n", ch );
 					return;
 				}
 
 				if ( !( obj->item_type==ITEM_FIGHTERCOMP || obj->item_type==ITEM_MIDCOMP
 					|| obj->item_type==ITEM_CAPITALCOMP ) )
 				{
-					send_to_char("That isn't a ship module.\n\r",ch);
+					send_to_char("That isn't a ship module.\n",ch);
 					return;
 				}
 
@@ -4625,25 +4625,25 @@ void do_repair_module ( CHAR_DATA *ch, char *argument ) // Coded by Johnson ( Mi
 
                 		if ( number_percent( ) < chance )
     				{
-    				  send_to_char( "&GYou begin your repairs\n\r", ch);
+    				  send_to_char( "&GYou begin your repairs\n", ch);
 				  act( AT_PLAIN, "$n begins repairing a ship module.", ch, NULL, argument , TO_ROOM );
     				  add_timer ( ch , TIMER_DO_FUN , 5 , do_repair_module , 1 );
     				  ch->dest_buf = str_dup(arg);
     				  return;
 				}
 
-				send_to_char("&RYou fail to locate the source of the problem.\n\r",ch);
+				send_to_char("&RYou fail to locate the source of the problem.\n",ch);
 
 				if ( obj->value[0] >= 100 )
 				{
-					send_to_char("&RYou failed overcharging the module and cause serious damage!.\n\r",ch);
+					send_to_char("&RYou failed overcharging the module and cause serious damage!.\n",ch);
 					obj->value[0] = (int) ((ch->pcdata->learned[gsn_repairmodule]) * 0.75 );
 				}
 				else
 				{
 					if ( number_percent( ) > URANGE( 50, chance * 1.25, 100  ) )
 					{
-						send_to_char("&RYou slip up and damage it slightly!\n\r",ch);
+						send_to_char("&RYou slip up and damage it slightly!\n",ch);
 						obj->value[0] += (int) (1 - URANGE(1, number_percent( )/20, 5 ));
 					}
 				}
@@ -4661,7 +4661,7 @@ void do_repair_module ( CHAR_DATA *ch, char *argument ) // Coded by Johnson ( Mi
     	case SUB_TIMER_DO_ABORT:
     		DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
-    	    send_to_char("&RYou are distracted and fail to finish your repairs.\n\r", ch);
+    	    send_to_char("&RYou are distracted and fail to finish your repairs.\n", ch);
     		return;
     }
 
@@ -4670,7 +4670,7 @@ void do_repair_module ( CHAR_DATA *ch, char *argument ) // Coded by Johnson ( Mi
 
     if ( ( obj = get_obj_carry( ch, arg ) ) == NULL )
     {
-      send_to_char( "The item you were working on seems to be gone...\n\r", ch );
+      send_to_char( "The item you were working on seems to be gone...\n", ch );
       return;
     }
 
@@ -4684,12 +4684,12 @@ void do_repair_module ( CHAR_DATA *ch, char *argument ) // Coded by Johnson ( Mi
 
 	if ( obj->value[0] >= 125 )
 	{
-		send_to_char("&RYou cannot repair it more than 125%!\n\r", ch);
+		send_to_char("&RYou cannot repair it more than 125%!\n", ch);
 		obj->value[0] = 125;
 	}
 	else
 	{
-	send_to_char("&GRepair successful.\n\r", ch);
+	send_to_char("&GRepair successful.\n", ch);
 	}
 
 	learn_from_success( ch, gsn_repairmodule );
@@ -4713,19 +4713,19 @@ void do_checkareaships ( CHAR_DATA *ch, char *argument )
     
   if ( !tarea )
   {
-    send_to_char( "Area not found.\n\r", ch );
+    send_to_char( "Area not found.\n", ch );
     return;
   }
   
   for ( roomvnum = tarea->low_r_vnum; roomvnum < tarea->hi_r_vnum; roomvnum++ )
   {    if( ( ship = ship_from_cockpit( roomvnum ) ) != NULL )
     {
-      ch_printf( ch, "Ship: %s %s, Room: %d\n\r", ship->name, ship->personalname, roomvnum );
+      ch_printf( ch, "Ship: %s %s, Room: %d\n", ship->name, ship->personalname, roomvnum );
       shipsfound++;
     }
   }
   
-  ch_printf( ch, "%d rooms found.\n\r", shipsfound );
+  ch_printf( ch, "%d rooms found.\n", shipsfound );
   return;
 
 }

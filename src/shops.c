@@ -92,7 +92,7 @@ CHAR_DATA *find_keeper_q( CHAR_DATA *ch, bool message )
 
     {
       if ( message )
-	send_to_char( "You can't do that here.\n\r", ch );
+	send_to_char( "You can't do that here.\n", ch );
       return NULL;
     }
 
@@ -148,7 +148,7 @@ CHAR_DATA *find_fixer( CHAR_DATA *ch )
 
     if ( !rShop )
     {
-	send_to_char( "You can't do that here.\n\r", ch );
+	send_to_char( "You can't do that here.\n", ch );
 	return NULL;
     }
 
@@ -391,7 +391,7 @@ void do_buy( CHAR_DATA *ch, char *argument )
 
     if ( arg[0] == '\0' )
     {
-	send_to_char( "Buy what?\n\r", ch );
+	send_to_char( "Buy what?\n", ch );
 	return;
     }
 
@@ -409,7 +409,7 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	if ( !pRoomIndexNext )
 	{
 	    bug( "Do_buy: bad pet shop at vnum %d.", ch->in_room->vnum );
-	    send_to_char( "Sorry, you can't buy that here.\n\r", ch );
+	    send_to_char( "Sorry, you can't buy that here.\n", ch );
 	    return;
 	}
 
@@ -420,25 +420,25 @@ void do_buy( CHAR_DATA *ch, char *argument )
 
 	if ( pet == NULL || !IS_NPC( pet ) || !IS_SET(pet->act, ACT_PET) )
 	{
-	    send_to_char( "Sorry, you can't buy that here.\n\r", ch );
+	    send_to_char( "Sorry, you can't buy that here.\n", ch );
 	    return;
 	}
 
 	if ( IS_SET(ch->act, PLR_BOUGHT_PET) )
 	{
-	    send_to_char( "You already bought one pet this level.\n\r", ch );
+	    send_to_char( "You already bought one pet this level.\n", ch );
 	    return;
 	}
 
 	if ( ch->gold < 10 * pet->top_level * pet->top_level )
 	{
-	    send_to_char( "You can't afford it.\n\r", ch );
+	    send_to_char( "You can't afford it.\n", ch );
 	    return;
 	}
 
 	if ( ch->top_level < pet->top_level )
 	{
-	    send_to_char( "You're not ready for this pet.\n\r", ch );
+	    send_to_char( "You're not ready for this pet.\n", ch );
 	    return;
 	}
 
@@ -458,7 +458,7 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	    pet->name = STRALLOC( buf );
 	}
 
-	SPRINTF( buf, "%sA neck tag says 'I belong to %s'.\n\r",
+	SPRINTF( buf, "%sA neck tag says 'I belong to %s'.\n",
 	    pet->description, ch->name );
 	STRFREE( pet->description );
 	pet->description = STRALLOC( buf );
@@ -468,7 +468,7 @@ void do_buy( CHAR_DATA *ch, char *argument )
 
 	char_to_room( pet, ch->in_room );
 	add_follower( pet, ch );
-	send_to_char( "Enjoy your pet.\n\r", ch );
+	send_to_char( "Enjoy your pet.\n", ch );
     	act( AT_ACTION, "$n bought $N as a pet.", ch, NULL, pet, TO_ROOM );
 	return;
     }
@@ -529,7 +529,7 @@ void do_buy( CHAR_DATA *ch, char *argument )
 
         if ( !obj )
         {
-	  send_to_char( "Buy what?\n\r", ch );
+	  send_to_char( "Buy what?\n", ch );
 	  return;
         }
           
@@ -606,14 +606,14 @@ void do_buy( CHAR_DATA *ch, char *argument )
 
 	if ( ch->carry_number + get_obj_number( obj ) > can_carry_n( ch ) )
 	{
-	    send_to_char( "You can't carry that many items.\n\r", ch );
+	    send_to_char( "You can't carry that many items.\n", ch );
 	    return;
 	}
 
 	if ( ch->carry_weight + ( get_obj_weight( obj ) * noi )
 		+ (noi > 1 ? 2 : 0) > can_carry_w( ch ) )
 	{
-	    send_to_char( "You can't carry that much weight.\n\r", ch );
+	    send_to_char( "You can't carry that much weight.\n", ch );
 	    return;
 	}
 
@@ -729,7 +729,7 @@ void do_list( CHAR_DATA *ch, char *argument )
 	if ( !pRoomIndexNext )
 	{
 	    bug( "Do_list: bad pet shop at vnum %d.", ch->in_room->vnum );
-	    send_to_char( "You can't do that here.\n\r", ch );
+	    send_to_char( "You can't do that here.\n", ch );
 	    return;
 	}
 
@@ -741,16 +741,16 @@ void do_list( CHAR_DATA *ch, char *argument )
 		if ( !found )
 		{
 		    found = TRUE;
-		    send_to_char( "Pets for sale:\n\r", ch );
+		    send_to_char( "Pets for sale:\n", ch );
 		}
-		ch_printf( ch, "[%2d] %8d - %s\n\r",
+		ch_printf( ch, "[%2d] %8d - %s\n",
 			pet->top_level,
 			10 * pet->top_level * pet->top_level,
 			pet->short_descr );
 	    }
 	}
 	if ( !found )
-	    send_to_char( "Sorry, we're out of pets right now.\n\r", ch );
+	    send_to_char( "Sorry, we're out of pets right now.\n", ch );
 	return;
     }
     else
@@ -782,11 +782,11 @@ void do_list( CHAR_DATA *ch, char *argument )
 		if ( !found )
 		{
 		    found = TRUE;
-		    send_to_char( "[Price] {ref} Item\n\r", ch );
+		    send_to_char( "[Price] {ref} Item\n", ch );
 		}
 		if ( obj->item_type == ITEM_FIGHTERCOMP )
 		{
-		  ch_printf( ch, "[%5d] {%3d} %s (Fighter)\n\r                %s Mod: %d Size: %d Cond: %d%%.\n\r",
+		  ch_printf( ch, "[%5d] {%3d} %s (Fighter)\n                %s Mod: %d Size: %d Cond: %d%%.\n",
 		  cost, oref, capitalize( obj->short_descr ),
 		  show_mod_type2( obj->value[1] ),
           obj->value[3], obj->value[2], obj->value[0] );
@@ -795,7 +795,7 @@ void do_list( CHAR_DATA *ch, char *argument )
 
         if ( obj->item_type == ITEM_MIDCOMP )
         {
-		  ch_printf( ch, "[%5d] {%3d} %s (Midsize)\n\r                %s Mod: %d Size: %d Cond: %d%%.\n\r",
+		  ch_printf( ch, "[%5d] {%3d} %s (Midsize)\n                %s Mod: %d Size: %d Cond: %d%%.\n",
 		  cost, oref, capitalize( obj->short_descr ),
 		  show_mod_type2( obj->value[1] ),
           obj->value[3], obj->value[2], obj->value[0] );
@@ -804,14 +804,14 @@ void do_list( CHAR_DATA *ch, char *argument )
 
         if ( obj->item_type == ITEM_CAPITALCOMP )
         {
-		  ch_printf( ch, "[%5d] {%3d} %s (Capital)\n\r                %s Mod: %d Size: %d Cond: %d%%.\n\r",
+		  ch_printf( ch, "[%5d] {%3d} %s (Capital)\n                %s Mod: %d Size: %d Cond: %d%%.\n",
 		  cost, oref, capitalize( obj->short_descr ),
 		  show_mod_type2( obj->value[1] ),
           obj->value[3], obj->value[2], obj->value[0] );
           continue;
         }
 
-        ch_printf( ch, "[%5d] {%3d} %s%s.\n\r",
+        ch_printf( ch, "[%5d] {%3d} %s%s.\n",
           cost, oref, capitalize( obj->short_descr ),
 		    IS_SET(obj->extra_flags, ITEM_HUTT_SIZE) ? " (hutt size)" :
 		    ( IS_SET(obj->extra_flags, ITEM_LARGE_SIZE) ? " (large)" :
@@ -825,9 +825,9 @@ void do_list( CHAR_DATA *ch, char *argument )
 	if ( !found )
 	{
 	    if ( arg[0] == '\0' )
-		send_to_char( "You can't buy anything here.\n\r", ch );
+		send_to_char( "You can't buy anything here.\n", ch );
 	    else
-		send_to_char( "You can't buy that here.\n\r", ch );
+		send_to_char( "You can't buy that here.\n", ch );
 	}
 	return;
     }
@@ -847,7 +847,7 @@ void do_sell( CHAR_DATA *ch, char *argument )
 
     if ( arg[0] == '\0' )
     {
-	send_to_char( "Sell what?\n\r", ch );
+	send_to_char( "Sell what?\n", ch );
 	return;
     }
 
@@ -864,7 +864,7 @@ void do_sell( CHAR_DATA *ch, char *argument )
 
     if ( !can_drop_obj( ch, obj ) )
     {
-	send_to_char( "You can't let go of it!\n\r", ch );
+	send_to_char( "You can't let go of it!\n", ch );
 	return;
     }
 
@@ -921,7 +921,7 @@ void do_sell( CHAR_DATA *ch, char *argument )
        long ch_exp;
        
        ch_exp = UMIN( obj->cost*10 , ( exp_level( ch->skill_level[SMUGGLING_ABILITY]+1) - exp_level( ch->skill_level[SMUGGLING_ABILITY])  ) / 10  );
-       ch_printf( ch, "You receive %ld smuggling experience for unloading your contraband.\n\r " , ch_exp );
+       ch_printf( ch, "You receive %ld smuggling experience for unloading your contraband.\n " , ch_exp );
        gain_exp( ch, ch_exp , SMUGGLING_ABILITY );
        if ( obj->item_type == ITEM_SPICE || obj->item_type == ITEM_RAWSPICE )
 	 extract_obj( obj );
@@ -954,7 +954,7 @@ void do_value( CHAR_DATA *ch, char *argument )
 
     if ( argument[0] == '\0' )
     {
-	send_to_char( "Value what?\n\r", ch );
+	send_to_char( "Value what?\n", ch );
 	return;
     }
 
@@ -971,7 +971,7 @@ void do_value( CHAR_DATA *ch, char *argument )
 
     if ( !can_drop_obj( ch, obj ) )
     {
-	send_to_char( "You can't let go of it!\n\r", ch );
+	send_to_char( "You can't let go of it!\n", ch );
 	return;
     }
 
@@ -998,7 +998,7 @@ void repair_one_obj( CHAR_DATA *ch, CHAR_DATA *keeper, OBJ_DATA *obj,
    int cost;
 
    if ( !can_drop_obj( ch, obj ) )
-       ch_printf( ch, "You can't let go of %s.\n\r", obj->name );
+       ch_printf( ch, "You can't let go of %s.\n", obj->name );
    else if ( ( cost = get_repaircost( keeper, obj ) ) < 0 )
    {
        if (cost != -2)
@@ -1041,7 +1041,7 @@ void repair_one_obj( CHAR_DATA *ch, CHAR_DATA *keeper, OBJ_DATA *obj,
       switch ( obj->item_type )
       {
           default:
-            send_to_char( "For some reason, you think you got ripped off...\n\r", ch);
+            send_to_char( "For some reason, you think you got ripped off...\n", ch);
             break;
           case ITEM_ARMOR:
             obj->value[0] = obj->value[1];
@@ -1068,7 +1068,7 @@ void do_repair( CHAR_DATA *ch, char *argument )
 
     if ( argument[0] == '\0' )
     {
-	send_to_char( "Repair what?\n\r", ch );
+	send_to_char( "Repair what?\n", ch );
 	return;
     }
 
@@ -1130,7 +1130,7 @@ void appraise_all( CHAR_DATA *ch, CHAR_DATA *keeper, char *fixstr )
         {
 
             if ( !can_drop_obj( ch, obj ) )
-            ch_printf( ch, "You can't let go of %s.\n\r", obj->name );
+            ch_printf( ch, "You can't let go of %s.\n", obj->name );
             else if ( ( cost = get_repaircost( keeper, obj ) ) < 0 )
             {
                if (cost != -2)
@@ -1153,7 +1153,7 @@ void appraise_all( CHAR_DATA *ch, CHAR_DATA *keeper, char *fixstr )
     }
     if ( total > 0 )
     {
-       send_to_char ("\n\r", ch);
+       send_to_char ("\n", ch);
        SPRINTF( buf,
           "$N tells you, 'It will cost %d credit%s in total.'",
           total, cost == 1 ? "" : "s" );
@@ -1178,7 +1178,7 @@ void do_appraise( CHAR_DATA *ch, char *argument )
 
     if ( arg[0] == '\0' )
     {
-	send_to_char( "Appraise what?\n\r", ch );
+	send_to_char( "Appraise what?\n", ch );
 	return;
     }
 
@@ -1212,7 +1212,7 @@ void do_appraise( CHAR_DATA *ch, char *argument )
 
     if ( !can_drop_obj( ch, obj ) )
     {
-	send_to_char( "You can't let go of it.\n\r", ch );
+	send_to_char( "You can't let go of it.\n", ch );
 	return;
     }
 
@@ -1248,7 +1248,7 @@ void do_makeshop( CHAR_DATA *ch, char *argument )
 
     if ( !argument || argument[0] == '\0' )
     {
-	send_to_char( "Usage: makeshop <mobvnum>\n\r", ch );
+	send_to_char( "Usage: makeshop <mobvnum>\n", ch );
 	return;
     }
 
@@ -1256,7 +1256,7 @@ void do_makeshop( CHAR_DATA *ch, char *argument )
     
     if ( (mob = get_mob_index(vnum)) == NULL )
     {
-	send_to_char( "Mobile not found.\n\r", ch );
+	send_to_char( "Mobile not found.\n", ch );
 	return;
     }
 
@@ -1265,7 +1265,7 @@ void do_makeshop( CHAR_DATA *ch, char *argument )
 
     if ( mob->pShop )
     {
-	send_to_char( "This mobile already has a shop.\n\r", ch );
+	send_to_char( "This mobile already has a shop.\n", ch );
 	return;
     }
 
@@ -1278,7 +1278,7 @@ void do_makeshop( CHAR_DATA *ch, char *argument )
     shop->open_hour	= 0;
     shop->close_hour	= 23;
     mob->pShop		= shop;
-    send_to_char( "Done.\n\r", ch );
+    send_to_char( "Done.\n", ch );
     return;
 }
 
@@ -1297,9 +1297,9 @@ void do_shopset( CHAR_DATA *ch, char *argument )
 
     if ( arg1[0] == '\0' || arg2[0] == '\0' )
     {
-	send_to_char( "Usage: shopset <mob vnum> <field> value\n\r", ch );
-	send_to_char( "\n\rField being one of:\n\r", ch );
-	send_to_char( "  buy0 buy1 buy2 buy3 buy4 buy sell open close keeper\n\r", ch );
+	send_to_char( "Usage: shopset <mob vnum> <field> value\n", ch );
+	send_to_char( "\nField being one of:\n", ch );
+	send_to_char( "  buy0 buy1 buy2 buy3 buy4 buy sell open close keeper\n", ch );
 	return;
     }
 
@@ -1307,7 +1307,7 @@ void do_shopset( CHAR_DATA *ch, char *argument )
 
     if ( (mob = get_mob_index(vnum)) == NULL )
     {
-	send_to_char( "Mobile not found.\n\r", ch );
+	send_to_char( "Mobile not found.\n", ch );
 	return;
     }
 
@@ -1316,7 +1316,7 @@ void do_shopset( CHAR_DATA *ch, char *argument )
 
     if ( !mob->pShop )
     {
-	send_to_char( "This mobile doesn't keep a shop.\n\r", ch );
+	send_to_char( "This mobile doesn't keep a shop.\n", ch );
 	return;
     }
     shop = mob->pShop;
@@ -1328,11 +1328,11 @@ void do_shopset( CHAR_DATA *ch, char *argument )
 	    value = get_otype(argument);
 	if ( value < 0 || value > MAX_ITEM_TYPE )
 	{
-	    send_to_char( "Invalid item type!\n\r", ch );
+	    send_to_char( "Invalid item type!\n", ch );
 	    return;
 	}
 	shop->buy_type[0] = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1342,11 +1342,11 @@ void do_shopset( CHAR_DATA *ch, char *argument )
 	    value = get_otype(argument);
 	if ( value < 0 || value > MAX_ITEM_TYPE )
 	{
-	    send_to_char( "Invalid item type!\n\r", ch );
+	    send_to_char( "Invalid item type!\n", ch );
 	    return;
 	}
 	shop->buy_type[1] = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1356,11 +1356,11 @@ void do_shopset( CHAR_DATA *ch, char *argument )
 	  value = get_otype(argument);
 	if ( value < 0 || value > MAX_ITEM_TYPE )
 	{
-	    send_to_char( "Invalid item type!\n\r", ch );
+	    send_to_char( "Invalid item type!\n", ch );
 	    return;
 	}
 	shop->buy_type[2] = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1370,11 +1370,11 @@ void do_shopset( CHAR_DATA *ch, char *argument )
 	  value = get_otype(argument);
 	if ( value < 0 || value > MAX_ITEM_TYPE )
 	{
-	    send_to_char( "Invalid item type!\n\r", ch );
+	    send_to_char( "Invalid item type!\n", ch );
 	    return;
 	}
 	shop->buy_type[3] = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1384,11 +1384,11 @@ void do_shopset( CHAR_DATA *ch, char *argument )
 	  value = get_otype(argument);
 	if ( value < 0 || value > MAX_ITEM_TYPE )
 	{
-	    send_to_char( "Invalid item type!\n\r", ch );
+	    send_to_char( "Invalid item type!\n", ch );
 	    return;
 	}
 	shop->buy_type[4] = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1396,11 +1396,11 @@ void do_shopset( CHAR_DATA *ch, char *argument )
     {
 	if ( value <= (shop->profit_sell) || value > 1000 )
 	{
-	    send_to_char( "Out of range.\n\r", ch );
+	    send_to_char( "Out of range.\n", ch );
 	    return;
 	}
 	shop->profit_buy = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1408,11 +1408,11 @@ void do_shopset( CHAR_DATA *ch, char *argument )
     {
 	if ( value < 0 || value >= (shop->profit_buy) )
 	{
-	    send_to_char( "Out of range.\n\r", ch );
+	    send_to_char( "Out of range.\n", ch );
 	    return;
 	}
 	shop->profit_sell = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1420,11 +1420,11 @@ void do_shopset( CHAR_DATA *ch, char *argument )
     {
 	if ( value < 0 || value > 23 )
 	{
-	    send_to_char( "Out of range.\n\r", ch );
+	    send_to_char( "Out of range.\n", ch );
 	    return;
 	}
 	shop->open_hour = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1432,11 +1432,11 @@ void do_shopset( CHAR_DATA *ch, char *argument )
     {
 	if ( value < 0 || value > 23 )
 	{
-	    send_to_char( "Out of range.\n\r", ch );
+	    send_to_char( "Out of range.\n", ch );
 	    return;
 	}
 	shop->close_hour = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1444,20 +1444,20 @@ void do_shopset( CHAR_DATA *ch, char *argument )
     {
 	if ( (mob2 = get_mob_index(vnum)) == NULL )
 	{
-	    send_to_char( "Mobile not found.\n\r", ch );
+	    send_to_char( "Mobile not found.\n", ch );
 	    return;
 	}
 	if ( !can_medit(ch, mob) )
 	    return;
 	if ( mob2->pShop )
 	{
-	    send_to_char( "That mobile already has a shop.\n\r", ch );
+	    send_to_char( "That mobile already has a shop.\n", ch );
 	    return;
 	}
 	mob->pShop  = NULL;
 	mob2->pShop = shop;
 	shop->keeper = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1474,7 +1474,7 @@ void do_shopstat( CHAR_DATA *ch, char *argument )
     
     if ( argument[0] == '\0' )
     {
-	send_to_char( "Usage: shopstat <keeper vnum>\n\r", ch );
+	send_to_char( "Usage: shopstat <keeper vnum>\n", ch );
 	return;
     }
 
@@ -1482,28 +1482,28 @@ void do_shopstat( CHAR_DATA *ch, char *argument )
     
     if ( (mob = get_mob_index(vnum)) == NULL )
     {
-	send_to_char( "Mobile not found.\n\r", ch );
+	send_to_char( "Mobile not found.\n", ch );
 	return;
     }
 
     if ( !mob->pShop )
     {
-	send_to_char( "This mobile doesn't keep a shop.\n\r", ch );
+	send_to_char( "This mobile doesn't keep a shop.\n", ch );
 	return;
     }
     shop = mob->pShop;
 
-    ch_printf( ch, "Keeper: %d  %s\n\r", shop->keeper, mob->short_descr );
-    ch_printf( ch, "buy0 [%s]  buy1 [%s]  buy2 [%s]  buy3 [%s]  buy4 [%s]\n\r",
+    ch_printf( ch, "Keeper: %d  %s\n", shop->keeper, mob->short_descr );
+    ch_printf( ch, "buy0 [%s]  buy1 [%s]  buy2 [%s]  buy3 [%s]  buy4 [%s]\n",
 		o_types[shop->buy_type[0]],
 		o_types[shop->buy_type[1]],
 		o_types[shop->buy_type[2]],
 		o_types[shop->buy_type[3]],
 		o_types[shop->buy_type[4]] );
-    ch_printf( ch, "Profit:  buy %3d%%  sell %3d%%\n\r",
+    ch_printf( ch, "Profit:  buy %3d%%  sell %3d%%\n",
 			shop->profit_buy,
 			shop->profit_sell );
-    ch_printf( ch, "Hours:   open %2d  close %2d\n\r",
+    ch_printf( ch, "Hours:   open %2d  close %2d\n",
 			shop->open_hour,
 			shop->close_hour );
     return;
@@ -1516,13 +1516,13 @@ void do_shops( CHAR_DATA *ch, char *argument )
 
     if ( !first_shop )
     {
-	send_to_char( "There are no shops.\n\r", ch );
+	send_to_char( "There are no shops.\n", ch );
 	return;
     }
 
     set_char_color( AT_NOTE, ch );
     for ( shop = first_shop; shop; shop = shop->next )
-	ch_printf( ch, "Keeper: %5d Buy: %3d Sell: %3d Open: %2d Close: %2d Buy: %2d %2d %2d %2d %2d\n\r",
+	ch_printf( ch, "Keeper: %5d Buy: %3d Sell: %3d Open: %2d Close: %2d Buy: %2d %2d %2d %2d %2d\n",
 		shop->keeper,	   shop->profit_buy, shop->profit_sell,
 		shop->open_hour,   shop->close_hour,
 		shop->buy_type[0], shop->buy_type[1],
@@ -1542,7 +1542,7 @@ void do_makerepair( CHAR_DATA *ch, char *argument )
 
     if ( !argument || argument[0] == '\0' )
     {
-	send_to_char( "Usage: makerepair <mobvnum>\n\r", ch );
+	send_to_char( "Usage: makerepair <mobvnum>\n", ch );
 	return;
     }
 
@@ -1550,7 +1550,7 @@ void do_makerepair( CHAR_DATA *ch, char *argument )
     
     if ( (mob = get_mob_index(vnum)) == NULL )
     {
-	send_to_char( "Mobile not found.\n\r", ch );
+	send_to_char( "Mobile not found.\n", ch );
 	return;
     }
 
@@ -1559,7 +1559,7 @@ void do_makerepair( CHAR_DATA *ch, char *argument )
 
     if ( mob->rShop )
     {
-	send_to_char( "This mobile already has a repair shop.\n\r", ch );
+	send_to_char( "This mobile already has a repair shop.\n", ch );
 	return;
     }
 
@@ -1572,7 +1572,7 @@ void do_makerepair( CHAR_DATA *ch, char *argument )
     repair->open_hour	= 0;
     repair->close_hour	= 23;
     mob->rShop		= repair;
-    send_to_char( "Done.\n\r", ch );
+    send_to_char( "Done.\n", ch );
     return;
 }
 
@@ -1591,9 +1591,9 @@ void do_repairset( CHAR_DATA *ch, char *argument )
 
     if ( arg1[0] == '\0' || arg2[0] == '\0' )
     {
-	send_to_char( "Usage: repairset <mob vnum> <field> value\n\r", ch );
-	send_to_char( "\n\rField being one of:\n\r", ch );
-	send_to_char( "  fix0 fix1 fix2 profit type open close keeper\n\r", ch );
+	send_to_char( "Usage: repairset <mob vnum> <field> value\n", ch );
+	send_to_char( "\nField being one of:\n", ch );
+	send_to_char( "  fix0 fix1 fix2 profit type open close keeper\n", ch );
 	return;
     }
 
@@ -1601,7 +1601,7 @@ void do_repairset( CHAR_DATA *ch, char *argument )
 
     if ( (mob = get_mob_index(vnum)) == NULL )
     {
-	send_to_char( "Mobile not found.\n\r", ch );
+	send_to_char( "Mobile not found.\n", ch );
 	return;
     }
 
@@ -1610,7 +1610,7 @@ void do_repairset( CHAR_DATA *ch, char *argument )
 
     if ( !mob->rShop )
     {
-	send_to_char( "This mobile doesn't keep a repair shop.\n\r", ch );
+	send_to_char( "This mobile doesn't keep a repair shop.\n", ch );
 	return;
     }
     repair = mob->rShop;
@@ -1622,11 +1622,11 @@ void do_repairset( CHAR_DATA *ch, char *argument )
 	  value = get_otype(argument);
 	if ( value < 0 || value > MAX_ITEM_TYPE )
 	{
-	    send_to_char( "Invalid item type!\n\r", ch );
+	    send_to_char( "Invalid item type!\n", ch );
 	    return;
 	}
 	repair->fix_type[0] = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1636,11 +1636,11 @@ void do_repairset( CHAR_DATA *ch, char *argument )
 	  value = get_otype(argument);
 	if ( value < 0 || value > MAX_ITEM_TYPE )
 	{
-	    send_to_char( "Invalid item type!\n\r", ch );
+	    send_to_char( "Invalid item type!\n", ch );
 	    return;
 	}
 	repair->fix_type[1] = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1650,11 +1650,11 @@ void do_repairset( CHAR_DATA *ch, char *argument )
 	  value = get_otype(argument);
 	if ( value < 0 || value > MAX_ITEM_TYPE )
 	{
-	    send_to_char( "Invalid item type!\n\r", ch );
+	    send_to_char( "Invalid item type!\n", ch );
 	    return;
 	}
 	repair->fix_type[2] = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1662,11 +1662,11 @@ void do_repairset( CHAR_DATA *ch, char *argument )
     {
 	if ( value < 1 || value > 1000 )
 	{
-	    send_to_char( "Out of range.\n\r", ch );
+	    send_to_char( "Out of range.\n", ch );
 	    return;
 	}
 	repair->profit_fix = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1674,11 +1674,11 @@ void do_repairset( CHAR_DATA *ch, char *argument )
     {
 	if ( value < 1 || value > 2 )
 	{
-	    send_to_char( "Out of range.\n\r", ch );
+	    send_to_char( "Out of range.\n", ch );
 	    return;
 	}
 	repair->shop_type = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1686,11 +1686,11 @@ void do_repairset( CHAR_DATA *ch, char *argument )
     {
 	if ( value < 0 || value > 23 )
 	{
-	    send_to_char( "Out of range.\n\r", ch );
+	    send_to_char( "Out of range.\n", ch );
 	    return;
 	}
 	repair->open_hour = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1698,11 +1698,11 @@ void do_repairset( CHAR_DATA *ch, char *argument )
     {
 	if ( value < 0 || value > 23 )
 	{
-	    send_to_char( "Out of range.\n\r", ch );
+	    send_to_char( "Out of range.\n", ch );
 	    return;
 	}
 	repair->close_hour = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1710,20 +1710,20 @@ void do_repairset( CHAR_DATA *ch, char *argument )
     {
 	if ( (mob2 = get_mob_index(vnum)) == NULL )
 	{
-	  send_to_char( "Mobile not found.\n\r", ch );
+	  send_to_char( "Mobile not found.\n", ch );
 	  return;
 	}
 	if ( !can_medit(ch, mob) )
 	  return;
 	if ( mob2->rShop )
 	{
-	  send_to_char( "That mobile already has a repair shop.\n\r", ch );
+	  send_to_char( "That mobile already has a repair shop.\n", ch );
 	  return;
 	}
 	mob->rShop  = NULL;
 	mob2->rShop = repair;
 	repair->keeper = value;
-	send_to_char( "Done.\n\r", ch );
+	send_to_char( "Done.\n", ch );
 	return;
     }
 
@@ -1740,7 +1740,7 @@ void do_repairstat( CHAR_DATA *ch, char *argument )
     
     if ( argument[0] == '\0' )
     {
-	send_to_char( "Usage: repairstat <keeper vnum>\n\r", ch );
+	send_to_char( "Usage: repairstat <keeper vnum>\n", ch );
 	return;
     }
 
@@ -1748,26 +1748,26 @@ void do_repairstat( CHAR_DATA *ch, char *argument )
     
     if ( (mob = get_mob_index(vnum)) == NULL )
     {
-	send_to_char( "Mobile not found.\n\r", ch );
+	send_to_char( "Mobile not found.\n", ch );
 	return;
     }
 
     if ( !mob->rShop )
     {
-	send_to_char( "This mobile doesn't keep a repair shop.\n\r", ch );
+	send_to_char( "This mobile doesn't keep a repair shop.\n", ch );
 	return;
     }
     repair = mob->rShop;
 
-    ch_printf( ch, "Keeper: %d  %s\n\r", repair->keeper, mob->short_descr );
-    ch_printf( ch, "fix0 [%s]  fix1 [%s]  fix2 [%s]\n\r",
+    ch_printf( ch, "Keeper: %d  %s\n", repair->keeper, mob->short_descr );
+    ch_printf( ch, "fix0 [%s]  fix1 [%s]  fix2 [%s]\n",
 			o_types[repair->fix_type[0]],
 			o_types[repair->fix_type[1]],
 			o_types[repair->fix_type[2]] );
-    ch_printf( ch, "Profit: %3d%%  Type: %d\n\r",
+    ch_printf( ch, "Profit: %3d%%  Type: %d\n",
 			repair->profit_fix,
 			repair->shop_type );
-    ch_printf( ch, "Hours:   open %2d  close %2d\n\r",
+    ch_printf( ch, "Hours:   open %2d  close %2d\n",
 			repair->open_hour,
 			repair->close_hour );
     return;
@@ -1780,13 +1780,13 @@ void do_repairshops( CHAR_DATA *ch, char *argument )
 
     if ( !first_repair )
     {
-	send_to_char( "There are no repair shops.\n\r", ch );
+	send_to_char( "There are no repair shops.\n", ch );
 	return;
     }
 
     set_char_color( AT_NOTE, ch );
     for ( repair = first_repair; repair; repair = repair->next )
-	ch_printf( ch, "Keeper: %5d Profit: %3d Type: %d Open: %2d Close: %2d Fix: %2d %2d %2d\n\r",
+	ch_printf( ch, "Keeper: %5d Profit: %3d Type: %d Open: %2d Close: %2d Fix: %2d %2d %2d\n",
 		repair->keeper,	     repair->profit_fix, repair->shop_type,
 		repair->open_hour,   repair->close_hour,
 		repair->fix_type[0], repair->fix_type[1], repair->fix_type[2] );
@@ -1818,29 +1818,29 @@ void do_buyvendor (CHAR_DATA *ch, char *argument)
 
     	if ( stat( strsave, &fst ) != -1 )
     	{
-		send_to_char( "You already have a shop!\n\r", ch);
-		send_to_char( "If you want to buy one anyway, type buyvendor yes.\n\r", ch);
-		send_to_char( "Your old one will be deleted.\n\r", ch);
+		send_to_char( "You already have a shop!\n", ch);
+		send_to_char( "If you want to buy one anyway, type buyvendor yes.\n", ch);
+		send_to_char( "Your old one will be deleted.\n", ch);
 		return;
 	}
   
 
   if (  (keeper = find_keeper_q( ch, FALSE ) )  == NULL  )
   {
-    send_to_char ("There is no one to buy that from!\n\r", ch);
+    send_to_char ("There is no one to buy that from!\n", ch);
     return;
   }
 
   if ( ch->gold < COST_BUY_VENDOR )
      {
-         SPRINTF(buf1, "%s says, You are too poor!\n\r", keeper->name);
+         SPRINTF(buf1, "%s says, You are too poor!\n", keeper->name);
          send_to_char (buf1, ch);
          return;
      }
 
 if ( (ch->top_level) < LEVEL_BUY_VENDOR )
 	{
-		SPRINTF (buf1, "you must be at least %d level.\n\r", LEVEL_BUY_VENDOR);
+		SPRINTF (buf1, "you must be at least %d level.\n", LEVEL_BUY_VENDOR);
 		send_to_char (buf1, ch);
 		return;
 	}
@@ -1853,7 +1853,7 @@ if ( (get_obj_index (OBJ_VNUM_DEED) ) == NULL )
 
 deed = create_object ( get_obj_index(OBJ_VNUM_DEED), 0);
 obj_to_char (deed, ch);
-send_to_char_color ("&bVery well, you may have a contract for a vendor.\n\r", ch);
+send_to_char_color ("&bVery well, you may have a contract for a vendor.\n", ch);
 ch->gold = ch->gold - COST_BUY_VENDOR;
 
 }
@@ -1872,7 +1872,7 @@ char buf [MAX_INPUT_LENGTH];
 
 if (  find_keeper_q (ch, FALSE) )
 {
-send_to_char ("A vendor is already here!\n\r",ch);
+send_to_char ("A vendor is already here!\n",ch);
 return;
 }
 
@@ -1884,19 +1884,19 @@ if ( IS_NPC(ch) )
 /* better way to do this? what if they have another object called deed?*/
   if ( ( obj = get_obj_carry( ch, "deed" ) ) == NULL )
 	{
-	    send_to_char( "You do not have a deed!.\n\r", ch );
+	    send_to_char( "You do not have a deed!.\n", ch );
 	    return;
 	}
 
   if (obj->pIndexData->vnum != OBJ_VNUM_DEED)
 	{
-	    send_to_char( "You do not have a deed!.\n\r", ch );
+	    send_to_char( "You do not have a deed!.\n", ch );
 	    return;
 	}
 
 	if (!IS_SET(ch->in_room->room_flags, ROOM_PLR_SHOP) )
 	{
-		send_to_char( "You need to find a free shop.\n\r", ch);
+		send_to_char( "You need to find a free shop.\n", ch);
 		return;
 	}
 
@@ -1904,7 +1904,7 @@ if ( IS_NPC(ch) )
 
     	if ( stat( strsave, &fst ) != -1 )
     	{
-		send_to_char( "You already have a shop!\n\r", ch);
+		send_to_char( "You already have a shop!\n", ch);
 		return;
 	}
 
@@ -1956,13 +1956,13 @@ argument = one_argument (argument, arg2);
 
 if ( arg1[0] == '\0' )
 	{
-	    send_to_char("usage:> pricevendor <item> <cost>\n\r",ch);
+	    send_to_char("usage:> pricevendor <item> <cost>\n",ch);
 	    return;
 	}
 
 if (arg2[0] == '\0')
 	{
-		send_to_char("usage:> pricevendor <item> <cost>\n\r",ch);
+		send_to_char("usage:> pricevendor <item> <cost>\n",ch);
 		return;
 	}
 
@@ -1977,12 +1977,12 @@ if ( !(vendor->owner) )
 
 if ( (ch1 = get_char_room(ch, vendor->owner)) == NULL )
 {
-send_to_char ("This isnt your vendor!\n\r",ch);
+send_to_char ("This isnt your vendor!\n",ch);
 return;
 }
 if ( str_cmp( ch1->name, vendor->owner ) )
 	{
-          send_to_char ("Trying to steal huh?\n\r",ch);
+          send_to_char ("Trying to steal huh?\n",ch);
  	  tms = localtime(&current_time);
  	  tms->tm_hour += 24;
 	  ch->pcdata->release_date = mktime(tms);
@@ -1992,8 +1992,8 @@ if ( str_cmp( ch1->name, vendor->owner ) )
 	  char_to_room(ch, get_room_index(6));
 	  act(AT_MAGIC, "$n appears in a could of hellish light.", ch, NULL, ch, TO_NOTVICT);
 	  do_look(ch, "auto");
-	  ch_printf(ch, "The immortals are not pleased with your actions.\n\r"
-            "You shall remain in hell for 24 Hours.\n\r");
+	  ch_printf(ch, "The immortals are not pleased with your actions.\n"
+            "You shall remain in hell for 24 Hours.\n");
 	  save_char_obj(ch);	/* used to save ch, fixed by Thoric 09/17/96 */
           log_printf( "%s just tried to abuse the vendor bug!" , ch->name);
 	  return;
@@ -2001,20 +2001,20 @@ if ( str_cmp( ch1->name, vendor->owner ) )
 
 if ( ch->fighting)
 {
-send_to_char ("Not while you fightZ!\n\r",ch);
+send_to_char ("Not while you fightZ!\n",ch);
 return;
 }
 
 if ( (obj  = get_obj_carry( vendor, arg1 )) != NULL)
 	{
 		obj->cost = atoi (arg2);
-		send_to_char("The price has been changed\n\r",ch);
+		send_to_char("The price has been changed\n",ch);
 		save_vendor(vendor);
 		return;
 	}
 
 
-send_to_char("He doesnt have that item!\n\r",ch);
+send_to_char("He doesnt have that item!\n",ch);
 save_vendor(vendor);
 return;
 
@@ -2036,7 +2036,7 @@ return;
 
 if (vendor->owner == NULL)
 	{
-		send_to_char("thats not a vendor!\n\r",ch);
+		send_to_char("thats not a vendor!\n",ch);
 		return;
     }
 
@@ -2044,12 +2044,12 @@ SPRINTF(name, "%s", vendor->owner);
 
 if ( (ch1 = get_char_room(ch, vendor->owner)) == NULL )
 	{
-		send_to_char ("Trying to steal huh?\n\r",ch);
+		send_to_char ("Trying to steal huh?\n",ch);
 		return;
 	}
 if ( str_cmp( ch1->name, vendor->owner ) )
 	{
-          send_to_char ("Trying to steal huh?\n\r",ch);
+          send_to_char ("Trying to steal huh?\n",ch);
  	  tms = localtime(&current_time);
  	  tms->tm_hour += 24;
 	  ch->pcdata->release_date = mktime(tms);
@@ -2059,8 +2059,8 @@ if ( str_cmp( ch1->name, vendor->owner ) )
 	  char_to_room(ch, get_room_index(6));
 	  act(AT_MAGIC, "$n appears in a could of hellish light.", ch, NULL, ch, TO_NOTVICT);
 	  do_look(ch, "auto");
-	  ch_printf(ch, "The immortals are not pleased with your actions.\n\r"
-            "You shall remain in hell for 24 Hours.\n\r");
+	  ch_printf(ch, "The immortals are not pleased with your actions.\n"
+            "You shall remain in hell for 24 Hours.\n");
 	  save_char_obj(ch);	/* used to save ch, fixed by Thoric 09/17/96 */
           log_printf( "%s just tried to abuse the vendor bug!" , ch->name);
 	  return;
@@ -2069,14 +2069,14 @@ if ( str_cmp( ch1->name, vendor->owner ) )
 
 if ( !(ch == ch1) )
 {
-	log_printf( "collectgold: %s and ch1 = %s\n\r", name, ch1->name);
-	send_to_char ("This isnt your vendor!\n\r",ch);
+	log_printf( "collectgold: %s and ch1 = %s\n", name, ch1->name);
+	send_to_char ("This isnt your vendor!\n",ch);
 	return;
 }
 
 if ( ch->fighting)
 {
-send_to_char ("Not while you fightZ!\n\r",ch);
+send_to_char ("Not while you fightZ!\n",ch);
 return;
 }
 
@@ -2087,8 +2087,8 @@ if( vendor->in_room && vendor->in_room->area )
 vendor->gold = 0;
 ch->gold += gold;
 
-send_to_char_color ("&GYour vendor gladly hands over his earnings minus a small fee of course..\n\r",ch);
-act( AT_ACTION, "$n hands over some money.\n\r", vendor, NULL, NULL, TO_ROOM );
+send_to_char_color ("&GYour vendor gladly hands over his earnings minus a small fee of course..\n",ch);
+act( AT_ACTION, "$n hands over some money.\n", vendor, NULL, NULL, TO_ROOM );
 
 save_vendor(vendor);
 }

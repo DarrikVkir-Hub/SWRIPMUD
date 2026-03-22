@@ -262,7 +262,7 @@ void show_map( CHAR_DATA *ch, char *text )
     buf[0] = '\0';
 
     /* Top of map frame */
-    len += snprintf(buf + len, sizeof(buf) - len, "+-----------+ \n\r");
+    len += snprintf(buf + len, sizeof(buf) - len, "+-----------+ \n");
 
     /* Main map area */
     for (y = 0; y <= MAPY && len < sizeof(buf) - 1; y++)
@@ -305,19 +305,19 @@ void do_draw( CHAR_DATA *ch, char *desc )
 
     if ( ( device = get_eq_char( ch, WEAR_HOLD ) ) == NULL )
     {
-	send_to_char( "You must have a scanner to draw a map of the surrounding area.\n\r", ch );
+	send_to_char( "You must have a scanner to draw a map of the surrounding area.\n", ch );
 	return;
     }
 
     if ( device->item_type != ITEM_DEVICE )
     {
-	send_to_char( "You must have a scanner to draw a map of the surrounding area.\n\r", ch );
+	send_to_char( "You must have a scanner to draw a map of the surrounding area.\n", ch );
 	return;
     }
 
     if (device->value[3] != 52 )
     {
-	send_to_char( "You must have a scanner to draw a map of the surrounding area.\n\r", ch );
+	send_to_char( "You must have a scanner to draw a map of the surrounding area.\n", ch );
 	return;
     }
 
