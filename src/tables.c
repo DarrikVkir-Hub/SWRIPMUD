@@ -443,6 +443,7 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_marena" ))		return do_marena;
 	if ( !str_cmp( name, "do_massign" ))		return do_massign;
 	if ( !str_cmp( name, "do_mass_propeganda" ))	return do_mass_propeganda;
+	if ( !str_cmp( name, "do_mccpstat"))			return do_mccpstat;
         if ( !str_cmp( name, "do_mchallenge" ))		return do_mchallenge;
 	if ( !str_cmp( name, "do_mcreate" ))		return do_mcreate;
 	if ( !str_cmp( name, "do_mdelete" ))		return do_mdelete;

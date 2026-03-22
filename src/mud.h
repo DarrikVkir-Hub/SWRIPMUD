@@ -526,19 +526,25 @@ struct	descriptor_data
     char *		user;
     int 		atimes;
     int			newstate;
-    unsigned char	prevcolor;
     unsigned char last_sent_color;   
     unsigned char rendercolor;    
+    bool has_rendercolor;
     bool color_initialized;     
 #ifdef MCCP
     unsigned char	compressing;
     z_stream *          out_compress;
     unsigned char *     out_compress_buf;
+    sh_int mccp_pending = 0;
+    size_t mccp_bytes_in;
+    size_t mccp_bytes_out;    
 #endif      
-
+    char telnet_logbuf[256];
+    int  telnet_logpos;
+    bool debug_telnet;
     TelnetState telstate = TS_DATA;
     bool naws_enabled = false;
-    sh_int mccp_pending = 0;
+    unsigned char telopt_us[256];   /* what we WILL/WONT */
+    unsigned char telopt_him[256];  /* what he WILL/WONT */    
     int inbuf_len = 0;
     
     unsigned char sb_option = 0;
@@ -4010,6 +4016,7 @@ extern		struct act_prog_data *	mob_act_list;
  * Command functions.
  * Defined in act_*.c (mostly).
  */
+DECLARE_DO_FUN( do_mccpstat );
 DECLARE_DO_FUN( do_repair_module );
 DECLARE_DO_FUN( do_maketemplateship);
 DECLARE_DO_FUN( do_ordership);

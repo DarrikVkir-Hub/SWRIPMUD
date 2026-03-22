@@ -45,6 +45,15 @@
 #define TELOPT_MAX 256
 #endif
 
+typedef enum
+{
+    TELPOLICY_IGNORE = 0,  /* Do nothing */
+    TELPOLICY_ACCEPT,      /* Accept and proceed */
+    TELPOLICY_REJECT       /* Explicitly refuse */
+} telnet_policy_t;
+
+#define LOGTELNET
+
 /*
  * Socket and TCP/IP stuff.
  */
@@ -68,7 +77,7 @@ const	unsigned char	echo_on_str	[] = { IAC, WONT, TELOPT_ECHO, '\0' };
 const	unsigned char 	go_ahead_str	[] = { IAC, GA, '\0' };
 
 #ifdef MCCP
-#define COMPRESS_BUF_SIZE 1024
+#define COMPRESS_BUF_SIZE 8192
 
 #define TELOPT_COMPRESS 85
 #define TELOPT_COMPRESS2 86
@@ -134,6 +143,7 @@ bool	read_from_descriptor	args( ( DESCRIPTOR_DATA *d ) );
 /*
  * Other local functions (OS-independent).
  */
+void send_telnet(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len);
 void output_to_descriptor(DESCRIPTOR_DATA *d, const char *txt);
 void write_to_buffer_str(DESCRIPTOR_DATA *d, const char *txt);
 static void append_str(char **buf, size_t *len, size_t *cap, const char *src);
@@ -856,8 +866,8 @@ void new_descriptor( int new_desc )
     dnew->auth_inc	= 0;
     dnew->auth_state	= 0;
     dnew->newstate	= 0;
-    dnew->prevcolor	=       0x07;
-    dnew->rendercolor	=   '\0';
+    dnew->rendercolor	=   0x07;
+    dnew->has_rendercolor = false;
     dnew->last_sent_color = 0xFF;    
     dnew->color_initialized = FALSE;        
     dnew->original      = NULL;
@@ -865,6 +875,13 @@ void new_descriptor( int new_desc )
     dnew->telnet_pos = 0;
     dnew->pagepoint = PAGEPOINT_NULL;
 
+#ifdef LOGTELNET
+    dnew->debug_telnet = true;
+#else
+    dnew->debug_telnet = false;
+#endif
+    memset(dnew->telopt_us,  0, sizeof(dnew->telopt_us));
+    memset(dnew->telopt_him, 0, sizeof(dnew->telopt_him));
     CREATE( dnew->outbuf, char, dnew->outsize );
 
     SPRINTF( buf, "%s", inet_ntoa( sock.sin_addr ) );
@@ -951,13 +968,13 @@ void new_descriptor( int new_desc )
     LINK( dnew, first_descriptor, last_descriptor, next, prev );
 
 #ifdef MCCP
-    output_to_descriptor(dnew, (const char *)eor_on_str);
-    output_to_descriptor(dnew, (const char *)compress2_on_str);
-    output_to_descriptor(dnew, (const char *)compress_on_str);
+    send_telnet(dnew, (const unsigned char *)eor_on_str, sizeof(eor_on_str));
+    send_telnet(dnew, (const unsigned char *)compress2_on_str, sizeof(compress2_on_str));
+//  output_to_descriptor(dnew, (const char *)compress_on_str);
 #endif
 
     const unsigned char will_naws[] = { IAC, DO, TELOPT_NAWS };
-    write_to_buffer(dnew,(const char *)(will_naws), 3);
+    send_telnet(dnew,(const unsigned char *)(will_naws), 3);
 
     /*
      * Send the greeting.
@@ -1004,7 +1021,6 @@ void free_desc( DESCRIPTOR_DATA *d )
     if (d->compressing)
     {
         compressEnd(d);
-        DISPOSE( d->out_compress_buf );
     }
 #endif
 
@@ -1146,6 +1162,106 @@ int readd( int handle, char *buffer, int length )
   return read( handle, buffer, length );
 }
 
+const char *telcmd(unsigned char c)
+{
+    switch (c)
+    {
+        case WILL: return "WILL";
+        case WONT: return "WONT";
+        case DO:   return "DO";
+        case DONT: return "DONT";
+        case SB:   return "SB";
+        case SE:   return "SE";
+        default:   return "UNK";
+    }
+}
+
+const char *telopt(unsigned char c)
+{
+    switch (c)
+    {
+        case TELOPT_COMPRESS:  return "COMPRESS";
+        case TELOPT_COMPRESS2: return "COMPRESS2";
+        case TELOPT_NAWS:      return "NAWS";
+        case TELOPT_TTYPE:     return "TTYPE";
+        case TELOPT_ECHO:      return "ECHO";
+        default:
+        {
+            static char buf[16];
+            snprintf(buf, sizeof(buf), "OPT_%d", c);
+            return buf;
+        }
+    }
+}
+
+#define TELLOG(d, fmt, ...) \
+    do { if ((d) && (d)->debug_telnet) \
+        bug("[TELNET] " fmt, ##__VA_ARGS__); } while(0)
+
+#define TELLOG_APPEND(d, fmt, ...) \
+    do { \
+        if ((d)->debug_telnet) { \
+            (d)->telnet_logpos += snprintf( \
+                (d)->telnet_logbuf + (d)->telnet_logpos, \
+                sizeof((d)->telnet_logbuf) - (d)->telnet_logpos, \
+                fmt, ##__VA_ARGS__); \
+        } \
+    } while(0)
+
+#define TELLOG_FLUSH(d, prefix) \
+    do { \
+        if ((d)->debug_telnet && (d)->telnet_logpos > 0) { \
+            bug("[TELNET] %s%s", prefix, (d)->telnet_logbuf); \
+            (d)->telnet_logpos = 0; \
+            (d)->telnet_logbuf[0] = '\0'; \
+        } \
+    } while(0)
+
+bool is_known_telopt(unsigned char opt)
+{
+    switch (opt)
+    {
+        case TELOPT_ECHO:
+        case TELOPT_SGA:
+        case TELOPT_NAWS:
+#ifdef MCCP
+        case TELOPT_COMPRESS2:
+#endif
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+telnet_policy_t telnet_policy(DESCRIPTOR_DATA *d, int cmd, int opt)
+{
+    switch (opt)
+    {
+        case TELOPT_COMPRESS2:
+            if (cmd == DO)
+                return TELPOLICY_ACCEPT;
+            if (cmd == DONT)
+                return TELPOLICY_ACCEPT;
+            return TELPOLICY_IGNORE;
+
+        case TELOPT_NAWS:
+            if (cmd == WILL)
+                return TELPOLICY_ACCEPT;
+            return TELPOLICY_IGNORE;
+
+        case TELOPT_ECHO:
+            return TELPOLICY_REJECT;
+
+        /* Common safe defaults */
+        case 25: /* EOR */
+            return TELPOLICY_IGNORE;
+
+        default:
+            return TELPOLICY_REJECT;
+    }
+}
+
 int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, unsigned char *out, int out_max )
 {
     int i, out_len = 0;
@@ -1155,17 +1271,32 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
         unsigned char c = in[i];
         bool process_char = true;
 
+        if (d->telstate == TS_IAC && c == IAC)
+        {
+            d->telstate = TS_DATA;
+        }
+
         switch (d->telstate)
         {
             case TS_DATA:
+            {
                 if (c == IAC)
                 {
+                    if (d->debug_telnet)
+                    {
+                        d->telnet_logpos = 0;
+                        d->telnet_logbuf[0] = '\0';
+                        TELLOG_APPEND(d, "IAC ");
+                    }
+
                     d->telstate = TS_IAC;
                     process_char = false;
                 }
                 break;
-
+            }
             case TS_IAC:
+            {
+                TELLOG_APPEND(d, "%s ", telcmd(c));
                 switch (c)
                 {
                     case IAC:
@@ -1211,50 +1342,127 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                         break;
                 }
                 break;
-
+            }
             case TS_WILL:
-                if (c == TELOPT_NAWS)
+            {
+                /* ignore invalid telopts */
+                if (c >= 240)
                 {
+                    d->telstate = TS_DATA;
+                    break;
+                }                
+                TELLOG_APPEND(d, "%s", telopt(c));
+                TELLOG_FLUSH(d, "RCV: ");   
+
+                if (d->telopt_him[c])
+                {
+                    d->telstate = TS_DATA;
+                    break;
+                }
+                d->telopt_him[c] = 1;
+
+                telnet_policy_t policy = telnet_policy(d, WILL, c);
+
+                if (policy == TELPOLICY_REJECT)
+                {
+                    /* CHANGE: only reply to known options */
+                    if (is_known_telopt(c))
+                    {
+                        const unsigned char dont[] = { IAC, DONT, c };
+                        send_telnet(d, dont, 3);
+                    }                    
+                    break;
+                }
+
+                /* === POLICY CHANGE: gated NAWS === */
+                if (policy == TELPOLICY_ACCEPT && c == TELOPT_NAWS)
+                {
+                    TELLOG(d, "NAWS: negotiation start");
+
                     const unsigned char do_naws[] = { IAC, DO, TELOPT_NAWS };
-                    write_to_buffer(d, (char *)do_naws, 3);
-                    flush_buffer(d, FALSE);
+                    send_telnet(d, (const unsigned char *)do_naws, 3);
 
                     d->naws_enabled = true;
 
-                    bug("NAWS enabled (client WILL)");
+                    TELLOG(d, "NAWS: enabled");
                 }
 
                 d->telstate = TS_DATA;
                 process_char = false;
                 break;
-
+            }
             case TS_WONT:
+            {
+                /* ignore invalid telopts */
+                if (c >= 240)
+                {
+                    d->telstate = TS_DATA;
+                    break;
+                }                
+                TELLOG_APPEND(d, "%s", telopt(c));
+                TELLOG_FLUSH(d, "RCV: ");   
+                
+                if (!d->telopt_him[c])
+                {
+                    d->telstate = TS_DATA;
+                    break;
+                }
+
+                d->telopt_him[c] = 0;
                 d->telstate = TS_DATA;
                 process_char = false;
                 break;
-
+            }
             case TS_DO:
-            #ifdef MCCP
-                if (c == TELOPT_COMPRESS2)
+            {
+                /* ignore invalid telopts */
+                if (c >= 240)
                 {
-                    const unsigned char will_comp[] = { IAC, WILL, TELOPT_COMPRESS2 };
-                    write_to_buffer(d, (char *)will_comp, 3);
-                    flush_buffer(d, FALSE);
-
-                    /*
-                    * DO NOT start compression yet
-                    * Wait for client to acknowledge
-                    */
-                    d->mccp_pending = 1;  /* NEW STATE: awaiting confirmation */
-
-                    bug("MCCP: client DO COMPRESS2 -> will start compression when playing");
+                    d->telstate = TS_DATA;
+                    break;
+                }                
+                TELLOG_APPEND(d, "%s", telopt(c));
+                TELLOG_FLUSH(d, "RCV: ");   
+                /* dedupe */
+                if (d->telopt_us[c])
+                {
+                    d->telstate = TS_DATA;
+                    break;
                 }
-            #endif
-                if (c == TELOPT_NAWS)
+                /* === POLICY ADD === */
+                telnet_policy_t policy = telnet_policy(d, DO, c);
+
+                if (policy == TELPOLICY_REJECT)
                 {
-                    const unsigned char do_naws[] = { IAC, WILL, TELOPT_NAWS };
-                    write_to_buffer(d, (char *)do_naws, 3);
-                    flush_buffer(d, FALSE);
+                    /* only reply to known options */
+                    if (is_known_telopt(c))
+                    {
+                        const unsigned char dont[] = { IAC, DONT, c };
+                        send_telnet(d, dont, 3);
+                    }                    
+                    break;
+                }
+
+#ifdef MCCP
+                /* === POLICY CHANGE: gated MCCP === */
+                if (policy == TELPOLICY_ACCEPT && c == TELOPT_COMPRESS2)
+                {
+                    TELLOG(d, "MCCP: client requested COMPRESS2 (DO)");
+
+                    const unsigned char will_comp[] = { IAC, WILL, TELOPT_COMPRESS2 };
+                    send_telnet(d, (const unsigned char *)will_comp, 3);
+
+                    d->mccp_pending = 1;
+
+                    TELLOG(d, "MCCP: pending set → waiting for CON_PLAYING");
+                }
+#endif
+
+                /* === POLICY CHANGE: gated NAWS === */
+                if (policy == TELPOLICY_ACCEPT && c == TELOPT_NAWS)
+                {
+                    const unsigned char will_naws[] = { IAC, WILL, TELOPT_NAWS };
+                    send_telnet(d, (const unsigned char *)will_naws, 3);
 
                     d->naws_enabled = true;
                 }
@@ -1262,22 +1470,45 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 d->telstate = TS_DATA;
                 process_char = false;
                 break;
-
+            }
             case TS_DONT:
+            {
+                /* ignore invalid telopts */
+                if (c >= 240)
+                {
+                    d->telstate = TS_DATA;
+                    break;
+                }                
+                TELLOG_APPEND(d, "%s", telopt(c));
+                TELLOG_FLUSH(d, "RCV: ");               
+                /* === POLICY ADD === */
+                /* dedupe */
+                if (!d->telopt_us[c])
+                {
+                    d->telstate = TS_DATA;
+                    break;
+                }
+                d->telopt_us[c] = 0;                
+                telnet_policy_t policy = telnet_policy(d, DONT, c);
+
 #ifdef MCCP
-                if (c == TELOPT_COMPRESS && d->compressing == TELOPT_COMPRESS)
+                /* === POLICY CHANGE: gated compression shutdown === */
+                if (policy == TELPOLICY_ACCEPT && c == TELOPT_COMPRESS2 &&
+                    d->compressing == TELOPT_COMPRESS2)
+                {
                     compressEnd(d);
-                else if (c == TELOPT_COMPRESS2 && d->compressing == TELOPT_COMPRESS2)
-                    compressEnd(d);
+                }
 #endif
+
                 d->telstate = TS_DATA;
                 process_char = false;
                 break;
-
+            }
             case TS_SB:
+            {
                 d->sb_option = c;
                 d->sb_len = 0;
-
+                TELLOG_APPEND(d, "%s ", telopt(c)); 
                 if (c == TELOPT_NAWS && d->naws_enabled)
                 {
                     d->telstate = TS_SB_DATA;
@@ -1291,8 +1522,13 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
 
                 process_char = false;
                 break;
-
+            }
             case TS_SB_DATA:
+            {
+                if (d->sb_option == TELOPT_NAWS && d->sb_len < 4)
+                {
+                    TELLOG_APPEND(d, "%d ", c);
+                }            
                 if (c == IAC)
                 {
                     d->telstate = TS_SB_IAC;
@@ -1311,10 +1547,13 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
 
                 process_char = false;
                 break;
-
+            }
             case TS_SB_IAC:
+            {
                 if (c == SE)
                 {
+                    TELLOG_APPEND(d, "IAC SE");
+                    TELLOG_FLUSH(d, "RCV: ");
                     if (d->sb_option == TELOPT_NAWS && d->sb_len == 4)
                     {
                         int width  = (d->sb_buf[0] << 8) | d->sb_buf[1];
@@ -1346,6 +1585,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
 
                 process_char = false;
                 break;
+            }
         }
 
         /* Emit only real data bytes */
@@ -1687,6 +1927,8 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
     {
         d->out_compress->next_in  = (unsigned char *)d->outbuf;
         d->out_compress->avail_in = d->outtop;
+        // Track Input
+        d->mccp_bytes_in += d->outtop;        
 
         while (d->out_compress->avail_in > 0)
         {
@@ -1706,8 +1948,12 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
         }
 
         d->outtop = 0;
-
-        return process_compressed(d);
+        if (d->out_compress->next_out > d->out_compress_buf)
+        {
+            if (!process_compressed(d))
+                return FALSE;
+        }
+        return TRUE;
     }
 #endif
 
@@ -1876,6 +2122,184 @@ int build_ansi_from_state(unsigned char prev, unsigned char cl, char *buf)
     return (int)(p - buf);
 }
 
+static void flush_color(DESCRIPTOR_DATA *d)
+{
+    if (!d->has_rendercolor)
+        return;
+
+    unsigned char prev   = d->last_sent_color;
+    unsigned char target = d->rendercolor;
+
+    if (prev > 0x8F)
+        prev = 0x07;
+    if (target > 0x8F)
+        target = 0x07;
+
+    if (target != prev)
+    {
+        char colbuf[64];
+        int ln = build_ansi_from_state(prev, target, colbuf);
+
+        if (ln > 0)
+        {
+            while (d->outtop + (size_t)ln >= d->outsize)
+            {
+                d->outsize *= 2;
+                RECREATE(d->outbuf, char, d->outsize);
+            }
+
+            memcpy(d->outbuf + d->outtop, colbuf, (size_t)ln);
+            d->outtop += (size_t)ln;
+        }
+
+        d->last_sent_color = target;
+    }
+
+    d->has_rendercolor = false;
+}
+
+unsigned char parse_color_code(unsigned char current, char type, char code)
+{
+    unsigned char newcolor = current;
+
+    /*
+     * type:
+     *   '&' = foreground
+     *   '^' = background
+     */
+
+    if (type == '&')
+    {
+        /* reset */
+        if (code == 'x' || code == 'X' || code == '-')
+            return 0x07;
+
+        /* clear foreground bits, preserve blink/background */
+        newcolor &= 0xF8;
+
+        switch (code)
+        {
+            case 'r': newcolor &= ~0x08; newcolor |= 1; break;
+            case 'g': newcolor &= ~0x08; newcolor |= 2; break;
+            case 'y': newcolor &= ~0x08; newcolor |= 3; break;
+            case 'b': newcolor &= ~0x08; newcolor |= 4; break;
+            case 'm': newcolor &= ~0x08; newcolor |= 5; break;
+            case 'c': newcolor &= ~0x08; newcolor |= 6; break;
+            case 'w': newcolor &= ~0x08; newcolor |= 7; break;
+
+            case 'R': newcolor |= 1; newcolor |= 0x08; break;
+            case 'G': newcolor |= 2; newcolor |= 0x08; break;
+            case 'Y': newcolor |= 3; newcolor |= 0x08; break;
+            case 'B': newcolor |= 4; newcolor |= 0x08; break;
+            case 'M': newcolor |= 5; newcolor |= 0x08; break;
+            case 'C': newcolor |= 6; newcolor |= 0x08; break;
+            case 'W': newcolor |= 7; newcolor |= 0x08; break;
+
+            case 'D': newcolor &= ~0x07; break; /* dark/black */
+
+            default:
+                return current; /* unknown → no change */
+        }
+
+        return newcolor;
+    }
+
+    if (type == '^')
+    {
+        /* clear background bits (upper nibble or flag-based) */
+        newcolor &= 0x8F;
+
+        switch (code)
+        {
+            case 'r': newcolor |= (1 << 4); break;
+            case 'g': newcolor |= (2 << 4); break;
+            case 'y': newcolor |= (3 << 4); break;
+            case 'b': newcolor |= (4 << 4); break;
+            case 'm': newcolor |= (5 << 4); break;
+            case 'c': newcolor |= (6 << 4); break;
+            case 'w': newcolor |= (7 << 4); break;
+            case 'D': newcolor |= (0 << 4); break;
+
+            case 'x':
+            case 'X':
+                newcolor &= 0x0F; /* reset background */
+                break;
+
+            default:
+                return current;
+        }
+
+        return newcolor;
+    }
+
+    return current;
+}
+
+int make_color_sequence(const char *col, char *buf, DESCRIPTOR_DATA *d, int *consumed)
+{
+    int ln = 0;
+    const char *ctype = col;
+    unsigned char current;
+    unsigned char target;
+    CHAR_DATA *och;
+    bool ansi;
+
+    if (consumed) *consumed = 2;
+
+    och = (d->original ? d->original : d->character);
+    ansi = (!IS_NPC(och) && IS_SET(och->act, PLR_ANSI));
+
+    col++;
+
+    if (!*col)
+        return -1;
+
+    if (*ctype != '&' && *ctype != '^')
+    {
+        bug("Make_color_sequence: command '%c' not '&' or '^'.", *ctype);
+        if (consumed) *consumed = 1;
+        return -1;
+    }
+
+    /* literal && or ^^ */
+    if (*col == *ctype)
+    {
+        buf[0] = *col;
+        buf[1] = '\0';
+        return 1;
+    }
+
+    if (!ansi)
+    {
+        *buf = '\0';
+        return 0;
+    }
+
+    /* 🔹 Use rendercolor as source of truth */
+    current = d->rendercolor;
+
+    target = parse_color_code(current, *ctype, *col);
+
+    if (target == current)
+    {
+        if (buf) *buf = '\0';
+        return 0;
+    }
+
+    if (target > 0x8F)
+        target = 0x07;
+
+    /* 🔹 Update deferred state ONLY */
+    d->rendercolor = target;
+    d->has_rendercolor = true;
+
+    if (ln <= 0 && buf)
+        *buf = '\0';
+
+    return ln;
+}
+
+
 static void copy_with_newlines(DESCRIPTOR_DATA *d,
                                const char *src,
                                size_t len)
@@ -1924,6 +2348,9 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
         bug( "Write_to_buffer: NULL descriptor" );
         return;
     }
+    if (d->has_rendercolor)
+        flush_color(d);
+
     if ( !d->outbuf )
     	return;
     // Find length in case caller didn't.
@@ -1933,38 +2360,6 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
             return;
         length = strlen(txt);  /* fallback only */
     }
-
-    if (d->rendercolor != '\0')
-    {
-        unsigned char prev   = d->last_sent_color;
-        unsigned char target = d->rendercolor;
-
-        if (prev > 0x8F)
-            prev = 0xFF;
-
-        if (target != prev)
-        {
-            char colbuf[64];
-            int ln = build_ansi_from_state(prev, target, colbuf);
-
-            if (ln > 0)
-            {
-                while (d->outtop + (size_t)ln >= d->outsize)
-                {
-                    d->outsize *= 2;
-                    RECREATE(d->outbuf, char, d->outsize);
-                }
-
-                memcpy(d->outbuf + d->outtop, colbuf, (size_t)ln);
-                d->outtop += (size_t)ln;
-
-                d->last_sent_color = target;
-            }
-        }
-
-        d->rendercolor = '\0'; /* consume */
-    }
- 
 
     if ( length <= 0 )
         return;
@@ -2044,7 +2439,10 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
         size_t seglen = (size_t)(colstr - ptr);
 
         if (seglen > 0)
+        {
+            flush_color(d);
             copy_with_newlines(d, ptr, seglen);
+        }
 
         if (colstr + 1 >= end)
         {
@@ -2057,29 +2455,11 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
         /* ========================= */
         int consumed = 0;
 
-        ln = make_color_sequence(colstr, colbuf, d, &consumed); 
-
-        if (ln < 0)
-        {
-            ptr = colstr + 1;
-            continue;
-        }
-
-        if (ln > 0)
-        {
-            while (d->outtop + (size_t)ln >= d->outsize)
-            {
-                d->outsize *= 2;
-                RECREATE(d->outbuf, char, d->outsize);
-            }
-
-            memcpy(d->outbuf + d->outtop, colbuf, (size_t)ln);
-            d->outtop += (size_t)ln;
-        }
+        make_color_sequence(colstr, colbuf, d, &consumed); 
 
         /* advance past color code */
         if (consumed <= 0)
-            consumed = 1;
+            consumed = 2;
 
         ptr = colstr + consumed;
 
@@ -2096,6 +2476,7 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
 
         if (textlen > 0)
         {
+            flush_color(d);            
             copy_with_newlines(d, ptr, textlen);
         }
 
@@ -2109,9 +2490,10 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
     {
         size_t rem = (size_t)(end - ptr);
 //        fprintf(stderr, "COLDB: COPY REMAINDER: [%.*s]\r\n", (int)rem, ptr);
+        flush_color(d);
         copy_with_newlines(d, ptr, rem);
     }
-
+    flush_color(d);
     d->outbuf[d->outtop] = '\0';
 
 //fprintf(stderr, "COLDB: OUTBUF RAW:\n");
@@ -2131,31 +2513,12 @@ fprintf(stderr, "\n\n");
 }
 
 
-#ifdef MCCP
-#define COMPRESS_BUF_SIZE 1024
-
 bool write_to_descriptor_depreciated(int desc, char *txt, int length)
 {
     bug("write_to_descriptor: deprecated path used!");
     return FALSE;
 }
-#else
 
-/*
- * Lowest level output function.
- * Write a block of text to the file descriptor.
- * If this gives errors on very long blocks (like 'ofind all'),
- *   try lowering the max block size.
- */
-bool write_to_descriptor_depreciated( int desc, char *txt, int length )
-{
-{
-    bug("write_to_descriptor: deprecated path used!");
-    return FALSE;
-}
-}
-
-#endif
 
 void show_title( DESCRIPTOR_DATA *d )
 {
@@ -3601,7 +3964,7 @@ void set_char_color(sh_int AType, CHAR_DATA *ch)
             newcolor = 0x07; /* reset */
         else
         {
-            newcolor = 0;
+            newcolor = d->rendercolor & 0x70;
 
             if (AType & 8)
                 newcolor |= 0x08;
@@ -3614,7 +3977,7 @@ void set_char_color(sh_int AType, CHAR_DATA *ch)
 
         /* ✅ ONLY update state — DO NOT EMIT ANSI */
         d->rendercolor = newcolor;
-        d->prevcolor   = newcolor;
+        d->has_rendercolor = true;
         //d->last_sent_color = newcolor;
     }
 }
@@ -4234,16 +4597,14 @@ void display_prompt( DESCRIPTOR_DATA *d )
     prompt = ch->pcdata->subprompt;
   else
   if ( IS_NPC(ch) || !ch->pcdata->prompt || !*ch->pcdata->prompt )
-    prompt = default_prompt(ch);
+     prompt = default_prompt(ch);
   else
-    prompt = ch->pcdata->prompt;
+     prompt = ch->pcdata->prompt;
 
-  if ( ansi )
-  {
-    memmove(pbuf, "\033[m", 3);
-    d->prevcolor = 0x07;
-    pbuf += 3;
-  }
+    if (ansi)
+    {
+        set_char_color(7, ch);  /* reset to default */
+    }
   /* Clear out old color stuff */
 /*  make_color_sequence(NULL, NULL, NULL);*/
   for ( ; *prompt; prompt++ )
@@ -4370,128 +4731,6 @@ void display_prompt( DESCRIPTOR_DATA *d )
   return;
 }
 
-int make_color_sequence(const char *col, char *buf, DESCRIPTOR_DATA *d,  int *consumed)
-{
-  int ln;
-  const char *ctype = col;
-  unsigned char cl = 0;
-  unsigned char prev;            /* snapshot previous state */
-  CHAR_DATA *och;
-  bool ansi;
-  
-  if (consumed) *consumed = 2;
-
-//    fprintf(stderr, "COLDB: MAKE_COLOR: code=%c%c\r\n", col[0], col[1]);
-//    fprintf(stderr, "COLDB: STATE BEFORE: %02x\n", d->last_sent_color);    
-//    fprintf(stderr, "COLDB: AT ENTRY: init=%d color=%02x\n", d->color_initialized, d->last_sent_color);    
-//    fprintf(stderr, "COLDB: MAKE: d=%p color=%02x\n", d, d->last_sent_color);        
-
-  och = (d->original ? d->original : d->character);
-  ansi = (!IS_NPC(och) && IS_SET(och->act, PLR_ANSI));
-
-  col++;
-
-  if ( !*col )
-    ln = -1;
-
-  else if ( *ctype != '&' && *ctype != '^' )
-  {
-    bug("Make_color_sequence: command '%c' not '&' or '^'.", *ctype);
-    ln = -1;
-    if (consumed) *consumed = 1;    
-  }
-
-  else if ( *col == *ctype )
-  {
-    buf[0] = *col;
-    buf[1] = '\0';
-    ln = 1;
-    if (consumed) *consumed = 2;    
-  }
-
-  else if ( !ansi )
-    ln = 0;
-
-  else
-  {
-    prev = d->last_sent_color;        /* preserve original state */
-
-    /* treat invalid state as "unknown" */
-    if (prev > 0x8F)
-    {
-//        fprintf(stderr, "COLDB: FORCING FIRST EMIT (prev invalid)\n");
-        prev = 0xFF;
-    }
-    cl = prev;
-    if (!d->color_initialized)
-    {
-//        fprintf(stderr, "COLDB: FIRST COLOR FORCE EMIT\n");
-
-        prev = 0xFF;                 /* impossible state */
-        d->last_sent_color = 0xFF;   
-        d->color_initialized = TRUE;
-    }
-    switch(*ctype)
-    {
-    default:
-      bug( "Make_color_sequence: bad command char '%c'.", *ctype );
-      ln = -1;
-      if (consumed) *consumed = 1;      
-      break;
-
-    case '&':
-      if ( *col == '-' )
-      {
-        /* explicit reset instead of '~' hack */
-        strcpy(buf, "\033[0m");
-        d->last_sent_color = 0x07;   
-        if (consumed) *consumed = 2;        
-        return strlen(buf);
-      }
-      /* FALLTHROUGH */
-
-    case '^':
-    {
-      int newcol;
-
-      if ( (newcol = getcolor(*col)) < 0 )
-      {
-        ln = 0;
-        break;
-      }
-
-    if ( *ctype == '&' )
-    {
-        /* reset intensity + set full foreground */
-        cl = (cl & 0xF0) | newcol;
-
-        /* clear brightness bit */
-        cl &= ~0x08;
-
-        /* apply brightness if uppercase */
-        if (isupper(*col))
-            cl |= 0x08;
-    }
-      else
-        cl = (cl & 0x0F) | (newcol << 4);
-    }
-
-    ln = build_ansi_from_state(prev, cl, buf);
-
-    /* ONLY update state once at end */
-    d->last_sent_color = cl;
-    break;
-    }
-  }
-
-  if ( ln <= 0 )
-    *buf = '\0';
-
-//  fprintf(stderr, "COLDB: MAKE_COLOR RESULT: state=%02x len=%d\r\n", d->last_sent_color, ln);
-
-  return ln;
-}
-
 void set_pager_input( DESCRIPTOR_DATA *d, char *argument )
 {
   while ( isspace(*argument) )
@@ -4590,7 +4829,7 @@ bool pager_output( DESCRIPTOR_DATA *d )
      * ========================= */
     if ( last != d->pagepoint )
     {
-        write_to_buffer(d, d->pagebuf + d->pagepoint, last - d->pagepoint);
+        output_to_descriptor(d, d->pagebuf + d->pagepoint);
         d->pagepoint = last;
     }
 
@@ -4737,6 +4976,35 @@ void cron()
  * retained intact.
  */
 
+void do_mccpstat(CHAR_DATA *ch, char *argument)
+{
+    if (!ch->desc || !ch->desc->out_compress)
+    {
+        send_to_char("MCCP is not active.\n\r", ch);
+        return;
+    }
+
+    DESCRIPTOR_DATA *d = ch->desc;
+
+    if (d->mccp_bytes_in == 0)
+    {
+        send_to_char("No compression data yet.\n\r", ch);
+        return;
+    }
+
+    double ratio = 100.0 *
+        (1.0 - ((double)d->mccp_bytes_out / (double)d->mccp_bytes_in));
+
+    ch_printf(ch,
+        "MCCP stats:\n\r"
+        "  Raw: %zu bytes\n\r"
+        "  Compressed: %zu bytes\n\r"
+        "  Savings: %.2f%%\n\r",
+        d->mccp_bytes_in,
+        d->mccp_bytes_out,
+        ratio);
+}
+
 void *zlib_alloc(void *opaque, unsigned int items, unsigned int size)
 {
     return calloc(items, size);
@@ -4762,7 +5030,7 @@ bool process_compressed(DESCRIPTOR_DATA *d)
         // we have some data to write
         for (iStart = 0; iStart < len; iStart += nWrite)
         {
-            nBlock = UMIN (len - iStart, 16384);
+            nBlock = len - iStart;
             if ((nWrite = write(d->descriptor, d->out_compress_buf + iStart, nBlock)) < 0)
             {
                 if (errno == EAGAIN || errno == EWOULDBLOCK || errno == ENOSR)
@@ -4770,7 +5038,10 @@ bool process_compressed(DESCRIPTOR_DATA *d)
 
                 return FALSE;
             }
-
+            if (nWrite > 0)
+            {
+                d->mccp_bytes_out += nWrite;
+            }                
             if (!nWrite)
                 break;
         }
@@ -4805,7 +5076,7 @@ bool compressStart(DESCRIPTOR_DATA *d, unsigned char telopt)
         return TRUE;
 
     bug("Starting compression for descriptor %d", d->descriptor);
-    bug("MCCP START BYTES: sending IAC SB COMPRESS2 IAC SE");    
+    TELLOG(d, "MCCP: START (COMPRESS%d)", telopt == TELOPT_COMPRESS2 ? 2 : 1);  
 
     CREATE(s, z_stream, 1);
     CREATE(d->out_compress_buf, unsigned char, COMPRESS_BUF_SIZE);
@@ -4820,6 +5091,9 @@ bool compressStart(DESCRIPTOR_DATA *d, unsigned char telopt)
     s->zfree  = zlib_free;
     s->opaque = NULL;
 
+    d->mccp_bytes_in  = 0;
+    d->mccp_bytes_out = 0;
+
     if (deflateInit(s, 9) != Z_OK)
     {
         DISPOSE(d->out_compress_buf);
@@ -4827,13 +5101,15 @@ bool compressStart(DESCRIPTOR_DATA *d, unsigned char telopt)
         return FALSE;
     }
 
-    if (telopt == TELOPT_COMPRESS)
-        output_to_descriptor(d, enable_compress);
-    else if (telopt == TELOPT_COMPRESS2)
-        output_to_descriptor(d, enable_compress2);
-    else
-        bug("compressStart: bad TELOPT passed");
-    flush_buffer(d, FALSE);
+    {
+        static const unsigned char start[] =
+        {
+            IAC, SB, TELOPT_COMPRESS2, IAC, SE
+        };
+
+        send_telnet(d, start, sizeof(start));
+    }
+
     d->compressing = telopt;
     d->out_compress = s;
 
@@ -4848,6 +5124,18 @@ bool compressEnd(DESCRIPTOR_DATA *d)
         return TRUE;
 
     bug("Stopping compression for descriptor %d", d->descriptor);
+    TELLOG(d, "MCCP: END");
+    if (d->mccp_bytes_in > 0)
+    {
+        double ratio = 100.0 *
+            (1.0 - ((double)d->mccp_bytes_out / (double)d->mccp_bytes_in));
+
+        bug("MCCP stats for descriptor %d: in=%zu, out=%zu, saved=%.2f%%",
+            d->descriptor,
+            d->mccp_bytes_in,
+            d->mccp_bytes_out,
+            ratio);
+    }
 
     d->out_compress->avail_in = 0;
     d->out_compress->next_in = dummy;
@@ -5699,3 +5987,51 @@ static void append_str(char **buf, size_t *len, size_t *cap, const char *src)
     (*buf)[*len] = '\0';
 }
 
+void send_telnet(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len)
+{
+    if (!d || d->descriptor < 0 || !data || len == 0)
+        return;
+
+    ssize_t total = 0;
+
+    while (total < (ssize_t)len)
+    {
+if (d->debug_telnet && len >= 2 && data[0] == IAC)
+{
+    char buf[256];
+    int pos = 0;
+
+    pos += snprintf(buf + pos, sizeof(buf) - pos, "IAC ");
+
+        for (size_t i = 1; i < len && pos < (int)sizeof(buf) - 10; i++)
+        {
+            unsigned char c = data[i];
+            if (c == IAC)
+                pos += snprintf(buf + pos, sizeof(buf) - pos, "IAC ");
+            else if (c == SB || c == SE || c == DO || c == WILL || c == WONT || c == DONT)
+                pos += snprintf(buf + pos, sizeof(buf) - pos, "%s ", telcmd(c));
+            else
+                pos += snprintf(buf + pos, sizeof(buf) - pos, "%s ", telopt(c));
+        }
+        bug("[TELNET] SEND: %s", buf);
+    }        ssize_t n = write(d->descriptor, data + total, len - total);
+
+        if (n <= 0)
+        {
+            if (errno == EINTR)
+                continue;
+
+            if (errno == EWOULDBLOCK || errno == EAGAIN)
+            {
+                /* Non-blocking: stop trying for now */
+                break;
+            }
+
+            perror("send_telnet: write");
+            close_socket(d, TRUE);
+            return;
+        }
+
+        total += n;
+    }
+}
