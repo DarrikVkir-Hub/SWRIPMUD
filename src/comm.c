@@ -1775,11 +1775,6 @@ void output_to_descriptor(DESCRIPTOR_DATA *d, const char *txt)
 
     wrapped = wrap_text_smart(txt, d->term_width);
 
-fprintf(stderr, "AFTER WRAP:\n");
-for (char *p = wrapped; *p; p++)
-    fprintf(stderr, "%02X ", (unsigned char)*p);
-fprintf(stderr, "\n");
-
     if (!wrapped)
         return;
 
@@ -4220,10 +4215,6 @@ void display_prompt( DESCRIPTOR_DATA *d )
   }
   *pbuf = '\0';
 
-    for (char *p = buf; *p; p++)
-        printf("%02X ", (unsigned char)*p);
-    printf("\n");
-
   output_to_descriptor(d, buf);
   return;
 }
@@ -4804,7 +4795,6 @@ char *wrap_text_ex(const char *txt, int width, int flags, int indent)
     int col = 0;
 
     int last_space_out = -1;
-    int last_space_col = -1;
     int last_space_i = -1;    
 
     int line = 0;
@@ -4902,7 +4892,6 @@ char *wrap_text_ex(const char *txt, int width, int flags, int indent)
                 col = 0;
 
                 last_space_out = -1;
-                last_space_col = -1;
                 last_space_i = -1;                
 
                 line++;
@@ -4927,7 +4916,6 @@ char *wrap_text_ex(const char *txt, int width, int flags, int indent)
 
                 /* track spaces for wrapping */
                 last_space_out = o - 1;
-                last_space_col = col - 1;
                 last_space_i = 1;                  
             }
 
@@ -4971,7 +4959,6 @@ char *wrap_text_ex(const char *txt, int width, int flags, int indent)
                 line++;
 
                 last_space_out = -1;
-                last_space_col = -1;
                 last_space_i = -1;
 
                 APPLY_INDENT();
@@ -4999,7 +4986,6 @@ char *wrap_text_ex(const char *txt, int width, int flags, int indent)
         if (txt[i] == ' ')
         {
             last_space_out = o - 1;
-            last_space_col = col - 1;
             last_space_i = i;
         }
     }
