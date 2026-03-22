@@ -156,8 +156,7 @@ void	read_from_buffer	args( ( DESCRIPTOR_DATA *d ) );
 void	stop_idling		args( ( CHAR_DATA *ch ) );
 void	free_desc		args( ( DESCRIPTOR_DATA *d ) );
 void	display_prompt		args( ( DESCRIPTOR_DATA *d ) );
-int	make_color_sequence	args( ( const char *col, char *buf,
-					DESCRIPTOR_DATA *d ) );
+int make_color_sequence(const char *col, char *buf, DESCRIPTOR_DATA *d,  int *consumed);
 void	set_pager_input		args( ( DESCRIPTOR_DATA *d,
 					char *argument ) );
 bool	pager_output		args( ( DESCRIPTOR_DATA *d ) );
@@ -857,7 +856,10 @@ void new_descriptor( int new_desc )
     dnew->auth_inc	= 0;
     dnew->auth_state	= 0;
     dnew->newstate	= 0;
-    dnew->prevcolor	= 0x07;
+    dnew->prevcolor	=       0x07;
+    dnew->rendercolor	=   '\0';
+    dnew->last_sent_color = 0xFF;    
+    dnew->color_initialized = FALSE;        
     dnew->original      = NULL;
     dnew->character     = NULL;
     dnew->telnet_pos = 0;
@@ -984,6 +986,8 @@ void new_descriptor( int new_desc )
       save_sysdata( sysdata );
     }
     set_alarm(0);
+//    fprintf(stderr, "COLDB: NEW DESC INIT: init=%d color=%02x\n", dnew->color_initialized, dnew->last_sent_color);
+
     return;
 }
 
@@ -997,8 +1001,11 @@ void free_desc( DESCRIPTOR_DATA *d )
 
 
 #ifdef MCCP
-    compressEnd(d);
-    DISPOSE( d->out_compress_buf );
+    if (d->compressing)
+    {
+        compressEnd(d);
+        DISPOSE( d->out_compress_buf );
+    }
 #endif
 
     if ( d->pagebuf )
@@ -1472,17 +1479,6 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
     if ( d->incomm[0] != '\0' )
         return;
 
-    /*
-     * ============================================================
-     * STEP 1: PROCESS ONLY NEW DATA (CRITICAL FIX)
-     * ============================================================
-     *
-     * BEFORE:
-     *   You processed entire inbuf every time ❌
-     *
-     * NOW:
-     *   Only process unprocessed bytes ✅
-     */
     unsigned char clean[MAX_INBUF_SIZE];
 
     int new_bytes = d->inbuf_len - d->telnet_pos;  /* NEW */
@@ -1583,7 +1579,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     /*
      * ============================================================
-     * STEP 6: SHIFT RAW BUFFER (FIXED)
+     * STEP 6: SHIFT RAW BUFFER
      * ============================================================
      *
      * IMPORTANT:
@@ -1621,7 +1617,6 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
     d->inbuf_len = remaining;
 
     /*
-     * 🔥 CRITICAL FIX:
      * Reset telnet position after buffer shift
      */
     d->telnet_pos = 0;
@@ -1789,7 +1784,103 @@ void output_to_descriptor(DESCRIPTOR_DATA *d, const char *txt)
 
 void write_to_buffer_str(DESCRIPTOR_DATA *d, const char *txt)
 {
-    write_to_buffer(d, txt, strnlen(txt, MAX_STRING_LENGTH));
+    size_t len = strnlen(txt, MAX_STRING_LENGTH);
+
+    if (len == MAX_STRING_LENGTH)
+    {
+        bug("write_to_buffer_str: string truncated");
+    }
+
+    write_to_buffer(d, txt, len);
+}
+
+int build_ansi_from_state(unsigned char state, char *buf)
+{
+    char *p = buf; 
+
+    /* FAST PATH: reset */
+    if (state == 0x07)
+    {
+        memcpy(p, "\033[0m", 4); 
+        return 4;
+    }
+
+    int bold  = (state & 0x08) ? 1 : 0;
+    int blink = (state & 0x80) ? 1 : 0;
+    int fg    = (state & 0x07);
+    int bg    = (state >> 4) & 0x07;
+
+    *p++ = '\033';
+    *p++ = '[';
+
+    int first = 1;
+
+    if (bold)
+    {
+        if (!first) *p++ = ';';
+        *p++ = '1';
+        first = 0;
+    }
+
+    if (blink)
+    {
+        if (!first) *p++ = ';';
+        *p++ = '5';
+        first = 0;
+    }
+
+    if (!first) *p++ = ';';
+    *p++ = '3';
+    *p++ = '0' + fg;
+    first = 0;
+
+    if (bg)
+    {
+        *p++ = ';';
+        *p++ = '4';
+        *p++ = '0' + bg;
+    }
+
+    *p++ = 'm';
+
+    return (int)(p - buf);
+}
+
+static void copy_with_newlines(DESCRIPTOR_DATA *d,
+                               const char *src,
+                               size_t len)
+{
+    const char *p   = src;
+    const char *end = src + len;
+
+    while (p < end)
+    {
+        /* precise reserve instead of magic 64 */
+        size_t needed = 2 /* CRLF */ + 32 /* ANSI worst case */;
+        if (d->outtop + needed >= d->outsize)
+        {
+            d->outsize *= 2;
+            RECREATE(d->outbuf, char, d->outsize);
+        }
+
+        /* unified CR/LF handling */
+        if (*p == '\r' || *p == '\n')
+        {
+            if (*p == '\r' && (p + 1 < end) && p[1] == '\n')
+                p++;
+            else if (*p == '\n' && (p + 1 < end) && p[1] == '\r')
+                p++;
+
+            d->outbuf[d->outtop++] = '\r';
+            d->outbuf[d->outtop++] = '\n';
+
+            p++;
+            continue;
+        }
+
+        /* normal character */
+        d->outbuf[d->outtop++] = *p++;
+    }
 }
 
 /*
@@ -1805,7 +1896,6 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
     }
     if ( !d->outbuf )
     	return;
-
     // Find length in case caller didn't.
     if ( length <= 0 )
     {
@@ -1814,8 +1904,31 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
         length = strlen(txt);  /* fallback only */
     }
 
+    if (d->rendercolor != '\0' && d->rendercolor != d->last_sent_color)
+    {
+        char buf[32];
+
+        int len = sprintf(buf, "\033[%s3%dm",
+            (d->rendercolor & 8) ? "1;" : "",
+            (d->rendercolor & 7));
+
+        /* inject directly into outbuf instead */
+        if (d->outtop + len >= d->outsize)
+            return; /* or flush */
+
+        memcpy(d->outbuf + d->outtop, buf, len);
+        d->outtop += len;
+
+        d->last_sent_color = d->rendercolor;
+        d->rendercolor = '\0';
+    }    
+
     if ( length <= 0 )
         return;
+//    fprintf(stderr, "COLDB: INIT COLOR: %02x\n", d->last_sent_color);
+//    fprintf(stderr, "COLDB: WTB INPUT: [%.*s]\r\n", length, txt);
+//    fprintf(stderr, "COLDB: WTB: d=%p color=%02x\n", d, d->last_sent_color);    
+
 
     // Initial \n\r if needed.
     if ( d->outtop == 0 && !d->fcommand )
@@ -1860,125 +1973,116 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
         RECREATE( d->outbuf, char, d->outsize );
     }
 
-        #define COPY_WITH_NEWLINES(src, len)                                     \
-    do {                                                                     \
-        const char *p = (src);                                               \
-        const char *end = (src) + (len);                                     \
-                                                                             \
-        while (p < end)                                                      \
-        {                                                                    \
-            if (d->outtop + 2 >= d->outsize)                                 \
-            {                                                                \
-                d->outsize *= 2;                                             \
-                RECREATE(d->outbuf, char, d->outsize);                       \
-            }                                                                \
-                                                                             \
-            if (*p == '\r')                                                  \
-            {                                                                \
-                if ((p + 1) < end && *(p + 1) == '\n')                       \
-                {                                                            \
-                    d->outbuf[d->outtop++] = '\r';                           \
-                    d->outbuf[d->outtop++] = '\n';                           \
-                    p += 2;                                                  \
-                    continue;                                                \
-                }                                                            \
-                                                                             \
-                d->outbuf[d->outtop++] = '\r';                               \
-                d->outbuf[d->outtop++] = '\n';                               \
-                p++;                                                         \
-                continue;                                                    \
-            }                                                                \
-                                                                             \
-            if (*p == '\n')                                                  \
-            {                                                                \
-                if ((p + 1) < end && *(p + 1) == '\r')                       \
-                    p++; /* skip bad order */                                \
-                                                                             \
-                d->outbuf[d->outtop++] = '\r';                               \
-                d->outbuf[d->outtop++] = '\n';                               \
-                p++;                                                         \
-                continue;                                                    \
-            }                                                                \
-                                                                             \
-            d->outbuf[d->outtop++] = *p++;                                   \
-        }                                                                    \
-    } while (0)
-
-    /* =========================
-    * COLOR-AWARE COPY
-    * ========================= */
-    const char *ptr = txt;         
+    // COLOR-AWARE COPY
+    /* COLOR-AWARE COPY */
+    const char *ptr = txt;
     const char *end = txt + length;
     char colbuf[64];
     int ln;
 
-    while ( ptr < end )                         /* CHANGED */
+    while (ptr < end)
     {
-        const char *colstr = NULL;              /* CHANGED */
+        const char *colstr = NULL;
 
-        /* CHANGED: manual scan instead of strpbrk */
-        for ( const char *p = ptr; p < end; ++p )
+        /* find next color code */
+        for (const char *p = ptr; p < end; ++p)
         {
-            if ( *p == '&' || *p == '^' )
+            if (*p == '&' || *p == '^')
             {
                 colstr = p;
                 break;
             }
         }
 
-        if ( !colstr )                          /* CHANGED */
+        if (!colstr)
             break;
 
         /* copy text before color */
-        size_t seglen = (size_t)(colstr - ptr); /* CHANGED */
+        size_t seglen = (size_t)(colstr - ptr);
 
-        if ( seglen > 0 )
-        {
-            COPY_WITH_NEWLINES(ptr, seglen);
-        }
+        if (seglen > 0)
+            copy_with_newlines(d, ptr, seglen);
 
-        /* CHANGED: bounds check for &X */
-        if ( colstr + 1 >= end )
+        if (colstr + 1 >= end)
         {
-            ptr = colstr;
+            ptr = end;
             break;
         }
 
-        /* convert color */
-        ln = make_color_sequence( colstr, colbuf, d );
+        /* ========================= */
+        /* track consumed   */
+        /* ========================= */
+        int consumed = 0;
 
-        if ( ln < 0 )
+        ln = make_color_sequence(colstr, colbuf, d, &consumed); 
+
+        if (ln < 0)
         {
-            ptr = colstr + 1;                  /* CHANGED */
+            ptr = colstr + 1;
             continue;
         }
 
-        if ( ln > 0 )
+        if (ln > 0)
         {
-            while ( d->outtop + (size_t)ln >= d->outsize )
+            while (d->outtop + (size_t)ln >= d->outsize)
             {
                 d->outsize *= 2;
-                RECREATE( d->outbuf, char, d->outsize );
+                RECREATE(d->outbuf, char, d->outsize);
             }
 
-            memcpy( d->outbuf + d->outtop, colbuf, (size_t)ln );
+            memcpy(d->outbuf + d->outtop, colbuf, (size_t)ln);
             d->outtop += (size_t)ln;
         }
 
-        ptr = colstr + 2;                      /* CHANGED */
+        /* advance past color code */
+        if (consumed <= 0)
+            consumed = 1;
+
+        ptr = colstr + consumed;
+
+        /* ========================================= */
+        /* IMMEDIATELY copy following text  */
+        /* until next color code                     */
+        /* ========================================= */
+        const char *next = ptr;
+
+        while (next < end && *next != '&' && *next != '^')
+            next++;
+
+        size_t textlen = (size_t)(next - ptr);
+
+        if (textlen > 0)
+        {
+            copy_with_newlines(d, ptr, textlen);
+        }
+
+        ptr = next;
     }
 
     /* =========================
-     * CHANGED: remainder copy (length-safe)
+     * remainder copy (length-safe)
      * ========================= */
     if ( ptr < end )
     {
         size_t rem = (size_t)(end - ptr);
-
-        COPY_WITH_NEWLINES(ptr, rem);  /* NEW */
+//        fprintf(stderr, "COLDB: COPY REMAINDER: [%.*s]\r\n", (int)rem, ptr);
+        copy_with_newlines(d, ptr, rem);
     }
 
     d->outbuf[d->outtop] = '\0';
+
+//fprintf(stderr, "COLDB: OUTBUF RAW:\n");
+for (unsigned int i = 0; i < d->outtop; i++)
+{
+    unsigned char c = d->outbuf[i];
+
+    if (c == 27) fprintf(stderr, "<ESC>");
+    else if (c == '\r') fprintf(stderr, "<CR>");
+    else if (c == '\n') fprintf(stderr, "<LF>");
+    else fprintf(stderr, "%c", c);
+}
+fprintf(stderr, "\n\n");
+
     return;
 }
 
@@ -3225,9 +3329,6 @@ void stop_idling( CHAR_DATA *ch )
 
 
 
-/*
- * Write to one char. Commented out in favour of colour
- *
 void send_to_char( const char *txt, CHAR_DATA *ch )
 {
     if ( !ch )
@@ -3236,14 +3337,14 @@ void send_to_char( const char *txt, CHAR_DATA *ch )
       return;
     }
     if ( txt && ch->desc )
-	output_to_descriptor( ch->desc, txt );
+	    output_to_descriptor( ch->desc, txt );
     return;
 }
-*/
+
 
 /*
  * Same as above, but converts &color codes to ANSI sequences..
- */
+ * No longer needed as color is handled in write_to_buffer
 void send_to_char_color( const char *txt, CHAR_DATA *ch )
 {
     DESCRIPTOR_DATA *d;
@@ -3263,11 +3364,6 @@ void send_to_char_color( const char *txt, CHAR_DATA *ch )
 
     prevstr = txt;
 
-    /*
-     * ============================================
-     * STEP 1: Build fully colorized string FIRST
-     * ============================================
-     */
     size_t outsize = strlen(txt) * 8 + 32;
     char *out;
     CREATE(out, char, outsize);
@@ -3275,7 +3371,7 @@ void send_to_char_color( const char *txt, CHAR_DATA *ch )
 
     while ( (colstr = strpbrk(prevstr, "&^")) != NULL )
     {
-        /* copy text before color code */
+        // copy text before color code *
         int seglen = colstr - prevstr;
         if (seglen > 0)
         {
@@ -3283,7 +3379,7 @@ void send_to_char_color( const char *txt, CHAR_DATA *ch )
             outpos += seglen;
         }
 
-        /* convert color code */
+        // convert color code *
         ln = make_color_sequence(colstr, colbuf, d);
 
         if ( ln < 0 )
@@ -3304,7 +3400,7 @@ void send_to_char_color( const char *txt, CHAR_DATA *ch )
             prevstr = colstr + 1;
     }
 
-    /* copy remaining text */
+    // copy remaining text *
     if ( *prevstr )
     {
         int len = strlen(prevstr);
@@ -3318,7 +3414,7 @@ void send_to_char_color( const char *txt, CHAR_DATA *ch )
 
     DISPOSE(out);
 }
-
+*/
 void write_to_pager( DESCRIPTOR_DATA *d, const char *txt, int length )
 {
   if ( length <= 0 )
@@ -3340,8 +3436,7 @@ void write_to_pager( DESCRIPTOR_DATA *d, const char *txt, int length )
   if ( d->pagelen == 0 && !d->fcommand )
   {
     d->pagebuf[0] = '\n';
-    d->pagebuf[1] = '\r';
-    d->pagelen = 2;
+    d->pagelen = 1;
   }
   while ( d->pagelen + (size_t)length + 1 >= d->pagesize )
   {
@@ -3364,7 +3459,6 @@ void write_to_pager( DESCRIPTOR_DATA *d, const char *txt, int length )
   return;
 }
 
-/* commented out in favour of colour routine
 
 void send_to_pager( const char *txt, CHAR_DATA *ch )
 {
@@ -3380,15 +3474,15 @@ void send_to_pager( const char *txt, CHAR_DATA *ch )
     ch = d->original ? d->original : d->character;
     if ( IS_NPC(ch) || !IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
     {
-	send_to_char(txt, d->character);
-	return;
+	    send_to_char(txt, d->character);
+	    return;
     }
     write_to_pager(d, txt, 0);
   }
   return;
 }
 
-*/
+/* Commented out as color is now handled in write_to_buffer 
 
 void send_to_pager_color( const char *txt, CHAR_DATA *ch )
 {
@@ -3406,14 +3500,14 @@ void send_to_pager_color( const char *txt, CHAR_DATA *ch )
   if ( !txt || !ch->desc )
     return;
 
-  d = ch->desc;
-  ch = d->original ? d->original : d->character;
+      d = ch->desc;
+     ch = d->original ? d->original : d->character;
 
-  if ( IS_NPC(ch) || !IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
-  {
-    send_to_char_color(txt, d->character);
-    return;
-  }
+    if ( IS_NPC(ch) || !IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
+    {
+        send_to_char_color(txt, d->character);
+        return;
+    }
 
     prevstr = txt;
 
@@ -3442,27 +3536,43 @@ void send_to_pager_color( const char *txt, CHAR_DATA *ch )
 
     return;
 }
+*/
 
-
-void set_char_color( sh_int AType, CHAR_DATA *ch )
+void set_char_color(sh_int AType, CHAR_DATA *ch)
 {
-    char buf[16];
     CHAR_DATA *och;
+    DESCRIPTOR_DATA *d;    
     
-    if ( !ch || !ch->desc )
-      return;
+    if (!ch || !ch->desc)
+        return;
     
-    och = (ch->desc->original ? ch->desc->original : ch);
-    if ( !IS_NPC(och) && IS_SET(och->act, PLR_ANSI) )
+    d = ch->desc;
+    och = (d->original ? d->original : ch);
+
+    if (!IS_NPC(och) && IS_SET(och->act, PLR_ANSI))
     {
-	if ( AType == 7 )
-	  SPRINTF( buf, "\033[m" );
-	else
-	  SPRINTF(buf, "\033[0;%d;%s%dm", (AType & 8) == 8,
-	        (AType > 15 ? "5;" : ""), (AType & 7)+30);
-	output_to_descriptor( ch->desc, buf );
+        unsigned char newcolor;
+
+        if (AType == 7)
+            newcolor = 0x07; /* reset */
+        else
+        {
+            newcolor = 0;
+
+            if (AType & 8)
+                newcolor |= 0x08;
+
+            if (AType > 15)
+                newcolor |= 0x80;
+
+            newcolor |= (AType & 7);
+        }
+
+        /* ✅ ONLY update state — DO NOT EMIT ANSI */
+        d->rendercolor = newcolor;
+        d->prevcolor   = newcolor;
+        //d->last_sent_color = newcolor;
     }
-    return;
 }
 
 void set_pager_color( sh_int AType, CHAR_DATA *ch )
@@ -4100,7 +4210,9 @@ void display_prompt( DESCRIPTOR_DATA *d )
      * '%' = prompt commands
      * Note: foreground changes will revert background to 0 (black)
      */
-    if ( *prompt != '&' && *prompt != '^' && *prompt != '%' )
+//    if ( *prompt != '&' && *prompt != '^' && *prompt != '%' )
+//  Removed color handling as it's handled in write_to_buffer now
+    if ( *prompt != '%' )
     {
       *(pbuf++) = *prompt;
       continue;
@@ -4115,102 +4227,97 @@ void display_prompt( DESCRIPTOR_DATA *d )
     }
     switch(*(prompt-1))
     {
-    default:
-      bug( "Display_prompt: bad command char '%c'.", *(prompt-1) );
-      break;
-    case '&':
-    case '^':
-      stat = make_color_sequence(&prompt[-1], pbuf, d);
-      if ( stat < 0 )
-        --prompt;
-      else if ( stat > 0 )
-        pbuf += stat;
-      break;
-    case '%':
-      *pbuf = '\0';
-      stat = 0x80000000;
-      switch(*prompt)
-      {
-      case '%':
-	*pbuf++ = '%';
-	*pbuf = '\0';
-	break;
-      case 'a':
-	if ( ch->top_level >= 10 )
-	  stat = ch->alignment;
-	else if ( IS_GOOD(ch) )
-    memmove(pbuf, "good", sizeof("good"));
-	else if ( IS_EVIL(ch) )
-	  memmove(pbuf, "evil", sizeof("evil"));
-	else
-	  memmove(pbuf, "neutral", sizeof("neutral"));
-	break;
-      case 'h':
-	stat = ch->hit;
-	break;
-      case 'H':
-	stat = ch->max_hit;
-	break;
-      case 'm':
-	if ( IS_IMMORTAL(ch) || ch->skill_level[FORCE_ABILITY] > 1 )
-	  stat = ch->mana;
-	else
-	  stat = 0;
-	break;
-      case 'M':
-	if ( IS_IMMORTAL(ch) || ch->skill_level[FORCE_ABILITY] > 1 )
-	  stat = ch->max_mana;
-	else
-	  stat = 0;
-	break;
-      case 'p':
-        if ( ch->position == POS_RESTING )
-          memmove(pbuf, "resting", sizeof("resting"));
-        else if ( ch->position == POS_SLEEPING )
-          memmove(pbuf, "sleeping", sizeof("sleeping"));
-        else if ( ch->position == POS_SITTING )
-          memmove(pbuf, "sitting", sizeof("sitting"));
+        default:
+        bug( "Display_prompt: bad command char '%c'.", *(prompt-1) );
         break;
-      case 'u':
-        stat = num_descriptors;
+        case '&':
+        case '^':
         break;
-      case 'U':
-        stat = sysdata.maxplayers;
+        case '%':
+        *pbuf = '\0';
+        stat = 0x80000000;
+        switch(*prompt)
+        {
+            case '%':
+            *pbuf++ = '%';
+            *pbuf = '\0';
+            break;
+            case 'a':
+            if ( ch->top_level >= 10 )
+            stat = ch->alignment;
+            else if ( IS_GOOD(ch) )
+            memmove(pbuf, "good", sizeof("good"));
+            else if ( IS_EVIL(ch) )
+            memmove(pbuf, "evil", sizeof("evil"));
+            else
+            memmove(pbuf, "neutral", sizeof("neutral"));
+            break;
+            case 'h':
+            stat = ch->hit;
+            break;
+            case 'H':
+            stat = ch->max_hit;
+            break;
+            case 'm':
+            if ( IS_IMMORTAL(ch) || ch->skill_level[FORCE_ABILITY] > 1 )
+            stat = ch->mana;
+            else
+            stat = 0;
+            break;
+            case 'M':
+            if ( IS_IMMORTAL(ch) || ch->skill_level[FORCE_ABILITY] > 1 )
+            stat = ch->max_mana;
+            else
+            stat = 0;
+            break;
+            case 'p':
+                if ( ch->position == POS_RESTING )
+                memmove(pbuf, "resting", sizeof("resting"));
+                else if ( ch->position == POS_SLEEPING )
+                memmove(pbuf, "sleeping", sizeof("sleeping"));
+                else if ( ch->position == POS_SITTING )
+                memmove(pbuf, "sitting", sizeof("sitting"));
+                break;
+            case 'u':
+                stat = num_descriptors;
+                break;
+            case 'U':
+                stat = sysdata.maxplayers;
+                break;
+            case 'v':
+                stat = ch->move;
+                break;
+            case 'V':
+                stat = ch->max_move;
+                break;
+            case 'g':
+                stat = ch->gold;
+                break;
+            case 'r':
+                if ( IS_IMMORTAL(och) )
+                stat = ch->in_room->vnum;
+                break;
+            case 'R':
+                if ( IS_SET(och->act, PLR_ROOMVNUM) )
+                    snprintf( pbuf, MAX_STRING_LENGTH, "<#%d> ", ch->in_room->vnum );
+                break;
+            case 'i':
+                if ( (!IS_NPC(ch) && IS_SET(ch->act, PLR_WIZINVIS)) ||
+                    (IS_NPC(ch) && IS_SET(ch->act, ACT_MOBINVIS)) )
+                snprintf( pbuf, MAX_STRING_LENGTH, "(Invis %d) ", ( IS_NPC( ch ) ? ch->mobinvis : ch->pcdata->wizinvis ) );
+                else
+                if ( IS_AFFECTED(ch, AFF_INVISIBLE) )
+                    snprintf( pbuf, MAX_STRING_LENGTH, "(Invis) ");
+                break;
+            case 'I':
+                stat = (IS_NPC(ch) ? (IS_SET(ch->act, ACT_MOBINVIS) ? ch->mobinvis : 0)
+                    : (IS_SET(ch->act, PLR_WIZINVIS) ? ch->pcdata->wizinvis : 0));
+                break;
+        }
+        if ( stat != (int) 0x80000000 )
+            snprintf( pbuf, MAX_STRING_LENGTH, "%d", stat );
+        pbuf += strlen(pbuf);
         break;
-      case 'v':
-        stat = ch->move;
-        break;
-      case 'V':
-        stat = ch->max_move;
-        break;
-      case 'g':
-        stat = ch->gold;
-        break;
-      case 'r':
-        if ( IS_IMMORTAL(och) )
-          stat = ch->in_room->vnum;
-        break;
-      case 'R':
-        if ( IS_SET(och->act, PLR_ROOMVNUM) )
-            snprintf( pbuf, MAX_STRING_LENGTH, "<#%d> ", ch->in_room->vnum );
-        break;
-      case 'i':
-        if ( (!IS_NPC(ch) && IS_SET(ch->act, PLR_WIZINVIS)) ||
-              (IS_NPC(ch) && IS_SET(ch->act, ACT_MOBINVIS)) )
-          snprintf( pbuf, MAX_STRING_LENGTH, "(Invis %d) ", ( IS_NPC( ch ) ? ch->mobinvis : ch->pcdata->wizinvis ) );
-          else
-          if ( IS_AFFECTED(ch, AFF_INVISIBLE) )
-            snprintf( pbuf, MAX_STRING_LENGTH, "(Invis) ");
-          break;
-      case 'I':
-          stat = (IS_NPC(ch) ? (IS_SET(ch->act, ACT_MOBINVIS) ? ch->mobinvis : 0)
-              : (IS_SET(ch->act, PLR_WIZINVIS) ? ch->pcdata->wizinvis : 0));
-          break;
-      }
-      if ( stat != (int) 0x80000000 )
-        snprintf( pbuf, MAX_STRING_LENGTH, "%d", stat );
-      pbuf += strlen(pbuf);
-      break;
     }
   }
   *pbuf = '\0';
@@ -4219,106 +4326,207 @@ void display_prompt( DESCRIPTOR_DATA *d )
   return;
 }
 
-int make_color_sequence(const char *col, char *buf, DESCRIPTOR_DATA *d)
+int make_color_sequence(const char *col, char *buf, DESCRIPTOR_DATA *d,  int *consumed)
 {
   int ln;
   const char *ctype = col;
-  unsigned char cl;
+  unsigned char cl = 0;
+  unsigned char prev;            /* snapshot previous state */
   CHAR_DATA *och;
   bool ansi;
   
+  if (consumed) *consumed = 2;
+
+//    fprintf(stderr, "COLDB: MAKE_COLOR: code=%c%c\r\n", col[0], col[1]);
+//    fprintf(stderr, "COLDB: STATE BEFORE: %02x\n", d->last_sent_color);    
+//    fprintf(stderr, "COLDB: AT ENTRY: init=%d color=%02x\n", d->color_initialized, d->last_sent_color);    
+//    fprintf(stderr, "COLDB: MAKE: d=%p color=%02x\n", d, d->last_sent_color);        
+
   och = (d->original ? d->original : d->character);
   ansi = (!IS_NPC(och) && IS_SET(och->act, PLR_ANSI));
+
   col++;
+
   if ( !*col )
     ln = -1;
+
   else if ( *ctype != '&' && *ctype != '^' )
   {
     bug("Make_color_sequence: command '%c' not '&' or '^'.", *ctype);
     ln = -1;
+    if (consumed) *consumed = 1;    
   }
+
   else if ( *col == *ctype )
   {
     buf[0] = *col;
     buf[1] = '\0';
     ln = 1;
+    if (consumed) *consumed = 2;    
   }
+
   else if ( !ansi )
     ln = 0;
+
   else
   {
-    cl = d->prevcolor;
+    prev = d->last_sent_color;        /* preserve original state */
+
+    /* treat invalid state as "unknown" */
+    if (prev > 0x8F)
+    {
+//        fprintf(stderr, "COLDB: FORCING FIRST EMIT (prev invalid)\n");
+        prev = 0xFF;
+    }
+    cl = prev;
+    if (!d->color_initialized)
+    {
+//        fprintf(stderr, "COLDB: FIRST COLOR FORCE EMIT\n");
+
+        prev = 0xFF;                 /* impossible state */
+        d->last_sent_color = 0xFF;   
+        d->color_initialized = TRUE;
+    }
     switch(*ctype)
     {
     default:
       bug( "Make_color_sequence: bad command char '%c'.", *ctype );
       ln = -1;
+      if (consumed) *consumed = 1;      
       break;
+
     case '&':
       if ( *col == '-' )
       {
-        buf[0] = '~';
-        buf[1] = '\0';
-        ln = 1;
-        break;
+        /* explicit reset instead of '~' hack */
+        strcpy(buf, "\033[0m");
+        d->last_sent_color = 0x07;   
+        if (consumed) *consumed = 2;        
+        return strlen(buf);
       }
+      /* FALLTHROUGH */
+
     case '^':
-      {
-        int newcol;
-        
-        if ( (newcol = getcolor(*col)) < 0 )
-        {
-          ln = 0;
-          break;
-        }
-        else if ( *ctype == '&' )
-          cl = (cl & 0xF0) | newcol;
-        else
-          cl = (cl & 0x0F) | (newcol << 4);
-      }
-      if ( cl == d->prevcolor )
+    {
+      int newcol;
+
+      if ( (newcol = getcolor(*col)) < 0 )
       {
         ln = 0;
         break;
       }
-      memmove(buf, "\033[", sizeof("\033["));
-      ln = sizeof("\033[") - 1;
 
-      if ((cl & 0x88) != (d->prevcolor & 0x88))
-      {
-          ln += snprintf(buf + ln, MAX_STRING_LENGTH - ln, "m\033[");
+    if ( *ctype == '&' )
+    {
+        /* reset intensity + set full foreground */
+        cl = (cl & 0xF0) | newcol;
 
-          if (cl & 0x08)
-              ln += snprintf(buf + ln, MAX_STRING_LENGTH - ln, "1;");
+        /* clear brightness bit */
+        cl &= ~0x08;
 
-          if (cl & 0x80)
-              ln += snprintf(buf + ln, MAX_STRING_LENGTH - ln, "5;");
-
-          d->prevcolor = 0x07 | (cl & 0x88);
-      }
+        /* apply brightness if uppercase */
+        if (isupper(*col))
+            cl |= 0x08;
+    }
       else
-        ln = 2;
-      if ((cl & 0x07) != (d->prevcolor & 0x07))
-      {
-          ln += snprintf(buf + ln, MAX_STRING_LENGTH - ln, "3%d;", cl & 0x07);
-      }
+        cl = (cl & 0x0F) | (newcol << 4);
+    }
 
-      if ((cl & 0x70) != (d->prevcolor & 0x70))
-      {
-          ln += snprintf(buf + ln, MAX_STRING_LENGTH - ln, "4%d;", (cl & 0x70) >> 4);
-      }
-      if ( buf[ln-1] == ';' )
-        buf[ln-1] = 'm';
-      else
-      {
-        buf[ln++] = 'm';
-        buf[ln] = '\0';
-      }
-      d->prevcolor = cl;
+    /* do NOT emit anything if no actual change */
+    if (cl == prev)
+    {
+        ln = 0;
+        break;
+    }
+
+    int changed = 0;
+
+    /* detect changes FIRST */
+    if ((cl & 0x88) != (prev & 0x88))
+        changed = 1;
+
+    if ((cl & 0x07) != (prev & 0x07))
+        changed = 1;
+
+    if ((cl & 0x70) != (prev & 0x70))
+        changed = 1;
+
+    /* if nothing changed, emit NOTHING */
+    if (!changed)
+    {
+        ln = 0;
+        break;
+    }
+
+    /* NOW build ANSI (only if needed) */
+    char *p = buf;
+
+    /* start new sequence */
+    char *seq_start = p;
+    *p++ = '\033';
+    *p++ = '[';
+
+    int added = 0;
+
+    /* intensity */
+    if ((cl & 0x08) != (prev & 0x08))
+    {
+        if (cl & 0x08)
+            p += sprintf(p, "1;");
+        else
+            p += sprintf(p, "22;"); /* NORMAL intensity */
+
+        added = 1;
+    }
+
+    /* blink */
+    if (cl & 0x80)
+    {
+        p += sprintf(p, "5;");
+        added = 1;
+    }
+
+    /* foreground */
+    if ((cl & 0x07) != (prev & 0x07))
+    {
+        p += sprintf(p, "3%d;", cl & 0x07);
+        added = 1;
+    }
+
+    /* background */
+    if ((cl & 0x70) != (prev & 0x70))
+    {
+        p += sprintf(p, "4%d;", (cl & 0x70) >> 4);
+        added = 1;
+    }
+
+    /* 🚨 critical fix */
+    if (!added)
+    {
+        /* discard ESC[ */
+        p = seq_start;
+    }
+    else
+    {
+        if (*(p-1) == ';')
+            *(p-1) = 'm';
+        else
+            *p++ = 'm';
+    }
+
+    ln = (int)(p - buf);
+
+    /* ONLY update state once at end */
+    d->last_sent_color = cl;
+    break;
     }
   }
+
   if ( ln <= 0 )
     *buf = '\0';
+
+//  fprintf(stderr, "COLDB: MAKE_COLOR RESULT: state=%02x len=%d\r\n", d->last_sent_color, ln);
+
   return ln;
 }
 
@@ -4787,207 +4995,303 @@ char *wrap_text_ex(const char *txt, int width, int flags, int indent)
     if (width <= 0 || (flags & WRAP_NO_WRAP))
         return str_dup(txt);
 
+    if (indent >= width)
+        indent = (width > 0) ? width - 1 : 0;
+
     int len = strlen(txt);
+
     int outsize = len * 4 + 1;
     char *out = (char *)malloc(outsize);
 
     int o = 0;
     int col = 0;
 
-    int last_space_out = -1;
-    int last_space_i = -1;    
-
     int line = 0;
+    int wrapped_line = 0;
 
-    /* helper: apply indent */
-    #define APPLY_INDENT() \
-        if ((flags & WRAP_INDENT) || \
-           ((flags & WRAP_HANGING_INDENT) && line > 0)) \
-        { \
-            for (int k = 0; k < indent; k++) \
-            { \
-                if (o >= outsize - 8) \
-                { \
-                    outsize *= 2; \
-                    out = (char *)realloc(out, outsize); \
-                } \
-                out[o++] = ' '; \
-                col++; \
-            } \
-        }
+#define WORD_MAX 4096
+#define VIS_MAX 4096
+
+    char word[WORD_MAX];
+    int wlen = 0;
+    int wcol = 0; /* visible width */
+    int vis_to_raw[VIS_MAX];
+
+    /* helpers*/
+
 #define ENSURE_SPACE(n) \
     do { \
         if (o + (n) >= outsize) { \
-            outsize *= 2; \
-            void *tmp_void = realloc(out, outsize); \
-            if (!tmp_void) { free(out); return str_dup(""); } \
-            out = (char *)tmp_void; \
+            outsize = outsize * 2 + n; \
+            char *tmp = (char *)realloc(out, outsize); \
+            if (!tmp) { free(out); return str_dup(""); } \
+            out = tmp; \
         } \
-    } while(0)
+    } while (0)
+
+#define APPLY_INDENT() \
+    if ((flags & WRAP_INDENT) || \
+       ((flags & WRAP_HANGING_INDENT) && wrapped_line)) \
+    { \
+        for (int k = 0; k < indent; k++) { \
+            ENSURE_SPACE(1); \
+            out[o++] = ' '; \
+            col++; \
+        } \
+    }
 
     APPLY_INDENT();
 
     for (int i = 0; i < len; i++)  
     {
-        /* ensure space */
-        ENSURE_SPACE(2);
+        char c = txt[i];
 
-        /* =========================
-         * ANSI handling
-         * ========================= */
-        if (!(flags & WRAP_NO_COLOR) && txt[i] == '\x1b')
+        /* =========== PRESERVE LINES (forward ============ */
+        if (flags & WRAP_PRESERVE_LINES)
         {
-            ENSURE_SPACE(2);
+            /* preserve newlines but STILL wrap long lines */
 
-            out[o++] = txt[i++];  /* copy ESC and advance */
+            if (c == '\r')
+                continue;
 
-            while (i < len)
+            if (c == '\n')
             {
-                ENSURE_SPACE(2);
-                char c = txt[i];
-                out[o++] = c;
-                i++;              /* advance AFTER using */
-
-                if (c == 'm')
-                    break;
-            }
-
-            i--; /* compensate for for-loop increment */
-            continue;
-        }
-
-        /* =========================
-         * NEW: SMAUG color handling (&X)
-         * ========================= */
-        if (!(flags & WRAP_NO_COLOR) && txt[i] == '&' && i + 1 < len)
-        {
-            /* NEW: handle escaped && (prints literal &) */
-            if (txt[i+1] == '&')
-            {
-                ENSURE_SPACE(2);
-
-                out[o++] = '&';
-                i++;        /* skip second & */
-                col++;      /* visible char */
+                ENSURE_SPACE(1);
+                out[o++] = '\n';
+                col = 0;
+                line++;
+                wrapped_line = 0; 
+                APPLY_INDENT();
                 continue;
             }
 
-            ENSURE_SPACE(3);
+            /* treat like normal char (allow wrapping) */
+        }    
 
-            out[o++] = txt[i++]; /* '&' */
-            out[o++] = txt[i];   /* color code */
-
-            continue;
-        }        
-
-        /* =========================
-         * newline handling
-         * ========================= */
-        if (txt[i] == '\n' || txt[i] == '\r')
+        /* ================= ANSI ================= */
+        if (!(flags & WRAP_NO_COLOR) && c == '\x1b')
         {
-            if (txt[i] == '\n')
+            if (wlen >= WORD_MAX - 2)
+                goto flush_word;
+
+            word[wlen++] = c;
+            i++;
+
+            int ansi_len = 0;            
+            while (i < len && ansi_len < 32)
             {
-                ENSURE_SPACE(2);        
-                out[o++] = '\n';
-                col = 0;
+                if (wlen < WORD_MAX - 1)
+                    word[wlen++] = txt[i];
 
-                last_space_out = -1;
-                last_space_i = -1;                
-
-                line++;
-                APPLY_INDENT();
+                if (txt[i++] == 'm')
+                    break;
+                ansi_len++;                    
             }
 
+            i--;
             continue;
         }
 
-        /* =========================
-        * TAB handling (expand to spaces)
-        * ========================= */
-        if (txt[i] == '\t')
+        /* ================= SMAUG COLOR ================= */
+        if (!(flags & WRAP_NO_COLOR) && c == '&' && i + 1 < len)
+        {
+            if (txt[i+1] == '&')
+            {
+                if (wlen < WORD_MAX - 1 && wcol < VIS_MAX) 
+                {
+                    word[wlen++] = '&';
+                    vis_to_raw[wcol] = wlen - 1;
+                    wcol++; 
+                }
+                else
+                    goto flush_word;
+
+                i++;
+                continue;
+            }
+
+            if (wlen < WORD_MAX - 2)
+            {
+                word[wlen++] = txt[i++];
+                word[wlen++] = txt[i];
+            }
+            continue;
+        }
+
+        /* ================= NEWLINE ================= */
+        if (c == '\n' || c == '\r')
+        {
+flush_word:
+            if (wlen > 0)
+            {
+                ENSURE_SPACE(wlen);
+                memcpy(out + o, word, wlen);
+                o += wlen;
+                col += wcol;
+
+                wlen = 0;
+                wcol = 0;
+                memset(vis_to_raw, 0, sizeof(vis_to_raw));                
+            }
+
+            if (c == '\n')
+            {
+                ENSURE_SPACE(1);
+                out[o++] = '\n';
+                col = 0;
+                line++;
+                wrapped_line = 0; 
+                APPLY_INDENT();
+            }
+            continue;
+        }
+
+        /* ================= TAB ================= */
+        if (c == '\t')
         {
             int spaces = 4 - (col % 4);
 
             for (int s = 0; s < spaces; s++)
             {
-                ENSURE_SPACE(1);
-                out[o++] = ' ';
-                col++;
-
-                /* track spaces for wrapping */
-                last_space_out = o - 1;
-                last_space_i = 1;                  
-            }
-
-            continue;
-        }
-
-        /* =========================
-         * preserve lines mode
-         * ========================= */
-        if (flags & WRAP_PRESERVE_LINES)
-        {
-            ENSURE_SPACE(2);           
-            out[o++] = txt[i];
-            col++;
-            continue;
-        }
-
-        /* =========================
-         * wrap before overflow
-         * ========================= */
-        if (col + 1 > width)
-        {
-            if (last_space_out != -1)
-            {
-                if (last_space_i < 0 || last_space_i >= len)   /* 🔹 FIX */
+                if (wlen < WORD_MAX - 1 && wcol < VIS_MAX) 
                 {
-                    /* fallback to hard wrap */
+                    word[wlen++] = ' ';
+                    vis_to_raw[wcol] = wlen - 1;
+                    wcol++;
+                }
+                else
+                    goto flush_word;
+            }
+            continue;
+        }
+
+
+        /* ================= SPACE ================= */
+        if (c == ' ')
+        {
+            /* flush word first */
+            if (wlen > 0)
+            {
+                /* 🔹 wrap BEFORE writing word */
+                if (col + wcol > width)
+                {
+                    ENSURE_SPACE(1);
                     out[o++] = '\n';
                     col = 0;
                     line++;
+                    wrapped_line = 1;                    
                     APPLY_INDENT();
-                    continue;
-                }                
-                o = last_space_out;
+                }
+
+                ENSURE_SPACE(wlen);
+                memcpy(out + o, word, wlen);
+                o += wlen;
+                col += wcol;
+
+                wlen = 0;
+                wcol = 0;
+                memset(vis_to_raw, 0, sizeof(vis_to_raw));                
+            }
+
+            /* then add space */
+            if (col + 1 > width)
+            {
+                ENSURE_SPACE(1);
                 out[o++] = '\n';
-
-                /* 🔹 FIX: jump to safe input position */
-                i = last_space_i - 1;
-
                 col = 0;
                 line++;
-
-                last_space_out = -1;
-                last_space_i = -1;
-
+                wrapped_line = 1;                
                 APPLY_INDENT();
-                continue;
             }
             else
             {
-                /* hard wrap */
+                ENSURE_SPACE(1);
+                out[o++] = ' ';
+                col++;
+            }
+
+            continue;
+        }
+
+        /* ================= NORMAL CHAR ================= */
+        if (wlen >= WORD_MAX - 1 || wcol >= VIS_MAX) 
+            goto flush_word;
+
+        word[wlen++] = c;
+        vis_to_raw[wcol] = wlen - 1; 
+        wcol++;
+        
+        /* ============= LONG WORD HANDLING ============== */
+        while (wcol > width)
+        {
+            int split_vis = (col == 0) ? width : (width - col);
+
+            if (split_vis <= 0)
+            {
+                ENSURE_SPACE(1);
                 out[o++] = '\n';
                 col = 0;
-
                 line++;
+                wrapped_line = 1; 
                 APPLY_INDENT();
-                continue;
+                split_vis = width;
+            }
+
+            /* convert visible split → raw split */
+            /* guard against empty/invalid mapping */
+            int split_raw;
+            if (wcol == 0 || split_vis - 1 < 0)
+                split_raw = wlen;
+            else
+                split_raw = vis_to_raw[split_vis - 1] + 1;
+
+
+
+            ENSURE_SPACE(split_raw);
+            memcpy(out + o, word, split_raw);
+            o += split_raw;
+
+            memmove(word, word + split_raw, wlen - split_raw);
+
+            /* rebuild mapping */
+            int new_wlen = wlen - split_raw;
+            int new_wcol = wcol - split_vis;
+
+            for (int k = 0; k < new_wcol; k++)
+                vis_to_raw[k] = vis_to_raw[k + split_vis] - split_raw;
+
+            wlen = new_wlen;
+            wcol = new_wcol;
+
+            col += split_vis;
+
+            if (col >= width)
+            {
+                ENSURE_SPACE(1);
+                out[o++] = '\n';
+                col = 0;
+                line++;
+                wrapped_line = 1; 
+                APPLY_INDENT();
             }
         }
-
-        /* =========================
-         * normal char
-         * ========================= */
-        out[o++] = txt[i];
-        col++;
-
-        /* track spaces */
-        if (txt[i] == ' ')
+    }
+    /* 🔹 flush final word */
+    if (wlen > 0)
+    {
+        if (col + wcol > width)
         {
-            last_space_out = o - 1;
-            last_space_i = i;
+            ENSURE_SPACE(1);
+            out[o++] = '\n';
+            col = 0;
+            line++;
+            wrapped_line = 1;            
+            APPLY_INDENT();
         }
+
+        ENSURE_SPACE(wlen);
+        memcpy(out + o, word, wlen);
+        o += wlen;
     }
 
     out[o] = '\0';

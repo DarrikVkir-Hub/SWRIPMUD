@@ -76,7 +76,26 @@ void do_score(CHAR_DATA * ch, char *argument)
 		ch_printf( ch, "\n%s\n", buf );
 		return;
 	}
+	if (!str_cmp(argument, "test"))
+	{
+	    ch_printf(ch, "\n&CScore for %s.\n", ch->pcdata->title);
+		set_char_color(AT_SCORE, ch);
+		if ( get_trust( ch ) != ch->top_level )
+		ch_printf( ch, "&cYou are trusted at level &C%d.\n", get_trust( ch ) );
 
+		send_to_char("&C----------------------------------------------------------------------------\n", ch);
+
+		ch_printf(ch,   "&cRace: %-17.10s                &cLog In:  &C%s\n",
+		capitalize(get_race(ch)), ( IS_NPC(ch) ? "(null)" : ctime(&(ch->pcdata->logon)) ) );
+
+		ch_printf(ch,   "&cHitroll: &C%-2.2d  &cDamroll: &C%-2.2d   &cArmor: &C%-4d        &cSaved:  &C%s\n",
+			GET_HITROLL(ch), GET_DAMROLL(ch), GET_AC(ch),
+			(ch->pcdata && ch->pcdata->save_time) ? ctime(&(ch->pcdata->save_time)) : "no\n" );
+
+		ch_printf(ch,   "&cAlign: &C%-5d    &cWimpy: &C%-3d                    &cTime:   &C%s\n",
+			ch->alignment, ch->wimpy  , ctime(&current_time) );
+		return;
+	}
     ch_printf(ch, "\n&CScore for %s.\n", ch->pcdata->title);
     set_char_color(AT_SCORE, ch);
     if ( get_trust( ch ) != ch->top_level )
@@ -84,14 +103,14 @@ void do_score(CHAR_DATA * ch, char *argument)
 
     send_to_char("&C----------------------------------------------------------------------------\n", ch);
 
-    ch_printf(ch,   "&cRace: %-17.10s                &cLog In:  &C%s\r",
+    ch_printf(ch,   "&cRace: %-17.10s                &cLog In:  &C%s\n",
 	capitalize(get_race(ch)), ( IS_NPC(ch) ? "(null)" : ctime(&(ch->pcdata->logon)) ) );
 
-    ch_printf(ch,   "&cHitroll: &C%-2.2d  &cDamroll: &C%-2.2d   &cArmor: &C%-4d        &cSaved:  &C%s\r",
+    ch_printf(ch,   "&cHitroll: &C%-2.2d  &cDamroll: &C%-2.2d   &cArmor: &C%-4d        &cSaved:  &C%s\n",
 		GET_HITROLL(ch), GET_DAMROLL(ch), GET_AC(ch),
 		(ch->pcdata && ch->pcdata->save_time) ? ctime(&(ch->pcdata->save_time)) : "no\n" );
 
-    ch_printf(ch,   "&cAlign: &C%-5d    &cWimpy: &C%-3d                    &cTime:   &C%s\r",
+    ch_printf(ch,   "&cAlign: &C%-5d    &cWimpy: &C%-3d                    &cTime:   &C%s\n",
 		ch->alignment, ch->wimpy  , ctime(&current_time) );
 
     if ( ch->skill_level[FORCE_ABILITY] > 1

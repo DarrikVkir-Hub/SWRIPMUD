@@ -527,6 +527,9 @@ struct	descriptor_data
     int 		atimes;
     int			newstate;
     unsigned char	prevcolor;
+    unsigned char last_sent_color;   
+    unsigned char rendercolor;    
+    bool color_initialized;     
 #ifdef MCCP
     unsigned char	compressing;
     z_stream *          out_compress;
