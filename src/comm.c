@@ -1794,54 +1794,84 @@ void write_to_buffer_str(DESCRIPTOR_DATA *d, const char *txt)
     write_to_buffer(d, txt, len);
 }
 
-int build_ansi_from_state(unsigned char state, char *buf)
+int build_ansi_from_state(unsigned char prev, unsigned char cl, char *buf)
 {
-    char *p = buf; 
+    char *p = buf;
 
-    /* FAST PATH: reset */
-    if (state == 0x07)
-    {
-        memcpy(p, "\033[0m", 4); 
-        return 4;
-    }
+    /* =========================
+     * Detect if anything changed
+     * ========================= */
+    int changed = 0;
 
-    int bold  = (state & 0x08) ? 1 : 0;
-    int blink = (state & 0x80) ? 1 : 0;
-    int fg    = (state & 0x07);
-    int bg    = (state >> 4) & 0x07;
+    if ((cl & 0x88) != (prev & 0x88)) /* intensity + blink */
+        changed = 1;
+
+    if ((cl & 0x07) != (prev & 0x07)) /* foreground */
+        changed = 1;
+
+    if ((cl & 0x70) != (prev & 0x70)) /* background */
+        changed = 1;
+
+    if (!changed)
+        return 0;
+
+    /* =========================
+     * Build ANSI sequence
+     * ========================= */
 
     *p++ = '\033';
     *p++ = '[';
 
-    int first = 1;
+    int added = 0;
 
-    if (bold)
+    /* intensity (bold/normal) */
+    if ((cl & 0x08) != (prev & 0x08))
     {
-        if (!first) *p++ = ';';
-        *p++ = '1';
-        first = 0;
+        if (cl & 0x08)
+            p += sprintf(p, "1;");
+        else
+            p += sprintf(p, "22;"); /* normal intensity */
+
+        added = 1;
     }
 
-    if (blink)
+    /* blink */
+    if ((cl & 0x80) != (prev & 0x80))
     {
-        if (!first) *p++ = ';';
-        *p++ = '5';
-        first = 0;
+        if (cl & 0x80)
+            p += sprintf(p, "5;");
+        else
+            p += sprintf(p, "25;"); /* blink off */
+
+        added = 1;
     }
 
-    if (!first) *p++ = ';';
-    *p++ = '3';
-    *p++ = '0' + fg;
-    first = 0;
-
-    if (bg)
+    /* foreground */
+    if ((cl & 0x07) != (prev & 0x07))
     {
-        *p++ = ';';
-        *p++ = '4';
-        *p++ = '0' + bg;
+        p += sprintf(p, "3%d;", cl & 0x07);
+        added = 1;
     }
 
-    *p++ = 'm';
+    /* background */
+    if ((cl & 0x70) != (prev & 0x70))
+    {
+        p += sprintf(p, "4%d;", (cl & 0x70) >> 4);
+        added = 1;
+    }
+
+    /* =========================
+     * Finalize or discard
+     * ========================= */
+
+    if (!added)
+        return 0;
+
+    /* replace trailing ';' with 'm' */
+    if (*(p - 1) == ';')
+        *(p - 1) = 'm';
+    else
+        *p++ = 'm';
 
     return (int)(p - buf);
 }
@@ -1904,24 +1934,37 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
         length = strlen(txt);  /* fallback only */
     }
 
-    if (d->rendercolor != '\0' && d->rendercolor != d->last_sent_color)
+    if (d->rendercolor != '\0')
     {
-        char buf[32];
+        unsigned char prev   = d->last_sent_color;
+        unsigned char target = d->rendercolor;
 
-        int len = sprintf(buf, "\033[%s3%dm",
-            (d->rendercolor & 8) ? "1;" : "",
-            (d->rendercolor & 7));
+        if (prev > 0x8F)
+            prev = 0xFF;
 
-        /* inject directly into outbuf instead */
-        if (d->outtop + len >= d->outsize)
-            return; /* or flush */
+        if (target != prev)
+        {
+            char colbuf[64];
+            int ln = build_ansi_from_state(prev, target, colbuf);
 
-        memcpy(d->outbuf + d->outtop, buf, len);
-        d->outtop += len;
+            if (ln > 0)
+            {
+                while (d->outtop + (size_t)ln >= d->outsize)
+                {
+                    d->outsize *= 2;
+                    RECREATE(d->outbuf, char, d->outsize);
+                }
 
-        d->last_sent_color = d->rendercolor;
-        d->rendercolor = '\0';
-    }    
+                memcpy(d->outbuf + d->outtop, colbuf, (size_t)ln);
+                d->outtop += (size_t)ln;
+
+                d->last_sent_color = target;
+            }
+        }
+
+        d->rendercolor = '\0'; /* consume */
+    }
+ 
 
     if ( length <= 0 )
         return;
@@ -2072,6 +2115,7 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
     d->outbuf[d->outtop] = '\0';
 
 //fprintf(stderr, "COLDB: OUTBUF RAW:\n");
+/*
 for (unsigned int i = 0; i < d->outtop; i++)
 {
     unsigned char c = d->outbuf[i];
@@ -2082,7 +2126,7 @@ for (unsigned int i = 0; i < d->outtop; i++)
     else fprintf(stderr, "%c", c);
 }
 fprintf(stderr, "\n\n");
-
+*/
     return;
 }
 
@@ -4432,89 +4476,7 @@ int make_color_sequence(const char *col, char *buf, DESCRIPTOR_DATA *d,  int *co
         cl = (cl & 0x0F) | (newcol << 4);
     }
 
-    /* do NOT emit anything if no actual change */
-    if (cl == prev)
-    {
-        ln = 0;
-        break;
-    }
-
-    int changed = 0;
-
-    /* detect changes FIRST */
-    if ((cl & 0x88) != (prev & 0x88))
-        changed = 1;
-
-    if ((cl & 0x07) != (prev & 0x07))
-        changed = 1;
-
-    if ((cl & 0x70) != (prev & 0x70))
-        changed = 1;
-
-    /* if nothing changed, emit NOTHING */
-    if (!changed)
-    {
-        ln = 0;
-        break;
-    }
-
-    /* NOW build ANSI (only if needed) */
-    char *p = buf;
-
-    /* start new sequence */
-    char *seq_start = p;
-    *p++ = '\033';
-    *p++ = '[';
-
-    int added = 0;
-
-    /* intensity */
-    if ((cl & 0x08) != (prev & 0x08))
-    {
-        if (cl & 0x08)
-            p += sprintf(p, "1;");
-        else
-            p += sprintf(p, "22;"); /* NORMAL intensity */
-
-        added = 1;
-    }
-
-    /* blink */
-    if (cl & 0x80)
-    {
-        p += sprintf(p, "5;");
-        added = 1;
-    }
-
-    /* foreground */
-    if ((cl & 0x07) != (prev & 0x07))
-    {
-        p += sprintf(p, "3%d;", cl & 0x07);
-        added = 1;
-    }
-
-    /* background */
-    if ((cl & 0x70) != (prev & 0x70))
-    {
-        p += sprintf(p, "4%d;", (cl & 0x70) >> 4);
-        added = 1;
-    }
-
-    /* 🚨 critical fix */
-    if (!added)
-    {
-        /* discard ESC[ */
-        p = seq_start;
-    }
-    else
-    {
-        if (*(p-1) == ';')
-            *(p-1) = 'm';
-        else
-            *p++ = 'm';
-    }
-
-    ln = (int)(p - buf);
+    ln = build_ansi_from_state(prev, cl, buf);
 
     /* ONLY update state once at end */
     d->last_sent_color = cl;
