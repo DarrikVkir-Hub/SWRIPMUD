@@ -1853,7 +1853,7 @@ if ( (get_obj_index (OBJ_VNUM_DEED) ) == NULL )
 
 deed = create_object ( get_obj_index(OBJ_VNUM_DEED), 0);
 obj_to_char (deed, ch);
-send_to_char_color ("&bVery well, you may have a contract for a vendor.\n", ch);
+send_to_char ("&bVery well, you may have a contract for a vendor.\n", ch);
 ch->gold = ch->gold - COST_BUY_VENDOR;
 
 }
@@ -2087,7 +2087,7 @@ if( vendor->in_room && vendor->in_room->area )
 vendor->gold = 0;
 ch->gold += gold;
 
-send_to_char_color ("&GYour vendor gladly hands over his earnings minus a small fee of course..\n",ch);
+send_to_char ("&GYour vendor gladly hands over his earnings minus a small fee of course..\n",ch);
 act( AT_ACTION, "$n hands over some money.\n", vendor, NULL, NULL, TO_ROOM );
 
 save_vendor(vendor);

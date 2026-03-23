@@ -519,6 +519,8 @@ struct	descriptor_data
     size_t		pagepoint;
     char		pagecmd;
     char		pagecolor;
+    sh_int pagecolor_pending;
+    bool   pagecolor_dirty;    
     int			auth_inc;
     int			auth_state;
     char		abuf[ 256 ];
@@ -5075,7 +5077,6 @@ void	close_socket	args( ( DESCRIPTOR_DATA *dclose, bool force ) );
 void	write_to_buffer	args( ( DESCRIPTOR_DATA *d, const char *txt, int length ) );
 void	write_to_pager	args( ( DESCRIPTOR_DATA *d, const char *txt, int length ) );
 void	send_to_char	args( ( const char *txt, CHAR_DATA *ch ) );
-void	send_to_char_color	args( ( const char *txt, CHAR_DATA *ch ) );
 //void  send_to_desc_color  args( ( const char *txt, DESCRIPTOR_DATA *d ) );
 void	send_to_pager	args( ( const char *txt, CHAR_DATA *ch ) );
 void	send_to_pager_color	args( ( const char *txt, CHAR_DATA *ch ) );
@@ -5832,7 +5833,7 @@ void rprog_act_trigger( char *buf, ROOM_INDEX_DATA *room, CHAR_DATA *ch,
 #endif
 
 
-#define send_to_char  send_to_char_color
+#define send_to_char_color  send_to_char
 #define send_to_pager send_to_pager_color
 #define GET_BETTED_ON(ch)    ((ch)->betted_on)
 #define GET_BET_AMT(ch) ((ch)->bet_amt)

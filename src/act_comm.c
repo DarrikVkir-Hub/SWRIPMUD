@@ -2839,7 +2839,7 @@ void do_ahelp( CHAR_DATA *ch, char *argument )
     set_char_color( AT_PLAIN, ch );
     if ( argument[0] == '\0' )
     {
-        send_to_char_color( "\nUsage:  'ahelp list' or 'ahelp clear now'\n", ch);
+        send_to_char( "\nUsage:  'ahelp list' or 'ahelp clear now'\n", ch);
         return;
     }
     if ( !str_cmp( argument, "clear now" ) )
@@ -2847,17 +2847,17 @@ void do_ahelp( CHAR_DATA *ch, char *argument )
         FILE *fp = fopen( HELP_FILE, "w" );
         if ( fp )
           FCLOSE( fp );
-        send_to_char_color( "Add Help file cleared.\n", ch);
+        send_to_char( "Add Help file cleared.\n", ch);
         return;
     }
     if ( !str_cmp( argument, "list" ) )
     {
-	  send_to_char_color( "\n VNUM \n.......\n", ch );
+	  send_to_char( "\n VNUM \n.......\n", ch );
         show_file( ch, HELP_FILE );
     }
     else
     {
-        send_to_char_color( "\nUsage:  'ahelp list' or 'ahelp clear now'\n", ch);
+        send_to_char( "\nUsage:  'ahelp list' or 'ahelp clear now'\n", ch);
         return;
     }
     return;

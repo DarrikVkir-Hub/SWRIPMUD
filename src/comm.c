@@ -1748,7 +1748,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     for ( i = 0; i < clean_len; i++ )
     {
-        if ( clean[i] == '\n' || clean[i] == '\r' )
+        if ( clean[i] == '\n' )
         {
             line_end = i;
             break;
@@ -1766,6 +1766,9 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
     for ( i = 0, k = 0; i < line_end; i++ )
     {
         unsigned char c = clean[i];
+
+        if ( c == '\r' )
+            continue;
 
         if ( k >= 254 )
         {
@@ -1833,7 +1836,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
     {
         if (!seen_newline)
         {
-            if ( d->inbuf[i] == '\n' || d->inbuf[i] == '\r' )
+            if ( d->inbuf[i] == '\n' )
                 seen_newline = 1;
         }
         else
@@ -2416,7 +2419,6 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
     const char *ptr = txt;
     const char *end = txt + length;
     char colbuf[64];
-    int ln;
 
     while (ptr < end)
     {
@@ -3752,7 +3754,7 @@ void send_to_char( const char *txt, CHAR_DATA *ch )
 /*
  * Same as above, but converts &color codes to ANSI sequences..
  * No longer needed as color is handled in write_to_buffer
-void send_to_char_color( const char *txt, CHAR_DATA *ch )
+//void send_to_char_color( const char *txt, CHAR_DATA *ch )
 {
     DESCRIPTOR_DATA *d;
     const char *colstr;
@@ -3866,6 +3868,16 @@ void write_to_pager( DESCRIPTOR_DATA *d, const char *txt, int length )
   return;
 }
 
+int build_ansi_from_atype(sh_int AType, char *buf)
+{
+    if ( AType == 7 )
+        return sprintf(buf, "\033[m");
+
+    return sprintf(buf, "\033[0;%d;%s%dm",
+        (AType & 8) == 8,
+        (AType > 15 ? "5;" : ""),
+        (AType & 7) + 30);
+}
 
 void send_to_pager( const char *txt, CHAR_DATA *ch )
 {
@@ -3884,6 +3896,18 @@ void send_to_pager( const char *txt, CHAR_DATA *ch )
 	    send_to_char(txt, d->character);
 	    return;
     }
+    if ( d->pagecolor_dirty )
+    {
+        char buf[32];
+        int len;
+
+        len = build_ansi_from_atype(d->pagecolor, buf);
+
+        write_to_pager(d, buf, len);
+
+        d->pagecolor_dirty = FALSE;
+        d->pagecolor_pending = d->pagecolor;
+    }    
     write_to_pager(d, txt, 0);
   }
   return;
@@ -3991,16 +4015,13 @@ void set_pager_color( sh_int AType, CHAR_DATA *ch )
       return;
     
     och = (ch->desc->original ? ch->desc->original : ch);
-    if ( !IS_NPC(och) && IS_SET(och->act, PLR_ANSI) )
-    {
-	if ( AType == 7 )
-	  SPRINTF( buf, "\033[m" );
-	else
-	  SPRINTF(buf, "\033[0;%d;%s%dm", (AType & 8) == 8,
-	        (AType > 15 ? "5;" : ""), (AType & 7)+30);
-	send_to_pager( buf, ch );
-	ch->desc->pagecolor = AType;
-    }
+    if ( IS_NPC(och) || !IS_SET(och->act, PLR_ANSI) )
+        return;
+
+    /* ✅ Only store pager color state */
+    ch->desc->pagecolor = AType;
+    ch->desc->pagecolor_dirty = TRUE;
+
     return;
 }
 
@@ -4284,12 +4305,23 @@ char *act_string(const char *format, CHAR_DATA *to, CHAR_DATA *ch,
 
     // Terminate message with newline/carriage return
     *point++ = '\n';
-    *point++ = '\r';
     *point   = '\0';
 
     // Capitalize the first character
-    if (buf[0])
-        buf[0] = UPPER(buf[0]);
+    char *p = buf;
+
+    /* skip leading color codes */
+    while (*p == '&' || *p == '^')
+    {
+        if (*(p + 1))
+            p += 2;
+        else
+            break;
+    }
+
+    /* capitalize first visible char */
+    if (*p)
+        *p = UPPER(*p);
 
     return buf;
 }
@@ -4475,7 +4507,8 @@ void act( sh_int AType, const char *format, CHAR_DATA *ch,
         if (to && to->desc)
         {
             set_char_color(AType, to);
-            send_to_char_color(txt, to);
+            flush_color(to->desc);
+            send_to_char(txt, to);
         }
 
         /*
@@ -4800,14 +4833,11 @@ bool pager_output( DESCRIPTOR_DATA *d )
     /* =========================
      * HANDLE \n\r
      * ========================= */
-    if ( d->pagepoint < d->pagelen &&
-         d->pagebuf[d->pagepoint] == '\n' )
+    while ( d->pagepoint < d->pagelen &&
+        (d->pagebuf[d->pagepoint] == '\n' ||
+            d->pagebuf[d->pagepoint] == '\r') )
     {
-        if ( d->pagepoint + 1 < d->pagelen &&
-             d->pagebuf[d->pagepoint + 1] == '\r' )
-        {
-            d->pagepoint += 2;
-        }
+        d->pagepoint++;
     }
 
     /* =========================
@@ -4829,7 +4859,11 @@ bool pager_output( DESCRIPTOR_DATA *d )
      * ========================= */
     if ( last != d->pagepoint )
     {
+        char save = d->pagebuf[last];
+        d->pagebuf[last] = '\0';
+
         output_to_descriptor(d, d->pagebuf + d->pagepoint);
+        d->pagebuf[last] = save;
         d->pagepoint = last;
     }
 
@@ -4851,20 +4885,18 @@ bool pager_output( DESCRIPTOR_DATA *d )
     }
 
     d->pagecmd = -1;
-    if ( IS_SET( ch->act, PLR_ANSI ) )
-        output_to_descriptor(d, "\033[1;36m");
-    output_to_descriptor(d,"(C)ontinue, (R)efresh, (B)ack, (Q)uit: [C] ");
+
     if ( IS_SET( ch->act, PLR_ANSI ) )
     {
-        char buf[32];
-
-        if ( d->pagecolor == 7 )
-        memmove( buf, "\033[m", sizeof("\033[m") );
-        else
-        SPRINTF(buf, "\033[0;%d;%s%dm", (d->pagecolor & 8) == 8,
-            (d->pagecolor > 15 ? "5;" : ""), (d->pagecolor & 7)+30);
-        output_to_descriptor( d, buf );
+        set_char_color( AT_LBLUE, ch );
     }
+    send_to_char("(C)ontinue, (R)efresh, (B)ack, (Q)uit: [C] ", ch);
+
+    if ( IS_SET( ch->act, PLR_ANSI ) )
+    {
+        d->rendercolor = d->pagecolor;
+        d->has_rendercolor = true;
+    }    
     flush_buffer(d, FALSE);    
     return TRUE;
 }

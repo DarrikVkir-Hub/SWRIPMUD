@@ -1402,7 +1402,7 @@ void do_look ( CHAR_DATA *ch, char *argument )
 		if ( !pdesc )
 		  pdesc = get_extra_descr( obj->name, obj->first_extradesc );
 		if ( !pdesc )
-		  send_to_char( "You see nothing special.\n", ch );
+		  send_to_char( "You see nothing special.\r\n", ch );
 		else
 		  send_to_char( pdesc, ch );
 		if ( doexaprog ) oprog_examine_trigger( ch, obj );
@@ -1440,7 +1440,7 @@ void do_look ( CHAR_DATA *ch, char *argument )
 		if ( !pdesc )
 		  pdesc = get_extra_descr( obj->name, obj->first_extradesc );
 		if ( !pdesc )
-		  send_to_char( "You see nothing special.\n", ch );
+		  send_to_char( "You see nothing special.\r\n", ch );
 		else
 		  send_to_char( pdesc, ch );
 		if ( doexaprog ) oprog_examine_trigger( ch, obj );
@@ -1824,7 +1824,7 @@ void do_exits( CHAR_DATA *ch, char *argument )
         && !IS_AFFECTED( ch, AFF_TRUESIGHT ) && !IS_AFFECTED( ch, AFF_INFRARED ) && room_is_dark( ch->in_room ) )
     {
         set_char_color( AT_DGREY, ch );
-        send_to_char( "It is pitch black ... \n", ch );
+        send_to_char( "It is pitch black ... \r\n", ch );
         return;
     }
     STRLCPY( buf, fAuto ? "Exits:" : "Obvious exits:\n" );
@@ -1912,9 +1912,9 @@ void do_time( CHAR_DATA *ch, char *argument )
     set_char_color( AT_YELLOW, ch );
     ch_printf( ch,
 	"It is %d o'clock %s, Day of %s, %d%s the Month of %s.\n"  
-        "The mud started up at:    %s\n"
-        "The system time (E.S.T.): %s\n"
-        "Next Reboot is set for:   %s\n",
+        "The mud started up at:    %s\r"
+        "The system time (E.S.T.): %s\r"
+        "Next Reboot is set for:   %s\r",
 
 	(time_info.hour % 12 == 0) ? 12 : time_info.hour % 12,
 	time_info.hour >= 12 ? "pm" : "am",
@@ -2338,18 +2338,18 @@ void do_hset( CHAR_DATA *ch, char *argument )
 
         if( !is_number(arg2) )
         {
-            send_to_char( "Level field must be numeric.\n", ch );
+            send_to_char( "Level field must be numeric.\r\n", ch );
             return;
         }
 
         lev = atoi(arg2);
         if( lev < -1 || lev > get_trust(ch) )
         {
-            send_to_char( "You can't set the level to that.\n", ch );
+            send_to_char( "You can't set the level to that.\r\n", ch );
             return;
         }
         pHelp->level = lev;
-        send_to_char( "Done.\n", ch );
+        send_to_char( "Done.\r\n", ch );
         return;
     }
     if ( !str_cmp( arg1, "keyword" ) )
@@ -2580,7 +2580,7 @@ void do_who( CHAR_DATA *ch, char *argument )
                     }
                     else
                     {
-                    send_to_char("&ROnly immortal's can do that to another clan!&w\n", ch);
+                    send_to_char("&ROnly immortal's can do that to another clan!&w\r\n", ch);
                     return;
                     }
                 }
