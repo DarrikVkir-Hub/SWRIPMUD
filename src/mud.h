@@ -548,7 +548,8 @@ struct	descriptor_data
     unsigned char telopt_us[256];   /* what we WILL/WONT */
     unsigned char telopt_him[256];  /* what he WILL/WONT */    
     int inbuf_len = 0;
-    
+    char intext[MAX_INBUF_SIZE];   // processed text buffer
+    int  intext_len;    
     unsigned char sb_option = 0;
     unsigned char sb_buf[64];
     int sb_len = 0;
@@ -567,8 +568,15 @@ struct	descriptor_data
 
     int telnet_pos;
 
+    // Additional telnet protocol variables
     bool sga_enabled;
     bool eor_enabled;    
+    char terminal_type[64];   /* TTYPE result */
+    int  ttype_state;         /* optional: for cycling */   
+    int  ttype_count;         /* how many we've received */
+    bool supports_256color;     
+    bool supports_truecolor;
+    bool echo_enabled;
 };
 
 

@@ -620,7 +620,7 @@ void game_loop( )
         */
         int cmd_count = 0;
 
-        while ( d->inbuf_len > 0 )
+        while ( d->inbuf_len > 0 || d->intext_len > 0 )
         {
             /* Stop if a command is already pending */
             if ( d->incomm[0] != '\0' )
@@ -876,6 +876,12 @@ void new_descriptor( int new_desc )
     dnew->pagepoint = PAGEPOINT_NULL;
     dnew->sga_enabled = false;
     dnew->eor_enabled = false;
+    dnew->ttype_count = 0;
+    dnew->supports_256color = false;
+    dnew->terminal_type[0] = '\0';    
+    dnew->echo_enabled = false;
+    dnew->intext_len = 0;
+    dnew->intext[0] = '\0';    
 
 #ifdef LOGTELNET
     dnew->debug_telnet = true;
@@ -987,6 +993,20 @@ void new_descriptor( int new_desc )
     /* EOR negotiation */
     const unsigned char will_eor[] = { IAC, WILL, TELOPT_EOR };
     send_telnet(dnew, will_eor, 3);
+
+    /* TTYPE negotiation */
+    const unsigned char do_ttype[] = { IAC, DO, TELOPT_TTYPE };
+    send_telnet(dnew, do_ttype, 3);
+
+    /* LINEMODE WONT */
+    const unsigned char do_linemode[] = { IAC, WONT, TELOPT_LINEMODE };
+    send_telnet(dnew, do_linemode, 3);
+
+    /* ECHO WONT */
+    const unsigned char will_echo[] = { IAC, WONT, TELOPT_ECHO };
+    send_telnet(dnew, will_echo, 3);    
+
+    
 
 // End Telnet Initiation
     /*
@@ -1199,7 +1219,8 @@ const char *telopt(unsigned char c)
         case TELOPT_TTYPE:     return "TTYPE";
         case TELOPT_ECHO:      return "ECHO";
         case TELOPT_SGA:        return "SGA";        
-        case TELOPT_EOR:        return "EOR";        
+        case TELOPT_EOR:        return "EOR";  
+        case TELOPT_LINEMODE:   return "LINEMODE";      
         default:
         {
             static char buf[16];
@@ -1240,6 +1261,8 @@ bool is_known_telopt(unsigned char opt)
         case TELOPT_SGA:
         case TELOPT_NAWS:
         case TELOPT_EOR:
+        case TELOPT_TTYPE:
+        case TELOPT_LINEMODE:
 #ifdef MCCP
         case TELOPT_COMPRESS2:
 #endif
@@ -1268,6 +1291,11 @@ telnet_policy_t telnet_policy(DESCRIPTOR_DATA *d, int cmd, int opt)
 
         case TELOPT_ECHO:
             return TELPOLICY_REJECT;
+        // TTYPE Support
+        case TELOPT_TTYPE:
+            if (cmd == DO || cmd == WILL)
+                return TELPOLICY_ACCEPT;
+            return TELPOLICY_IGNORE;            
         /* SGA support */
         case TELOPT_SGA:
             if (cmd == DO || cmd == WILL)
@@ -1278,7 +1306,8 @@ telnet_policy_t telnet_policy(DESCRIPTOR_DATA *d, int cmd, int opt)
             if (cmd == DO || cmd == WILL)
                 return TELPOLICY_ACCEPT;
             return TELPOLICY_IGNORE;
-
+        case TELOPT_LINEMODE:
+            return TELPOLICY_REJECT;
         default:
             return TELPOLICY_REJECT;
     }
@@ -1287,6 +1316,7 @@ telnet_policy_t telnet_policy(DESCRIPTOR_DATA *d, int cmd, int opt)
 int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, unsigned char *out, int out_max )
 {
     int i, out_len = 0;
+    bool last_was_cr = false;    
 
     for (i = 0; i < in_len; i++)
     {
@@ -1380,7 +1410,6 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                     d->telstate = TS_DATA;
                     break;
                 }
-                d->telopt_him[c] = 1;
 
                 telnet_policy_t policy = telnet_policy(d, WILL, c);
 
@@ -1406,20 +1435,43 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                     const unsigned char do_eor[] = { IAC, DO, TELOPT_EOR };
                     send_telnet(d, do_eor, 3);
                 }                
+                /* TTYPE */
+                if (policy == TELPOLICY_ACCEPT && c == TELOPT_TTYPE)
+                {
+                    const unsigned char do_ttype[] = { IAC, DO, TELOPT_TTYPE };
+                    send_telnet(d, do_ttype, 3);
 
+                    TELLOG(d, "TTYPE: DO sent\r\n");
+
+                    /* Request terminal type */
+                    const unsigned char ttype_send[] = {
+                        IAC, SB, TELOPT_TTYPE, TELQUAL_SEND, IAC, SE
+                    };
+                    send_telnet(d, ttype_send, sizeof(ttype_send));
+
+                    TELLOG(d, "TTYPE: SEND request\r\n");
+                }
                 /* === POLICY CHANGE: gated NAWS === */
                 if (policy == TELPOLICY_ACCEPT && c == TELOPT_NAWS)
                 {
-                    TELLOG(d, "NAWS: negotiation start");
+                    TELLOG(d, "NAWS: negotiation start\r\n");
 
                     const unsigned char do_naws[] = { IAC, DO, TELOPT_NAWS };
                     send_telnet(d, (const unsigned char *)do_naws, 3);
 
                     d->naws_enabled = true;
 
-                    TELLOG(d, "NAWS: enabled");
+                    TELLOG(d, "NAWS: enabled\r\n");
                 }
+                if (policy == TELPOLICY_REJECT && c == TELOPT_LINEMODE)
+                {
+                    const unsigned char dont[] = { IAC, DONT, TELOPT_LINEMODE };
+                    send_telnet(d, dont, 3);
 
+                    TELLOG(d, "LINEMODE: rejected\r\n");
+                    break;
+                }
+                d->telopt_him[c] = 1;                
                 d->telstate = TS_DATA;
                 process_char = false;
                 break;
@@ -1474,6 +1526,17 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
 
                     d->eor_enabled = true;
                 }
+                if (policy == TELPOLICY_ACCEPT && c == TELOPT_ECHO)
+                {
+                    d->telopt_us[c] = 1;
+
+                    const unsigned char will_echo[] = { IAC, WILL, TELOPT_ECHO };
+                    send_telnet(d, will_echo, 3);
+
+                    d->echo_enabled = true;
+
+                    TELLOG(d, "ECHO: enabled\r\n");
+                }                
                 if (policy == TELPOLICY_REJECT)
                 {
                     /* only reply to known options */
@@ -1489,19 +1552,20 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 /* === POLICY CHANGE: gated MCCP === */
                 if (policy == TELPOLICY_ACCEPT && c == TELOPT_COMPRESS2)
                 {
-                    TELLOG(d, "MCCP: client requested COMPRESS2 (DO)");
+                    TELLOG(d, "MCCP: client requested COMPRESS2 (DO)\r\n");
 
                     const unsigned char will_comp[] = { IAC, WILL, TELOPT_COMPRESS2 };
                     send_telnet(d, (const unsigned char *)will_comp, 3);
 
                     d->mccp_pending = 1;
 
-                    TELLOG(d, "MCCP: pending set → waiting for CON_PLAYING");
+                    TELLOG(d, "MCCP: pending set → waiting for CON_PLAYING\r\n");
                 }
 #endif
                 /* SGA */
                 if (policy == TELPOLICY_ACCEPT && c == TELOPT_SGA)
                 {
+                    d->telopt_us[c] = 1;
                     const unsigned char will_sga[] = { IAC, WILL, TELOPT_SGA };
                     send_telnet(d, will_sga, 3);
 
@@ -1542,13 +1606,13 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 if (c == TELOPT_EOR)
                 {
                     d->eor_enabled = false;
-                    TELLOG(d, "EOR: disabled");
+                    TELLOG(d, "EOR: disabled\r\n");
                 }
 
                 if (c == TELOPT_SGA)
                 {
                     d->sga_enabled = false;
-                    TELLOG(d, "SGA: disabled");
+                    TELLOG(d, "SGA: disabled\r\n");
                 }
 #ifdef MCCP
                 /* === POLICY CHANGE: gated compression shutdown === */
@@ -1606,9 +1670,54 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                         d->term_width  = width;
                         d->term_height = height;
                     }
+                    else if (d->sb_option == TELOPT_TTYPE && d->sb_len >= 1)
+                    {
+                        if (d->sb_buf[0] == TELQUAL_IS)
+                        {
+                            char tmp[128];
+
+                            int len = d->sb_len - 1;
+                            if (len > (int)sizeof(tmp) - 1)
+                                len = sizeof(tmp) - 1;
+
+                            memcpy(tmp, d->sb_buf + 1, len);
+                            tmp[len] = '\0';
+
+                            TELLOG(d, "TTYPE IS[%d]: %s\r\n", d->ttype_count, tmp);
+
+                            /* Store first response as primary */
+                            if (d->ttype_count == 0)
+                            {
+                                strncpy(d->terminal_type, tmp, sizeof(d->terminal_type) - 1);
+                                d->terminal_type[sizeof(d->terminal_type) - 1] = '\0';
+                            }
+
+                            /* Detect capabilities */
+                            if (strstr(tmp, "256") || strstr(tmp, "256COLOR"))
+                            {
+                                d->supports_256color = true;
+                            }
+                            /* Detect capabilities */
+                            if (strstr(tmp, "TRUECOLOR") )
+                            {
+                                d->supports_truecolor = true;
+                            }                            
+
+                            d->ttype_count++;
+
+                            /* Request next TTYPE (LIMITED) */
+                            if (d->ttype_count < 5)   /* limit to avoid infinite loops */
+                            {
+                                const unsigned char ttype_send[] = {
+                                    IAC, SB, TELOPT_TTYPE, TELQUAL_SEND, IAC, SE
+                                };
+                                send_telnet(d, ttype_send, sizeof(ttype_send));
+                            }
+                        }
+                    }                
                     else
                     {
-                        /* 🔁 NEW: hook for future protocols (GMCP, MSSP, etc.) */
+                        /* hook for future protocols (GMCP, MSSP, etc.) */
                         /* Example:
                         if (d->sb_option == TELOPT_GMCP)
                             handle_gmcp(d, d->sb_buf, d->sb_len);
@@ -1640,11 +1749,39 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
         /* Emit only real data bytes */
         if (process_char)
         {
-            if (out_len < out_max)
+            if (c == '\r')
+            {
+                last_was_cr = true;
+                c = '\n'; 
+            }
+            else if (c == '\n')
+            {
+                if (last_was_cr)
+                {
+                    last_was_cr = false;
+                    continue; /* skip LF in CRLF */
+                }
+
+                /* lone LF → treat as newline */
+                c = '\n';
+            }
+            else if (c == '\0' && last_was_cr)
+            {
+                last_was_cr = false;
+                continue; /* skip NUL after CR */
+            }
+            else
+            {
+                last_was_cr = false;
+            }
+            if (out_len < out_max - 1)
+            {
                 out[out_len++] = c;
+            }            
         }
     }
-
+    if (out_len < out_max)
+        out[out_len] = '\0';
     return out_len;
 }
 
@@ -1727,8 +1864,8 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
             }            
             iStart += nRead;
             d->inbuf_len += nRead;
-            if ( d->inbuf[iStart-1] == '\n' || d->inbuf[iStart-1] == '\r' )
-            break;
+//            if ( d->inbuf[iStart-1] == '\n' || d->inbuf[iStart-1] == '\r' )
+//                break;
         }
         else if ( nRead == 0 )
         {
@@ -1770,34 +1907,65 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     unsigned char clean[MAX_INBUF_SIZE];
 
-    int new_bytes = d->inbuf_len - d->telnet_pos;  /* NEW */
+    int new_bytes = d->inbuf_len - d->telnet_pos;
 
-    if ( new_bytes <= 0 )
-        return;
+    if ( new_bytes > 0 )
+    {
+        memset(clean, 0, sizeof(clean));
 
-    int clean_len = telnet_process(
-        d,
-        (unsigned char *)d->inbuf + d->telnet_pos,  /* NEW OFFSET */
-        new_bytes,
-        clean,
-        sizeof(clean)
-    );
+        int clean_len = telnet_process(
+            d,
+            (unsigned char *)d->inbuf + d->telnet_pos,
+            new_bytes,
+            clean,
+            sizeof(clean)
+        );
 
-    d->telnet_pos += new_bytes;  /* MARK AS PROCESSED */
+        d->telnet_pos = d->inbuf_len;
 
-//  bug("TELNET: clean_len=%d new_bytes=%d inbuf_len=%d",
-//      clean_len, new_bytes, d->inbuf_len);
+        /*
+         * ============================================================
+         * NEW: APPEND CLEAN DATA INTO INTEXT BUFFER
+         * ============================================================
+         */
+        if ( clean_len > 0 )
+        {
+            int space = sizeof(d->intext) - d->intext_len - 1;
+
+            if ( clean_len > space )
+                clean_len = space;
+
+            memcpy(d->intext + d->intext_len, clean, clean_len);
+            d->intext_len += clean_len;
+            d->intext[d->intext_len] = '\0';
+        }
+
+        /*
+         * ============================================================
+         * EXISTING: SHIFT RAW BUFFER (UNCHANGED LOGIC)
+         * ============================================================
+         */
+        int shift = d->telnet_pos;
+
+        int remaining = d->inbuf_len - shift;
+
+        if ( remaining > 0 )
+            memmove( d->inbuf, d->inbuf + shift, remaining );
+
+        d->inbuf_len = remaining;
+        d->telnet_pos = 0;
+    }
 
     /*
      * ============================================================
-     * STEP 2: FIND NEWLINE
+     * CHANGED: FIND NEWLINE IN INTEXT (NOT CLEAN)
      * ============================================================
      */
     int line_end = -1;
 
-    for ( i = 0; i < clean_len; i++ )
+    for ( i = 0; i < d->intext_len; i++ )
     {
-        if ( clean[i] == '\n' )
+        if ( d->intext[i] == '\n' )
         {
             line_end = i;
             break;
@@ -1809,12 +1977,12 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     /*
      * ============================================================
-     * STEP 3: BUILD COMMAND
+     * CHANGED: BUILD COMMAND FROM INTEXT
      * ============================================================
      */
     for ( i = 0, k = 0; i < line_end; i++ )
     {
-        unsigned char c = clean[i];
+        unsigned char c = d->intext[i];
 
         if ( c == '\r' )
             continue;
@@ -1838,7 +2006,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     /*
      * ============================================================
-     * STEP 4: COMMAND RATE LIMIT
+     * EXISTING: RATE LIMIT
      * ============================================================
      */
     d->in_commands++;
@@ -1852,7 +2020,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     /*
      * ============================================================
-     * STEP 5: HISTORY (!! support)
+     * EXISTING: HISTORY
      * ============================================================
      */
     if ( k > 1 || d->incomm[0] == '!' )
@@ -1871,51 +2039,21 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     /*
      * ============================================================
-     * STEP 6: SHIFT RAW BUFFER
+     * NEW: REMOVE ONLY ONE LINE FROM INTEXT
      * ============================================================
-     *
-     * IMPORTANT:
-     * - We must ALSO reset telnet_pos
-     * - Otherwise it points into garbage after memmove
      */
-    int shift = 0;
-    int seen_newline = 0;
+    int shift = line_end + 1;  // include newline
 
-    for ( i = 0; i < d->inbuf_len; i++ )
-    {
-        if (!seen_newline)
-        {
-            if ( d->inbuf[i] == '\n' )
-                seen_newline = 1;
-        }
-        else
-        {
-            if ( d->inbuf[i] != '\n' && d->inbuf[i] != '\r' )
-            {
-                shift = i;
-                break;
-            }
-        }
-    }
-
-    if ( i >= d->inbuf_len )
-        shift = d->inbuf_len;
-
-    int remaining = d->inbuf_len - shift;
+    int remaining = d->intext_len - shift;
 
     if ( remaining > 0 )
-        memmove( d->inbuf, d->inbuf + shift, remaining );
+        memmove( d->intext, d->intext + shift, remaining );
 
-    d->inbuf_len = remaining;
-
-    /*
-     * Reset telnet position after buffer shift
-     */
-    d->telnet_pos = 0;
+    d->intext_len = remaining;
+    d->intext[d->intext_len] = '\0';
 
     return;
 }
-
 
 /*
  * Low level output function.
@@ -2685,937 +2823,937 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
     switch ( d->connected )
     {
 
-    default:
-	bug( "Nanny: bad d->connected %d.", d->connected );
-	close_socket( d, TRUE );
-	return;
+        default:
+        bug( "Nanny: bad d->connected %d.", d->connected );
+        close_socket( d, TRUE );
+        return;
 
-    case CON_GET_NAME:
-	if ( argument[0] == '\0' )
-	{
-	    close_socket( d, FALSE );
-	    return;
-	}
-
-	argument[0] = UPPER(argument[0]);
-	if ( !check_parse_name( argument ) )
-	{
-	    output_to_descriptor( d, "Illegal name, try another.\nName: " );
-	    return;
-	}
-
-  if ( !str_cmp( argument, "New" ) )
-	{
-	    if (d->newstate == 0)
-	    {
-              /* New player */
-              /* Don't allow new players if DENY_NEW_PLAYERS is true */
-      	      if (sysdata.DENY_NEW_PLAYERS == TRUE)
-      	      {
-                SPRINTF( buf, "The mud is currently preparing for a reboot.\n" );
-                output_to_descriptor( d, buf );
-                SPRINTF( buf, "New players are not accepted during this time.\n" );
-                output_to_descriptor( d, buf );
-                SPRINTF( buf, "Please try again in a few minutes.\n" );
-                output_to_descriptor( d, buf );
-                close_socket( d, FALSE );
-              }
-              SPRINTF( buf, "\nChoosing a name is one of the most important parts of this game...\n"
-              			"Make sure to pick a name appropriate to the character you are going\n"
-               			"to role play, and be sure that it suits our Star Wars theme.\n"
-               			"If the name you select is not acceptable, you will be asked to choose\n"
-               			"another one.\n\nPlease choose a name for your character: ");
-              output_to_descriptor( d, buf );
-	      d->newstate++;
-	      d->connected = CON_GET_NAME;
-	      return;
-	    }
-	    else
-   	    {
-	      output_to_descriptor(d, "Illegal name, try another.\nName: " );
-	      return;
-	    }
-	}
-
-	if ( check_playing( d, argument, FALSE ) == BERR )
-	{
-	    output_to_descriptor( d, "Name: " );
-	    return;
-	}
-
-	fOld = load_char_obj( d, argument, TRUE );
-	if ( !d->character )
-	{
-	    log_printf( "Bad player file %s@%s.", argument, d->host );
-	    output_to_descriptor( d, "Your playerfile is corrupt...Please notify the admins.\n" );
-	    close_socket( d, FALSE );
-	    return;
-	}
-	ch   = d->character;
-
-        for ( pban = first_ban; pban; pban = pban->next )
+        case CON_GET_NAME:
+        if ( argument[0] == '\0' )
         {
-	  if ( 
-	  ( !str_prefix( pban->name, d->host ) 
-	    || !str_suffix( pban->name, d->host ) )
-	  && pban->level >= ch->top_level )
-          {
-            output_to_descriptor( d,
-              "Your site has been banned from this Mud.\n" );
-            close_socket( d, FALSE );
-	    return;
-	  }
+            //close_socket( d, FALSE );
+            return;
         }
-	if ( IS_SET(ch->act, PLR_DENY) )
-	{
-	    log_printf_plus( LOG_COMM, sysdata.log_level, "Denying access to %s@%s.", argument, d->host );
-	    if (d->newstate != 0)
-	    {
-              output_to_descriptor( d, "That name is already taken.  Please choose another: " );
-	      d->connected = CON_GET_NAME;
-	      return;
-	    }
-	    output_to_descriptor( d, "You are denied access.\n" );
-	    close_socket( d, FALSE );
-	    return;
-	}
 
-	chk = check_reconnect( d, argument, FALSE );
-	if ( chk == BERR )
-	  return;
-
-	if ( chk )
-	{
-	    fOld = TRUE;
-	}
-	else
-	{
-	    if ( wizlock && !IS_IMMORTAL(ch) )
-	    {
-		output_to_descriptor( d, "The game is wizlocked.  Only immortals can connect now.\n" );
-		output_to_descriptor( d, "Please try back later.\n" );
-		close_socket( d, FALSE );
-		return;
-	    }
-	}
-
-	if ( fOld )
-	{
-	    if (d->newstate != 0)
-	    {
-	      output_to_descriptor( d, "That name is already taken.  Please choose another: " );
-	      d->connected = CON_GET_NAME;
-	      return;
-	    }
-	    /* Old player */
-	    output_to_descriptor( d, "Password: " );
-	    output_to_descriptor( d, (const char *)echo_off_str );
-	    d->connected = CON_GET_OLD_PASSWORD;
-	    return;
-	}
-	else
-	{
-     if (check_bad_name(ch->name)) {
-       output_to_descriptor( d, "\nThat name is unacceptable, please choose another.\n");
-       output_to_descriptor( d, "Name: ");
-       d->connected = CON_GET_NAME;
-       return;
-     }
-            output_to_descriptor( d, "\nI don't recognize your name, you must be new here.\n\n" );
-            SPRINTF( buf, "Did I get that right, %s (Y/N)? ", argument );
-            output_to_descriptor( d, buf );
-            d->connected = CON_CONFIRM_NEW_NAME;
-	    return;
-	}
-	break;
-
-    case CON_GET_OLD_PASSWORD:
-	output_to_descriptor( d, "\n" );
-//New SHA-256 password checking - AI/DV 3-12-26
-  char pwdhash[65];
-  sha256_hash(argument, pwdhash);
-
-  if (strcmp(pwdhash, ch->pcdata->pwd))
-  {
-      output_to_descriptor(d, "Wrong password.\n");
-	    // clear descriptor pointer to get rid of bug message in log      
-      d->character->desc = NULL;
-      close_socket(d, FALSE);
-      return;
-  }
-/*
-	if ( strcmp( crypt( argument, ch->pcdata->pwd ), ch->pcdata->pwd ) )
-	{
-	    output_to_descriptor( d, "Wrong password.\n" );
-	    // clear descriptor pointer to get rid of bug message in log
-	    d->character->desc = NULL;
-	    close_socket( d, FALSE );
-	    return;
-	}
-*/
-	output_to_descriptor( d, (const char*) echo_on_str );
-
-	if ( check_playing( d, ch->name, TRUE ) )
-	    return;
-
-	chk = check_reconnect( d, ch->name, TRUE );
-	if ( chk == BERR )
-	{
-	    if ( d->character && d->character->desc )
-	      d->character->desc = NULL;
-	    close_socket( d, FALSE );
-	    return;
-	}
-	if ( chk == TRUE )
-	  return;
-        
-        if ( check_multi( d , ch->name  ) )
+        argument[0] = UPPER(argument[0]);
+        if ( !check_parse_name( argument ) )
         {
+            output_to_descriptor( d, "Illegal name, try another.\nName: " );
+            return;
+        }
+
+        if ( !str_cmp( argument, "New" ) )
+        {
+            if (d->newstate == 0)
+            {
+                /* New player */
+                /* Don't allow new players if DENY_NEW_PLAYERS is true */
+                if (sysdata.DENY_NEW_PLAYERS == TRUE)
+                {
+                    SPRINTF( buf, "The mud is currently preparing for a reboot.\n" );
+                    output_to_descriptor( d, buf );
+                    SPRINTF( buf, "New players are not accepted during this time.\n" );
+                    output_to_descriptor( d, buf );
+                    SPRINTF( buf, "Please try again in a few minutes.\n" );
+                    output_to_descriptor( d, buf );
+                    close_socket( d, FALSE );
+                }
+                SPRINTF( buf, "\nChoosing a name is one of the most important parts of this game...\n"
+                            "Make sure to pick a name appropriate to the character you are going\n"
+                            "to role play, and be sure that it suits our Star Wars theme.\n"
+                            "If the name you select is not acceptable, you will be asked to choose\n"
+                            "another one.\n\nPlease choose a name for your character: ");
+                output_to_descriptor( d, buf );
+            d->newstate++;
+            d->connected = CON_GET_NAME;
+            return;
+            }
+            else
+            {
+            output_to_descriptor(d, "Illegal name, try another.\nName: " );
+            return;
+            }
+        }
+
+        if ( check_playing( d, argument, FALSE ) == BERR )
+        {
+            output_to_descriptor( d, "Name: " );
+            return;
+        }
+
+        fOld = load_char_obj( d, argument, TRUE );
+        if ( !d->character )
+        {
+            log_printf( "Bad player file %s@%s.", argument, d->host );
+            output_to_descriptor( d, "Your playerfile is corrupt...Please notify the admins.\n" );
             close_socket( d, FALSE );
             return;
         }
-        
-	SPRINTF( buf, "%s", ch->name );
-	d->character->desc = NULL;
-	free_char( d->character );
-	fOld = load_char_obj( d, buf, FALSE );
-	ch = d->character;
+        ch   = d->character;
 
-	if ( ch->top_level < LEVEL_DEMI )
-	{
-	  log_printf_plus( LOG_COMM, sysdata.log_level, "%s@%s(%s) has connected.", ch->name, d->host, d->user );    
-	}
-	else
-	  log_printf_plus( LOG_COMM, ch->top_level, "%s@%s(%s) has connected.", ch->name, d->host, d->user );    
+        for ( pban = first_ban; pban; pban = pban->next )
+        {
+            if ( 
+            ( !str_prefix( pban->name, d->host ) 
+                || !str_suffix( pban->name, d->host ) )
+            && pban->level >= ch->top_level )
+                {
+                    output_to_descriptor( d,
+                    "Your site has been banned from this Mud.\n" );
+                    close_socket( d, FALSE );
+                    return;
+                }
+        }
+        if ( IS_SET(ch->act, PLR_DENY) )
+        {
+            log_printf_plus( LOG_COMM, sysdata.log_level, "Denying access to %s@%s.", argument, d->host );
+            if (d->newstate != 0)
+            {
+                output_to_descriptor( d, "That name is already taken.  Please choose another: " );
+            d->connected = CON_GET_NAME;
+            return;
+            }
+            output_to_descriptor( d, "You are denied access.\n" );
+            close_socket( d, FALSE );
+            return;
+        }
 
-	show_title(d);
-	if ( ch->pcdata->area )
-		do_loadarea (ch , "" );
-	
-	
-	break;
+        chk = check_reconnect( d, argument, FALSE );
+        if ( chk == BERR )
+        return;
 
-    case CON_CONFIRM_NEW_NAME:
-	switch ( *argument )
-	{
-	case 'y': case 'Y':
-	    SPRINTF( buf, "\nMake sure to use a password that won't be easily guessed by someone else."
-	    		  "\nPick a good password for %s: %s",
-		ch->name, echo_off_str );
-	    output_to_descriptor( d, buf );
-	    d->connected = CON_GET_NEW_PASSWORD;
-	    break;
+        if ( chk )
+        {
+            fOld = TRUE;
+        }
+        else
+        {
+            if ( wizlock && !IS_IMMORTAL(ch) )
+            {
+            output_to_descriptor( d, "The game is wizlocked.  Only immortals can connect now.\n" );
+            output_to_descriptor( d, "Please try back later.\n" );
+            close_socket( d, FALSE );
+            return;
+            }
+        }
 
-	case 'n': case 'N':
-	    output_to_descriptor( d, "Ok, what IS it, then? " );
-	    /* clear descriptor pointer to get rid of bug message in log */
-	    d->character->desc = NULL;
-	    free_char( d->character );
-	    d->character = NULL;
-	    d->connected = CON_GET_NAME;
-	    break;
+        if ( fOld )
+        {
+            if (d->newstate != 0)
+            {
+            output_to_descriptor( d, "That name is already taken.  Please choose another: " );
+            d->connected = CON_GET_NAME;
+            return;
+            }
+            /* Old player */
+            output_to_descriptor( d, "Password: " );
+            output_to_descriptor( d, (const char *)echo_off_str );
+            d->connected = CON_GET_OLD_PASSWORD;
+            return;
+        }
+        else
+        {
+        if (check_bad_name(ch->name)) {
+        output_to_descriptor( d, "\nThat name is unacceptable, please choose another.\n");
+        output_to_descriptor( d, "Name: ");
+        d->connected = CON_GET_NAME;
+        return;
+        }
+                output_to_descriptor( d, "\nI don't recognize your name, you must be new here.\n\n" );
+                SPRINTF( buf, "Did I get that right, %s (Y/N)? ", argument );
+                output_to_descriptor( d, buf );
+                d->connected = CON_CONFIRM_NEW_NAME;
+            return;
+        }
+        break;
 
-	default:
-	    output_to_descriptor( d, "Please type Yes or No. " );
-	    break;
-	}
-	break;
+        case CON_GET_OLD_PASSWORD:
+        output_to_descriptor( d, "\n" );
+    //New SHA-256 password checking - AI/DV 3-12-26
+    char pwdhash[65];
+    sha256_hash(argument, pwdhash);
 
-    case CON_GET_NEW_PASSWORD:
-	output_to_descriptor( d, "\n" );
-
-	if ( visible_length(argument) < 5 )
-	{
-	    output_to_descriptor( d,
-		"Password must be at least five characters long.\nPassword: " );
-	    return;
-	}
-
-//	pwdnew = crypt( argument, ch->name );
-// New SHA-256 password hashing - AI/DV 3-12-26
-  char pwdnewhash[65];
-  sha256_hash(argument, pwdnewhash);
-  pwdnew = pwdnewhash;
-
-	for ( p = pwdnew; *p != '\0'; p++ )
-	{
-	    if ( *p == '~' )
-	    {
-		output_to_descriptor( d,
-		    "New password not acceptable, try again.\nPassword: " );
-		return;
-	    }
-	}
-
-	DISPOSE( ch->pcdata->pwd );
-	ch->pcdata->pwd	= str_dup( pwdnew );
-	output_to_descriptor( d, "\nPlease retype the password to confirm: " );
-	d->connected = CON_CONFIRM_NEW_PASSWORD;
-	break;
-
-    case CON_CONFIRM_NEW_PASSWORD:
-	output_to_descriptor( d, "\n" );
-  
-// New SHA-256 password checking - AI/DV 3-12-26
-sha256_hash(argument, pwdnewhash);
-
-for (p = pwdnewhash; *p != '\0'; p++)
-{
-    if (*p == '~')
+    if (strcmp(pwdhash, ch->pcdata->pwd))
     {
-        output_to_descriptor(d,
-            "New password not acceptable, try again.\nPassword: " );
+        output_to_descriptor(d, "Wrong password.\n");
+            // clear descriptor pointer to get rid of bug message in log      
+        d->character->desc = NULL;
+        close_socket(d, FALSE);
         return;
     }
-}
-
-DISPOSE(ch->pcdata->pwd);
-ch->pcdata->pwd = str_dup(pwdnewhash);
-/*
-
-	if ( strcmp( crypt( argument, ch->pcdata->pwd ), ch->pcdata->pwd ) )
-	{
-	    output_to_descriptor( d, "Passwords don't match.\nRetype password: " );
-	    d->connected = CON_GET_NEW_PASSWORD;
-	    return;
-	}
-*/
-	output_to_descriptor( d, (const char*) echo_on_str );
-	output_to_descriptor( d, "\nWhat is your sex (M/F/N)? " );
-	d->connected = CON_GET_NEW_SEX;
-	break;
-
-    case CON_GET_NEW_SEX:
-	switch ( argument[0] )
-	{
-	case 'm': case 'M': ch->sex = SEX_MALE;    break;
-	case 'f': case 'F': ch->sex = SEX_FEMALE;  break;
-	case 'n': case 'N': ch->sex = SEX_NEUTRAL; break;
-	default:
-	    output_to_descriptor( d, "That's not a sex.\nWhat IS your sex? " );
-	    return;
-	}
-
-
-	output_to_descriptor( d, "\nYou may choose from the following races, or type showstat [race] to learn more:\n" );
-	buf[0] = '\0';
-	buf2[0] = '\0';
-	halfmax = (MAX_RACE/3) + 1;
-	for ( iRace = 0; iRace < halfmax; iRace++ )
-	{
-	 if ( iRace == RACE_GOD )
-	   continue;
-         if (race_table[iRace].race_name[0] != '\0')
-         {
-          SPRINTF( buf2, "%-20s", race_table[iRace].race_name );
-          STRAPP( buf, "%s", buf2 );
-          SPRINTF( buf2, "%-20s", race_table[iRace+halfmax].race_name );
-          STRAPP( buf, "%s", buf2 );
-          if( iRace + (halfmax*2) < MAX_RACE )
-          {
-            SPRINTF( buf2, "%s", race_table[iRace+(halfmax*2)].race_name );
-            STRAPP( buf, "%s", buf2 );
-	  }
-          STRAPP( buf, "\n" );
-          output_to_descriptor( d, buf );
-          buf[0] = '\0';
-         }
+    /*
+        if ( strcmp( crypt( argument, ch->pcdata->pwd ), ch->pcdata->pwd ) )
+        {
+            output_to_descriptor( d, "Wrong password.\n" );
+            // clear descriptor pointer to get rid of bug message in log
+            d->character->desc = NULL;
+            close_socket( d, FALSE );
+            return;
         }
-	STRAPP( buf, ": " );
-	output_to_descriptor( d, buf );
-	d->connected = CON_GET_NEW_RACE;
-	break;
+    */
+        output_to_descriptor( d, (const char*) echo_on_str );
 
-    case CON_GET_NEW_RACE:
-	argument = one_argument(argument, arg);
-        if (!str_cmp( arg, "help") )
+        if ( check_playing( d, ch->name, TRUE ) )
+            return;
+
+        chk = check_reconnect( d, ch->name, TRUE );
+        if ( chk == BERR )
         {
-	      do_help(ch, argument);
-      	      output_to_descriptor( d, "Please choose a race: ");
-	      return;
-	}
-        if (!str_cmp( arg, "showstat") )
-        {
-	      do_showstatistic(ch, argument);
-      	      output_to_descriptor( d, "Please choose a race: ");
-	      return;
-	}
-	
-	 for ( iRace = 0; iRace < MAX_RACE; iRace++ )
-	 {
-	    if ( toupper(arg[0]) == toupper(race_table[iRace].race_name[0])
-	    &&   !str_prefix( arg, race_table[iRace].race_name ) )
-	    {
-		ch->race = iRace;
-		break;
-	    }
-	 }
-    if ( iRace == RACE_ASSASSIN_DROID || iRace == RACE_YEVETHA || iRace == RACE_TOGARIAN )
-	{
-	    output_to_descriptor( d,
-		"Do to too many people choosing this race, it now must be applied for.\nWhat IS your race? " );
-	    return;
-	}
-    
-
-    if ( iRace == MAX_RACE || iRace == RACE_GOD
-    ||  race_table[iRace].race_name[0] == '\0')
-	{
-	    output_to_descriptor( d,
-		"That's not a race.\nWhat IS your race? " );
-	    return;
-	}
-
-	output_to_descriptor( d, "\nPlease choose a main ability from the folowing classes:\n" );
-	buf[0] = '\0';
-	buf2[0] = '\0';
-	halfmax = (MAX_ABILITY/2) + 1;
-	for ( iClass = 0; iClass < halfmax; iClass++ )
-	{
-	 if (ability_name[iClass] && ability_name[iClass][0] != '\0')
-	 {
-          SPRINTF( buf2, "%-20s", ability_name[iClass] );
-          STRAPP( buf, "%s", buf2 );
-          if( iClass + halfmax < MAX_ABILITY )
-          {
-            SPRINTF( buf2, "%s", ability_name[iClass+halfmax] );
-            STRAPP( buf, "%s", buf2 );
-	  }
-          STRAPP( buf, "\n" );
-          output_to_descriptor( d, buf );
-          buf[0] = '\0';
-         }
+            if ( d->character && d->character->desc )
+            d->character->desc = NULL;
+            close_socket( d, FALSE );
+            return;
         }
-	STRAPP( buf, ": " );
-	output_to_descriptor( d, buf );
-	d->connected = CON_GET_NEW_CLASS;
-	break;
+        if ( chk == TRUE )
+        return;
+            
+            if ( check_multi( d , ch->name  ) )
+            {
+                close_socket( d, FALSE );
+                return;
+            }
+            
+        SPRINTF( buf, "%s", ch->name );
+        d->character->desc = NULL;
+        free_char( d->character );
+        fOld = load_char_obj( d, buf, FALSE );
+        ch = d->character;
 
-    case CON_GET_NEW_CLASS:
-	argument = one_argument(argument, arg);
-        if (!str_cmp( arg, "help") )
+        if ( ch->top_level < LEVEL_DEMI )
         {
-	      do_help(ch, argument);
-      	      output_to_descriptor( d, "Please choose an ability class: ");
-	      return;
-	}
-	
+        log_printf_plus( LOG_COMM, sysdata.log_level, "%s@%s(%s) has connected.", ch->name, d->host, d->user );    
+        }
+        else
+        log_printf_plus( LOG_COMM, ch->top_level, "%s@%s(%s) has connected.", ch->name, d->host, d->user );    
 
-	for ( iClass = 0; iClass < MAX_ABILITY; iClass++ )
-	{
-	    if ( toupper(arg[0]) == toupper(ability_name[iClass][0])
-	    &&   !str_prefix( arg, ability_name[iClass] ) )
-	    {
-		ch->main_ability = iClass;
-		break;
-	    }
-	}
-
-    if ( iClass == MAX_ABILITY || iClass == 7 
-    ||  !ability_name[iClass] || ability_name[iClass][0] == '\0')
-	{
-	    output_to_descriptor( d,
-		"That's not a skill class.\nWhat IS it going to be? " );
-	    return;
-	}
-
-	output_to_descriptor( d, "\nRolling stats....\n" );
-
-    case CON_ROLL_STATS:
-
-	    ch->perm_str = number_range(1, 6)+number_range(1, 6)+number_range(1, 6);
-	    ch->perm_int = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
-	    ch->perm_wis = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
-	    ch->perm_dex = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
-	    ch->perm_con = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
-	    ch->perm_cha = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
-
-	    ch->perm_str	 += race_table[ch->race].str_plus;
-	    ch->perm_int	 += race_table[ch->race].int_plus;
-	    ch->perm_wis	 += race_table[ch->race].wis_plus;
-	    ch->perm_dex	 += race_table[ch->race].dex_plus;
-	    ch->perm_con	 += race_table[ch->race].con_plus;
-	    ch->perm_cha	 += race_table[ch->race].cha_plus;
-	
-	SPRINTF( buf, "\nSTR: %d  INT: %d  WIS: %d  DEX: %d  CON: %d  CHA: %d\n" ,
-	    ch->perm_str, ch->perm_int, ch->perm_wis, 
-	    ch->perm_dex, ch->perm_con, ch->perm_cha) ;
-         
-        output_to_descriptor( d, buf );
-        output_to_descriptor( d, "\nAre these stats OK?. " );
-	d->connected = CON_STATS_OK;
+        show_title(d);
+        if ( ch->pcdata->area )
+            do_loadarea (ch , "" );
+        
+        
         break;
-	
-    case CON_STATS_OK:
-		
-	switch ( argument[0] )
-	{
-	case 'y': case 'Y': break;
-	case 'n': case 'N': 
-	    ch->perm_str = number_range(1, 6)+number_range(1, 6)+number_range(1, 6);
-	    ch->perm_int = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
-	    ch->perm_wis = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
-	    ch->perm_dex = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
-	    ch->perm_con = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
-	    ch->perm_cha = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
 
-	    ch->perm_str	 += race_table[ch->race].str_plus;
-	    ch->perm_int	 += race_table[ch->race].int_plus;
-	    ch->perm_wis	 += race_table[ch->race].wis_plus;
-	    ch->perm_dex	 += race_table[ch->race].dex_plus;
-	    ch->perm_con	 += race_table[ch->race].con_plus;
-	    ch->perm_cha	 += race_table[ch->race].cha_plus;
-	
-	    SPRINTF( buf, "\nSTR: %d  INT: %d  WIS: %d  DEX: %d  CON: %d  CHA: %d\n" ,
-	    ch->perm_str, ch->perm_int, ch->perm_wis, 
-	    ch->perm_dex, ch->perm_con, ch->perm_cha) ;
-         
+        case CON_CONFIRM_NEW_NAME:
+        switch ( *argument )
+        {
+        case 'y': case 'Y':
+            SPRINTF( buf, "\nMake sure to use a password that won't be easily guessed by someone else."
+                    "\nPick a good password for %s: %s",
+            ch->name, echo_off_str );
             output_to_descriptor( d, buf );
-            output_to_descriptor( d, "\nOK?. " );
-	    return;
-	default:
-	    output_to_descriptor( d, "Invalid selection.\nYES or NO? " );
-	    return;
-	}
+            d->connected = CON_GET_NEW_PASSWORD;
+            break;
 
-	output_to_descriptor( d, "\nWould you like ANSI or no graphic/color support, (R/A/N)? " );
-	d->connected = CON_GET_WANT_RIPANSI;
-        break;
-        
-    case CON_GET_WANT_RIPANSI:
-	switch ( argument[0] )
-	{
-	case 'a': case 'A': SET_BIT(ch->act,PLR_ANSI);  break;
-	case 'n': case 'N': break;
-	default:
-	    output_to_descriptor( d, "Invalid selection.\nANSI or NONE? " );
-	    return;
-	}
-        output_to_descriptor( d, "Does your mud client have the Mud Sound Protocol? " );
-	d->connected = CON_GET_MSP; 
-	 break;
-          
+        case 'n': case 'N':
+            output_to_descriptor( d, "Ok, what IS it, then? " );
+            /* clear descriptor pointer to get rid of bug message in log */
+            d->character->desc = NULL;
+            free_char( d->character );
+            d->character = NULL;
+            d->connected = CON_GET_NAME;
+            break;
 
-case CON_GET_MSP:
-	switch ( argument[0] )
-	{
-	case 'y': case 'Y': SET_BIT(ch->act,PLR_SOUND);  break;
-	case 'n': case 'N': break;
-	default:
-	    output_to_descriptor( d, "Invalid selection.\nYES or NO? " );
-	    return;
-	}
-/*
-	if ( !sysdata.WAIT_FOR_AUTH )
-	{
-*/	    SPRINTF( buf, "%s@%s new %s.", ch->name, d->host,
-				race_table[ch->race].race_name);
-	    log_string_plus( buf, LOG_COMM, sysdata.log_level);
-	    to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
-	    output_to_descriptor( d, "Press [ENTER] " );
-	    show_title(d);
-	    {
-	       int ability;
-	       
-	       for ( ability =0 ; ability < MAX_ABILITY ; ability++ )
-	          ch->skill_level[ability] = 0;
-	    }
-	    ch->top_level = 0;
-	    ch->position = POS_STANDING;
-	    d->connected = CON_PRESS_ENTER;
-	    return;
-	    break;
-/*	}
-
-	output_to_descriptor( d, "\nYou now have to wait for a god to authorize you... please be patient...\n" );
-	SPRINTF( buf, "(1) %s@%s new %s applying for authorization...",
-				ch->name, d->host,
-				race_table[ch->race].race_name);
-	log_string( buf );
-	to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
-	d->connected = CON_WAIT_1;
-	break;
-
-     case CON_WAIT_1:
-	output_to_descriptor( d, "\nTwo more tries... please be patient...\n" );
-	SPRINTF( buf, "(2) %s@%s new %s applying for authorization...",
-				ch->name, d->host,
-				race_table[ch->race].race_name);
-	log_string( buf );
-	to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
-	d->connected = CON_WAIT_2;
-	break;
-
-     case CON_WAIT_2:
-	output_to_descriptor( d, "\nThis is your last try...\n" );
-	SPRINTF( buf, "(3) %s@%s new %s applying for authorization...",
-				ch->name, d->host,
-				race_table[ch->race].race_name);
-	log_string( buf );
-	to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
-	d->connected = CON_WAIT_3;
-	break;
-
-    case CON_WAIT_3:
-	output_to_descriptor( d, "Sorry... try again later.\n" );
-	close_socket( d, FALSE );
-	return;
-	break;
-
-    case CON_ACCEPTED:
-
-	SPRINTF( buf, "%s@%s new %s.", ch->name, d->host,
-				race_table[ch->race].race_name);
-	log_string_plus( buf, LOG_COMM, sysdata.log_level );
-	to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
-	output_to_descriptor( d, "\n" );
-	show_title(d);
-	    {
-	       int ability;
-	       
-	       for ( ability =0 ; ability < MAX_ABILITY ; ability++ )
-	          ch->skill_level[ability] = 0;
-	    }
-	ch->top_level = 0;
-	ch->position = POS_STANDING;
-	d->connected = CON_PRESS_ENTER;
-	break;
-*/
-    case CON_PRESS_ENTER:
-	if ( IS_SET(ch->act, PLR_ANSI) )
-	  send_to_pager( "\033[2J", ch );
-	else
-	  send_to_pager( "\014", ch );
-	if ( IS_IMMORTAL(ch) )
-	{
-	  send_to_pager( "&WImmortal Message of the Day&w\n", ch );
-	  do_help( ch, "imotd" );
-	}
-	if ( ch->top_level > 0 )
-	{
-	  send_to_pager( "\n&WMessage of the Day&w\n", ch );
-	  do_help( ch, "motd" );
-	}
-	if ( ch->top_level >= 100)
-	{
-	  send_to_pager( "\n&WAvatar Message of the Day&w\n", ch );
-	  do_help( ch, "amotd" );
-	}
-	if ( ch->top_level == 0 )
-	  do_help( ch, "nmotd" );
-	send_to_pager( "\n&WPress [ENTER] &Y", ch );
-        d->connected = CON_READ_MOTD;
+        default:
+            output_to_descriptor( d, "Please type Yes or No. " );
+            break;
+        }
         break;
 
-    case CON_READ_MOTD:
-	output_to_descriptor( d, "\nWelcome to Rise in Power...\n\n" );
-	add_char( ch );
-	d->connected	= CON_PLAYING;
-        
-        if ( !IS_NPC(ch) && IS_SET( ch->act , PLR_SOUND ) )
-           send_to_char( "!!MUSIC(starwars.mid V=100)" , ch );
-        
-        
-	if ( ch->top_level == 0 )
-	{
-	    OBJ_DATA *obj;
-	    int iLang;
-        
-	    ch->pcdata->clan_name = STRALLOC( "" );
-	    ch->pcdata->clan	  = NULL;
-	    
-	    ch->perm_lck = number_range(6, 20);
-            ch->perm_frc = number_range(-800, 20);
-	    ch->affected_by	  = race_table[ch->race].affected;
-	    ch->perm_lck	 += race_table[ch->race].lck_plus;
-	    ch->perm_frc	 += race_table[ch->race].frc_plus;
-            
-       if ( ch->main_ability == FORCE_ABILITY )
-//         ch->perm_frc = URANGE( 1 , ch->perm_frc , 20 ); // Forcers always roll 25, per Sonja - DV 8/12/02
-	   ch->perm_frc = 5;
-	    else
-	       ch->perm_frc = URANGE( 0 , ch->perm_frc , 20 );
-	    /* Hunters do not recieve force */       
-	    
-	    if ( ch->main_ability == HUNTING_ABILITY )         
-	      ch->perm_frc = 0;	    
-	    
-	    /* Droids do not recieve force */
-	    
-	    if( is_droid(ch) ) 
-	      ch->perm_frc = 0;	    
+        case CON_GET_NEW_PASSWORD:
+        output_to_descriptor( d, "\n" );
 
-	    /* Noghri are auto commando */
-/*	    
-	    if (ch->race == RACE_NOGHRI )
-	    {
-	       ch->pcdata->clan = get_clan( "The Death Commandos");
-   	       ch->pcdata->clan_name = QUICKLINK( ch->pcdata->clan->name );
-   	    }
-*/	    
-	    /* took out automaticly knowing common
-	    
-	    if ( (iLang = skill_lookup( "common" )) < 0 )
-	    	bug( "Nanny: cannot find common language." );
-	    else
-	    	ch->pcdata->learned[iLang] = 100;
-	    */
-	    	
-	    for ( iLang = 0; lang_array[iLang] != LANG_UNKNOWN; iLang++ )
-	    	if ( lang_array[iLang] == race_table[ch->race].language )
-	    		break;
-	    if ( lang_array[iLang] == LANG_UNKNOWN )
-	    	bug( "Nanny: invalid racial language." );
-	    else
-	    {
-	    	if ( (iLang = skill_lookup( lang_names[iLang] )) < 0 )
-	    		bug( "Nanny: cannot find racial language." );
-	    	else
-	    	{
-	    		ch->pcdata->learned[iLang] = 100;
-	    		ch->speaking	=  race_table[ch->race].language;
-		   if ( ch->race == RACE_QUARREN &&
-		   (iLang = skill_lookup( "quarren" )) >= 0 )
-	    	   {
-	    	        ch->pcdata->learned[iLang] = 100;
-		        SET_BIT( ch->speaks , LANG_QUARREN );
-		   }
-		   if ( ch->race == RACE_MON_CALAMARI && 
-		   (iLang = skill_lookup( "common" )) >= 0 )
-	    	        ch->pcdata->learned[iLang] = 100;
+        if ( visible_length(argument) < 5 )
+        {
+            output_to_descriptor( d,
+            "Password must be at least five characters long.\nPassword: " );
+            return;
+        }
 
-		}
-	    }
+    //	pwdnew = crypt( argument, ch->name );
+    // New SHA-256 password hashing - AI/DV 3-12-26
+    char pwdnewhash[65];
+    sha256_hash(argument, pwdnewhash);
+    pwdnew = pwdnewhash;
 
-            ch->resistant           += race_table[ch->race].resist;
-            ch->susceptible     += race_table[ch->race].suscept;
-
-	    name_stamp_stats( ch );
-            
-	    {
-	       int ability;
-	       
-	       for ( ability =0 ; ability < MAX_ABILITY ; ability++ )
-	       {
-	          ch->skill_level[ability] = 1;
-	          ch->experience[ability] = 0;
-	       }
-	    }
-	    ch->top_level = 1;
-	    ch->hit	 = ch->max_hit;
-            ch->hit     += race_table[ch->race].hit;
-            ch->max_hit += race_table[ch->race].hit;
-	    ch->move	 = ch->max_move;
-	    ch->gold     = 5000;
-	    if ( ch->perm_frc > 0 )
-         	 ch->max_mana = 100 + 100*ch->perm_frc;
-	    else
-	         ch->max_mana = 0;
-            ch->max_mana += race_table[ch->race].mana;
-	    ch->mana	= ch->max_mana;
-	    SPRINTF( buf, "%s the %s",ch->name,
-		race_table[ch->race].race_name );
-	    set_title( ch, buf );
-
-            /* Added by Narn.  Start new characters with autoexit and autgold
-               already turned on.  Very few people don't use those. */
-            SET_BIT( ch->act, PLR_AUTOGOLD ); 
-            SET_BIT( ch->act, PLR_AUTOEXIT ); 
-            
-            /* New players don't have to earn some eq */
-            
-            obj = create_object( get_obj_index(OBJ_VNUM_SCHOOL_BANNER), 0 );
-	    obj_to_char( obj, ch );
-	    equip_char( ch, obj, WEAR_LIGHT );
-	    
-	    /* armor they do though
-	    obj = create_object( get_obj_index(OBJ_VNUM_SCHOOL_VEST), 0 );
-	    obj_to_char( obj, ch );
-	    equip_char( ch, obj, WEAR_BODY );
-
-	    obj = create_object( get_obj_index(OBJ_VNUM_SCHOOL_SHIELD), 0 );
-	    obj_to_char( obj, ch );
-	    equip_char( ch, obj, WEAR_SHIELD );
-            */
-            
-	    obj = create_object( get_obj_index(OBJ_VNUM_SCHOOL_DAGGER), 0 );
-	    obj_to_char( obj, ch );
-	    equip_char( ch, obj, WEAR_WIELD );
-
-            /* comlink */
-            
+        for ( p = pwdnew; *p != '\0'; p++ )
+        {
+            if ( *p == '~' )
             {
-            OBJ_INDEX_DATA *obj_ind = get_obj_index( 10424 );
-            if ( obj_ind != NULL )
-            {
-              obj = create_object( obj_ind, 0 );
-              obj_to_char( obj, ch );
+            output_to_descriptor( d,
+                "New password not acceptable, try again.\nPassword: " );
+            return;
             }
-            }
-	        
-	    if (!sysdata.WAIT_FOR_AUTH)
-	    {
-	      char_to_room( ch, get_room_index( ROOM_VNUM_SCHOOL ) );
-	      ch->pcdata->auth_state = 3; 
-	    }
-	    else
-	    {
-	      char_to_room( ch, get_room_index( ROOM_VNUM_SCHOOL ) );
-	      ch->pcdata->auth_state = 1;
-	      SET_BIT(ch->pcdata->flags, PCFLAG_UNAUTHED);
-	    }
-	    /* Display_prompt interprets blank as default */
-//	    ch->pcdata->prompt = STRALLOC("");
-	}
-	else
-	if ( !IS_IMMORTAL(ch) && ch->pcdata->release_date > current_time )
-	{
-	    if ( ch->pcdata->jail_vnum )
-	      char_to_room( ch, get_room_index(ch->pcdata->jail_vnum));
-	    else
-	      char_to_room( ch, get_room_index(6) );
-	}
-	else if ( ch->in_room && !IS_IMMORTAL( ch ) 
-             && !IS_SET( ch->in_room->room_flags, ROOM_SPACECRAFT )
-             && ch->in_room != get_room_index(6) )
-	{
-	    char_to_room( ch, ch->in_room );
-	}
-	else if ( ch->in_room && !IS_IMMORTAL( ch )  
-             && IS_SET( ch->in_room->room_flags, ROOM_SPACECRAFT )
-             && ch->in_room != get_room_index(6) )
-	{
-	    SHIP_DATA *ship;
-	    
-	    for ( ship = first_ship; ship; ship = ship->next )
-	      if ( ch->in_room->vnum >= ship->firstroom && ch->in_room->vnum <= ship->lastroom )
-                if ( ship->shipclass != SHIP_PLATFORM || ship->spaceobject ) 
-                  char_to_room( ch, ch->in_room );
-	}
-	else
-	{
-	    char_to_room( ch, get_room_index( wherehome(ch) ) );
-	}
+        }
 
+        DISPOSE( ch->pcdata->pwd );
+        ch->pcdata->pwd	= str_dup( pwdnew );
+        output_to_descriptor( d, "\nPlease retype the password to confirm: " );
+        d->connected = CON_CONFIRM_NEW_PASSWORD;
+        break;
 
-    if ( IS_SET(ch->act, ACT_POLYMORPHED) )
-	  REMOVE_BIT(ch->act, ACT_POLYMORPHED);
-    if ( IS_SET(ch->act, PLR_QUESTOR) )
-	  REMOVE_BIT(ch->act, PLR_QUESTOR);
-
-
-
-
-    if ( get_timer( ch, TIMER_SHOVEDRAG ) > 0 )
-        remove_timer( ch, TIMER_SHOVEDRAG );
-
-    if ( get_timer( ch, TIMER_PKILLED ) > 0 )
-	remove_timer( ch, TIMER_PKILLED );
-    if ( ch->plr_home != NULL )
-    	{
-	 char filename[256];
-         FILE *fph;
-         ROOM_INDEX_DATA *storeroom = ch->plr_home;
-         OBJ_DATA *obj;
-         OBJ_DATA *obj_next;
-           
-         for ( obj = storeroom->first_content; obj; obj = obj_next )
-	 {
-	    obj_next = obj->next_content;
-	    extract_obj( obj );
-	 }
-
-	 SPRINTF( filename, "%s%c/%s.home", PLAYER_DIR, tolower(ch->name[0]),
-				 capitalize( ch->name ) );
-	 if ( ( fph = fopen( filename, "r" ) ) != NULL )
-	 {
-//	    bool found;
-	    OBJ_DATA *tobj, *tobj_next;
-
-	    rset_supermob(storeroom);
-
-//	    found = TRUE;
-	    for ( ; ; )
-	    {
-		char letter;
-		char *word;
-
-		letter = fread_letter( fph );
-		if ( letter == '*' )
-		{
-		    fread_to_eol( fph );
-		    continue;
-		}
-
-		if ( letter != '#' )
-		{
-		    bug( "Load_plr_home: # not found.", 0 );
-		    bug( ch->name, 0 );
-		    break;
-		}
-
-		word = fread_word( fph );
-		if ( !str_cmp( word, "OBJECT" ) )	/* Objects	*/
-		  fread_obj  ( supermob, fph, OS_CARRY );
-		else
-		if ( !str_cmp( word, "END"    ) )	/* Done		*/
-		  break;
-		else
-		{
-		    bug( "Load_plr_home: bad section.", 0 );
-		    bug( ch->name, 0 );
-		    break;
-		}
-	    }
-
-	    FCLOSE( fph );
-
-	    for ( tobj = supermob->first_carrying; tobj; tobj = tobj_next )
-	    {
-		tobj_next = tobj->next_content;
-		obj_from_char( tobj );
-                if( tobj->item_type != ITEM_MONEY )
-		  obj_to_room( tobj, storeroom );
-	    }
-	    
-	    release_supermob();
-
-         }
-    }
+        case CON_CONFIRM_NEW_PASSWORD:
+        output_to_descriptor( d, "\n" );
     
+    // New SHA-256 password checking - AI/DV 3-12-26
+    sha256_hash(argument, pwdnewhash);
 
-    if ( ch->pcdata->pet )
+    for (p = pwdnewhash; *p != '\0'; p++)
     {
-           act( AT_ACTION, "$n returns with $s master.",
-                      ch->pcdata->pet, NULL, ch, TO_NOTVICT );
-           act( AT_ACTION, "$N returns with you.",
-                        ch, NULL, ch->pcdata->pet, TO_CHAR );
-    }         
+        if (*p == '~')
+        {
+            output_to_descriptor(d,
+                "New password not acceptable, try again.\nPassword: " );
+            return;
+        }
+    }
 
-    ch->pcdata->logon			= current_time;
+    DISPOSE(ch->pcdata->pwd);
+    ch->pcdata->pwd = str_dup(pwdnewhash);
+    /*
 
-    act( AT_ACTION, "$n has entered the game.", ch, NULL, NULL, TO_ROOM );
-    do_look( ch, "auto" );
-    mail_count(ch);
-    break;
+        if ( strcmp( crypt( argument, ch->pcdata->pwd ), ch->pcdata->pwd ) )
+        {
+            output_to_descriptor( d, "Passwords don't match.\nRetype password: " );
+            d->connected = CON_GET_NEW_PASSWORD;
+            return;
+        }
+    */
+        output_to_descriptor( d, (const char*) echo_on_str );
+        output_to_descriptor( d, "\nWhat is your sex (M/F/N)? " );
+        d->connected = CON_GET_NEW_SEX;
+        break;
 
-        /* Far too many possible screwups if we do it this way. -- Altrag */
-/*        case CON_NEW_LANGUAGE:
-        for ( iLang = 0; lang_array[iLang] != LANG_UNKNOWN; iLang++ )
-		if ( !str_prefix( argument, lang_names[iLang] ) )
-			if ( can_learn_lang( ch, lang_array[iLang] ) )
-			{
-				add_char( ch );
-				SET_BIT( ch->speaks, lang_array[iLang] );
-				set_char_color( AT_SAY, ch );
-				ch_printf( ch, "You can now speak %s.\n", lang_names[iLang] );
-				d->connected = CON_PLAYING;
-				return;
-			}
-	set_char_color( AT_SAY, ch );
-	output_to_descriptor( d, "You may not learn that language.  Please choose another.\n"
-				  "New language: " );
-	break;*/
+        case CON_GET_NEW_SEX:
+        switch ( argument[0] )
+        {
+        case 'm': case 'M': ch->sex = SEX_MALE;    break;
+        case 'f': case 'F': ch->sex = SEX_FEMALE;  break;
+        case 'n': case 'N': ch->sex = SEX_NEUTRAL; break;
+        default:
+            output_to_descriptor( d, "That's not a sex.\nWhat IS your sex? " );
+            return;
+        }
+
+
+        output_to_descriptor( d, "\nYou may choose from the following races, or type showstat [race] to learn more:\n" );
+        buf[0] = '\0';
+        buf2[0] = '\0';
+        halfmax = (MAX_RACE/3) + 1;
+        for ( iRace = 0; iRace < halfmax; iRace++ )
+        {
+        if ( iRace == RACE_GOD )
+        continue;
+            if (race_table[iRace].race_name[0] != '\0')
+            {
+            SPRINTF( buf2, "%-20s", race_table[iRace].race_name );
+            STRAPP( buf, "%s", buf2 );
+            SPRINTF( buf2, "%-20s", race_table[iRace+halfmax].race_name );
+            STRAPP( buf, "%s", buf2 );
+            if( iRace + (halfmax*2) < MAX_RACE )
+            {
+                SPRINTF( buf2, "%s", race_table[iRace+(halfmax*2)].race_name );
+                STRAPP( buf, "%s", buf2 );
+        }
+            STRAPP( buf, "\n" );
+            output_to_descriptor( d, buf );
+            buf[0] = '\0';
+            }
+            }
+        STRAPP( buf, ": " );
+        output_to_descriptor( d, buf );
+        d->connected = CON_GET_NEW_RACE;
+        break;
+
+        case CON_GET_NEW_RACE:
+        argument = one_argument(argument, arg);
+            if (!str_cmp( arg, "help") )
+            {
+            do_help(ch, argument);
+                output_to_descriptor( d, "Please choose a race: ");
+            return;
+        }
+            if (!str_cmp( arg, "showstat") )
+            {
+            do_showstatistic(ch, argument);
+                output_to_descriptor( d, "Please choose a race: ");
+            return;
+        }
+        
+        for ( iRace = 0; iRace < MAX_RACE; iRace++ )
+        {
+            if ( toupper(arg[0]) == toupper(race_table[iRace].race_name[0])
+            &&   !str_prefix( arg, race_table[iRace].race_name ) )
+            {
+            ch->race = iRace;
+            break;
+            }
+        }
+        if ( iRace == RACE_ASSASSIN_DROID || iRace == RACE_YEVETHA || iRace == RACE_TOGARIAN )
+        {
+            output_to_descriptor( d,
+            "Do to too many people choosing this race, it now must be applied for.\nWhat IS your race? " );
+            return;
+        }
+        
+
+        if ( iRace == MAX_RACE || iRace == RACE_GOD
+        ||  race_table[iRace].race_name[0] == '\0')
+        {
+            output_to_descriptor( d,
+            "That's not a race.\nWhat IS your race? " );
+            return;
+        }
+
+        output_to_descriptor( d, "\nPlease choose a main ability from the folowing classes:\n" );
+        buf[0] = '\0';
+        buf2[0] = '\0';
+        halfmax = (MAX_ABILITY/2) + 1;
+        for ( iClass = 0; iClass < halfmax; iClass++ )
+        {
+        if (ability_name[iClass] && ability_name[iClass][0] != '\0')
+        {
+            SPRINTF( buf2, "%-20s", ability_name[iClass] );
+            STRAPP( buf, "%s", buf2 );
+            if( iClass + halfmax < MAX_ABILITY )
+            {
+                SPRINTF( buf2, "%s", ability_name[iClass+halfmax] );
+                STRAPP( buf, "%s", buf2 );
+        }
+            STRAPP( buf, "\n" );
+            output_to_descriptor( d, buf );
+            buf[0] = '\0';
+            }
+            }
+        STRAPP( buf, ": " );
+        output_to_descriptor( d, buf );
+        d->connected = CON_GET_NEW_CLASS;
+        break;
+
+        case CON_GET_NEW_CLASS:
+        argument = one_argument(argument, arg);
+            if (!str_cmp( arg, "help") )
+            {
+            do_help(ch, argument);
+                output_to_descriptor( d, "Please choose an ability class: ");
+            return;
+        }
+        
+
+        for ( iClass = 0; iClass < MAX_ABILITY; iClass++ )
+        {
+            if ( toupper(arg[0]) == toupper(ability_name[iClass][0])
+            &&   !str_prefix( arg, ability_name[iClass] ) )
+            {
+            ch->main_ability = iClass;
+            break;
+            }
+        }
+
+        if ( iClass == MAX_ABILITY || iClass == 7 
+        ||  !ability_name[iClass] || ability_name[iClass][0] == '\0')
+        {
+            output_to_descriptor( d,
+            "That's not a skill class.\nWhat IS it going to be? " );
+            return;
+        }
+
+        output_to_descriptor( d, "\nRolling stats....\n" );
+
+        case CON_ROLL_STATS:
+
+            ch->perm_str = number_range(1, 6)+number_range(1, 6)+number_range(1, 6);
+            ch->perm_int = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
+            ch->perm_wis = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
+            ch->perm_dex = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
+            ch->perm_con = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
+            ch->perm_cha = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
+
+            ch->perm_str	 += race_table[ch->race].str_plus;
+            ch->perm_int	 += race_table[ch->race].int_plus;
+            ch->perm_wis	 += race_table[ch->race].wis_plus;
+            ch->perm_dex	 += race_table[ch->race].dex_plus;
+            ch->perm_con	 += race_table[ch->race].con_plus;
+            ch->perm_cha	 += race_table[ch->race].cha_plus;
+        
+        SPRINTF( buf, "\nSTR: %d  INT: %d  WIS: %d  DEX: %d  CON: %d  CHA: %d\n" ,
+            ch->perm_str, ch->perm_int, ch->perm_wis, 
+            ch->perm_dex, ch->perm_con, ch->perm_cha) ;
+            
+            output_to_descriptor( d, buf );
+            output_to_descriptor( d, "\nAre these stats OK?. " );
+        d->connected = CON_STATS_OK;
+            break;
+        
+        case CON_STATS_OK:
+            
+        switch ( argument[0] )
+        {
+        case 'y': case 'Y': break;
+        case 'n': case 'N': 
+            ch->perm_str = number_range(1, 6)+number_range(1, 6)+number_range(1, 6);
+            ch->perm_int = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
+            ch->perm_wis = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
+            ch->perm_dex = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
+            ch->perm_con = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
+            ch->perm_cha = number_range(3, 6)+number_range(1, 6)+number_range(1, 6);
+
+            ch->perm_str	 += race_table[ch->race].str_plus;
+            ch->perm_int	 += race_table[ch->race].int_plus;
+            ch->perm_wis	 += race_table[ch->race].wis_plus;
+            ch->perm_dex	 += race_table[ch->race].dex_plus;
+            ch->perm_con	 += race_table[ch->race].con_plus;
+            ch->perm_cha	 += race_table[ch->race].cha_plus;
+        
+            SPRINTF( buf, "\nSTR: %d  INT: %d  WIS: %d  DEX: %d  CON: %d  CHA: %d\n" ,
+            ch->perm_str, ch->perm_int, ch->perm_wis, 
+            ch->perm_dex, ch->perm_con, ch->perm_cha) ;
+            
+                output_to_descriptor( d, buf );
+                output_to_descriptor( d, "\nOK?. " );
+            return;
+        default:
+            output_to_descriptor( d, "Invalid selection.\nYES or NO? " );
+            return;
+        }
+
+        output_to_descriptor( d, "\nWould you like ANSI or no graphic/color support, (R/A/N)? " );
+        d->connected = CON_GET_WANT_RIPANSI;
+            break;
+            
+        case CON_GET_WANT_RIPANSI:
+        switch ( argument[0] )
+        {
+        case 'a': case 'A': SET_BIT(ch->act,PLR_ANSI);  break;
+        case 'n': case 'N': break;
+        default:
+            output_to_descriptor( d, "Invalid selection.\nANSI or NONE? " );
+            return;
+        }
+            output_to_descriptor( d, "Does your mud client have the Mud Sound Protocol? " );
+        d->connected = CON_GET_MSP; 
+        break;
+            
+
+    case CON_GET_MSP:
+        switch ( argument[0] )
+        {
+        case 'y': case 'Y': SET_BIT(ch->act,PLR_SOUND);  break;
+        case 'n': case 'N': break;
+        default:
+            output_to_descriptor( d, "Invalid selection.\nYES or NO? " );
+            return;
+        }
+    /*
+        if ( !sysdata.WAIT_FOR_AUTH )
+        {
+    */	    SPRINTF( buf, "%s@%s new %s.", ch->name, d->host,
+                    race_table[ch->race].race_name);
+            log_string_plus( buf, LOG_COMM, sysdata.log_level);
+            to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
+            output_to_descriptor( d, "Press [ENTER] " );
+            show_title(d);
+            {
+            int ability;
+            
+            for ( ability =0 ; ability < MAX_ABILITY ; ability++ )
+                ch->skill_level[ability] = 0;
+            }
+            ch->top_level = 0;
+            ch->position = POS_STANDING;
+            d->connected = CON_PRESS_ENTER;
+            return;
+            break;
+    /*	}
+
+        output_to_descriptor( d, "\nYou now have to wait for a god to authorize you... please be patient...\n" );
+        SPRINTF( buf, "(1) %s@%s new %s applying for authorization...",
+                    ch->name, d->host,
+                    race_table[ch->race].race_name);
+        log_string( buf );
+        to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
+        d->connected = CON_WAIT_1;
+        break;
+
+        case CON_WAIT_1:
+        output_to_descriptor( d, "\nTwo more tries... please be patient...\n" );
+        SPRINTF( buf, "(2) %s@%s new %s applying for authorization...",
+                    ch->name, d->host,
+                    race_table[ch->race].race_name);
+        log_string( buf );
+        to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
+        d->connected = CON_WAIT_2;
+        break;
+
+        case CON_WAIT_2:
+        output_to_descriptor( d, "\nThis is your last try...\n" );
+        SPRINTF( buf, "(3) %s@%s new %s applying for authorization...",
+                    ch->name, d->host,
+                    race_table[ch->race].race_name);
+        log_string( buf );
+        to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
+        d->connected = CON_WAIT_3;
+        break;
+
+        case CON_WAIT_3:
+        output_to_descriptor( d, "Sorry... try again later.\n" );
+        close_socket( d, FALSE );
+        return;
+        break;
+
+        case CON_ACCEPTED:
+
+        SPRINTF( buf, "%s@%s new %s.", ch->name, d->host,
+                    race_table[ch->race].race_name);
+        log_string_plus( buf, LOG_COMM, sysdata.log_level );
+        to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
+        output_to_descriptor( d, "\n" );
+        show_title(d);
+            {
+            int ability;
+            
+            for ( ability =0 ; ability < MAX_ABILITY ; ability++ )
+                ch->skill_level[ability] = 0;
+            }
+        ch->top_level = 0;
+        ch->position = POS_STANDING;
+        d->connected = CON_PRESS_ENTER;
+        break;
+    */
+        case CON_PRESS_ENTER:
+        if ( IS_SET(ch->act, PLR_ANSI) )
+        send_to_pager( "\033[2J", ch );
+        else
+        send_to_pager( "\014", ch );
+        if ( IS_IMMORTAL(ch) )
+        {
+        send_to_pager( "&WImmortal Message of the Day&w\n", ch );
+        do_help( ch, "imotd" );
+        }
+        if ( ch->top_level > 0 )
+        {
+        send_to_pager( "\n&WMessage of the Day&w\n", ch );
+        do_help( ch, "motd" );
+        }
+        if ( ch->top_level >= 100)
+        {
+        send_to_pager( "\n&WAvatar Message of the Day&w\n", ch );
+        do_help( ch, "amotd" );
+        }
+        if ( ch->top_level == 0 )
+        do_help( ch, "nmotd" );
+        send_to_pager( "\n&WPress [ENTER] &Y", ch );
+            d->connected = CON_READ_MOTD;
+            break;
+
+        case CON_READ_MOTD:
+        output_to_descriptor( d, "\nWelcome to Rise in Power...\n\n" );
+        add_char( ch );
+        d->connected	= CON_PLAYING;
+            
+            if ( !IS_NPC(ch) && IS_SET( ch->act , PLR_SOUND ) )
+            send_to_char( "!!MUSIC(starwars.mid V=100)" , ch );
+            
+            
+        if ( ch->top_level == 0 )
+        {
+            OBJ_DATA *obj;
+            int iLang;
+            
+            ch->pcdata->clan_name = STRALLOC( "" );
+            ch->pcdata->clan	  = NULL;
+            
+            ch->perm_lck = number_range(6, 20);
+                ch->perm_frc = number_range(-800, 20);
+            ch->affected_by	  = race_table[ch->race].affected;
+            ch->perm_lck	 += race_table[ch->race].lck_plus;
+            ch->perm_frc	 += race_table[ch->race].frc_plus;
+                
+        if ( ch->main_ability == FORCE_ABILITY )
+    //         ch->perm_frc = URANGE( 1 , ch->perm_frc , 20 ); // Forcers always roll 25, per Sonja - DV 8/12/02
+        ch->perm_frc = 5;
+            else
+            ch->perm_frc = URANGE( 0 , ch->perm_frc , 20 );
+            /* Hunters do not recieve force */       
+            
+            if ( ch->main_ability == HUNTING_ABILITY )         
+            ch->perm_frc = 0;	    
+            
+            /* Droids do not recieve force */
+            
+            if( is_droid(ch) ) 
+            ch->perm_frc = 0;	    
+
+            /* Noghri are auto commando */
+    /*	    
+            if (ch->race == RACE_NOGHRI )
+            {
+            ch->pcdata->clan = get_clan( "The Death Commandos");
+            ch->pcdata->clan_name = QUICKLINK( ch->pcdata->clan->name );
+            }
+    */	    
+            /* took out automaticly knowing common
+            
+            if ( (iLang = skill_lookup( "common" )) < 0 )
+                bug( "Nanny: cannot find common language." );
+            else
+                ch->pcdata->learned[iLang] = 100;
+            */
+                
+            for ( iLang = 0; lang_array[iLang] != LANG_UNKNOWN; iLang++ )
+                if ( lang_array[iLang] == race_table[ch->race].language )
+                    break;
+            if ( lang_array[iLang] == LANG_UNKNOWN )
+                bug( "Nanny: invalid racial language." );
+            else
+            {
+                if ( (iLang = skill_lookup( lang_names[iLang] )) < 0 )
+                    bug( "Nanny: cannot find racial language." );
+                else
+                {
+                    ch->pcdata->learned[iLang] = 100;
+                    ch->speaking	=  race_table[ch->race].language;
+            if ( ch->race == RACE_QUARREN &&
+            (iLang = skill_lookup( "quarren" )) >= 0 )
+                {
+                        ch->pcdata->learned[iLang] = 100;
+                    SET_BIT( ch->speaks , LANG_QUARREN );
+            }
+            if ( ch->race == RACE_MON_CALAMARI && 
+            (iLang = skill_lookup( "common" )) >= 0 )
+                        ch->pcdata->learned[iLang] = 100;
+
+            }
+            }
+
+                ch->resistant           += race_table[ch->race].resist;
+                ch->susceptible     += race_table[ch->race].suscept;
+
+            name_stamp_stats( ch );
+                
+            {
+            int ability;
+            
+            for ( ability =0 ; ability < MAX_ABILITY ; ability++ )
+            {
+                ch->skill_level[ability] = 1;
+                ch->experience[ability] = 0;
+            }
+            }
+            ch->top_level = 1;
+            ch->hit	 = ch->max_hit;
+                ch->hit     += race_table[ch->race].hit;
+                ch->max_hit += race_table[ch->race].hit;
+            ch->move	 = ch->max_move;
+            ch->gold     = 5000;
+            if ( ch->perm_frc > 0 )
+                ch->max_mana = 100 + 100*ch->perm_frc;
+            else
+                ch->max_mana = 0;
+                ch->max_mana += race_table[ch->race].mana;
+            ch->mana	= ch->max_mana;
+            SPRINTF( buf, "%s the %s",ch->name,
+            race_table[ch->race].race_name );
+            set_title( ch, buf );
+
+                /* Added by Narn.  Start new characters with autoexit and autgold
+                already turned on.  Very few people don't use those. */
+                SET_BIT( ch->act, PLR_AUTOGOLD ); 
+                SET_BIT( ch->act, PLR_AUTOEXIT ); 
+                
+                /* New players don't have to earn some eq */
+                
+                obj = create_object( get_obj_index(OBJ_VNUM_SCHOOL_BANNER), 0 );
+            obj_to_char( obj, ch );
+            equip_char( ch, obj, WEAR_LIGHT );
+            
+            /* armor they do though
+            obj = create_object( get_obj_index(OBJ_VNUM_SCHOOL_VEST), 0 );
+            obj_to_char( obj, ch );
+            equip_char( ch, obj, WEAR_BODY );
+
+            obj = create_object( get_obj_index(OBJ_VNUM_SCHOOL_SHIELD), 0 );
+            obj_to_char( obj, ch );
+            equip_char( ch, obj, WEAR_SHIELD );
+                */
+                
+            obj = create_object( get_obj_index(OBJ_VNUM_SCHOOL_DAGGER), 0 );
+            obj_to_char( obj, ch );
+            equip_char( ch, obj, WEAR_WIELD );
+
+                /* comlink */
+                
+                {
+                OBJ_INDEX_DATA *obj_ind = get_obj_index( 10424 );
+                if ( obj_ind != NULL )
+                {
+                obj = create_object( obj_ind, 0 );
+                obj_to_char( obj, ch );
+                }
+                }
+                
+            if (!sysdata.WAIT_FOR_AUTH)
+            {
+            char_to_room( ch, get_room_index( ROOM_VNUM_SCHOOL ) );
+            ch->pcdata->auth_state = 3; 
+            }
+            else
+            {
+            char_to_room( ch, get_room_index( ROOM_VNUM_SCHOOL ) );
+            ch->pcdata->auth_state = 1;
+            SET_BIT(ch->pcdata->flags, PCFLAG_UNAUTHED);
+            }
+            /* Display_prompt interprets blank as default */
+    //	    ch->pcdata->prompt = STRALLOC("");
+        }
+        else
+        if ( !IS_IMMORTAL(ch) && ch->pcdata->release_date > current_time )
+        {
+            if ( ch->pcdata->jail_vnum )
+            char_to_room( ch, get_room_index(ch->pcdata->jail_vnum));
+            else
+            char_to_room( ch, get_room_index(6) );
+        }
+        else if ( ch->in_room && !IS_IMMORTAL( ch ) 
+                && !IS_SET( ch->in_room->room_flags, ROOM_SPACECRAFT )
+                && ch->in_room != get_room_index(6) )
+        {
+            char_to_room( ch, ch->in_room );
+        }
+        else if ( ch->in_room && !IS_IMMORTAL( ch )  
+                && IS_SET( ch->in_room->room_flags, ROOM_SPACECRAFT )
+                && ch->in_room != get_room_index(6) )
+        {
+            SHIP_DATA *ship;
+            
+            for ( ship = first_ship; ship; ship = ship->next )
+            if ( ch->in_room->vnum >= ship->firstroom && ch->in_room->vnum <= ship->lastroom )
+                    if ( ship->shipclass != SHIP_PLATFORM || ship->spaceobject ) 
+                    char_to_room( ch, ch->in_room );
+        }
+        else
+        {
+            char_to_room( ch, get_room_index( wherehome(ch) ) );
+        }
+
+
+        if ( IS_SET(ch->act, ACT_POLYMORPHED) )
+        REMOVE_BIT(ch->act, ACT_POLYMORPHED);
+        if ( IS_SET(ch->act, PLR_QUESTOR) )
+        REMOVE_BIT(ch->act, PLR_QUESTOR);
+
+
+
+
+        if ( get_timer( ch, TIMER_SHOVEDRAG ) > 0 )
+            remove_timer( ch, TIMER_SHOVEDRAG );
+
+        if ( get_timer( ch, TIMER_PKILLED ) > 0 )
+        remove_timer( ch, TIMER_PKILLED );
+        if ( ch->plr_home != NULL )
+            {
+        char filename[256];
+            FILE *fph;
+            ROOM_INDEX_DATA *storeroom = ch->plr_home;
+            OBJ_DATA *obj;
+            OBJ_DATA *obj_next;
+            
+            for ( obj = storeroom->first_content; obj; obj = obj_next )
+        {
+            obj_next = obj->next_content;
+            extract_obj( obj );
+        }
+
+        SPRINTF( filename, "%s%c/%s.home", PLAYER_DIR, tolower(ch->name[0]),
+                    capitalize( ch->name ) );
+        if ( ( fph = fopen( filename, "r" ) ) != NULL )
+        {
+    //	    bool found;
+            OBJ_DATA *tobj, *tobj_next;
+
+            rset_supermob(storeroom);
+
+    //	    found = TRUE;
+            for ( ; ; )
+            {
+            char letter;
+            char *word;
+
+            letter = fread_letter( fph );
+            if ( letter == '*' )
+            {
+                fread_to_eol( fph );
+                continue;
+            }
+
+            if ( letter != '#' )
+            {
+                bug( "Load_plr_home: # not found.", 0 );
+                bug( ch->name, 0 );
+                break;
+            }
+
+            word = fread_word( fph );
+            if ( !str_cmp( word, "OBJECT" ) )	/* Objects	*/
+            fread_obj  ( supermob, fph, OS_CARRY );
+            else
+            if ( !str_cmp( word, "END"    ) )	/* Done		*/
+            break;
+            else
+            {
+                bug( "Load_plr_home: bad section.", 0 );
+                bug( ch->name, 0 );
+                break;
+            }
+            }
+
+            FCLOSE( fph );
+
+            for ( tobj = supermob->first_carrying; tobj; tobj = tobj_next )
+            {
+            tobj_next = tobj->next_content;
+            obj_from_char( tobj );
+                    if( tobj->item_type != ITEM_MONEY )
+            obj_to_room( tobj, storeroom );
+            }
+            
+            release_supermob();
+
+            }
+        }
+        
+
+        if ( ch->pcdata->pet )
+        {
+            act( AT_ACTION, "$n returns with $s master.",
+                        ch->pcdata->pet, NULL, ch, TO_NOTVICT );
+            act( AT_ACTION, "$N returns with you.",
+                            ch, NULL, ch->pcdata->pet, TO_CHAR );
+        }         
+
+        ch->pcdata->logon			= current_time;
+
+        act( AT_ACTION, "$n has entered the game.", ch, NULL, NULL, TO_ROOM );
+        do_look( ch, "auto" );
+        mail_count(ch);
+        break;
+
+            /* Far too many possible screwups if we do it this way. -- Altrag */
+    /*        case CON_NEW_LANGUAGE:
+            for ( iLang = 0; lang_array[iLang] != LANG_UNKNOWN; iLang++ )
+            if ( !str_prefix( argument, lang_names[iLang] ) )
+                if ( can_learn_lang( ch, lang_array[iLang] ) )
+                {
+                    add_char( ch );
+                    SET_BIT( ch->speaks, lang_array[iLang] );
+                    set_char_color( AT_SAY, ch );
+                    ch_printf( ch, "You can now speak %s.\n", lang_names[iLang] );
+                    d->connected = CON_PLAYING;
+                    return;
+                }
+        set_char_color( AT_SAY, ch );
+        output_to_descriptor( d, "You may not learn that language.  Please choose another.\n"
+                    "New language: " );
+        break;*/
     }
 
     return;
