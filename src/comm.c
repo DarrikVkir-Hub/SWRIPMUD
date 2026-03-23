@@ -874,6 +874,8 @@ void new_descriptor( int new_desc )
     dnew->character     = NULL;
     dnew->telnet_pos = 0;
     dnew->pagepoint = PAGEPOINT_NULL;
+    dnew->sga_enabled = false;
+    dnew->eor_enabled = false;
 
 #ifdef LOGTELNET
     dnew->debug_telnet = true;
@@ -967,6 +969,8 @@ void new_descriptor( int new_desc )
 
     LINK( dnew, first_descriptor, last_descriptor, next, prev );
 
+// Start Telnet Initiation
+
 #ifdef MCCP
     send_telnet(dnew, (const unsigned char *)eor_on_str, sizeof(eor_on_str));
     send_telnet(dnew, (const unsigned char *)compress2_on_str, sizeof(compress2_on_str));
@@ -976,6 +980,15 @@ void new_descriptor( int new_desc )
     const unsigned char will_naws[] = { IAC, DO, TELOPT_NAWS };
     send_telnet(dnew,(const unsigned char *)(will_naws), 3);
 
+    /* SGA negotiation */
+    const unsigned char will_sga[] = { IAC, WILL, TELOPT_SGA };
+    send_telnet(dnew, will_sga, 3);
+
+    /* EOR negotiation */
+    const unsigned char will_eor[] = { IAC, WILL, TELOPT_EOR };
+    send_telnet(dnew, will_eor, 3);
+
+// End Telnet Initiation
     /*
      * Send the greeting.
      */
@@ -1185,6 +1198,8 @@ const char *telopt(unsigned char c)
         case TELOPT_NAWS:      return "NAWS";
         case TELOPT_TTYPE:     return "TTYPE";
         case TELOPT_ECHO:      return "ECHO";
+        case TELOPT_SGA:        return "SGA";        
+        case TELOPT_EOR:        return "EOR";        
         default:
         {
             static char buf[16];
@@ -1196,7 +1211,7 @@ const char *telopt(unsigned char c)
 
 #define TELLOG(d, fmt, ...) \
     do { if ((d) && (d)->debug_telnet) \
-        bug("[TELNET] " fmt, ##__VA_ARGS__); } while(0)
+        fprintf(stderr, "[TELNET] " fmt, ##__VA_ARGS__); } while(0)
 
 #define TELLOG_APPEND(d, fmt, ...) \
     do { \
@@ -1211,7 +1226,7 @@ const char *telopt(unsigned char c)
 #define TELLOG_FLUSH(d, prefix) \
     do { \
         if ((d)->debug_telnet && (d)->telnet_logpos > 0) { \
-            bug("[TELNET] %s%s", prefix, (d)->telnet_logbuf); \
+            fprintf(stderr,"[TELNET] %s%s\r\n", prefix, (d)->telnet_logbuf); \
             (d)->telnet_logpos = 0; \
             (d)->telnet_logbuf[0] = '\0'; \
         } \
@@ -1224,6 +1239,7 @@ bool is_known_telopt(unsigned char opt)
         case TELOPT_ECHO:
         case TELOPT_SGA:
         case TELOPT_NAWS:
+        case TELOPT_EOR:
 #ifdef MCCP
         case TELOPT_COMPRESS2:
 #endif
@@ -1252,9 +1268,15 @@ telnet_policy_t telnet_policy(DESCRIPTOR_DATA *d, int cmd, int opt)
 
         case TELOPT_ECHO:
             return TELPOLICY_REJECT;
-
+        /* SGA support */
+        case TELOPT_SGA:
+            if (cmd == DO || cmd == WILL)
+                return TELPOLICY_ACCEPT;
+            return TELPOLICY_IGNORE;
         /* Common safe defaults */
-        case 25: /* EOR */
+        case TELOPT_EOR:
+            if (cmd == DO || cmd == WILL)
+                return TELPOLICY_ACCEPT;
             return TELPOLICY_IGNORE;
 
         default:
@@ -1328,10 +1350,9 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
 
                     case SB:
                         /* Only allow SB if NAWS enabled */
-                        if (!d->naws_enabled)
-                            d->telstate = TS_DATA;
-                        else
-                            d->telstate = TS_SB;
+                        d->telstate = TS_SB;
+                        process_char = false;
+                        break;
 
                         process_char = false;
                         break;
@@ -1373,6 +1394,18 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                     }                    
                     break;
                 }
+                /* SGA */
+                if (policy == TELPOLICY_ACCEPT && c == TELOPT_SGA)
+                {
+                    const unsigned char do_sga[] = { IAC, DO, TELOPT_SGA };
+                    send_telnet(d, do_sga, 3);
+                }                
+                /* EOR */
+                if (policy == TELPOLICY_ACCEPT && c == TELOPT_EOR)
+                {
+                    const unsigned char do_eor[] = { IAC, DO, TELOPT_EOR };
+                    send_telnet(d, do_eor, 3);
+                }                
 
                 /* === POLICY CHANGE: gated NAWS === */
                 if (policy == TELPOLICY_ACCEPT && c == TELOPT_NAWS)
@@ -1431,7 +1464,16 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 }
                 /* === POLICY ADD === */
                 telnet_policy_t policy = telnet_policy(d, DO, c);
+                /* EOR */
+                if (policy == TELPOLICY_ACCEPT && c == TELOPT_EOR)
+                {
+                    d->telopt_us[c] = 1;
 
+                    const unsigned char will_eor[] = { IAC, WILL, TELOPT_EOR };
+                    send_telnet(d, will_eor, 3);
+
+                    d->eor_enabled = true;
+                }
                 if (policy == TELPOLICY_REJECT)
                 {
                     /* only reply to known options */
@@ -1457,7 +1499,14 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                     TELLOG(d, "MCCP: pending set → waiting for CON_PLAYING");
                 }
 #endif
+                /* SGA */
+                if (policy == TELPOLICY_ACCEPT && c == TELOPT_SGA)
+                {
+                    const unsigned char will_sga[] = { IAC, WILL, TELOPT_SGA };
+                    send_telnet(d, will_sga, 3);
 
+                    d->sga_enabled = true;
+                }
                 /* === POLICY CHANGE: gated NAWS === */
                 if (policy == TELPOLICY_ACCEPT && c == TELOPT_NAWS)
                 {
@@ -1490,7 +1539,17 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 }
                 d->telopt_us[c] = 0;                
                 telnet_policy_t policy = telnet_policy(d, DONT, c);
+                if (c == TELOPT_EOR)
+                {
+                    d->eor_enabled = false;
+                    TELLOG(d, "EOR: disabled");
+                }
 
+                if (c == TELOPT_SGA)
+                {
+                    d->sga_enabled = false;
+                    TELLOG(d, "SGA: disabled");
+                }
 #ifdef MCCP
                 /* === POLICY CHANGE: gated compression shutdown === */
                 if (policy == TELPOLICY_ACCEPT && c == TELOPT_COMPRESS2 &&
@@ -1509,26 +1568,14 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 d->sb_option = c;
                 d->sb_len = 0;
                 TELLOG_APPEND(d, "%s ", telopt(c)); 
-                if (c == TELOPT_NAWS && d->naws_enabled)
-                {
-                    d->telstate = TS_SB_DATA;
-                }
-                else
-                {
-                    /* INVALID SB → DROP */
-                    d->telstate = TS_DATA;
-                    d->sb_len = 0;
-                }
+                d->telstate = TS_SB_DATA;
 
                 process_char = false;
                 break;
             }
             case TS_SB_DATA:
             {
-                if (d->sb_option == TELOPT_NAWS && d->sb_len < 4)
-                {
-                    TELLOG_APPEND(d, "%d ", c);
-                }            
+                TELLOG_APPEND(d, "%d ", c);
                 if (c == IAC)
                 {
                     d->telstate = TS_SB_IAC;
@@ -1536,13 +1583,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                     break;
                 }
 
-                if (d->sb_option != TELOPT_NAWS)
-                {
-                    process_char = false;
-                    break;
-                }
-
-                if (d->sb_len < 4)
+                if (d->sb_len < (int)sizeof(d->sb_buf))
                     d->sb_buf[d->sb_len++] = c;
 
                 process_char = false;
@@ -1551,9 +1592,9 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
             case TS_SB_IAC:
             {
                 if (c == SE)
-                {
+                {            
                     TELLOG_APPEND(d, "IAC SE");
-                    TELLOG_FLUSH(d, "RCV: ");
+                    TELLOG_FLUSH(d, "RCV: ");                        
                     if (d->sb_option == TELOPT_NAWS && d->sb_len == 4)
                     {
                         int width  = (d->sb_buf[0] << 8) | d->sb_buf[1];
@@ -1564,6 +1605,14 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
 
                         d->term_width  = width;
                         d->term_height = height;
+                    }
+                    else
+                    {
+                        /* 🔁 NEW: hook for future protocols (GMCP, MSSP, etc.) */
+                        /* Example:
+                        if (d->sb_option == TELOPT_GMCP)
+                            handle_gmcp(d, d->sb_buf, d->sb_len);
+                        */
                     }
 
                     d->telstate = TS_DATA;
@@ -1876,6 +1925,7 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
     char buf[MAX_INPUT_LENGTH];
     extern bool mud_down;
     CHAR_DATA *ch;
+    bool flushed_all = true;    
     
     ch = d->original ? d->original : d->character;
     if( ch && ch->fighting && ch->fighting->who )
@@ -1896,6 +1946,11 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
 	if ( IS_SET(ch->act, PLR_TELNET_GA) )
 	    output_to_descriptor( d, (const char *) go_ahead_str );
     }
+
+    bool had_output = (d->outtop > 0);    
+
+    TELLOG(d, "flush start: had_output=%d outtop=%ld fPrompt=%d\r\n",
+       had_output, d->outtop, fPrompt);
 
     /*
      * Short-circuit if nothing to write.
@@ -1956,6 +2011,39 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
             if (!process_compressed(d))
                 return FALSE;
         }
+        if (d->eor_enabled && had_output)
+        {
+            TELLOG(d, "flush (MCCP): sending EOR\r\n");
+
+            const unsigned char eor[] = { IAC, EOR };
+
+            d->out_compress->next_in  = (unsigned char *)eor;
+            d->out_compress->avail_in = 2;
+
+            while (d->out_compress->avail_in > 0)
+            {
+                d->out_compress->avail_out =
+                    COMPRESS_BUF_SIZE -
+                    (d->out_compress->next_out - d->out_compress_buf);
+
+                if (d->out_compress->avail_out == 0)
+                {
+                    if (!process_compressed(d))
+                        return FALSE;
+                    continue;
+                }
+
+                if (deflate(d->out_compress, Z_SYNC_FLUSH) != Z_OK)
+                    return FALSE;
+            }
+
+            /* ensure it actually goes out */
+            if (d->out_compress->next_out > d->out_compress_buf)
+            {
+                if (!process_compressed(d))
+                    return FALSE;
+            }
+        }
         return TRUE;
     }
 #endif
@@ -1991,7 +2079,10 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
         else
         {
             if (errno == EWOULDBLOCK || errno == EAGAIN)
+            {
+                flushed_all = false;
                 break;
+            }
 
             return FALSE;
         }
@@ -2006,7 +2097,12 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
             d->character ? d->character->name : d->host);
         return FALSE;
     }
-
+    if (d->eor_enabled && flushed_all && had_output)
+    {
+        TELLOG(d, "flush: had_output=%d outtop=%ld", had_output, d->outtop);        
+        const unsigned char eor[] = { IAC, EOR };
+        send_telnet(d, eor, 2);
+    }
     return TRUE;
 }
 
@@ -2077,9 +2173,15 @@ int build_ansi_from_state(unsigned char prev, unsigned char cl, char *buf)
     if ((cl & 0x08) != (prev & 0x08))
     {
         if (cl & 0x08)
-            p += sprintf(p, "1;");
+        {
+            /* 🔁 CHANGED: p += sprintf(p, "1;"); */
+            *p++ = '1'; *p++ = ';';
+        }
         else
-            p += sprintf(p, "22;"); /* normal intensity */
+        {
+            /* 🔁 CHANGED: p += sprintf(p, "22;"); */
+            *p++ = '2'; *p++ = '2'; *p++ = ';';
+        }
 
         added = 1;
     }
@@ -2088,9 +2190,15 @@ int build_ansi_from_state(unsigned char prev, unsigned char cl, char *buf)
     if ((cl & 0x80) != (prev & 0x80))
     {
         if (cl & 0x80)
-            p += sprintf(p, "5;");
+        {
+            /* 🔁 CHANGED: p += sprintf(p, "5;"); */
+            *p++ = '5'; *p++ = ';';
+        }
         else
-            p += sprintf(p, "25;"); /* blink off */
+        {
+            /* 🔁 CHANGED: p += sprintf(p, "25;"); */
+            *p++ = '2'; *p++ = '5'; *p++ = ';';
+        }
 
         added = 1;
     }
@@ -2098,14 +2206,22 @@ int build_ansi_from_state(unsigned char prev, unsigned char cl, char *buf)
     /* foreground */
     if ((cl & 0x07) != (prev & 0x07))
     {
-        p += sprintf(p, "3%d;", cl & 0x07);
+        /* 🔁 CHANGED: p += sprintf(p, "3%d;", cl & 0x07); */
+        *p++ = '3';
+        *p++ = '0' + (cl & 0x07);
+        *p++ = ';';
+
         added = 1;
     }
 
     /* background */
     if ((cl & 0x70) != (prev & 0x70))
     {
-        p += sprintf(p, "4%d;", (cl & 0x70) >> 4);
+        /* 🔁 CHANGED: p += sprintf(p, "4%d;", (cl & 0x70) >> 4); */
+        *p++ = '4';
+        *p++ = '0' + ((cl & 0x70) >> 4);
+        *p++ = ';';
+
         added = 1;
     }
 
@@ -3871,9 +3987,8 @@ void write_to_pager( DESCRIPTOR_DATA *d, const char *txt, int length )
 int build_ansi_from_atype(sh_int AType, char *buf)
 {
     if ( AType == 7 )
-        return sprintf(buf, "\033[m");
-
-    return sprintf(buf, "\033[0;%d;%s%dm",
+        return mud_snprintf_runtime(buf, 64, "\033[m");
+    return mud_snprintf_runtime(buf, 64, "\033[0;%d;%s%dm",
         (AType & 8) == 8,
         (AType > 15 ? "5;" : ""),
         (AType & 7) + 30);
@@ -3898,7 +4013,7 @@ void send_to_pager( const char *txt, CHAR_DATA *ch )
     }
     if ( d->pagecolor_dirty )
     {
-        char buf[32];
+        char buf[64];
         int len;
 
         len = build_ansi_from_atype(d->pagecolor, buf);
@@ -4008,7 +4123,7 @@ void set_char_color(sh_int AType, CHAR_DATA *ch)
 
 void set_pager_color( sh_int AType, CHAR_DATA *ch )
 {
-    char buf[16];
+//  char buf[16];
     CHAR_DATA *och;
     
     if ( !ch || !ch->desc )
@@ -4609,6 +4724,15 @@ int getcolor(char clr)
   return -1;
 }
 
+void send_eor(DESCRIPTOR_DATA *d)
+{
+    if (!d->eor_enabled)
+        return;
+
+    const unsigned char eor[] = { IAC, EOR };
+    send_telnet(d, eor, 2);
+}
+
 void display_prompt( DESCRIPTOR_DATA *d )
 {
   CHAR_DATA *ch = d->character;
@@ -4761,6 +4885,7 @@ void display_prompt( DESCRIPTOR_DATA *d )
   *pbuf = '\0';
 
   output_to_descriptor(d, buf);
+//send_eor(d);
   return;
 }
 
@@ -6028,12 +6153,12 @@ void send_telnet(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len)
 
     while (total < (ssize_t)len)
     {
-if (d->debug_telnet && len >= 2 && data[0] == IAC)
-{
-    char buf[256];
-    int pos = 0;
+        if (d->debug_telnet && len >= 2 && data[0] == IAC)
+        {
+            char buf[256];
+            int pos = 0;
 
-    pos += snprintf(buf + pos, sizeof(buf) - pos, "IAC ");
+            pos += snprintf(buf + pos, sizeof(buf) - pos, "IAC ");
 
         for (size_t i = 1; i < len && pos < (int)sizeof(buf) - 10; i++)
         {
@@ -6045,7 +6170,7 @@ if (d->debug_telnet && len >= 2 && data[0] == IAC)
             else
                 pos += snprintf(buf + pos, sizeof(buf) - pos, "%s ", telopt(c));
         }
-        bug("[TELNET] SEND: %s", buf);
+        fprintf(stderr,"[TELNET] SEND: %s\r\n", buf);
     }        ssize_t n = write(d->descriptor, data + total, len - total);
 
         if (n <= 0)

@@ -566,6 +566,9 @@ struct	descriptor_data
     time_t out_time;     /* last reset */    
 
     int telnet_pos;
+
+    bool sga_enabled;
+    bool eor_enabled;    
 };
 
 
