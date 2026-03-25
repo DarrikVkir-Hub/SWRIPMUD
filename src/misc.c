@@ -322,6 +322,7 @@ void do_clone( CHAR_DATA *ch, char *argument )
      ch_printf( ch, "&WYou have been succesfully cloned.\n" );
 
      ch->hit--;
+     gmcp_evt_char_vitals(ch);
 }
 
 void do_arm( CHAR_DATA *ch, char *argument )
@@ -858,6 +859,7 @@ void do_takedrug( CHAR_DATA *ch, char *argument )
 	     af.bitvector = AFF_POISON;
 	     affect_to_char( ch, &af );
 	     ch->hit = 1;
+       gmcp_evt_char_vitals(ch);
 	}
 		  
 	switch (drug)
@@ -974,6 +976,8 @@ void jedi_bonus( CHAR_DATA *ch )
         ch->max_mana++;
    	send_to_char("&YYou are wise in your use of the force.\n", ch);
    	send_to_char("You feel a little stronger in your wisdom.&w\n", ch);
+    gmcp_evt_char_stats(ch);
+    gmcp_evt_char_vitals(ch);
    }
 }
 
@@ -986,6 +990,8 @@ void sith_penalty( CHAR_DATA *ch )
    	  ch->max_hit--   ;
    	ch->hit--   ;
    	send_to_char("&zYour body grows weaker as your strength in the dark side grows.&w\n",ch);
+    gmcp_evt_char_stats(ch);
+    gmcp_evt_char_vitals(ch);
    }
 }
 
@@ -3729,6 +3735,7 @@ QUEST_VALUE5, obj5->short_descr);
 			questman, TO_ROOM );
                 act(AT_MAGIC,"$N waves his hand over you. You feel stronger.",   ch, NULL, 
 			questman, TO_CHAR );
+        gmcp_evt_char_vitals(ch);
 	        return;
 	    }
 	    else

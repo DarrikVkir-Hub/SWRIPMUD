@@ -966,6 +966,7 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
 	  ch->mount->move -= move;
 	else
 	  ch->move -= move;
+	gmcp_evt_char_vitals(ch);
     }
 
     /*
@@ -1166,6 +1167,8 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
     }
 
     do_look( ch, "auto" );
+	if (!IS_NPC(ch))
+		gmcp_evt_room_change(ch);
     if ( brief ) 
       SET_BIT( ch->act, PLR_BRIEF );
 

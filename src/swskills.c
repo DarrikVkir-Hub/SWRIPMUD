@@ -3094,7 +3094,7 @@ void do_torture( CHAR_DATA *ch, char *argument )
     
     ch->alignment = ch->alignment -= 100;
     ch->alignment = URANGE( -1000, ch->alignment, 1000 );
-    
+    gmcp_evt_char_stats(ch);    
     WAIT_STATE( ch, skill_table[gsn_torture]->beats );
     
     fail = FALSE;
@@ -3181,6 +3181,7 @@ void do_disguise( CHAR_DATA *ch, char *argument )
     smash_tilde( argument );
     set_title( ch, argument );
     learn_from_success( ch, gsn );
+    gmcp_evt_char_status(ch);
     send_to_char( "Ok.\n", ch );
 }
 
@@ -3273,7 +3274,7 @@ void do_mine( CHAR_DATA *ch, char *argument )
 
     STRFREE ( obj->armed_by );
     obj->armed_by = STRALLOC ( ch->name );
-
+   gmcp_evt_char_vitals(ch);
     ch_printf( ch, "You arm and bury %s.\n", obj->short_descr );
     act( AT_PLAIN, "$n arms and buries $p.", ch, obj, NULL, TO_ROOM );
 
@@ -5414,7 +5415,7 @@ void do_bind ( CHAR_DATA *ch , char *argument )
     }
 
     ch->alignment -= 10;
-    
+    gmcp_evt_char_stats(ch);
     WAIT_STATE( ch, 1 * PULSE_VIOLENCE );
 
     if ( IS_NPC(victim) || number_percent( ) > ch->pcdata->learned[gsn_bind] )

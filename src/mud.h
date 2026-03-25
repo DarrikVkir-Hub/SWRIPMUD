@@ -487,6 +487,22 @@ enum TelnetState
     TS_SB_IAC
 };
 
+#define MAX_GMCP_CAPS 64
+#define MAX_GMCP_SUBS 64
+#define GMCP_MAX_CACHE 256
+
+typedef struct
+{
+    char key[64];     /* e.g. "Char.Vitals.hp" */
+    char value[128];  /* stored as string */
+} gmcp_kv_t;
+
+typedef struct
+{
+    gmcp_kv_t entries[GMCP_MAX_CACHE];
+    int count;
+} gmcp_cache_t;
+
 /*
  * Descriptor (channel) structure.
  */
@@ -577,6 +593,26 @@ struct	descriptor_data
     bool supports_256color;     
     bool supports_truecolor;
     bool echo_enabled;
+    bool gmcp_enabled;
+
+    //GMCP handling
+    typedef struct
+    {
+        char name[64];
+        int version;
+    } gmcp_cap_t;
+    typedef struct
+    {
+        char name[64];
+    } gmcp_sub_t;
+
+    gmcp_cap_t gmcp_caps[MAX_GMCP_CAPS];
+    int gmcp_cap_count;
+    gmcp_sub_t gmcp_subs[MAX_GMCP_SUBS];
+    int gmcp_sub_count;
+    gmcp_cache_t gmcp_cache;
+    int gmcp_pending; 
+
 };
 
 
@@ -5081,6 +5117,18 @@ void do_makeinternaltracker( CHAR_DATA *ch, char *argument );
 
 /* templateparse.c */
 int parse_ship_template(char *string, SHIP_DATA *ship);
+
+/* gmcp.c*/
+void handle_gmcp(DESCRIPTOR_DATA *d, unsigned char *data, int len);
+void send_gmcp(DESCRIPTOR_DATA *d, const char *msg);
+void dispatch_gmcp(DESCRIPTOR_DATA *d, const char *module, const char *data);
+void gmcp_evt_room_change(CHAR_DATA *ch);
+void gmcp_evt_char_vitals(CHAR_DATA *ch);
+void gmcp_evt_char_status(CHAR_DATA *ch);
+void gmcp_evt_char_stats(CHAR_DATA *ch);
+void gmcp_force_resync(CHAR_DATA *ch);
+void gmcp_init_subscriptions(DESCRIPTOR_DATA *d);
+void gmcp_flush(DESCRIPTOR_DATA *d);
 
 /* comm.c */
 int telnet_process      args( ( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, unsigned char *out, int out_max) );

@@ -1346,15 +1346,15 @@ void char_update( void )
 	if ( ch->position >= POS_STUNNED )
 	{
 	    if ( ch->hit  < ch->max_hit )
-		ch->hit  += hit_gain(ch);
+			ch->hit  += hit_gain(ch);
 
 	    if ( ch->mana < ch->max_mana || ch->skill_level[FORCE_ABILITY] == 1 )
-		ch->mana += mana_gain(ch);
+			ch->mana += mana_gain(ch);
 
 	    if ( ch->move < ch->max_move )
-		ch->move += move_gain(ch);
+			ch->move += move_gain(ch);
+		gmcp_evt_char_vitals(ch);
 	}
-
 	if ( ch->position == POS_STUNNED )
 	    update_pos( ch );
         
@@ -1563,12 +1563,14 @@ void char_update( void )
 	     if ( ++ch->timer > 15 && !ch->desc )
              {
                 if ( ch->in_room )
-		     char_from_room( ch );
-		char_to_room( ch , get_room_index( ROOM_PLUOGUS_QUIT ) );      
+		     		char_from_room( ch );
+
+			   char_to_room( ch , get_room_index( ROOM_PLUOGUS_QUIT ) );      
                 ch->position = POS_RESTING;
                 ch->hit = UMAX ( 1 , ch->hit ); 
                 save_char_obj( ch );
-        	do_quit( ch, "" );
+				gmcp_evt_char_vitals(ch);
+        		do_quit( ch, "" );
              }
 	     else
 	     if ( ch == ch_save && IS_SET( sysdata.save_flags, SV_AUTO )
@@ -1957,7 +1959,10 @@ void char_check( void )
 			    int dam;
 
 			    if ( ch->move > 0 )
+				{
 				    ch->move--;
+					gmcp_evt_char_vitals(ch);
+				}
 			    else
 			    {
 				dam = number_range( ch->max_hit / 50, ch->max_hit / 30 );
@@ -1966,7 +1971,7 @@ void char_check( void )
 			           dam = UMIN( 10, dam );
 				if ( number_bits(3) == 0 )
 				   send_to_char( "Struggling with exhaustion, you choke on a mouthful of water.\n", ch );
-				damage( ch, ch, dam, TYPE_UNDEFINED );
+					damage( ch, ch, dam, TYPE_UNDEFINED );
 			    }
           	      }
 		}

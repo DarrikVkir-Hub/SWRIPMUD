@@ -921,6 +921,7 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_bribe )     return "do_bribe";
     if ( skill == do_seduce )     return "do_seduce";
     if ( skill == do_mass_propeganda )     return "do_mass_propeganda";
+    if ( skill == do_mccpstat )     return "do_mccpstat";	
     if ( skill == do_senate )     return "do_senate";
     if ( skill == do_autopilot )     return "do_autopilot";
     if ( skill == do_allspeeders )     return "do_allspeeders";

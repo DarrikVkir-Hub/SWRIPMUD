@@ -781,6 +781,7 @@ bool process_spell_components( CHAR_DATA *ch, int sn )
 			set_char_color( AT_BLOOD, ch );
 			send_to_char( "You feel a little weaker...\n", ch );
 			ch->hit -= value;
+            gmcp_evt_char_vitals(ch);
 			update_pos( ch );
 		    }
 		    continue;
@@ -2370,20 +2371,21 @@ ch_ret spell_energy_drain( int sn, int level, CHAR_DATA *ch, void *vo )
     }
 
     if ( victim->top_level <= 2 )
-	dam		 = ch->hit + 1;
+    	dam		 = ch->hit + 1;
     else
     {
-	victim->mana	/= 2;
-	victim->move	/= 2;
-	dam		 = dice(1, level);
-	ch->hit		+= dam;
+        victim->mana	/= 2;
+        victim->move	/= 2;
+        dam		 = dice(1, level);
+        ch->hit		+= dam;
+        gmcp_evt_char_vitals(ch);
     }
 
     if ( ch->hit > ch->max_hit )
       ch->hit = ch->max_hit;
     if ( IS_AFFECTED(victim, AFF_PROTECT) && IS_EVIL(ch) )
       dam -= (int) (dam / 4);
-
+    gmcp_evt_char_vitals(ch);
     return damage( ch, victim, dam, sn );
 }
 
@@ -4610,6 +4612,7 @@ ch_ret spell_affectchar( int sn, int level, CHAR_DATA *ch, void *vo )
                         return rSPELL_FAILED; 
                     }                   
 		    victim->move = URANGE( 0, victim->move + af.modifier, victim->max_move );
+            
 		    update_pos( victim );
 		    break;
 		default:

@@ -3502,10 +3502,11 @@ void update_member( CHAR_DATA *ch )
                          member->kills = ch->pcdata->pkills;
                          member->deaths = ch->pcdata->clones;
                      }
-		     member->plrclass = ch->main_ability;
+		             member->plrclass = ch->main_ability;
                      member->level = ch->top_level;
                      SPRINTF( buf, "[%02d|%02d|%04d]", t->tm_mon+1, t->tm_mday, t->tm_year+1900 );
                      member->laston = STRALLOC( buf );
+                     gmcp_evt_char_status(ch);
                      save_member_list( members_list );
                      return;
                  }
@@ -3536,6 +3537,8 @@ void update_member( CHAR_DATA *ch )
              }
 
          }
+    gmcp_evt_char_status(ch);
+
 }
     
 void do_clanfunds( CHAR_DATA *ch, char *argument )

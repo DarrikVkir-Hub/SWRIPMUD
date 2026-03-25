@@ -2116,7 +2116,7 @@ void do_bury( CHAR_DATA *ch, char *argument )
 	return;
     }
     ch->move -= move;
-    
+    gmcp_evt_char_vitals(ch);
     act( AT_ACTION, "You solemnly bury $p...", ch, obj, NULL, TO_CHAR );
     act( AT_ACTION, "$n solemnly buries $p...", ch, obj, NULL, TO_ROOM );
     SET_BIT( obj->extra_flags, ITEM_BURRIED );

@@ -2921,7 +2921,7 @@ void do_balzhur( CHAR_DATA *ch, char *argument )
 	victim->hit      = victim->max_hit;
 	victim->mana     = victim->max_mana;
 	victim->move     = victim->max_move;
-
+    gmcp_evt_char_vitals(victim);
 
     SPRINTF( buf, "%s%s", GOD_DIR, capitalize(victim->name) );  
  
@@ -3048,6 +3048,7 @@ void do_advance( CHAR_DATA *ch, char *argument )
           victim->max_hit = 500;
         if ( ability == FORCE_ABILITY )
           victim->max_mana = 0;
+       gmcp_evt_char_vitals(ch);
     }
     else
     {
@@ -3259,6 +3260,7 @@ void do_restore( CHAR_DATA *ch, char *argument )
    		vch->hit = vch->max_hit;
 		vch->mana = vch->max_mana;
 		vch->move = vch->max_move;
+        gmcp_evt_char_vitals(vch);
 		vch->pcdata->condition[COND_BLOODTHIRST] = (10 + vch->top_level);
 		update_pos (vch);
 		act( AT_IMMORT, "$n has restored you.", ch, NULL, vch, TO_VICT);
@@ -3287,6 +3289,7 @@ void do_restore( CHAR_DATA *ch, char *argument )
     victim->hit  = victim->max_hit;
     victim->mana = victim->max_mana;
     victim->move = victim->max_move;
+    gmcp_evt_char_vitals(victim);
     if ( victim->pcdata )
       victim->pcdata->condition[COND_BLOODTHIRST] = (10 + victim->top_level);
     update_pos( victim );
@@ -6837,6 +6840,7 @@ void do_undead( CHAR_DATA *ch, char *argument )
 	 //Set new parts
          victim = d->character;
          victim->hit = victim->max_hit;
+         gmcp_evt_char_vitals(victim);
          victim->position = POS_STANDING;
 	 add_char(victim);
          char_to_room(victim, in_room);

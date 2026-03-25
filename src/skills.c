@@ -2137,6 +2137,7 @@ void do_rescue( CHAR_DATA *ch, char *argument )
 	act( AT_SKILL, "$n tries to rescue you!", ch, NULL, victim, TO_VICT   );
 	act( AT_SKILL, "$n tries to rescue $N!", ch, NULL, victim, TO_NOTVICT );
 	learn_from_failure( ch, gsn_rescue );
+	gmcp_evt_char_stats(ch);
 	return;
     }
 
@@ -2156,6 +2157,7 @@ void do_rescue( CHAR_DATA *ch, char *argument )
     /* check_killer( ch, fch ); */
     set_fighting( ch, fch );
     set_fighting( fch, ch );
+    gmcp_evt_char_stats(ch);	
     return;
 }
 
@@ -2270,6 +2272,7 @@ void do_punch( CHAR_DATA *ch, char *argument )
 	learn_from_failure( ch, gsn_punch );
 	global_retcode = damage( ch, victim, 0, gsn_punch );
     }
+    gmcp_evt_char_stats(ch);	
     return;
 }
 
@@ -2549,6 +2552,7 @@ void do_stun( CHAR_DATA *ch, char *argument )
 	ch->move -= 15;
 	WAIT_STATE( ch,     2 * PULSE_VIOLENCE );
 	WAIT_STATE( victim, PULSE_VIOLENCE );
+	gmcp_evt_char_vitals(ch);
 	act( AT_SKILL, "$N smashes into you, leaving you stunned!", victim, NULL, ch, TO_CHAR );
 	act( AT_SKILL, "You smash into $N, leaving $M stunned!", ch, NULL, victim, TO_CHAR );
 	act( AT_SKILL, "$n smashes into $N, leaving $M stunned!", ch, NULL, victim, TO_NOTVICT );
@@ -2568,6 +2572,7 @@ void do_stun( CHAR_DATA *ch, char *argument )
 	WAIT_STATE( ch,     2 * PULSE_VIOLENCE );
 	ch->move -= 5;
 	learn_from_failure( ch, gsn_stun );
+	gmcp_evt_char_vitals(ch);
 	act( AT_SKILL, "$N charges at you screaming, but you dodge out of the way.", victim, NULL, ch, TO_CHAR );
 	act( AT_SKILL, "Your attempt to stun $N leaves you racing past $E as $e laughs.", ch, NULL, victim, TO_CHAR );
 	act( AT_SKILL, "$n charges screaming at $N, but keeps going right on past.", ch, NULL, victim, TO_NOTVICT );
@@ -3222,7 +3227,7 @@ void do_aid( CHAR_DATA *ch, char *argument )
 
     ch->alignment = ch->alignment + 20;
     ch->alignment = URANGE( -1000, ch->alignment, 1000 );
-
+    gmcp_evt_char_stats(ch);
     percent = number_percent( ) - (get_curr_lck(ch) - 13);
     WAIT_STATE( ch, skill_table[gsn_aid]->beats );
     if ( !IS_NPC(ch) && percent > ch->pcdata->learned[gsn_aid] )
@@ -3234,12 +3239,15 @@ void do_aid( CHAR_DATA *ch, char *argument )
     
     ch->alignment = ch->alignment + 20;
     ch->alignment = URANGE( -1000, ch->alignment, 1000 );
-    
+    gmcp_evt_char_stats(ch);
     act( AT_SKILL, "You aid $N!",  ch, NULL, victim, TO_CHAR    );
     act( AT_SKILL, "$n aids $N!",  ch, NULL, victim, TO_NOTVICT );
     learn_from_success( ch, gsn_aid );
     if ( victim->hit < 1 )
+	{
       victim->hit = 1;
+	  gmcp_evt_char_vitals(victim);
+	}
 
     update_pos( victim );
     act( AT_SKILL, "$n aids you!", ch, NULL, victim, TO_VICT    );
@@ -4111,6 +4119,7 @@ void do_hitall( CHAR_DATA *ch, char *argument )
     learn_from_success(ch, gsn_hitall);
   else
     learn_from_failure(ch, gsn_hitall);
+	gmcp_evt_char_vitals(ch);
   return;
 }
     

@@ -531,15 +531,18 @@ ch_ret multi_hit( CHAR_DATA *ch, CHAR_DATA *victim, int dt )
 
     if ( retcode == rNONE )
     {
-	int move;
+        int move;
 
-	if ( !IS_AFFECTED(ch, AFF_FLYING)
-	&&   !IS_AFFECTED(ch, AFF_FLOATING) )
-	  move = encumbrance( ch, movement_loss[UMIN(SECT_MAX-1, ch->in_room->sector_type)] );
-	else
-	  move = encumbrance( ch, 1 );
-	if ( ch->move )
-	  ch->move = UMAX( 0, ch->move - move );
+        if ( !IS_AFFECTED(ch, AFF_FLYING)
+        &&   !IS_AFFECTED(ch, AFF_FLOATING) )
+        move = encumbrance( ch, movement_loss[UMIN(SECT_MAX-1, ch->in_room->sector_type)] );
+        else
+        move = encumbrance( ch, 1 );
+        if ( ch->move )
+        {
+            ch->move = UMAX( 0, ch->move - move );
+            gmcp_evt_char_vitals(ch);
+        }
     }
 
     return retcode;
@@ -1690,6 +1693,8 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
 	raw_kill( ch, victim );
 	victim = NULL;
 
+    gmcp_evt_char_vitals(victim);
+
 	if ( !IS_NPC(ch) && loot )
 	{
 	   /* Autogold by Scryn 8/12 */
@@ -1868,31 +1873,33 @@ void check_killer( CHAR_DATA *ch, CHAR_DATA *victim )
     
     if ( IS_NPC(victim) )
     {
-	if ( !IS_NPC( ch ) )
-	{
-	  for ( x = 0; x < 32; x++ )
-	  {
-	      if ( IS_SET(victim->vip_flags , 1 << x ) )
-	      {
-	         SET_BIT(ch->pcdata->wanted_flags, 1 << x );
-	         ch_printf( ch, "&YYou are now wanted on %s.&w\n", planet_flags[x] );
-	      }
-	  }      
-	  if ( ch->pcdata->clan )
-	    ch->pcdata->clan->mkills++;
-	  ch->pcdata->mkills++;
-	  ch->in_room->area->mkills++;
-	}
-	return;
+        if ( !IS_NPC( ch ) )
+        {
+        for ( x = 0; x < 32; x++ )
+        {
+            if ( IS_SET(victim->vip_flags , 1 << x ) )
+            {
+                SET_BIT(ch->pcdata->wanted_flags, 1 << x );
+                ch_printf( ch, "&YYou are now wanted on %s.&w\n", planet_flags[x] );
+            }
+        }      
+        if ( ch->pcdata->clan )
+            ch->pcdata->clan->mkills++;
+        ch->pcdata->mkills++;
+        ch->in_room->area->mkills++;
+        }
+        gmcp_evt_char_status(ch);
+	    return;
     }
    
     if ( !IS_NPC(ch) && !IS_NPC(victim) )
     {
-	if ( ch->pcdata->clan ) ch->pcdata->clan->pkills++;
-	  ch->pcdata->pkills++;
-	update_pos(victim);
-	if ( victim->pcdata->clan )
-	  victim->pcdata->clan->pdeaths++;	   
+        if ( ch->pcdata->clan ) ch->pcdata->clan->pkills++;
+            ch->pcdata->pkills++;
+        update_pos(victim);
+        if ( victim->pcdata->clan )
+            victim->pcdata->clan->pdeaths++;	
+        gmcp_evt_char_status(ch);         
     }
 
 

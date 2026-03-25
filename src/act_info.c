@@ -3386,18 +3386,20 @@ void do_wimpy( CHAR_DATA *ch, char *argument )
 
     if ( wimpy < 0 )
     {
-	send_to_char( "Your courage exceeds your wisdom.\n", ch );
-	return;
+	    send_to_char( "Your courage exceeds your wisdom.\n", ch );
+	    return;
     }
 
     if ( wimpy > ch->max_hit )
     {
-	send_to_char( "Such cowardice ill becomes you.\n", ch );
-	return;
+	    send_to_char( "Such cowardice ill becomes you.\n", ch );
+	    return;
     }
 
     ch->wimpy	= wimpy;
     ch_printf( ch, "Wimpy set to %d hit points.\n", wimpy );
+    gmcp_evt_char_status(ch);
+
     return;
 }
 

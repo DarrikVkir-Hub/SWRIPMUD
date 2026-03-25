@@ -1068,6 +1068,9 @@ void char_from_room( CHAR_DATA *ch )
     &&   get_timer( ch, TIMER_SHOVEDRAG ) > 0 )
 	remove_timer( ch, TIMER_SHOVEDRAG );
 
+    if (!IS_NPC(ch))
+        gmcp_evt_room_change(ch);
+
     return;
 }
 
@@ -1134,6 +1137,8 @@ void char_to_room( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex )
 	tele->room		= pRoomIndex;
 	tele->timer		= pRoomIndex->tele_delay;
     }
+    if (!IS_NPC(ch))
+        gmcp_evt_room_change(ch);
     return;
 }
 
@@ -1194,6 +1199,7 @@ OBJ_DATA *obj_to_char( OBJ_DATA *obj, CHAR_DATA *ch )
     else
     if ( !IS_SET(extra_flags, ITEM_MAGIC) && wear_loc != WEAR_FLOATING )
 	ch->carry_weight	+= oweight;
+    gmcp_evt_char_stats(ch);
     return (oret ? oret : obj);
 }
 
@@ -1228,6 +1234,7 @@ void obj_from_char( OBJ_DATA *obj )
     obj->carried_by	 = NULL;
     ch->carry_number	-= get_obj_number( obj );
     ch->carry_weight	-= get_obj_weight( obj );
+    gmcp_evt_char_stats(ch);
     return;
 }
 
@@ -1358,7 +1365,8 @@ void equip_char( CHAR_DATA *ch, OBJ_DATA *obj, int iWear )
     &&   obj->value[2] != 0
     &&   ch->in_room )
 	++ch->in_room->light;
-
+    
+    gmcp_evt_char_stats(ch);
     return;
 }
 
@@ -1398,7 +1406,8 @@ void unequip_char( CHAR_DATA *ch, OBJ_DATA *obj )
     &&   ch->in_room
     &&   ch->in_room->light > 0 )
 	--ch->in_room->light;
-
+    
+    gmcp_evt_char_stats(ch);
     return;
 }
 
@@ -1692,6 +1701,7 @@ void extract_char( CHAR_DATA *ch, bool fPull )
         ch->hit = ch->max_hit;
         ch->mana = ch->max_mana;
         ch->move = ch->max_move;
+        gmcp_evt_char_vitals(ch);
     }
 
     if ( ch->mount )
@@ -3142,6 +3152,9 @@ void fix_char( CHAR_DATA *ch )
 	obj_to_char( carry[x], ch );
 
     re_equip_char( ch );
+    gmcp_evt_char_vitals(ch);
+    gmcp_evt_char_status(ch);
+    gmcp_evt_char_stats(ch);
 }
 
 

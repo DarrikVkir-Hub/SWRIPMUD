@@ -55,6 +55,9 @@ void do_score(CHAR_DATA * ch, char *argument)
 	do_oldscore(ch, argument);
 	return;
     }
+
+	gmcp_force_resync(ch);
+
     set_char_color(AT_SCORE, ch);
 
 	if (!str_cmp(argument, "lang"))
@@ -860,6 +863,7 @@ void set_title( CHAR_DATA *ch, char *title )
 
     STRFREE( ch->pcdata->title );
     ch->pcdata->title = STRALLOC( buf );
+	gmcp_evt_char_status(ch);
     return;
 }
 

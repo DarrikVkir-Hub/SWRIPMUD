@@ -44,6 +44,7 @@
 #ifndef TELOPT_MAX
 #define TELOPT_MAX 256
 #endif
+#define TELOPT_GMCP 201
 
 typedef enum
 {
@@ -143,6 +144,7 @@ bool	read_from_descriptor	args( ( DESCRIPTOR_DATA *d ) );
 /*
  * Other local functions (OS-independent).
  */
+ssize_t net_write(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len);
 void send_telnet(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len);
 void output_to_descriptor(DESCRIPTOR_DATA *d, const char *txt);
 void write_to_buffer_str(DESCRIPTOR_DATA *d, const char *txt);
@@ -175,7 +177,6 @@ bool	pager_output		args( ( DESCRIPTOR_DATA *d ) );
 
 void	mail_count		args( ( CHAR_DATA *ch ) );
 void    cron();
-
 
 int main( int argc, char **argv )
 {
@@ -526,28 +527,28 @@ void game_loop( )
 	    d->idle++;	/* make it so a descriptor can idle out */
 	    if ( FD_ISSET( d->descriptor, &exc_set ) )
 	    {
-		FD_CLR( d->descriptor, &in_set  );
-		FD_CLR( d->descriptor, &out_set );
-		if ( d->character
-		&& ( d->connected == CON_PLAYING
-		||   d->connected == CON_EDITING ) )
-		    save_char_obj( d->character );
-		d->outtop	= 0;
-		close_socket( d, TRUE );
-		continue;
+            FD_CLR( d->descriptor, &in_set  );
+            FD_CLR( d->descriptor, &out_set );
+            if ( d->character
+            && ( d->connected == CON_PLAYING
+            ||   d->connected == CON_EDITING ) )
+                save_char_obj( d->character );
+            d->outtop	= 0;
+            close_socket( d, TRUE );
+            continue;
 	    }
 	    else 
 	    if (( d->character ? d->character->top_level <= LEVEL_IMMORTAL : FALSE) &&
 	    ( d->idle > 7200 ) && !IS_SET(d->character->act, PLR_AFK))		  /* 30 minutes  */
 	    {
-	      if( (d->character && d->character->in_room) ? d->character->top_level <= LEVEL_IMMORTAL : FALSE)
-	      {
-            output_to_descriptor( d,
-            "Idle 30 Minutes. Activating AFK Flag\n");
-		SET_BIT(d->character->act, PLR_AFK);
-		act(AT_GREY,"$n is now afk due to idle time.", d->character, NULL, NULL, TO_ROOM);
-		continue;
-	      }
+            if( (d->character && d->character->in_room) ? d->character->top_level <= LEVEL_IMMORTAL : FALSE)
+            {
+                output_to_descriptor( d,
+                "Idle 30 Minutes. Activating AFK Flag\n");
+                SET_BIT(d->character->act, PLR_AFK);
+                act(AT_GREY,"$n is now afk due to idle time.", d->character, NULL, NULL, TO_ROOM);
+                continue;
+            }
 	    }
 	    else 
 	    if (( d->character ? d->character->top_level <= LEVEL_IMMORTAL : TRUE) &&
@@ -555,134 +556,137 @@ void game_loop( )
             ||   ( d->connected != CON_PLAYING && d->idle > 1200) /* 5 mins */
 	    ||     d->idle > 28800 ))				  /* 2 hrs  */
 	    {
-	      if( d->character ? d->character->top_level <= LEVEL_IMMORTAL : TRUE)
-	      {
-		output_to_descriptor( d,
-		 "Idle timeout... disconnecting.\n");
-		d->outtop	= 0;
-		close_socket( d, TRUE );
-		continue;
-	      }
+            if( d->character ? d->character->top_level <= LEVEL_IMMORTAL : TRUE)
+            {
+                output_to_descriptor( d,
+                "Idle timeout... disconnecting.\n");
+                d->outtop	= 0;
+                close_socket( d, TRUE );
+                continue;
+            }
 	    }
 	    else
 	    {
-		d->fcommand	= FALSE;
+            d->fcommand	= FALSE;
 
-		if ( FD_ISSET( d->descriptor, &in_set ) )
-		{
-			d->idle = 0;
-			if ( d->character )
-			  d->character->timer = 0;
-			if ( !read_from_descriptor( d ) )
-			{
-			    FD_CLR( d->descriptor, &out_set );
-			    if ( d->character
-			    && ( d->connected == CON_PLAYING
-			    ||   d->connected == CON_EDITING ) )
-				save_char_obj( d->character );
-			    d->outtop	= 0;
-			    close_socket( d, FALSE );
-			    continue;
-			}
-		}
-
-		/* IDENT authentication */
-	        if ( ( d->auth_fd == -1 ) && ( d->atimes < 20 ) 
-		&& !str_cmp( d->user, "unknown" ) )
-		   start_auth( d );
-
-		if ( d->auth_fd != -1)
-		{
-		   if ( FD_ISSET( d->auth_fd, &in_set ) )
-		   {
-			read_auth( d );
-			/* if ( !d->auth_state ) 
-			    check_ban( d );*/
-		   }
-		   else
-		   if ( FD_ISSET( d->auth_fd, &out_set )
-		   && IS_SET( d->auth_state, FLAG_WRAUTH) )
-		   {
-			send_auth( d );
-			/* if ( !d->auth_state )
-			  check_ban( d );*/
-		   }
-		}
-		if ( d->character && d->character->wait > 0 )
-		{
-			--d->character->wait;
-			continue;
-		}
-        /*
-        * ============================================================
-        * MULTI-COMMAND PROCESSING LOOP 
-        * ============================================================
-        */
-        int cmd_count = 0;
-
-        while ( d->inbuf_len > 0 || d->intext_len > 0 )
-        {
-            /* Stop if a command is already pending */
-            if ( d->incomm[0] != '\0' )
-                break;
-
-            read_from_buffer( d );
-
-            /* No full command ready */
-            if ( d->incomm[0] == '\0' )
-                break;
-
-            d->fcommand = TRUE;
-            stop_idling( d->character );
-
-            SPRINTF( cmdline, "%s", d->incomm );
-            d->incomm[0] = '\0';
-
-            if ( d->character )
-                set_cur_char( d->character );
-
-            /*
-                * 🔥 EXECUTE immediately (instead of delaying a tick)
-                */
-            if ( d->pagepoint != PAGEPOINT_NULL)
-                set_pager_input(d, cmdline);
-            else
+            if ( FD_ISSET( d->descriptor, &in_set ) )
             {
-                switch( d->connected )
+                d->idle = 0;
+                if ( d->character )
+                d->character->timer = 0;
+                if ( !read_from_descriptor( d ) )
                 {
-                    default:
-                        nanny( d, cmdline );
-                        break;
-
-                    case CON_PLAYING:
-                        d->character->cmd_recurse = 0;
-                        interpret( d->character, cmdline );
-                        break;
-
-                    case CON_EDITING:
-                        edit_buffer( d->character, cmdline );
-                        break;
-                        
+                    FD_CLR( d->descriptor, &out_set );
+                    if ( d->character
+                    && ( d->connected == CON_PLAYING
+                    ||   d->connected == CON_EDITING ) )
+                    save_char_obj( d->character );
+                    d->outtop	= 0;
+                    close_socket( d, FALSE );
+                    continue;
                 }
             }
-            if ( d->descriptor < 0 )   /* CLOSED inside interpret/nanny */
+
+            /* IDENT authentication */
+                if ( ( d->auth_fd == -1 ) && ( d->atimes < 20 ) 
+            && !str_cmp( d->user, "unknown" ) )
+            start_auth( d );
+
+            if ( d->auth_fd != -1)
             {
-                break;
+            if ( FD_ISSET( d->auth_fd, &in_set ) )
+            {
+                read_auth( d );
+                /* if ( !d->auth_state ) 
+                    check_ban( d );*/
+            }
+            else
+            if ( FD_ISSET( d->auth_fd, &out_set )
+            && IS_SET( d->auth_state, FLAG_WRAUTH) )
+            {
+                send_auth( d );
+                /* if ( !d->auth_state )
+                check_ban( d );*/
+            }
+            }
+            if ( d->character && d->character->wait > 0 )
+            {
+                --d->character->wait;
+                continue;
             }
             /*
-                * 🔥 SAFETY: prevent CPU abuse
-                */
-            if ( ++cmd_count >= MAX_COMMANDS_PER_TICK )
+            * ============================================================
+            * MULTI-COMMAND PROCESSING LOOP 
+            * ============================================================
+            */
+            int cmd_count = 0;
+
+            while ( d->inbuf_len > 0 || d->intext_len > 0 )
             {
-                output_to_descriptor(d,
-                    "\n*** Command limit per tick reached ***\n");
-                break;
+                /* Stop if a command is already pending */
+                if ( d->incomm[0] != '\0' )
+                    break;
+
+                read_from_buffer( d );
+
+                /* No full command ready */
+                if ( d->incomm[0] == '\0' )
+                    break;
+
+                d->fcommand = TRUE;
+                stop_idling( d->character );
+
+                SPRINTF( cmdline, "%s", d->incomm );
+                d->incomm[0] = '\0';
+
+                if ( d->character )
+                    set_cur_char( d->character );
+
+                /*
+                    * 🔥 EXECUTE immediately (instead of delaying a tick)
+                    */
+                if ( d->pagepoint != PAGEPOINT_NULL)
+                    set_pager_input(d, cmdline);
+                else
+                {
+                    switch( d->connected )
+                    {
+                        default:
+                            nanny( d, cmdline );
+                            break;
+
+                        case CON_PLAYING:
+                            d->character->cmd_recurse = 0;
+                            interpret( d->character, cmdline );
+                            break;
+
+                        case CON_EDITING:
+                            edit_buffer( d->character, cmdline );
+                            break;
+                            
+                    }
+                }
+                if ( d->descriptor < 0 )   /* CLOSED inside interpret/nanny */
+                {
+                    break;
+                }
+                /*
+                    * 🔥 SAFETY: prevent CPU abuse
+                    */
+                if ( ++cmd_count >= MAX_COMMANDS_PER_TICK )
+                {
+                    output_to_descriptor(d,
+                        "\n*** Command limit per tick reached ***\n");
+                    break;
+                }
             }
-        }
-        /*
+            /*
             * ================= END MULTI-COMMAND BLOCK ==================
             */
-    }
+        }
+
+        gmcp_flush(d); 
+
         if ( d->descriptor < 0 )   /* CLOSED inside interpret/nanny */
         {
             DISPOSE(d);
@@ -882,6 +886,7 @@ void new_descriptor( int new_desc )
     dnew->echo_enabled = false;
     dnew->intext_len = 0;
     dnew->intext[0] = '\0';    
+    dnew->gmcp_enabled = false;
 
 #ifdef LOGTELNET
     dnew->debug_telnet = true;
@@ -1006,7 +1011,8 @@ void new_descriptor( int new_desc )
     const unsigned char will_echo[] = { IAC, WONT, TELOPT_ECHO };
     send_telnet(dnew, will_echo, 3);    
 
-    
+    const unsigned char will_gmcp[] = { IAC, WILL, TELOPT_GMCP };
+    send_telnet(dnew, will_gmcp, 3);    
 
 // End Telnet Initiation
     /*
@@ -1220,7 +1226,8 @@ const char *telopt(unsigned char c)
         case TELOPT_ECHO:      return "ECHO";
         case TELOPT_SGA:        return "SGA";        
         case TELOPT_EOR:        return "EOR";  
-        case TELOPT_LINEMODE:   return "LINEMODE";      
+        case TELOPT_LINEMODE:   return "LINEMODE"; 
+        case TELOPT_GMCP:       return "GMCP";
         default:
         {
             static char buf[16];
@@ -1263,6 +1270,7 @@ bool is_known_telopt(unsigned char opt)
         case TELOPT_EOR:
         case TELOPT_TTYPE:
         case TELOPT_LINEMODE:
+        case TELOPT_GMCP:
 #ifdef MCCP
         case TELOPT_COMPRESS2:
 #endif
@@ -1308,6 +1316,10 @@ telnet_policy_t telnet_policy(DESCRIPTOR_DATA *d, int cmd, int opt)
             return TELPOLICY_IGNORE;
         case TELOPT_LINEMODE:
             return TELPOLICY_REJECT;
+        case TELOPT_GMCP:
+            if (cmd == DO || cmd == WILL)
+                return TELPOLICY_ACCEPT;
+            return TELPOLICY_IGNORE;            
         default:
             return TELPOLICY_REJECT;
     }
@@ -1317,6 +1329,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
 {
     int i, out_len = 0;
     bool last_was_cr = false;    
+    bool in_sb_block = false;
 
     for (i = 0; i < in_len; i++)
     {
@@ -1326,6 +1339,11 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
         if (d->telstate == TS_IAC && c == IAC)
         {
             d->telstate = TS_DATA;
+
+            if (out_len < out_max - 1)
+                out[out_len++] = IAC;
+
+            continue;
         }
 
         switch (d->telstate)
@@ -1381,9 +1399,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                     case SB:
                         /* Only allow SB if NAWS enabled */
                         d->telstate = TS_SB;
-                        process_char = false;
-                        break;
-
+                        in_sb_block = true;
                         process_char = false;
                         break;
 
@@ -1400,6 +1416,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 if (c >= 240)
                 {
                     d->telstate = TS_DATA;
+                    process_char = false;
                     break;
                 }                
                 TELLOG_APPEND(d, "%s", telopt(c));
@@ -1420,7 +1437,9 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                     {
                         const unsigned char dont[] = { IAC, DONT, c };
                         send_telnet(d, dont, 3);
-                    }                    
+                    }
+                    d->telstate = TS_DATA;
+                    process_char = false;                     
                     break;
                 }
                 /* SGA */
@@ -1451,7 +1470,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
 
                     TELLOG(d, "TTYPE: SEND request\r\n");
                 }
-                /* === POLICY CHANGE: gated NAWS === */
+                /* === POLICY: gated NAWS === */
                 if (policy == TELPOLICY_ACCEPT && c == TELOPT_NAWS)
                 {
                     TELLOG(d, "NAWS: negotiation start\r\n");
@@ -1463,6 +1482,18 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
 
                     TELLOG(d, "NAWS: enabled\r\n");
                 }
+                // GMCP
+                if (policy == TELPOLICY_ACCEPT && c == TELOPT_GMCP)
+                {
+                    const unsigned char do_gmcp[] = { IAC, DO, TELOPT_GMCP };
+                    send_telnet(d, do_gmcp, 3);
+
+                    d->telopt_him[c] = 1;
+                    d->gmcp_enabled = true;
+                    gmcp_init_subscriptions(d);
+
+                    TELLOG(d, "GMCP: enabled\r\n");
+                }                
                 if (policy == TELPOLICY_REJECT && c == TELOPT_LINEMODE)
                 {
                     const unsigned char dont[] = { IAC, DONT, TELOPT_LINEMODE };
@@ -1482,6 +1513,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 if (c >= 240)
                 {
                     d->telstate = TS_DATA;
+                    process_char = false;
                     break;
                 }                
                 TELLOG_APPEND(d, "%s", telopt(c));
@@ -1490,6 +1522,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 if (!d->telopt_him[c])
                 {
                     d->telstate = TS_DATA;
+                    process_char = false; 
                     break;
                 }
 
@@ -1504,6 +1537,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 if (c >= 240)
                 {
                     d->telstate = TS_DATA;
+                    process_char = false;
                     break;
                 }                
                 TELLOG_APPEND(d, "%s", telopt(c));
@@ -1511,11 +1545,32 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 /* dedupe */
                 if (d->telopt_us[c])
                 {
+                    /* NEW: ensure GMCP state is correct even if already negotiated */
+                    if (c == TELOPT_GMCP)
+                    {
+                        d->gmcp_enabled = true;
+                        gmcp_init_subscriptions(d);   /* NEW */
+                        TELLOG(d, "GMCP: enabled (dedupe path)\r\n"); /* NEW */
+                    }
+
                     d->telstate = TS_DATA;
                     break;
                 }
                 /* === POLICY ADD === */
                 telnet_policy_t policy = telnet_policy(d, DO, c);
+                /* GMCP SUPPORT (symmetric safety) */
+                if (policy == TELPOLICY_ACCEPT && c == TELOPT_GMCP)
+                {
+                    const unsigned char will_gmcp[] = { IAC, WILL, TELOPT_GMCP };
+                    send_telnet(d, will_gmcp, 3);
+
+                    d->telopt_us[c] = 1;
+                    d->gmcp_enabled = true;
+
+                    gmcp_init_subscriptions(d);   /* NEW */
+
+                    TELLOG(d, "GMCP: enabled (DO path)\r\n");
+                }             
                 /* EOR */
                 if (policy == TELPOLICY_ACCEPT && c == TELOPT_EOR)
                 {
@@ -1544,7 +1599,9 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                     {
                         const unsigned char dont[] = { IAC, DONT, c };
                         send_telnet(d, dont, 3);
-                    }                    
+                    }        
+                    d->telstate = TS_DATA;
+                    process_char = false;                                 
                     break;
                 }
 
@@ -1556,7 +1613,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
 
                     const unsigned char will_comp[] = { IAC, WILL, TELOPT_COMPRESS2 };
                     send_telnet(d, (const unsigned char *)will_comp, 3);
-
+                    d->telopt_us[c] = 1;
                     d->mccp_pending = 1;
 
                     TELLOG(d, "MCCP: pending set → waiting for CON_PLAYING\r\n");
@@ -1590,6 +1647,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 if (c >= 240)
                 {
                     d->telstate = TS_DATA;
+                    process_char = false;
                     break;
                 }                
                 TELLOG_APPEND(d, "%s", telopt(c));
@@ -1599,6 +1657,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 if (!d->telopt_us[c])
                 {
                     d->telstate = TS_DATA;
+                    process_char = false; 
                     break;
                 }
                 d->telopt_us[c] = 0;                
@@ -1629,11 +1688,20 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
             }
             case TS_SB:
             {
+                /* FIX: validate telopt before trusting */
+                if (!is_known_telopt(c))
+                {
+                    d->telstate = TS_DATA;
+                    process_char = false;
+                    break;
+                }
+
                 d->sb_option = c;
                 d->sb_len = 0;
-                TELLOG_APPEND(d, "%s ", telopt(c)); 
-                d->telstate = TS_SB_DATA;
 
+                TELLOG_APPEND(d, "%s ", telopt(c)); 
+
+                d->telstate = TS_SB_DATA;
                 process_char = false;
                 break;
             }
@@ -1647,9 +1715,12 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                     break;
                 }
 
-                if (d->sb_len < (int)sizeof(d->sb_buf))
-                    d->sb_buf[d->sb_len++] = c;
-
+                if (d->sb_len >= (int)sizeof(d->sb_buf))
+                {
+                    process_char = false;
+                    break;
+                }
+                d->sb_buf[d->sb_len++] = c;
                 process_char = false;
                 break;
             }
@@ -1714,7 +1785,12 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                                 send_telnet(d, ttype_send, sizeof(ttype_send));
                             }
                         }
-                    }                
+                    }    
+                    /* GMCP HOOK */
+                    else if (d->sb_option == TELOPT_GMCP)
+                    {
+                        handle_gmcp(d, d->sb_buf, d->sb_len);
+                    }                                
                     else
                     {
                         /* hook for future protocols (GMCP, MSSP, etc.) */
@@ -1729,16 +1805,20 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                 }
                 else if (c == IAC)
                 {
-                    if (d->sb_len < 4)
+                    if (d->sb_len < (int)sizeof(d->sb_buf) - 1)
                         d->sb_buf[d->sb_len++] = IAC;
 
                     d->telstate = TS_SB_DATA;
                 }
                 else
                 {
-                    /* INVALID SB TERMINATION → RESET */
-                    d->telstate = TS_DATA;
-                    d->sb_len = 0;
+                    /* PARTIAL SB — stay in SB mode, wait for more data */
+                    d->telstate = TS_SB_DATA;
+
+                    if (d->sb_len < (int)sizeof(d->sb_buf) - 1)
+                        d->sb_buf[d->sb_len++] = c;
+
+                    process_char = false;
                 }
 
                 process_char = false;
@@ -1747,8 +1827,10 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
         }
 
         /* Emit only real data bytes */
-        if (process_char)
+        if (process_char && d->telstate == TS_DATA)
         {
+            if ((c != '\n' && c!= '\r' ) && (c < 32 || c > 126))
+                continue;            
             if (c == '\r')
             {
                 last_was_cr = true;
@@ -1908,53 +1990,50 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
     unsigned char clean[MAX_INBUF_SIZE];
 
     int new_bytes = d->inbuf_len - d->telnet_pos;
+    /*
+     * ============================================================
+     * ✅ NEW: Process ENTIRE buffer as a continuous stream
+     * ============================================================
+     */
+    int clean_len = 0;
 
-    if ( new_bytes > 0 )
+    if ( d->inbuf_len > 0 )
     {
         memset(clean, 0, sizeof(clean));
 
-        int clean_len = telnet_process(
+        clean_len = telnet_process(
             d,
-            (unsigned char *)d->inbuf + d->telnet_pos,
-            new_bytes,
+            (unsigned char *)d->inbuf,
+            d->inbuf_len,
             clean,
             sizeof(clean)
         );
-
-        d->telnet_pos = d->inbuf_len;
+    }
 
         /*
          * ============================================================
          * NEW: APPEND CLEAN DATA INTO INTEXT BUFFER
          * ============================================================
          */
-        if ( clean_len > 0 )
-        {
-            int space = sizeof(d->intext) - d->intext_len - 1;
+    if ( clean_len > 0 )
+    {
+        int space = sizeof(d->intext) - d->intext_len - 1;
 
-            if ( clean_len > space )
-                clean_len = space;
+        if ( clean_len > space )
+            clean_len = space;
 
-            memcpy(d->intext + d->intext_len, clean, clean_len);
-            d->intext_len += clean_len;
-            d->intext[d->intext_len] = '\0';
-        }
-
-        /*
-         * ============================================================
-         * EXISTING: SHIFT RAW BUFFER (UNCHANGED LOGIC)
-         * ============================================================
-         */
-        int shift = d->telnet_pos;
-
-        int remaining = d->inbuf_len - shift;
-
-        if ( remaining > 0 )
-            memmove( d->inbuf, d->inbuf + shift, remaining );
-
-        d->inbuf_len = remaining;
-        d->telnet_pos = 0;
+        memcpy(d->intext + d->intext_len, clean, clean_len);
+        d->intext_len += clean_len;
+        d->intext[d->intext_len] = '\0';
     }
+
+     /*
+     * ============================================================
+     * ✅ NEW: Fully consume buffer after processing
+     * ============================================================
+     */
+    d->inbuf_len = 0;
+    d->inbuf[0] = '\0';
 
     /*
      * ============================================================
@@ -1995,7 +2074,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
         if ( (c == '\b' || c == 127) && k > 0 )
             --k;
-        else if ( isprint(c) )
+        else if (c >= 32 && c <= 126)  /* STRICT ASCII ONLY */
             d->incomm[k++] = (char)c;
     }
 
@@ -2087,8 +2166,8 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
 
     bool had_output = (d->outtop > 0);    
 
-    TELLOG(d, "flush start: had_output=%d outtop=%ld fPrompt=%d\r\n",
-       had_output, d->outtop, fPrompt);
+//    TELLOG(d, "flush start: had_output=%d outtop=%ld fPrompt=%d\r\n",
+//       had_output, d->outtop, fPrompt);
 
     /*
      * Short-circuit if nothing to write.
@@ -2121,7 +2200,12 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
      */
     if (d->out_compress)
     {
-        d->out_compress->next_in  = (unsigned char *)d->outbuf;
+        unsigned char tmp[COMPRESS_BUF_SIZE];
+
+        memcpy(tmp, d->outbuf, d->outtop);
+
+        d->out_compress->next_in  = tmp;
+        d->out_compress->avail_in = d->outtop;
         d->out_compress->avail_in = d->outtop;
         // Track Input
         d->mccp_bytes_in += d->outtop;        
@@ -2151,9 +2235,9 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
         }
         if (d->eor_enabled && had_output)
         {
-            TELLOG(d, "flush (MCCP): sending EOR\r\n");
+            //TELLOG(d, "flush (MCCP): sending EOR\r\n");
 
-            const unsigned char eor[] = { IAC, EOR };
+            static const unsigned char eor[] = { IAC, EOR };
 
             d->out_compress->next_in  = (unsigned char *)eor;
             d->out_compress->avail_in = 2;
@@ -2275,6 +2359,72 @@ void write_to_buffer_str(DESCRIPTOR_DATA *d, const char *txt)
     }
 
     write_to_buffer(d, txt, len);
+}
+
+void write_to_buffer_raw(DESCRIPTOR_DATA *d, const unsigned char *data, int length)
+{
+    static int count = 0;
+
+    if (!d)
+    {
+        bug("write_to_buffer_raw: NULL descriptor");
+        return;
+    }
+
+    if (!d->outbuf)
+        return;
+
+    if (!data || length <= 0)
+        return;
+
+    /*
+     * HARD CAP (same as original)
+     */
+    if (d->outtop + length > 50000)
+    {
+        if (count == 0)
+        {
+            bug("write_to_buffer_raw: overflow (%s) [%d bytes queued]",
+                d->character ? d->character->name : d->host,
+                d->outtop);
+            count++;
+            close_socket(d, TRUE);
+        }
+        count = 0;
+        return;
+    }
+
+    /*
+     * Expand buffer as needed (same logic)
+     */
+    while (d->outtop + (unsigned int)length >= d->outsize)
+    {
+        if (d->outsize > 65536)
+        {
+            d->outtop = 0;
+            bug("write_to_buffer_raw: max buffer exceeded (%s)",
+                d->character ? d->character->name : "???");
+            close_socket(d, TRUE);
+            return;
+        }
+
+        d->outsize *= 2;
+        RECREATE(d->outbuf, char, d->outsize);
+    }
+
+    /*
+     * ✅ RAW COPY (no processing)
+     */
+    memcpy(d->outbuf + d->outtop, data, length);
+    d->outtop += length;
+
+    /*
+     * ⚠️ DO NOT null-terminate binary stream
+     * (but harmless if you want for debugging)
+     */
+    d->outbuf[d->outtop] = '\0';
+
+    return;
 }
 
 int build_ansi_from_state(unsigned char prev, unsigned char cl, char *buf)
@@ -3549,7 +3699,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
                 ch->max_mana = 100 + 100*ch->perm_frc;
             else
                 ch->max_mana = 0;
-                ch->max_mana += race_table[ch->race].mana;
+            ch->max_mana += race_table[ch->race].mana;
             ch->mana	= ch->max_mana;
             SPRINTF( buf, "%s the %s",ch->name,
             race_table[ch->race].race_name );
@@ -3735,6 +3885,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
         act( AT_ACTION, "$n has entered the game.", ch, NULL, NULL, TO_ROOM );
         do_look( ch, "auto" );
         mail_count(ch);
+        gmcp_force_resync(ch);
         break;
 
             /* Far too many possible screwups if we do it this way. -- Altrag */
@@ -5021,7 +5172,7 @@ void display_prompt( DESCRIPTOR_DATA *d )
     }
   }
   *pbuf = '\0';
-
+  
   output_to_descriptor(d, buf);
 //send_eor(d);
   return;
@@ -5868,17 +6019,18 @@ size_t visible_length(const char *txt)
             while (txt[i] && txt[i] != 'm')
                 i++;
 
-            continue;
+            if (txt[i] == 'm')
+                continue;
+
+            /* reached end of string safely */
+            break;
         }
         /* =========================
          * SMAUG color codes (&x, ^x)
          * ========================= */
         if ((txt[i] == '&' || txt[i] == '^'))
         {
-            if (txt[i + 1] == '\0')
-                break;  // nothing to look ahead to
-
-            if (is_smaug_color(txt[i + 1]))
+            if (txt[i + 1] != '\0' && is_smaug_color(txt[i + 1]))
             {
                 i++;  // skip color code
                 continue;
@@ -6287,16 +6439,12 @@ void send_telnet(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len)
     if (!d || d->descriptor < 0 || !data || len == 0)
         return;
 
-    ssize_t total = 0;
-
-    while (total < (ssize_t)len)
+    if (d->debug_telnet && len >= 2 && data[0] == IAC)
     {
-        if (d->debug_telnet && len >= 2 && data[0] == IAC)
-        {
-            char buf[256];
-            int pos = 0;
+        char buf[256];
+        int pos = 0;
 
-            pos += snprintf(buf + pos, sizeof(buf) - pos, "IAC ");
+        pos += snprintf(buf + pos, sizeof(buf) - pos, "IAC ");
 
         for (size_t i = 1; i < len && pos < (int)sizeof(buf) - 10; i++)
         {
@@ -6308,8 +6456,21 @@ void send_telnet(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len)
             else
                 pos += snprintf(buf + pos, sizeof(buf) - pos, "%s ", telopt(c));
         }
-        fprintf(stderr,"[TELNET] SEND: %s\r\n", buf);
-    }        ssize_t n = write(d->descriptor, data + total, len - total);
+
+        fprintf(stderr, "[TELNET] SEND: %s\r\n", buf);
+    }
+
+    /* 🔥 Single call is enough */
+    net_write(d, data, len);
+}
+
+ssize_t net_write_raw(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len)
+{
+    ssize_t total = 0;
+
+    while (total < (ssize_t)len)
+    {
+        ssize_t n = write(d->descriptor, data + total, len - total);
 
         if (n <= 0)
         {
@@ -6317,16 +6478,80 @@ void send_telnet(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len)
                 continue;
 
             if (errno == EWOULDBLOCK || errno == EAGAIN)
-            {
-                /* Non-blocking: stop trying for now */
                 break;
-            }
 
-            perror("send_telnet: write");
+            perror("net_write_raw");
             close_socket(d, TRUE);
-            return;
+            return -1;
         }
 
         total += n;
     }
+
+    return total;
+}
+
+ssize_t net_write(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len)
+{
+#ifdef MCCP
+    if (d->compressing == TELOPT_COMPRESS2)
+    {
+        z_stream *s = d->out_compress;
+
+        s->next_in  = (unsigned char *)data;
+        s->avail_in = len;
+
+        size_t total_out = 0;
+
+        while (s->avail_in > 0)
+        {
+            /* === FIX: use persistent buffer instead of stack === */
+            s->next_out  = d->out_compress_buf;        // ✅ WAS: stack buffer
+            s->avail_out = COMPRESS_BUF_SIZE;
+
+            if (deflate(s, Z_SYNC_FLUSH) != Z_OK)
+                return -1;
+
+            size_t have = COMPRESS_BUF_SIZE - s->avail_out;
+
+            if (have > 0)
+            {
+                if (net_write_raw(d, d->out_compress_buf, have) < 0)
+                    return -1;
+
+                total_out += have;
+            }
+        }
+
+        return total_out; /* approximate */
+    }
+#endif
+
+    return net_write_raw(d, data, len);
+}
+
+void send_gmcp(DESCRIPTOR_DATA *d, const char *msg)
+{
+    unsigned char buf[2048];
+    int len = 0;
+
+    int msg_len = strlen(msg);
+
+    /* NEW: bounds check */
+    if (msg_len > (int)sizeof(buf) - 6)
+        msg_len = sizeof(buf) - 6;
+
+    buf[len++] = IAC;
+    buf[len++] = SB;
+    buf[len++] = TELOPT_GMCP;
+
+    memcpy(buf + len, msg, msg_len);
+    len += msg_len;
+
+    buf[len++] = IAC;
+    buf[len++] = SE;
+
+    write_to_buffer_raw(d, buf, len);
+
+//    send_telnet(d, buf, len);
 }

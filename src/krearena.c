@@ -1075,6 +1075,7 @@ void remove_from_arena(CHAR_DATA *ch)
       stop_fighting( ch, TRUE );
       char_from_room(ch);
       char_to_room(ch,get_room_index(ch->retran));
+      gmcp_evt_char_vitals(ch);
       do_look(ch,"auto");
       act(AT_YELLOW,"$n falls from the sky.", ch, NULL, NULL, TO_ROOM);
       switch (g->place) {
