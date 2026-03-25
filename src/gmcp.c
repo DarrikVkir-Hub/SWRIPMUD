@@ -461,15 +461,15 @@ void gmcp_core_supports_set(DESCRIPTOR_DATA *d, const char *data)
 
 void gmcp_force_resync(CHAR_DATA *ch)
 {
-    gmcp_evt_char_vitals(ch);
-    gmcp_evt_room_change(ch);
     gmcp_evt_char_status(ch);
+    gmcp_evt_char_vitals(ch);
     gmcp_evt_char_stats(ch);
+    gmcp_evt_room_change(ch);
 
     if (gmcp_has(ch->desc, "Char"))
     {
-        gmcp_send_from_cache(ch->desc, "Char.Vitals", build_char_vitals);
         gmcp_send_from_cache(ch->desc, "Char.Status", build_char_status);
+        gmcp_send_from_cache(ch->desc, "Char.Vitals", build_char_vitals);
         gmcp_send_from_cache(ch->desc, "Char.Stats", build_char_stats);
     }
 

@@ -45,6 +45,7 @@
 #define TELOPT_MAX 256
 #endif
 #define TELOPT_GMCP 201
+#define TELOPT_MSSP 70
 
 typedef enum
 {
@@ -103,6 +104,7 @@ void    show_condition( CHAR_DATA *ch, CHAR_DATA *victim );
 /*
  * Global variables.
  */
+int player_count = 0;
 DESCRIPTOR_DATA *   first_descriptor;	/* First descriptor		*/
 DESCRIPTOR_DATA *   last_descriptor;	/* Last descriptor		*/
 DESCRIPTOR_DATA *   d_next;		/* Next descriptor in loop	*/
@@ -144,6 +146,7 @@ bool	read_from_descriptor	args( ( DESCRIPTOR_DATA *d ) );
 /*
  * Other local functions (OS-independent).
  */
+void send_mssp(DESCRIPTOR_DATA *d);
 ssize_t net_write(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len);
 void send_telnet(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len);
 void output_to_descriptor(DESCRIPTOR_DATA *d, const char *txt);
@@ -887,6 +890,13 @@ void new_descriptor( int new_desc )
     dnew->intext_len = 0;
     dnew->intext[0] = '\0';    
     dnew->gmcp_enabled = false;
+    dnew->client_name[0]   = '\0';
+    dnew->terminal_type[0] = '\0';
+    dnew->last_ttype[0]    = '\0';
+    dnew->client_type = CLIENT_UNKNOWN;
+    dnew->supports_utf8 = false;
+    dnew->supports_ansi = false;
+    dnew->ttype_count = 0;    
 
 #ifdef LOGTELNET
     dnew->debug_telnet = true;
@@ -1010,9 +1020,15 @@ void new_descriptor( int new_desc )
     /* ECHO WONT */
     const unsigned char will_echo[] = { IAC, WONT, TELOPT_ECHO };
     send_telnet(dnew, will_echo, 3);    
-
+    
+    // GMCP
     const unsigned char will_gmcp[] = { IAC, WILL, TELOPT_GMCP };
     send_telnet(dnew, will_gmcp, 3);    
+
+// Temporary for testing MSSP    
+    const unsigned char will_mssp[] = { IAC, WILL, TELOPT_MSSP };
+    send_telnet(dnew, will_mssp, 3);    
+
 
 // End Telnet Initiation
     /*
@@ -1319,7 +1335,11 @@ telnet_policy_t telnet_policy(DESCRIPTOR_DATA *d, int cmd, int opt)
         case TELOPT_GMCP:
             if (cmd == DO || cmd == WILL)
                 return TELPOLICY_ACCEPT;
-            return TELPOLICY_IGNORE;            
+            return TELPOLICY_IGNORE;    
+        case TELOPT_MSSP:
+            if (cmd == DO)
+                return TELPOLICY_ACCEPT;
+            return TELPOLICY_IGNORE;                    
         default:
             return TELPOLICY_REJECT;
     }
@@ -1329,7 +1349,6 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
 {
     int i, out_len = 0;
     bool last_was_cr = false;    
-    bool in_sb_block = false;
 
     for (i = 0; i < in_len; i++)
     {
@@ -1399,7 +1418,6 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                     case SB:
                         /* Only allow SB if NAWS enabled */
                         d->telstate = TS_SB;
-                        in_sb_block = true;
                         process_char = false;
                         break;
 
@@ -1592,6 +1610,22 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
 
                     TELLOG(d, "ECHO: enabled\r\n");
                 }                
+                /* MSSP */
+                if (policy == TELPOLICY_ACCEPT && c == TELOPT_MSSP)
+                {
+                    TELLOG(d, "MSSP: client requested (DO)\r\n");
+
+                    d->telopt_us[c] = 1;
+
+                    /* MSSP does NOT require WILL response in practice */
+                    send_mssp(d);
+
+                    TELLOG(d, "MSSP: sent\r\n");
+
+                    d->telstate = TS_DATA;
+                    process_char = false;
+                    break;
+                }                
                 if (policy == TELPOLICY_REJECT)
                 {
                     /* only reply to known options */
@@ -1756,28 +1790,64 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
 
                             TELLOG(d, "TTYPE IS[%d]: %s\r\n", d->ttype_count, tmp);
 
-                            /* Store first response as primary */
+                            char norm[128];
+                            int i;
+                            for (i = 0; i < len && i < (int)sizeof(norm) - 1; i++)
+                                norm[i] = tolower((unsigned char)tmp[i]);
+                            norm[i] = '\0';
+
                             if (d->ttype_count == 0)
+                            {
+                                strncpy(d->client_name, tmp, sizeof(d->client_name) - 1);
+                                d->client_name[sizeof(d->client_name) - 1] = '\0';
+
+                                /* NEW: detect client */
+                                if (strstr(norm, "mudlet"))
+                                    d->client_type = CLIENT_MUDLET;
+                                else if (strstr(norm, "cmud"))
+                                    d->client_type = CLIENT_CMUD;
+                                else if (strstr(norm, "zmud"))
+                                    d->client_type = CLIENT_ZMUD;
+                                else if (strstr(norm, "tintin"))
+                                    d->client_type = CLIENT_TINTIN;
+                                else if (strstr(norm, "mushclient"))
+                                    d->client_type = CLIENT_MUSHCLIENT;
+                                else if (strstr(norm, "putty"))
+                                    d->client_type = CLIENT_PUTTY;
+                                else if (strstr(norm, "kitty"))
+                                    d->client_type = CLIENT_KITTY;
+                                else
+                                    d->client_type = CLIENT_UNKNOWN;
+                            }
+
+                            else if (d->ttype_count == 1)
                             {
                                 strncpy(d->terminal_type, tmp, sizeof(d->terminal_type) - 1);
                                 d->terminal_type[sizeof(d->terminal_type) - 1] = '\0';
                             }
 
                             /* Detect capabilities */
-                            if (strstr(tmp, "256") || strstr(tmp, "256COLOR"))
+                            if (strstr(norm, "256"))
                             {
                                 d->supports_256color = true;
                             }
                             /* Detect capabilities */
-                            if (strstr(tmp, "TRUECOLOR") )
+                            if (strstr(norm, "truecolor") || strstr(norm, "24bit"))
                             {
                                 d->supports_truecolor = true;
                             }                            
+                            if (strstr(norm, "utf-8") || strstr(norm, "utf8"))
+                                d->supports_utf8 = true;
+                            if (strstr(norm, "xterm") || strstr(norm, "ansi"))
+                                d->supports_ansi = true;                                
+                            /* loop protection */
+                            strncpy(d->last_ttype, tmp, sizeof(d->last_ttype) - 1);
+                            d->last_ttype[sizeof(d->last_ttype) - 1] = '\0';                                
 
                             d->ttype_count++;
 
                             /* Request next TTYPE (LIMITED) */
-                            if (d->ttype_count < 5)   /* limit to avoid infinite loops */
+                            if (d->ttype_count < 5)
                             {
                                 const unsigned char ttype_send[] = {
                                     IAC, SB, TELOPT_TTYPE, TELQUAL_SEND, IAC, SE
@@ -1989,7 +2059,6 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     unsigned char clean[MAX_INBUF_SIZE];
 
-    int new_bytes = d->inbuf_len - d->telnet_pos;
     /*
      * ============================================================
      * ✅ NEW: Process ENTIRE buffer as a continuous stream
@@ -5172,7 +5241,7 @@ void display_prompt( DESCRIPTOR_DATA *d )
     }
   }
   *pbuf = '\0';
-  
+  gmcp_flush(d);
   output_to_descriptor(d, buf);
 //send_eor(d);
   return;
@@ -5320,7 +5389,6 @@ void whocount(struct tm tmdata)
   char datebuf[32];
   char timebuf[32];
   char countbuf[64];
-  int player_count = 0;
   int imm_count = 0;
   int count = 0;
   DESCRIPTOR_DATA *d;
@@ -6006,7 +6074,7 @@ size_t visible_length(const char *txt)
 
     size_t len = 0;
 
-    for (int i = 0; txt[i] != '\0'; i++)
+    for (int i = 0; txt[i] != '\0';)
     {
         /* =========================
          * ANSI escape sequence
@@ -6020,7 +6088,7 @@ size_t visible_length(const char *txt)
                 i++;
 
             if (txt[i] == 'm')
-                continue;
+                i++;
 
             /* reached end of string safely */
             break;
@@ -6032,15 +6100,29 @@ size_t visible_length(const char *txt)
         {
             if (txt[i + 1] != '\0' && is_smaug_color(txt[i + 1]))
             {
-                i++;  // skip color code
+                i += 2;  // skip color code
                 continue;
             }
         }
 
         /* =========================
-         * Normal visible character
+         * UTF-8 handling
          * ========================= */
-        len++;
+        unsigned char c = (unsigned char)txt[i];
+        int char_len = utf8_char_len(c);
+
+        /* Prevent overrunning string on malformed UTF-8 */
+        for (int j = 1; j < char_len; j++)
+        {
+            if (txt[i + j] == '\0')
+            {
+                char_len = 1;
+                break;
+            }
+        }
+
+        i += char_len;   /* advance full UTF-8 char */
+        len++;           /* visible width = 1 */
     }
 
     return len;
@@ -6066,54 +6148,6 @@ size_t visible_length_range(const char *start, const char *end, int flags)
         if (!(flags & WRAP_NO_COLOR) && (*p == '&' || *p == '^'))
         {
             if ((p + 1) < end && is_smaug_color(*(p + 1)))
-            {
-                p += 2;
-                continue;
-            }
-        }
-
-        len++;
-        p++;
-    }
-
-    return len;
-}
-
-size_t visible_length_ex(const char *txt, int flags)
-{
-    if (!txt)
-        return 0;
-
-    size_t len = 0;
-    const char *p = txt;
-
-    while (*p)
-    {
-        /* ANSI escape */
-        if (!(flags & WRAP_NO_COLOR) && *p == '\x1b')
-        {
-            p++;
-
-            if (!*p)
-                break;
-
-            while (*p && *p != 'm')
-                p++;
-
-            if (!*p)
-                break;
-
-            p++;  // skip 'm'
-            continue;
-        }
-
-        /* SMAUG color */
-        if (!(flags & WRAP_NO_COLOR) && (*p == '&' || *p == '^'))
-        {
-            if (!*(p + 1))
-                break;
-
-            if (is_smaug_color(*(p + 1)))
             {
                 p += 2;
                 continue;
@@ -6545,7 +6579,29 @@ void send_gmcp(DESCRIPTOR_DATA *d, const char *msg)
     buf[len++] = SB;
     buf[len++] = TELOPT_GMCP;
 
-    memcpy(buf + len, msg, msg_len);
+    /* SAFE COPY WITH IAC ESCAPING */
+    for (int i = 0; i < msg_len && len < (int)sizeof(buf) - 2; i++)
+    {
+        unsigned char c = (unsigned char)msg[i];
+
+        if (c == IAC)
+        {
+            /* Duplicate IAC */
+            if (len < (int)sizeof(buf) - 3)
+            {
+                buf[len++] = IAC;
+                buf[len++] = IAC;
+            }
+            else
+            {
+                break; /* avoid overflow */
+            }
+        }
+        else
+        {
+            buf[len++] = c;
+        }
+    }
     len += msg_len;
 
     buf[len++] = IAC;
@@ -6554,4 +6610,101 @@ void send_gmcp(DESCRIPTOR_DATA *d, const char *msg)
     write_to_buffer_raw(d, buf, len);
 
 //    send_telnet(d, buf, len);
+}
+
+#define MSSP_VAR 1
+#define MSSP_VAL 2
+
+extern int			top_area;
+extern int			top_help;
+extern int			top_mob_index;
+extern int			top_obj_index;
+extern int			top_room;
+
+
+void send_mssp(DESCRIPTOR_DATA *d)
+{
+    unsigned char buf[2048];
+    int len = 0;
+    if (!d)
+        return;
+
+    buf[len++] = IAC;
+    buf[len++] = SB;
+    buf[len++] = TELOPT_MSSP;
+
+#define ADD(name, value) \
+    do { \
+        buf[len++] = MSSP_VAR; \
+        len += snprintf((char *)buf + len, sizeof(buf) - len, "%s", name); \
+        buf[len++] = MSSP_VAL; \
+        len += snprintf((char *)buf + len, sizeof(buf) - len, "%s", value); \
+    } while (0)
+
+    char players[16], uptime[32], port[16];
+    char areas[16], rooms[16], mobs[16], objs[16];
+    char levels[16], classes[16], races[16], skills[16];
+    char helps[16];
+
+    snprintf(players, sizeof(players), "%d", player_count);
+    snprintf(uptime, sizeof(uptime), "%ld", (long)boot_time);
+    snprintf(port, sizeof(uptime), "%d", control);
+    snprintf(areas, sizeof(areas), "%d", top_area);
+    snprintf(rooms, sizeof(rooms), "%d", top_room);
+    snprintf(mobs, sizeof(mobs), "%d", top_mob_index);
+    snprintf(objs, sizeof(objs), "%d", top_obj_index);
+    snprintf(helps, sizeof(helps), "%d", top_help);
+    snprintf(levels, sizeof(levels), "%d", MAX_LEVEL);
+    snprintf(classes, sizeof(classes), "%d", MAX_RL_ABILITY);
+    snprintf(races, sizeof(races), "%d", MAX_RACE);
+    snprintf(skills, sizeof(skills), "%d", top_sn);
+
+
+    ADD("NAME", "SWRIP2");
+    ADD("PLAYERS", players);
+    ADD("UPTIME", uptime);
+    ADD("HOSTNAME", "swrip.net");    
+    ADD("PORT", port);
+
+    /* Classification */
+    ADD("CODEBASE", "SMAUG");    
+    ADD("CODEBASE", "SWR");
+    ADD("CODEBASE", "SWRIP2");    
+    ADD("FAMILY", "DikuMUD");
+    ADD("GENRE", "Science Fiction");
+    ADD("GAMEPLAY", "Roleplaying");
+    ADD("STATUS", "Closed Beta");
+
+    /* World */
+    ADD("AREAS", areas);
+    ADD("ROOMS", rooms);
+    ADD("MOBILES", mobs);
+    ADD("OBJECTS", objs);    
+
+    /* Player system */
+    ADD("LEVELS", levels);
+    ADD("CLASSES", classes);
+    ADD("RACES", races);
+    ADD("SKILLS", skills);
+
+    /* Capabilities */
+    ADD("ANSI", "1");
+    ADD("GMCP", "1");
+    ADD("MCCP", "1");
+
+    /* Optional but useful */
+    ADD("CREATED", "2001?");
+    ADD("LANGUAGE", "English");
+    ADD("LOCATION", "USA");
+    ADD("WEBSITE", "https://swrip.com");    
+    ADD("CONTACT", "darrik@swrip.net");    
+
+    ADD("CRAWL DELAY", "-1");
+
+#undef ADD
+
+    buf[len++] = IAC;
+    buf[len++] = SE;
+
+    send_telnet(d, buf, len);
 }
