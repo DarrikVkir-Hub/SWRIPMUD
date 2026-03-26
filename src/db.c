@@ -806,7 +806,87 @@ ASSIGN_GSN( gsn_yevethan, "yevethan" );
     return;
 }
 
+int utf8_decode(const unsigned char *p, unsigned int *out_cp)
+{
+    if (*p < 0x80)
+    {
+        *out_cp = *p;
+        return 1;
+    }
+    else if ((*p & 0xE0) == 0xC0)
+    {
+        *out_cp = (*p & 0x1F) << 6 |
+                  (p[1] & 0x3F);
+        return 2;
+    }
+    else if ((*p & 0xF0) == 0xE0)
+    {
+        *out_cp = (*p & 0x0F) << 12 |
+                  (p[1] & 0x3F) << 6 |
+                  (p[2] & 0x3F);
+        return 3;
+    }
+    else if ((*p & 0xF8) == 0xF0)
+    {
+        *out_cp = (*p & 0x07) << 18 |
+                  (p[1] & 0x3F) << 12 |
+                  (p[2] & 0x3F) << 6 |
+                  (p[3] & 0x3F);
+        return 4;
+    }
 
+    *out_cp = *p;
+    return 1; // fallback
+}
+
+bool isalpha_utf8(const char *p)
+{
+    if (!p || !*p)
+        return FALSE;
+
+    unsigned int cp;
+    utf8_decode((const unsigned char *)p, &cp);
+
+    // ASCII fast path
+    if (cp < 128)
+        return isalpha((unsigned char)cp);
+
+    // 🔥 Conservative rule:
+    // Treat ALL non-ASCII as "alpha"
+    // (prevents breaking names like: élan, über, 世界)
+    return TRUE;
+}
+
+bool isspace_utf8(const char *p)
+{
+    if (!p || !*p)
+        return FALSE;
+
+    unsigned int cp;
+    utf8_decode((const unsigned char *)p, &cp);
+
+    // ASCII whitespace
+    if (cp < 128)
+        return isspace((unsigned char)cp);
+
+    // 🔥 Common Unicode whitespace
+    switch (cp)
+    {
+        case 0x00A0: // non-breaking space
+        case 0x1680:
+        case 0x2000: case 0x2001: case 0x2002:
+        case 0x2003: case 0x2004: case 0x2005:
+        case 0x2006: case 0x2007: case 0x2008:
+        case 0x2009: case 0x200A:
+        case 0x2028: case 0x2029:
+        case 0x202F:
+        case 0x205F:
+        case 0x3000:
+            return TRUE;
+    }
+
+    return FALSE;
+}
 
 /*
  * Load an 'area' header line.
@@ -3241,7 +3321,6 @@ char *fread_string( FILE *fp )
 
 	case '\n':
 	    plast++;  ln++;
-	    *plast++ = '\r';  ln++;
 	    break;
 
 	case '\r':
@@ -3312,7 +3391,6 @@ char *fread_string_nohash( FILE *fp )
 
 	case '\n':
 	    plast++;  ln++;
-	    *plast++ = '\r';  ln++;
 	    break;
 
 	case '\r':
@@ -3821,6 +3899,136 @@ char *show_tilde( char *str )
  * Return TRUE if different
  *   (compatibility with historical functions).
  */
+bool str_suffix_utf8(const char *astr, const char *bstr)
+{
+    if (!astr || !bstr)
+        return TRUE;
+
+    size_t len_a = strlen(astr);
+    size_t len_b = strlen(bstr);
+
+    if (len_a > len_b)
+        return TRUE;
+
+    const char *end_b = bstr + len_b;
+
+    /* Walk backwards safely */
+    const char *p = end_b;
+    size_t remaining = len_a;
+
+    while (p > bstr && remaining > 0)
+    {
+        /* Step back one UTF-8 char */
+        do { p--; } while ((unsigned char)(*p & 0xC0) == 0x80);
+
+        size_t clen = utf8_char_len_safe(p);
+        remaining -= (remaining >= clen) ? clen : remaining;
+    }
+
+    return str_cmp(astr, p);
+}
+
+bool str_infix_utf8(const char *astr, const char *bstr)
+{
+    if (!astr || !bstr)
+        return TRUE;
+
+    if (*astr == '\0')
+        return FALSE;
+
+    for (; *bstr; )
+    {
+        /* Check match at this position */
+        if (!str_prefix(astr, bstr))
+            return FALSE;
+
+        /* Advance bstr by one UTF-8 character */
+        bstr += utf8_char_len_safe(bstr);
+    }
+
+    return TRUE;
+}
+
+bool str_prefix_utf8(const char *astr, const char *bstr)
+{
+    if (!astr)
+    {
+        bug("Strn_cmp: null astr.");
+        return TRUE;
+    }
+
+    if (!bstr)
+    {
+        bug("Strn_cmp: null bstr.");
+        return TRUE;
+    }
+
+    while (*astr)
+    {
+        size_t la = utf8_char_len_safe(astr);
+        size_t lb = utf8_char_len_safe(bstr);
+
+        if (la == 1 && lb == 1)
+        {
+            if (LOWER(*astr) != LOWER(*bstr))
+                return TRUE;
+        }
+        else
+        {
+            if (la != lb || memcmp(astr, bstr, la) != 0)
+                return TRUE;
+        }
+
+        astr += la;
+        bstr += lb;
+    }
+
+    return FALSE;
+}
+
+bool str_cmp_utf8(const char *astr, const char *bstr)
+{
+    if (!astr)
+    {
+        bug("Str_cmp: null astr.");
+        if (bstr)
+            fprintf(stderr, "str_cmp: astr: (null)  bstr: %s\n", bstr);
+        return TRUE;
+    }
+
+    if (!bstr)
+    {
+        bug("Str_cmp: null bstr.");
+        if (astr)
+            fprintf(stderr, "str_cmp: astr: %s  bstr: (null)\n", astr);
+        return TRUE;
+    }
+
+    while (*astr || *bstr)
+    {
+        size_t la = utf8_char_len_safe(astr);
+        size_t lb = utf8_char_len_safe(bstr);
+
+        if (la == 1 && lb == 1)
+        {
+            if (LOWER(*astr) != LOWER(*bstr))
+                return TRUE;
+        }
+        else
+        {
+            /* UTF-8 → exact match required */
+            if (la != lb || memcmp(astr, bstr, la) != 0)
+                return TRUE;
+        }
+
+        if (*astr) astr += la;
+        if (*bstr) bstr += lb;
+    }
+
+    return FALSE;
+}
+
+/*
 bool str_cmp( const char *astr, const char *bstr )
 {
     if ( !astr )
@@ -3850,11 +4058,12 @@ bool str_cmp( const char *astr, const char *bstr )
 
 
 
-/*
- * Compare strings, case insensitive, for prefix matching.
- * Return TRUE if astr not a prefix of bstr
- *   (compatibility with historical functions).
- */
+//
+// Compare strings, case insensitive, for prefix matching.
+// Return TRUE if astr not a prefix of bstr
+//   (compatibility with historical functions).
+//
+
 bool str_prefix( const char *astr, const char *bstr )
 {
     if ( !astr )
@@ -3880,11 +4089,11 @@ bool str_prefix( const char *astr, const char *bstr )
 
 
 
-/*
- * Compare strings, case insensitive, for match anywhere.
- * Returns TRUE is astr not part of bstr.
- *   (compatibility with historical functions).
- */
+//
+ //Compare strings, case insensitive, for match anywhere.
+ //Returns TRUE is astr not part of bstr.
+ //  (compatibility with historical functions).
+ //
 bool str_infix( const char *astr, const char *bstr )
 {
     int sstr1;
@@ -3907,11 +4116,11 @@ bool str_infix( const char *astr, const char *bstr )
 
 
 
-/*
- * Compare strings, case insensitive, for suffix matching.
- * Return TRUE if astr not a suffix of bstr
- *   (compatibility with historical functions).
- */
+//
+// Compare strings, case insensitive, for suffix matching.
+// Return TRUE if astr not a suffix of bstr
+//   (compatibility with historical functions).
+//
 bool str_suffix( const char *astr, const char *bstr )
 {
     int sstr1;
@@ -3925,7 +4134,7 @@ bool str_suffix( const char *astr, const char *bstr )
 	return TRUE;
 }
 
-
+*/
 
 
 /*
@@ -3938,19 +4147,60 @@ char *capitalize( const char *str )
    char *dest = buf;
    enum { Normal, Color } state = Normal;
    bool bFirst = TRUE;
-   char c;
+   const unsigned char *p = (const unsigned char *)str;
 
-   while( (c = *str++) )
+   while( *p )
    {
+      unsigned int codepoint = 0;
+      int len = 1;
+
+      // Decode UTF-8 sequence
+      if( *p < 0x80 )
+      {
+         codepoint = *p;
+         len = 1;
+      }
+      else if( (*p & 0xE0) == 0xC0 )
+      {
+         codepoint = (*p & 0x1F) << 6;
+         codepoint |= (p[1] & 0x3F);
+         len = 2;
+      }
+      else if( (*p & 0xF0) == 0xE0 )
+      {
+         codepoint = (*p & 0x0F) << 12;
+         codepoint |= (p[1] & 0x3F) << 6;
+         codepoint |= (p[2] & 0x3F);
+         len = 3;
+      }
+      else if( (*p & 0xF8) == 0xF0 )
+      {
+         codepoint = (*p & 0x07) << 18;
+         codepoint |= (p[1] & 0x3F) << 12;
+         codepoint |= (p[2] & 0x3F) << 6;
+         codepoint |= (p[3] & 0x3F);
+         len = 4;
+      }
+      else
+      {
+         // Invalid byte, copy raw
+         *dest++ = *p++;
+         continue;
+      }
+
       if( state == Normal )
       {
-         if( c == '&' || c == '^' || c == '}' )
+         // Only treat ASCII color triggers
+         if( codepoint == '&' || codepoint == '^' || codepoint == '}' )
          {
             state = Color;
          }
-         else if( isalpha(c) )
+         // Only apply alpha logic to ASCII
+         else if( codepoint < 128 && isalpha((unsigned char)codepoint) )
          {
-            c = bFirst ? toupper(c) : tolower(c);
+            codepoint = bFirst
+               ? toupper((unsigned char)codepoint)
+               : tolower((unsigned char)codepoint);
             bFirst = FALSE;
          }
       }
@@ -3958,9 +4208,35 @@ char *capitalize( const char *str )
       {
          state = Normal;
       }
-      *dest++ = c;
+
+      // Re-encode UTF-8 safely
+      if( codepoint < 0x80 )
+      {
+         *dest++ = codepoint;
+      }
+      else if( codepoint < 0x800 )
+      {
+         *dest++ = 0xC0 | (codepoint >> 6);
+         *dest++ = 0x80 | (codepoint & 0x3F);
+      }
+      else if( codepoint < 0x10000 )
+      {
+         *dest++ = 0xE0 | (codepoint >> 12);
+         *dest++ = 0x80 | ((codepoint >> 6) & 0x3F);
+         *dest++ = 0x80 | (codepoint & 0x3F);
+      }
+      else
+      {
+         *dest++ = 0xF0 | (codepoint >> 18);
+         *dest++ = 0x80 | ((codepoint >> 12) & 0x3F);
+         *dest++ = 0x80 | ((codepoint >> 6) & 0x3F);
+         *dest++ = 0x80 | (codepoint & 0x3F);
+      }
+
+      p += len;
    }
-   *dest = c;
+
+   *dest = '\0';  // 🔥 CHANGED: safer termination
 
    return buf;
 }

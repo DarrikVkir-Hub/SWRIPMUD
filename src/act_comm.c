@@ -206,55 +206,72 @@ void do_beep( CHAR_DATA *ch, char *argument )
 }
 
 /* Text scrambler -- Altrag */
-char *scramble( const char *argument, int modifier )
+char *scramble(const char *argument, int modifier)
 {
     static char arg[MAX_INPUT_LENGTH];
-    sh_int position;
-    sh_int conversion = 0;
-    
-	modifier %= number_range( 80, 300 ); /* Bitvectors get way too large #s */
-    for ( position = 0; position < (MAX_INPUT_LENGTH-1); position++ )
+    int outpos = 0;
+    int conversion = 0;
+
+    modifier %= number_range(80, 300);
+
+    for (int i = 0; argument[i] != '\0' && outpos < MAX_INPUT_LENGTH - 1; )
     {
-    	if ( argument[position] == '\0' )
-    	{
-    		arg[position] = '\0';
-    		return arg;
-    	}
-    	else if ( argument[position] >= 'A' && argument[position] <= 'Z' )
-	    {
-	    	conversion = -conversion + position - modifier + argument[position] - 'A';
-	    	conversion = number_range( conversion - 5, conversion + 5 );
-	    	while ( conversion > 25 )
-	    		conversion -= 26;
-	    	while ( conversion < 0 )
-	    		conversion += 26;
-	    	arg[position] = conversion + 'A';
-	    }
-	    else if ( argument[position] >= 'a' && argument[position] <= 'z' )
-	    {
-	    	conversion = -conversion + position - modifier + argument[position] - 'a';
-	    	conversion = number_range( conversion - 5, conversion + 5 );
-	    	while ( conversion > 25 )
-	    		conversion -= 26;
-	    	while ( conversion < 0 )
-	    		conversion += 26;
-	    	arg[position] = conversion + 'a';
-	    }
-	    else if ( argument[position] >= '0' && argument[position] <= '9' )
-	    {
-	    	conversion = -conversion + position - modifier + argument[position] - '0';
-	    	conversion = number_range( conversion - 2, conversion + 2 );
-	    	while ( conversion > 9 )
-	    		conversion -= 10;
-	    	while ( conversion < 0 )
-	    		conversion += 10;
-	    	arg[position] = conversion + '0';
-	    }
-	    else
-	    	arg[position] = argument[position];
-	}
-	arg[position] = '\0';
-	return arg;	     
+        size_t len = utf8_char_len_safe(&argument[i]);
+
+        /* Preserve UTF-8 */
+        if (len > 1)
+        {
+            if (outpos + len >= MAX_INPUT_LENGTH - 1)
+                break;
+
+            memcpy(&arg[outpos], &argument[i], len);
+            outpos += len;
+            i += len;
+            continue;
+        }
+
+        char c = argument[i];
+
+        if (c >= 'A' && c <= 'Z')
+        {
+            conversion = -conversion + i - modifier + c - 'A';
+            conversion = number_range(conversion - 5, conversion + 5);
+
+            while (conversion > 25) conversion -= 26;
+            while (conversion < 0)  conversion += 26;
+
+            arg[outpos++] = conversion + 'A';
+        }
+        else if (c >= 'a' && c <= 'z')
+        {
+            conversion = -conversion + i - modifier + c - 'a';
+            conversion = number_range(conversion - 5, conversion + 5);
+
+            while (conversion > 25) conversion -= 26;
+            while (conversion < 0)  conversion += 26;
+
+            arg[outpos++] = conversion + 'a';
+        }
+        else if (c >= '0' && c <= '9')
+        {
+            conversion = -conversion + i - modifier + c - '0';
+            conversion = number_range(conversion - 2, conversion + 2);
+
+            while (conversion > 9) conversion -= 10;
+            while (conversion < 0) conversion += 10;
+
+            arg[outpos++] = conversion + '0';
+        }
+        else
+        {
+            arg[outpos++] = c;
+        }
+
+        i += 1;  // ASCII advance
+    }
+
+    arg[outpos] = '\0';
+    return arg;
 }
 
 /* I'll rewrite this later if its still needed.. -- Altrag */
@@ -272,7 +289,7 @@ char *drunk_speech(const char *argument, CHAR_DATA *ch)
 
     if (!argument)
     {
-        bug( "%s: NULL argument", __func__ );
+        bug("%s: NULL argument", __func__);
         return (char *)"";
     }
 
@@ -286,10 +303,25 @@ char *drunk_speech(const char *argument, CHAR_DATA *ch)
 
     while (*in && out < end)
     {
-        char c = *in++;
+        size_t len = utf8_char_len_safe(in);
+
+        /* Preserve UTF-8 multibyte chars untouched */
+        if (len > 1)
+        {
+            if (out + len >= end)
+                break;
+
+            memcpy(out, in, len);
+            out += len;
+            in += len;
+            continue;
+        }
+
+        /* ASCII path (original logic) */
+        char c = *in++;                                   // same as before
 
         /* slur S */
-        if (toupper(c) == 'S' && number_percent() < drunk * 2)
+        if (toupper((unsigned char)c) == 'S' && number_percent() < drunk * 2)
         {
             if (out < end) *out++ = c;
             if (out < end) *out++ = 'h';
@@ -297,7 +329,7 @@ char *drunk_speech(const char *argument, CHAR_DATA *ch)
         }
 
         /* slur X -> csh */
-        if (toupper(c) == 'X' && number_percent() < drunk)
+        if (toupper((unsigned char)c) == 'X' && number_percent() < drunk)
         {
             if (out < end) *out++ = 'c';
             if (out < end) *out++ = 's';
@@ -308,7 +340,7 @@ char *drunk_speech(const char *argument, CHAR_DATA *ch)
         /* duplicate letters randomly */
         if (number_percent() < drunk / 2)
         {
-            int repeat = number_range(1,2);
+            int repeat = number_range(1, 2);
             while (repeat-- && out < end)
                 *out++ = c;
             continue;
@@ -317,10 +349,10 @@ char *drunk_speech(const char *argument, CHAR_DATA *ch)
         /* random caps flip */
         if (number_percent() < drunk)
         {
-            if (islower(c))
-                c = toupper(c);
-            else if (isupper(c))
-                c = tolower(c);
+            if (islower((unsigned char)c))
+                c = toupper((unsigned char)c);
+            else if (isupper((unsigned char)c))
+                c = tolower((unsigned char)c);
         }
 
         *out++ = c;
@@ -329,14 +361,22 @@ char *drunk_speech(const char *argument, CHAR_DATA *ch)
         if (c == ' ' && number_percent() < drunk / 2 && out < end)
         {
             const char *peek = in;
-            int count = number_range(1,3);
+            int count = number_range(1, 3);
 
             while (*peek && *peek != ' ' && count-- && out < end)
             {
-                *out++ = *peek;
+                size_t plen = utf8_char_len_safe(peek);
+
+                if (out + plen + 1 >= end)
+                    break;
+
+                memcpy(out, peek, plen);
+                out += plen;
+
                 if (out < end)
                     *out++ = '-';
-                peek++;
+
+                peek += plen;
             }
         }
     }

@@ -487,6 +487,20 @@ enum TelnetState
     TS_SB_IAC
 };
 
+typedef enum
+{
+    CLIENT_UNKNOWN = 0,
+    CLIENT_MUDLET,
+    CLIENT_CMUD,
+    CLIENT_ZMUD,
+    CLIENT_TINTIN,
+    CLIENT_MUSHCLIENT,
+    CLIENT_PUTTY,
+    CLIENT_KITTY,
+    CLIENT_XTERM,
+    CLIENT_GENERIC
+} client_type_t;
+
 #define MAX_GMCP_CAPS 64
 #define MAX_GMCP_SUBS 64
 #define GMCP_MAX_CACHE 256
@@ -592,8 +606,15 @@ struct	descriptor_data
     int  ttype_count;         /* how many we've received */
     bool supports_256color;     
     bool supports_truecolor;
+    bool supports_utf8;
+    bool supports_ansi;    
+    int client_type;
+    char client_name[64];
+    char last_ttype[64];
     bool echo_enabled;
     bool gmcp_enabled;
+    int gmcp_pending; 
+
 
     //GMCP handling
     typedef struct
@@ -611,7 +632,6 @@ struct	descriptor_data
     gmcp_sub_t gmcp_subs[MAX_GMCP_SUBS];
     int gmcp_sub_count;
     gmcp_cache_t gmcp_cache;
-    int gmcp_pending; 
 
 };
 
@@ -3394,6 +3414,63 @@ extern  sh_int			gsn_yevethan;
 /*
  * Utility macros.
  */
+
+#define str_cmp    str_cmp_utf8
+#define str_prefix str_prefix_utf8
+#define str_infix  str_infix_utf8
+#define str_suffix str_suffix_utf8
+
+#define UTF8_NEXT(p) \
+    do { unsigned int _cp; p += utf8_decode((unsigned char *)p, &_cp); } while(0)
+
+static inline bool is_utf8_cont(unsigned char c)
+{
+    return (c & 0xC0) == 0x80;
+}
+
+static inline size_t utf8_char_len_safe(const char *p)
+{
+    unsigned char c = (unsigned char)*p;
+
+    if ((c & 0x80) == 0) return 1;
+    if ((c & 0xE0) == 0xC0) return (p[1] ? 2 : 1);
+    if ((c & 0xF0) == 0xE0) return (p[1] && p[2] ? 3 : 1);
+    if ((c & 0xF8) == 0xF0) return (p[1] && p[2] && p[3] ? 4 : 1);
+    return 1;
+}
+
+static inline int utf8_char_len(unsigned char c)
+{
+    if ((c & 0x80) == 0x00) return 1;
+    if ((c & 0xE0) == 0xC0) return 2;
+    if ((c & 0xF0) == 0xE0) return 3;
+    if ((c & 0xF8) == 0xF0) return 4;
+    return 1; // fallback
+}
+
+static inline const char *utf8_next(const char *p)
+{
+    if (!p || !*p)
+        return p;
+
+    int len = utf8_char_len((unsigned char)*p);
+    return p + len;
+}
+
+static inline int utf8_prev_len(const char *start, const char *p)
+{
+    if (p <= start)
+        return 0;
+
+    p--;
+
+    /* move back to UTF-8 start byte */
+    while (p > start && ((*p & 0xC0) == 0x80))
+        p--;
+
+    return utf8_char_len((unsigned char)*p);
+}
+
 static inline char *find_any(const char *buf, size_t len,
                              const char *set, size_t setlen)
 {
@@ -5152,6 +5229,9 @@ RD  *	place_reset	args( ( AREA_DATA *tarea, char letter, int extra, int arg1, in
 void	reset_area	args( ( AREA_DATA * pArea ) );
 
 /* db.c */
+int utf8_decode(const unsigned char *p, unsigned int *out_cp);
+bool isspace_utf8(const char *p);
+bool isalpha_utf8(const char *p);
 void buffer_printf args ( ( DESCRIPTOR_DATA * d, const char *fmt, ... ) );
 void log_printf args( (const char *fmt, ...) );
 void log_printf_plus args ( (int log_type, int level, const char *fmt, ...) );

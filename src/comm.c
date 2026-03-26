@@ -1018,8 +1018,8 @@ void new_descriptor( int new_desc )
     send_telnet(dnew, do_linemode, 3);
 
     /* ECHO WONT */
-    const unsigned char will_echo[] = { IAC, WONT, TELOPT_ECHO };
-    send_telnet(dnew, will_echo, 3);    
+//    const unsigned char will_echo[] = { IAC, WONT, TELOPT_ECHO };
+//    send_telnet(dnew, will_echo, 3);    
     
     // GMCP
     const unsigned char will_gmcp[] = { IAC, WILL, TELOPT_GMCP };
@@ -1570,7 +1570,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
                         gmcp_init_subscriptions(d);   /* NEW */
                         TELLOG(d, "GMCP: enabled (dedupe path)\r\n"); /* NEW */
                     }
-
+                    process_char = false; // This was not there before!
                     d->telstate = TS_DATA;
                     break;
                 }
@@ -1899,7 +1899,7 @@ int telnet_process( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, uns
         /* Emit only real data bytes */
         if (process_char && d->telstate == TS_DATA)
         {
-            if ((c != '\n' && c!= '\r' ) && (c < 32 || c > 126))
+            if (c < 32 && c != '\n' && c != '\r' && c != '\b' && c != 127)
                 continue;            
             if (c == '\r')
             {
@@ -2045,7 +2045,26 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
     return TRUE;
 }
 
+void dump_bytes(const char *label, const unsigned char *buf, int len)
+{
+    printf("%s [%d]: ", label, len);
 
+    for (int i = 0; i < len; i++)
+        printf("%02X ", buf[i]);
+
+    printf(" | ");
+
+    for (int i = 0; i < len; i++)
+    {
+        unsigned char c = buf[i];
+        if (c >= 32 && c <= 126)
+            printf("%c", c);
+        else
+            printf(".");
+    }
+
+    printf("\n");
+}
 
 /*
  * Transfer one line from input buffer to input line.
@@ -2061,7 +2080,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     /*
      * ============================================================
-     * ✅ NEW: Process ENTIRE buffer as a continuous stream
+     * Process ENTIRE buffer as a continuous stream
      * ============================================================
      */
     int clean_len = 0;
@@ -2081,7 +2100,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
         /*
          * ============================================================
-         * NEW: APPEND CLEAN DATA INTO INTEXT BUFFER
+         * APPEND CLEAN DATA INTO INTEXT BUFFER
          * ============================================================
          */
     if ( clean_len > 0 )
@@ -2098,7 +2117,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
      /*
      * ============================================================
-     * ✅ NEW: Fully consume buffer after processing
+     * Fully consume buffer after processing
      * ============================================================
      */
     d->inbuf_len = 0;
@@ -2106,7 +2125,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     /*
      * ============================================================
-     * CHANGED: FIND NEWLINE IN INTEXT (NOT CLEAN)
+     * FIND NEWLINE IN INTEXT
      * ============================================================
      */
     int line_end = -1;
@@ -2125,7 +2144,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     /*
      * ============================================================
-     * CHANGED: BUILD COMMAND FROM INTEXT
+     * BUILD COMMAND FROM INTEXT
      * ============================================================
      */
     for ( i = 0, k = 0; i < line_end; i++ )
@@ -2142,9 +2161,35 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
         }
 
         if ( (c == '\b' || c == 127) && k > 0 )
-            --k;
-        else if (c >= 32 && c <= 126)  /* STRICT ASCII ONLY */
-            d->incomm[k++] = (char)c;
+        {
+            k -= utf8_prev_len(d->incomm, d->incomm + k);
+            if (k < 0)
+                k = 0;
+        }
+//        else if (c >= 32 && c <= 126)  /* STRICT ASCII ONLY */
+//            d->incomm[k++] = (char)c;
+        else if (c >= 32 || (c & 0x80))  /* allow UTF-8 bytes */
+        {
+            int char_len = utf8_char_len_safe(&d->intext[i]);
+
+            /* prevent overflow */
+            if (k + char_len >= 254)
+            {
+                output_to_descriptor( d, "Line too long.\n" );
+                break;
+            }
+
+            /* copy full UTF-8 character safely */
+            for (int j = 0; j < char_len; j++)
+            {
+                if (i + j >= line_end)
+                    break;
+
+                d->incomm[k++] = d->intext[i + j];
+            }
+
+            i += char_len - 1;
+        }            
     }
 
     if ( k == 0 )
@@ -2154,7 +2199,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     /*
      * ============================================================
-     * EXISTING: RATE LIMIT
+     * RATE LIMIT
      * ============================================================
      */
     d->in_commands++;
@@ -2168,7 +2213,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     /*
      * ============================================================
-     * EXISTING: HISTORY
+     * HISTORY
      * ============================================================
      */
     if ( k > 1 || d->incomm[0] == '!' )
@@ -2187,7 +2232,7 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
 
     /*
      * ============================================================
-     * NEW: REMOVE ONLY ONE LINE FROM INTEXT
+     * REMOVE ONLY ONE LINE FROM INTEXT
      * ============================================================
      */
     int shift = line_end + 1;  // include newline
@@ -2271,30 +2316,46 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
     {
         unsigned char tmp[COMPRESS_BUF_SIZE];
 
-        memcpy(tmp, d->outbuf, d->outtop);
+        size_t remaining = d->outtop;
+        size_t offset = 0;
 
-        d->out_compress->next_in  = tmp;
-        d->out_compress->avail_in = d->outtop;
-        d->out_compress->avail_in = d->outtop;
-        // Track Input
-        d->mccp_bytes_in += d->outtop;        
-
-        while (d->out_compress->avail_in > 0)
+        while (remaining > 0)
         {
-            d->out_compress->avail_out =
-                COMPRESS_BUF_SIZE -
-                (d->out_compress->next_out - d->out_compress_buf);
+            size_t chunk = remaining;
 
-            if (d->out_compress->avail_out == 0)
+            if (chunk > sizeof(tmp))
+                chunk = sizeof(tmp);
+
+            memcpy(tmp, d->outbuf + offset, chunk);
+
+            d->out_compress->next_in  = tmp;
+            d->out_compress->avail_in = chunk;
+
+            /* Track input */
+            d->mccp_bytes_in += chunk;
+
+            while (d->out_compress->avail_in > 0)
             {
-                if (!process_compressed(d))
+                d->out_compress->avail_out =
+                    COMPRESS_BUF_SIZE -
+                    (d->out_compress->next_out - d->out_compress_buf);
+
+                if (d->out_compress->avail_out == 0)
+                {
+                    if (!process_compressed(d))
+                        return FALSE;
+                    continue;
+                }
+
+                if (deflate(d->out_compress, Z_SYNC_FLUSH) != Z_OK)
                     return FALSE;
-                continue;
             }
 
-            if (deflate(d->out_compress, Z_SYNC_FLUSH) != Z_OK)
-                return FALSE;
+            offset += chunk;
+            remaining -= chunk;
         }
+        // Track Input
+        d->mccp_bytes_in += d->outtop;        
 
         d->outtop = 0;
         if (d->out_compress->next_out > d->out_compress_buf)
@@ -2397,6 +2458,43 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
     return TRUE;
 }
 
+static size_t utf8_safe_len(const char *buf, size_t len)
+{
+    size_t i = 0;
+
+    while (i < len)
+    {
+        unsigned char c = (unsigned char)buf[i];
+        size_t char_len = 1;
+
+        if (c < 0x80)
+            char_len = 1;
+        else if ((c & 0xE0) == 0xC0)
+            char_len = 2;
+        else if ((c & 0xF0) == 0xE0)
+            char_len = 3;
+        else if ((c & 0xF8) == 0xF0)
+            char_len = 4;
+        else
+            break; /* invalid start byte */
+
+        /* Not enough bytes left → stop BEFORE partial char */
+        if (i + char_len > len)
+            break;
+
+        /* Validate continuation bytes */
+        for (size_t j = 1; j < char_len; j++)
+        {
+            if ((buf[i + j] & 0xC0) != 0x80)
+                return i; /* invalid sequence */
+        }
+
+        i += char_len;
+    }
+
+    return i;
+}
+
 void output_to_descriptor(DESCRIPTOR_DATA *d, const char *txt)
 {
     char *wrapped;
@@ -2420,7 +2518,7 @@ void output_to_descriptor(DESCRIPTOR_DATA *d, const char *txt)
 
 void write_to_buffer_str(DESCRIPTOR_DATA *d, const char *txt)
 {
-    size_t len = strnlen(txt, MAX_STRING_LENGTH);
+    size_t len = strnlen(txt, MAX_STRING_LENGTH - 1);
 
     if (len == MAX_STRING_LENGTH)
     {
@@ -2432,43 +2530,40 @@ void write_to_buffer_str(DESCRIPTOR_DATA *d, const char *txt)
 
 void write_to_buffer_raw(DESCRIPTOR_DATA *d, const unsigned char *data, int length)
 {
-    static int count = 0;
-
     if (!d)
     {
         bug("write_to_buffer_raw: NULL descriptor");
         return;
     }
 
-    if (!d->outbuf)
-        return;
-
-    if (!data || length <= 0)
+     if (!d->outbuf || !data || length == 0)
         return;
 
     /*
-     * HARD CAP (same as original)
+     * HARD CAP
      */
-    if (d->outtop + length > 50000)
+    if (d->outtop + length > d->outsize * 2)
     {
-        if (count == 0)
-        {
-            bug("write_to_buffer_raw: overflow (%s) [%d bytes queued]",
+            fprintf(stderr, "write_to_buffer_raw: overflow (%s) [%ld bytes queued]\r\n",
                 d->character ? d->character->name : d->host,
                 d->outtop);
-            count++;
             close_socket(d, TRUE);
-        }
-        count = 0;
         return;
+    }
+
+    /* early flush */
+    if (d->outtop + length > d->outsize)
+    {
+        if (!flush_buffer(d, FALSE))
+            return;
     }
 
     /*
      * Expand buffer as needed (same logic)
      */
-    while (d->outtop + (unsigned int)length >= d->outsize)
+    while (d->outtop + (size_t)length + 1 >= d->outsize)
     {
-        if (d->outsize > 65536)
+        if (d->outsize > 262144)
         {
             d->outtop = 0;
             bug("write_to_buffer_raw: max buffer exceeded (%s)",
@@ -2482,13 +2577,13 @@ void write_to_buffer_raw(DESCRIPTOR_DATA *d, const unsigned char *data, int leng
     }
 
     /*
-     * ✅ RAW COPY (no processing)
+     * RAW COPY (no processing)
      */
     memcpy(d->outbuf + d->outtop, data, length);
     d->outtop += length;
 
     /*
-     * ⚠️ DO NOT null-terminate binary stream
+     * DO NOT null-terminate binary stream
      * (but harmless if you want for debugging)
      */
     d->outbuf[d->outtop] = '\0';
@@ -2809,7 +2904,23 @@ static void copy_with_newlines(DESCRIPTOR_DATA *d,
         }
 
         /* normal character */
-        d->outbuf[d->outtop++] = *p++;
+        size_t char_len = utf8_char_len((unsigned char)*p);
+
+        /* Clamp if malformed or truncated */
+        if (p + char_len > end)
+            char_len = 1;
+
+        /* Ensure buffer space */
+        if (d->outtop + char_len >= d->outsize)
+        {
+            d->outsize *= 2;
+            RECREATE(d->outbuf, char, d->outsize);
+        }
+
+        /* Copy full character */
+        memcpy(d->outbuf + d->outtop, p, char_len);
+        d->outtop += char_len;
+        p += char_len;
     }
 }
 
@@ -2858,7 +2969,7 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
      * - Prevent infinite growth if client isn't reading
      * - Protects server from output flooding
      */
-    if ( d->outtop + length > 50000 )  /* tune this */
+    if ( d->outtop + length + 4> 50000 )  /* tune this */
     {
         if ( count == 0 )
         {
@@ -2873,7 +2984,7 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
     }
 
     // Expand the buffer as needed.
-    while ( d->outtop + (unsigned int ) length >= d->outsize )
+    while ( d->outtop + (unsigned long ) length + 4 >= d->outsize )
     {
         if (d->outsize > 65536)
         {
@@ -2916,7 +3027,8 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
         if (seglen > 0)
         {
             flush_color(d);
-            copy_with_newlines(d, ptr, seglen);
+            size_t safe = utf8_safe_len(ptr, seglen);
+            copy_with_newlines(d, ptr, safe);
         }
 
         if (colstr + 1 >= end)
@@ -2952,7 +3064,8 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
         if (textlen > 0)
         {
             flush_color(d);            
-            copy_with_newlines(d, ptr, textlen);
+            size_t safe = utf8_safe_len(ptr, textlen);
+            copy_with_newlines(d, ptr, safe);
         }
 
         ptr = next;
@@ -2966,7 +3079,8 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
         size_t rem = (size_t)(end - ptr);
 //        fprintf(stderr, "COLDB: COPY REMAINDER: [%.*s]\r\n", (int)rem, ptr);
         flush_color(d);
-        copy_with_newlines(d, ptr, rem);
+        size_t safe = utf8_safe_len(ptr, rem);
+        copy_with_newlines(d, ptr, safe);
     }
     flush_color(d);
     d->outbuf[d->outtop] = '\0';
@@ -3034,8 +3148,8 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
     bool fOld;
     short chk;
 
-    while ( isspace(*argument) )
-	argument++;
+    while (*argument && isspace_utf8(argument))
+        UTF8_NEXT(argument);
 
     ch = d->character;
 
@@ -4014,7 +4128,7 @@ bool check_parse_name( char *name )
 	for ( pc = name; *pc != '\0'; pc++ )
 	{
 	    if ( !isalpha(*pc) )
-		return FALSE;
+		    return FALSE;
 	    if ( LOWER(*pc) != 'i' && LOWER(*pc) != 'l' )
 		fIll = FALSE;
 	}
@@ -5249,8 +5363,8 @@ void display_prompt( DESCRIPTOR_DATA *d )
 
 void set_pager_input( DESCRIPTOR_DATA *d, char *argument )
 {
-  while ( isspace(*argument) )
-    argument++;
+    while (*argument && isspace_utf8(argument))
+        UTF8_NEXT(argument);
   d->pagecmd = *argument;
   return;
 }
@@ -5978,13 +6092,24 @@ flush_word:
         }
 
         /* ================= NORMAL CHAR ================= */
-        if (wlen >= WORD_MAX - 1 || wcol >= VIS_MAX) 
+        if (wlen >= WORD_MAX - 4 || wcol >= VIS_MAX)
             goto flush_word;
 
-        word[wlen++] = c;
-        vis_to_raw[wcol] = wlen - 1; 
+        /* 🔹 NEW: UTF-8 aware handling */
+        unsigned char uc = (unsigned char)c;
+        int char_len = utf8_char_len(uc);
+
+        if (i + char_len > len)
+            char_len = 1;
+
+        for (int j = 0; j < char_len; j++)
+            word[wlen++] = txt[i + j];
+
+        vis_to_raw[wcol] = wlen - 1;   /* map visible → last byte */
         wcol++;
-        
+
+        i += char_len - 1; /* 🔹 critical adjustment */
+
         /* ============= LONG WORD HANDLING ============== */
         while (wcol > width)
         {
@@ -6005,9 +6130,40 @@ flush_word:
             /* guard against empty/invalid mapping */
             int split_raw;
             if (wcol == 0 || split_vis - 1 < 0)
+            {
                 split_raw = wlen;
+            }
             else
+            {
                 split_raw = vis_to_raw[split_vis - 1] + 1;
+
+                /* 🔹 NEW: prevent splitting inside ANSI */
+                int check = split_raw - 1;
+
+                /* scan backward to see if we're inside an ANSI sequence */
+                while (check >= 0)
+                {
+                    if (word[check] == 'm')
+                        break; /* safe: we're after a completed ANSI */
+
+                    if (word[check] == '\x1b')
+                    {
+                        /* we are inside ANSI → move split forward */
+                        int fwd = split_raw;
+                        while (fwd < wlen && word[fwd] != 'm')
+                            fwd++;
+
+                        if (fwd < wlen)
+                            split_raw = fwd + 1; /* include 'm' */
+                        else
+                            split_raw = wlen; /* malformed, flush whole */
+
+                        break;
+                    }
+
+                    check--;
+                }
+            }
 
 
 
@@ -6135,16 +6291,25 @@ size_t visible_length_range(const char *start, const char *end, int flags)
 
     while (p < end && *p)
     {
+        /* =========================
+         * ANSI escape sequence
+         * ========================= */
         if (!(flags & WRAP_NO_COLOR) && *p == '\x1b')
         {
-            p++;
-            while (p < end && *p && *p != 'm')
+            p++; /* skip ESC */
+
+            while (p < end && *p != 'm')
                 p++;
-            if (p < end && *p)
-                p++;
+
+            if (p < end)
+                p++; /* consume 'm' */
+
             continue;
         }
 
+        /* =========================
+         * SMAUG color codes
+         * ========================= */
         if (!(flags & WRAP_NO_COLOR) && (*p == '&' || *p == '^'))
         {
             if ((p + 1) < end && is_smaug_color(*(p + 1)))
@@ -6154,8 +6319,24 @@ size_t visible_length_range(const char *start, const char *end, int flags)
             }
         }
 
+        /* =========================
+         * UTF-8 handling
+         * ========================= */
+        unsigned char c = (unsigned char)*p;
+        int char_len = utf8_char_len(c);
+
+        /* Clamp to end to prevent overflow */
+        for (int j = 1; j < char_len; j++)
+        {
+            if ((p + j) >= end || *(p + j) == '\0')
+            {
+                char_len = 1;
+                break;
+            }
+        }
+
+        p += char_len;
         len++;
-        p++;
     }
 
     return len;
@@ -6364,7 +6545,7 @@ while (*p)
             processed = format_divider_line(para, width);
             processed_owned = TRUE;
         }
-        else if (is_structured_line(para) || looks_preformatted(para))
+        else if (is_structured_line(para))// || looks_preformatted(para)) // Took performatted out because it just doesn't work right, lots of false positives.
         {
             /*
              * Pass through unchanged

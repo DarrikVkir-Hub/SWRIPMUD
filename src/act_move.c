@@ -226,8 +226,8 @@ char *grab_word( char *argument, char *arg_first )
 
     count = 0;
 
-    while ( isspace(*argument) )
-	argument++;
+    while (*argument && isspace_utf8(argument))
+        UTF8_NEXT(argument);
 
     cEnd = ' ';
     if ( *argument == '\'' || *argument == '"' )
@@ -244,8 +244,8 @@ char *grab_word( char *argument, char *arg_first )
     }
     *arg_first = '\0';
 
-    while ( isspace(*argument) )
-	argument++;
+    while (*argument && isspace_utf8(argument))
+        UTF8_NEXT(argument);
 
     return argument;
 }

@@ -3420,8 +3420,8 @@ void do_password(CHAR_DATA *ch, char *argument)
     /* ---------------------- ARG1 ---------------------- */
     pArg = arg1;
     count = 0;
-    while (isspace((unsigned char)*argument))
-        argument++;
+    while (*argument && isspace_utf8(argument))
+        UTF8_NEXT(argument);
 
     cEnd = ' ';
     if (*argument == '\'' || *argument == '"')
@@ -3442,8 +3442,8 @@ void do_password(CHAR_DATA *ch, char *argument)
     /* ---------------------- ARG2 ---------------------- */
     pArg = arg2;
     count = 0;
-    while (isspace((unsigned char)*argument))
-        argument++;
+    while (*argument && isspace_utf8(argument))
+        UTF8_NEXT(argument);
 
     cEnd = ' ';
     if (*argument == '\'' || *argument == '"')
@@ -3525,8 +3525,8 @@ void do_password(CHAR_DATA *ch, char *argument)
     // ---------------------- ARG1 ---------------------- 
     pArg = arg1;
     count = 0;
-    while (isspace((unsigned char)*argument))
-        argument++;
+    while (*argument && isspace_utf8(argument))
+        UTF8_NEXT(argument);
 
     cEnd = ' ';
     if (*argument == '\'' || *argument == '"')
@@ -3547,8 +3547,8 @@ void do_password(CHAR_DATA *ch, char *argument)
     // ---------------------- ARG2 ---------------------- 
     pArg = arg2;
     count = 0;
-    while (isspace((unsigned char)*argument))
-        argument++;
+    while (*argument && isspace_utf8(argument))
+        UTF8_NEXT(argument);
 
     cEnd = ' ';
     if (*argument == '\'' || *argument == '"')

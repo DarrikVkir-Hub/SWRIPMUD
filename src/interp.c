@@ -102,78 +102,111 @@ char multicommand[MAX_INPUT_LENGTH];
 
 char  * parse_target( CHAR_DATA *ch, char *oldstring )
 {  
-     	const 	char 	*str;
-     	int		count = 0;
-     	char 		*i = NULL; 
-     	char 		*point;
-     	char 		buf[ MAX_INPUT_LENGTH   ];
-     	
-         buf[0]  = '\0';
-         str     = oldstring;
-         point   = buf;
-         while( *str != '\0' )
-         {
-             if( *str != '$' )
-             {
-                 count++;
-                 *point++ = *str++;
-                 continue;
-             }
- 
- 	    ++str;
-             if ( *str == '$' && ch->pcdata->target[0] != '\0' )
-             {
-                i = strdup(ch->pcdata->target); 
-             	++str;
-                 while ( ( *point = *i ) != '\0' )
-                 	{
-                 	   ++point, ++i;
-                 	   count++;
-                 	   if (count > MAX_INPUT_LENGTH)
- 	    		   {
- 				send_to_char("Target substitution too long; not processed.\n",ch);
- 				return oldstring;
- 	    		   }
- 			}
-             }
-             else 
-             {
-             	*point++ = '$'; 
-          	count++;
-             }
-          }
-     buf[count] = '\0';
-     oldstring = strdup( buf );
-     return oldstring;
+    const 	char 	*str;
+    int		count = 0;
+//  char 		*i = NULL; 
+    char 		*point;
+    char 		buf[ MAX_INPUT_LENGTH   ];
+    
+    buf[0]  = '\0';
+    str     = oldstring;
+    point   = buf;
+    while (*str != '\0')
+    {
+        if (*str != '$')
+        {
+            int len = utf8_char_len_safe(str);
+
+            for (int j = 0; j < len; j++)
+                *point++ = *str++;
+
+            count += len;
+
+            if (count >= MAX_INPUT_LENGTH - 1)
+                break;
+
+            continue;
+        }
+
+        ++str;
+
+        if (*str == '$' && ch->pcdata->target[0] != '\0')
+        {
+            const char *i = ch->pcdata->target;
+
+            while (*i != '\0')
+            {
+                int len = utf8_char_len_safe(i);
+
+                for (int j = 0; j < len; j++)
+                    *point++ = *i++;
+
+                count += len;
+
+                if (count >= MAX_INPUT_LENGTH - 1)
+                {
+                    send_to_char("Target substitution too long; not processed.\n", ch);
+                    return oldstring;
+                }
+            }
+            ++str;
+        }
+        else
+        {
+            *point++ = '$';
+            count++;
+        }
+    }
+    buf[count] = '\0';
+    oldstring = strdup( buf );
+    return oldstring;
  }
  
  char *get_multi_command( DESCRIPTOR_DATA *d, char *argument ) 
  { 
- int counter, counter2; 
- char leftover[MAX_INPUT_LENGTH]; 
- multicommand[0] = '\0'; 
- 
- for ( counter = 0; argument[counter] != '\0'; counter++ ) 
- { 
-   if ( argument[counter] == '|' && argument[counter+1] != '|' ) 
-   { 
-     multicommand[counter] = '\0'; 
-     counter++; 
-     for (counter2 = 0; argument[counter] != '\0'; counter2++,counter++) 
-       leftover[counter2] = argument[counter]; 
-     leftover[counter2] = '\0'; 
-     SPRINTF( d->incomm, "%s", leftover ); 
-     return (multicommand); 
-   } 
-   else if (argument[counter] == '|' && argument[counter+1] == '|') 
-     for (counter2 = counter; argument[counter2] != '\0'; counter2++) 
-       argument[counter2] = argument[counter2+1]; 
-   multicommand[counter] = argument[counter]; 
- } 
- d->incomm[0] = '\0'; 
- multicommand[counter] = '\0'; 
- 
- return (multicommand); 
+    int counter, counter2; 
+    char leftover[MAX_INPUT_LENGTH]; 
+    multicommand[0] = '\0'; 
+    
+    for (counter = 0; argument[counter] != '\0'; counter++)
+    {
+        /* Split on single '|' */
+        if (argument[counter] == '|' && argument[counter + 1] != '|')
+        {
+            multicommand[counter] = '\0';
+            counter++;
+
+            /* Copy remainder into leftover */
+            for (counter2 = 0; argument[counter] != '\0'; counter2++, counter++)
+                leftover[counter2] = argument[counter];
+
+            leftover[counter2] = '\0';
+
+            /* Safe copy */
+            snprintf(d->incomm, MAX_INPUT_LENGTH, "%s", leftover);
+
+            return multicommand;
+        }
+        /* Handle escaped '||' safely */
+        else if (argument[counter] == '|' && argument[counter + 1] == '|')
+        {
+            /* UTF-8 SAFE SHIFT */
+            memmove(&argument[counter],
+                    &argument[counter + 1],
+                    strlen(&argument[counter + 1]) + 1);
+
+            /* Stay on same index to re-evaluate */
+            counter--;
+            continue;
+        }
+
+        /* Normal copy */
+        multicommand[counter] = argument[counter];
+    }
+    d->incomm[0] = '\0'; 
+    multicommand[counter] = '\0'; 
+    
+    return (multicommand); 
  } 
 
 
@@ -200,124 +233,123 @@ void interpret( CHAR_DATA *ch, char *argument )
     found = FALSE;
     if ( ch->substate == SUB_REPEATCMD )
     {
-	DO_FUN *fun;
+        DO_FUN *fun;
 
-	if ( (fun=ch->last_cmd) == NULL )
-	{
-	    ch->substate = SUB_NONE;
-	    bug( "interpret: SUB_REPEATCMD with NULL last_cmd", 0 );
-	    return;
-	}
-	else
-	{
-	    int x;
+        if ( (fun=ch->last_cmd) == NULL )
+        {
+            ch->substate = SUB_NONE;
+            bug( "interpret: SUB_REPEATCMD with NULL last_cmd", 0 );
+            return;
+        }
+        else
+        {
+            int x;
 
-	    /*
-	     * yes... we lose out on the hashing speediness here...
-	     * but the only REPEATCMDS are wizcommands (currently)
-	     */
-	    for ( x = 0; x < 126; x++ )
-	    {
-		for ( cmd = command_hash[x]; cmd; cmd = cmd->next )
-		   if ( cmd->do_fun == fun )
-		   {
-			found = TRUE;
-			break;
-		   }
-		if ( found )
-		   break;
-	    }
-	    if ( !found )
-	    {
-		cmd = NULL;
-		bug( "interpret: SUB_REPEATCMD: last_cmd invalid", 0 );
-		return;
-	    }
-	    SPRINTF( logline, "(%s) %s", cmd->name, argument );
-	}
+            /*
+            * yes... we lose out on the hashing speediness here...
+            * but the only REPEATCMDS are wizcommands (currently)
+            */
+            for ( x = 0; x < 126; x++ )
+            {
+                for ( cmd = command_hash[x]; cmd; cmd = cmd->next )
+                if ( cmd->do_fun == fun )
+                    {
+                        found = TRUE;
+                        break;
+                    }
+                if ( found )
+                    break;
+            }
+            if ( !found )
+            {
+                cmd = NULL;
+                bug( "interpret: SUB_REPEATCMD: last_cmd invalid", 0 );
+                return;
+            }
+            SPRINTF( logline, "(%s) %s", cmd->name, argument );
+        }
     }
 
     if ( !cmd )
     {
-	/* Changed the order of these ifchecks to prevent crashing. */
-	if ( !argument || !strcmp(argument,"") ) 
-	{
-	    bug( "interpret: null argument!", 0 );
-	    return;
-	}
+        /* Changed the order of these ifchecks to prevent crashing. */
+        if ( !argument || !strcmp(argument,"") ) 
+        {
+            bug( "interpret: null argument!", 0 );
+            return;
+        }
 
-	/*
-	 * Strip leading spaces.
-	 */
-	while ( isspace(*argument) )
-	    argument++;
-	if ( argument[0] == '\0' )
-	    return;
+        /*
+        * Strip leading spaces.
+        */
+        while (*argument && isspace_utf8(argument))
+            UTF8_NEXT(argument);
+        if ( argument[0] == '\0' )
+            return;
 
-	timer = get_timerptr( ch, TIMER_DO_FUN );
+        timer = get_timerptr( ch, TIMER_DO_FUN );
 
-	/* REMOVE_BIT( ch->affected_by, AFF_HIDE ); */
+        /* REMOVE_BIT( ch->affected_by, AFF_HIDE ); */
 
-	/*
-	 * Implement freeze command.
-	 */
-	if ( !IS_NPC(ch) && IS_SET(ch->act, PLR_FREEZE) )
-	{
-	    send_to_char( "You're totally frozen!\n", ch );
-	    return;
-	}
+        /*
+        * Implement freeze command.
+        */
+        if ( !IS_NPC(ch) && IS_SET(ch->act, PLR_FREEZE) )
+        {
+            send_to_char( "You're totally frozen!\n", ch );
+            return;
+        }
 
-	/*
-	 * Grab the command word.
-	 * Special parsing so ' can be a command,
-	 *   also no spaces needed after punctuation.
-	 */
-	SPRINTF( logline, "%s", argument );
+        /*
+        * Grab the command word.
+        * Special parsing so ' can be a command,
+        *   also no spaces needed after punctuation.
+        */
+        SPRINTF( logline, "%s", argument );
 
-    if (ch->desc && strchr(argument, '|'))
-	  argument = get_multi_command( ch->desc, argument ); 
-
+        if (ch->desc && strchr(argument, '|'))
+            argument = get_multi_command( ch->desc, argument ); 
 
         if ( !IS_NPC(ch) && ch->pcdata && ch->pcdata->target )
-         if ( ch->pcdata->target[0] != '\0' )
-          if( strchr(argument, '$'))
-            argument = parse_target(ch, argument);
- 
-	if ( !isalpha(argument[0]) && !isdigit(argument[0]) )
-	{
-	    command[0] = argument[0];
-	    command[1] = '\0';
-	    argument++;
-	    while ( isspace(*argument) )
-		argument++;
-	}
-	else
-	    argument = one_argument( argument, command );
+            if ( ch->pcdata->target[0] != '\0' )
+                if( strchr(argument, '$'))
+                    argument = parse_target(ch, argument);
+    
+        if ( !isalpha(argument[0]) && !isdigit(argument[0]) )
+        {
+            command[0] = argument[0];
+            command[1] = '\0';
+            argument++;
+            while (*argument && isspace_utf8(argument))
+                UTF8_NEXT(argument);
+        }
+        else
+            argument = one_argument( argument, command );
 
-	/*
-	 * Look for command in command table.
-	 * Check for council powers and/or bestowments
-	 */
-	trust = get_trust( ch );
-	for ( cmd = command_hash[LOWER(command[0])%126]; cmd; cmd = cmd->next )
-	    if ( !str_prefix( command, cmd->name )
-	    &&   ((cmd->level <= trust && (IS_NPC(ch) || !cmd->commandgroup || (cmd->commandgroup & ch->pcdata->commandgroup)))
-	    ||  (!IS_NPC(ch) && ch->pcdata->bestowments && ch->pcdata->bestowments[0] != '\0'
-	    &&    is_name( cmd->name, ch->pcdata->bestowments )
-	    &&    cmd->level <= (trust+5)) ) )
-	    {
-		found = TRUE;
-		break;
-	    }
+        /*
+        * Look for command in command table.
+        * Check for council powers and/or bestowments
+        */
+        trust = get_trust( ch );
+        for ( cmd = command_hash[LOWER(command[0])%126]; cmd; cmd = cmd->next )
+            if ( !str_prefix( command, cmd->name )
+            &&   ((cmd->level <= trust && (IS_NPC(ch) || !cmd->commandgroup || (cmd->commandgroup & ch->pcdata->commandgroup)))
+            ||  (!IS_NPC(ch) && ch->pcdata->bestowments && ch->pcdata->bestowments[0] != '\0'
+            &&    is_name( cmd->name, ch->pcdata->bestowments )
+            &&    cmd->level <= (trust+5)) ) )
+            {
+                found = TRUE;
+                break;
+            }
 
-	/*
-	 * Turn off afk bit when any command performed.
-	 */
-	if ( IS_SET ( ch->act, PLR_AFK)  && (str_cmp(command, "AFK")))
-	{
-	    REMOVE_BIT( ch->act, PLR_AFK );
-     	    act( AT_GREY, "$n is no longer afk.", ch, NULL, NULL, TO_ROOM );
-	}
+        /*
+        * Turn off afk bit when any command performed.
+        */
+        if ( IS_SET ( ch->act, PLR_AFK)  && (str_cmp(command, "AFK")))
+        {
+            REMOVE_BIT( ch->act, PLR_AFK );
+                act( AT_GREY, "$n is no longer afk.", ch, NULL, NULL, TO_ROOM );
+        }
     }
 
     /*
@@ -326,7 +358,7 @@ void interpret( CHAR_DATA *ch, char *argument )
     SPRINTF( lastplayercmd, "** %s: %s", ch->name, logline );
 
     if ( found && cmd->log == LOG_NEVER )
-	SPRINTF( logline, "XXXXXXXX XXXXXXXX XXXXXXXX" );
+	    SPRINTF( logline, "XXXXXXXX XXXXXXXX XXXXXXXX" );
 
     loglvl = found ? cmd->log : LOG_NORMAL;
 
@@ -355,34 +387,34 @@ void interpret( CHAR_DATA *ch, char *argument )
 
     if ( ch->desc && ch->desc->snoop_by )
     {
-  	SPRINTF( logname, "%s", ch->name);
-	write_to_buffer( ch->desc->snoop_by, logname, strnlen(logname, MAX_INPUT_LENGTH) );
-	write_to_buffer( ch->desc->snoop_by, "% ",    2 );
-	write_to_buffer( ch->desc->snoop_by, logline, strnlen(logline, MAX_INPUT_LENGTH) );
-	write_to_buffer( ch->desc->snoop_by, "\n",  2 );
+        SPRINTF( logname, "%s", ch->name);
+        write_to_buffer( ch->desc->snoop_by, logname, strnlen(logname, MAX_INPUT_LENGTH) );
+        write_to_buffer( ch->desc->snoop_by, "% ",    2 );
+        write_to_buffer( ch->desc->snoop_by, logline, strnlen(logline, MAX_INPUT_LENGTH) );
+        write_to_buffer( ch->desc->snoop_by, "\n",  2 );
     }
 
     
 
     if ( timer )
     {
-	int tempsub;
+        int tempsub;
 
-	tempsub = ch->substate;
-	ch->substate = SUB_TIMER_DO_ABORT;
-	(timer->do_fun)(ch,"");
-	if ( char_died(ch) )
-	  return;
-	if ( ch->substate != SUB_TIMER_CANT_ABORT )
-	{
-	  ch->substate = tempsub;
-	  extract_timer( ch, timer );
-	}
-	else
-	{
-	  ch->substate = tempsub;
-	  return;
-	}
+        tempsub = ch->substate;
+        ch->substate = SUB_TIMER_DO_ABORT;
+        (timer->do_fun)(ch,"");
+        if ( char_died(ch) )
+            return;
+        if ( ch->substate != SUB_TIMER_CANT_ABORT )
+        {
+            ch->substate = tempsub;
+            extract_timer( ch, timer );
+        }
+        else
+        {
+            ch->substate = tempsub;
+            return;
+        }
     }
 
     /*
@@ -390,32 +422,32 @@ void interpret( CHAR_DATA *ch, char *argument )
      */
     if ( !found )
     {
-	if ( !check_skill( ch, command, argument )
-	&&   !check_alias( ch, command, argument )
-	&&   !check_social( ch, command, argument ) )
-	{
-	    EXIT_DATA *pexit;
+        if ( !check_skill( ch, command, argument )
+        &&   !check_alias( ch, command, argument )
+        &&   !check_social( ch, command, argument ) )
+        {
+            EXIT_DATA *pexit;
 
-	    /* check for an auto-matic exit command */
-	    if ( (pexit = find_door( ch, command, TRUE )) != NULL
-	    &&   IS_SET( pexit->exit_info, EX_xAUTO ))
-	    {
-		if ( IS_SET(pexit->exit_info, EX_CLOSED)
-		&& (!IS_AFFECTED(ch, AFF_PASS_DOOR)
-		||   IS_SET(pexit->exit_info, EX_NOPASSDOOR)) )
-		{
-		  if ( !IS_SET( pexit->exit_info, EX_SECRET ) )
-		    act( AT_PLAIN, "The $d is closed.", ch, NULL, pexit->keyword, TO_CHAR );
-		  else
-		    send_to_char( "You cannot do that here.\n", ch );
-		  return;
-		}
-		move_char( ch, pexit, 0 );
-		return;
-	    }
-	    send_to_char( "Huh?\n", ch );
-	}
-	return;
+            /* check for an auto-matic exit command */
+            if ( (pexit = find_door( ch, command, TRUE )) != NULL
+            &&   IS_SET( pexit->exit_info, EX_xAUTO ))
+            {
+                if ( IS_SET(pexit->exit_info, EX_CLOSED)
+                && (!IS_AFFECTED(ch, AFF_PASS_DOOR)
+                ||   IS_SET(pexit->exit_info, EX_NOPASSDOOR)) )
+                {
+                    if ( !IS_SET( pexit->exit_info, EX_SECRET ) )
+                        act( AT_PLAIN, "The $d is closed.", ch, NULL, pexit->keyword, TO_CHAR );
+                    else
+                        send_to_char( "You cannot do that here.\n", ch );
+                    return;
+                }
+                move_char( ch, pexit, 0 );
+                return;
+            }
+            send_to_char( "Huh?\n", ch );
+        }
+        return;
     }
 
     /*
@@ -429,8 +461,8 @@ void interpret( CHAR_DATA *ch, char *argument )
     if ( !str_cmp(cmd->name, "flee") &&
           IS_AFFECTED(ch, AFF_BERSERK) )
     {
-	send_to_char( "You aren't thinking very clearly..\n", ch);
-	return;
+        send_to_char( "You aren't thinking very clearly..\n", ch);
+        return;
     }
 
     /*
@@ -670,8 +702,8 @@ char *one_argument(char *argument, char *arg_first)
         return argument;  // safety check
 
     // Skip leading spaces
-    while (isspace((unsigned char)*argument))
-        argument++;
+    while (*argument && isspace_utf8(argument))
+        UTF8_NEXT(argument);
 
     // Determine delimiter
     cEnd = ' ';
@@ -679,12 +711,27 @@ char *one_argument(char *argument, char *arg_first)
         cEnd = *argument++;
 
     // Copy argument safely
-    while (*argument != '\0' && *argument != cEnd && count < MAX_INPUT_LENGTH - 1)
+    while (*argument != '\0' && *argument != cEnd)
     {
-        *arg_first = tolower((unsigned char)*argument);
-        arg_first++;
-        argument++;
-        count++;
+        size_t char_len = utf8_char_len_safe(argument); 
+
+        /* Prevent overflow (respect multibyte) */
+        if (count + char_len >= MAX_INPUT_LENGTH - 1) 
+            break;
+
+        if (char_len == 1) /* ASCII */
+        {
+            *arg_first = tolower((unsigned char)*argument);
+            arg_first++;
+        }
+        else /* UTF-8 multibyte */
+        {
+            memcpy(arg_first, argument, char_len); 
+            arg_first += char_len;
+        }
+
+        argument += char_len;  /* UTF-8 FIX */
+        count += char_len;     /* UTF-8 FIX */
     }
 
     // Skip closing quote if any
@@ -694,8 +741,8 @@ char *one_argument(char *argument, char *arg_first)
     *arg_first = '\0';  // null terminate
 
     // Skip trailing spaces
-    while (isspace((unsigned char)*argument))
-        argument++;
+    while (*argument && isspace_utf8(argument))
+        UTF8_NEXT(argument);
 
     return argument;
 }
@@ -714,8 +761,8 @@ char *one_argument2(char *argument, char *arg_first)
         return argument;  // safety check
 
     // Skip leading spaces
-    while (isspace((unsigned char)*argument))
-        argument++;
+    while (*argument && isspace_utf8(argument))
+        UTF8_NEXT(argument);
 
     // Determine delimiter
     cEnd = ' ';
@@ -723,12 +770,31 @@ char *one_argument2(char *argument, char *arg_first)
         cEnd = *argument++;
 
     // Copy argument safely
-    while (*argument != '\0' && *argument != cEnd && *argument != '-' && count < MAX_INPUT_LENGTH - 1)
+    while (*argument != '\0')
     {
-        *arg_first = tolower((unsigned char)*argument);
-        arg_first++;
-        argument++;
-        count++;
+        /* UTF-8 FIX: ASCII-safe delimiter checks */
+        if ((unsigned char)*argument == (unsigned char)cEnd ||
+            (unsigned char)*argument == (unsigned char)'-')
+            break;
+
+        size_t char_len = utf8_char_len_safe(argument); 
+
+        /* Prevent overflow (respect multibyte) */
+        if (count + char_len >= MAX_INPUT_LENGTH - 1) 
+            break;
+
+        if (char_len == 1) /* ASCII */
+        {
+            *arg_first++ = tolower((unsigned char)*argument);
+        }
+        else /* UTF-8 multibyte */
+        {
+            memcpy(arg_first, argument, char_len); 
+            arg_first += char_len;
+        }
+
+        argument += char_len;  
+        count += char_len;     
     }
 
     // Skip closing delimiter or '-' if present
@@ -738,8 +804,8 @@ char *one_argument2(char *argument, char *arg_first)
     *arg_first = '\0';  // null terminate
 
     // Skip trailing spaces
-    while (isspace((unsigned char)*argument))
-        argument++;
+    while (*argument && isspace_utf8(argument))
+        UTF8_NEXT(argument);
 
     return argument;
 }
