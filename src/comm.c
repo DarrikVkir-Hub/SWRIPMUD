@@ -5438,38 +5438,46 @@ bool pager_output( DESCRIPTOR_DATA *d )
     }
 
     /* =========================
-     * FORWARD SCAN
-     * ========================= */
-    for ( lines = 0, last = d->pagepoint; lines < pclines; ++last )
+    * FORWARD SCAN (FIXED)
+    * ========================= */
+    size_t line_end = d->pagepoint;
+
+    for ( lines = 0, last = d->pagepoint;
+        last < d->pagelen && lines < pclines;
+        ++last )
     {
-        if ( last >= d->pagelen ) 
-            break;
-        else if ( d->pagebuf[last] == '\n' )
+        if ( d->pagebuf[last] == '\n' )
+        {
+            line_end = last + 1;  /* ✅ track safe boundary */
             ++lines;
+        }
     }
     
-    if ( last < d->pagelen && d->pagebuf[last] == '\r' )
-        ++last;
+//    if ( last < d->pagelen && d->pagebuf[last] == '\r' )
+//        ++last;
 
     /* =========================
-     * OUTPUT CHUNK
-     * ========================= */
-    if ( last != d->pagepoint )
+    * OUTPUT CHUNK (FIXED)
+    * ========================= */
+    if ( line_end == d->pagepoint )
+        line_end = last;  /* fallback if no newline found */
+
+    if ( line_end != d->pagepoint )
     {
-        char save = d->pagebuf[last];
-        d->pagebuf[last] = '\0';
+        char save = d->pagebuf[line_end];
+        d->pagebuf[line_end] = '\0';
 
         output_to_descriptor(d, d->pagebuf + d->pagepoint);
-        d->pagebuf[last] = save;
-        d->pagepoint = last;
+
+        d->pagebuf[line_end] = save;
+
+        d->pagepoint = line_end;  /* ✅ advance ONLY what was shown */
     }
 
     /* =========================
      * SKIP WHITESPACE
      * ========================= */
-    while ( last < d->pagelen &&
-            (d->pagebuf[last] == ' ' || d->pagebuf[last] == '\t') )
-        ++last;
+    last = d->pagepoint; 
 
     if ( last >= d->pagelen )
     {

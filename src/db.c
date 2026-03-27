@@ -3263,144 +3263,184 @@ bool is_valid_filename( CHAR_DATA *ch, const char *direct, const char *filename 
    return TRUE;
 }
 
+static int sanitize_utf8_char(FILE *fp, int first, unsigned char out[4])
+{
+    unsigned char c0 = (unsigned char)first;
+
+    /* newline */
+    if (c0 == '\n')
+    {
+        out[0] = '\n';
+        return 1;
+    }
+
+    /* skip CR */
+    if (c0 == '\r')
+        return -1;
+
+    /* ASCII */
+    if (c0 < 0x80)
+    {
+        if (c0 < 32 || c0 == 127)
+            out[0] = '?';
+        else
+            out[0] = c0;
+
+        return 1;
+    }
+
+    /* --- UTF-8 MULTIBYTE --- */
+    int needed = 0;
+
+    if ((c0 & 0xE0) == 0xC0) needed = 2;
+    else if ((c0 & 0xF0) == 0xE0) needed = 3;
+    else if ((c0 & 0xF8) == 0xF0) needed = 4;
+    else
+    {
+        out[0] = '?';
+        return 1;
+    }
+
+    unsigned char seq[4];
+    seq[0] = c0;
+
+    for (int i = 1; i < needed; i++)
+    {
+        int nx = getc(fp);
+        if (nx == EOF)
+        {
+            out[0] = '?';
+            return 1;
+        }
+
+        unsigned char uc = (unsigned char)nx;
+
+        if ((uc & 0xC0) != 0x80)
+        {
+            ungetc(nx, fp);
+            out[0] = '?';
+            return 1;
+        }
+
+        seq[i] = uc;
+    }
+
+    /* --- Validation --- */
+    int valid = 1;
+
+    if (needed == 2 && c0 < 0xC2) valid = 0;
+    if (needed == 3 && c0 == 0xE0 && seq[1] < 0xA0) valid = 0;
+    if (needed == 3 && c0 == 0xED && seq[1] >= 0xA0) valid = 0;
+    if (needed == 4 && c0 == 0xF0 && seq[1] < 0x90) valid = 0;
+    if (needed == 4 && c0 > 0xF4) valid = 0;
+
+    if (!valid)
+    {
+        out[0] = '?';
+        return 1;
+    }
+
+    /* valid sequence */
+    for (int i = 0; i < needed; i++)
+        out[i] = seq[i];
+
+    return needed;
+}
+
+static char *fread_string_core(FILE *fp)
+{
+    static char buf[MAX_STRING_LENGTH];
+    char *plast = buf;
+    int ln = 0;
+    int c;
+
+    buf[0] = '\0';
+
+    /* Skip leading whitespace */
+    do
+    {
+        if (feof(fp))
+        {
+            bug("fread_string_core: EOF encountered on read.\n");
+            if (fBootDb)
+                exit(1);
+            return buf;
+        }
+        c = getc(fp);
+    }
+    while (isspace((unsigned char)c));
+
+    /* Unified read loop (handles first char too) */
+    for (;;)
+    {
+        if (c == EOF)
+        {
+            bug("fread_string_core: EOF");
+            if (fBootDb)
+                exit(1);
+            break;
+        }
+
+        if (c == '~')
+            break;
+
+        if (c == '\n')
+        {
+            if (ln >= MAX_STRING_LENGTH - 1)
+            {
+                bug("fread_string_core: string too long");
+                break;
+            }
+
+            *plast++ = '\n';
+            ln++;
+        }
+        else if (c != '\r')
+        {
+            unsigned char utf8[4];
+            int len = sanitize_utf8_char(fp, c, utf8);
+
+            if (len != -1)
+            {
+                for (int i = 0; i < len; i++)
+                {
+                    if (ln >= MAX_STRING_LENGTH - 1)
+                    {
+                        bug("fread_string_core: string too long");
+                        goto done;
+                    }
+
+                    *plast++ = utf8[i];
+                    ln++;
+                }
+            }
+            /* else: skip invalid sequence */
+        }
+
+        c = getc(fp);
+    }
+
+done:
+    *plast = '\0';
+    return buf;
+}
+
 /*
  * Read a string from file fp
  */
-char *fread_string( FILE *fp )
+char *fread_string(FILE *fp)
 {
-    char buf[MAX_STRING_LENGTH];
-    char *plast;
-    char c;
-    int ln;
-
-    plast = buf;
-    buf[0] = '\0';
-    ln = 0;
-
-    /*
-     * Skip blanks.
-     * Read first char.
-     */
-    do
-    {
-	if ( feof(fp) )
-	{
-	    bug("fread_string: EOF encountered on read.\n");
-	    if ( fBootDb )
-		exit(1);
-	    return STRALLOC("");
-	}
-	c = getc( fp );
-    }
-    while ( isspace(c) );
-
-    if ( ( *plast++ = c ) == '~' )
-	return STRALLOC( "" );
-
-    for ( ;; )
-    {
-	if ( ln >= (MAX_STRING_LENGTH - 1) )
-	{
-	     bug( "fread_string: string too long" );
-	     *plast = '\0';
-	     return STRALLOC( buf );
-	}
-	switch ( *plast = getc( fp ) )
-	{
-	default:
-	    plast++; ln++;
-	    break;
-
-	case EOF:
-	    bug( "Fread_string: EOF" );
-	    if ( fBootDb )
-	      exit( 1 );
-	    *plast = '\0';
-	    return STRALLOC(buf);
-	    break;
-
-	case '\n':
-	    plast++;  ln++;
-	    break;
-
-	case '\r':
-	    break;
-
-	case '~':
-	    *plast = '\0';
-	    return STRALLOC( buf );
-	}
-    }
+    char *str = fread_string_core(fp);
+    return STRALLOC(str);
 }
 
 /*
  * Read a string from file fp using str_dup (ie: no string hashing)
  */
-char *fread_string_nohash( FILE *fp )
+char *fread_string_nohash(FILE *fp)
 {
-    char buf[MAX_STRING_LENGTH];
-    char *plast;
-    char c;
-    int ln;
-
-    plast = buf;
-    buf[0] = '\0';
-    ln = 0;
-
-    /*
-     * Skip blanks.
-     * Read first char.
-     */
-    do
-    {
-	if ( feof(fp) )
-	{
-	    bug("fread_string_no_hash: EOF encountered on read.\n");
-	    if ( fBootDb )
-		exit(1);
-	    return str_dup("");
-	}
-	c = getc( fp );
-    }
-    while ( isspace(c) );
-
-    if ( ( *plast++ = c ) == '~' )
-	return str_dup( "" );
-
-    for ( ;; )
-    {
-	if ( ln >= (MAX_STRING_LENGTH - 1) )
-	{
-	   bug( "fread_string_no_hash: string too long" );
-	   *plast = '\0';
-	   return str_dup( buf );
-	}
-	switch ( *plast = getc( fp ) )
-	{
-	default:
-	    plast++; ln++;
-	    break;
-
-	case EOF:
-	    bug( "Fread_string_no_hash: EOF" );
-	    if ( fBootDb )
-	      exit( 1 );
-	    *plast = '\0';
-	    return str_dup(buf);
-	    break;
-
-	case '\n':
-	    plast++;  ln++;
-	    break;
-
-	case '\r':
-	    break;
-
-	case '~':
-	    *plast = '\0';
-	    return str_dup( buf );
-	}
-    }
+    char *str = fread_string_core(fp);
+    return str_dup(str);
 }
 
 
@@ -3414,20 +3454,20 @@ void fread_to_eol( FILE *fp )
 
     do
     {
-	if ( feof(fp) )
-	{
-	    bug("fread_to_eol: EOF encountered on read.\n");
-	    if ( fBootDb )
-		exit(1);
-	    return;
-	}
-	c = getc( fp );
+		if ( feof(fp) )
+		{
+			bug("fread_to_eol: EOF encountered on read.\n");
+			if ( fBootDb )
+			exit(1);
+			return;
+		}
+		c = getc( fp );
     }
     while ( c != '\n' && c != '\r' );
 
     do
     {
-	c = getc( fp );
+		c = getc( fp );
     }
     while ( c == '\n' || c == '\r' );
 
@@ -3438,63 +3478,84 @@ void fread_to_eol( FILE *fp )
 /*
  * Read to end of line into static buffer			-Thoric
  */
-char *fread_line( FILE *fp )
+char *fread_line(FILE *fp)
 {
     static char line[MAX_STRING_LENGTH];
-    char *pline;
-    char c;
-    int ln;
+    char *pline = line;
+    int ln = 0;
+    int c;
 
-    pline = line;
     line[0] = '\0';
-    ln = 0;
 
-    /*
-     * Skip blanks.
-     * Read first char.
-     */
+    /* Skip leading whitespace */
     do
     {
-	if ( feof(fp) )
-	{
-	    bug("fread_line: EOF encountered on read.\n");
-	    if ( fBootDb )
-			exit(1);
-		line[0] = '\0';
-	    return line;
-	}
-	c = getc( fp );
+        if (feof(fp))
+        {
+            bug("fread_line: EOF encountered on read.\n");
+            if (fBootDb)
+                exit(1);
+            return line;
+        }
+        c = getc(fp);
     }
-    while ( isspace(c) );
+    while (isspace((unsigned char)c));
 
-    ungetc( c, fp );
+    ungetc(c, fp);
+
+    for (;;)
+    {
+        if (feof(fp))
+        {
+            bug("fread_line: EOF encountered on read.\n");
+            if (fBootDb)
+                exit(1);
+            break;
+        }
+
+        int raw = getc(fp);
+
+        /* Stop at newline */
+        if (raw == '\n' || raw == '\r')
+            break;
+
+        unsigned char utf8[4];
+        int len = sanitize_utf8_char(fp, raw, utf8);
+
+        if (len == -1)
+        {
+            if (ln < MAX_STRING_LENGTH - 1)
+            {
+                *pline++ = '?';
+                ln++;
+            }
+            continue; /* 🔥 IMPORTANT */
+        }
+
+        for (int i = 0; i < len; i++)
+        {
+            if (ln >= MAX_STRING_LENGTH - 1)
+            {
+                bug("fread_line: line too long");
+                goto done;
+            }
+
+            *pline++ = utf8[i];
+            ln++;
+        }
+    }
+
+    /* Skip trailing newline chars */
     do
     {
-	if ( feof(fp) )
-	{
-	    bug("fread_line: EOF encountered on read.\n");
-	    if ( fBootDb )
-		exit(1);
-	    *pline = '\0';
-	    return line;
-	}
-	c = getc( fp );
-	*pline++ = c; ln++;
-	if ( ln >= (MAX_STRING_LENGTH - 1) )
-	{
-	    bug( "fread_line: line too long" );
-	    break;
-	}
+        c = getc(fp);
     }
-    while ( c != '\n' && c != '\r' );
+    while (c == '\n' || c == '\r');
 
-    do
-    {
-	c = getc( fp );
-    }
-    while ( c == '\n' || c == '\r' );
+    if (c != EOF)
+        ungetc(c, fp);
 
-    ungetc( c, fp );
+done:
     *pline = '\0';
     return line;
 }
@@ -3504,60 +3565,88 @@ char *fread_line( FILE *fp )
 /*
  * Read one word (into static buffer).
  */
-char *fread_word( FILE *fp )
+char *fread_word(FILE *fp)
 {
     static char word[MAX_INPUT_LENGTH];
-    char *pword;
-    char cEnd;
+    char *pword = word;
+    int cEnd;
+    int c;
 
+    /* Skip whitespace */
     do
     {
-	if ( feof(fp) )
-	{
-	    bug("fread_word: EOF encountered on read.\n");
-	    if ( fBootDb )
-		exit(1);
-	    word[0] = '\0';
-	    return word;
-	}
-	cEnd = getc( fp );
+        if (feof(fp))
+        {
+            bug("fread_word: EOF encountered on read.\n");
+            if (fBootDb)
+                exit(1);
+            word[0] = '\0';
+            return word;
+        }
+        c = getc(fp);
     }
-    while ( isspace( cEnd ) );
+    while (isspace(c));
 
-    if ( cEnd == '\'' || cEnd == '"' )
+    /* Handle quoted words */
+    if (c == '\'' || c == '"')
     {
-	pword   = word;
+        cEnd = c;
     }
     else
     {
-	word[0] = cEnd;
-	pword   = word+1;
-	cEnd    = ' ';
+        cEnd = ' ';
+
+        unsigned char utf8[4];
+        int len = sanitize_utf8_char(fp, c, utf8);
+
+        if (len > 0)
+        {
+            for (int i = 0; i < len; i++)
+                *pword++ = utf8[i];
+        }
     }
 
-    for ( ; pword < word + MAX_INPUT_LENGTH; pword++ )
+    for (;;)
     {
-	if ( feof(fp) )
-	{
-	    bug("fread_word: EOF encountered on read.\n");
-	    if ( fBootDb )
-		exit(1);
-	    *pword = '\0';
-	    return word;
-	}
-	*pword = getc( fp );
-	if ( cEnd == ' ' ? isspace(*pword) : *pword == cEnd )
-	{
-	    if ( cEnd == ' ' )
-		ungetc( *pword, fp );
-	    *pword = '\0';
-	    return word;
-	}
+        if (feof(fp))
+        {
+            bug("fread_word: EOF encountered on read.\n");
+            if (fBootDb)
+                exit(1);
+            break;
+        }
+
+        int raw = getc(fp);
+
+        /* End conditions */
+        if ((cEnd == ' ' && isspace(raw)) ||
+            (cEnd != ' ' && raw == cEnd))
+        {
+            if (cEnd == ' ')
+                ungetc(raw, fp);
+            break;
+        }
+
+        unsigned char utf8[4];
+        int len = sanitize_utf8_char(fp, raw, utf8);
+
+        if (len == -1)
+            continue;
+
+        for (int i = 0; i < len; i++)
+        {
+            if (pword >= word + MAX_INPUT_LENGTH - 1)
+            {
+                bug("fread_word: word too long");
+                exit(1);
+            }
+
+            *pword++ = utf8[i];
+        }
     }
 
-    bug( "Fread_word: word too long" );
-    exit( 1 );
-    return NULL;
+    *pword = '\0';
+    return word;
 }
 
 
