@@ -956,7 +956,7 @@ void do_outcast( CHAR_DATA *ch, char *argument )
 
     if ( victim->speaking & LANG_CLAN )
         victim->speaking = LANG_COMMON;
-    REMOVE_BIT( victim->speaks, LANG_CLAN );
+    BV_REMOVE_BIT( victim->speaks, LANG_CLAN );
     --clan->members;
     if( clan->members < 0 ) //--Shaddai/FUSS - DV added 3-13-26
         clan->members = 0;    
@@ -2274,7 +2274,7 @@ void do_enlist( CHAR_DATA *ch, char *argument )
 		    send_to_char( "&CThe recruiter says, 'You will need to find a sponsor to enlist'&R&w\n", ch );
 		    return;
 		  }
-			SET_BIT( ch->speaks, LANG_CLAN );
+			BV_SET_BIT( ch->speaks, LANG_CLAN );
 			++clan->members;
 			STRFREE( ch->pcdata->clan_name );
 			ch->pcdata->clan_name = QUICKLINK( clan->name );
@@ -2319,7 +2319,7 @@ void do_resign( CHAR_DATA *ch, char *argument )
        
     if ( ch->speaking & LANG_CLAN )
       ch->speaking = LANG_COMMON;
-    REMOVE_BIT( ch->speaks, LANG_CLAN );
+    BV_REMOVE_BIT( ch->speaks, LANG_CLAN );
     --clan->members;
     if ( !str_cmp( ch->name, ch->pcdata->clan->number1 ) )
     {

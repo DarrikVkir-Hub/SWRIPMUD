@@ -1,0 +1,140 @@
+act_wiz.c:	    if ( fAll || nifty_is_name( arg, pObjIndex->name ) )
+act_wiz.c:		    pObjIndex->vnum, capitalize( pObjIndex->short_descr ) );
+act_wiz.c:	      pObjIndex = pObjIndex->next )
+act_wiz.c:	    if ( fAll || nifty_is_name( arg, pObjIndex->name ) )
+act_wiz.c:		    pObjIndex->vnum, capitalize( pObjIndex->short_descr ) );
+act_wiz.c:		  pObjIndex = pObjIndex->next )
+act_wiz.c:	    if ( nifty_is_name( arg, pObjIndex->name )
+act_wiz.c:		vnum = pObjIndex->vnum;
+act_wiz.c:    &&	 pObjIndex->count > 5 )
+build.c:		for( paf = pObjIndex->first_affect; paf; paf = paf->next )
+build.c:				UNLINK( paf, pObjIndex->first_affect, pObjIndex->last_affect, next, prev );
+build.c:	  BV_REMOVE_BIT( pObjIndex->objflags, ITEM_PROTOTYPE );
+build.c:	fprintf( fpout, "%s~\n",	pObjIndex->name			);
+build.c:	fprintf( fpout, "%s~\n",	pObjIndex->short_descr		);
+build.c:	fprintf( fpout, "%s~\n",	pObjIndex->description		);
+build.c:	fprintf( fpout, "%s~\n",	pObjIndex->action_desc		);
+build.c:	if ( pObjIndex->layers )
+build.c:	  fprintf( fpout, "%d %d %d %d\n",	pObjIndex->item_type,
+build.c:						pObjIndex->layers	); 
+build.c:	  fprintf( fpout, "%d %d %d\n",	pObjIndex->item_type,
+build.c: 	fwrite_bitset(fpout, NULL, pObjIndex->wear_flags);
+build.c:	fwrite_bitset(fpout, NULL, pObjIndex->objflags);
+build.c:	val0 = pObjIndex->value[0];
+build.c:	val1 = pObjIndex->value[1];
+build.c:	val2 = pObjIndex->value[2];
+build.c:	val3 = pObjIndex->value[3];
+build.c:	val4 = pObjIndex->value[4];
+build.c:	val5 = pObjIndex->value[5];
+build.c:	switch ( pObjIndex->item_type )
+build.c:	fprintf( fpout, "%d %d %d\n",	pObjIndex->weight,
+build.c:					pObjIndex->cost,
+build.c:					pObjIndex->rent ? pObjIndex->rent :
+build.c:				 (int) (pObjIndex->cost / 10)		);
+build.c:	for ( ed = pObjIndex->first_extradesc; ed; ed = ed->next )
+build.c:	for ( paf = pObjIndex->first_affect; paf; paf = paf->next )
+build.c:	if ( pObjIndex->mudprogs )
+build.c:	  for ( mprog = pObjIndex->mudprogs; mprog; mprog = mprog->next )
+db.c:	pObjIndex->vnum			= vnum;
+db.c:	pObjIndex->name			= fread_string( fp );
+db.c:	pObjIndex->short_descr		= fread_string( fp );
+db.c:	pObjIndex->description		= fread_string( fp );
+db.c:	pObjIndex->action_desc		= fread_string( fp );
+db.c:	/*pObjIndex->short_descr[0]	= LOWER(pObjIndex->short_descr[0]);*/
+db.c:	pObjIndex->description[0]	= UPPER(pObjIndex->description[0]);
+db.c:	pObjIndex->item_type		= x1;
+db.c:	pObjIndex->layers		= x4;
+db.c:        fread_bitset(fp, pObjIndex->wear_flags);
+db.c:        pObjIndex->wear_flags.reset();
+db.c:        pObjIndex->wear_flags.from_int(x3);
+db.c:        fread_bitset(fp, pObjIndex->objflags);
+db.c:        int_into_bitset_offset(pObjIndex->objflags, x2, ITEM_FIRST);
+db.c:	pObjIndex->value[0]		= x1;
+db.c:	pObjIndex->value[1]		= x2;
+db.c:	pObjIndex->value[2]		= x3;
+db.c:	pObjIndex->value[3]		= x4;
+db.c:	pObjIndex->value[4]		= x5;
+db.c:	pObjIndex->value[5]		= x6;
+db.c:	pObjIndex->weight		= fread_number( fp );
+db.c:	pObjIndex->weight = UMAX( 1, pObjIndex->weight );
+db.c:	pObjIndex->cost			= fread_number( fp );
+db.c:	pObjIndex->rent		  	= fread_number( fp ); /* unused */
+db.c:    if (pObjIndex->item_type == ITEM_WEAPON)
+db.c:        pObjIndex->objflags.set(pObjIndex->value[3]+WEAPON_FIRST);
+db.c:		LINK( paf, pObjIndex->first_affect, pObjIndex->last_affect,
+db.c:		LINK( ed, pObjIndex->first_extradesc, pObjIndex->last_extradesc,
+db.c:	switch ( pObjIndex->item_type )
+db.c:	    pObjIndex->value[1] = slot_lookup( pObjIndex->value[1] );
+db.c:	    pObjIndex->value[2] = slot_lookup( pObjIndex->value[2] );
+db.c:	    pObjIndex->value[3] = slot_lookup( pObjIndex->value[3] );
+db.c:	    pObjIndex->value[3] = slot_lookup( pObjIndex->value[3] );
+db.c:	    pObjIndex->value[4] = slot_lookup( pObjIndex->value[4] );
+db.c:	    pObjIndex->value[5] = slot_lookup( pObjIndex->value[5] );
+db.c:	  pObjIndex->next	= obj_index_hash[iHash];
+db.c:    obj->name		= QUICKLINK( pObjIndex->name 	 );
+db.c:    obj->short_descr	= QUICKLINK( pObjIndex->short_descr );
+db.c:    obj->description	= QUICKLINK( pObjIndex->description );
+db.c:    obj->action_desc	= QUICKLINK( pObjIndex->action_desc );
+db.c:    obj->item_type	= pObjIndex->item_type;
+db.c:    obj->objflags	= pObjIndex->objflags;
+db.c:    obj->wear_flags	= pObjIndex->wear_flags;
+db.c:    obj->value[0]	= pObjIndex->value[0];
+db.c:    obj->value[1]	= pObjIndex->value[1];
+db.c:    obj->value[2]	= pObjIndex->value[2];
+db.c:    obj->value[3]	= pObjIndex->value[3];
+db.c:    obj->value[4]	= pObjIndex->value[4];
+db.c:    obj->value[5]	= pObjIndex->value[5];
+db.c:    obj->weight		= pObjIndex->weight;
+db.c:    obj->cost		= pObjIndex->cost;
+db.c:    obj->objflags   = pObjIndex->objflags;
+db.c:	bug( "Read_object: vnum %d bad type.", pObjIndex->vnum );
+db.c:    ++pObjIndex->count;
+db.c:	  pObjIndex  = pObjIndex->next )
+db.c:	if ( pObjIndex->vnum == vnum )
+db.c:     bug( "Obj: %d couldnt open mudprog file", pObjIndex->vnum );
+db.c:	pObjIndex->progtypes = pObjIndex->progtypes | mprg2->type;
+db.c:      bug( "Load_objects: vnum %d OBJPROG char", pObjIndex->vnum );
+db.c:  pObjIndex->mudprogs = mprg;
+db.c:	bug( "Load_objects: vnum %d OBJPROG type.", pObjIndex->vnum );
+db.c:	     bug( "Load_objects: vnum %d bad OBJPROG.", pObjIndex->vnum );
+db.c:	pObjIndex->progtypes = pObjIndex->progtypes | mprg->type;
+db.c:	     bug( "Load_objects: vnum %d bad OBJPROG.", pObjIndex->vnum );
+db.c:	pObjIndex->vnum			= vnum;
+db.c:	pObjIndex->name			= STRALLOC( name );
+db.c:	pObjIndex->first_affect		= NULL;
+db.c:	pObjIndex->last_affect		= NULL;
+db.c:	pObjIndex->first_extradesc	= NULL;
+db.c:	pObjIndex->last_extradesc	= NULL;
+db.c:	  pObjIndex->short_descr	= STRALLOC( buf  );
+db.c:	  pObjIndex->description	= STRALLOC( buf );
+db.c:	  pObjIndex->action_desc	= STRALLOC( "" );
+db.c:	  pObjIndex->short_descr[0]	= LOWER(pObjIndex->short_descr[0]);
+db.c:	  pObjIndex->description[0]	= UPPER(pObjIndex->description[0]);
+db.c:	  pObjIndex->item_type		= ITEM_TRASH;
+db.c:	  BV_SET_BIT(pObjIndex->objflags,ITEM_PROTOTYPE);
+db.c:	  pObjIndex->wear_flags.reset();
+db.c:	  pObjIndex->value[0]		= 0;
+db.c:	  pObjIndex->value[1]		= 0;
+db.c:	  pObjIndex->value[2]		= 0;
+db.c:	  pObjIndex->value[3]		= 0;
+db.c:	  pObjIndex->weight		= 1;
+db.c:	  pObjIndex->cost		= 0;
+db.c:	  pObjIndex->short_descr	= QUICKLINK( cObjIndex->short_descr );
+db.c:	  pObjIndex->description	= QUICKLINK( cObjIndex->description );
+db.c:	  pObjIndex->action_desc	= QUICKLINK( cObjIndex->action_desc );
+db.c:	  pObjIndex->item_type		= cObjIndex->item_type;
+db.c:	  pObjIndex->objflags	    = cObjIndex->objflags; pObjIndex->objflags.set(ITEM_PROTOTYPE);
+db.c:	  pObjIndex->wear_flags		= cObjIndex->wear_flags;
+db.c:	  pObjIndex->value[0]		= cObjIndex->value[0];
+db.c:	  pObjIndex->value[1]		= cObjIndex->value[1];
+db.c:	  pObjIndex->value[2]		= cObjIndex->value[2];
+db.c:	  pObjIndex->value[3]		= cObjIndex->value[3];
+db.c:	  pObjIndex->weight		= cObjIndex->weight;
+db.c:	  pObjIndex->cost		= cObjIndex->cost;
+db.c:		LINK( ed, pObjIndex->first_extradesc, pObjIndex->last_extradesc,
+db.c:		LINK( paf, pObjIndex->first_affect, pObjIndex->last_affect,
+db.c:	pObjIndex->count		= 0;
+db.c:	pObjIndex->next			= obj_index_hash[iHash];
+reset.c:    if ( pObjIndex->level > 0 )
+reset.c:	olevel = UMIN(pObjIndex->level, MAX_LEVEL);
+reset.c:	switch ( pObjIndex->item_type )

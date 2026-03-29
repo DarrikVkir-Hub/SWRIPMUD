@@ -263,8 +263,8 @@ char *flag_string( int bitvector, char * const flagarray[] )
     for ( x = 0; x < 32 ; x++ )
       if ( IS_SET( bitvector, 1 << x ) )
       {
-	STRAPP( buf, "%s", flagarray[x] );
-	STRAPP( buf, " " );
+			STRAPP( buf, "%s", flagarray[x] );
+			STRAPP( buf, " " );
       }
     if ( (x=strlen( buf )) > 0 )
       buf[--x] = '\0';
@@ -296,13 +296,21 @@ char *flag_string(const FLAG_SET &bv, char * const flagarray[], size_t max_flags
     return buf;
 }
 
-std::string bitset_to_string(const FLAG_SET &bv, const flag_name *table)
+std::string bitset_to_string(const FLAG_SET &bv, const flag_name *table,
+                             size_t min_bit,
+                             size_t max_bit)
 {
     std::string result;
 
     for (size_t i = 0; table[i].name != nullptr; ++i)
     {
-        if (bv.test(table[i].bit))
+        size_t bit = table[i].bit;
+
+        // Range filter
+        if (bit < min_bit || bit > max_bit)
+            continue;
+
+        if (bv.test(bit))
         {
             if (!result.empty())
                 result += " ";
@@ -389,9 +397,6 @@ size_t get_flag_partial(const char *input,
 
         if (!strncasecmp(input, table[i].name, strlen(input)))
         {
-            if (match != (size_t)-1)
-                return (size_t)-2; // ambiguous
-
             match = bit;
         }
     }
@@ -634,14 +639,18 @@ int get_mpflag( char *flag )
     return -1;
 }
 
+
 int get_oflag( char *flag )
 {
-    int x;
+	return get_flag_partial(flag, obj_flag_table, ITEM_FIRST, ITEM_MAX);
+/*
+	int x;
 
     for ( x = 0; x < 32; x++ )
       if ( !str_cmp( flag, o_flags[x] ) )
         return x;
     return -1;
+*/
 }
 
 size_t get_flag(const char *flag, const flag_name *table)
@@ -777,14 +786,14 @@ int get_defenseflag( char *flag )
     return -1;
 }
 
-int get_langflag( char *flag )
+size_t get_langflag(char *flag)
 {
-	int x;
-	
-	for ( x = 0; lang_array[x] != LANG_UNKNOWN; x++ )
-		if ( !str_cmp( flag, lang_names[x] ) )
-			return lang_array[x];
-	return LANG_UNKNOWN;
+    size_t x;
+
+	x = get_flag_partial(flag, lang_names);
+	if ( x == ((size_t)-1))
+	    return LANG_UNKNOWN;
+	return x;
 }
 
 /*
@@ -2925,61 +2934,66 @@ void do_mset( CHAR_DATA *ch, char *argument )
     	}
     	while ( argument[0] != '\0' )
     	{
-	    argument = one_argument( argument, arg3 );
-	    value = get_langflag( arg3 );
-	    if ( value == LANG_UNKNOWN )
-		ch_printf( ch, "Unknown language: %s\n", arg3 );
-	    else
-	    if ( !IS_NPC( victim ) )
-	    {
-	    	if ( !(value &= VALID_LANGS) )
+			argument = one_argument( argument, arg3 );
+			value = get_langflag( arg3 );
+			if ( value == LANG_UNKNOWN )
+			{
+				ch_printf( ch, "Unknown language: %s\n", arg3 );
+				continue;
+			}
+			else
+				if ( !IS_NPC( victim ) )
+				{
+					if ( !(VALID_LANG(value)) )
+					{
+							ch_printf( ch, "Players may not know %s.\n", arg3 );
+						continue;
+					}    		
+	    		}
+	    	BV_TOGGLE_BIT( victim->speaks, value );
+		}
+		if ( !IS_NPC( victim ) )
 		{
-    		    ch_printf( ch, "Players may not know %s.\n", arg3 );
-		    continue;
-		}    		
-	    }
-	    TOGGLE_BIT( victim->speaks, value );
-	}
-	if ( !IS_NPC( victim ) )
-	{
-	    REMOVE_BIT( victim->speaks, race_table[victim->race].language );
-	    if ( !knows_language( victim, victim->speaking, victim ) )
-		victim->speaking = race_table[victim->race].language;
-	}
-	else
-	    if ( IS_SET( victim->act, ACT_PROTOTYPE ) )
-		victim->pIndexData->speaks = victim->speaks;
-	send_to_char( "Done.\n", ch );
-	return;
+			BV_REMOVE_BIT( victim->speaks, race_table[victim->race].language );
+			if ( !knows_language( victim, victim->speaking, victim ) )
+				victim->speaking = race_table[victim->race].language;
+		}
+		else
+			if ( IS_SET( victim->act, ACT_PROTOTYPE ) )
+				victim->pIndexData->speaks = victim->speaks;
+		send_to_char( "Done.\n", ch );
+		return;
     }
 
     if ( !str_cmp( arg2, "speaking" ) )
     {
-	if ( !IS_NPC( victim ) )
-	{
-	    send_to_char( "Players must choose the language they speak themselves.\n", ch );
-	    return;
-	}
-	if ( !can_mmodify( ch, victim ) )
-	    return;
-	if ( !argument || argument[0] == '\0' )
-	{
-	    send_to_char( "Usage: mset <victim> speaking <language> [language]...\n", ch );
-	    return;
-	}
-	while ( argument[0] != '\0' )
-	{
-	    argument = one_argument( argument, arg3 );
-	    value = get_langflag( arg3 );
-	    if ( value == LANG_UNKNOWN )
-		ch_printf( ch, "Unknown language: %s\n", arg3 );
-	    else
-		TOGGLE_BIT( victim->speaking, value );
-	}
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
-	    victim->pIndexData->speaking = victim->speaking;
-	send_to_char( "Done.\n", ch );
-	return;
+		if ( !IS_NPC( victim ) )
+		{
+			send_to_char( "Players must choose the language they speak themselves.\n", ch );
+			return;
+		}
+		if ( !can_mmodify( ch, victim ) )
+			return;
+		if ( !argument || argument[0] == '\0' )
+		{
+			send_to_char( "Usage: mset <victim> speaking <language> [language]...\n", ch );
+			return;
+		}
+
+		argument = one_argument( argument, arg3 );
+		value = get_langflag( arg3 );
+		if ( value == LANG_UNKNOWN )
+		{
+			ch_printf( ch, "Unknown language: %s\n", arg3 );
+			return;
+		}
+		else
+			victim->speaking = value;
+
+		if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+			victim->pIndexData->speaking = victim->speaking;
+		send_to_char( "Done.\n", ch );
+		return;
     }
 
     /*
@@ -2987,10 +3001,10 @@ void do_mset( CHAR_DATA *ch, char *argument )
      */
     if ( ch->substate == SUB_REPEATCMD )
     {
-	ch->substate = SUB_RESTRICTED;
-	interpret( ch, origarg );
-	ch->substate = SUB_REPEATCMD;
-	ch->last_cmd = do_mset;
+		ch->substate = SUB_RESTRICTED;
+		interpret( ch, origarg );
+		ch->substate = SUB_REPEATCMD;
+		ch->last_cmd = do_mset;
     }
     else
 	do_mset( ch, "" );
@@ -3331,17 +3345,17 @@ void do_oset( CHAR_DATA *ch, char *argument )
 		{
 		argument = one_argument( argument, arg3 );
 		value = get_oflag( arg3 );
-		if ( value < 0 || value > 31 )
+		if ( value < 0 )
 			ch_printf( ch, "Unknown flag: %s\n", arg3 );
 		else
 		{
-			TOGGLE_BIT(obj->extra_flags, 1 << value);
-			if ( 1 << value == ITEM_PROTOTYPE )
-				obj->pIndexData->extra_flags = obj->extra_flags;
+			BV_TOGGLE_BIT(obj->objflags, value);
+			if ( value == ITEM_PROTOTYPE )
+				obj->pIndexData->objflags = obj->objflags;
 		}
 		}
 		if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
-		obj->pIndexData->extra_flags = obj->extra_flags; 
+		obj->pIndexData->objflags = obj->objflags; 
 		return;
 	}
 
@@ -3370,8 +3384,8 @@ void do_oset( CHAR_DATA *ch, char *argument )
 				value = get_objflag( arg3 );
 				{
 					BV_TOGGLE_BIT(obj->objflags, value);
-//					if ( 1 << value == ITEM_PROTOTYPE )
-//						obj->pIndexData->extra_flags = obj->extra_flags;
+//					if ( value == ITEM_PROTOTYPE )
+//						obj->pIndexData->objflags = obj->objflags;
 				}
 			}
 			if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
@@ -6072,7 +6086,7 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 	||   pMobIndex->race	 != 0
 	||   pMobIndex->attacks	 != 0	||   pMobIndex->defenses   != 0
 	||   pMobIndex->height	 != 0	||   pMobIndex->weight	   != 0
-	||   pMobIndex->speaks	 != 0	||   pMobIndex->speaking   != 0
+	||   !pMobIndex->speaks.any()	||   pMobIndex->speaking   != 0
 	||   pMobIndex->xflags	 != 0   ||   pMobIndex->numattacks != 1
 	||   pMobIndex->vip_flags.any() )
 	  complexmob = TRUE;
@@ -6122,9 +6136,10 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 					pMobIndex->race,
 					pMobIndex->height,
 					pMobIndex->weight,
-					pMobIndex->speaks,
+					-9999,
 					pMobIndex->speaking,
 					pMobIndex->numattacks );
+	  fwrite_bitset(fpout, NULL, pMobIndex->speaks);	  
 	  fprintf( fpout, "%d %d %d %d %d %d %d %d\n",
 					pMobIndex->hitroll,
 					pMobIndex->damroll,
@@ -6158,7 +6173,7 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 	if ( (pObjIndex = get_obj_index( vnum )) == NULL )
 	  continue;
 	if ( install )
-	  REMOVE_BIT( pObjIndex->extra_flags, ITEM_PROTOTYPE );
+	  BV_REMOVE_BIT( pObjIndex->objflags, ITEM_PROTOTYPE );
 	fprintf( fpout, "#%d\n",	vnum				);
 	fprintf( fpout, "%s~\n",	pObjIndex->name			);
 	fprintf( fpout, "%s~\n",	pObjIndex->short_descr		);
@@ -6166,15 +6181,16 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 	fprintf( fpout, "%s~\n",	pObjIndex->action_desc		);
 	if ( pObjIndex->layers )
 	  fprintf( fpout, "%d %d %d %d\n",	pObjIndex->item_type,
-						pObjIndex->extra_flags,
+						-9999, // Sentinel - new BitSet extra_flags file format will have this number always be -9999
 						-9999, // Sentinel - new BitSet wear_flags file format will have this number always be -9999
 						pObjIndex->layers	); 
 	else
 	  fprintf( fpout, "%d %d %d\n",	pObjIndex->item_type,
-					pObjIndex->extra_flags,
-					-9999	); // Sentinel - new BitSet wear_flags file format will have this number always be -9999
+					-9999,
+					-9999	); 
  	fwrite_bitset(fpout, NULL, pObjIndex->wear_flags);
-
+	fwrite_bitset(fpout, NULL, pObjIndex->objflags);
+	
 	val0 = pObjIndex->value[0];
 	val1 = pObjIndex->value[1];
 	val2 = pObjIndex->value[2];
@@ -6266,7 +6282,7 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 	    for ( obj = room->first_content; obj; obj = obj_next )
 	    {
 			obj_next = obj->next_content;
-         	if( IS_SET( obj->extra_flags, ITEM_PROTOTYPE ) )
+         	if( BV_IS_SET( obj->objflags, ITEM_PROTOTYPE ) )
             	extract_obj( obj );
 	    }
 	}

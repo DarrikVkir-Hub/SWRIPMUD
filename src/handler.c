@@ -1153,7 +1153,7 @@ OBJ_DATA *obj_to_char( OBJ_DATA *obj, CHAR_DATA *ch )
     int oweight = get_obj_weight( obj );
     int onum = get_obj_number( obj );
     int wear_loc = obj->wear_loc;
-    int extra_flags = obj->extra_flags;
+    FLAG_SET objflags = obj->objflags;
 
     skipgroup = FALSE;
     grouped = FALSE;
@@ -1197,7 +1197,7 @@ OBJ_DATA *obj_to_char( OBJ_DATA *obj, CHAR_DATA *ch )
 	ch->carry_weight	+= oweight;
     }
     else
-    if ( !IS_SET(extra_flags, ITEM_MAGIC) && wear_loc != WEAR_FLOATING )
+    if ( !BV_IS_SET(objflags, ITEM_MAGIC) && wear_loc != WEAR_FLOATING )
 	ch->carry_weight	+= oweight;
     gmcp_evt_char_stats(ch);
     return (oret ? oret : obj);
@@ -1353,7 +1353,7 @@ void equip_char( CHAR_DATA *ch, OBJ_DATA *obj, int iWear )
     obj->wear_loc	 = iWear;
 
     ch->carry_number	-= get_obj_number( obj );
-    if ( IS_SET( obj->extra_flags, ITEM_MAGIC ) || obj->wear_loc == WEAR_FLOATING )
+    if ( BV_IS_SET( obj->objflags, ITEM_MAGIC ) || obj->wear_loc == WEAR_FLOATING )
       ch->carry_weight  -= get_obj_weight( obj );
 
     for ( paf = obj->pIndexData->first_affect; paf; paf = paf->next )
@@ -1386,7 +1386,7 @@ void unequip_char( CHAR_DATA *ch, OBJ_DATA *obj )
     }
 
     ch->carry_number	+= get_obj_number( obj );
-    if ( IS_SET( obj->extra_flags, ITEM_MAGIC ) || obj->wear_loc == WEAR_FLOATING )
+    if ( BV_IS_SET( obj->objflags, ITEM_MAGIC ) || obj->wear_loc == WEAR_FLOATING )
       ch->carry_weight  += get_obj_weight( obj );
 
     ch->armor		+= apply_ac( obj, obj->wear_loc );
@@ -2692,9 +2692,12 @@ char *affect_bit_name( int vector )
 /*
  * Return ascii name of extra flags vector.
  */
-char *extra_bit_name( int extra_flags )
+const char *extra_bit_name( FLAG_SET extra_flags )
 {
-    static char buf[512];
+    return bitset_to_string(extra_flags, obj_flag_table,
+                             ITEM_FIRST,
+                             ITEM_MAX).c_str();    
+/*    static char buf[512];
 
     buf[0] = '\0';
     if ( extra_flags & ITEM_GLOW         ) STRAPP( buf, " glow"         );
@@ -2726,14 +2729,18 @@ char *extra_bit_name( int extra_flags )
     if ( extra_flags & ITEM_PROTOTYPE    ) STRAPP( buf, " prototype"    );
     if ( extra_flags & ITEM_HUMAN_SIZE   ) STRAPP( buf, " human_size"   );
     return ( buf[0] != '\0' ) ? buf+1 : (char* )"none";
+    */
 }
 
 /*
  * Return ascii name of magic flags vector. - Scryn
  */
-char *magic_bit_name( int magic_flags )
+const char *magic_bit_name( FLAG_SET magic_flags )
 {
-    return flag_bit_name(magic_flags, obj_flag_table);
+    return bitset_to_string(magic_flags, obj_flag_table,
+                             ITEM_MAGIC_FLAG_FIRST,
+                             ITEM_MAGIC_FLAG_MAX).c_str();
+//    return flag_bit_name(magic_flags, obj_flag_table); 
 //    static char buf[512];
 
 //    buf[0] = '\0';
@@ -3007,7 +3014,7 @@ void clean_obj( OBJ_INDEX_DATA *obj )
 	STRFREE( obj->description );
 	STRFREE( obj->action_desc );
 	obj->item_type		= 0;
-	obj->extra_flags	= 0;
+	obj->objflags.reset();
 	obj->wear_flags.reset();
 	obj->count		= 0;
 	obj->weight		= 0;
@@ -3587,8 +3594,7 @@ OBJ_DATA *clone_object( OBJ_DATA *obj )
     clone->description	= QUICKLINK( obj->description );
     clone->action_desc	= QUICKLINK( obj->action_desc );
     clone->item_type	= obj->item_type;
-    clone->extra_flags	= obj->extra_flags;
-    clone->magic_flags	= obj->magic_flags;
+    clone->objflags	    = obj->objflags;
     clone->wear_flags	= obj->wear_flags;
     clone->wear_loc	= obj->wear_loc;
     clone->weight	= obj->weight;
@@ -3636,8 +3642,7 @@ OBJ_DATA *group_object( OBJ_DATA *obj1, OBJ_DATA *obj2 )
     && !str_cmp( obj1->description, obj2->description )
     && !str_cmp( obj1->action_desc, obj2->action_desc )
     &&   obj1->item_type	== obj2->item_type
-    &&   obj1->extra_flags	== obj2->extra_flags
-    &&   obj1->magic_flags	== obj2->magic_flags
+    &&   obj1->objflags	    == obj2->objflags
     &&   obj1->wear_flags	== obj2->wear_flags
     &&   obj1->wear_loc		== obj2->wear_loc
     &&	 obj1->weight		== obj2->weight

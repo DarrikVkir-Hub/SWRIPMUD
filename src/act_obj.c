@@ -1825,13 +1825,13 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, int wear_bit )
 			return;
 	      	    }
 
-		    if( IS_SET( tmpobj->extra_flags, ITEM_TWO_HANDS ) )
+		    if( BV_IS_SET( tmpobj->objflags, ITEM_TWO_HANDS ) )
 		    {
 			send_to_char("Both hands are occupied wielding that weapon.\n",ch);
 			return;
 		    }
 
-		    if( IS_SET( obj->extra_flags, ITEM_TWO_HANDS  ) )
+		    if( BV_IS_SET( obj->objflags, ITEM_TWO_HANDS  ) )
 		    {
 			send_to_char("You need two hands to wield that weapon.\n",ch);
 			return;
@@ -1859,7 +1859,7 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, int wear_bit )
 		return;
 	    }
 
-	    if( IS_SET( obj->extra_flags, ITEM_TWO_HANDS ) && ch->race == RACE_HUTT )
+	    if( BV_IS_SET( obj->objflags, ITEM_TWO_HANDS ) && ch->race == RACE_HUTT )
 	    {
 		send_to_char("A Hutt cannot wield two handed weapons.\n",ch);
 		return;
@@ -2119,7 +2119,7 @@ void do_bury( CHAR_DATA *ch, char *argument )
     gmcp_evt_char_vitals(ch);
     act( AT_ACTION, "You solemnly bury $p...", ch, obj, NULL, TO_CHAR );
     act( AT_ACTION, "$n solemnly buries $p...", ch, obj, NULL, TO_ROOM );
-    SET_BIT( obj->extra_flags, ITEM_BURRIED );
+    BV_SET_BIT( obj->objflags, ITEM_BURRIED );
     WAIT_STATE( ch, URANGE( 10, move / 2, 100 ) );
     return;
 }
@@ -2445,11 +2445,10 @@ void do_auction (CHAR_DATA *ch, char *argument)
 /*          spell_identify (0, LEVEL_HERO - 1, ch, auction->item); */
 
 	    SPRINTF( buf,
-		"Object '%s' is %s, special properties: %s %s.\nIts weight is %d, value is %d.\n",
+		"Object '%s' is %s, special properties: %s.\nIts weight is %d, value is %d.\n",
 		obj->name,
 		aoran( item_type_name( obj ) ),
-		extra_bit_name( obj->extra_flags ),
-		magic_bit_name( obj->magic_flags ),
+		extra_bit_name( obj->objflags ),
 		obj->weight,
 		obj->cost );
 	    set_char_color( AT_LBLUE, ch );

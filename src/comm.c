@@ -3175,8 +3175,6 @@ void show_title( DESCRIPTOR_DATA *d )
  */
 void nanny( DESCRIPTOR_DATA *d, char *argument )
 {
-/*	extern int lang_array[];
-	extern char *lang_names[];*/
     char buf[MAX_STRING_LENGTH];
     char buf2[MAX_STRING_LENGTH];
     char arg[MAX_STRING_LENGTH];
@@ -3185,7 +3183,6 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
     char *p;
     int iRace, iClass, halfmax;
     BAN_DATA *pban;
-/*    int iLang;*/
     bool fOld;
     short chk;
 
@@ -3831,7 +3828,6 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
         if ( ch->top_level == 0 )
         {
             OBJ_DATA *obj;
-            int iLang;
             
             ch->pcdata->clan_name = STRALLOC( "" );
             ch->pcdata->clan	  = NULL;
@@ -3842,11 +3838,11 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
             ch->perm_lck	 += race_table[ch->race].lck_plus;
             ch->perm_frc	 += race_table[ch->race].frc_plus;
                 
-        if ( ch->main_ability == FORCE_ABILITY )
+            if ( ch->main_ability == FORCE_ABILITY )
     //         ch->perm_frc = URANGE( 1 , ch->perm_frc , 20 ); // Forcers always roll 25, per Sonja - DV 8/12/02
-        ch->perm_frc = 5;
+                ch->perm_frc = 5;
             else
-            ch->perm_frc = URANGE( 0 , ch->perm_frc , 20 );
+                ch->perm_frc = URANGE( 0 , ch->perm_frc , 20 );
             /* Hunters do not recieve force */       
             
             if ( ch->main_ability == HUNTING_ABILITY )         
@@ -3855,52 +3851,55 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
             /* Droids do not recieve force */
             
             if( is_droid(ch) ) 
-            ch->perm_frc = 0;	    
+                ch->perm_frc = 0;	    
 
-            /* Noghri are auto commando */
-    /*	    
-            if (ch->race == RACE_NOGHRI )
+            int lang = race_table[ch->race].language;
+            int sn;
+
+            if (!VALID_LANG(lang))
             {
-            ch->pcdata->clan = get_clan( "The Death Commandos");
-            ch->pcdata->clan_name = QUICKLINK( ch->pcdata->clan->name );
+                bug("Nanny: invalid racial language.");
             }
-    */	    
-            /* took out automaticly knowing common
-            
-            if ( (iLang = skill_lookup( "common" )) < 0 )
-                bug( "Nanny: cannot find common language." );
-            else
-                ch->pcdata->learned[iLang] = 100;
-            */
-                
-            for ( iLang = 0; lang_array[iLang] != LANG_UNKNOWN; iLang++ )
-                if ( lang_array[iLang] == race_table[ch->race].language )
-                    break;
-            if ( lang_array[iLang] == LANG_UNKNOWN )
-                bug( "Nanny: invalid racial language." );
             else
             {
-                if ( (iLang = skill_lookup( lang_names[iLang] )) < 0 )
-                    bug( "Nanny: cannot find racial language." );
+                sn = lang_sn[lang];
+
+                if (sn < 0)
+                {
+                    bug("Nanny: cannot find racial language skill.");
+                }
                 else
                 {
-                    ch->pcdata->learned[iLang] = 100;
-                    ch->speaking	=  race_table[ch->race].language;
-            if ( ch->race == RACE_QUARREN &&
-            (iLang = skill_lookup( "quarren" )) >= 0 )
-                {
-                        ch->pcdata->learned[iLang] = 100;
-                    SET_BIT( ch->speaks , LANG_QUARREN );
-            }
-            if ( ch->race == RACE_MON_CALAMARI && 
-            (iLang = skill_lookup( "common" )) >= 0 )
-                        ch->pcdata->learned[iLang] = 100;
+                    ch->pcdata->learned[sn] = 100;
+                    ch->speaking = lang;
 
-            }
+                    // Quarren special case
+                    if (ch->race == RACE_QUARREN)
+                    {
+                        int qlang = LANG_QUARREN;
+                        int qsn = lang_sn[qlang];
+
+                        if (qsn >= 0)
+                        {
+                            ch->pcdata->learned[qsn] = 100;
+                            BV_SET_BIT(ch->speaks, qlang);
+                        }
+                    }
+
+                    // Mon Calamari special case
+                    if (ch->race == RACE_MON_CALAMARI)
+                    {
+                        int clang = LANG_COMMON;
+                        int csn = lang_sn[clang];
+
+                        if (csn >= 0)
+                            ch->pcdata->learned[csn] = 100;
+                    }
+                }
             }
 
-                ch->resistant           += race_table[ch->race].resist;
-                ch->susceptible     += race_table[ch->race].suscept;
+            ch->resistant           += race_table[ch->race].resist;
+            ch->susceptible     += race_table[ch->race].suscept;
 
             name_stamp_stats( ch );
                 
@@ -4112,23 +4111,6 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
         gmcp_force_resync(ch);
         break;
 
-            /* Far too many possible screwups if we do it this way. -- Altrag */
-    /*        case CON_NEW_LANGUAGE:
-            for ( iLang = 0; lang_array[iLang] != LANG_UNKNOWN; iLang++ )
-            if ( !str_prefix( argument, lang_names[iLang] ) )
-                if ( can_learn_lang( ch, lang_array[iLang] ) )
-                {
-                    add_char( ch );
-                    SET_BIT( ch->speaks, lang_array[iLang] );
-                    set_char_color( AT_SAY, ch );
-                    ch_printf( ch, "You can now speak %s.\n", lang_names[iLang] );
-                    d->connected = CON_PLAYING;
-                    return;
-                }
-        set_char_color( AT_SAY, ch );
-        output_to_descriptor( d, "You may not learn that language.  Please choose another.\n"
-                    "New language: " );
-        break;*/
     }
 
     return;
@@ -4772,6 +4754,7 @@ char *act_string(const char *format, CHAR_DATA *to, CHAR_DATA *ch,
 
     /* Pointer to the string we will append */
     const char *i = NULL;
+    std::string lang_buf;
 
     /*
      * Interpret arg1 and arg2 in common ways.
@@ -4920,7 +4903,8 @@ char *act_string(const char *format, CHAR_DATA *to, CHAR_DATA *ch,
 
             // $l = language string
             case 'l':
-                i = lang_string(ch, to);
+                lang_buf = lang_string(ch, to);
+                i = lang_buf.c_str();
                 break;
             }
         }

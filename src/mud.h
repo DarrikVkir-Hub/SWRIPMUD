@@ -469,6 +469,16 @@ struct BitSet
     {
         return bits.size();
     }    
+    void copy_range_from(const BitSet &src, size_t min_bit, size_t max_bit)
+    {
+        for (size_t bit = min_bit; bit <= max_bit; ++bit)
+        {
+            if (src.test(bit))
+                set(bit);
+            else
+                clear(bit);
+        }
+    }    
 };
 
 typedef BitSet FLAG_SET;
@@ -484,6 +494,15 @@ static inline FLAG_SET int_to_bitset(int flags)
         if (flags & (1 << i))
             bv.set(i);
     return bv;
+}
+
+static inline void int_into_bitset_offset(FLAG_SET &bv, int flags, size_t offset)
+{
+    for (size_t i = 0; i < 32; ++i)
+    {
+        if (flags & (1U << i))
+            bv.set(i + offset);
+    }
 }
 
 static inline int bitset_to_int(const FLAG_SET &bv)
@@ -1039,59 +1058,52 @@ struct  frc_app_type
 #define RACE_SULLUSTAN         16  /* big mistake was causing mass chaos */
 #define RACE_QUARREN           15
 
+enum LangFlags
+{
+    LANG_UNKNOWN            = -1,
+    LANG_COMMON             = 0,  /* Human base language */
+    LANG_WOOKIEE            = 1,
+    LANG_TWI_LEK            = 2,
+    LANG_RODIAN             = 3,
+    LANG_HUTT               = 4,
+    LANG_MON_CALAMARI       = 5,
+    LANG_SHISTAVANEN        = 6,
+    LANG_EWOK               = 7,
+    LANG_ITHORIAN           = 8,
+    LANG_GOTAL              = 9,
+    LANG_DEVARONIAN         = 10,
+    LANG_BARABEL            = 11,
+    LANG_FIRRERREO          = 12,
+    LANG_BOTHAN             = 13,
+    LANG_GAMORREAN          = 14,
+    LANG_TOGORIAN           = 15,
+    LANG_KUBAZ              = 16,
+    LANG_JAWA               = 17,
+    LANG_CLAN	            = 18,
+    LANG_ADARIAN	        = 19,
+    LANG_VERPINE	        = 20,
+    LANG_DEFEL              = 21,
+    LANG_TRANDOSHAN         = 22,
+    LANG_CHADRA_FAN         = 23,
+    LANG_QUARREN            = 24,
+    LANG_SULLUSTAN          = 25,
+    LANG_FALLEEN            = 26,
+    LANG_BINARY             = 27,
+    LANG_YEVETHAN           = 28,
+    LANG_GAND               = 29,
+    LANG_DUROS              = 30,
+    LANG_COYNITE            = 31,
+    LANG_NOGHRI             = 32,
+    LANG_DIVINE	            = 33,
+    LANG_ANCIENT            = 34,
+    LANG_DROID              = 35,    
+    LANG_SPIRITUAL          = 36,    
+    LANG_MAGICAL            = 37,
 
-/*
- * Languages -- Altrag
- */
-#define LANG_COMMON      BV00  /* Human base language */
-#define LANG_WOOKIEE     BV01
-#define LANG_TWI_LEK     BV02
-#define LANG_RODIAN      BV03
-#define LANG_HUTT        BV04
-#define LANG_MON_CALAMARI   BV05
-#define LANG_NOGHRI      BV06
-#define LANG_SHISTAVANEN BV06
-#define LANG_EWOK        BV07
-#define LANG_ITHORIAN    BV08
-#define LANG_GOTAL       BV09
-#define LANG_DEVARONIAN  BV10
-#define LANG_BARABEL       BV11
-#define LANG_DROID       BV11
-#define LANG_FIRRERREO   BV12
-#define LANG_SPIRITUAL  BV12
-#define LANG_BOTHAN     BV13
-#define LANG_MAGICAL    BV13
-#define LANG_GAMORREAN   BV14
-#define LANG_TOGORIAN         BV15
-#define LANG_GOD	BV15
-#define LANG_KUBAZ     BV16
-#define LANG_ANCIENT   BV16
-#define LANG_JAWA        BV17
-#define LANG_CLAN	       BV18
-#define LANG_ADARIAN	    BV19
-#define LANG_VERPINE	    BV20
-#define LANG_DEFEL       BV21
-#define LANG_TRANDOSHAN  BV22
-#define LANG_CHADRA_FAN  BV23
-#define LANG_QUARREN     BV24
-#define LANG_SULLUSTAN   BV25
-#define LANG_FALLEEN     BV26
-#define LANG_BINARY      BV27
-#define LANG_YEVETHAN    BV28
-#define LANG_GAND        BV29
-#define LANG_DUROS       BV30
-#define LANG_COYNITE     BV31
+    LANG_MAX                = 38,
+};
+#define VALID_LANG(lang) (is_valid_lang(lang))
 
-#define LANG_UNKNOWN        0  /* Anything that doesnt fit a category */
-#define VALID_LANGS    ( LANG_COMMON | LANG_WOOKIEE | LANG_TWI_LEK | LANG_RODIAN  \
-		       | LANG_HUTT | LANG_MON_CALAMARI | LANG_NOGHRI | LANG_GAMORREAN \
-		       | LANG_JAWA | LANG_ADARIAN | LANG_EWOK | LANG_VERPINE | LANG_DEFEL \
-		       | LANG_TRANDOSHAN | LANG_CHADRA_FAN | LANG_QUARREN | LANG_SULLUSTAN \
-		       | LANG_BARABEL | LANG_FIRRERREO | LANG_BOTHAN | LANG_TOGORIAN \
-		       | LANG_KUBAZ | LANG_YEVETHAN | LANG_GAND | LANG_DUROS | LANG_COYNITE \
-             | LANG_GOTAL | LANG_DEVARONIAN | LANG_FALLEEN | LANG_ITHORIAN \
-             | LANG_BINARY | LANG_NOGHRI)
-/*  26 Languages */
 
 /*
  * TO types for act.
@@ -2100,9 +2112,40 @@ enum ObjFlags {
     WEAPON_BLADE        = 74,
     WEAPON_FORCE_PIKE	= 75,
     WEAPON_MAX          = 76,
-    ITEM_FIRST          = 256,
-
-/* Magic flags - extra extra_flags for objects that are used in spells */
+    ITEM_FIRST          = 256, // If you want more than 192 weapon types... figure it out yourself :) DV 3-28-26
+    ITEM_GLOW		    = 256,
+    ITEM_HUM		    = 257,
+    ITEM_DARK		    = 258,
+    ITEM_HUTT_SIZE		= 259,
+    ITEM_CONTRABAND		= 260,
+    ITEM_INVIS		    = 261,
+    ITEM_MAGIC		    = 262,
+    ITEM_NODROP		    = 263,
+    ITEM_BLESS		    = 264,
+    ITEM_ANTI_GOOD		= 265,
+    ITEM_ANTI_EVIL		= 266,
+    ITEM_ANTI_NEUTRAL	= 267,
+    ITEM_NOREMOVE		= 268,
+    ITEM_INVENTORY		= 269,
+    ITEM_ANTI_SOLDIER	= 270,
+    ITEM_TWO_HANDS	    = 271,
+    ITEM_ANTI_HUNTER	= 272,
+    ITEM_ANTI_JEDI  	= 273,
+    ITEM_SMALL_SIZE		= 274,
+    ITEM_LARGE_SIZE		= 275,
+    ITEM_DONATION		= 276,
+    ITEM_CLANOBJECT		= 277,
+    ITEM_ANTI_CITIZEN	= 278,
+    ITEM_ANTI_SITH  	= 279,
+    ITEM_ANTI_PILOT	    = 280,
+    ITEM_HIDDEN		    = 281,
+    ITEM_POISONED		= 282,
+    ITEM_COVERING		= 283,
+    ITEM_DEATHROT		= 284,
+    ITEM_BURRIED		= 285,	
+    ITEM_PROTOTYPE		= 286,
+    ITEM_HUMAN_SIZE     = 287,
+    ITEM_MAGIC_FLAG_FIRST = 288,
     ITEM_RETURNING      = 288,
     ITEM_BACKSTABBER    = 289,
     ITEM_BANE           = 290,
@@ -2110,8 +2153,9 @@ enum ObjFlags {
     ITEM_HASTE          = 292,
     ITEM_DRAIN          = 293,
     ITEM_LIGHTNING_BLADE = 294,
+    ITEM_MAGIC_FLAG_MAX = 295,
+    ITEM_MAX            = 296,
 };
-
 
 #define BASEDAM_WEAPON_NONE     	0
 #define BASEDAM_WEAPON_VIBRO_AXE	1
@@ -2252,6 +2296,8 @@ typedef enum {
 
 #define OBJ_VNUM_BLASTECH_E11     50
 
+#define MAX_ITEM_TYPE		     ITEM_CARGO
+
 /*
  * Item types.
  * Used in #OBJECTS.
@@ -2278,45 +2324,6 @@ typedef enum
   ITEM_DISGUISE, ITEM_DIS_FABRIC, ITEM_HAIR, ITEM_STUNGRENADE,
   ITEM_CARGO, ITEM_TRACKINGDEVICE
 } item_types;
-
-
-#define MAX_ITEM_TYPE		     ITEM_CARGO
-/*
- * Extra flags.
- * Used in #OBJECTS.
- */
-#define ITEM_GLOW		BV00
-#define ITEM_HUM		BV01
-#define ITEM_DARK		BV02
-#define ITEM_HUTT_SIZE		BV03
-#define ITEM_CONTRABAND		BV04
-#define ITEM_INVIS		BV05
-#define ITEM_MAGIC		BV06
-#define ITEM_NODROP		BV07
-#define ITEM_BLESS		BV08
-#define ITEM_ANTI_GOOD		BV09
-#define ITEM_ANTI_EVIL		BV10
-#define ITEM_ANTI_NEUTRAL	BV11
-#define ITEM_NOREMOVE		BV12
-#define ITEM_INVENTORY		BV13
-#define ITEM_ANTI_SOLDIER	BV14
-#define ITEM_TWO_HANDS	        BV15
-#define ITEM_ANTI_HUNTER	BV16
-#define ITEM_ANTI_JEDI  	BV17
-#define ITEM_SMALL_SIZE		BV18
-#define ITEM_LARGE_SIZE		BV19
-#define ITEM_DONATION		BV20
-#define ITEM_CLANOBJECT		BV21
-#define ITEM_ANTI_CITIZEN	BV22
-#define ITEM_ANTI_SITH  	BV23
-#define ITEM_ANTI_PILOT	        BV24
-#define ITEM_HIDDEN		BV25
-#define ITEM_POISONED		BV26
-#define ITEM_COVERING		BV27
-#define ITEM_DEATHROT		BV28
-#define ITEM_BURRIED		BV29	/* item is underground */
-#define ITEM_PROTOTYPE		BV30
-#define ITEM_HUMAN_SIZE         BV31
 
 /* Blaster settings - only saves on characters */
 #define BLASTER_NORMAL          0
@@ -2822,8 +2829,8 @@ struct	mob_index_data
     int			susceptible;
     int			attacks;
     int			defenses;
-    int			speaks;
-    int 		speaking;
+    FLAG_SET	speaks;
+    int	        speaking;
     sh_int		position;
     sh_int		defposition;
     sh_int		height;
@@ -2958,7 +2965,7 @@ struct	char_data
     int			susceptible;
     int			attacks;
     int			defenses;
-    int			speaks;
+    FLAG_SET	speaks;
     int			speaking;
     sh_int		saving_poison_death;
     sh_int		saving_wand;
@@ -3162,7 +3169,7 @@ struct	obj_index_data
     int			vnum;
     sh_int              level;
     sh_int		item_type;
-    int			extra_flags;
+//  int			extra_flags;
 //  int			magic_flags; /*Need more bitvectors for spells - Scryn*/
     FLAG_SET    wear_flags;
     sh_int		count;
@@ -3202,7 +3209,7 @@ struct	obj_data
     char *		action_desc;
     sh_int		item_type;
     sh_int		mpscriptpos;
-    int			extra_flags;
+//  int			extra_flags;
 //  int			magic_flags; /*Need more bitvectors for spells - Scryn*/
     FLAG_SET    wear_flags; 
     int                 blaster_setting;
@@ -4237,7 +4244,7 @@ do								\
  * Object macros.
  */
 #define CAN_WEAR(obj, part)	(BV_IS_SET((obj)->wear_flags,  (part)))
-#define IS_OBJ_STAT(obj, stat)	(IS_SET((obj)->extra_flags, (stat)))
+#define IS_OBJ_STAT(obj, stat)	(BV_IS_SET((obj)->objflags, (stat)))
 
 
 
@@ -4362,7 +4369,7 @@ extern	char *	const	area_flags	[];
 extern  char *  const   cargo_names     [];
 extern  int     const   modflags	[MAXMODFLAG];
 extern	int	const	lang_array      [];
-extern	char *	const	lang_names      [];
+extern const flag_name lang_names[];
 
 /*
  * Global variables.
@@ -4390,6 +4397,7 @@ extern		ROOM_INDEX_DATA	  *	cur_room;
 extern		bool			cur_char_died;
 extern		ch_ret			global_retcode;
 extern		SKILLTYPE	  *	herb_table	[MAX_HERB];
+extern      int             lang_sn[LANG_MAX];
 
 extern		int			cur_obj;
 extern		int			cur_obj_serial;
@@ -5341,10 +5349,13 @@ extern "C" char *crypt(const char *key, const char *salt);
 #define WRAP_NO_WRAP           BV05  /* disable wrapping entirely */
 
 /* act_comm.c */
+void init_language_sn();
+bool is_valid_lang(size_t lang);
+FLAG_SET make_all_languages(void);
 int     closed          args( ( int d ) );
 int readd               args( ( int handle, char *buffer, int length ) );
 bool	write_to_descriptor_depreciated	args( ( int desc, char *txt, int length ) );
-const char *  lang_string( CHAR_DATA *ch, CHAR_DATA *vch );
+std::string lang_string(CHAR_DATA *ch,  CHAR_DATA *vch);
 void    sound_to_room( ROOM_INDEX_DATA *room , char *argument );
 bool	circle_follow	args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );
 void	add_follower	args( ( CHAR_DATA *ch, CHAR_DATA *master ) );
@@ -5638,7 +5649,9 @@ void 	save_sysdata	args( ( SYSTEM_DATA sys ) );
 
 /* build.c */
 bool string_to_bitset(const char *str, FLAG_SET &bv, const flag_name *table, bool clear_first = false);
-std::string bitset_to_string(const FLAG_SET &bv, const flag_name *table);
+std::string bitset_to_string(const FLAG_SET &bv, const flag_name *table,
+                             size_t min_bit = 0,
+                             size_t max_bit = SIZE_MAX);
 void	start_editing	args( ( CHAR_DATA *ch, char *data ) );
 void	stop_editing	args( ( CHAR_DATA *ch ) );
 void	edit_buffer	args( ( CHAR_DATA *ch, char *argument ) );
@@ -5833,8 +5846,8 @@ bool	can_drop_obj	args( ( CHAR_DATA *ch, OBJ_DATA *obj ) );
 char *	item_type_name	args( ( OBJ_DATA *obj ) );
 char *	affect_loc_name	args( ( int location ) );
 char *	affect_bit_name	args( ( int vector ) );
-char *	extra_bit_name	args( ( int extra_flags ) );
-char *	magic_bit_name	args( ( int magic_flags ) );
+const char *	extra_bit_name	args( ( FLAG_SET extra_flags ) );
+const char *	magic_bit_name	args( ( FLAG_SET magic_flags ) );
 ch_ret	check_for_trap	args( ( CHAR_DATA *ch, OBJ_DATA *obj, int flag ) );
 ch_ret	check_room_for_traps args( ( CHAR_DATA *ch, int flag ) );
 bool	is_trapped	args( ( OBJ_DATA *obj ) );
@@ -5927,6 +5940,7 @@ void	check_requests		args( ( void ) );
 /* object saving defines for fread/write_obj. -- Altrag */
 #define OS_CARRY	0
 #define OS_CORPSE	1
+void call_to_stop(); // Debugging function that does nothing but can be tracked in gbd and called in specific conditions.
 void fread_bitset_compat(FILE *fp, FLAG_SET &bv);
 void    fwrite_bitset(FILE *fp, const char *name, const FLAG_SET &bv);
 void    fread_bitset(FILE *fp, FLAG_SET &bv);

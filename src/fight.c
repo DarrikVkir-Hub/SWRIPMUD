@@ -69,7 +69,7 @@ bool is_wielding_poisoned( CHAR_DATA *ch )
          OBJ_DATA *obj;
 
          if ( ( obj = get_eq_char( ch, WEAR_WIELD ) 	)
-         &&   (IS_SET( obj->extra_flags, ITEM_POISONED) )	)
+         &&   (BV_IS_SET( obj->objflags, ITEM_POISONED) )	)
                   return TRUE;
 
          return FALSE;
@@ -826,7 +826,7 @@ ch_ret one_hit( CHAR_DATA *ch, CHAR_DATA *victim, int dt )
 
     if ( wield )
     {
-      if ( IS_SET( wield->extra_flags, ITEM_MAGIC ) )
+      if ( BV_IS_SET( wield->objflags, ITEM_MAGIC ) )
         dam = ris_damage( victim, dam, RIS_MAGIC );
       else
         dam = ris_damage( victim, dam, RIS_NONMAGIC );
@@ -1454,7 +1454,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
 
 	if( (wield = get_eq_char(ch,WEAR_WIELD) ) != NULL )
 	{
-	   if( IS_SET(wield->extra_flags,ITEM_TWO_HANDS) )
+	   if( BV_IS_SET(wield->objflags,ITEM_TWO_HANDS) )
 	   {
 		if( ch->perm_dex < URANGE( 1, (wield->weight/25)%25, 25 ) )
 			dam /= 2;

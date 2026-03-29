@@ -2319,18 +2319,18 @@ ch_ret spell_enchant_weapon( int sn, int level, CHAR_DATA *ch, void *vo )
 
     if ( IS_GOOD(ch) )
     {
-	SET_BIT(obj->extra_flags, ITEM_ANTI_EVIL);
+	BV_SET_BIT(obj->objflags, ITEM_ANTI_EVIL);
 	act( AT_BLUE, "$p glows blue.", ch, obj, NULL, TO_CHAR );
     }
     else if ( IS_EVIL(ch) )
     {
-	SET_BIT(obj->extra_flags, ITEM_ANTI_GOOD);
+	BV_SET_BIT(obj->objflags, ITEM_ANTI_GOOD);
 	act( AT_RED, "$p glows red.", ch, obj, NULL, TO_CHAR );
     }
     else
     {
-	SET_BIT(obj->extra_flags, ITEM_ANTI_EVIL);
-	SET_BIT(obj->extra_flags, ITEM_ANTI_GOOD);
+	BV_SET_BIT(obj->objflags, ITEM_ANTI_EVIL);
+	BV_SET_BIT(obj->objflags, ITEM_ANTI_GOOD);
 	act( AT_YELLOW, "$p glows yellow.", ch, obj, NULL, TO_CHAR );
     }
 
@@ -2559,11 +2559,10 @@ ch_ret spell_identify( int sn, int level, CHAR_DATA *ch, void *vo )
     {
 	set_char_color( AT_LBLUE, ch );
 	ch_printf( ch,
-	"Object '%s' is %s, special properties: %s %s.\nIts weight is %d, value is %d.\n",
+	"Object '%s' is %s, special properties: %s.\nIts weight is %d, value is %d.\n",
 	obj->name,
 	aoran( item_type_name( obj ) ),
-	extra_bit_name( obj->extra_flags ),
-	magic_bit_name( obj->magic_flags ),
+	extra_bit_name( obj->objflags ),
 	obj->weight,
 	obj->cost
 	);
@@ -2802,7 +2801,7 @@ ch_ret spell_invis( int sn, int level, CHAR_DATA *ch, void *vo )
 		return rSPELL_FAILED;
 	    }
 
-	    SET_BIT( obj->extra_flags, ITEM_INVIS );
+	    BV_SET_BIT( obj->objflags, ITEM_INVIS );
 	    act( AT_MAGIC, "$p fades out of existence.", ch, obj, NULL, TO_CHAR );
 	    return rNONE;
 	}
@@ -3757,7 +3756,7 @@ ch_ret spell_remove_invis( int sn, int level, CHAR_DATA *ch, void *vo )
       if ( !IS_OBJ_STAT(obj, ITEM_INVIS) )
   	return rSPELL_FAILED;
 
-      REMOVE_BIT(obj->extra_flags, ITEM_INVIS);
+      BV_REMOVE_BIT(obj->objflags, ITEM_INVIS);
       act( AT_MAGIC, "$p becomes visible again.", ch, obj, NULL, TO_CHAR );
     
       send_to_char( "Ok.\n", ch );
@@ -4952,7 +4951,7 @@ ch_ret spell_obj_inv( int sn, int level, CHAR_DATA *ch, void *vo )
      	     return rSPELL_FAILED;
 	  }
 	  successful_casting( skill, ch, NULL, obj );
-          SET_BIT(obj->extra_flags, ITEM_INVIS);
+          BV_SET_BIT(obj->objflags, ITEM_INVIS);
 	  return rNONE;
 
 	case SA_CHANGE:

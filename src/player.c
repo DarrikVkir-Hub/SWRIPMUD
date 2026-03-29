@@ -62,21 +62,31 @@ void do_score(CHAR_DATA * ch, char *argument)
 
 	if (!str_cmp(argument, "lang"))
 	{
-		ch_printf(ch, "Score Languages:");
-		SPRINTF(buf, "&cLanguages: &c" );
-		for ( iLang = 0; lang_array[iLang] != LANG_UNKNOWN; iLang++ )
-			if ( knows_language( ch, lang_array[iLang], ch )
-			||  (IS_NPC(ch) && ch->speaks == 0) )
+		SPRINTF(buf, "&cLanguages: &c");
+		int race_lang = race_table[ch->race].language;
+		for (iLang = 0; iLang < LANG_MAX; ++iLang)
+		{
+			if (!VALID_LANG(iLang))
+				continue;
+			if (!lang_names[iLang].name)
+				continue;
+			bool knows = knows_language(ch, iLang, ch) ||
+						(IS_NPC(ch) && iLang == race_lang);
+			bool speaking = (ch->speaking == iLang) ||
+							(IS_NPC(ch) && ch->speaking == LANG_UNKNOWN && iLang == race_lang);
+			if (knows)
 			{
-				if ( lang_array[iLang] & ch->speaking
-				||  (IS_NPC(ch) && !ch->speaking) )
-				STRAPP(buf, "&R");
-				STRAPP(buf, "%s", lang_names[iLang] );
-				STRAPP(buf, " " );
-				STRAPP(buf, "&c" );
+				if (speaking)
+					STRAPP(buf, "&R");
+				STRAPP(buf, "%s", lang_names[iLang].name);
+				STRAPP(buf, " ");
+				STRAPP(buf, "&c");
 			}
-//		fprintf(stderr,"LANG_BUF: %s\n", buf);
-		ch_printf( ch, "\n%s\n", buf );
+		}
+
+// fprintf(stderr,"LANG_BUF: %s\n", buf);
+
+ch_printf(ch, "\n%s\n", buf);
 		return;
 	}
 	if (!str_cmp(argument, "test"))
@@ -254,25 +264,33 @@ void do_score(CHAR_DATA * ch, char *argument)
 
     send_to_char("&cSPICE Level/Addiction: &C", ch );
     for ( drug = 0; drug <= 9; drug++ )
-	if ( ch->pcdata->drug_level[drug] > 0 )
-	{
-	    ch_printf( ch, "%s&c(&C%d&c/&C%d&c) ", spice_table[drug],
-	                                 ch->pcdata->drug_level[drug],
-	                                 ch->pcdata->addiction[drug] );
-	}
-    SPRINTF(buf, "\n&cLanguages: &c" );
-    for ( iLang = 0; lang_array[iLang] != LANG_UNKNOWN; iLang++ )
-		if ( knows_language( ch, lang_array[iLang], ch )
-		||  (IS_NPC(ch) && ch->speaks == 0) )
+		if ( ch->pcdata->drug_level[drug] > 0 )
 		{
-			if ( lang_array[iLang] & ch->speaking
-			||  (IS_NPC(ch) && !ch->speaking) )
-			STRAPP(buf, "&R");
-			STRAPP(buf, "%s", lang_names[iLang] );
-			STRAPP(buf, " " );
-			STRAPP(buf, "&c" );
+			ch_printf( ch, "%s&c(&C%d&c/&C%d&c) ", spice_table[drug],
+										ch->pcdata->drug_level[drug],
+										ch->pcdata->addiction[drug] );
 		}
-//	bug("LANG_BUF: %s", buf);
+	SPRINTF(buf, "&cLanguages: &c");
+	int race_lang = race_table[ch->race].language;
+	for (iLang = 0; iLang < LANG_MAX; ++iLang)
+	{
+		if (!VALID_LANG(iLang))
+			continue;
+		if (!lang_names[iLang].name)
+			continue;
+		bool knows = knows_language(ch, iLang, ch) ||
+					(IS_NPC(ch) && iLang == race_lang);
+		bool speaking = (ch->speaking == iLang) ||
+						(IS_NPC(ch) && ch->speaking == LANG_UNKNOWN && iLang == race_lang);
+		if (knows)
+		{
+			if (speaking)
+				STRAPP(buf, "&R");
+			STRAPP(buf, "%s", lang_names[iLang].name);
+			STRAPP(buf, " ");
+			STRAPP(buf, "&c");
+		}
+	}
     ch_printf( ch, "%s\n", buf );
     ch_printf( ch, "&cWANTED ON: &C%s\n",
              flag_string(ch->pcdata->wanted_flags, planet_flags, PLANET_MAX) );

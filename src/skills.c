@@ -1629,7 +1629,7 @@ void do_dig( CHAR_DATA *ch, char *argument )
     }
 
     separate_obj(obj);
-    REMOVE_BIT( obj->extra_flags, ITEM_BURRIED );
+    BV_REMOVE_BIT( obj->objflags, ITEM_BURRIED );
     act( AT_SKILL, "Your dig uncovered $p!", ch, obj, NULL, TO_CHAR );
     act( AT_SKILL, "$n's dig uncovered $p!", ch, obj, NULL, TO_ROOM );
     learn_from_success( ch, gsn_dig );
@@ -1771,7 +1771,7 @@ void do_search( CHAR_DATA *ch, char *argument )
     }
 
     separate_obj(obj);
-    REMOVE_BIT( obj->extra_flags, ITEM_HIDDEN );
+    BV_REMOVE_BIT( obj->objflags, ITEM_HIDDEN );
     act( AT_SKILL, "Your search reveals $p!", ch, obj, NULL, TO_CHAR );
     act( AT_SKILL, "$n finds $p!", ch, obj, NULL, TO_ROOM );
     learn_from_success( ch, gsn_search );
@@ -3560,7 +3560,7 @@ void do_poison_weapon( CHAR_DATA *ch, char *argument )
     act(AT_RED, "$n mixes $p in $P, creating a deadly poison!",ch, pobj, wobj, TO_ROOM );
     act(AT_GREEN, "You pour the poison over $p, which glistens wickedly!",ch, obj, NULL, TO_CHAR  );
     act(AT_GREEN, "$n pours the poison over $p, which glistens wickedly!",ch, obj, NULL, TO_ROOM  );
-    SET_BIT( obj->extra_flags, ITEM_POISONED );
+    BV_SET_BIT( obj->objflags, ITEM_POISONED );
     obj->cost *= ch->skill_level[HUNTING_ABILITY]/2;
     /* Set an object timer.  Don't want proliferation of poisoned weapons */
     obj->timer = 10 + ch->skill_level[HUNTING_ABILITY] ;

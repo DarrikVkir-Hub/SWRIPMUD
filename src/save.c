@@ -376,7 +376,6 @@ void fread_bitset_compat(FILE *fp, FLAG_SET &bv)
 
     int vals[64]; // more than enough
     int count = 0;
-	bool first = true;
 
     char *ptr = ln;
     while (*ptr && count < 64)
@@ -385,9 +384,6 @@ void fread_bitset_compat(FILE *fp, FLAG_SET &bv)
         if (!*ptr) break;
 
         vals[count++] = strtol(ptr, &ptr, 10);
-		if (first && vals[0] != 0)
-			call_to_stop();
-		first = false;
     }
 
     if (count == 0)
@@ -467,7 +463,8 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     fprintf( fp, "Sex          %d\n",	ch->sex			);
     fprintf( fp, "Race         %d\n",	ch->race		);
     fprintf( fp, "MainAbility  %d\n",	ch->main_ability	);
-    fprintf( fp, "Languages    %d %d\n", ch->speaks, ch->speaking );
+    fprintf( fp, "Speaking    %d\n", ch->speaking );
+	fwrite_bitset( fp, "Speaks", ch->speaks);
     if ( ch->trust )
       fprintf( fp, "Trust        %d\n",	ch->trust		);
     fprintf( fp, "Played       %d\n",
@@ -779,8 +776,6 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
     fprintf( fp, "Vnum         %d\n",	obj->pIndexData->vnum	     );
     if ( os_type == OS_CORPSE && obj->in_room )
     	fprintf( fp, "Room         %d\n",   obj->in_room->vnum         );
-    if ( obj->extra_flags != obj->pIndexData->extra_flags )
-		fprintf( fp, "ExtraFlags   %d\n",	obj->extra_flags     );
     if ( obj->wear_flags != obj->pIndexData->wear_flags )
 		fwrite_bitset(fp,"WearFlagsEx", obj->wear_flags);
 //		fprintf( fp, "WearFlags    %d\n",	obj->wear_flags	     );
@@ -1538,7 +1533,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	    KEY( "LongDescr",	ch->long_descr,		fread_string( fp ) );
 	    if ( !str_cmp( word, "Languages" ) )
 	    {
-	    	ch->speaks = fread_number( fp );
+	    	ch->speaks = int_to_bitset(fread_number( fp ));
 	    	ch->speaking = fread_number( fp );
 	    	fMatch = TRUE;
 	    }
@@ -1635,11 +1630,19 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	    break;
 
 	case 'S':
-            KEY( "Salary",      ch->pcdata->salary,		fread_number( fp ) );
+        KEY( "Salary",      ch->pcdata->salary,		fread_number( fp ) );
 	    KEY( "Salary_time",ch->pcdata->salary_date, fread_number( fp ) );
 	    KEY( "Sex",		ch->sex,		fread_number( fp ) );
 	    KEY( "ShortDescr",	ch->short_descr,	fread_string( fp ) );
 	    KEY( "Susceptible",	ch->susceptible,	fread_number( fp ) );
+        KEY( "Speaking",      ch->speaking,		fread_number( fp ) );
+	    if ( !str_cmp( word, "Speaks" ) )
+	    {
+			fread_bitset(fp,ch->speaks);
+			fMatch = TRUE;
+			break;
+	    }
+		
 	    if ( !str_cmp( word, "SavingThrow" ) )
 	    {
 		ch->saving_wand 	= fread_number( fp );
@@ -1776,9 +1779,9 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 			ch->speaking = race_table[ch->race].language;
 		if ( IS_IMMORTAL( ch ) )
 		{
-			ch->speaks = ~0;
+			ch->speaks = make_all_languages();
 			if ( ch->speaking == 0 )
-				ch->speaking = ~0;
+				ch->speaking = LANG_DIVINE;
 		}
 		if ( !ch->pcdata->prompt )
 		  ch->pcdata->prompt = STRALLOC("");
@@ -2004,8 +2007,13 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 	    break;
 
 	case 'E':
-	    KEY( "ExtraFlags",	obj->extra_flags,	fread_number( fp ) );
-
+		if ( !str_cmp( word, "ExtraFlags" ) )
+		{
+			int legacy = fread_number(fp);
+			int_into_bitset_offset(obj->objflags, legacy, ITEM_FIRST);
+			fMatch = TRUE;
+			break;
+		}
 	    if ( !str_cmp( word, "ExtraDescr" ) )
 	    {
 		EXTRA_DESCR_DATA *ed;
@@ -2187,12 +2195,12 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 		fMatch		= TRUE;
 		if ( obj->item_type == ITEM_PIPE )
 		{
-			obj->objflags.add_int_offset(obj->value[3], PIPE_FIRST);
+			int_into_bitset_offset(obj->objflags, obj->value[3], PIPE_FIRST);
 			obj->value[3] = 0;
 		}
 		if ( obj->item_type == ITEM_WEAPON )
 		{
-			obj->objflags.add_int_offset(obj->value[3], WEAPON_FIRST);
+			int_into_bitset_offset(obj->objflags, obj->value[3], WEAPON_FIRST);
 			obj->value[3] = 0;
 		}
 		break;
@@ -2215,7 +2223,7 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 		    obj->weight = obj->pIndexData->weight;
 		    obj->item_type = obj->pIndexData->item_type;
 		    obj->wear_flags = obj->pIndexData->wear_flags;
-		    obj->extra_flags = obj->pIndexData->extra_flags;
+		    obj->objflags = obj->pIndexData->objflags;
 		}
 		fMatch = TRUE;
 		break;

@@ -467,6 +467,8 @@ void boot_db( void )
 	if ( !gsn_first_tongue && skill_table[x]->type == SKILL_TONGUE )
 	    gsn_first_tongue = x;
 
+    init_language_sn(); // Loading static lang->sn table
+
     log_string("Loading herb table");
     load_herb_table();
 
@@ -1094,6 +1096,18 @@ void load_helps( AREA_DATA *tarea, FILE *fp )
     return;
 }
 
+int first_lang_from_flags(int flags)
+{
+    int lang;
+
+    for (lang = 0; lang < LANG_MAX; ++lang)
+    {
+        if (flags & (1 << lang))
+            return lang;
+    }
+
+    return LANG_UNKNOWN;
+}
 
 /*
  * Add a character to the list of all characters		-Thoric
@@ -1250,13 +1264,24 @@ void load_mobiles( AREA_DATA *tarea, FILE *fp )
 	    pMobIndex->race		= x1;
 	    pMobIndex->height		= x3;
 	    pMobIndex->weight		= x4;
-	    pMobIndex->speaks		= x5;
-	    pMobIndex->speaking		= x6;
 	    pMobIndex->numattacks	= x7;
-	    if ( !pMobIndex->speaks )
-		pMobIndex->speaks = race_table[pMobIndex->race].language | LANG_COMMON;
-	    if ( !pMobIndex->speaking )
-		pMobIndex->speaking = race_table[pMobIndex->race].language;
+        if (x5 != -9999) // Pre BitSet file format
+        {
+            pMobIndex->speaks = int_to_bitset(x5); // Was an intflag
+            pMobIndex->speaking = first_lang_from_flags(x6); //Was an intflag
+        }
+        else
+        {
+            fread_bitset(fp, pMobIndex->speaks); // Now a BitSet
+            pMobIndex->speaking = x6; // now an enum
+
+        }
+
+        if ( !pMobIndex->speaks.any())
+        {
+            BV_SET_BIT(pMobIndex->speaks, race_table[pMobIndex->race].language);
+            BV_SET_BIT(pMobIndex->speaks, LANG_COMMON);            
+        }
 
 	    ln = fread_line( fp );
 	    x1=x2=x3=x4=x5=x6=x7=x8=0;
@@ -1299,7 +1324,7 @@ void load_mobiles( AREA_DATA *tarea, FILE *fp )
         pMobIndex->vip_flags		= x1;
         */
     }
-        
+
 	letter = fread_letter( fp );
 	if ( letter == '>' )
 	{
@@ -1417,16 +1442,27 @@ void load_objects( AREA_DATA *tarea, FILE *fp )
 	sscanf( ln, "%d %d %d %d",
 		&x1, &x2, &x3, &x4 );
 	pObjIndex->item_type		= x1;
-	pObjIndex->extra_flags		= x2;
 	pObjIndex->layers		= x4;
-
-    if (x3 == -9999) // Sentinel value - new BitSet wear_flags will have this value set at -9999
+    if (x2 != 0) call_to_stop();
+    if (x3 == -9999 ) // Sentinel value - new BitSet wear_flags will have this value set at -9999
+    {
         fread_bitset(fp, pObjIndex->wear_flags);
+
+    }
     else
     {
         pObjIndex->wear_flags.reset();
         pObjIndex->wear_flags.from_int(x3);
     }
+    if (x2 == -9999) // Sentinel value - new BitSet wear_flags will have this value set at -9999
+    {
+        fread_bitset(fp, pObjIndex->objflags);
+    }
+    else
+    {
+        int_into_bitset_offset(pObjIndex->objflags, x2, ITEM_FIRST);
+    }
+
 	ln = fread_line( fp );
 	x1=x2=x3=x4=x5=x6=0;
 	sscanf( ln, "%d %d %d %d %d %d",
@@ -2615,7 +2651,7 @@ OBJ_DATA *create_object( OBJ_INDEX_DATA *pObjIndex, int level )
     obj->description	= QUICKLINK( pObjIndex->description );
     obj->action_desc	= QUICKLINK( pObjIndex->action_desc );
     obj->item_type	= pObjIndex->item_type;
-    obj->extra_flags	= pObjIndex->extra_flags;
+    obj->objflags	= pObjIndex->objflags;
     obj->wear_flags	= pObjIndex->wear_flags;
     obj->value[0]	= pObjIndex->value[0];
     obj->value[1]	= pObjIndex->value[1];
@@ -2625,7 +2661,6 @@ OBJ_DATA *create_object( OBJ_INDEX_DATA *pObjIndex, int level )
     obj->value[5]	= pObjIndex->value[5];
     obj->weight		= pObjIndex->weight;
     obj->cost		= pObjIndex->cost;
-    obj->objflags   = pObjIndex->objflags;
     /*
     obj->cost		= number_fuzzy( 10 )
 			* number_fuzzy( level ) * number_fuzzy( level );
@@ -2826,7 +2861,7 @@ void clear_char( CHAR_DATA *ch )
     ch->xflags			= 0;
     ch->race			= 0;
     ch->speaking		= LANG_COMMON;
-    ch->speaks			= LANG_COMMON;
+    BV_SET_BIT(ch->speaks, LANG_COMMON);
     ch->barenumdie		= 1;
     ch->baresizedie		= 4;
     ch->substate		= 0;
@@ -5743,7 +5778,7 @@ OBJ_INDEX_DATA *make_object( int vnum, int cvnum, char *name )
 	  pObjIndex->short_descr[0]	= LOWER(pObjIndex->short_descr[0]);
 	  pObjIndex->description[0]	= UPPER(pObjIndex->description[0]);
 	  pObjIndex->item_type		= ITEM_TRASH;
-	  pObjIndex->extra_flags	= ITEM_PROTOTYPE;
+	  BV_SET_BIT(pObjIndex->objflags,ITEM_PROTOTYPE);
 	  pObjIndex->wear_flags.reset();
 	  pObjIndex->value[0]		= 0;
 	  pObjIndex->value[1]		= 0;
@@ -5761,8 +5796,7 @@ OBJ_INDEX_DATA *make_object( int vnum, int cvnum, char *name )
 	  pObjIndex->description	= QUICKLINK( cObjIndex->description );
 	  pObjIndex->action_desc	= QUICKLINK( cObjIndex->action_desc );
 	  pObjIndex->item_type		= cObjIndex->item_type;
-	  pObjIndex->extra_flags	= cObjIndex->extra_flags
-	  				| ITEM_PROTOTYPE;
+	  pObjIndex->objflags	    = cObjIndex->objflags; pObjIndex->objflags.set(ITEM_PROTOTYPE);
 	  pObjIndex->wear_flags		= cObjIndex->wear_flags;
 	  pObjIndex->value[0]		= cObjIndex->value[0];
 	  pObjIndex->value[1]		= cObjIndex->value[1];
@@ -5770,7 +5804,6 @@ OBJ_INDEX_DATA *make_object( int vnum, int cvnum, char *name )
 	  pObjIndex->value[3]		= cObjIndex->value[3];
 	  pObjIndex->weight		= cObjIndex->weight;
 	  pObjIndex->cost		= cObjIndex->cost;
-      pObjIndex->objflags   =   cObjIndex->objflags;
 	  for ( ced = cObjIndex->first_extradesc; ced; ced = ced->next )
 	  {
 		CREATE( ed, EXTRA_DESCR_DATA, 1 );

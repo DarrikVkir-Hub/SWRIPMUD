@@ -43,6 +43,71 @@ void	talk_channel	args( ( CHAR_DATA *ch, char *argument,
 char *  scramble        args( ( const char *argument, int modifier ) );			    
 char *  drunk_speech    args( ( const char *argument, CHAR_DATA *ch ) ); 
 
+int lang_sn[LANG_MAX];
+
+const FLAG_SET &valid_langs()
+{
+    static FLAG_SET bv;
+    static bool initialized = false;
+
+    if (!initialized)
+    {
+        initialized = true;
+
+        bv.set(LANG_COMMON);
+        bv.set(LANG_WOOKIEE);
+        bv.set(LANG_TWI_LEK);
+        bv.set(LANG_RODIAN);
+        bv.set(LANG_HUTT);
+        bv.set(LANG_MON_CALAMARI);
+        bv.set(LANG_NOGHRI);
+        bv.set(LANG_GAMORREAN);
+        bv.set(LANG_JAWA);
+        bv.set(LANG_ADARIAN);
+        bv.set(LANG_EWOK);
+        bv.set(LANG_VERPINE);
+        bv.set(LANG_DEFEL);
+        bv.set(LANG_TRANDOSHAN);
+        bv.set(LANG_CHADRA_FAN);
+        bv.set(LANG_QUARREN);
+        bv.set(LANG_SULLUSTAN);
+        bv.set(LANG_BARABEL);
+        bv.set(LANG_FIRRERREO);
+        bv.set(LANG_BOTHAN);
+        bv.set(LANG_TOGORIAN);
+        bv.set(LANG_KUBAZ);
+        bv.set(LANG_YEVETHAN);
+        bv.set(LANG_GAND);
+        bv.set(LANG_DUROS);
+        bv.set(LANG_COYNITE);
+        bv.set(LANG_GOTAL);
+        bv.set(LANG_DEVARONIAN);
+        bv.set(LANG_FALLEEN);
+        bv.set(LANG_ITHORIAN);
+        bv.set(LANG_BINARY);
+        bv.set(LANG_DIVINE);
+    }
+
+    return bv;
+}
+
+bool is_valid_lang(size_t lang)
+{
+    return valid_langs().test(lang);
+}
+
+FLAG_SET make_all_languages(void)
+{
+    FLAG_SET bs;
+    int lang;
+
+    bs.reset();
+    for (lang = 0; lang < LANG_MAX; ++lang)
+        BV_SET_BIT(bs, lang);
+
+    return bs;
+}
+
 void sound_to_room( ROOM_INDEX_DATA *room , char *argument )
 {
    CHAR_DATA *vic;
@@ -55,21 +120,27 @@ void sound_to_room( ROOM_INDEX_DATA *room , char *argument )
      
 }
 
-const char * lang_string( CHAR_DATA *ch, CHAR_DATA *vch )
+std::string lang_string(CHAR_DATA *ch,  CHAR_DATA *vch)
 {
-  int lang;
-  
-  for ( lang = 0; lang_array[lang] != LANG_UNKNOWN; lang++ )
-    if ( IS_SET(ch->speaking, lang_array[lang]) )
-      break;
+    if (!ch || !vch)
+        return "??";
 
-  if ( !IS_NPC(vch) && ( knows_language(vch, ch->speaking, ch ) ) && ( (!IS_NPC(ch) ) || ch->speaking != 0 ) )
-    return capitalize(lang_names[lang]);
-  else
+    int lang = ch->speaking;
+
+    if (!IS_NPC(vch) &&
+        knows_language(vch, lang, ch) &&
+        (!IS_NPC(ch) || lang != LANG_COMMON))
+    {
+        if (lang >= 0 && lang < LANG_MAX && lang_names[lang].name)
+        {
+            std::string result = lang_names[lang].name;
+            if (!result.empty())
+                result[0] = toupper(result[0]);
+            return result;
+        }
+    }
+
     return "??";
-  
-//  return (( !IS_NPC(vch) && ( knows_language(vch, ch->speaking, ch ) ) && ( (!IS_NPC(ch) ) || ch->speaking != 0 ) ) ?
-//                              capitalize(lang_names[lang]) ) : "??" );
 }
 
 void do_beep( CHAR_DATA *ch, char *argument )
@@ -490,27 +561,27 @@ void talk_channel( CHAR_DATA *ch, char *argument, int channel, const char *verb 
     {
     default:
 	set_char_color( AT_GOSSIP, ch );
-	ch_printf( ch, "&z&CYou %s over the public network in %s&c, '&C%s&c'\n", verb, lang_string( ch, ch ), argument );
+	ch_printf( ch, "&z&CYou %s over the public network in %s&c, '&C%s&c'\n", verb, lang_string( ch, ch ).c_str(), argument );
 	SPRINTF( buf, "&z&C$n &C%ss over the public network in $l&c, '&C$t&c'",     verb );
 	break;
     case CHANNEL_CLANTALK:
 	set_char_color( AT_CLAN, ch );
-	ch_printf( ch, "&z&POver the organizations private network you say in %s&R, '&P%s&R'\n", lang_string( ch, ch ), argument );
+	ch_printf( ch, "&z&POver the organizations private network you say in %s&R, '&P%s&R'\n", lang_string( ch, ch ).c_str(), argument );
 	SPRINTF( buf, "&z&P$n &Pspeaks over the organizations network in $l&R, '&P$t&R'" );
 	break;
     case CHANNEL_ALLCLAN:
 	set_char_color( AT_CLAN, ch );
-	ch_printf( ch, "&z&POver the entire organizations private network you say in %s&R, '&P%s&R'\n", lang_string( ch, ch ), argument );
+	ch_printf( ch, "&z&POver the entire organizations private network you say in %s&R, '&P%s&R'\n", lang_string( ch, ch ).c_str(), argument );
 	SPRINTF( buf, "&z&P$n &Pspeaks over the entire organizations network in $l&R, '&P$t&R'" );
 	break;
     case CHANNEL_SHIP:
         set_char_color( AT_SHIP, ch );
-	ch_printf( ch, "&z&rYou tell the ship in %s&P, '%s'\n", lang_string( ch, ch ), argument );
+	ch_printf( ch, "&z&rYou tell the ship in %s&P, '%s'\n", lang_string( ch, ch ).c_str(), argument );
 	SPRINTF( buf, "&z&r$n &rsays over the ships com system in $l,&P '$t'"  );
 	break;
     case CHANNEL_SYSTEM:
         set_char_color( AT_GOSSIP, ch );
-	ch_printf( ch, "&z&R(System) (%s): '&W%s&r'\n", lang_string( ch, ch ), argument );
+	ch_printf( ch, "&z&R(System) (%s): '&W%s&r'\n", lang_string( ch, ch ).c_str(), argument );
 	SPRINTF( buf, "&z&R(System) ($l) &R$n&r: '&W$t&r'" );
 	break;
     case CHANNEL_SPACE:
@@ -521,7 +592,7 @@ void talk_channel( CHAR_DATA *ch, char *argument, int channel, const char *verb 
     case CHANNEL_YELL:
     case CHANNEL_SHOUT:
         set_char_color( AT_GOSSIP, ch );
-	ch_printf( ch, "You %s in %s, '%s'\n", verb, lang_string( ch, ch ), argument );
+	ch_printf( ch, "You %s in %s, '%s'\n", verb, lang_string( ch, ch ).c_str(), argument );
 	SPRINTF( buf, "$n %ss in $l, '$t'",     verb );
 	break;
     case CHANNEL_ASK:
@@ -1036,83 +1107,91 @@ void do_avtalk( CHAR_DATA *ch, char *argument )
 }
 
 
-void do_say( CHAR_DATA *ch, char *argument )
+void do_say(CHAR_DATA *ch, char *argument)
 {
     char buf[MAX_STRING_LENGTH];
     CHAR_DATA *vch;
     int actflags;
     int lang;
 
-    if ( argument[0] == '\0' )
+    if (argument[0] == '\0')
     {
-	send_to_char( "Say what?\n", ch );
-	return;
+        send_to_char("Say what?\n", ch);
+        return;
     }
 
-    if (!ch || !ch->in_room) return;
-    if ( IS_SET( ch->in_room->room_flags, ROOM_SILENCE ) )
+    if (!ch || !ch->in_room)
+        return;
+
+    if (IS_SET(ch->in_room->room_flags, ROOM_SILENCE))
     {
-	send_to_char( "You can't do that here.\n", ch );
-	return;
+        send_to_char("You can't do that here.\n", ch);
+        return;
     }
 
     actflags = ch->act;
-    if ( IS_NPC( ch ) ) REMOVE_BIT( ch->act, ACT_SECRETIVE );
-	for ( vch = ch->in_room->first_person; vch; vch = vch->next_in_room )
-	{
-		char *sbuf = argument;
-		char sbuflang[MAX_STRING_LENGTH];
+    if (IS_NPC(ch))
+        REMOVE_BIT(ch->act, ACT_SECRETIVE);
 
-		if ( vch == ch )
-			continue;
-		if ( !knows_language(vch, ch->speaking, ch) &&
-			 (!IS_NPC(ch) || ch->speaking != 0) )
-			sbuf = scramble(argument, ch->speaking);
-	      sbuf = drunk_speech( sbuf, ch );
-
-		MOBtrigger = FALSE;
-
-    // Language display code - DV 5-6-04
-    
-    for ( lang = 0; lang_array[lang] != LANG_UNKNOWN; lang++ )
-      if ( IS_SET(ch->speaking, lang_array[lang]) )
-        break;
-        
-    if ( !IS_NPC(vch) && ( knows_language(vch, ch->speaking, ch ) ) && ( (!IS_NPC(ch) ) || ch->speaking != 0 ) )
+    for (vch = ch->in_room->first_person; vch; vch = vch->next_in_room)
     {
-      if ( !IS_NPC(vch) )
-      {
-      	SPRINTF( sbuflang, "$n says in %s, '$t'", capitalize(lang_names[lang]) );
-      	act(AT_SAY, sbuflang, ch, sbuf, vch, TO_VICT );
-      }
-    }
-    else
-    {
-      act(AT_SAY, "$n says, in some language, '$t'", ch, sbuf, vch, TO_VICT);
-    }
-      
+        char *sbuf = argument;
+        char sbuflang[MAX_STRING_LENGTH];
 
-//  act( AT_SAY, "$n says '$t'", ch, sbuf, vch, TO_VICT );
+        if (vch == ch)
+            continue;
+
+        if (!knows_language(vch, ch->speaking, ch) &&
+            (!IS_NPC(ch) || ch->speaking != LANG_UNKNOWN))
+            sbuf = scramble(argument, ch->speaking);
+
+        sbuf = drunk_speech(sbuf, ch);
+
+        MOBtrigger = FALSE;
+
+        lang = ch->speaking;
+
+        if (!IS_NPC(vch) &&
+            knows_language(vch, ch->speaking, ch) &&
+            (!IS_NPC(ch) || ch->speaking != LANG_UNKNOWN))
+        {
+            SPRINTF(sbuflang, "$n says in %s, '$t'",
+                    capitalize(lang_names[lang].name));
+            act(AT_SAY, sbuflang, ch, sbuf, vch, TO_VICT);
         }
-/*    MOBtrigger = FALSE;
-    act( AT_SAY, "$n says '$T'", ch, NULL, argument, TO_ROOM );*/
-    ch->act = actflags;
-    MOBtrigger = FALSE;
-    act( AT_SAY, "You say in $l '$T'", ch, NULL, drunk_speech( argument, ch ), TO_CHAR ); 
-    if ( IS_SET( ch->in_room->room_flags, ROOM_LOGSPEECH ) )
-    {
-	    SPRINTF( buf, "%s: %s", IS_NPC( ch ) ? ch->short_descr : ch->name,
-		 argument );
-	    append_to_file( LOG_FILE, buf );
+        else
+        {
+            act(AT_SAY, "$n says, in some language, '$t'",
+                ch, sbuf, vch, TO_VICT);
+        }
     }
-    mprog_speech_trigger( argument, ch );
-    if ( char_died(ch) )
-      return;
-    oprog_speech_trigger( argument, ch ); 
-    if ( char_died(ch) )
-      return;
-    rprog_speech_trigger( argument, ch ); 
-    return;
+
+    ch->act = actflags;
+
+    MOBtrigger = FALSE;
+
+    lang = ch->speaking;
+
+    act(AT_SAY, "You say in $l '$T'",
+        ch, NULL, drunk_speech(argument, ch), TO_CHAR);
+
+    if (IS_SET(ch->in_room->room_flags, ROOM_LOGSPEECH))
+    {
+        SPRINTF(buf, "%s: %s",
+                IS_NPC(ch) ? ch->short_descr : ch->name,
+                argument);
+        append_to_file(LOG_FILE, buf);
+    }
+
+    mprog_speech_trigger(argument, ch);
+    if (char_died(ch))
+        return;
+
+    oprog_speech_trigger(argument, ch);
+    if (char_died(ch))
+        return;
+
+    rprog_speech_trigger(argument, ch);
 }
 
 
@@ -1288,7 +1367,7 @@ void do_tell( CHAR_DATA *ch, char *argument )
       sbuf = scramble(argument, ch->speaking);
     sbuf = drunk_speech( sbuf, ch );
     
-      	SPRINTF( sbuflang, "(&CIncoming Message&B)(&C%s&B) $n: '$t'", lang_string(ch, victim ) );
+      	SPRINTF( sbuflang, "(&CIncoming Message&B)(&C%s&B) $n: '$t'", lang_string(ch, victim ).c_str() );
 	act( AT_TELL, sbuflang, ch, sbuf, victim, TO_VICT );
 
 
@@ -1326,7 +1405,7 @@ void do_tell( CHAR_DATA *ch, char *argument )
 	MOBtrigger = FALSE;
     if ( ( !IS_NPC(vch) && knows_language(vch, ch->speaking, ch ) ) && ( (!IS_NPC(ch) ) || ch->speaking != 0 ) )
     {
-      SPRINTF( sbuflang, "$n says quietly into $s comlink in %s '$t'", lang_string(ch, vch ) );
+      SPRINTF( sbuflang, "$n says quietly into $s comlink in %s '$t'", lang_string(ch, vch ).c_str() );
       act( AT_TELL, sbuflang, ch, sbuf, vch, TO_VICT );
     }
     else
@@ -1419,7 +1498,7 @@ void do_reply( CHAR_DATA *ch, char *argument )
       sbuf = scramble(argument, ch->speaking);
     sbuf = drunk_speech( sbuf, ch );
 
-    SPRINTF( sbuflang, "(&CIncoming Message&B)(&C%s&B) $n: '$t'", lang_string(ch, victim ) );
+    SPRINTF( sbuflang, "(&CIncoming Message&B)(&C%s&B) $n: '$t'", lang_string(ch, victim ).c_str() );
     act( AT_TELL, sbuflang, ch, sbuf, victim, TO_VICT );
 
     victim->position	= position;
@@ -1451,7 +1530,7 @@ void do_reply( CHAR_DATA *ch, char *argument )
 
     if ( ( !IS_NPC(vch) && knows_language(vch, ch->speaking, ch ) ) && ( (!IS_NPC(ch) ) || ch->speaking != 0 ) )
     {
-      SPRINTF( sbuflang, "$n says quietly into $s comlink in %s '$t'", lang_string(ch, vch ) );
+      SPRINTF( sbuflang, "$n says quietly into $s comlink in %s '$t'", lang_string(ch, vch ).c_str() );
       act( AT_TELL, sbuflang, ch, sbuf, vch, TO_VICT );
     }
     else
@@ -1522,7 +1601,7 @@ void do_retell( CHAR_DATA *ch, char *argument )
           sbuf = scramble(argument, ch->speaking);
         sbuf = drunk_speech( sbuf, ch );
 
-        SPRINTF( sbuflang, "(&CIncoming Message&B)(&C%s&B) $n: '$t'", lang_string(ch, victim ) );
+        SPRINTF( sbuflang, "(&CIncoming Message&B)(&C%s&B) $n: '$t'", lang_string(ch, victim ).c_str() );
         act( AT_TELL, sbuflang, ch, sbuf, victim, TO_VICT );
 
 	victim->position = position;	
@@ -1545,7 +1624,7 @@ void do_retell( CHAR_DATA *ch, char *argument )
 
 		    if ( ( !IS_NPC(vch) && knows_language(vch, ch->speaking, ch ) ) && ( (!IS_NPC(ch) ) || ch->speaking != 0 ) )
 		    {
-		      SPRINTF( sbuflang, "$n says quietly into $s comlink in %s '$t'", lang_string(ch, vch ) );
+		      SPRINTF( sbuflang, "$n says quietly into $s comlink in %s '$t'", lang_string(ch, vch ).c_str() );
 		      act( AT_TELL, sbuflang, ch, sbuf, vch, TO_VICT );
 		    }
 		    else
@@ -2539,85 +2618,120 @@ void talk_auction (char *argument)
 /*
  * Language support functions. -- Altrag
  * 07/01/96
+ * Replaced for new bitset 3-29-26 DV
  */
-bool knows_language( CHAR_DATA *ch, int language, CHAR_DATA *cch )
+
+void init_language_sn()
 {
-	sh_int sn;
+    for (int i = 0; i < LANG_MAX; ++i)
+    {
+        const char *name = lang_names[i].name;
 
-	if ( !IS_NPC(ch) && IS_IMMORTAL(ch) )
-		return TRUE;
-	if ( IS_NPC(ch) && !ch->speaks ) /* No langs = knows all for npcs */
-		return TRUE;
-	if ( IS_NPC(ch) && IS_SET(ch->speaks, (language & ~LANG_CLAN)) )
-		return TRUE;
-	/* everyone does not KNOW common tongue
-	if ( IS_SET(language, LANG_COMMON) )
-		return TRUE;
-	*/
-	if ( language & LANG_CLAN )
-	{
-		/* Clan = common for mobs.. snicker.. -- Altrag */
-		if ( IS_NPC(ch) || IS_NPC(cch) )
-			return TRUE;
-		if ( ch->pcdata->clan == cch->pcdata->clan &&
-			 ch->pcdata->clan != NULL )
-			return TRUE;
-	}
-	if ( !IS_NPC( ch ) )
-	{
-	    int lang;
-	    
-		/* Racial languages for PCs */
-	    if ( IS_SET(race_table[ch->race].language, language) )
-	    	return TRUE;
+        if (!name)
+        {
+            lang_sn[i] = -1;
+            continue;
+        }
 
-	    for ( lang = 0; lang_array[lang] != LANG_UNKNOWN; lang++ )
-	      if ( IS_SET(language, lang_array[lang]) &&
-	      	   IS_SET(ch->speaks, lang_array[lang]) )
-	      {
-		  if ( (sn = skill_lookup(lang_names[lang])) != -1 )
-		  {
-		    if( number_percent()-1 < ch->pcdata->learned[sn] )
-		      return TRUE;
-		  }
-	      }
-	}
-	return FALSE;
+        lang_sn[i] = skill_lookup(name);
+
+        if (lang_sn[i] < 0)
+        {
+            bug("%s: No skill found for language %d (%s)", __func__, i, name);
+        }
+    }
 }
 
-bool can_learn_lang( CHAR_DATA *ch, int language )
+bool knows_language(CHAR_DATA *ch, int language, CHAR_DATA *cch)
 {
-	if ( language & LANG_CLAN )
-		return FALSE;
-	if ( IS_NPC(ch) || IS_IMMORTAL(ch) )
-		return FALSE;
-	if ( race_table[ch->race].language & language )
-		return FALSE;
-	if ( ch->speaks & language )
-	{
-		int lang;
-		
-		for ( lang = 0; lang_array[lang] != LANG_UNKNOWN; lang++ )
-			if ( language & lang_array[lang] )
-			{
-				int sn;
-				
-				if ( !(VALID_LANGS & lang_array[lang]) )
-					return FALSE;
-				if ( ( sn = skill_lookup( lang_names[lang] ) ) < 0 )
-				{
-                    bug( "%s: valid language without sn: %d", __func__, lang );
-					continue;
-				}
-				if ( ch->pcdata->learned[sn] >= 99 )
-					return FALSE;
-			}
-	}
-	if ( VALID_LANGS & language )
-		return TRUE;
-	return FALSE;
+    if (!ch)
+        return false;
+
+    // Immortals know everything
+    if (!IS_NPC(ch) && IS_IMMORTAL(ch))
+        return true;
+
+    // NPCs with no language restriction know everything
+    if (IS_NPC(ch) && !ch->speaks.any())
+        return true;
+    // Verify language is not out of bounds
+    if (language < 0 || language >= LANG_MAX)
+        return false;
+    if (language == LANG_DIVINE) // Divine language can be understood by all - replacing speak all
+        return true;        
+
+    // Clan language handling
+    if (language == LANG_CLAN)
+    {
+        if (IS_NPC(ch) || IS_NPC(cch))
+            return true;
+
+        return (ch->pcdata->clan &&
+                ch->pcdata->clan == cch->pcdata->clan);
+    }
+
+    // NPCs: simple BitSet check
+    if (IS_NPC(ch))
+        return BV_IS_SET(ch->speaks, language);
+
+    // PCs: racial language (single enum)
+    if (race_table[ch->race].language == language)
+        return true;
+
+    // If player doesn't know the language at all
+    if (!BV_IS_SET(ch->speaks, language))
+        return false;
+
+    // Skill-based comprehension
+        int sn = lang_sn[language];
+
+    if (sn != -1)
+        return (number_percent() - 1 < ch->pcdata->learned[sn]);
+
+    return false;
 }
 
+bool can_learn_lang(CHAR_DATA *ch, int language)
+{
+    if (!ch)
+        return false;
+
+    // Clan language cannot be learned
+    if (language == LANG_CLAN)
+        return false;
+
+    // NPCs and immortals don't learn
+    if (IS_NPC(ch) || IS_IMMORTAL(ch))
+        return false;
+
+    // Racial language cannot be learned
+    if (race_table[ch->race].language == language)
+        return false;
+    if (language == LANG_DIVINE)
+        return false;
+    // Must be a valid language
+    if (!VALID_LANG(language))
+        return false;
+
+    // If already known, check if maxed
+    if (BV_IS_SET(ch->speaks, language))
+    {
+        int sn = lang_sn[language];
+
+        if (sn < 0)
+        {
+            bug("%s: valid language without sn: %d", __func__, language);
+            return false;
+        }
+
+        if (ch->pcdata->learned[sn] >= 99)
+            return false;
+    }
+
+    return true;
+}
+
+/*
 int const lang_array[] = { LANG_COMMON, LANG_WOOKIEE, LANG_TWI_LEK, LANG_RODIAN,
 						   LANG_HUTT, LANG_MON_CALAMARI, LANG_SHISTAVANEN, LANG_EWOK,
 						   LANG_ITHORIAN, LANG_GOTAL, LANG_DEVARONIAN,
@@ -2627,23 +2741,69 @@ int const lang_array[] = { LANG_COMMON, LANG_WOOKIEE, LANG_TWI_LEK, LANG_RODIAN,
 						   LANG_TRANDOSHAN, LANG_CHADRA_FAN, LANG_QUARREN, 
 						   LANG_SULLUSTAN, LANG_FALLEEN, LANG_BINARY, 
 						   LANG_YEVETHAN, LANG_GAND, LANG_DUROS, LANG_COYNITE, LANG_UNKNOWN };
-
+*/
 /* Note: does not count racial language.  This is intentional (for now). */
-int countlangs( int languages )
+int countlangs(const FLAG_SET &languages)
 {
-	int numlangs = 0;
-	int looper;
+    int count = 0;
 
-	for ( looper = 0; lang_array[looper] != LANG_UNKNOWN; looper++ )
-	{
-		if ( lang_array[looper] == LANG_CLAN )
-			continue;
-		if ( languages & lang_array[looper] )
-			numlangs++;
-	}
-	return numlangs;
+    for (size_t i = 0; i < LANG_MAX; ++i)
+    {
+        if (i == LANG_CLAN)
+            continue;
+
+        if (BV_IS_SET(languages, i))
+            ++count;
+    }
+
+    return count;
 }
 
+const flag_name lang_names[] =
+{
+    { LANG_COMMON,              "common" },
+    { LANG_WOOKIEE,             "shyriiwook" },
+    { LANG_TWI_LEK,             "ryl" },
+    { LANG_RODIAN,              "rodese" },
+    { LANG_HUTT,                "huttese" },
+    { LANG_MON_CALAMARI,        "mon calamari" },
+    { LANG_SHISTAVANEN,         "shistavanen" },
+    { LANG_EWOK,                "ewokese" },
+    { LANG_ITHORIAN,            "ithorese" },
+    { LANG_GOTAL,               "gotalse" },
+    { LANG_DEVARONIAN,          "devaronese" },
+    { LANG_BARABEL,             "barabel" },
+    { LANG_FIRRERREO,           "firrerrean" },
+    { LANG_BOTHAN,              "bothese" },
+    { LANG_GAMORREAN,           "gamorrese" },
+    { LANG_TOGORIAN,            "togorese" },
+    { LANG_KUBAZ,               "kubazian" },
+    { LANG_JAWA,                "jawaese" },
+    { LANG_CLAN,	            "clan" },
+    { LANG_ADARIAN,	            "adarian" },
+    { LANG_VERPINE,	            "verpine" },
+    { LANG_DEFEL,               "defel" },
+    { LANG_TRANDOSHAN,          "dosh" },
+    { LANG_CHADRA_FAN,          "chadra-fan" },
+    { LANG_QUARREN,             "quarrenese" },
+    { LANG_SULLUSTAN,           "sullustese" },
+    { LANG_FALLEEN,             "falleen" },
+    { LANG_BINARY,              "binary" },
+    { LANG_YEVETHAN,            "yevethan" },
+    { LANG_GAND,                "gand" },
+    { LANG_DUROS,               "durese" },
+    { LANG_COYNITE,             "coynite" },
+    { LANG_NOGHRI,              "honoghran" },
+    { LANG_DIVINE,	            "divine" },
+    { LANG_ANCIENT,             "ancient" },
+    { LANG_DROID,               "droidspeak" },
+    { LANG_SPIRITUAL,           "spiritual" },
+    { LANG_MAGICAL,             "magical" },
+    { LANG_MAX,                 "Lang_Max" },
+
+    { (size_t)-1, nullptr } // terminator
+};
+/*
 char * const lang_names[] = { "common", "wookiee", "twilek", "rodian", "hutt",
 							 "mon calamari", "shistavanen", "ewok", "ithorian",
 							 "gotal", "devaronian", "barabel", "firrerreo",
@@ -2652,216 +2812,279 @@ char * const lang_names[] = { "common", "wookiee", "twilek", "rodian", "hutt",
 							 "trandoshan", "chadra-fan", "quarren", "sullustan", 
 							 "falleen", "binary", "yevethan", "gand", "duros", 
 							 "coynite", "" };
-
-void do_speak( CHAR_DATA *ch, char *argument )
+*/
+void do_speak(CHAR_DATA *ch, char *argument)
 {
-	int langs;
-	char arg[MAX_INPUT_LENGTH];
-	
-	argument = one_argument(argument, arg );
-	
-	if ( !str_cmp( arg, "all" ) && IS_IMMORTAL( ch ) )
-	{
-		set_char_color( AT_SAY, ch );
-		ch->speaking = ~LANG_CLAN;
-		send_to_char( "Now speaking all languages.\n", ch );
-		return;
-	}
-        if ( !str_prefix( arg, "clan" ))
-	{
-		set_char_color( AT_SAY, ch );
-		send_to_char( "Clan language? There is no such thing.\n", ch );
-		return;
-	}
-        
+    char arg[MAX_INPUT_LENGTH];
+    argument = one_argument(argument, arg);
 
-        if ( ch->race == RACE_WOOKIEE && str_prefix( arg, "wookiee" ))
-	{
-		set_char_color( AT_SAY, ch );
-		send_to_char( "Your vocal cords refuse to make those sounds.\n", ch );
-		return;
-	}
-        if ( ch->race == RACE_VERPINE && str_prefix( arg, "verpine" ))
-	{
-		set_char_color( AT_SAY, ch );
-		send_to_char( "Your jaws cant pronounce that language.\n", ch );
-		return;
-	}
-        if ( ch->race == RACE_GAMORREAN && str_prefix( arg, "gamorrean" ))
-	{
-		set_char_color( AT_SAY, ch );
-		send_to_char( "You can barely speak your own language!\n", ch );
-		return;
-	}
-        
-        
-	if ( !str_prefix( arg, "common" ) && 
-	   ( ch->race == RACE_EWOK || ch->race == RACE_JAWA ))
-	{
-		set_char_color( AT_SAY, ch );
-		send_to_char( "You can not speak common, although you may be able to learn to understand it.\n", ch );
-		return;
-	}
-	if ( !str_prefix( arg, "twilek" ) && ch->race != RACE_TWI_LEK )
-	{
-		set_char_color( AT_SAY, ch );
-		send_to_char( "To speak the Twi'lek language requires body parts that you don't have.\n", ch );
-		return;
-	}
-	if ( !str_prefix( arg, "binary" ) && !is_droid(ch) )
-	{
-		set_char_color( AT_SAY, ch );
-		send_to_char( "Only droids are able to speak binary.\n", ch );
-		return;
-	}
-	if ( !str_prefix( arg, "verpine" ) && ch->race != RACE_VERPINE )
-	{
-		set_char_color( AT_SAY, ch );
-		send_to_char( "You need certain bodyparts you do not have to speak verpine.\n", ch );
-		return;
-	}
-	if ( !str_prefix( arg, "trandoshan" ) && ch->race != RACE_TRANDOSHAN )
-	{
-		set_char_color( AT_SAY, ch );
-		send_to_char( "Only a fellow reptile can speak the trandoshan language.\n", ch );
-		return;
-	}
-	if ( !str_prefix( arg, "gamorrean" ) && ch->race != RACE_GAMORREAN )
-	{
-		set_char_color( AT_SAY, ch );
-		send_to_char( "The gamorrean language can only be spoken by the pigs themselves!\n", ch );
-		return;
-	}
-	if ( !str_prefix( arg, "ithorian" ) && ch->race != RACE_ITHORIAN )
-	{
-		set_char_color( AT_SAY, ch );
-		send_to_char( "You can not replicate the sounds of the ithorian language.\n", ch );
-		return;
-	}
+    // Immortal: speak all (keep behavior, though questionable now)
+    if (!str_cmp(arg, "all") && IS_IMMORTAL(ch))
+    {
+        set_char_color(AT_SAY, ch);
+        ch->speaking = LANG_DIVINE; // or whatever default you want
+        send_to_char("Now speaking the divine language, understood by all.\n", ch);
+        return;
+    }
 
-	for ( langs = 0; lang_array[langs] != LANG_UNKNOWN; langs++ )
-		if ( !str_prefix( arg, lang_names[langs] ) )
-			if ( knows_language( ch, lang_array[langs], ch ) )
-			{
-				if ( lang_array[langs] == LANG_CLAN &&
-					(IS_NPC(ch) || !ch->pcdata->clan) )
-					continue;
-				ch->speaking = lang_array[langs];
-				set_char_color( AT_SAY, ch );
-				ch_printf( ch, "You now speak %s.\n", lang_names[langs] );
-				return;
-			}
-	set_char_color( AT_SAY, ch );
-	send_to_char( "You do not know that language.\n", ch );
+    if (!str_prefix(arg, "clan"))
+    {
+        set_char_color(AT_SAY, ch);
+        send_to_char("Clan language? There is no such thing.\n", ch);
+        return;
+    }
+
+    // --- Race restrictions (unchanged logic) ---
+    if (ch->race == RACE_WOOKIEE && str_prefix(arg, "shyriiwook"))
+    {
+        set_char_color(AT_SAY, ch);
+        send_to_char("Your vocal cords refuse to make those sounds.\n", ch);
+        return;
+    }
+
+    if (ch->race == RACE_VERPINE && str_prefix(arg, "verpine"))
+    {
+        set_char_color(AT_SAY, ch);
+        send_to_char("Your jaws cant pronounce that language.\n", ch);
+        return;
+    }
+
+    if (ch->race == RACE_GAMORREAN && str_prefix(arg, "gamorrese"))
+    {
+        set_char_color(AT_SAY, ch);
+        send_to_char("You can barely speak your own language!\n", ch);
+        return;
+    }
+
+    if (!str_prefix(arg, "common") &&
+        (ch->race == RACE_EWOK || ch->race == RACE_JAWA))
+    {
+        set_char_color(AT_SAY, ch);
+        send_to_char("You can not speak common, although you may be able to learn to understand it.\n", ch);
+        return;
+    }
+
+    if (!str_prefix(arg, "ryl") && ch->race != RACE_TWI_LEK)
+    {
+        set_char_color(AT_SAY, ch);
+        send_to_char("To speak the Twi'lek language requires body parts that you don't have.\n", ch);
+        return;
+    }
+
+    if (!str_prefix(arg, "binary") && !is_droid(ch))
+    {
+        set_char_color(AT_SAY, ch);
+        send_to_char("Only droids are able to speak binary.\n", ch);
+        return;
+    }
+
+    if (!str_prefix(arg, "verpine") && ch->race != RACE_VERPINE)
+    {
+        set_char_color(AT_SAY, ch);
+        send_to_char("You need certain bodyparts you do not have to speak verpine.\n", ch);
+        return;
+    }
+
+    if (!str_prefix(arg, "dosh") && ch->race != RACE_TRANDOSHAN)
+    {
+        set_char_color(AT_SAY, ch);
+        send_to_char("Only a fellow reptile can speak the trandoshan language.\n", ch);
+        return;
+    }
+
+    if (!str_prefix(arg, "gamorrese") && ch->race != RACE_GAMORREAN)
+    {
+        set_char_color(AT_SAY, ch);
+        send_to_char("The gamorrean language can only be spoken by the pigs themselves!\n", ch);
+        return;
+    }
+
+    if (!str_prefix(arg, "ithorese") && ch->race != RACE_ITHORIAN)
+    {
+        set_char_color(AT_SAY, ch);
+        send_to_char("You can not replicate the sounds of the ithorian language.\n", ch);
+        return;
+    }
+
+    // --- New language selection logic ---
+    for (int lang = 0; lang < LANG_MAX; ++lang)
+    {
+        const char *name = lang_names[lang].name;
+        if (!name)
+            continue;
+
+        if (!str_prefix(arg, name))
+        {
+            if (!knows_language(ch, lang, ch))
+                break;
+
+            if (lang == LANG_CLAN &&
+                (IS_NPC(ch) || !ch->pcdata->clan))
+                break;
+
+            if (lang == LANG_DIVINE && !IS_IMMORTAL(ch))
+            {
+                set_char_color(AT_SAY, ch);
+                send_to_char("You cannot speak the divine tongue.\n", ch);
+                return;
+            }
+            ch->speaking = lang;
+
+            set_char_color(AT_SAY, ch);
+            ch_printf(ch, "You now speak %s.\n", name);
+            return;
+        }
+    }
+
+    set_char_color(AT_SAY, ch);
+    send_to_char("You do not know that language.\n", ch);
 }
 
-void do_languages( CHAR_DATA *ch, char *argument )
+void do_languages(CHAR_DATA *ch, char *argument)
 {
-	char arg[MAX_INPUT_LENGTH];
-	int lang;
-        int sn;
-        	
-	argument = one_argument( argument, arg );
-	if ( arg[0] != '\0' && !str_prefix( arg, "learn" ) &&
-		!IS_IMMORTAL(ch) && !IS_NPC(ch) )
-	{
-		CHAR_DATA *sch;
-		char arg2[MAX_INPUT_LENGTH];
-		int prct;
+    char arg[MAX_INPUT_LENGTH];
+    int lang;
+    int sn;
 
-		argument = one_argument( argument, arg2 );
-		if ( arg2[0] == '\0' )
-		{
-			send_to_char( "Learn which language?\n", ch );
-			return;
-		}
-		for ( lang = 0; lang_array[lang] != LANG_UNKNOWN; lang++ )
-		{
-			if ( lang_array[lang] == LANG_CLAN )
-				continue;
-			if ( !str_prefix( arg2, lang_names[lang] ) )
-				break;
-		}
-		if ( lang_array[lang] == LANG_UNKNOWN )
-		{
-			send_to_char( "That is not a language.\n", ch );
-			return;
-		}
-		if ( !(VALID_LANGS & lang_array[lang]) )
-		{
-			send_to_char( "You may not learn that language.\n", ch );
-			return;
-		}
-		if ( ( sn = skill_lookup( lang_names[lang] ) ) < 0 )
-		{
-			send_to_char( "That is not a language.\n", ch );
-			return;
-		}
-		if ( race_table[ch->race].language & lang_array[lang] ||
-			 ch->pcdata->learned[sn] >= 99 )
-		{
-			act( AT_PLAIN, "You are already fluent in $t.", ch,
-				 lang_names[lang], NULL, TO_CHAR );
-			return;
-		}
-		for ( sch = ch->in_room->first_person; sch; sch = sch->next )
-			if ( IS_NPC(sch) && IS_SET(sch->act, ACT_SCHOLAR) &&
-					knows_language( sch, ch->speaking, ch ) &&
-					knows_language( sch, lang_array[lang], sch ) &&
-					(!sch->speaking || knows_language( ch, sch->speaking, sch )) )
-				break;
-		if ( !sch )
-		{
-			send_to_char( "There is no one who can teach that language here.\n", ch );
-			return;
-		}
-                if ( ch->gold < 25 )
-		{
-			send_to_char( "language lessons cost 25 credits... you don't have enough.\n", ch );
-			return;
-		}
-                ch->gold -= 25;
-		/* Max 12% (5 + 4 + 3) at 24+ int and 21+ wis. -- Altrag */
-		prct = 5 + (get_curr_int(ch) / 6) + (get_curr_wis(ch) / 7);
-		ch->pcdata->learned[sn] += prct;
-		ch->pcdata->learned[sn] = UMIN(ch->pcdata->learned[sn], 99);
-		SET_BIT( ch->speaks, lang_array[lang] );
-		if ( ch->pcdata->learned[sn] == prct )
-			act( AT_PLAIN, "You begin lessons in $t.", ch, lang_names[lang],
-				 NULL, TO_CHAR );
-		else if ( ch->pcdata->learned[sn] < 60 )
-			act( AT_PLAIN, "You continue lessons in $t.", ch, lang_names[lang],
-				 NULL, TO_CHAR );
-		else if ( ch->pcdata->learned[sn] < 60 + prct )
-			act( AT_PLAIN, "You feel you can start communicating in $t.", ch,
-				 lang_names[lang], NULL, TO_CHAR );
-		else if ( ch->pcdata->learned[sn] < 99 )
-			act( AT_PLAIN, "You become more fluent in $t.", ch,
-				 lang_names[lang], NULL, TO_CHAR );
-		else
-			act( AT_PLAIN, "You now speak perfect $t.", ch, lang_names[lang],
-				 NULL, TO_CHAR );
-		return;
-	}
-	for ( lang = 0; lang_array[lang] != LANG_UNKNOWN; lang++ )
-		{
-		       if ( !(VALID_LANGS & lang_array[lang]) )
-                                continue;
-			if ( ch->speaking & lang_array[lang] ||
-				(IS_NPC(ch) && !ch->speaking) )
-				set_char_color( AT_RED, ch );
-			else
-				set_char_color( AT_SAY, ch );
-	                if ( ( sn = skill_lookup( lang_names[lang] ) ) < 0 )
-			   send_to_char( "(  0) ", ch );
-			else
-			   ch_printf( ch , "(%3d) ", ch->pcdata->learned[sn] );
-		        send_to_char( lang_names[lang], ch );
-			send_to_char( "\n", ch );
-		}
-	send_to_char( "\n", ch );
-	return;
+    argument = one_argument(argument, arg);
+
+    if (arg[0] != '\0' && !str_prefix(arg, "learn") &&
+        !IS_IMMORTAL(ch) && !IS_NPC(ch))
+    {
+        CHAR_DATA *sch;
+        char arg2[MAX_INPUT_LENGTH];
+        int prct;
+
+        argument = one_argument(argument, arg2);
+
+        if (arg2[0] == '\0')
+        {
+            send_to_char("Learn which language?\n", ch);
+            return;
+        }
+
+        // Find language
+        for (lang = 0; lang < LANG_MAX; ++lang)
+        {
+            if (lang == LANG_CLAN)
+                continue;
+
+            if (!lang_names[lang].name)
+                continue;
+
+            if (!str_prefix(arg2, lang_names[lang].name))
+                break;
+        }
+
+        if (lang >= LANG_MAX)
+        {
+            send_to_char("That is not a language.\n", ch);
+            return;
+        }
+
+        if (!VALID_LANG(lang))
+        {
+            send_to_char("You may not learn that language.\n", ch);
+            return;
+        }
+
+        // Divine cannot be learned
+        if (lang == LANG_DIVINE)
+        {
+            send_to_char("That language cannot be learned.\n", ch);
+            return;
+        }
+
+        sn = lang_sn[lang];
+        if (sn < 0)
+        {
+            send_to_char("That is not a language.\n", ch);
+            return;
+        }
+
+        // Already fluent?
+        if (race_table[ch->race].language == lang ||
+            ch->pcdata->learned[sn] >= 99)
+        {
+            act(AT_PLAIN, "You are already fluent in $t.",
+                ch, lang_names[lang].name, NULL, TO_CHAR);
+            return;
+        }
+
+        // Find a teacher
+        for (sch = ch->in_room->first_person; sch; sch = sch->next)
+        {
+            if (IS_NPC(sch) && IS_SET(sch->act, ACT_SCHOLAR) &&
+                knows_language(sch, ch->speaking, ch) &&
+                knows_language(sch, lang, sch) &&
+                (!sch->speaking || knows_language(ch, sch->speaking, sch)))
+                break;
+        }
+
+        if (!sch)
+        {
+            send_to_char("There is no one who can teach that language here.\n", ch);
+            return;
+        }
+
+        if (ch->gold < 25)
+        {
+            send_to_char("language lessons cost 25 credits... you don't have enough.\n", ch);
+            return;
+        }
+
+        ch->gold -= 25;
+
+        // Learning progress
+        prct = 5 + (get_curr_int(ch) / 6) + (get_curr_wis(ch) / 7);
+
+        ch->pcdata->learned[sn] += prct;
+        ch->pcdata->learned[sn] = UMIN(ch->pcdata->learned[sn], 99);
+
+        BV_SET_BIT(ch->speaks, lang);
+
+        if (ch->pcdata->learned[sn] == prct)
+            act(AT_PLAIN, "You begin lessons in $t.", ch, lang_names[lang].name, NULL, TO_CHAR);
+        else if (ch->pcdata->learned[sn] < 60)
+            act(AT_PLAIN, "You continue lessons in $t.", ch, lang_names[lang].name, NULL, TO_CHAR);
+        else if (ch->pcdata->learned[sn] < 60 + prct)
+            act(AT_PLAIN, "You feel you can start communicating in $t.", ch, lang_names[lang].name, NULL, TO_CHAR);
+        else if (ch->pcdata->learned[sn] < 99)
+            act(AT_PLAIN, "You become more fluent in $t.", ch, lang_names[lang].name, NULL, TO_CHAR);
+        else
+            act(AT_PLAIN, "You now speak perfect $t.", ch, lang_names[lang].name, NULL, TO_CHAR);
+
+        return;
+    }
+
+    // Display known languages
+    for (lang = 0; lang < LANG_MAX; ++lang)
+    {
+        if (!VALID_LANG(lang))
+            continue;
+
+        if (!lang_names[lang].name)
+            continue;
+
+        if (ch->speaking == lang || (IS_NPC(ch) && ch->speaking == 0))
+            set_char_color(AT_RED, ch);
+        else
+            set_char_color(AT_SAY, ch);
+
+        sn = lang_sn[lang];
+
+        if (sn < 0)
+            send_to_char("(  0) ", ch);
+        else
+            ch_printf(ch, "(%3d) ", ch->pcdata->learned[sn]);
+
+        send_to_char(lang_names[lang].name, ch);
+        send_to_char("\n", ch);
+    }
+
+    send_to_char("\n", ch);
 }
+
 
 void do_vulgar( CHAR_DATA *ch, char *argument )
 {

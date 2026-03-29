@@ -372,13 +372,13 @@ bool spec_customs_smut( CHAR_DATA *ch )
     		  act( AT_ACTION, "$n confiscates $p from $N.", ch, obj, victim, TO_NOTVICT );
     		  act( AT_ACTION, "$n takes $p from you.",   ch, obj, victim, TO_VICT    );
     		  obj = obj_to_char( obj, ch );
-                  SET_BIT( obj->extra_flags , ITEM_CONTRABAND);
+                  BV_SET_BIT( obj->objflags , ITEM_CONTRABAND);
                   ch_exp = UMIN( obj->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                   ch_printf( victim, "You lose %ld experience.\n " , ch_exp );
                   gain_exp( victim, 0-ch_exp , SMUGGLING_ABILITY);
                   return TRUE;
 	       }
-	       else if ( can_see( ch, victim ) && !IS_SET( obj->extra_flags , ITEM_CONTRABAND)  ) 
+	       else if ( can_see( ch, victim ) && !BV_IS_SET( obj->objflags , ITEM_CONTRABAND)  ) 
 	       { 
                   ch_exp = UMIN( obj->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                   ch_printf( victim, "You receive %ld experience for smuggling %s.\n " , ch_exp , obj->short_descr );
@@ -386,17 +386,17 @@ bool spec_customs_smut( CHAR_DATA *ch )
        
 	          act( AT_ACTION, "$n looks at $N suspiciously.", ch, NULL, victim, TO_NOTVICT );
     		  act( AT_ACTION, "$n look at you suspiciously.",   ch, NULL, victim, TO_VICT  );
-    		  SET_BIT( obj->extra_flags , ITEM_CONTRABAND);
+    		  BV_SET_BIT( obj->objflags , ITEM_CONTRABAND);
 	          
 	          return TRUE;
 	       }
-	       else if ( !IS_SET( obj->extra_flags , ITEM_CONTRABAND)  )
+	       else if ( !BV_IS_SET( obj->objflags , ITEM_CONTRABAND)  )
 	       {
                   ch_exp = UMIN( obj->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                   ch_printf( victim, "You receive %ld experience for smuggling %s.\n " , ch_exp, obj->short_descr );
                   gain_exp( victim, ch_exp , SMUGGLING_ABILITY );
        
-	          SET_BIT( obj->extra_flags , ITEM_CONTRABAND);
+	          BV_SET_BIT( obj->objflags , ITEM_CONTRABAND);
 	          return TRUE;
 	       }
 	    }
@@ -406,13 +406,13 @@ bool spec_customs_smut( CHAR_DATA *ch )
 	        for ( content = obj->first_content; content; content = content->next_content )
 	        {
 	            if (content->pIndexData->item_type == ITEM_SMUT
-	            && !IS_SET( content->extra_flags , ITEM_CONTRABAND ) )
+	            && !BV_IS_SET( content->objflags , ITEM_CONTRABAND ) )
 	            {
 	               ch_exp = UMIN( content->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                      ch_printf( victim, "You receive %ld experience for smuggling %s.\n " , ch_exp , content->short_descr );
                        gain_exp( victim, ch_exp, SMUGGLING_ABILITY );
                    separate_obj( content );                                            
-	               SET_BIT( content->extra_flags , ITEM_CONTRABAND);
+	               BV_SET_BIT( content->objflags , ITEM_CONTRABAND);
 	               return TRUE;
 	            }
 	        }
@@ -460,13 +460,13 @@ bool spec_customs_weapons( CHAR_DATA *ch )
     		  act( AT_ACTION, "$n confiscates $p from $N.", ch, obj, victim, TO_NOTVICT );
     		  act( AT_ACTION, "$n takes $p from you.",   ch, obj, victim, TO_VICT    );
     		  obj = obj_to_char( obj, ch );
-                  SET_BIT( obj->extra_flags , ITEM_CONTRABAND);
+                  BV_SET_BIT( obj->objflags , ITEM_CONTRABAND);
                   ch_exp = UMIN( obj->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )  );
                   ch_printf( victim, "You lose %ld experience.\n " , ch_exp );
                   gain_exp( victim, 0-ch_exp , SMUGGLING_ABILITY);
                   return TRUE;
 	       }
-	       else if ( can_see( ch, victim ) && !IS_SET( obj->extra_flags , ITEM_CONTRABAND)  ) 
+	       else if ( can_see( ch, victim ) && !BV_IS_SET( obj->objflags , ITEM_CONTRABAND)  ) 
 	       { 
                   ch_exp = UMIN( obj->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                   ch_printf( victim, "You receive %ld experience for smuggling %s.\n " , ch_exp, obj->short_descr );
@@ -474,16 +474,16 @@ bool spec_customs_weapons( CHAR_DATA *ch )
        
 	         act( AT_ACTION, "$n looks at $N suspiciously.", ch, NULL, victim, TO_NOTVICT );
     		  act( AT_ACTION, "$n look at you suspiciously.",   ch, NULL, victim, TO_VICT  );
-    		  SET_BIT( obj->extra_flags , ITEM_CONTRABAND);
+    		  BV_SET_BIT( obj->objflags , ITEM_CONTRABAND);
 	          return TRUE;
 	       }
-	       else if ( !IS_SET( obj->extra_flags , ITEM_CONTRABAND)  )
+	       else if ( !BV_IS_SET( obj->objflags , ITEM_CONTRABAND)  )
 	       {
                   ch_exp = UMIN( obj->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                   ch_printf( victim, "You receive %ld experience for smuggling %s.\n " , ch_exp , obj->short_descr);
                   gain_exp( victim, ch_exp , SMUGGLING_ABILITY);
        
-	          SET_BIT( obj->extra_flags , ITEM_CONTRABAND);
+	          BV_SET_BIT( obj->objflags , ITEM_CONTRABAND);
 	          return TRUE;
 	       }
 	    }
@@ -493,13 +493,13 @@ bool spec_customs_weapons( CHAR_DATA *ch )
 	        for ( content = obj->first_content; content; content = content->next_content )
 	        {
 	            if (content->pIndexData->item_type == ITEM_WEAPON
-	            && !IS_SET( content->extra_flags , ITEM_CONTRABAND ) )
+	            && !BV_IS_SET( content->objflags , ITEM_CONTRABAND ) )
 	            {
 	               ch_exp = UMIN( content->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                      ch_printf( victim, "You receive %ld experience for smuggling %s.\n " , ch_exp , content->short_descr);
                        gain_exp( victim, ch_exp, SMUGGLING_ABILITY );
                    separate_obj( content );                       
-	               SET_BIT( content->extra_flags , ITEM_CONTRABAND);
+	               BV_SET_BIT( content->objflags , ITEM_CONTRABAND);
 	               return TRUE;
 	            }
 	        }
@@ -550,13 +550,13 @@ bool spec_customs_alcohol( CHAR_DATA *ch )
     		  act( AT_ACTION, "$n confiscates $p from $N.", ch, obj, victim, TO_NOTVICT );
     		  act( AT_ACTION, "$n takes $p from you.",   ch, obj, victim, TO_VICT    );
     		  obj = obj_to_char( obj, ch );
-                  SET_BIT( obj->extra_flags , ITEM_CONTRABAND);
+                  BV_SET_BIT( obj->objflags , ITEM_CONTRABAND);
                   ch_exp = UMIN( obj->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                   ch_printf( victim, "You lose %ld experience. \n" , ch_exp );
                   gain_exp( victim, 0-ch_exp , SMUGGLING_ABILITY);
                   return TRUE;
 	       }
-            else if( can_see( ch, victim ) && !IS_SET( obj->extra_flags, ITEM_CONTRABAND ) )
+            else if( can_see( ch, victim ) && !BV_IS_SET( obj->objflags, ITEM_CONTRABAND ) )
             {
                ch_exp =
                   UMIN( obj->cost * 10,
@@ -568,11 +568,11 @@ bool spec_customs_alcohol( CHAR_DATA *ch )
                act( AT_ACTION, "$n looks at $N suspiciously.", ch, NULL, victim, TO_NOTVICT );
                act( AT_ACTION, "$n look at you suspiciously.", ch, NULL, victim, TO_VICT );
                separate_obj( obj );
-               SET_BIT( obj->extra_flags, ITEM_CONTRABAND );
+               BV_SET_BIT( obj->objflags, ITEM_CONTRABAND );
 
                return TRUE;
             }
-            else if( !IS_SET( obj->extra_flags, ITEM_CONTRABAND ) )
+            else if( !BV_IS_SET( obj->objflags, ITEM_CONTRABAND ) )
             {
                ch_exp =
                   UMIN( obj->cost * 10,
@@ -581,7 +581,7 @@ bool spec_customs_alcohol( CHAR_DATA *ch )
                ch_printf( victim, "You receive %ld experience for smuggling %s.\n ", ch_exp, obj->short_descr );
                gain_exp( victim, ch_exp, SMUGGLING_ABILITY );
                separate_obj( obj );
-               SET_BIT( obj->extra_flags, ITEM_CONTRABAND );
+               BV_SET_BIT( obj->objflags, ITEM_CONTRABAND );
                return TRUE;
             }
 	     }
@@ -592,7 +592,7 @@ bool spec_customs_alcohol( CHAR_DATA *ch )
 	        for ( content = obj->first_content; content; content = content->next_content )
 	        {
 	            if (content->pIndexData->item_type == ITEM_DRINK_CON
-	            && !IS_SET( content->extra_flags , ITEM_CONTRABAND ) )
+	            && !BV_IS_SET( content->objflags , ITEM_CONTRABAND ) )
 	            {
 	               if ( ( liquid = obj->value[2] ) >= LIQ_MAX )
 	                    liquid = obj->value[2] = 0;
@@ -604,7 +604,7 @@ bool spec_customs_alcohol( CHAR_DATA *ch )
                     ch_printf( victim, "You receive %ld experience for smuggling %s.\n " , ch_exp , content->short_descr);
                     gain_exp( victim, ch_exp , SMUGGLING_ABILITY);
                     separate_obj( content );                    
-	                SET_BIT( content->extra_flags , ITEM_CONTRABAND);
+	                BV_SET_BIT( content->objflags , ITEM_CONTRABAND);
 	                return TRUE;
 	            }
 	        }
@@ -649,13 +649,13 @@ bool spec_customs_spice( CHAR_DATA *ch )
     		  act( AT_ACTION, "$n confiscates $p from $N.", ch, obj, victim, TO_NOTVICT );
     		  act( AT_ACTION, "$n takes $p from you.",   ch, obj, victim, TO_VICT    );
     		  obj = obj_to_char( obj, ch );
-                  SET_BIT( obj->extra_flags , ITEM_CONTRABAND);
+                  BV_SET_BIT( obj->objflags , ITEM_CONTRABAND);
                   ch_exp = UMIN( obj->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                   ch_printf( victim, "You lose %ld experience. \n" , ch_exp );
                   gain_exp( victim, 0-ch_exp , SMUGGLING_ABILITY);
 	          return TRUE;
 	       }
-	       else if ( can_see( ch, victim ) && !IS_SET( obj->extra_flags , ITEM_CONTRABAND)  ) 
+	       else if ( can_see( ch, victim ) && !BV_IS_SET( obj->objflags , ITEM_CONTRABAND)  ) 
 	       { 
                   ch_exp = UMIN( obj->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                   ch_printf( victim, "You receive %ld experience for smuggling %s. \n" , ch_exp , obj->short_descr);
@@ -663,16 +663,16 @@ bool spec_customs_spice( CHAR_DATA *ch )
        
 	          act( AT_ACTION, "$n looks at $N suspiciously.", ch, NULL, victim, TO_NOTVICT );
     		  act( AT_ACTION, "$n look at you suspiciously.",   ch, NULL, victim, TO_VICT  );
-    		  SET_BIT( obj->extra_flags , ITEM_CONTRABAND);
+    		  BV_SET_BIT( obj->objflags , ITEM_CONTRABAND);
 	          return TRUE;
 	       }
-	       else if ( !IS_SET( obj->extra_flags , ITEM_CONTRABAND)  )
+	       else if ( !BV_IS_SET( obj->objflags , ITEM_CONTRABAND)  )
 	       {
                   ch_exp = UMIN( obj->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                   ch_printf( victim, "You receive %ld experience for smuggling %s. \n" , ch_exp , obj->short_descr);
                   gain_exp( victim, ch_exp , SMUGGLING_ABILITY);
        
-	          SET_BIT( obj->extra_flags , ITEM_CONTRABAND);
+	          BV_SET_BIT( obj->objflags , ITEM_CONTRABAND);
 	          return TRUE;
 	       }
 	    }
@@ -682,13 +682,13 @@ bool spec_customs_spice( CHAR_DATA *ch )
 	        for ( content = obj->first_content; content; content = content->next_content )
 	        {
 	            if (content->pIndexData->item_type == ITEM_SPICE
-	            && !IS_SET( content->extra_flags , ITEM_CONTRABAND ) )
+	            && !BV_IS_SET( content->objflags , ITEM_CONTRABAND ) )
 	            {
 	               ch_exp = UMIN( content->cost*10 , ( exp_level( victim->skill_level[SMUGGLING_ABILITY]+1) - exp_level( victim->skill_level[SMUGGLING_ABILITY])  )   );
                      ch_printf( victim, "You receive %ld experience for smuggling %s.\n " , ch_exp , content->short_descr);
                        gain_exp( victim, ch_exp, SMUGGLING_ABILITY );
                    separate_obj( content );                       
-	               SET_BIT( content->extra_flags , ITEM_CONTRABAND);
+	               BV_SET_BIT( content->objflags , ITEM_CONTRABAND);
 	               return TRUE;
 	            }
 	        }

@@ -826,11 +826,11 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
     obj->item_type = ITEM_WEAPON;
     BV_SET_BIT( obj->wear_flags, ITEM_WIELD );
     BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
-    SET_BIT( obj->extra_flags, ITEM_ANTI_SOLDIER );
-   /*  SET_BIT( obj->extra_flags, ITEM_ANTI_THIEF ); */
-    SET_BIT( obj->extra_flags, ITEM_ANTI_HUNTER );
-    SET_BIT( obj->extra_flags, ITEM_ANTI_PILOT );
-    SET_BIT( obj->extra_flags, ITEM_ANTI_CITIZEN );
+    BV_SET_BIT( obj->objflags, ITEM_ANTI_SOLDIER );
+   /*  BV_SET_BIT( obj->objflags, ITEM_ANTI_THIEF ); */
+    BV_SET_BIT( obj->objflags, ITEM_ANTI_HUNTER );
+    BV_SET_BIT( obj->objflags, ITEM_ANTI_PILOT );
+    BV_SET_BIT( obj->objflags, ITEM_ANTI_CITIZEN );
     obj->level = level;
     obj->weight = 5;
     STRFREE( obj->name );
@@ -3279,7 +3279,7 @@ void do_mine( CHAR_DATA *ch, char *argument )
     }
     ch->move -= move;
 
-    SET_BIT( obj->extra_flags, ITEM_BURRIED );
+    BV_SET_BIT( obj->objflags, ITEM_BURRIED );
     WAIT_STATE( ch, URANGE( 10, move / 2, 100 ) );
 
     STRFREE ( obj->armed_by );

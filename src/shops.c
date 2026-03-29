@@ -595,7 +595,7 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 
-	if ( IS_SET(obj->extra_flags, ITEM_PROTOTYPE) 
+	if ( BV_IS_SET(obj->objflags, ITEM_PROTOTYPE) 
              && get_trust( ch ) < LEVEL_IMMORTAL )
 	{
 	    act( AT_TELL, "$n tells you 'This is a only a prototype!  I can't sell you that...'", 
@@ -813,10 +813,10 @@ void do_list( CHAR_DATA *ch, char *argument )
 
         ch_printf( ch, "[%5d] {%3d} %s%s.\n",
           cost, oref, capitalize( obj->short_descr ),
-		    IS_SET(obj->extra_flags, ITEM_HUTT_SIZE) ? " (hutt size)" :
-		    ( IS_SET(obj->extra_flags, ITEM_LARGE_SIZE) ? " (large)" :
-		    ( IS_SET(obj->extra_flags, ITEM_HUMAN_SIZE) ? " (medium)" :
-		    ( IS_SET(obj->extra_flags, ITEM_SMALL_SIZE) ? " (small)" :
+		    BV_IS_SET(obj->objflags, ITEM_HUTT_SIZE) ? " (hutt size)" :
+		    ( BV_IS_SET(obj->objflags, ITEM_LARGE_SIZE) ? " (large)" :
+		    ( BV_IS_SET(obj->objflags, ITEM_HUMAN_SIZE) ? " (medium)" :
+		    ( BV_IS_SET(obj->objflags, ITEM_SMALL_SIZE) ? " (small)" :
 		    "" ) ) ) );
 	       }
 	    }
@@ -916,7 +916,7 @@ void do_sell( CHAR_DATA *ch, char *argument )
 
     if ( obj->item_type == ITEM_TRASH )
 	extract_obj( obj );
-    else  if ( IS_SET( obj->extra_flags , ITEM_CONTRABAND) )
+    else  if ( BV_IS_SET( obj->objflags , ITEM_CONTRABAND) )
    {
        long ch_exp;
        
@@ -927,7 +927,7 @@ void do_sell( CHAR_DATA *ch, char *argument )
 	 extract_obj( obj );
        else
        {
-         REMOVE_BIT( obj->extra_flags , ITEM_CONTRABAND );
+         BV_REMOVE_BIT( obj->objflags , ITEM_CONTRABAND );
          obj_from_char( obj );
          obj_to_char( obj, keeper );
        }

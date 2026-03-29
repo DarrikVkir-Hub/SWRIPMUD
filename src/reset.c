@@ -1257,6 +1257,19 @@ int generate_itemlevel( AREA_DATA *pArea, OBJ_INDEX_DATA *pObjIndex )
     return olevel;
 }
 
+/* Find an object in a room so we can check it's dependents. Used by 'O' resets. */
+OBJ_DATA *get_obj_room( OBJ_INDEX_DATA * pObjIndex, ROOM_INDEX_DATA * pRoomIndex )
+{
+   OBJ_DATA *obj;
+
+   for( obj = pRoomIndex->first_content; obj; obj = obj->next_content )
+   {
+      if( obj->pIndexData == pObjIndex )
+         return obj;
+   }
+   return NULL;
+}
+
 /*
  * Reset one area.
  */
@@ -1275,11 +1288,12 @@ void reset_area( AREA_DATA *pArea )
   OBJ_DATA *to_obj;
   int level = 0;
   int *plc;
-  
+  FLAG_SET *fsplc = NULL;
+    
   if ( !pArea )
   {
-    bug( "reset_area: NULL pArea", 0 );
-    return;
+      bug( "reset_area: NULL pArea", 0 );
+      return;
   }
   
   mob = NULL;
@@ -1287,394 +1301,424 @@ void reset_area( AREA_DATA *pArea )
   lastobj = NULL;
   if ( !pArea->first_reset )
   {
-    bug( "%s: reset_area: no resets", pArea->filename );
-    return;
+      bug( "%s: reset_area: no resets", pArea->filename );
+      return;
   }
   level = 0;
   for ( pReset = pArea->first_reset; pReset; pReset = next_reset )
   {
-    next_reset = pReset->next;
-    switch( pReset->command )
-    {
-    default:
-      bug( "%s: Reset_area: bad command %c.", pArea->filename, pReset->command );
-      break;
-    
-    case 'M':
-      if ( !(pMobIndex = get_mob_index(pReset->arg1)) )
+      next_reset = pReset->next;
+      switch( pReset->command )
       {
-        bug( "%s: Reset_area: 'M': bad mob vnum %d.", pArea->filename, pReset->arg1 );
-        if( !bootup )
-        {
-         UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-         DISPOSE( pReset );
-        }
-        continue;
+          default:
+              bug( "%s: Reset_area: bad command %c.", pArea->filename, pReset->command );
+              break;
+            
+          case 'M':
+              if ( !(pMobIndex = get_mob_index(pReset->arg1)) )
+              {
+                  bug( "%s: Reset_area: 'M': bad mob vnum %d.", pArea->filename, pReset->arg1 );
+                  if( !bootup )
+                  {
+                      UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                      DISPOSE( pReset );
+                  }
+                  continue;
+              }
+              if ( !(pRoomIndex = get_room_index(pReset->arg3)) )
+              {
+                  bug( "%s: Reset_area: 'M': bad room vnum %d.", pArea->filename, pReset->arg3 );
+                  if( !bootup )
+                  {
+                    UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                    DISPOSE( pReset );
+                  }
+                    continue;
+              }
+              if ( pMobIndex->count >= pReset->arg2 )
+              {
+                  mob = NULL;
+                  break;
+              }
+              mob = create_mobile(pMobIndex);
+              {
+                  ROOM_INDEX_DATA *pRoomPrev = get_room_index(pReset->arg3 - 1);
+                  
+                  if ( pRoomPrev && IS_SET(pRoomPrev->room_flags, ROOM_PET_SHOP) )
+                    SET_BIT(mob->act, ACT_PET);
+              }
+              if ( room_is_dark(pRoomIndex) )
+                  SET_BIT(mob->affected_by, AFF_INFRARED);
+              char_to_room(mob, pRoomIndex);
+              economize_mobgold(mob);
+              level = URANGE(0, mob->top_level - 2, LEVEL_AVATAR);
+              if ( mob->vip_flags.any() && pArea->planet )
+                  pArea->planet->population++;
+              break;
+            
+          case 'G':
+          case 'E':
+              if ( !(pObjIndex = get_obj_index(pReset->arg1)) )
+              {
+                  bug( "%s: Reset_area: 'E' or 'G': bad obj vnum %d.", pArea->filename, pReset->arg1 );
+                  if( !bootup )
+                  {
+                    UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                    DISPOSE( pReset );
+                  }
+                    continue;
+              }
+              if ( !mob )
+              {
+                  lastobj = NULL;
+                  break;
+              }
+              if ( mob->pIndexData->pShop )
+              {
+                  int olevel = generate_itemlevel( pArea, pObjIndex );
+                  obj = create_object(pObjIndex, olevel);
+                  BV_SET_BIT(obj->objflags, ITEM_INVENTORY);
+              }
+              else
+                  obj = create_object(pObjIndex, number_fuzzy(level));
+              obj->level = URANGE(0, obj->level, LEVEL_AVATAR);
+              obj = obj_to_char(obj, mob);
+              if( pReset->command == 'E' )
+              {
+                  if( obj->carried_by != mob )
+                  {
+                    bug( "%s: 'E' reset: can't give object %d to mob %d.", __func__, obj->pIndexData->vnum,
+                          mob->pIndexData->vnum );
+                    break;
+                  }
+                  equip_char( mob, obj, pReset->arg3 );
+              }
+              lastobj = obj;
+              break;
+            
+          case 'O':
+              if ( !(pObjIndex = get_obj_index(pReset->arg1)) )
+              {
+                  bug( "%s: Reset_area: 'O': bad obj vnum %d.", pArea->filename, pReset->arg1 );
+                  if( !bootup )
+                  {
+                      UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                      DISPOSE( pReset );
+                  }
+                  continue;
+              }
+              if ( !(pRoomIndex = get_room_index(pReset->arg3)) )
+              {
+                  bug( "%s: Reset_area: 'O': bad room vnum %d.", pArea->filename, pReset->arg3 );
+                  if( !bootup )
+                  {
+                      UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                      DISPOSE( pReset );
+                  }
+                  continue;
+              }
+              if ( count_obj_list(pObjIndex, pRoomIndex->first_content) > 0 )
+              {
+                  if( !( obj = get_obj_room( pObjIndex, pRoomIndex ) ) )
+                  {
+                      obj = NULL;
+                      lastobj = NULL;
+                      break;
+                  }                
+                  obj->objflags.copy_range_from(pObjIndex->objflags,ITEM_FIRST,ITEM_MAX); // Copies item flags from index to object to be reset.
+                  for( int x = 0; x < 6; ++x )
+                      obj->value[x] = pObjIndex->value[x];                
+                  break;
+              }
+              obj = create_object(pObjIndex, number_fuzzy(generate_itemlevel(pArea, pObjIndex)));
+              obj->level = UMIN(obj->level, LEVEL_AVATAR);
+              //obj->cost = 0;
+              obj_to_room(obj, pRoomIndex);
+              lastobj = obj;
+              break;
+            
+          case 'P':
+              if ( !(pObjIndex = get_obj_index(pReset->arg1)) )
+              {
+                  bug( "%s: Reset_area: 'P': bad obj vnum %d.", pArea->filename, pReset->arg1 );
+                  if( !bootup )
+                  {
+                    UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                    DISPOSE( pReset );
+                  }
+                  continue;
+              }
+              if ( pReset->arg3 > 0 )
+              {
+                  if ( !(pObjToIndex = get_obj_index(pReset->arg3)) )
+                  {
+                      bug( "%s: Reset_area: 'P': bad objto vnum %d.", pArea->filename, pReset->arg3 );
+                      if( !bootup )
+                      {
+                          UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                          DISPOSE( pReset );
+                      }
+                      continue;
+                  }
+                  if ( pArea->nplayer > 0 ||
+                    !(to_obj = get_obj_type(pObjToIndex)) ||
+                      !to_obj->in_room ||
+                      count_obj_list(pObjIndex, to_obj->first_content) > 0 )
+                  {
+                      obj = NULL;
+                      break;
+                  }
+                  lastobj = to_obj;
+              }
+              else
+              {
+                int iNest;
+                
+                if ( !lastobj )
+                    break;
+                to_obj = lastobj;
+                for ( iNest = 0; iNest < pReset->extra; iNest++ )
+                    if ( !(to_obj = to_obj->last_content) )
+                    {
+                      bug( "%s: Reset_area: 'P': Invalid nesting obj %d.", pArea->filename, pReset->arg1 );
+                      iNest = -1;
+                      break;
+                    }
+                if ( iNest < 0 )
+                    continue;
+              }
+              obj = create_object(pObjIndex, number_fuzzy(UMAX(generate_itemlevel(pArea, pObjIndex),to_obj->level)));
+              obj->level = UMIN(obj->level, LEVEL_AVATAR);
+              obj_to_obj(obj, to_obj);
+              break;
+            
+          case 'T':
+              if ( IS_SET(pReset->extra, TRAP_OBJ) )
+              {
+                    /* We need to preserve obj for future 'T' and 'H' checks */
+                    OBJ_DATA *pobj;
+                    
+                    if ( pReset->arg3 > 0 )
+                    {
+                        if ( !(pObjToIndex = get_obj_index(pReset->arg3)) )
+                        {
+                            bug( "%s: Reset_area: 'T': bad objto vnum %d.", pArea->filename, pReset->arg3 );
+                            if( !bootup )
+                            {
+                              UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                              DISPOSE( pReset );
+                            }
+                            continue;
+                        }
+                        if ( pArea->nplayer > 0 ||
+                          !(to_obj = get_obj_type(pObjToIndex)) ||
+                            (to_obj->carried_by && !IS_NPC(to_obj->carried_by)) ||
+                            is_trapped(to_obj) )
+                            break;
+                    }
+                    else
+                    {
+                        if ( !lastobj || !obj )
+                            break;
+                        to_obj = obj;
+                    }
+                    pobj = make_trap( pReset->arg2, pReset->arg1,
+                          number_fuzzy(to_obj->level), pReset->extra );
+                    obj_to_obj(pobj, to_obj);
+              }
+              else
+              {
+                  if ( !(pRoomIndex = get_room_index(pReset->arg3)) )
+                  {
+                      bug( "%s: Reset_area: 'T': bad room %d.", pArea->filename, pReset->arg3 );
+                      if( !bootup )
+                      {
+                          UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                          DISPOSE( pReset );
+                      }
+                      continue;
+                  }
+                  if ( pArea->nplayer > 0 ||
+                      count_obj_list(get_obj_index(OBJ_VNUM_TRAP),
+                        pRoomIndex->first_content) > 0 )
+                      break;
+                  to_obj = make_trap(pReset->arg1, pReset->arg1, 10, pReset->extra);
+                  obj_to_room(to_obj, pRoomIndex);
+              }
+              break;
+            
+          case 'H':
+              if ( pReset->arg1 > 0 )
+              {
+                  if ( !(pObjToIndex = get_obj_index(pReset->arg1)) )
+                  {
+                      bug( "%s: Reset_area: 'H': bad objto vnum %d.", pArea->filename, pReset->arg1 );
+                      if( !bootup )
+                      {
+                          UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                          DISPOSE( pReset );
+                      }
+                      continue;
+                  }
+                  if ( pArea->nplayer > 0 ||
+                    !(to_obj = get_obj_type(pObjToIndex)) ||
+                      !to_obj->in_room ||
+                      to_obj->in_room->area != pArea ||
+                      IS_OBJ_STAT(to_obj, ITEM_HIDDEN) )
+                      break;
+              }
+              else
+              {
+                  if ( !lastobj || !obj )
+                    break;
+                  to_obj = obj;
+              }
+              BV_SET_BIT(to_obj->objflags, ITEM_HIDDEN);
+              break;
+            
+            case 'B':
+              switch(pReset->arg2 & BIT_RESET_TYPE_MASK)
+              {
+                  case BIT_RESET_DOOR:
+                    {
+                        int doornum;
+                        
+                        if ( !(pRoomIndex = get_room_index(pReset->arg1)) )
+                        {
+                            bug( "%s: Reset_area: 'B': door: bad room vnum %d.", pArea->filename, pReset->arg1 );
+                            if( !bootup )
+                            {
+                                UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                                DISPOSE( pReset );
+                            }
+                            continue;
+                        }
+                        doornum = (pReset->arg2 & BIT_RESET_DOOR_MASK)
+                                >> BIT_RESET_DOOR_THRESHOLD;
+                        if ( !(pexit = get_exit(pRoomIndex, doornum)) )
+                            break;
+                        plc = &pexit->exit_info;
+                    }
+                    break;
+                  case BIT_RESET_ROOM:
+                    if ( !(pRoomIndex = get_room_index(pReset->arg1)) )
+                        {
+                            bug( "%s: Reset_area: 'B': room: bad room vnum %d.", pArea->filename, pReset->arg1 );
+                            if( !bootup )
+                            {
+                              UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                              DISPOSE( pReset );
+                            }
+                            continue;
+                        }
+                        plc = &pRoomIndex->room_flags;
+                        break;
+                  case BIT_RESET_OBJECT:
+                    if ( pReset->arg1 > 0 )
+                    {
+                        if ( !(pObjToIndex = get_obj_index(pReset->arg1)) )
+                        {
+                            bug( "%s: Reset_area: 'B': object: bad objto vnum %d.", pArea->filename, pReset->arg1 );
+                            if( !bootup )
+                            {
+                                UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                                DISPOSE( pReset );
+                            }
+                            continue;
+                        }
+                        if ( !(to_obj = get_obj_type(pObjToIndex)) ||
+                              !to_obj->in_room ||
+                              to_obj->in_room->area != pArea )
+                            continue;
+                    }
+                    else
+                    {
+                        if ( !lastobj || !obj )
+                            continue;
+                        to_obj = obj;
+                    }
+                    fsplc = &to_obj->objflags;
+                    plc = NULL;
+                    break;
+                  case BIT_RESET_MOBILE:
+                      if ( !mob )
+                        continue;
+                      plc = &mob->affected_by;
+                      break;
+                  default:
+                      bug( "%s: Reset_area: 'B': bad options %d.", pArea->filename, pReset->arg2 );
+                      continue;
+              }
+
+              if (fsplc) 
+              {
+                  if ( IS_SET(pReset->arg2, BIT_RESET_SET) )
+                      BV_SET_BIT(*fsplc, pReset->arg3);
+                  else if ( IS_SET(pReset->arg2, BIT_RESET_TOGGLE) )
+                      BV_TOGGLE_BIT(*fsplc, pReset->arg3);
+                  else
+                      BV_REMOVE_BIT(*fsplc, pReset->arg3);
+                  fsplc = NULL;
+              }
+              else 
+              {
+                  if ( IS_SET(pReset->arg2, BIT_RESET_SET) )
+                      SET_BIT(*plc, pReset->arg3);
+                  else if ( IS_SET(pReset->arg2, BIT_RESET_TOGGLE) )
+                      TOGGLE_BIT(*plc, pReset->arg3);
+                  else
+                      REMOVE_BIT(*plc, pReset->arg3);
+              }
+              break;
+            
+          case 'D':
+              if ( !(pRoomIndex = get_room_index(pReset->arg1)) )
+              {
+                  bug( "%s: Reset_area: 'D': bad room vnum %d.", pArea->filename, pReset->arg1 );
+                  if( !bootup )
+                  {
+                      UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                      DISPOSE( pReset );
+                  }
+                  continue;
+              }
+              if ( !(pexit = get_exit(pRoomIndex, pReset->arg2)) )
+                  break;
+              switch( pReset->arg3 )
+              {
+              case 0:
+                    REMOVE_BIT(pexit->exit_info, EX_CLOSED);
+                    REMOVE_BIT(pexit->exit_info, EX_LOCKED);
+                    break;
+                case 1:
+                    SET_BIT(   pexit->exit_info, EX_CLOSED);
+                    REMOVE_BIT(pexit->exit_info, EX_LOCKED);
+                    if ( IS_SET(pexit->exit_info, EX_xSEARCHABLE) )
+                      SET_BIT( pexit->exit_info, EX_SECRET);
+                  break;
+                case 2:
+                    SET_BIT(   pexit->exit_info, EX_CLOSED);
+                    SET_BIT(   pexit->exit_info, EX_LOCKED);
+                    if ( IS_SET(pexit->exit_info, EX_xSEARCHABLE) )
+                      SET_BIT( pexit->exit_info, EX_SECRET);
+                  break;
+              }
+              break;
+            
+          case 'R':
+              if ( !(pRoomIndex = get_room_index(pReset->arg1)) )
+              {
+                  bug( "%s: Reset_area: 'R': bad room vnum %d.", pArea->filename, pReset->arg1 );
+                  if( !bootup )
+                  {
+                      UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
+                      DISPOSE( pReset );
+                  }
+                  continue;
+              }
+              randomize_exits(pRoomIndex, pReset->arg2-1);
+              break;
       }
-      if ( !(pRoomIndex = get_room_index(pReset->arg3)) )
-      {
-        bug( "%s: Reset_area: 'M': bad room vnum %d.", pArea->filename, pReset->arg3 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-        continue;
-      }
-      if ( pMobIndex->count >= pReset->arg2 )
-      {
-        mob = NULL;
-        break;
-      }
-      mob = create_mobile(pMobIndex);
-      {
-        ROOM_INDEX_DATA *pRoomPrev = get_room_index(pReset->arg3 - 1);
-        
-        if ( pRoomPrev && IS_SET(pRoomPrev->room_flags, ROOM_PET_SHOP) )
-          SET_BIT(mob->act, ACT_PET);
-      }
-      if ( room_is_dark(pRoomIndex) )
-        SET_BIT(mob->affected_by, AFF_INFRARED);
-      char_to_room(mob, pRoomIndex);
-      economize_mobgold(mob);
-      level = URANGE(0, mob->top_level - 2, LEVEL_AVATAR);
-      if ( mob->vip_flags.any() && pArea->planet )
-            pArea->planet->population++;
-      break;
-    
-    case 'G':
-    case 'E':
-      if ( !(pObjIndex = get_obj_index(pReset->arg1)) )
-      {
-        bug( "%s: Reset_area: 'E' or 'G': bad obj vnum %d.", pArea->filename, pReset->arg1 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-        continue;
-      }
-      if ( !mob )
-      {
-        lastobj = NULL;
-        break;
-      }
-      if ( mob->pIndexData->pShop )
-      {
-	int olevel = generate_itemlevel( pArea, pObjIndex );
-        obj = create_object(pObjIndex, olevel);
-        SET_BIT(obj->extra_flags, ITEM_INVENTORY);
-      }
-      else
-        obj = create_object(pObjIndex, number_fuzzy(level));
-      obj->level = URANGE(0, obj->level, LEVEL_AVATAR);
-      obj = obj_to_char(obj, mob);
-      if ( pReset->command == 'E' )
-        equip_char(mob, obj, pReset->arg3);
-      lastobj = obj;
-      break;
-    
-    case 'O':
-      if ( !(pObjIndex = get_obj_index(pReset->arg1)) )
-      {
-        bug( "%s: Reset_area: 'O': bad obj vnum %d.", pArea->filename, pReset->arg1 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-        continue;
-      }
-      if ( !(pRoomIndex = get_room_index(pReset->arg3)) )
-      {
-        bug( "%s: Reset_area: 'O': bad room vnum %d.", pArea->filename, pReset->arg3 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-        continue;
-      }
-      if ( count_obj_list(pObjIndex, pRoomIndex->first_content) > 0 )
-      {
-        obj = NULL;
-        lastobj = NULL;
-        break;
-      }
-      obj = create_object(pObjIndex, number_fuzzy(generate_itemlevel(pArea, pObjIndex)));
-      obj->level = UMIN(obj->level, LEVEL_AVATAR);
-//    obj->cost = 0;
-      obj_to_room(obj, pRoomIndex);
-      lastobj = obj;
-      break;
-    
-    case 'P':
-      if ( !(pObjIndex = get_obj_index(pReset->arg1)) )
-      {
-        bug( "%s: Reset_area: 'P': bad obj vnum %d.", pArea->filename, pReset->arg1 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-        continue;
-      }
-      if ( pReset->arg3 > 0 )
-      {
-        if ( !(pObjToIndex = get_obj_index(pReset->arg3)) )
-        {
-          bug( "%s: Reset_area: 'P': bad objto vnum %d.", pArea->filename, pReset->arg3 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-          continue;
-        }
-        if ( pArea->nplayer > 0 ||
-           !(to_obj = get_obj_type(pObjToIndex)) ||
-            !to_obj->in_room ||
-             count_obj_list(pObjIndex, to_obj->first_content) > 0 )
-        {
-          obj = NULL;
-          break;
-        }
-        lastobj = to_obj;
-      }
-      else
-      {
-        int iNest;
-        
-        if ( !lastobj )
-          break;
-        to_obj = lastobj;
-        for ( iNest = 0; iNest < pReset->extra; iNest++ )
-          if ( !(to_obj = to_obj->last_content) )
-          {
-            bug( "%s: Reset_area: 'P': Invalid nesting obj %d.", pArea->filename, pReset->arg1 );
-            iNest = -1;
-            break;
-          }
-        if ( iNest < 0 )
-          continue;
-      }
-      obj = create_object(pObjIndex, number_fuzzy(UMAX(generate_itemlevel(pArea, pObjIndex),to_obj->level)));
-      obj->level = UMIN(obj->level, LEVEL_AVATAR);
-      obj_to_obj(obj, to_obj);
-      break;
-    
-    case 'T':
-      if ( IS_SET(pReset->extra, TRAP_OBJ) )
-      {
-        /* We need to preserve obj for future 'T' and 'H' checks */
-        OBJ_DATA *pobj;
-        
-        if ( pReset->arg3 > 0 )
-        {
-          if ( !(pObjToIndex = get_obj_index(pReset->arg3)) )
-          {
-            bug( "%s: Reset_area: 'T': bad objto vnum %d.", pArea->filename, pReset->arg3 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-            continue;
-          }
-          if ( pArea->nplayer > 0 ||
-             !(to_obj = get_obj_type(pObjToIndex)) ||
-              (to_obj->carried_by && !IS_NPC(to_obj->carried_by)) ||
-               is_trapped(to_obj) )
-            break;
-        }
-        else
-        {
-          if ( !lastobj || !obj )
-            break;
-          to_obj = obj;
-        }
-        pobj = make_trap( pReset->arg2, pReset->arg1,
-        		  number_fuzzy(to_obj->level), pReset->extra );
-        obj_to_obj(pobj, to_obj);
-      }
-      else
-      {
-        if ( !(pRoomIndex = get_room_index(pReset->arg3)) )
-        {
-          bug( "%s: Reset_area: 'T': bad room %d.", pArea->filename, pReset->arg3 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-          continue;
-        }
-        if ( pArea->nplayer > 0 ||
-             count_obj_list(get_obj_index(OBJ_VNUM_TRAP),
-               pRoomIndex->first_content) > 0 )
-          break;
-        to_obj = make_trap(pReset->arg1, pReset->arg1, 10, pReset->extra);
-        obj_to_room(to_obj, pRoomIndex);
-      }
-      break;
-    
-    case 'H':
-      if ( pReset->arg1 > 0 )
-      {
-        if ( !(pObjToIndex = get_obj_index(pReset->arg1)) )
-        {
-          bug( "%s: Reset_area: 'H': bad objto vnum %d.", pArea->filename, pReset->arg1 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-          continue;
-        }
-        if ( pArea->nplayer > 0 ||
-           !(to_obj = get_obj_type(pObjToIndex)) ||
-            !to_obj->in_room ||
-             to_obj->in_room->area != pArea ||
-             IS_OBJ_STAT(to_obj, ITEM_HIDDEN) )
-          break;
-      }
-      else
-      {
-        if ( !lastobj || !obj )
-          break;
-        to_obj = obj;
-      }
-      SET_BIT(to_obj->extra_flags, ITEM_HIDDEN);
-      break;
-    
-    case 'B':
-      switch(pReset->arg2 & BIT_RESET_TYPE_MASK)
-      {
-      case BIT_RESET_DOOR:
-        {
-        int doornum;
-        
-        if ( !(pRoomIndex = get_room_index(pReset->arg1)) )
-        {
-          bug( "%s: Reset_area: 'B': door: bad room vnum %d.", pArea->filename, pReset->arg1 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-          continue;
-        }
-        doornum = (pReset->arg2 & BIT_RESET_DOOR_MASK)
-                >> BIT_RESET_DOOR_THRESHOLD;
-        if ( !(pexit = get_exit(pRoomIndex, doornum)) )
-          break;
-        plc = &pexit->exit_info;
-        }
-        break;
-      case BIT_RESET_ROOM:
-        if ( !(pRoomIndex = get_room_index(pReset->arg1)) )
-        {
-          bug( "%s: Reset_area: 'B': room: bad room vnum %d.", pArea->filename, pReset->arg1 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-          continue;
-        }
-        plc = &pRoomIndex->room_flags;
-        break;
-      case BIT_RESET_OBJECT:
-        if ( pReset->arg1 > 0 )
-        {
-          if ( !(pObjToIndex = get_obj_index(pReset->arg1)) )
-          {
-            bug( "%s: Reset_area: 'B': object: bad objto vnum %d.", pArea->filename, pReset->arg1 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-            continue;
-          }
-          if ( !(to_obj = get_obj_type(pObjToIndex)) ||
-                !to_obj->in_room ||
-                 to_obj->in_room->area != pArea )
-            continue;
-        }
-        else
-        {
-          if ( !lastobj || !obj )
-            continue;
-          to_obj = obj;
-        }
-        plc = &to_obj->extra_flags;
-        break;
-      case BIT_RESET_MOBILE:
-        if ( !mob )
-          continue;
-        plc = &mob->affected_by;
-        break;
-      default:
-        bug( "%s: Reset_area: 'B': bad options %d.", pArea->filename, pReset->arg2 );
-        continue;
-      }
-      if ( IS_SET(pReset->arg2, BIT_RESET_SET) )
-        SET_BIT(*plc, pReset->arg3);
-      else if ( IS_SET(pReset->arg2, BIT_RESET_TOGGLE) )
-        TOGGLE_BIT(*plc, pReset->arg3);
-      else
-        REMOVE_BIT(*plc, pReset->arg3);
-      break;
-    
-    case 'D':
-      if ( !(pRoomIndex = get_room_index(pReset->arg1)) )
-      {
-        bug( "%s: Reset_area: 'D': bad room vnum %d.", pArea->filename, pReset->arg1 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-        continue;
-      }
-      if ( !(pexit = get_exit(pRoomIndex, pReset->arg2)) )
-        break;
-      switch( pReset->arg3 )
-      {
-      case 0:
-        REMOVE_BIT(pexit->exit_info, EX_CLOSED);
-        REMOVE_BIT(pexit->exit_info, EX_LOCKED);
-        break;
-      case 1:
-        SET_BIT(   pexit->exit_info, EX_CLOSED);
-        REMOVE_BIT(pexit->exit_info, EX_LOCKED);
-        if ( IS_SET(pexit->exit_info, EX_xSEARCHABLE) )
-          SET_BIT( pexit->exit_info, EX_SECRET);
-        break;
-      case 2:
-        SET_BIT(   pexit->exit_info, EX_CLOSED);
-        SET_BIT(   pexit->exit_info, EX_LOCKED);
-        if ( IS_SET(pexit->exit_info, EX_xSEARCHABLE) )
-          SET_BIT( pexit->exit_info, EX_SECRET);
-        break;
-      }
-      break;
-    
-    case 'R':
-      if ( !(pRoomIndex = get_room_index(pReset->arg1)) )
-      {
-        bug( "%s: Reset_area: 'R': bad room vnum %d.", pArea->filename, pReset->arg1 );
-       if( !bootup )
-       {
-        UNLINK( pReset, pArea->first_reset, pArea->last_reset, next, prev );
-        DISPOSE( pReset );
-       }
-        continue;
-      }
-      randomize_exits(pRoomIndex, pReset->arg2-1);
-      break;
-    }
   }
   
 //fold_area( pArea, pArea->filename, FALSE );
@@ -1838,6 +1882,7 @@ void list_resets( CHAR_DATA *ch, AREA_DATA *pArea, ROOM_INDEX_DATA *pRoom,
       break;
     case 'B':
       {
+      bool skip = false;
       char * const *flagarray;
       
       STRAPP(pbuf, "BIT: ");
@@ -1893,7 +1938,10 @@ void list_resets( CHAR_DATA *ch, AREA_DATA *pArea, ROOM_INDEX_DATA *pRoom,
           rname = oname;
         SPRINTF(pbuf, "Object %s (%d)", rname,
             (pReset->arg1 > 0 ? pReset->arg1 : obj ? obj->vnum : 0));
-        flagarray = o_flags;
+        STRAPP(pbuf, "; flag: %s [%d]\n",
+            flag_bit_name(pReset->arg3, obj_flag_table), pReset->arg3);
+        skip = true;
+
         break;
       case BIT_RESET_MOBILE:
         if ( pReset->arg1 > 0 )
@@ -1918,11 +1966,13 @@ void list_resets( CHAR_DATA *ch, AREA_DATA *pArea, ROOM_INDEX_DATA *pRoom,
         flagarray = NULL;
         break;
       }
-      if ( flagarray )
-        STRAPP(pbuf, "; flags: %s [%d]\n",
-            flag_string(pReset->arg3, flagarray), pReset->arg3);
-      else
-        STRAPP(pbuf, "; flags %d\n", pReset->arg3);
+        if (!skip)
+        {
+          if ( flagarray )
+            STRAPP(pbuf, "; flags: %s [%d]\n", flag_string(pReset->arg3, flagarray), pReset->arg3);
+          else
+            STRAPP(pbuf, "; flags %d\n", pReset->arg3);
+        }
       }
       break;
     case 'D':

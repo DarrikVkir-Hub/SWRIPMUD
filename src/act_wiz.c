@@ -1268,7 +1268,7 @@ void do_ostat( CHAR_DATA *ch, char *argument )
     ch_printf( ch, "Wear flags : %s : Proto: %s\n", 
         flag_string(obj->wear_flags, w_flags, ITEM_WEAR_MAX), 
         flag_string(obj->pIndexData->wear_flags, w_flags, ITEM_WEAR_MAX) );
-    ch_printf( ch, "Extra flags: %s\n", flag_string(obj->extra_flags, o_flags) );
+//  ch_printf( ch, "Extra flags: %s\n", flag_string(obj->extra_flags, o_flags) );
 
     ch_printf( ch, "Number: %d/%d.  Weight: %d/%d.  Layers: %d\n",
 	1,           get_obj_number( obj ),
@@ -1481,30 +1481,33 @@ ch_printf( ch,
     }
     ch_printf( ch, "Affected by: %s\n",
 	affect_bit_name( victim->affected_by ) );
-    ch_printf( ch, "Speaks: %d   Speaking: %d\n",
-    	victim->speaks, victim->speaking );
-    send_to_char( "Languages: ", ch );
-    for ( x = 0; lang_array[x] != LANG_UNKNOWN; x++ )
-    	if ( knows_language( victim, lang_array[x], victim )
-    	||  (IS_NPC(victim) && victim->speaks == 0) )
-    	{
-		if ( IS_SET(lang_array[x], victim->speaking)
-		||  (IS_NPC(victim) && !victim->speaking) )
-    		   set_char_color( AT_RED, ch );
- 		send_to_char( lang_names[x], ch );
- 		send_to_char( " ", ch );
- 		set_char_color( AT_PLAIN, ch );
- 	}
- 	else
- 	if ( IS_SET(lang_array[x], victim->speaking)
- 	||  (IS_NPC(victim) && !victim->speaking) )
- 	{
- 		set_char_color( AT_PINK, ch );
- 		send_to_char( lang_names[x], ch );
- 		send_to_char( " ", ch );
- 		set_char_color( AT_PLAIN, ch );
- 	}
-    send_to_char( "\n", ch );
+    ch_printf( ch, "Speaking: %d\n", victim->speaking );
+    send_to_char("Languages: ", ch);
+
+    for (x = 0; x < LANG_MAX; ++x)
+    {
+        if (!lang_names[x].name)
+            continue;
+        bool knows = knows_language(victim, x, victim);
+        bool speaking = (victim->speaking == x);
+
+        if (knows)
+        {
+            if (speaking)
+                set_char_color(AT_RED, ch);
+            send_to_char(lang_names[x].name, ch);
+            send_to_char(" ", ch);
+            set_char_color(AT_PLAIN, ch);
+        }
+        else if (speaking)
+        {
+            set_char_color(AT_PINK, ch);
+            send_to_char(lang_names[x].name, ch);
+            send_to_char(" ", ch);
+            set_char_color(AT_PLAIN, ch);
+        }
+    }
+    send_to_char("\n", ch);
     if ( victim->pcdata && victim->pcdata->bestowments 
          && victim->pcdata->bestowments[0] != '\0' )
       ch_printf( ch, "Bestowments: %s\n", victim->pcdata->bestowments );
