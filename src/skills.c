@@ -902,8 +902,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	    if ( num == 1 )
 	    {
 		skill->affects = aff->next;
-		DISPOSE( aff->duration );
-		DISPOSE( aff->modifier );
+		STR_DISPOSE( aff->duration );
+		STR_DISPOSE( aff->modifier );
 		DISPOSE( aff );
 		send_to_char( "Removed.\n", ch );
 		return;
@@ -913,8 +913,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 		if ( ++cnt == num && (aff_next=aff->next) != NULL )
 		{
 		    aff->next = aff_next->next;
-		    DISPOSE( aff_next->duration );
-		    DISPOSE( aff_next->modifier );
+		    STR_DISPOSE( aff_next->duration );
+		    STR_DISPOSE( aff_next->modifier );
 		    DISPOSE( aff_next );
 		    send_to_char( "Removed.\n", ch );
 		    return;
@@ -993,14 +993,14 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !str_cmp( arg2, "name" ) )
 	{
-	    DISPOSE(skill->name);
+	    STR_DISPOSE(skill->name);
 	    skill->name = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
 	if ( !str_cmp( arg2, "dammsg" ) )
 	{
-	    DISPOSE(skill->noun_damage);
+	    STR_DISPOSE(skill->noun_damage);
 	    if ( !str_cmp( argument, "clear" ) )
 	      skill->noun_damage = str_dup( "" );
 	    else
@@ -1010,7 +1010,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !str_cmp( arg2, "wearoff" ) )
 	{
-	    DISPOSE(skill->msg_off);
+	    STR_DISPOSE(skill->msg_off);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->msg_off = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1019,7 +1019,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "hitchar" ) )
 	{
 	    if ( skill->hit_char )
-	      DISPOSE(skill->hit_char);
+	      STR_DISPOSE(skill->hit_char);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->hit_char = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1028,7 +1028,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "hitvict" ) )
 	{
 	    if ( skill->hit_vict )
-	      DISPOSE(skill->hit_vict);
+	      STR_DISPOSE(skill->hit_vict);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->hit_vict = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1037,7 +1037,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "hitroom" ) )
 	{
 	    if ( skill->hit_room )
-	      DISPOSE(skill->hit_room);
+	      STR_DISPOSE(skill->hit_room);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->hit_room = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1046,7 +1046,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "misschar" ) )
 	{
 	    if ( skill->miss_char )
-	      DISPOSE(skill->miss_char);
+	      STR_DISPOSE(skill->miss_char);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->miss_char = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1055,7 +1055,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "missvict" ) )
 	{
 	    if ( skill->miss_vict )
-	      DISPOSE(skill->miss_vict);
+	      STR_DISPOSE(skill->miss_vict);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->miss_vict = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1064,7 +1064,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "missroom" ) )
 	{
 	    if ( skill->miss_room )
-	      DISPOSE(skill->miss_room);
+	      STR_DISPOSE(skill->miss_room);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->miss_room = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1073,7 +1073,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "diechar" ) )
 	{
 	    if ( skill->die_char )
-	      DISPOSE(skill->die_char);
+	      STR_DISPOSE(skill->die_char);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->die_char = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1082,7 +1082,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "dievict" ) )
 	{
 	    if ( skill->die_vict )
-	      DISPOSE(skill->die_vict);
+	      STR_DISPOSE(skill->die_vict);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->die_vict = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1091,7 +1091,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "dieroom" ) )
 	{
 	    if ( skill->die_room )
-	      DISPOSE(skill->die_room);
+	      STR_DISPOSE(skill->die_room);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->die_room = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1100,7 +1100,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "immchar" ) )
 	{
 	    if ( skill->imm_char )
-	      DISPOSE(skill->imm_char);
+	      STR_DISPOSE(skill->imm_char);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->imm_char = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1109,7 +1109,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "immvict" ) )
 	{
 	    if ( skill->imm_vict )
-	      DISPOSE(skill->imm_vict);
+	      STR_DISPOSE(skill->imm_vict);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->imm_vict = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1118,7 +1118,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "immroom" ) )
 	{
 	    if ( skill->imm_room )
-	      DISPOSE(skill->imm_room);
+	      STR_DISPOSE(skill->imm_room);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->imm_room = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1127,7 +1127,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "dice" ) )
 	{
 	    if ( skill->dice )
-	      DISPOSE(skill->dice);
+	      STR_DISPOSE(skill->dice);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->dice = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1136,7 +1136,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "components" ) )
 	{
 	    if ( skill->components )
-	      DISPOSE(skill->components);
+	      STR_DISPOSE(skill->components);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->components = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1145,7 +1145,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "teachers" ) )
 	{
 	    if ( skill->teachers )
-	      DISPOSE(skill->teachers);
+	      STR_DISPOSE(skill->teachers);
 	    if ( str_cmp( argument, "clear" ) )
 	      skill->teachers = str_dup( argument );
 	    send_to_char( "Ok.\n", ch );
@@ -1431,12 +1431,12 @@ void do_detrap( CHAR_DATA *ch, char *argument )
 		return;
 	    }
 	    SPRINTF( arg, "%s", (const char * )ch->dest_buf );
-	    DISPOSE( ch->dest_buf );
-	    DISPOSE(ch->dest_buf);
+	    STR_DISPOSE( ch->dest_buf );
+	    STR_DISPOSE(ch->dest_buf);
 	    ch->substate = SUB_NONE;
 	    break;
 	case SUB_TIMER_DO_ABORT:
-	    DISPOSE(ch->dest_buf);
+	    STR_DISPOSE(ch->dest_buf);
 	    ch->substate = SUB_NONE;
 	    send_to_char( "You carefully stop what you were doing.\n", ch );
 	    return;
@@ -1559,11 +1559,11 @@ void do_dig( CHAR_DATA *ch, char *argument )
 	      return;
 	  }
 	  SPRINTF( arg, "%s", (const char* ) ch->dest_buf );  
-	  DISPOSE( ch->dest_buf );	
+	  STR_DISPOSE( ch->dest_buf );	
 	  break;
 
 	case SUB_TIMER_DO_ABORT:
-	  DISPOSE( ch->dest_buf );
+	  STR_DISPOSE( ch->dest_buf );
 	  ch->substate = SUB_NONE;
 	  send_to_char( "You stop digging...\n", ch );
 	  act( AT_PLAIN, "$n stops digging...", ch, NULL, NULL, TO_ROOM );
@@ -1695,10 +1695,10 @@ void do_search( CHAR_DATA *ch, char *argument )
 		return;
 	    }
 	    SPRINTF( arg, "%s", (const char * ) ch->dest_buf );
-	    DISPOSE( ch->dest_buf );
+	    STR_DISPOSE( ch->dest_buf );
 	    break;
 	case SUB_TIMER_DO_ABORT:
-	    DISPOSE( ch->dest_buf );
+	    STR_DISPOSE( ch->dest_buf );
 	    ch->substate = SUB_NONE;
 	    send_to_char( "You stop your search...\n", ch );
 	    return;
@@ -2021,7 +2021,7 @@ void do_backstab( CHAR_DATA *ch, char *argument )
 
     /* Added stabbing weapon. -Narn */
     if ( ( obj = get_eq_char( ch, WEAR_WIELD ) ) == NULL
-    ||   ( obj->value[3] != WEAPON_VIBRO_BLADE ) )
+    ||   ( !BV_IS_SET(obj->objflags, WEAPON_VIBRO_BLADE) && !BV_IS_SET(obj->objflags, WEAPON_BLADE) ) )
     {
 	send_to_char( "You need to wield a stabbing weapon.\n", ch );
 	return;
@@ -2257,7 +2257,7 @@ void do_punch( CHAR_DATA *ch, char *argument )
 	return;
       }
 
-      if ( victim->vip_flags != 0 )
+      if ( victim->vip_flags.any() )
         ch->alignment -= 10;
     }
 
@@ -3386,10 +3386,10 @@ bool check_parry( CHAR_DATA *ch, CHAR_DATA *victim )
     else
     {
 	if ( ( wield = get_eq_char( victim, WEAR_WIELD ) ) == NULL ||
-            ( wield->value[3] != WEAPON_LIGHTSABER ) )
+            ( BV_IS_SET(wield->objflags, WEAPON_LIGHTSABER) ) )
 	{
 	   if ( ( wield = get_eq_char( victim, WEAR_DUAL_WIELD ) ) == NULL ||
-            ( wield->value[3] != WEAPON_LIGHTSABER ) )
+            ( BV_IS_SET(wield->objflags, WEAPON_LIGHTSABER) ) )
               return FALSE;
 	}
 	chances = (int) (victim->pcdata->learned[gsn_parry] );
@@ -3403,11 +3403,11 @@ bool check_parry( CHAR_DATA *ch, CHAR_DATA *victim )
 	return FALSE;
     }
     if ( !IS_NPC(victim)
-         && !IS_SET( victim->pcdata->flags, PCFLAG_GAG) ) /*SB*/
+         && !BV_IS_SET( victim->pcdata->flags, PCFLAG_GAG) ) /*SB*/
     act( AT_SKILL, "You parry $n's attack.",  ch, NULL, victim, TO_VICT    );
 
     if ( !IS_NPC(ch)
-         && !IS_SET( ch->pcdata->flags, PCFLAG_GAG) )  /* SB */   
+         && !BV_IS_SET( ch->pcdata->flags, PCFLAG_GAG) )  /* SB */   
     act( AT_SKILL, "$N parries your attack.", ch, NULL, victim, TO_CHAR    );
 
     learn_from_success( victim, gsn_parry );
@@ -3442,10 +3442,10 @@ bool check_dodge( CHAR_DATA *ch, CHAR_DATA *victim )
         return FALSE;
     }
 
-    if ( !IS_NPC(victim) && !IS_SET( victim->pcdata->flags, PCFLAG_GAG) )    
+    if ( !IS_NPC(victim) && !BV_IS_SET( victim->pcdata->flags, PCFLAG_GAG) )    
     act( AT_SKILL, "You dodge $n's attack.", ch, NULL, victim, TO_VICT    );
     
-    if ( !IS_NPC(ch) && !IS_SET( ch->pcdata->flags, PCFLAG_GAG) ) 
+    if ( !IS_NPC(ch) && !BV_IS_SET( ch->pcdata->flags, PCFLAG_GAG) ) 
     act( AT_SKILL, "$N dodges your attack.", ch, NULL, victim, TO_CHAR    );
 
     learn_from_success( victim, gsn_dodge );
@@ -3492,7 +3492,7 @@ void do_poison_weapon( CHAR_DATA *ch, char *argument )
 	send_to_char( "That item is not a weapon.\n",        ch );
 	return;
     }
-    if ( obj->value[3] != WEAPON_VIBRO_BLADE && obj->value[3] != WEAPON_FORCE_PIKE )
+    if ( !BV_IS_SET(obj->objflags, WEAPON_VIBRO_BLADE) && !BV_IS_SET(obj->objflags, WEAPON_FORCE_PIKE) && !BV_IS_SET(obj->objflags, WEAPON_BLADE))
     {
 	send_to_char( "You can not apply poison to that.\n",        ch );
 	return;
@@ -3976,7 +3976,7 @@ void do_circle( CHAR_DATA *ch, char *argument )
       return;
 
     if ( ( obj = get_eq_char( ch, WEAR_WIELD ) ) == NULL
-    ||   ( obj->value[3] != 11 && obj->value[3] != 2 ) )
+    ||   ( !BV_IS_SET(obj->objflags, WEAPON_VIBRO_BLADE) && !BV_IS_SET(obj->objflags, WEAPON_BLADE) && !BV_IS_SET(obj->objflags, WEAPON_FORCE_PIKE)) )
     {
 	send_to_char( "You need to wield a piercing or stabbing weapon.\n", ch );
 	return;

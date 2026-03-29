@@ -613,11 +613,11 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
     		if ( !ch->dest_buf )
     		   return;
     		SPRINTF(arg, "%s", (const char * ) ch->dest_buf);
-    		DISPOSE( ch->dest_buf);
+    		STR_DISPOSE( ch->dest_buf);
     		break;
 
     	case SUB_TIMER_DO_ABORT:
-    		DISPOSE( ch->dest_buf );
+    		STR_DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
     		if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
     		      return;
@@ -1217,11 +1217,11 @@ void do_dock(CHAR_DATA *ch, char *argument)
     		if ( !ch->dest_buf )
     		   return;
     		SPRINTF(arg, ch->dest_buf);
-    		DISPOSE( ch->dest_buf);
+    		STR_DISPOSE( ch->dest_buf);
     		break;
 
     	case SUB_TIMER_DO_ABORT:
-    		DISPOSE( ch->dest_buf );
+    		STR_DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
 		ship->docked = NULL;
     	        send_to_char("&RDocking maneuver aborted.\n", ch);
@@ -1865,11 +1865,11 @@ void do_sabotage(CHAR_DATA *ch, char *argument )
     		if ( !ch->dest_buf )
     		   return;
     		SPRINTF(arg, "%s", ( const char* ) ch->dest_buf);
-    		DISPOSE( ch->dest_buf);
+    		STR_DISPOSE( ch->dest_buf);
     		break;
 
     	case SUB_TIMER_DO_ABORT:
-    		DISPOSE( ch->dest_buf );
+    		STR_DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
     		if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
     		      return;
@@ -4655,11 +4655,11 @@ void do_repair_module ( CHAR_DATA *ch, char *argument ) // Coded by Johnson ( Mi
     		if ( !ch->dest_buf )
     		   return;
     		SPRINTF(arg, "%s", (const char * )ch->dest_buf);
-    		DISPOSE( ch->dest_buf);
+    		STR_DISPOSE( ch->dest_buf);
     		break;
 
     	case SUB_TIMER_DO_ABORT:
-    		DISPOSE( ch->dest_buf );
+    		STR_DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
     	    send_to_char("&RYou are distracted and fail to finish your repairs.\n", ch);
     		return;

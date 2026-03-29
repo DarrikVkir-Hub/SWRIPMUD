@@ -3,15 +3,8 @@ PROF    =
 NOCRYPT =
 #Uncomment the next line if you want MCCP support
 #DBUGFLG = -DMCCP
-C_FLAGS = -g3 -Wall -Wno-write-strings -fsanitize=address -fno-omit-frame-pointer $(PROF) $(NOCRYPT) $(DBUGFLG)
-L_FLAGS = -fsanitize=address -fno-omit-frame-pointer $(PROF)
-
-O_FILES = act_comm.o act_info.o act_move.o act_obj.o act_wiz.o boards.o \
-	  build.o clans.o comments.o const.o db.o fight.o \
-	  handler.o hashstr.o interp.o magic.o makeobjs.o \
-	  misc.o mud_comm.o mud_prog.o krearena.o player.o requests.o \
-	  reset.o save.o shops.o skills.o special.o tables.o track.o update.o \
-	  space.o space2.o bounty.o swskills.o alias.o grub.o mapper.o templateparse.o trivia.o comm.o id.o gmcp.o
+C_FLAGS = -g3 -Wall -MMD -MP -Wno-write-strings -fsanitize=address,undefined $(PROF) $(NOCRYPT) $(DBUGFLG)
+L_FLAGS = -fsanitize=address,undefined -fno-omit-frame-pointer $(PROF)
 
 C_FILES = act_comm.c act_info.c act_move.c act_obj.c act_wiz.c boards.c \
 	  build.c clans.c comm.c comments.c const.c db.c fight.c \
@@ -19,6 +12,8 @@ C_FILES = act_comm.c act_info.c act_move.c act_obj.c act_wiz.c boards.c \
 	  misc.c mud_comm.c mud_prog.c krearena.c player.c requests.c \
 	  reset.c save.c shops.c skills.c special.c tables.c track.c update.c \
 	  space.c space2.c bounty.c swskills.c alias.c grub.c mapper.c templateparse.c trivia.c gmcp.c
+
+O_FILES = $(C_FILES:.c=.o)
 
 H_FILES = mud.h bet.h
 
@@ -34,8 +29,10 @@ swrip: $(O_FILES)
 	chmod g+w swrip
 	chmod g+w $(O_FILES)
 
-.c.o: mud.h
-	$(CC) -c $(C_FLAGS) $<
+.c.o:
+	$(CC) -c $(C_FLAGS) $< -o $@
 
 clean:
-	rm -f $(O_FILES)
+	rm -f $(O_FILES) $(O_FILES:.o=.d) swrip
+
+-include $(O_FILES:.o=.d)

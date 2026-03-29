@@ -27,6 +27,13 @@
 #include <cstdarg>
 #include <cstdio>   // for snprintf
 #include <cstddef>  // for size_t
+#include <vector>
+#include <cstdint>
+#include <algorithm>
+#include <bit>
+#include <string>
+#include <sstream>
+
 
 #define MCCP
 
@@ -214,6 +221,296 @@ typedef ch_ret	SPELL_FUN	args( ( int sn, int level, CHAR_DATA *ch, void *vo ) );
 #define BV31		(1 << 31)
 /* 32 USED! DO NOT ADD MORE! SB */
 
+struct flag_name
+{
+    size_t bit;
+    const char *name;
+};
+
+extern  const   flag_name   obj_flag_table[];
+extern const    flag_name   obj_attack_table[];
+
+// bitset implementation
+#ifndef __BITSET_H__
+#define __BITSET_H__
+
+bool str_cmp_utf8(const char *astr, const char *bstr);
+
+struct BitSet
+{
+    std::vector<uint64_t> bits;
+
+    // Ensure capacity for a given bit index
+    void ensure(size_t bit)
+    {
+        size_t idx = bit >> 6; // divide by 64
+        if (idx >= bits.size())
+            bits.resize(idx + 1, 0);
+    }
+
+    // Set a bit
+    void set(size_t bit)
+    {
+        if (bit > 10000)   // same bound
+        {
+            // optional: log
+            return;
+        }
+
+        ensure(bit);
+        bits[bit >> 6] |= (1ULL << (bit & 63));
+    }
+
+    // Clear a bit
+    void clear(size_t bit)
+    {
+        size_t idx = bit >> 6;
+        if (idx < bits.size())
+            bits[idx] &= ~(1ULL << (bit & 63));
+    }
+
+    // Toggle a bit
+    void toggle(size_t bit)
+    {
+        ensure(bit);
+        bits[bit >> 6] ^= (1ULL << (bit & 63));
+    }
+
+    // Test a bit
+    bool test(size_t bit) const
+    {
+        size_t idx = bit >> 6;
+        if (idx >= bits.size())
+            return false;
+        return (bits[idx] & (1ULL << (bit & 63))) != 0;
+    }
+
+    // Clear all bits
+    void reset()
+    {
+        bits.clear();
+    }
+
+    // Check if empty
+    bool any() const
+    {
+        for (uint64_t b : bits)
+            if (b != 0)
+                return true;
+        return false;
+    }
+
+    // Count bits (optional but useful)
+    size_t count() const
+    {
+        size_t total = 0;
+        for (uint64_t b : bits)
+            total += __builtin_popcountll(b);
+        return total;
+    }
+    void set_range(size_t start, size_t end)
+    {
+        for (size_t i = start; i <= end; i++)
+            set(i);
+    }
+
+    bool operator[](size_t bit) const
+    {
+        return test(bit);
+    }
+
+    bool operator==(const BitSet &other) const
+    {
+        return bits == other.bits;
+    }
+    bool operator!=(const BitSet &other) const
+    {
+        return !(*this == other);
+    }    
+
+    BitSet operator|(const BitSet &other) const
+    {
+        BitSet result;
+        size_t max = std::max(bits.size(), other.bits.size());
+        result.bits.resize(max, 0);
+
+        for (size_t i = 0; i < max; i++)
+        {
+            uint64_t a = (i < bits.size()) ? bits[i] : 0;
+            uint64_t b = (i < other.bits.size()) ? other.bits[i] : 0;
+            result.bits[i] = a | b;
+        }
+
+        return result;
+    }    
+    bool intersects(const BitSet &other) const
+    {
+        size_t max = std::min(bits.size(), other.bits.size());
+
+        for (size_t i = 0; i < max; i++)
+        {
+            if ((bits[i] & other.bits[i]) != 0)
+                return true;
+        }
+
+        return false;
+    }    
+    BitSet& operator|=(const BitSet &other)
+    {
+        size_t max = std::max(bits.size(), other.bits.size());
+        bits.resize(max, 0);
+
+        for (size_t i = 0; i < other.bits.size(); i++)
+            bits[i] |= other.bits[i];
+
+        return *this;
+    }    
+    void from_int(uint32_t value)
+    {
+        bits.clear();
+        for (size_t i = 0; i < 32; i++)
+        {
+            if (value & (1u << i))
+                set(i);
+        }
+    }    
+    void add_int(uint32_t value)
+    {
+        for (size_t i = 0; i < 32; i++)
+        {
+            if (value & (1u << i))
+                set(i);
+        }
+    }
+    void add_int_offset(uint32_t value, size_t offset)
+    {
+        if (value == 0)
+            return;
+
+        size_t word = offset >> 6;
+        size_t shift = offset & 63;
+
+        ensure(offset + 31);
+
+        bits[word] |= (uint64_t)value << shift;
+
+        if (shift + 32 > 64)
+        {
+            bits[word + 1] |= (uint64_t)value >> (64 - shift);
+        }
+    }
+    uint32_t to_int_offset(size_t offset) const
+    {
+        uint32_t result = 0;
+
+        for (size_t i = 0; i < 32; ++i)
+        {
+            if (test(offset + i))
+                result |= (1u << i);
+        }
+
+        return result;
+    }        
+    std::string bitset_to_string() const
+    {
+        std::string result;
+
+        for (size_t i = 0; obj_flag_table[i].name != nullptr; ++i)
+        {
+            if (test(obj_flag_table[i].bit))
+            {
+                if (!result.empty())
+                    result += " ";
+                result += obj_flag_table[i].name;
+            }
+        }
+
+        return result;
+    }    
+    bool string_to_bitset(const char *str, bool clear_first = false)
+    {
+        if (!str || *str == '\0')
+            return false;
+
+        if (clear_first)
+            reset();
+
+        std::istringstream iss(str);
+        std::string token;
+        bool found_any = false;
+
+        while (iss >> token)
+        {
+            for (size_t i = 0; obj_flag_table[i].name != nullptr; ++i)
+            {
+                if (!str_cmp_utf8(token.c_str(), obj_flag_table[i].name))
+                {
+                    set(obj_flag_table[i].bit);
+                    found_any = true;                    
+                    break;
+                }
+            }
+        }
+        return found_any;    
+    }
+    bool intersects_excluding(const BitSet &other, size_t exclude_bit) const
+    {
+        for (size_t bit = 0; bit < size(); ++bit)
+        {
+            if (bit == exclude_bit)
+                continue;
+
+            if (test(bit) && other.test(bit))
+                return true;
+        }
+        return false;
+    }    
+    size_t size() const
+    {
+        return bits.size();
+    }    
+};
+
+typedef BitSet FLAG_SET;
+#define BV_IS_SET(var, bit)     ((var).test(bit))
+#define BV_SET_BIT(var, bit)    ((var).set(bit))
+#define BV_REMOVE_BIT(var, bit) ((var).clear(bit))
+#define BV_TOGGLE_BIT(var, bit) ((var).toggle(bit))
+
+static inline FLAG_SET int_to_bitset(int flags)
+{
+    FLAG_SET bv;
+    for (int i = 0; i < 32; i++)
+        if (flags & (1 << i))
+            bv.set(i);
+    return bv;
+}
+
+static inline int bitset_to_int(const FLAG_SET &bv)
+{
+    int flags = 0;
+
+    for (int i = 0; i < 32; i++)
+    {
+        if (bv.test(i))
+            flags |= (1 << i);
+    }
+
+    // Optional debug warning
+    for (size_t i = 32; i < bv.bits.size() * 64; i++)
+    {
+        if (bv.test(i))
+        {
+            // log warning here
+            break;
+        }
+    }
+
+    return flags;
+}
+#endif
+
+
 /*
  * String and memory management parameters.
  */
@@ -255,7 +552,6 @@ typedef ch_ret	SPELL_FUN	args( ( int sn, int level, CHAR_DATA *ch, void *vo ) );
 #define MAX_RAN_POP                16
 
 #define	MAX_HERB		   20
-#define MAX_COMMAND_GROUP          10
 
 #define LEVEL_HERO                 (MAX_LEVEL - 10)
 #define LEVEL_IMMORTAL             (MAX_LEVEL - 9)
@@ -306,17 +602,20 @@ typedef ch_ret	SPELL_FUN	args( ( int sn, int level, CHAR_DATA *ch, void *vo ) );
 
 /* When adding command groups, make sure to change 
 the command_group array in const.c - DV 2-2-03 */
+enum CGroupFlags {
+    CGROUP_IMPLEMENTOR      = 0,
+    CGROUP_CODER            = 1,
+    CGROUP_HEAD_BUILDER     = 2,
+    CGROUP_BUILDER          = 3,
+    CGROUP_SHIP_BUILDER     = 4,
+    CGROUP_HEAD_CLAN        = 5,
+    CGROUP_CLAN_PATRON      = 6,
+    CGROUP_HEAD_ADMIN       = 7,
+    CGROUP_ADMIN            = 8,
+    CGROUP_QUEST_MASTER     = 9,
+    MAX_COMMAND_GROUP       = 10,
+};
 
-#define CGROUP_IMPLEMENTOR         BV00
-#define CGROUP_CODER		   BV01
-#define CGROUP_HEAD_BUILDER	   BV02
-#define CGROUP_BUILDER		   BV03
-#define CGROUP_SHIP_BUILDER	   BV04
-#define CGROUP_HEAD_CLAN	   BV05
-#define CGROUP_CLAN_PATRON	   BV06
-#define CGROUP_HEAD_ADMIN	   BV07
-#define CGROUP_ADMIN		   BV08
-#define CGROUP_QUEST_MASTER	   BV09
 
 #include "alias.h"
 
@@ -1552,68 +1851,39 @@ struct	smaug_affect
 /* 20 acts */
 
 /* bits for vip flags */
+enum PlanetFlags {
+    PLANET_CORUSCANT            = 1,
+    PLANET_KASHYYYK          	= 2,
+    PLANET_RYLOTH            	= 3,
+    PLANET_RODIA             	= 4,
+    PLANET_NAL_HUTTA            = 5,
+    PLANET_MON_CALAMARI       	= 6,
+    PLANET_HONOGHR              = 7,
+    PLANET_GAMORR               = 8,
+    PLANET_TATOOINE             = 9,
+    PLANET_ADARI            	= 10,
+    PLANET_BYSS		            = 11,
+    PLANET_ENDOR		        = 12,
+    PLANET_ROCHE		        = 13,
+    PLANET_AF_EL		        = 14,
+    PLANET_TRANDOSH		        = 15,
+    PLANET_CHAD		            = 16,
+    PLANET_CORELLIA		        = 17,
+    PLANET_HOTH		            = 18,
+    PLANET_ASTEROID		        = 19,
+    PLANET_BESPIN   		    = 20,
+    PLANET_KUAT     		    = 21,
+    PLANET_SOCORRO 		        = 22,
+    PLANET_CORULAG 		        = 23,
+    PLANET_HAPES   		        = 24,
+    PLANET_WROONA  		        = 25,
+    PLANET_DATHOMIR  		    = 26,
+    PLANET_SULLUST		        = 27,
+    PLANET_FALLEEN		        = 28,
+    PLANET_ETTI		            = 29,
+    PLANET_MAX                  = 30,
+};
 
-#define VIP_CORUSCANT           BV00
-#define VIP_KASHYYYK          	BV01
-#define VIP_RYLOTH            	BV02
-#define VIP_RODIA             	BV03
-#define VIP_NAL_HUTTA           BV04
-#define VIP_MON_CALAMARI       	BV05
-#define VIP_HONOGHR             BV06
-#define VIP_GAMORR              BV07
-#define VIP_TATOOINE            BV08
-#define VIP_ADARI           	BV09
-#define VIP_BYSS		BV10
-#define VIP_ENDOR		BV11
-#define VIP_ROCHE		BV12
-#define VIP_AF_EL		BV13
-#define VIP_TRANDOSH		BV14
-#define VIP_CHAD		BV15
-#define VIP_CORELLIA		BV16
-#define VIP_HOTH		BV17
-#define VIP_ASTEROID		BV18
-#define VIP_BESPIN   		BV19
-#define VIP_KUAT     		BV20
-#define VIP_SOCORRO 		BV21
-#define VIP_CORULAG 		BV22
-#define VIP_HAPES   		BV23
-#define VIP_WROONA  		BV24
-#define VIP_DATHOMIR  		BV25
-#define VIP_SULLUST		BV26
-#define VIP_FALLEEN		BV27
-#define VIP_ETTI		BV28
-
-/* player wanted bits */
-
-#define WANTED_MON_CALAMARI   	VIP_MON_CALAMARI
-#define WANTED_CORUSCANT   	VIP_CORUSCANT
-#define WANTED_ADARI   		VIP_ADARI
-#define WANTED_RODIA   		VIP_RODIA
-#define WANTED_RYLOTH   	VIP_RYLOTH
-#define WANTED_GAMORR   	VIP_GAMORR
-#define WANTED_TATOOINE   	VIP_TATOOINE
-#define WANTED_BYSS   		VIP_BYSS
-#define WANTED_NAL_HUTTA   	VIP_NAL_HUTTA
-#define WANTED_KASHYYYK   	VIP_KASHYYYK
-#define WANTED_HONOGHR   	VIP_HONOGHR
-#define WANTED_ENDOR		BV11
-#define WANTED_ROCHE		BV12
-#define WANTED_AF_EL		BV13
-#define WANTED_TRANDOSH		BV14
-#define WANTED_CHAD		BV15
-#define WANTED_CORELLIA		VIP_CORELLIA
-#define WANTED_HOTH		VIP_HOTH
-#define WANTED_ASTEROID		VIP_ASTEROID
-#define WANTED_BESPIN   VIP_BESPIN
-#define WANTED_KUAT     VIP_KUAT
-#define WANTED_SOCORRO  VIP_SOCORRO
-#define WANTED_CORULAG  VIP_CORULAG
-#define WANTED_HAPES    VIP_HAPES
-#define WANTED_WROONA  		VIP_WROONA
-#define WANTED_DATHOMIR		VIP_DATHOMIR
-#define WANTED_SULLUST		VIP_SULLUST
-#define WANTED_FALLEEN		VIP_FALLEEN
-#define WANTED_ETTI		VIP_ETTI
 /*
  * Bits for 'affected_by'.
 / * Used in #MOBILES.
@@ -1806,14 +2076,53 @@ struct	smaug_affect
 /*
  * Pipe flags
  */
-#define PIPE_TAMPED		  BV01
-#define PIPE_LIT		  BV02
-#define PIPE_HOT		  BV03
-#define PIPE_DIRTY		  BV04
-#define PIPE_FILTHY		  BV05
-#define PIPE_GOINGOUT		  BV06
-#define PIPE_BURNT		  BV07
-#define PIPE_FULLOFASH		  BV08
+enum ObjFlags {
+    PIPE_FIRST          = 0,
+    PIPE_TAMPED		    = 1,
+    PIPE_LIT		    = 2,
+    PIPE_HOT		    = 3,
+    PIPE_DIRTY		    = 4,
+    PIPE_FILTHY		    = 5,
+    PIPE_GOINGOUT	    = 6,
+    PIPE_BURNT		    = 7,
+    PIPE_FULLOFASH		= 8,
+    PIPE_MAX            = 9,
+    WEAPON_FIRST        = 64,
+    WEAPON_VIBRO_AXE	= 65,
+    WEAPON_VIBRO_BLADE	= 66,
+    WEAPON_LIGHTSABER	= 67,
+    WEAPON_WHIP		    = 68,
+    WEAPON_CLAW		    = 69,
+    WEAPON_BLASTER		= 70,
+    WEAPON_POLE         = 71,
+    WEAPON_BLUDGEON		= 72,
+    WEAPON_BOWCASTER    = 73,
+    WEAPON_BLADE        = 74,
+    WEAPON_FORCE_PIKE	= 75,
+    WEAPON_MAX          = 76,
+    ITEM_FIRST          = 256,
+
+/* Magic flags - extra extra_flags for objects that are used in spells */
+    ITEM_RETURNING      = 288,
+    ITEM_BACKSTABBER    = 289,
+    ITEM_BANE           = 290,
+    ITEM_LOYAL          = 291,
+    ITEM_HASTE          = 292,
+    ITEM_DRAIN          = 293,
+    ITEM_LIGHTNING_BLADE = 294,
+};
+
+
+#define BASEDAM_WEAPON_NONE     	0
+#define BASEDAM_WEAPON_VIBRO_AXE	1
+#define BASEDAM_WEAPON_VIBRO_BLADE	2
+#define BASEDAM_WEAPON_LIGHTSABER	3
+#define BASEDAM_WEAPON_WHIP		4
+#define BASEDAM_WEAPON_CLAW		5
+#define BASEDAM_WEAPON_BLASTER		6
+#define BASEDAM_WEAPON_BLUDGEON		8
+#define BASEDAM_WEAPON_BOWCASTER        9
+#define BASEDAM_WEAPON_FORCE_PIKE	11
 
 /*
  * Skill/Spell flags	The minimum BV *MUST* be 11!
@@ -2009,15 +2318,6 @@ typedef enum
 #define ITEM_PROTOTYPE		BV30
 #define ITEM_HUMAN_SIZE         BV31
 
-/* Magic flags - extra extra_flags for objects that are used in spells */
-#define ITEM_RETURNING		BV00
-#define ITEM_BACKSTABBER  	BV01
-#define ITEM_BANE		BV02
-#define ITEM_LOYAL		BV03
-#define ITEM_HASTE		BV04
-#define ITEM_DRAIN		BV05
-#define ITEM_LIGHTNING_BLADE  	BV06
-
 /* Blaster settings - only saves on characters */
 #define BLASTER_NORMAL          0
 #define BLASTER_HALF		2
@@ -2025,19 +2325,6 @@ typedef enum
 #define BLASTER_LOW		1	
 #define	BLASTER_STUN		3
 #define BLASTER_HIGH            4
-
-/* Weapon Types */
-
-#define WEAPON_NONE     	0
-#define WEAPON_VIBRO_AXE	1
-#define WEAPON_VIBRO_BLADE	2
-#define WEAPON_LIGHTSABER	3
-#define WEAPON_WHIP		4
-#define WEAPON_CLAW		5
-#define WEAPON_BLASTER		6
-#define WEAPON_BLUDGEON		8
-#define WEAPON_BOWCASTER        9
-#define WEAPON_FORCE_PIKE	11
 
 /* Furniture Types - Darrik Vequir 10/23/00 */
 
@@ -2116,28 +2403,32 @@ typedef enum
  * Wear flags.
  * Used in #OBJECTS.
  */
-#define ITEM_TAKE		BV00
-#define ITEM_WEAR_FINGER	BV01
-#define ITEM_WEAR_NECK		BV02
-#define ITEM_WEAR_BODY		BV03
-#define ITEM_WEAR_HEAD		BV04
-#define ITEM_WEAR_LEGS		BV05
-#define ITEM_WEAR_FEET		BV06
-#define ITEM_WEAR_HANDS		BV07
-#define ITEM_WEAR_ARMS		BV08
-#define ITEM_WEAR_SHIELD	BV09
-#define ITEM_WEAR_ABOUT		BV10
-#define ITEM_WEAR_WAIST		BV11
-#define ITEM_WEAR_WRIST		BV12
-#define ITEM_WIELD		BV13
-#define ITEM_HOLD		BV14
-#define ITEM_DUAL_WIELD		BV15
-#define ITEM_WEAR_EARS		BV16
-#define ITEM_WEAR_EYES		BV17
-#define ITEM_MISSILE_WIELD	BV18
-#define ITEM_WEAR_FLOATING	BV19
-#define ITEM_WEAR_OVER		BV20
-#define ITEM_WEAR_DISGUISE      BV20
+
+enum WearFlags{
+    ITEM_TAKE               = 0,
+    ITEM_WEAR_FINGER	    = 1,
+    ITEM_WEAR_NECK		    = 2,
+    ITEM_WEAR_BODY		    = 3,
+    ITEM_WEAR_HEAD		    = 4,
+    ITEM_WEAR_LEGS		    = 5,
+    ITEM_WEAR_FEET		    = 6,
+    ITEM_WEAR_HANDS		    = 7,
+    ITEM_WEAR_ARMS		    = 8,
+    ITEM_WEAR_SHIELD	    = 9,
+    ITEM_WEAR_ABOUT		    = 10,
+    ITEM_WEAR_WAIST		    = 11,
+    ITEM_WEAR_WRIST		    = 12,
+    ITEM_WIELD		        = 13,
+    ITEM_HOLD		        = 14,
+    ITEM_DUAL_WIELD		    = 15,
+    ITEM_WEAR_EARS		    = 16,
+    ITEM_WEAR_EYES		    = 17,
+    ITEM_MISSILE_WIELD	    = 18,
+    ITEM_WEAR_FLOATING	    = 19,
+    ITEM_WEAR_OVER		    = 20,
+    ITEM_WEAR_DISGUISE      = 21,
+    ITEM_WEAR_MAX           = 22,
+};
 
 /*
  * Apply types (for affects).
@@ -2393,21 +2684,35 @@ typedef enum
 #define PLR_AFK                    BV31
 
 /* Bits for pc_data->flags. */
-#define PCFLAG_R1                  BV00
-/*
-#define PCFLAG_                    BV01     extra flag
-*/
-#define PCFLAG_UNAUTHED		   BV02
-#define PCFLAG_NORECALL            BV03
-#define PCFLAG_NOINTRO             BV04
-#define PCFLAG_GAG		   BV05
-#define PCFLAG_RETIRED             BV06
-#define PCFLAG_GUEST               BV07
-#define PCFLAG_NOSUMMON		   BV08
-#define PCFLAG_PAGERON		   BV09
-#define PCFLAG_NOTITLE             BV10
-#define PCFLAG_ROOM                BV11
-#define PCFLAG_DND		   BV12
+
+enum PlayerFlags {
+    PCFLAG_R0           = 0,
+    PCFLAG_R1           = 1,
+    PCFLAG_R2           = 2,
+    PCFLAG_UNAUTHED     = 3,
+    PCFLAG_NORECALL     = 4,
+    PCFLAG_NOINTRO      = 5,
+    PCFLAG_GAG          = 6,
+    PCFLAG_RETIRED      = 7,
+    PCFLAG_GUEST        = 8,
+    PCFLAG_NOSUMMON     = 9,
+    PCFLAG_PAGERON      = 10,
+    PCFLAG_NOTITLE      = 11,
+    PCFLAG_ROOM         = 12,
+    PCFLAG_DND          = 13,
+    PCFLAG_MAX          = 32,
+};
+
+/* Retired and guest imms. */
+#define IS_RETIRED(ch) ((ch)->pcdata && BV_IS_SET((ch)->pcdata->flags, PCFLAG_RETIRED))
+#define IS_GUEST(ch)   ((ch)->pcdata && BV_IS_SET((ch)->pcdata->flags, PCFLAG_GUEST))
+
+#define NOT_AUTHED(ch)		(!IS_NPC(ch) && ch->pcdata->auth_state <= 3  \
+			      && BV_IS_SET(ch->pcdata->flags, PCFLAG_UNAUTHED) )
+
+#define IS_WAITING_FOR_AUTH(ch) (!IS_NPC(ch) && ch->desc		     \
+			      && ch->pcdata->auth_state == 1		     \
+			      && BV_IS_SET(ch->pcdata->flags, PCFLAG_UNAUTHED) ) 
 
 typedef enum
 {
@@ -2539,7 +2844,7 @@ struct	mob_index_data
     sh_int		saving_para_petri;
     sh_int		saving_breath;
     sh_int		saving_spell_staff;
-    int                 vip_flags;
+    FLAG_SET    vip_flags;
 };
 
 
@@ -2702,7 +3007,7 @@ struct	char_data
     int			retran;
     int			regoto;
     sh_int		mobinvis;	/* Mobinvis level SB */
-    int                 vip_flags;
+    FLAG_SET            vip_flags;
     sh_int              backup_wait;	/* reinforcements */
     int                 backup_mob;     /* reinforcements */
     sh_int              was_stunned;
@@ -2750,7 +3055,8 @@ struct	pc_data
     char *              rank;
     char *		title;
     char *		bestowments;	/* Special bestowed commands	   */
-    int                 flags;		/* Whether the player is deadly and whatever else we add.      */
+    //int         flags;		/* Whether the player is deadly and whatever else we add.      */
+    FLAG_SET    flags;
     int			pkills;		/* Number of pkills on behalf of clan */
     int			pdeaths;	/* Number of times pkilled (legally)  */
     int			mkills;		/* Number of mobs killed		   */
@@ -2785,7 +3091,7 @@ struct	pc_data
     bool		openedtourney;
     sh_int              addiction[10];
     sh_int              drug_level[10];
-    int                 wanted_flags;
+    FLAG_SET            wanted_flags;
     long		bank;
     bool  whoCloak;
     char *     		betted_on;
@@ -2802,7 +3108,7 @@ struct	pc_data
     int			played;
     time_t		logon;
     time_t		save_time;
-    int                 commandgroup;
+    FLAG_SET    commandgroup;
     
 };
 
@@ -2857,12 +3163,13 @@ struct	obj_index_data
     sh_int              level;
     sh_int		item_type;
     int			extra_flags;
-    int			magic_flags; /*Need more bitvectors for spells - Scryn*/
-    int			wear_flags;
+//  int			magic_flags; /*Need more bitvectors for spells - Scryn*/
+    FLAG_SET    wear_flags;
     sh_int		count;
     sh_int		weight;
     int			cost;
     int			value	[6];
+    FLAG_SET    objflags;
     int			serial;
     sh_int		layers;
     int			rent;			/* Unused */
@@ -2896,17 +3203,18 @@ struct	obj_data
     sh_int		item_type;
     sh_int		mpscriptpos;
     int			extra_flags;
-    int			magic_flags; /*Need more bitvectors for spells - Scryn*/
-    int			wear_flags; 
+//  int			magic_flags; /*Need more bitvectors for spells - Scryn*/
+    FLAG_SET    wear_flags; 
     int                 blaster_setting;
     MPROG_ACT_LIST *	mpact;		/* mudprogs */
     int			mpactnum;	/* mudprogs */
-    sh_int		wear_loc;
+    int 		wear_loc;
     sh_int		weight;
     int			cost;
     sh_int		level;
     sh_int		timer;
     int			value	[6];
+    FLAG_SET    objflags;
     sh_int		count;		/* support for object grouping */
     int			serial;		/* serial number	       */
 };
@@ -3621,16 +3929,47 @@ do {                                                                        \
 /*
  * Memory allocation macros.
  */
+#define CREATE(result, type, number)                           \
+do                                                             \
+{                                                              \
+    if ((number) == 1)                                         \
+        (result) = new type();                                 \
+    else                                                       \
+        (result) = new type[(number)](); /* value-init */      \
+} while(0)
 
+#define CREATE_ARRAY(result, type, number)                     \
+do                                                             \
+{                                                              \
+    (result) = new type[(number)](); /* value-init */      \
+} while(0)
 
-#define CREATE(result, type, number)				\
+#define DISPOSE(point)                                         \
+do                                                             \
+{                                                              \
+    if (!(point))                                              \
+    {                                                          \
+        bug("Deleting null pointer");                          \
+        fprintf(stderr, "DISPOSE NULL %s:%d\n", __FILE__, __LINE__); \
+    }                                                          \
+    else                                                       \
+    {                                                          \
+        delete (point);                                        \
+        (point) = NULL;                                        \
+    }                                                          \
+} while(0)
+
+#define DISPOSE_ARRAY(ptr) \
+do { delete[] (ptr); (ptr) = NULL; } while(0)
+
+#define CREATE_OLD(result, type, number)				\
 do								\
 {								\
    if (!((result) = (type *) calloc ((number), sizeof(type))))	\
 	{ perror("malloc failure"); abort(); }			\
 } while(0)
 
-#define RECREATE(result,type,number)				\
+#define RECREATE_OLD(result,type,number)				\
 do								\
 {								\
   if (!((result) = (type *) realloc ((result), sizeof(type) * (number))))\
@@ -3638,7 +3977,7 @@ do								\
 } while(0)
 
 
-#define DISPOSE(point) 						\
+#define STR_DISPOSE(point) 						\
 do								\
 {								\
   if (!(point))							\
@@ -3871,10 +4210,6 @@ do								\
 #define SET_SCLA(skill, val)	( (skill)->flags =  ((skill)->flags & SCLA_MASK) + (((val) & 7) << 6) )
 #define SET_SPOW(skill, val)	( (skill)->flags =  ((skill)->flags & SPOW_MASK) + (((val) & 3) << 9) )
 
-/* Retired and guest imms. */
-#define IS_RETIRED(ch) (ch->pcdata && IS_SET(ch->pcdata->flags,PCFLAG_RETIRED))
-#define IS_GUEST(ch) (ch->pcdata && IS_SET(ch->pcdata->flags,PCFLAG_GUEST))
-
 /* RIS by gsn lookups. -- Altrag.
    Will need to add some || stuff for spells that need a special GSN. */
 
@@ -3896,17 +4231,12 @@ do								\
 				SPELL_DAMAGE(skill_table[(dt)]) == SD_POISON )
 
 
-#define NOT_AUTHED(ch)		(!IS_NPC(ch) && ch->pcdata->auth_state <= 3  \
-			      && IS_SET(ch->pcdata->flags, PCFLAG_UNAUTHED) )
 
-#define IS_WAITING_FOR_AUTH(ch) (!IS_NPC(ch) && ch->desc		     \
-			      && ch->pcdata->auth_state == 1		     \
-			      && IS_SET(ch->pcdata->flags, PCFLAG_UNAUTHED) ) 
 
 /*
  * Object macros.
  */
-#define CAN_WEAR(obj, part)	(IS_SET((obj)->wear_flags,  (part)))
+#define CAN_WEAR(obj, part)	(BV_IS_SET((obj)->wear_flags,  (part)))
 #define IS_OBJ_STAT(obj, stat)	(IS_SET((obj)->extra_flags, (stat)))
 
 
@@ -3940,7 +4270,7 @@ struct	cmd_type
     sh_int		position;
     sh_int		level;
     sh_int		log;
-    int                 commandgroup;
+    FLAG_SET    commandgroup;
     struct		timerset	userec;
 };
 
@@ -3977,6 +4307,7 @@ struct tracker_data
 	int			duration_installed;	// How long the device has been on the ship
 }; // Johnson: 6-20-2004: End
 
+
 /*
  * Global constants.
  */
@@ -3999,6 +4330,7 @@ extern	const	struct	race_type	race_table	[MAX_RACE];
 extern	const	struct	liq_type	liq_table	[LIQ_MAX];
 extern	char *	const			attack_table	[13];
 extern	char *  const	        	ability_name	[MAX_ABILITY];
+
 
 extern	char *	const	skill_tname	[];
 extern	sh_int	const	movement_loss	[SECT_MAX];
@@ -5082,6 +5414,9 @@ BD *	get_board	args( ( OBJ_DATA *obj ) );
 void	free_note	args( ( NOTE_DATA *pnote ) );
 
 /* build.c */
+const char *flag_bit_name(size_t bit, const flag_name *table);
+size_t get_attackflag( char *flag );
+char *flag_string(const FLAG_SET &bv, char * const flagarray[], size_t max_flags);
 char *	flag_string	args( ( int bitvector, char * const flagarray[] ) );
 int	get_mpflag	args( ( char *flag ) );
 int	get_dir		args( ( char *txt  ) );
@@ -5302,6 +5637,8 @@ void	sort_area	args( ( AREA_DATA *pArea, bool proto ) );
 void 	save_sysdata	args( ( SYSTEM_DATA sys ) );
 
 /* build.c */
+bool string_to_bitset(const char *str, FLAG_SET &bv, const flag_name *table, bool clear_first = false);
+std::string bitset_to_string(const FLAG_SET &bv, const flag_name *table);
 void	start_editing	args( ( CHAR_DATA *ch, char *data ) );
 void	stop_editing	args( ( CHAR_DATA *ch ) );
 void	edit_buffer	args( ( CHAR_DATA *ch, char *argument ) );
@@ -5590,6 +5927,9 @@ void	check_requests		args( ( void ) );
 /* object saving defines for fread/write_obj. -- Altrag */
 #define OS_CARRY	0
 #define OS_CORPSE	1
+void fread_bitset_compat(FILE *fp, FLAG_SET &bv);
+void    fwrite_bitset(FILE *fp, const char *name, const FLAG_SET &bv);
+void    fread_bitset(FILE *fp, FLAG_SET &bv);
 void	save_char_obj	args( ( CHAR_DATA *ch ) );
 void	save_clone	args( ( CHAR_DATA *ch ) );
 bool	load_char_obj	args( ( DESCRIPTOR_DATA *d, char *name, bool preload ) );

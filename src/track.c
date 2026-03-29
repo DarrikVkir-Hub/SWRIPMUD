@@ -378,7 +378,7 @@ void hunt_victim( CHAR_DATA *ch )
 	OBJ_DATA *wield;
 	  
         wield = get_eq_char( ch, WEAR_WIELD );
-	if ( wield != NULL && wield->value[3] == WEAPON_BLASTER  )
+	if ( wield != NULL && BV_IS_SET(wield->objflags,WEAPON_BLASTER)  )
 	{
 	  if ( mob_snipe( ch, ch->hunting->who ) == TRUE ) 
 	   return;

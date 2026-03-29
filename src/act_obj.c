@@ -1224,18 +1224,18 @@ bool can_layer( CHAR_DATA *ch, OBJ_DATA *obj, sh_int wear_loc )
     sh_int	objlayers = obj->pIndexData->layers;
 
     for ( otmp = ch->first_carrying; otmp; otmp = otmp->next_content )
-	if ( otmp->wear_loc == wear_loc )
-	{
-	    if ( !otmp->pIndexData->layers )
-		return FALSE;
-	    else
-		bitlayers |= otmp->pIndexData->layers;
-	}
+		if ( otmp->wear_loc == wear_loc )
+		{
+			if ( !otmp->pIndexData->layers )
+			return FALSE;
+			else
+			bitlayers |= otmp->pIndexData->layers;
+		}
 
     if ( (bitlayers && !objlayers) || bitlayers > objlayers )
-	return FALSE;
+		return FALSE;
     if ( !bitlayers || ((bitlayers & ~objlayers) == bitlayers) )
-	return TRUE;
+		return TRUE;
     return FALSE;
 }
 
@@ -1245,7 +1245,7 @@ bool can_layer( CHAR_DATA *ch, OBJ_DATA *obj, sh_int wear_loc )
  * Big repetitive code, ick.
  * Restructured a bit to allow for specifying body location	-Thoric
  */
-void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
+void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, int wear_bit )
 {
 //  char buf[MAX_STRING_LENGTH];
     OBJ_DATA *tmpobj;
@@ -1257,11 +1257,11 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
     if ( wear_bit > -1 )
     {
 	bit = wear_bit;
-	if ( !CAN_WEAR(obj, 1 << bit) )
+	if ( !CAN_WEAR(obj, bit) )
 	{
 	    if ( fReplace )
 	    {
-			switch( 1 << bit )
+			switch( bit )
 			{
 				case ITEM_HOLD:
 				send_to_char( "You cannot hold that.\n", ch );
@@ -1278,12 +1278,12 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
     }
     else
     {
-	for ( bit = -1, tmp = 1; tmp < 31; tmp++ )
+	for ( bit = -1, tmp = 1; tmp < ITEM_WEAR_MAX; tmp++ )
 	{
-	    if ( CAN_WEAR(obj, 1 << tmp) )
+	    if ( CAN_WEAR(obj, tmp) )
 	    {
-		bit = tmp;
-		break;
+			bit = tmp;
+			break;
 	    }
 	}
     }
@@ -1291,8 +1291,8 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
     
     check_size = FALSE;
     
-    if (  1 << bit == ITEM_WIELD ||   1 << bit == ITEM_HOLD 
-    || obj->item_type == ITEM_LIGHT ||   1 << bit == ITEM_WEAR_SHIELD )
+    if (  bit == ITEM_WIELD ||   bit == ITEM_HOLD 
+    || obj->item_type == ITEM_LIGHT ||   bit == ITEM_WEAR_SHIELD )
        check_size = FALSE;
     else if ( ch->race == RACE_DEFEL )
        check_size = TRUE; 
@@ -1344,7 +1344,7 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
    
    if ( check_size )
    { 
-    if ( ch->race == RACE_DEFEL && (1 << wear_bit != ITEM_WEAR_WRIST ) )
+    if ( ch->race == RACE_DEFEL && ( wear_bit != ITEM_WEAR_WRIST ) )
     {
 	act( AT_MAGIC, "It is against your nature to wear anything that might make you visible.", ch, NULL, NULL, TO_CHAR );
 	act( AT_ACTION, "$n wants to use $p, but doesn't.",
@@ -1404,7 +1404,7 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, sh_int wear_bit )
 	return;
     }
 
-    switch ( 1 << bit )
+    switch ( bit )
     {
 	default:
         bug( "%s: unknown/unused item_wear bit %d", __func__, bit );
@@ -1953,7 +1953,7 @@ void do_wear( CHAR_DATA *ch, char *argument )
     char arg1[MAX_INPUT_LENGTH];
     char arg2[MAX_INPUT_LENGTH];
     OBJ_DATA *obj;
-    sh_int wear_bit;
+    int wear_bit;
 
     argument = one_argument( argument, arg1 );
     argument = one_argument( argument, arg2 );
@@ -2456,7 +2456,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
 	    send_to_char( buf, ch );
            
             SPRINTF( buf, "Worn on: %s\n", 
-                     flag_string(obj->wear_flags -1, w_flags ) );
+                     flag_string(obj->wear_flags , w_flags, ITEM_WEAR_MAX ) );
             send_to_char( buf, ch );
 
 	    set_char_color( AT_BLUE, ch );

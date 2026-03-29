@@ -272,6 +272,151 @@ char *flag_string( int bitvector, char * const flagarray[] )
     return buf;
 }
 
+char *flag_string(const FLAG_SET &bv, char * const flagarray[], size_t max_flags)
+{
+    static char buf[MAX_STRING_LENGTH];
+    buf[0] = '\0';
+
+    for (size_t x = 0; x < max_flags; x++)
+    {
+        if (bv.test(x))
+        {
+            if (!flagarray[x] || flagarray[x][0] == '\0')
+                continue;
+
+            STRAPP(buf, "%s", flagarray[x]);
+            STRAPP(buf, " ");
+        }
+    }
+
+    size_t len = strlen(buf);
+    if (len > 0)
+        buf[len - 1] = '\0';
+
+    return buf;
+}
+
+std::string bitset_to_string(const FLAG_SET &bv, const flag_name *table)
+{
+    std::string result;
+
+    for (size_t i = 0; table[i].name != nullptr; ++i)
+    {
+        if (bv.test(table[i].bit))
+        {
+            if (!result.empty())
+                result += " ";
+            result += table[i].name;
+        }
+    }
+
+    return result;
+}
+
+bool string_to_bitset(const char *str, FLAG_SET &bv, const flag_name *table, bool clear_first)
+{
+    if (!str || *str == '\0')
+        return false;
+
+    if (clear_first)
+        bv.reset();
+
+    std::istringstream iss(str);
+    std::string token;
+    bool found_any = false;
+
+    while (iss >> token)
+    {
+        for (size_t i = 0; table[i].name != nullptr; ++i)
+        {
+            if (!str_cmp_utf8(token.c_str(), table[i].name))
+            {
+                bv.set(table[i].bit);
+                found_any = true;
+                break;
+            }
+        }
+    }
+
+    return found_any;
+}
+
+const char *flag_bit_name(size_t bit, const flag_name *table)
+{
+    for (size_t i = 0; table[i].name != nullptr; ++i)
+    {
+        if (table[i].bit == bit)
+            return table[i].name;
+    }
+    return nullptr;
+}
+
+size_t get_flag_partial(const char *input,
+                        const flag_name *table,
+                        size_t start = 0,
+                        size_t end = (size_t)-1)
+{
+    if (!input || *input == '\0')
+        return (size_t)-1;
+
+    // 1. Exact match first
+    for (size_t i = 0; table[i].name != nullptr; ++i)
+    {
+        size_t bit = table[i].bit;
+
+        if (bit < start)
+            continue;
+
+        if (end != (size_t)-1 && bit >= end)
+            continue;
+
+        if (!str_cmp_utf8(input, table[i].name))
+            return bit;
+    }
+
+    // 2. Prefix match
+    size_t match = (size_t)-1;
+
+    for (size_t i = 0; table[i].name != nullptr; ++i)
+    {
+        size_t bit = table[i].bit;
+
+        if (bit < start)
+            continue;
+
+        if (end != (size_t)-1 && bit >= end)
+            continue;
+
+        if (!strncasecmp(input, table[i].name, strlen(input)))
+        {
+            if (match != (size_t)-1)
+                return (size_t)-2; // ambiguous
+
+            match = bit;
+        }
+    }
+
+    return match;
+}
+
+void set_exclusive_flag(FLAG_SET &bv, size_t first, size_t last, size_t new_flag)
+{
+    if (new_flag < first || new_flag >= last)
+    {
+        bug("set_exclusive_flag: invalid flag %zu", new_flag);
+        return;
+    }
+
+    for (size_t bit = first; bit < last; ++bit)
+        bv.clear(bit);
+
+    bv.set(new_flag);
+}
+
+void set_weapon_flag(FLAG_SET &bv, size_t new_flag)
+{
+	set_exclusive_flag(bv, WEAPON_FIRST, WEAPON_MAX, new_flag);
+}
 
 bool can_rmodify( CHAR_DATA *ch, ROOM_INDEX_DATA *room )
 {
@@ -499,6 +644,25 @@ int get_oflag( char *flag )
     return -1;
 }
 
+size_t get_flag(const char *flag, const flag_name *table)
+{
+    if (!flag || *flag == '\0')
+        return (size_t)-1;
+
+    for (size_t i = 0; table[i].name != nullptr; ++i)
+    {
+        if (!str_cmp_utf8(flag, table[i].name))
+            return table[i].bit;
+    }
+
+    return (size_t)-1;
+}
+
+size_t get_objflag( char *flag )
+{
+	return get_flag(flag, obj_flag_table);
+}
+
 int get_areaflag( char *flag )
 {
     int x;
@@ -513,7 +677,7 @@ int get_wflag( char *flag )
 {
     int x;
 
-    for ( x = 0; x < 32; x++ )
+    for ( x = 0; x < ITEM_WEAR_MAX; x++ )
       if ( !str_cmp( flag, w_flags[x] ) )
         return x;
     return -1;
@@ -533,7 +697,7 @@ int get_vip_flag( char *flag )
 {
     int x;
 
-    for ( x = 0; x < 32; x++ )
+    for ( x = 0; x < PLANET_MAX; x++ )
       if ( !str_cmp( flag, planet_flags[x] ) )
         return x;
     return -1;
@@ -543,7 +707,7 @@ int get_wanted_flag( char *flag )
 {
     int x;
 
-    for ( x = 0; x < 32; x++ )
+    for ( x = 0; x < PLANET_MAX; x++ )
       if ( !str_cmp( flag, planet_flags[x] ) )
         return x;
     return -1;
@@ -598,14 +762,9 @@ int get_partflag( char *flag )
     return -1;
 }
 
-int get_attackflag( char *flag )
+size_t get_attackflag( char *flag )
 {
-    int x;
-
-    for ( x = 0; x < 32; x++ )
-      if ( !str_cmp( flag, attack_flags[x] ) )
-        return x;
-    return -1;
+	return get_flag(flag, obj_attack_table);
 }
 
 int get_defenseflag( char *flag )
@@ -646,7 +805,7 @@ char *strip_cr( char *str )
    {
       if( str[i] != '\r' )
       {
-	newstr[j++] = str[i];
+		newstr[j++] = str[i];
       }
    }
    newstr[j] = '\0';
@@ -1029,7 +1188,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	{
 	    send_to_char( "Mset mode off.\n", ch );
 	    ch->substate = SUB_NONE;
-	    DISPOSE(ch->dest_buf);
+	    STR_DISPOSE(ch->dest_buf);
 	    if ( ch->pcdata && ch->pcdata->subprompt )
 		STRFREE( ch->pcdata->subprompt );
 	    return;
@@ -1456,7 +1615,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "commandgroup"))
     {
-        if (!IS_SET(ch->pcdata->commandgroup,1)) 
+        if (!BV_IS_SET(ch->pcdata->commandgroup,1)) 
           return;
         if ( !can_mmodify( ch, victim ) )
           return;
@@ -1474,7 +1633,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
           }
           return;
         }
-        TOGGLE_BIT(victim->pcdata->commandgroup,(1<<value));
+        BV_TOGGLE_BIT(victim->pcdata->commandgroup,(1<<value));
         send_to_char("Ok.\n",ch);
         return;
     }  
@@ -1681,7 +1840,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	}
       }
 
-      DISPOSE( victim->pcdata->pwd );
+      STR_DISPOSE( victim->pcdata->pwd );
       victim->pcdata->pwd = str_dup( pwdnew );
       if ( IS_SET(sysdata.save_flags, SV_PASSCHG) )
  	save_char_obj( victim );
@@ -2120,7 +2279,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	     else
 	     {
 		if ( pcflag )
-		  TOGGLE_BIT( victim->pcdata->flags, 1 << value );
+		  BV_TOGGLE_BIT( victim->pcdata->flags, 1 << value );
 		else
 		{ 
 		  TOGGLE_BIT( victim->act, 1 << value );
@@ -2162,10 +2321,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	{
 	   argument = one_argument( argument, arg3 );
 	   value = get_wanted_flag( arg3 );
-           if ( value < 0 || value > 31 )
-	     ch_printf( ch, "Unknown flag: %s\n", arg3 );
-	   else
-	     TOGGLE_BIT( victim->pcdata->wanted_flags, 1 << value );
+	     BV_TOGGLE_BIT( victim->pcdata->wanted_flags, value );
         }
         return;
     }
@@ -2191,13 +2347,13 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	{
 	   argument = one_argument( argument, arg3 );
 	   value = get_vip_flag( arg3 );
-           if ( value < 0 || value > 31 )
-	     ch_printf( ch, "Unknown flag: %s\n", arg3 );
-	   else
-	     TOGGLE_BIT( victim->vip_flags, 1 << value );
+//           if ( value < 0 || value > 31 )
+//	     ch_printf( ch, "Unknown flag: %s\n", arg3 );
+//	   else
+	     BV_TOGGLE_BIT( victim->vip_flags, value );
         }
         if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
-	  victim->pIndexData->vip_flags = victim->vip_flags; 
+	  		victim->pIndexData->vip_flags = victim->vip_flags; 
 	return;
     }
 
@@ -2950,7 +3106,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
 	{
 	    send_to_char( "Oset mode off.\n", ch );
 	    ch->substate = SUB_NONE;
-	    DISPOSE(ch->dest_buf);
+	    STR_DISPOSE(ch->dest_buf);
 	    if ( ch->pcdata && ch->pcdata->subprompt )
 		STRFREE( ch->pcdata->subprompt );
 	    return;
@@ -3038,6 +3194,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
         ch->dest_buf = NULL;
 
     separate_obj( obj );
+	
     value = atoi( arg3 );
 
 /*
@@ -3159,34 +3316,69 @@ void do_oset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "flags" ) )
     {
-	if ( !can_omodify( ch, obj ) )
-	  return;
-	if ( !argument || argument[0] == '\0' )
-	{
-	   send_to_char( "Usage: oset <object> flags <flag> [flag]...\n", ch );
-	   send_to_char( "glow, dark, magic, bless, antievil, noremove, antisith, antisoldier,\n", ch );
-           send_to_char( "donation, covering, hum, invis, nodrop, antigood, antipilot, anticitizen\n", ch );
-           send_to_char( "antineutral, inventory, antithief, antijedi, clanobject, antihunter\n", ch );
-	   send_to_char( "small_size, human_size, large_size, hutt_size, contraband\n", ch );
-	   return;
+		if ( !can_omodify( ch, obj ) )
+		return;
+		if ( !argument || argument[0] == '\0' )
+		{
+		send_to_char( "Usage: oset <object> flags <flag> [flag]...\n", ch );
+		send_to_char( "glow, dark, magic, bless, antievil, noremove, antisith, antisoldier,\n", ch );
+			send_to_char( "donation, covering, hum, invis, nodrop, antigood, antipilot, anticitizen\n", ch );
+			send_to_char( "antineutral, inventory, antithief, antijedi, clanobject, antihunter\n", ch );
+		send_to_char( "small_size, human_size, large_size, hutt_size, contraband\n", ch );
+		return;
+		}
+		while ( argument[0] != '\0' )
+		{
+		argument = one_argument( argument, arg3 );
+		value = get_oflag( arg3 );
+		if ( value < 0 || value > 31 )
+			ch_printf( ch, "Unknown flag: %s\n", arg3 );
+		else
+		{
+			TOGGLE_BIT(obj->extra_flags, 1 << value);
+			if ( 1 << value == ITEM_PROTOTYPE )
+				obj->pIndexData->extra_flags = obj->extra_flags;
+		}
+		}
+		if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
+		obj->pIndexData->extra_flags = obj->extra_flags; 
+		return;
 	}
-	while ( argument[0] != '\0' )
-	{
-	   argument = one_argument( argument, arg3 );
-	   value = get_oflag( arg3 );
-	   if ( value < 0 || value > 31 )
-	     ch_printf( ch, "Unknown flag: %s\n", arg3 );
-	   else
-	   {
-	       TOGGLE_BIT(obj->extra_flags, 1 << value);
-	       if ( 1 << value == ITEM_PROTOTYPE )
-	         obj->pIndexData->extra_flags = obj->extra_flags;
-	   }
-	}
-	if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
-	  obj->pIndexData->extra_flags = obj->extra_flags; 
-	return;
-    }
+
+		if ( !str_cmp( arg2, "objflags" ) )
+		{
+			if ( !can_omodify( ch, obj ) )
+				return;
+
+			if ( !argument || argument[0] == '\0' )
+			{
+				send_to_char( "Usage: oset <object> objflags <flag(s)>...\n", ch );
+				std::string result;
+
+				for (size_t i = 0; obj_flag_table[i].name != nullptr; ++i)
+				{
+					if (!result.empty())
+						result += " ";
+					result += obj_flag_table[i].name;
+				}
+				return;
+			}			
+
+			while ( argument[0] != '\0' )
+			{
+				argument = one_argument( argument, arg3 );
+				value = get_objflag( arg3 );
+				{
+					BV_TOGGLE_BIT(obj->objflags, value);
+//					if ( 1 << value == ITEM_PROTOTYPE )
+//						obj->pIndexData->extra_flags = obj->extra_flags;
+				}
+			}
+			if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
+				obj->pIndexData->objflags = obj->objflags; 
+			return;
+		}
+
 
     if ( !str_cmp( arg2, "wear" ) )
     {
@@ -3206,10 +3398,10 @@ void do_oset( CHAR_DATA *ch, char *argument )
 	{
 	   argument = one_argument( argument, arg3 );
 	   value = get_wflag( arg3 );
-	   if ( value < 0 || value > 31 )
+	   if ( value < 0 )
 	     ch_printf( ch, "Unknown flag: %s\n", arg3 );
 	   else
-	     TOGGLE_BIT( obj->wear_flags, 1 << value );
+	     BV_TOGGLE_BIT( obj->wear_flags, value );
 	}
 
 	if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
@@ -3671,6 +3863,25 @@ void do_oset( CHAR_DATA *ch, char *argument )
         return;
     }
 
+	if ( !str_cmp( arg2, "weapontype" ) )
+	{
+		size_t new_flag;
+
+		new_flag = get_flag_partial(arg3, obj_flag_table, WEAPON_FIRST, WEAPON_MAX);
+
+		if ( new_flag < 0 )
+		{
+			send_to_char( "Unknown weapon type.\n", ch );
+			send_to_char( "\nChoices:\n", ch );
+			send_to_char( "   none, lightsaber, vibro-blade, blaster, force pike, bowcaster, bludgeon\n", ch );
+			return;
+		}
+		set_weapon_flag(obj->objflags,new_flag);
+		if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
+			set_weapon_flag(obj->pIndexData->objflags, new_flag);
+		return;
+	}
+
     /*
      * Make it easier to set special object values by name than number
      * 						-Thoric
@@ -3679,24 +3890,6 @@ void do_oset( CHAR_DATA *ch, char *argument )
     switch( obj->item_type )
     {
 	case ITEM_WEAPON:
-	    if ( !str_cmp( arg2, "weapontype" ) )
-	    {
-		unsigned int x;
-
-		value = -1;
-		for ( x = 0; x < sizeof( weapon_table ) / sizeof( weapon_table[0] ); x++ )
-		  if ( !str_cmp( arg3, weapon_table[x] ) )
-		    value = x;
-		if ( value < 0 )
-		{
-		    send_to_char( "Unknown weapon type.\n", ch );
-		    send_to_char( "\nChoices:\n", ch );
-		    send_to_char( "   none, lightsaber, vibro-blade, blaster, force pike, bowcaster, bludgeon\n", ch );
-		    return;
-		}
-		tmp = 3;
-		break;
-	    }
 	    if ( !str_cmp( arg2, "condition" ) )	tmp = 0;
 	    if ( !str_cmp( arg2, "numdamdie" ) )        tmp = 1;
 	    if ( !str_cmp( arg2, "sizedamdie" ) )       tmp = 2;
@@ -5552,8 +5745,8 @@ void free_reset( AREA_DATA *are, RESET_DATA *res )
 
 void free_area( AREA_DATA *are )
 {
-    DISPOSE( are->name );
-    DISPOSE( are->filename );
+    STR_DISPOSE( are->name );
+    STR_DISPOSE( are->filename );
     while ( are->first_reset )
 	free_reset( are, are->first_reset );
     DISPOSE( are );
@@ -5881,7 +6074,7 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 	||   pMobIndex->height	 != 0	||   pMobIndex->weight	   != 0
 	||   pMobIndex->speaks	 != 0	||   pMobIndex->speaking   != 0
 	||   pMobIndex->xflags	 != 0   ||   pMobIndex->numattacks != 1
-	||   pMobIndex->vip_flags !=0 )
+	||   pMobIndex->vip_flags.any() )
 	  complexmob = TRUE;
 	else
 	  complexmob = FALSE;
@@ -5941,8 +6134,9 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 					pMobIndex->susceptible,
 					pMobIndex->attacks,
 					pMobIndex->defenses );
-	fprintf( fpout, "%d 0 0 0 0 0 0 0\n",
-	                                pMobIndex->vip_flags );
+	  fwrite_bitset(fpout, NULL, pMobIndex->vip_flags);
+//	fprintf( fpout, "%d 0 0 0 0 0 0 0\n",
+//	                pMobIndex->vip_flags );
 	}
 	if ( pMobIndex->mudprogs )
 	{
@@ -5973,12 +6167,13 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 	if ( pObjIndex->layers )
 	  fprintf( fpout, "%d %d %d %d\n",	pObjIndex->item_type,
 						pObjIndex->extra_flags,
-						pObjIndex->wear_flags,
-						pObjIndex->layers	);
+						-9999, // Sentinel - new BitSet wear_flags file format will have this number always be -9999
+						pObjIndex->layers	); 
 	else
 	  fprintf( fpout, "%d %d %d\n",	pObjIndex->item_type,
 					pObjIndex->extra_flags,
-					pObjIndex->wear_flags		);
+					-9999	); // Sentinel - new BitSet wear_flags file format will have this number always be -9999
+ 	fwrite_bitset(fpout, NULL, pObjIndex->wear_flags);
 
 	val0 = pObjIndex->value[0];
 	val1 = pObjIndex->value[1];
@@ -6452,7 +6647,7 @@ void do_installarea( CHAR_DATA *ch, char *argument )
 	{
 	  if ( argument && argument[0] != '\0' )
 	  {
-		DISPOSE( tarea->name );
+		STR_DISPOSE( tarea->name );
 		tarea->name = str_dup( argument );
 	  }
 
@@ -6944,7 +7139,7 @@ void do_aset( CHAR_DATA *ch, char *argument )
             return;
          }
       }
-      DISPOSE( tarea->name );
+      STR_DISPOSE( tarea->name );
       tarea->name = str_dup( argument );
       send_to_char( "Done.\n", ch );
       return;
@@ -6984,7 +7179,7 @@ void do_aset( CHAR_DATA *ch, char *argument )
          return;
 
       strncpy( filename, tarea->filename, 256 );
-      DISPOSE( tarea->filename );
+      STR_DISPOSE( tarea->filename );
       tarea->filename = str_dup( argument );
       rename( filename, tarea->filename );
       write_area_list(  );
@@ -7111,7 +7306,7 @@ void do_aset( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg2, "resetmsg" ) )
     {
         if ( tarea->resetmsg )
-          DISPOSE( tarea->resetmsg );
+          STR_DISPOSE( tarea->resetmsg );
         if ( str_cmp( argument, "clear" ) )
           tarea->resetmsg = str_dup( argument );
         send_to_char( "Done.\n", ch );

@@ -49,6 +49,17 @@ int	obj_hitroll	args( ( OBJ_DATA *obj ) );
 bool    get_cover( CHAR_DATA *ch );
 bool	dual_flip = FALSE;
 
+//Find the first weapon flag - hopefully on an object
+size_t get_first_weapon_flag(const FLAG_SET &bv)
+{
+    for (size_t bit = WEAPON_FIRST; bit < WEAPON_MAX; ++bit)
+    {
+        if (bv.test(bit))
+            return bit;
+    }
+
+    return (size_t)-1;
+}
 
 /*
  * Check to see if weapon is poisoned.
@@ -559,18 +570,17 @@ int weapon_prof_bonus_check( CHAR_DATA *ch, OBJ_DATA *wield, int *gsn_ptr )
     bonus = 0;	*gsn_ptr = -1;
     if ( !IS_NPC(ch) && wield )   
     {
-	switch(wield->value[3])
+	switch(get_first_weapon_flag(wield->objflags))
 	{
 	   default:	*gsn_ptr = -1;			break;
-           case 3:      *gsn_ptr = gsn_lightsabers;     break;
-           case 2:	*gsn_ptr = gsn_vibro_blades;	break;
-           case 4:	*gsn_ptr = gsn_flexible_arms;	break;
-           case 5:	*gsn_ptr = gsn_talonous_arms;	break;
-           case 6:	*gsn_ptr = gsn_blasters;	break;
-           case 8:	*gsn_ptr = gsn_bludgeons;	break;
-           case 9:	*gsn_ptr = gsn_bowcasters;	break;
-           case 11:	*gsn_ptr = gsn_force_pikes;	break;
-
+           case WEAPON_LIGHTSABER:      *gsn_ptr = gsn_lightsabers;     break;
+           case WEAPON_VIBRO_BLADE:	*gsn_ptr = gsn_vibro_blades;	break;
+           case WEAPON_WHIP:	*gsn_ptr = gsn_flexible_arms;	break;
+           case WEAPON_CLAW:	*gsn_ptr = gsn_talonous_arms;	break;
+           case WEAPON_BLASTER:	*gsn_ptr = gsn_blasters;	break;
+           case WEAPON_BLUDGEON:	*gsn_ptr = gsn_bludgeons;	break;
+           case WEAPON_BOWCASTER:	*gsn_ptr = gsn_bowcasters;	break;
+           case WEAPON_FORCE_PIKE:	*gsn_ptr = gsn_force_pikes;	break;
 	}
 	if ( *gsn_ptr != -1 )
 	  bonus = (int) ( ch->pcdata->learned[*gsn_ptr] );
@@ -661,11 +671,11 @@ ch_ret one_hit( CHAR_DATA *ch, CHAR_DATA *victim, int dt )
     {
        if ( dual_flip == FALSE )
        {
-	 dual_flip = TRUE;
-	 wield = get_eq_char( ch, WEAR_WIELD );
+            dual_flip = TRUE;
+            wield = get_eq_char( ch, WEAR_WIELD );
        }
        else
-	 dual_flip = FALSE;
+	        dual_flip = FALSE;
     }
     else
       wield = get_eq_char( ch, WEAR_WIELD );
@@ -677,64 +687,65 @@ ch_ret one_hit( CHAR_DATA *ch, CHAR_DATA *victim, int dt )
     &&   IS_NPC(ch)
     &&   ch->attacks != 0 )
     {
-	cnt = 0;
-	for ( ;; )
-	{
-	   x = number_range( 0, 6 );
-	   attacktype = 1 << x;
-	   if ( IS_SET( ch->attacks, attacktype ) )
-	     break;
-	   if ( cnt++ > 16 )
-	   {
-	     attacktype = 0;
-	     break;
-	   }
-	}
-	if ( attacktype == ATCK_BACKSTAB )
-	  attacktype = 0;
-	if ( wield && number_percent( ) > 25 )
-	  attacktype = 0;
-	switch ( attacktype )
-	{
-	  default:
-	    break;
-	  case ATCK_BITE:
-	    do_bite( ch, "" );
-	    retcode = global_retcode;
-	    break;
-	  case ATCK_CLAWS:
-	    do_claw( ch, "" );
-	    retcode = global_retcode;
-	    break;
-	  case ATCK_TAIL:
-	    do_tail( ch, "" );
-	    retcode = global_retcode;
-	    break;
-	  case ATCK_STING:
-	    do_sting( ch, "" );
-	    retcode = global_retcode;
-	    break;
-	  case ATCK_PUNCH:
-	    do_punch( ch, "" );
-	    retcode = global_retcode;
-	    break;
-	  case ATCK_KICK:
-	    do_kick( ch, "" );
-	    retcode = global_retcode;
-	    break;
-	  case ATCK_TRIP:
-	    attacktype = 0;
-	    break;
-	}
-	if ( attacktype )
-	  return retcode;
+        cnt = 0;
+        for ( ;; )
+        {
+            x = number_range( 0, 6 );
+            attacktype = 1 << x;
+            if ( IS_SET( ch->attacks, attacktype ) )
+                break;
+            if ( cnt++ > 16 )
+            {
+                attacktype = 0;
+                break;
+            }
+        }
+        if ( attacktype == ATCK_BACKSTAB )
+            attacktype = 0;
+        if ( wield && number_percent( ) > 25 )
+            attacktype = 0;
+        switch ( attacktype )
+        {
+            default:
+                break;
+            case ATCK_BITE:
+                do_bite( ch, "" );
+                retcode = global_retcode;
+                break;
+            case ATCK_CLAWS:
+                do_claw( ch, "" );
+                retcode = global_retcode;
+                break;
+            case ATCK_TAIL:
+                do_tail( ch, "" );
+                retcode = global_retcode;
+                break;
+            case ATCK_STING:
+                do_sting( ch, "" );
+                retcode = global_retcode;
+                break;
+            case ATCK_PUNCH:
+                do_punch( ch, "" );
+                retcode = global_retcode;
+                break;
+            case ATCK_KICK:
+                do_kick( ch, "" );
+                retcode = global_retcode;
+                break;
+            case ATCK_TRIP:
+                attacktype = 0;
+                break;
+        }
+        if ( attacktype )
+            return retcode;
     }
 
     if ( dt == TYPE_UNDEFINED )
     {
-	dt = TYPE_HIT;
-	if ( wield && wield->item_type == ITEM_WEAPON )
-	    dt += wield->value[3];
+        dt = TYPE_HIT;
+        if ( wield && wield->item_type == ITEM_WEAPON )
+            dt += get_first_weapon_flag(wield->objflags);
+
     }
 
     /*
@@ -1121,7 +1132,7 @@ ch_ret one_hit( CHAR_DATA *ch, CHAR_DATA *victim, int dt )
          OBJ_DATA *twield;
          
          twield = get_eq_char( victim, WEAR_WIELD );                 
-         if ( twield != NULL && twield->value[3] == WEAPON_BLASTER && get_cover( victim ) == TRUE ) 
+         if ( twield != NULL && BV_IS_SET(twield->objflags, WEAPON_BLASTER) && get_cover( victim ) == TRUE ) 
          {
                start_hating( victim, ch );
 	       start_hunting( victim, ch );
@@ -1217,7 +1228,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
 	if ( IS_ELECTRICITY(dt) )
 	  dam = ris_damage(victim, dam, RIS_ELECTRICITY);
 	else
-	if ( IS_ENERGY(dt) || dt == ( TYPE_HIT + 6 ))
+	if ( IS_ENERGY(dt) || dt == ( TYPE_HIT + WEAPON_BLASTER ) || dt == ( TYPE_HIT + WEAPON_BOWCASTER ))
 	  dam = ris_damage(victim, dam, RIS_ENERGY);
 	else
 	if ( IS_DRAIN(dt) )
@@ -1226,15 +1237,15 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
 	if ( dt == gsn_poison || IS_POISON(dt) )
 	  dam = ris_damage(victim, dam, RIS_POISON);
 	else
-	if ( dt == (TYPE_HIT + 7) || dt == (TYPE_HIT + 8) )
+	if ( dt == (TYPE_HIT + WEAPON_POLE) || dt == (TYPE_HIT + WEAPON_BLUDGEON) )
 	  dam = ris_damage(victim, dam, RIS_BLUNT);
 	else
-	if ( dt == (TYPE_HIT + 2) || dt == (TYPE_HIT + 11)
-	||   dt == (TYPE_HIT + 10) )
+	if ( dt == (TYPE_HIT + WEAPON_VIBRO_BLADE) || dt == (TYPE_HIT + WEAPON_FORCE_PIKE)
+	||   dt == (TYPE_HIT + WEAPON_BLADE) )
 	  dam = ris_damage(victim, dam, RIS_PIERCE);
 	else
-	if ( dt == (TYPE_HIT + 1) || dt == (TYPE_HIT + 3)
-	||   dt == (TYPE_HIT + 4) || dt == (TYPE_HIT + 5) )
+	if ( dt == (TYPE_HIT + WEAPON_VIBRO_AXE) || dt == (TYPE_HIT + WEAPON_LIGHTSABER)
+	||   dt == (TYPE_HIT + WEAPON_WHIP) || dt == (TYPE_HIT + WEAPON_CLAW) )
 	  dam = ris_damage(victim, dam, RIS_SLASH);
 
 	if ( dam == -1 )
@@ -1847,8 +1858,6 @@ murder a no pk person. --- edited again for planetary wanted flags -- well will 
 void check_killer( CHAR_DATA *ch, CHAR_DATA *victim )
 {
     
-    int x;
-    
     /*
     * Charm-o-rama.
     */
@@ -1875,11 +1884,11 @@ void check_killer( CHAR_DATA *ch, CHAR_DATA *victim )
     {
         if ( !IS_NPC( ch ) )
         {
-        for ( x = 0; x < 32; x++ )
+        for ( size_t x = 0; x < PLANET_MAX; ++x )
         {
-            if ( IS_SET(victim->vip_flags , 1 << x ) )
+            if ( BV_IS_SET(victim->vip_flags , x ) )
             {
-                SET_BIT(ch->pcdata->wanted_flags, 1 << x );
+                BV_SET_BIT(ch->pcdata->wanted_flags, x );
                 ch_printf( ch, "&YYou are now wanted on %s.&w\n", planet_flags[x] );
             }
         }      
@@ -2139,7 +2148,7 @@ void raw_kill( CHAR_DATA *ch, CHAR_DATA *victim )
       return;
     }
 
-    if ( victim->in_room && IS_NPC(victim) && victim->vip_flags != 0 && victim->in_room->area && victim->in_room->area->planet )
+    if ( victim->in_room && IS_NPC(victim) && victim->vip_flags.any() && victim->in_room->area && victim->in_room->area->planet )
     {
        victim->in_room->area->planet->population--;
        victim->in_room->area->planet->population = UMAX( victim->in_room->area->planet->population , 0 );
@@ -2582,10 +2591,10 @@ void dam_message( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
     punct   = (dampc <= 30) ? '.' : '!';
 
     if ( dam == 0 && (!IS_NPC(ch) && 
-       (IS_SET(ch->pcdata->flags, PCFLAG_GAG)))) gcflag = TRUE;
+       (BV_IS_SET(ch->pcdata->flags, PCFLAG_GAG)))) gcflag = TRUE;
 
     if ( dam == 0 && (!IS_NPC(victim) &&
-       (IS_SET(victim->pcdata->flags, PCFLAG_GAG)))) gvflag = TRUE;
+       (BV_IS_SET(victim->pcdata->flags, PCFLAG_GAG)))) gvflag = TRUE;
 
     if ( dt >=0 && dt < top_sn )
 	skill = skill_table[dt];
@@ -2608,13 +2617,12 @@ void dam_message( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
     else
     if ( dt > TYPE_HIT && is_wielding_poisoned( ch ) )
     {
-	if ( dt < (int) (TYPE_HIT + sizeof(attack_table)/sizeof(attack_table[0]) ) )
-	    attack	= attack_table[dt - TYPE_HIT];
-	else
-	{
-	    bug( "Dam_message: bad dt %d.", dt );
-	    dt  = TYPE_HIT;
-	    attack  = attack_table[0];
+        attack = flag_bit_name((dt - TYPE_HIT), obj_attack_table);
+        if (attack == nullptr )
+    	{
+            bug( "Dam_message: bad dt %d.", dt );
+            dt  = TYPE_HIT;
+            attack = flag_bit_name((WEAPON_FIRST), obj_attack_table);
         }
 
 	SPRINTF( buf1, "$n's poisoned %s %s $N%c", attack, vp, punct );
@@ -2658,15 +2666,16 @@ void dam_message( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
 		  act( AT_ACTION, skill->hit_room, ch, NULL, victim, TO_NOTVICT );
 	    }
 	}
-	else if ( dt >= TYPE_HIT
-	&& dt < (int) ( TYPE_HIT + sizeof(attack_table)/sizeof(attack_table[0]) ) )
-	    attack	= attack_table[dt - TYPE_HIT];
-	else
-	{
-	    bug( "Dam_message: bad dt %d.", dt );
-	    dt  = TYPE_HIT;
-	    attack  = attack_table[0];
-	}
+    else
+    {
+        attack = flag_bit_name((dt - TYPE_HIT), obj_attack_table);
+        if (attack == nullptr )
+    	{
+            bug( "Dam_message: bad dt %d.", dt );
+            dt  = TYPE_HIT;
+            attack = flag_bit_name((WEAPON_FIRST), obj_attack_table);
+        }
+    }
 
 	SPRINTF( buf1, "$n's %s %s $N%c",  attack, vp, punct );
 	SPRINTF( buf2, "Your %s %s $N%c",  attack, vp, punct );
@@ -2750,7 +2759,7 @@ void do_kill( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( victim->vip_flags != 0 && !IS_SET( victim->act, ACT_DROID )  )
+    if ( victim->vip_flags.any() && !IS_SET( victim->act, ACT_DROID )  )
        ch->alignment -= 10;
 
     WAIT_STATE( ch, 1 * PULSE_VIOLENCE );

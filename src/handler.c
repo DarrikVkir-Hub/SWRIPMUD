@@ -2733,11 +2733,12 @@ char *extra_bit_name( int extra_flags )
  */
 char *magic_bit_name( int magic_flags )
 {
-    static char buf[512];
+    return flag_bit_name(magic_flags, obj_flag_table);
+//    static char buf[512];
 
-    buf[0] = '\0';
-    if ( magic_flags & ITEM_RETURNING     ) STRAPP( buf, " returning"     );
-    return ( buf[0] != '\0' ) ? buf+1 : (char *) "none";
+//    buf[0] = '\0';
+//    if ( magic_flags & ITEM_RETURNING     ) STRAPP( buf, " returning"     );
+//      return ( buf[0] != '\0' ) ? buf+1 : (char *) "none";
 }
 
 /*
@@ -3007,7 +3008,7 @@ void clean_obj( OBJ_INDEX_DATA *obj )
 	STRFREE( obj->action_desc );
 	obj->item_type		= 0;
 	obj->extra_flags	= 0;
-	obj->wear_flags		= 0;
+	obj->wear_flags.reset();
 	obj->count		= 0;
 	obj->weight		= 0;
 	obj->cost		= 0;
@@ -3267,7 +3268,7 @@ void free_obj( OBJ_DATA * obj )
    for( mpact = obj->mpact; mpact; mpact = mpact_next )
    {
       mpact_next = mpact->next;
-      DISPOSE( mpact->buf );
+      STR_DISPOSE( mpact->buf );
       DISPOSE( mpact );
    }
 

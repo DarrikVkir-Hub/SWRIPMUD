@@ -1734,7 +1734,7 @@ void save_commands()
 	    fprintf( fpout, "Position    %d\n",	 command->position	);
 	    fprintf( fpout, "Level       %d\n",	 command->level		);
 	    fprintf( fpout, "Log         %d\n",	 command->log		);
-            fprintf( fpout, "CommandGroup %d\n",  command->commandgroup  );
+        fwrite_bitset( fpout, "CommandGroupEx",  command->commandgroup  );
 	    fprintf( fpout, "End\n\n" );
 	}
     }
@@ -2142,7 +2142,22 @@ void fread_command( FILE *fp )
 
 	case 'C':
 	    KEY( "Code",	command->do_fun,	skill_function(fread_word(fp)) );
-            KEY("CommandGroup", command->commandgroup, fread_number(fp));
+//            KEY("CommandGroup", command->commandgroup, fread_number(fp));
+			if ( !str_cmp( word, "CommandGroup" ) )
+			{
+				int legacy = fread_number(fp);
+				fprintf(stderr,"DEBUG: old flags read = %d\r\n", legacy);
+				command->commandgroup.reset();  // ensure clean state
+				command->commandgroup = int_to_bitset(legacy);
+				fMatch = TRUE;
+				break;
+			}			
+			if ( !str_cmp(word, "CommandGroupEx") )
+			{
+				fread_bitset(fp, command->commandgroup);
+				fMatch = TRUE;
+				break;
+			}			
 	    break;
 
 	case 'E':

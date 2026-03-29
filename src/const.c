@@ -169,6 +169,34 @@ const	struct	race_type	race_table	[MAX_RACE]	=
 
 };
 
+const flag_name obj_flag_table[] =
+{
+    { PIPE_FIRST,     "Pipe_First" },
+    { PIPE_TAMPED,     "Pipe_Tamped" },
+    { PIPE_LIT,        "Pipe_Lit" },
+    { PIPE_HOT,        "Pipe_Hot" },
+    { PIPE_DIRTY,      "Pipe_Dirty" },
+    { PIPE_FILTHY,		"Pipe_Filthy" },
+    { PIPE_GOINGOUT,    "Pipe_Goingout"},
+    { PIPE_BURNT,		"Pipe_Burnt"},
+    { PIPE_FULLOFASH,	"Pipe_FullofAsh"},
+    { PIPE_MAX,          "Pipe_Max"},
+    { WEAPON_FIRST,     "Weapon_First"},
+    { WEAPON_VIBRO_AXE, "VibroAxe"},
+    { WEAPON_VIBRO_BLADE, "VibroBlade"},
+    { WEAPON_LIGHTSABER, "Lightsaber"},
+    { WEAPON_WHIP, "Whip"},
+    { WEAPON_CLAW, "Claw"},
+    { WEAPON_BLASTER, "Blaster"},
+    { WEAPON_POLE, "Pole"}, 
+    { WEAPON_BLUDGEON, "Budgeon"},
+    { WEAPON_BOWCASTER, "Bowcaster"},
+    { WEAPON_BLADE, "Blade"},       
+    { WEAPON_FORCE_PIKE, "ForcePike"},
+    { WEAPON_MAX, "Weapon_Max"},
+   
+    { (size_t)-1, nullptr } // terminator
+};
 
 char * const command_groups [MAX_COMMAND_GROUP] =
 {
@@ -506,6 +534,26 @@ const	struct	liq_type	liq_table	[LIQ_MAX]	=
     { "sweet tea",		"tan",		{  0, 2,  6 }	}
 };
 
+const flag_name obj_attack_table[] =
+{
+    { WEAPON_FIRST,     "hit"},
+    { WEAPON_VIBRO_AXE, "slice"},
+    { WEAPON_VIBRO_BLADE, "stab"},
+    { WEAPON_LIGHTSABER, "slash"},
+    { WEAPON_WHIP, "whip"},
+    { WEAPON_CLAW, "claw"},
+    { WEAPON_BLASTER, "blast"},
+    { WEAPON_POLE, "crush"},
+    { WEAPON_BLUDGEON, "pound"},
+    { WEAPON_BOWCASTER, "shot"},
+    { WEAPON_BLADE, "stab"},           
+    { WEAPON_FORCE_PIKE, "pierce"}, 
+    { WEAPON_MAX, "Weapon_Max"},
+
+    { (size_t)-1, nullptr } // terminator
+};
+
+/*
 char *	const	attack_table	[13] =
 {
     "hit",
@@ -513,7 +561,7 @@ char *	const	attack_table	[13] =
     "blast",  "pound", "crush", "shot", "bite",
     "pierce", "suction"
 };
-
+*/
 
 
 /*

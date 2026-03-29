@@ -155,7 +155,7 @@ void do_score(CHAR_DATA * ch, char *argument)
     ch_printf(ch, "&cTime Played: &C%d Hours &C%d Minutes.\n",
 	ch->pcdata->played/3600,(ch->pcdata->played%3600)/60);
     ch_printf(ch, "&cPager: &C(%c) %3d   &cAutoExit(&C%c&c)  AutoLoot(&C%c&c)  Autosac(&C%c&c)\n",
-	IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) ? 'X' : ' ',
+	BV_IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) ? 'X' : ' ',
 	ch->pcdata->pagerlen, IS_SET(ch->act, PLR_AUTOEXIT) ? 'X' : ' ',
 	IS_SET(ch->act, PLR_AUTOLOOT) ? 'X' : ' ', IS_SET(ch->act, PLR_AUTOSAC) ? 'X' : ' ');
 
@@ -275,7 +275,7 @@ void do_score(CHAR_DATA * ch, char *argument)
 //	bug("LANG_BUF: %s", buf);
     ch_printf( ch, "%s\n", buf );
     ch_printf( ch, "&cWANTED ON: &C%s\n",
-             flag_string(ch->pcdata->wanted_flags, planet_flags) );
+             flag_string(ch->pcdata->wanted_flags, planet_flags, PLANET_MAX) );
 
     if ( ch->pcdata->bestowments && ch->pcdata->bestowments[0] != '\0' )
 	ch_printf( ch, "&cYou are bestowed with the command(s): &C%s.\n",
@@ -802,28 +802,27 @@ void do_equipment( CHAR_DATA *ch, char *argument )
                            else if (dam < 12) STRAPP( buf, " (awful) ");
                            else if (dam ==  12) STRAPP( buf, " (broken) ");
                 	   send_to_char( buf, ch );
-	                   if (obj->value[3] == WEAPON_BLASTER )
+	                   if (BV_IS_SET(obj->objflags, WEAPON_BLASTER) )
 	                   {
-		            if (obj->blaster_setting == BLASTER_FULL)
-	    		      ch_printf( ch, "FULL");
-	  	            else if (obj->blaster_setting == BLASTER_HIGH)
-	    		      ch_printf( ch, "HIGH");
-	  	            else if (obj->blaster_setting == BLASTER_NORMAL)
-	    		      ch_printf( ch, "NORMAL");
-	  	            else if (obj->blaster_setting == BLASTER_HALF)
-	    		      ch_printf( ch, "HALF");
-	  	            else if (obj->blaster_setting == BLASTER_LOW)
-	    		      ch_printf( ch, "LOW");
-	  	            else if (obj->blaster_setting == BLASTER_STUN)
-	    		      ch_printf( ch, "STUN");
-	  	            ch_printf( ch, " %d", obj->value[4] );
+							if (obj->blaster_setting == BLASTER_FULL)
+							ch_printf( ch, "FULL");
+							else if (obj->blaster_setting == BLASTER_HIGH)
+							ch_printf( ch, "HIGH");
+							else if (obj->blaster_setting == BLASTER_NORMAL)
+							ch_printf( ch, "NORMAL");
+							else if (obj->blaster_setting == BLASTER_HALF)
+							ch_printf( ch, "HALF");
+							else if (obj->blaster_setting == BLASTER_LOW)
+							ch_printf( ch, "LOW");
+							else if (obj->blaster_setting == BLASTER_STUN)
+							ch_printf( ch, "STUN");
+							ch_printf( ch, " %d", obj->value[4] );
 	                   }
-	                   else if (     ( obj->value[3] == WEAPON_LIGHTSABER || 
-		           obj->value[3] == WEAPON_VIBRO_BLADE  
-		           || obj->value[3] == WEAPON_FORCE_PIKE 
-		           || obj->value[3] == WEAPON_BOWCASTER ) )
+					   else if ( BV_IS_SET(obj->objflags, WEAPON_LIGHTSABER) || BV_IS_SET(obj->objflags, WEAPON_VIBRO_BLADE) ||
+							BV_IS_SET(obj->objflags, WEAPON_FORCE_PIKE) || BV_IS_SET(obj->objflags, WEAPON_BOWCASTER)
+						|| BV_IS_SET(obj->objflags, WEAPON_VIBRO_AXE))
 	                   {
-		             ch_printf( ch, "%d", obj->value[4] );
+				             ch_printf( ch, "%d", obj->value[4] );
 	                   }        
 	                   break;
                     }   
@@ -875,7 +874,7 @@ void do_title( CHAR_DATA *ch, char *argument )
     if ( IS_NPC(ch) )
 	return;
 
-    if ( IS_SET( ch->pcdata->flags, PCFLAG_NOTITLE ))
+    if ( BV_IS_SET( ch->pcdata->flags, PCFLAG_NOTITLE ))
     {
         send_to_char( "You try but the Force resists you.\n", ch );
         return;
@@ -925,7 +924,7 @@ void do_homepage( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( argument, "clear" ) )
     {
 	if ( ch->pcdata->homepage )
-	  DISPOSE(ch->pcdata->homepage);
+	  STR_DISPOSE(ch->pcdata->homepage);
 	ch->pcdata->homepage = str_dup("");
 	send_to_char( "Homepage cleared.\n", ch );
 	return;
@@ -940,7 +939,7 @@ void do_homepage( CHAR_DATA *ch, char *argument )
 
     hide_tilde( buf );
     if ( ch->pcdata->homepage )
-      DISPOSE(ch->pcdata->homepage);
+      STR_DISPOSE(ch->pcdata->homepage);
     ch->pcdata->homepage = str_dup(buf);
     send_to_char( "Homepage set.\n", ch );
 }

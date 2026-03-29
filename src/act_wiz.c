@@ -86,7 +86,7 @@ void do_wizhelp( CHAR_DATA *ch, char *argument )
 	for ( cmd = command_hash[hash]; cmd; cmd = cmd->next )
 	    if ( cmd->level >= LEVEL_HERO
 	    &&   cmd->level <= get_trust( ch ) 
-            && (!cmd->commandgroup || (cmd->commandgroup & ch->pcdata->commandgroup)))
+            && (!cmd->commandgroup.any() || (cmd->commandgroup.intersects(ch->pcdata->commandgroup))))
 	    {
 		pager_printf( ch, "%-12s", cmd->name );
 		if ( ++col % 6 == 0 )
@@ -221,7 +221,7 @@ void do_authorize( CHAR_DATA *ch, char *argument )
   if ( arg2[0]=='\0' || !str_cmp( arg2,"accept" ) || !str_cmp( arg2,"yes" ))
      {
 	victim->pcdata->auth_state = 3;
-	REMOVE_BIT(victim->pcdata->flags, PCFLAG_UNAUTHED);
+	BV_REMOVE_BIT(victim->pcdata->flags, PCFLAG_UNAUTHED);
 	if ( victim->pcdata->authed_by )
 	   STRFREE( victim->pcdata->authed_by );
 	victim->pcdata->authed_by = QUICKLINK( ch->name );
@@ -273,7 +273,7 @@ void do_bamfin( CHAR_DATA *ch, char *argument )
     if ( !IS_NPC(ch) )
     {
 	smash_tilde( argument );
-	DISPOSE( ch->pcdata->bamfin );
+	STR_DISPOSE( ch->pcdata->bamfin );
 	ch->pcdata->bamfin = str_dup( argument );
 	send_to_char( "Ok.\n", ch );
     }
@@ -287,7 +287,7 @@ void do_bamfout( CHAR_DATA *ch, char *argument )
     if ( !IS_NPC(ch) )
     {
 	smash_tilde( argument );
-	DISPOSE( ch->pcdata->bamfout );
+	STR_DISPOSE( ch->pcdata->bamfout );
 	ch->pcdata->bamfout = str_dup( argument );
 	send_to_char( "Ok.\n", ch );
     }
@@ -307,7 +307,7 @@ void do_rank( CHAR_DATA *ch, char *argument )
   }
 
   smash_tilde( argument );
-  DISPOSE( ch->pcdata->rank );
+  STR_DISPOSE( ch->pcdata->rank );
   if ( !str_cmp( argument, "none" ) )
     ch->pcdata->rank = str_dup( "" );
   else
@@ -356,13 +356,13 @@ void do_retire( CHAR_DATA *ch, char *argument )
 
     if ( IS_RETIRED( victim ) )
     {
-      REMOVE_BIT( victim->pcdata->flags, PCFLAG_RETIRED );
+      BV_REMOVE_BIT( victim->pcdata->flags, PCFLAG_RETIRED );
       ch_printf( ch, "%s returns from retirement.\n", victim->name );
       ch_printf( victim, "%s brings you back from retirement.\n", ch->name );
     }
     else
     { 
-      SET_BIT( victim->pcdata->flags, PCFLAG_RETIRED );
+      BV_SET_BIT( victim->pcdata->flags, PCFLAG_RETIRED );
       ch_printf( ch, "%s is now a retired immortal.\n", victim->name );
       ch_printf( victim, "Courtesy of %s, you are now a retired immortal.\n", ch->name );
     }
@@ -1265,7 +1265,9 @@ void do_ostat( CHAR_DATA *ch, char *argument )
     if ( obj->action_desc[0] != '\0' )
 	ch_printf( ch, "Action description: %s.\n", obj->action_desc );
 
-    ch_printf( ch, "Wear flags : %s\n", flag_string(obj->wear_flags, w_flags) );
+    ch_printf( ch, "Wear flags : %s : Proto: %s\n", 
+        flag_string(obj->wear_flags, w_flags, ITEM_WEAR_MAX), 
+        flag_string(obj->pIndexData->wear_flags, w_flags, ITEM_WEAR_MAX) );
     ch_printf( ch, "Extra flags: %s\n", flag_string(obj->extra_flags, o_flags) );
 
     ch_printf( ch, "Number: %d/%d.  Weight: %d/%d.  Layers: %d\n",
@@ -1288,6 +1290,8 @@ void do_ostat( CHAR_DATA *ch, char *argument )
 	obj->pIndexData->value[4], obj->pIndexData->value[5] );
     ch_printf( ch, "Object Values: %d %d %d %d %d %d.\n",
 	obj->value[0], obj->value[1], obj->value[2], obj->value[3], obj->value[4], obj->value[5] );
+    ch_printf(ch, "Object Flags: %s\n", bitset_to_string(obj->objflags,obj_flag_table).c_str());
+    ch_printf(ch, "Index Object Flags: %s\n", bitset_to_string(obj->pIndexData->objflags,obj_flag_table).c_str());
 
     if ( obj->pIndexData->first_extradesc )
     {
@@ -1414,7 +1418,7 @@ ch_printf( ch,
     {
       int i;
       for(i = 0; i < MAX_COMMAND_GROUP; i++) {
-        if (!IS_NPC(victim) && IS_SET(victim->pcdata->commandgroup,(1<<i)))
+        if (!IS_NPC(victim) && BV_IS_SET(victim->pcdata->commandgroup,(1<<i)))
           ch_printf(ch,"%s ",command_groups[i]);
       }
     }
@@ -1461,7 +1465,7 @@ ch_printf( ch,
     if ( IS_NPC( victim ) )
     {	
 	ch_printf( ch, "Act flags: %s\n", flag_string(victim->act, act_flags) );
-        ch_printf( ch, "VIP flags: %s\n", flag_string(victim->vip_flags, planet_flags) );
+        ch_printf( ch, "VIP flags: %s\n", flag_string(victim->vip_flags, planet_flags, PLANET_MAX) );
     }    
     else
     { 
@@ -1471,9 +1475,9 @@ ch_printf( ch,
 	ch_printf( ch, "Player flags: %s\n",
 		flag_string(victim->act, plr_flags) );
 	ch_printf( ch, "Pcflags: %s\n",
-		flag_string(victim->pcdata->flags, pc_flags) );
+		flag_string(victim->pcdata->flags, pc_flags, PCFLAG_MAX) );
 	ch_printf( ch, "Wanted flags: %s\n",
-		flag_string(victim->pcdata->wanted_flags, planet_flags) );
+		flag_string(victim->pcdata->wanted_flags, planet_flags, PLANET_MAX) );
     }
     ch_printf( ch, "Affected by: %s\n",
 	affect_bit_name( victim->affected_by ) );
@@ -3630,15 +3634,15 @@ void do_notitle( CHAR_DATA *ch, char *argument )
         return;
     }
     
-    if ( IS_SET(victim->pcdata->flags, PCFLAG_NOTITLE) )
+    if ( BV_IS_SET(victim->pcdata->flags, PCFLAG_NOTITLE) )
     {
-        REMOVE_BIT(victim->pcdata->flags, PCFLAG_NOTITLE);
+        BV_REMOVE_BIT(victim->pcdata->flags, PCFLAG_NOTITLE);
         send_to_char( "You can set your own title again.\n", victim );
         send_to_char( "NOTITLE removed.\n", ch );
     }
     else
     {
-        SET_BIT(victim->pcdata->flags, PCFLAG_NOTITLE);
+        BV_SET_BIT(victim->pcdata->flags, PCFLAG_NOTITLE);
         SPRINTF( buf, "%s", victim->name );
         set_title( victim, buf );   
         send_to_char( "You can't set your own title!\n", victim );
@@ -3922,8 +3926,8 @@ void do_allow( CHAR_DATA *ch, char *argument )
 	{
 	    UNLINK( pban, first_ban, last_ban, next, prev );
 	    if ( pban->ban_time )
-	      DISPOSE(pban->ban_time);
-	    DISPOSE( pban->name );
+	      STR_DISPOSE(pban->ban_time);
+	    STR_DISPOSE( pban->name );
 	    DISPOSE( pban );
 	    save_banlist( );
 	    send_to_char( "Site no longer banned.\n", ch );
@@ -4546,7 +4550,7 @@ void do_loadup( CHAR_DATA *ch, char *argument )
 	d->character->desc	= NULL;
 	d->character->retran    = old_room_vnum;
 	d->character		= NULL;	
-	DISPOSE( d->outbuf );
+	STR_DISPOSE( d->outbuf );
 	DISPOSE( d );
 	ch_printf(ch, "Player %s loaded from room %d.\n", capitalize( name ),old_room_vnum );
 	SPRINTF(buf, "%s appears from nowhere, eyes glazed over.\n", capitalize( name ) );
@@ -4763,7 +4767,7 @@ void do_bestowarea( CHAR_DATA *ch, char *argument )
     if ( !str_cmp (argument, "none") )
        {
        remove_area_names (victim->pcdata->bestowments, buf, sizeof(buf));
-       DISPOSE( victim->pcdata->bestowments );
+       STR_DISPOSE( victim->pcdata->bestowments );
        victim->pcdata->bestowments = str_dup( buf );
        send_to_char( "Done.\n", ch);
        return;
@@ -4780,7 +4784,7 @@ void do_bestowarea( CHAR_DATA *ch, char *argument )
     }
 
     SPRINTF( buf, "%s %s", victim->pcdata->bestowments, argument );
-    DISPOSE( victim->pcdata->bestowments );
+    STR_DISPOSE( victim->pcdata->bestowments );
     victim->pcdata->bestowments = str_dup( buf );
     ch_printf( victim, "%s has bestowed on you the area: %s\n", 
              ch->name, argument );
@@ -4831,7 +4835,7 @@ void do_bestow( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( argument, "none" ) )
     {
-        DISPOSE( victim->pcdata->bestowments );
+        STR_DISPOSE( victim->pcdata->bestowments );
 	victim->pcdata->bestowments = str_dup("");
         ch_printf( ch, "Bestowments removed from %s.\n", victim->name );
         ch_printf( victim, "%s has removed your bestowed commands.\n", ch->name );
@@ -4840,7 +4844,7 @@ void do_bestow( CHAR_DATA *ch, char *argument )
     }
 
     SPRINTF( buf, "%s %s", victim->pcdata->bestowments, argument );
-    DISPOSE( victim->pcdata->bestowments );
+    STR_DISPOSE( victim->pcdata->bestowments );
     victim->pcdata->bestowments = str_dup( buf );
     ch_printf( victim, "%s has bestowed on you the command(s): %s\n", 
              ch->name, argument );
@@ -5278,8 +5282,8 @@ void close_area( AREA_DATA *pArea )
     ereset_next = ereset->next;
     DISPOSE(ereset);
   }
-  DISPOSE(pArea->name);
-  DISPOSE(pArea->filename);
+  STR_DISPOSE(pArea->name);
+  STR_DISPOSE(pArea->filename);
   STRFREE(pArea->author);
   UNLINK( pArea, first_build, last_build, next, prev );
   UNLINK( pArea, first_asort, last_asort, next_sort, prev_sort );
@@ -6064,21 +6068,21 @@ void do_sober( CHAR_DATA *ch, char *argument )
 void free_social( SOCIALTYPE *social )
 {
     if ( social->name )
-      DISPOSE( social->name );
+      STR_DISPOSE( social->name );
     if ( social->char_no_arg )
-      DISPOSE( social->char_no_arg );
+      STR_DISPOSE( social->char_no_arg );
     if ( social->others_no_arg )
-      DISPOSE( social->others_no_arg );
+      STR_DISPOSE( social->others_no_arg );
     if ( social->char_found )
-      DISPOSE( social->char_found );
+      STR_DISPOSE( social->char_found );
     if ( social->others_found )
-      DISPOSE( social->others_found );
+      STR_DISPOSE( social->others_found );
     if ( social->vict_found )
-      DISPOSE( social->vict_found );
+      STR_DISPOSE( social->vict_found );
     if ( social->char_auto )
-      DISPOSE( social->char_auto );
+      STR_DISPOSE( social->char_auto );
     if ( social->others_auto )
-      DISPOSE( social->others_auto );
+      STR_DISPOSE( social->others_auto );
     DISPOSE( social );
 }
 
@@ -6281,7 +6285,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	if ( social->char_no_arg )
-	    DISPOSE( social->char_no_arg );
+	    STR_DISPOSE( social->char_no_arg );
 	social->char_no_arg = str_dup( argument );
 	send_to_char( "Done.\n", ch );
 	return;
@@ -6290,7 +6294,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg2, "onoarg" ) )
     {
 	if ( social->others_no_arg )
-	    DISPOSE( social->others_no_arg );
+	    STR_DISPOSE( social->others_no_arg );
 	if ( argument[0] != '\0' && str_cmp( argument, "clear" ) )
 	    social->others_no_arg = str_dup( argument );
 	send_to_char( "Done.\n", ch );
@@ -6300,7 +6304,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg2, "cfound" ) )
     {
 	if ( social->char_found )
-	    DISPOSE( social->char_found );
+	    STR_DISPOSE( social->char_found );
 	if ( argument[0] != '\0' && str_cmp( argument, "clear" ) )
 	    social->char_found = str_dup( argument );
 	send_to_char( "Done.\n", ch );
@@ -6310,7 +6314,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg2, "ofound" ) )
     {
 	if ( social->others_found )
-	    DISPOSE( social->others_found );
+	    STR_DISPOSE( social->others_found );
 	if ( argument[0] != '\0' && str_cmp( argument, "clear" ) )
 	    social->others_found = str_dup( argument );
 	send_to_char( "Done.\n", ch );
@@ -6320,7 +6324,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg2, "vfound" ) )
     {
 	if ( social->vict_found )
-	    DISPOSE( social->vict_found );
+	    STR_DISPOSE( social->vict_found );
 	if ( argument[0] != '\0' && str_cmp( argument, "clear" ) )
 	    social->vict_found = str_dup( argument );
 	send_to_char( "Done.\n", ch );
@@ -6330,7 +6334,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg2, "cauto" ) )
     {
 	if ( social->char_auto )
-	    DISPOSE( social->char_auto );
+	    STR_DISPOSE( social->char_auto );
 	if ( argument[0] != '\0' && str_cmp( argument, "clear" ) )
 	    social->char_auto = str_dup( argument );
 	send_to_char( "Done.\n", ch );
@@ -6340,7 +6344,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg2, "oauto" ) )
     {
 	if ( social->others_auto )
-	    DISPOSE( social->others_auto );
+	    STR_DISPOSE( social->others_auto );
 	if ( argument[0] != '\0' && str_cmp( argument, "clear" ) )
 	    social->others_auto = str_dup( argument );
 	send_to_char( "Done.\n", ch );
@@ -6371,7 +6375,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
         else
             relocate = FALSE;
         if ( social->name )
-            DISPOSE( social->name );
+            STR_DISPOSE( social->name );
         social->name = str_dup( arg1 );
         if ( relocate )
             add_social( social );
@@ -6389,7 +6393,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
 void free_command( CMDTYPE *command )
 {
     if ( command->name )
-      DISPOSE( command->name );
+      STR_DISPOSE( command->name );
     DISPOSE( command );
 }
 
@@ -6561,7 +6565,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
         ch_printf(ch, "Command Groups: ");
         for(i = 0; i < MAX_COMMAND_GROUP; i++)
         {
-           if (IS_SET(command->commandgroup,(1<<i)))
+           if (BV_IS_SET(command->commandgroup,(1<<i)))
              ch_printf(ch,"%s ",command_groups[i]);
         }
         ch_printf(ch,"\n");
@@ -6610,7 +6614,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
             }
             return;
         }
-        TOGGLE_BIT(command->commandgroup,(1<<grp));
+        BV_TOGGLE_BIT(command->commandgroup,(1<<grp));
         send_to_char( "Done.\n", ch );
         return;
     }
@@ -6689,7 +6693,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
         else
             relocate = FALSE;
         if ( command->name )
-            DISPOSE( command->name );
+            STR_DISPOSE( command->name );
         command->name = str_dup( arg1 );
         if ( relocate )
             add_command( command );
@@ -6721,14 +6725,14 @@ void do_badname(CHAR_DATA *ch, char *arguments)
 void do_dnd( CHAR_DATA *ch, char *argument )
 {
    if ( !IS_NPC(ch) && ch->pcdata )
-      if ( IS_SET(ch->pcdata->flags, PCFLAG_DND) )
+      if ( BV_IS_SET(ch->pcdata->flags, PCFLAG_DND) )
       {
-          REMOVE_BIT(ch->pcdata->flags, PCFLAG_DND);
+          BV_REMOVE_BIT(ch->pcdata->flags, PCFLAG_DND);
           send_to_char( "Your 'do not disturb' flag is now off.\n", ch );
       }
       else
       {
-          SET_BIT(ch->pcdata->flags, PCFLAG_DND);
+          BV_SET_BIT(ch->pcdata->flags, PCFLAG_DND);
           send_to_char( "Your 'do not disturb' flag is now on.\n", ch );
       }
    else

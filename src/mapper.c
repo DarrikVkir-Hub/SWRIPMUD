@@ -280,7 +280,6 @@ void show_map( CHAR_DATA *ch, char *text )
             buf[len++] = '|';
             buf[len++] = ' ';
             buf[len++] = '\n';
-            buf[len++] = '\r';
         }
 
         buf[len] = '\0';

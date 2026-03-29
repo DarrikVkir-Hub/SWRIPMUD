@@ -521,7 +521,7 @@ void gmcp_evt_char_status(CHAR_DATA *ch)
     changed |= gmcp_cache_set(d, "Char.Status.class", ability_name[ch->main_ability]);
     changed |= gmcp_cache_set(d, "Char.Status.race", capitalize(get_race(ch)));
     changed |= gmcp_cache_set_int(d, "Char.Status.wimpy", ch->wimpy);
-    changed |= gmcp_cache_set(d, "Char.Status.wanted", flag_string(ch->pcdata->wanted_flags, planet_flags));
+    changed |= gmcp_cache_set(d, "Char.Status.wanted", flag_string(ch->pcdata->wanted_flags, planet_flags, PLANET_MAX));
 
     changed |= gmcp_cache_set(d, "Char.Status.clan", (ch->pcdata->clan ? ch->pcdata->clan->name : "None"));
     changed |= gmcp_cache_set_int(d, "Char.Status.salary", (ch->pcdata->clan ? ch->pcdata->salary : 0));

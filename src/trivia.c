@@ -387,7 +387,7 @@ void do_trivia_winner(CHAR_DATA *ch, char *argument)
 	      if (ws->ch == NULL)
 		{
 		  send_to_char("I can't find that winner!\n",ch);
-		  free(ws);
+		  DISPOSE(ws);
 		  return;
 		}
 	      if (g_trivia->winners == NULL)

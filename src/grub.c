@@ -753,7 +753,7 @@ bool go_read( CHAR_DATA *ch, int dis_num, int op_num, int sor_ind,
       r.n[OVNUM]  = px->vnum;
       r.n[OTYPE]  = po->item_type;
       r.n[OLEVEL] = po->level;
-      r.n[OWEAR]  = go_wear_ext( po->wear_flags );
+      r.n[OWEAR]  = go_wear_ext( bitset_to_int(po->wear_flags) );
       r.n[OAVG]   = (po->item_type == ITEM_WEAPON) ?
                     (po->value[1] + po->value[2])/2 : 0;
       for (pa=px->first_affect; pa; pa=pa->next)
@@ -1237,8 +1237,8 @@ for (hash = 0; hash < MAX_KEY_HASH; hash++) /* loop thru obj_index_hash */
          if (pObj->layers > 0)
          {
             if (++cou <= display_limit)
-            pager_printf(ch, "%4d&R&w %5d&R&w %9d&R&w %5d&R&w   %s&R&w\n",
-              cou, pObj->vnum, pObj->wear_flags, pObj->layers,
+            pager_printf(ch, "%4d&R&w %5d&R&w %5d&R&w %s&R&w   %s&R&w\n",
+              cou, pObj->vnum, pObj->layers, pObj->wear_flags.bitset_to_string().c_str(), 
               pObj->short_descr);
           }
 }

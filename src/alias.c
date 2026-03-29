@@ -73,8 +73,8 @@ void do_alias( CHAR_DATA *ch, char *argument )
     {
         if ( (pal = find_alias(ch, arg)) != NULL )
         {
-            DISPOSE(pal->name);
-            DISPOSE(pal->cmd);
+            STR_DISPOSE(pal->name);
+            STR_DISPOSE(pal->cmd);
             UNLINK(pal, ch->pcdata->first_alias, ch->pcdata->last_alias, next, prev);
             DISPOSE(pal);
             send_to_char("Deleted Alias.\n", ch);
@@ -95,7 +95,7 @@ void do_alias( CHAR_DATA *ch, char *argument )
     else 
     {
         if (pal->cmd)
-            DISPOSE(pal->cmd);
+            STR_DISPOSE(pal->cmd);
         pal->cmd  = str_dup(argument);
         send_to_char("Modified Alias.\n", ch);
     }
@@ -112,9 +112,9 @@ void free_aliases( CHAR_DATA *ch )
     {
         next_pal=pal->next;
         if (pal->name)
-            DISPOSE(pal->name);
+            STR_DISPOSE(pal->name);
         if (pal->cmd)
-            DISPOSE(pal->cmd);
+            STR_DISPOSE(pal->cmd);
         DISPOSE( pal );
     }
 }

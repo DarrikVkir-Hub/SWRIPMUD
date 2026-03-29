@@ -247,11 +247,11 @@ void free_note( NOTE_DATA *pnote )
     STRFREE( pnote->date    );
     STRFREE( pnote->sender  );
     if ( pnote->yesvotes )
-	DISPOSE( pnote->yesvotes );
+	STR_DISPOSE( pnote->yesvotes );
     if ( pnote->novotes )
-	DISPOSE( pnote->novotes );
+	STR_DISPOSE( pnote->novotes );
     if ( pnote->abstentions )
-	DISPOSE( pnote->abstentions );
+	STR_DISPOSE( pnote->abstentions );
     DISPOSE( pnote );
 }
 
@@ -694,7 +694,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	if ( !str_cmp( arg_passed, "yes" ) )
 	{
 	    SPRINTF( buf, "%s %s", pnote->yesvotes, ch->name );
-	    DISPOSE( pnote->yesvotes );
+	    STR_DISPOSE( pnote->yesvotes );
 	    pnote->yesvotes = str_dup( buf );
 	    act( AT_ACTION, "$n votes on a note.", ch, NULL, NULL, TO_ROOM );
 	    send_to_char( "Ok.\n", ch );
@@ -704,7 +704,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	if ( !str_cmp( arg_passed, "no" ) )
 	{
 	    SPRINTF( buf, "%s %s", pnote->novotes, ch->name );
-	    DISPOSE( pnote->novotes );
+	    STR_DISPOSE( pnote->novotes );
 	    pnote->novotes = str_dup( buf );
 	    act( AT_ACTION, "$n votes on a note.", ch, NULL, NULL, TO_ROOM );
 	    send_to_char( "Ok.\n", ch );
@@ -714,7 +714,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	if ( !str_cmp( arg_passed, "abstain" ) )
 	{
 	    SPRINTF( buf, "%s %s", pnote->abstentions, ch->name );
-	    DISPOSE( pnote->abstentions );
+	    STR_DISPOSE( pnote->abstentions );
 	    pnote->abstentions = str_dup( buf );
 	    act( AT_ACTION, "$n votes on a note.", ch, NULL, NULL, TO_ROOM );
 	    send_to_char( "Ok.\n", ch );
@@ -1455,7 +1455,7 @@ void do_bset( CHAR_DATA *ch, char *argument )
 	    send_to_char( "No group specified.\n", ch );
 	    return;
 	}
-	DISPOSE( board->read_group );
+	STR_DISPOSE( board->read_group );
         if ( !str_cmp( argument, "none" ) )
 	  board->read_group = str_dup( "" );
         else
@@ -1472,7 +1472,7 @@ void do_bset( CHAR_DATA *ch, char *argument )
 	    send_to_char( "No group specified.\n", ch );
 	    return;
 	}
-	DISPOSE( board->post_group );
+	STR_DISPOSE( board->post_group );
         if ( !str_cmp( argument, "none" ) )
 	  board->post_group = str_dup( "" );
         else
@@ -1493,7 +1493,7 @@ void do_bset( CHAR_DATA *ch, char *argument )
             buf[0] = '\0';
         else
             SPRINTF( buf, "%s %s", board->extra_removers, argument );
-        DISPOSE( board->extra_removers );
+        STR_DISPOSE( board->extra_removers );
         board->extra_removers = str_dup( buf ); 
         write_boards_txt( );
         send_to_char( "Done.\n", ch );
@@ -1511,7 +1511,7 @@ void do_bset( CHAR_DATA *ch, char *argument )
 	    buf[0] = '\0';
 	else
 	    SPRINTF( buf, "%s %s", board->extra_readers, argument );        
-	DISPOSE( board->extra_readers );
+	STR_DISPOSE( board->extra_readers );
 	board->extra_readers = str_dup( buf );
 	write_boards_txt( );
 	send_to_char( "Done.\n", ch );
@@ -1525,7 +1525,7 @@ void do_bset( CHAR_DATA *ch, char *argument )
 	    send_to_char( "No filename specified.\n", ch );
 	    return;
 	}
-	DISPOSE( board->note_file );
+	STR_DISPOSE( board->note_file );
 	board->note_file = str_dup( argument );
 	write_boards_txt( );
 	send_to_char( "Done.\n", ch );

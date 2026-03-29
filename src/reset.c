@@ -995,7 +995,7 @@ void do_reset( CHAR_DATA *ch, char *argument )
         bug("do_reset: %s's dest_buf points to invalid area",
             ch->name);
         ch->substate = SUB_NONE;
-        DISPOSE(ch->dest_buf);
+        STR_DISPOSE(ch->dest_buf);
         return;
       }
     }
@@ -1008,7 +1008,7 @@ void do_reset( CHAR_DATA *ch, char *argument )
     {
       send_to_char( "Reset mode off.\n", ch );
       ch->substate = SUB_NONE;
-      DISPOSE(ch->dest_buf);
+      STR_DISPOSE(ch->dest_buf);
       return;
     }
   }
@@ -1052,7 +1052,7 @@ void do_rreset( CHAR_DATA *ch, char *argument )
       bug("do_rreset: %s's dest_buf points to invalid room", ch->name);
     }
     ch->substate = SUB_NONE;
-    DISPOSE(ch->dest_buf);
+    STR_DISPOSE(ch->dest_buf);
     return;
   }
   else
@@ -1079,7 +1079,7 @@ void add_obj_reset( AREA_DATA *pArea, char cm, OBJ_DATA *obj, int v2, int v3 )
   /* Only add hide for in-room objects that are hidden and cant be moved, as
      hide is an update reset, not a load-only reset. */
   if ( cm == 'O' && IS_OBJ_STAT(obj, ITEM_HIDDEN) &&
-      !IS_SET(obj->wear_flags, ITEM_TAKE) )
+      !BV_IS_SET(obj->wear_flags, ITEM_TAKE) )
     add_reset(pArea, 'H', 1, 0, 0, 0);
   for ( inobj = obj->first_content; inobj; inobj = inobj->next_content )
     if ( inobj->pIndexData->vnum == OBJ_VNUM_TRAP )
@@ -1338,7 +1338,7 @@ void reset_area( AREA_DATA *pArea )
       char_to_room(mob, pRoomIndex);
       economize_mobgold(mob);
       level = URANGE(0, mob->top_level - 2, LEVEL_AVATAR);
-      if ( mob->vip_flags != 0 && pArea->planet )
+      if ( mob->vip_flags.any() && pArea->planet )
             pArea->planet->population++;
       break;
     

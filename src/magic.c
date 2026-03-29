@@ -132,11 +132,11 @@ int skill_lookup( const char *name )
 SKILLTYPE *get_skilltype( int sn )
 {
     if ( sn >= TYPE_PERSONAL )
-	return NULL;
+	    return NULL;
     if ( sn >= TYPE_HERB )
-	return IS_VALID_HERB(sn-TYPE_HERB) ? herb_table[sn-TYPE_HERB] : NULL;
+	    return IS_VALID_HERB(sn-TYPE_HERB) ? herb_table[sn-TYPE_HERB] : NULL;
     if ( sn >= TYPE_HIT )
-	return NULL;
+	    return NULL;
     return IS_VALID_SN(sn) ? skill_table[sn] : NULL;
 }
 
@@ -1140,7 +1140,7 @@ void do_cast( CHAR_DATA *ch, char *argument )
 	ch->tempnum = sn;
 	return;	
       case SUB_TIMER_DO_ABORT:
-        DISPOSE( ch->dest_buf );
+        STR_DISPOSE( ch->dest_buf );
 	if ( IS_VALID_SN((sn = ch->tempnum)) )
 	{
 	    if ( (skill=get_skilltype(sn)) == NULL )
@@ -1175,7 +1175,7 @@ void do_cast( CHAR_DATA *ch, char *argument )
         	mana = IS_NPC(ch) ? 0 : skill->min_mana;
 	SPRINTF( staticbuf, "%s", (const char* ) ch->dest_buf );
 	target_name = one_argument(staticbuf, arg2);
-	DISPOSE( ch->dest_buf );
+	STR_DISPOSE( ch->dest_buf );
 	ch->substate = SUB_NONE;
 	if ( skill->participants > 1 )
 	{
@@ -1208,7 +1208,7 @@ void do_cast( CHAR_DATA *ch, char *argument )
 			tmp->mana -= mana;
 		    tmp->substate = SUB_NONE;
 		    tmp->tempnum = -1;
-		    DISPOSE( tmp->dest_buf );
+		    STR_DISPOSE( tmp->dest_buf );
 		}
 		dont_wait = TRUE;
 		send_to_char( "You concentrate all the energy into a burst of force!\n", ch );
@@ -2618,7 +2618,7 @@ ch_ret spell_identify( int sn, int level, CHAR_DATA *ch, void *vo )
 	ch_printf( ch, "Damage is %d to %d (average %d).\n",
 	    obj->value[1], obj->value[2],
 	    ( obj->value[1] + obj->value[2] ) / 2 );
-	if ( obj->value[3] == WEAPON_BLASTER )
+	if ( BV_IS_SET(obj->objflags, WEAPON_BLASTER))
 	{
 	  if (obj->blaster_setting == BLASTER_FULL)
 	    ch_printf( ch, "It is set on FULL power.\n");
@@ -2635,14 +2635,13 @@ ch_ret spell_identify( int sn, int level, CHAR_DATA *ch, void *vo )
 	  ch_printf( ch, "It has %d out of %d charges.\n",
 	    obj->value[4], obj->value[5] );
 	}
-	else if ( obj->value[3] == WEAPON_LIGHTSABER ||
-	          obj->value[3] == WEAPON_VIBRO_BLADE ||
-	          obj->value[3] == WEAPON_FORCE_PIKE)
+    else if ( BV_IS_SET(obj->objflags, WEAPON_LIGHTSABER) || BV_IS_SET(obj->objflags, WEAPON_VIBRO_BLADE) ||
+            BV_IS_SET(obj->objflags, WEAPON_FORCE_PIKE) || BV_IS_SET(obj->objflags, WEAPON_VIBRO_AXE) )
 	{
 	   ch_printf( ch, "It has %d out of %d units of charge remaining.\n",
 	     obj->value[4], obj->value[5] );
 	}
-	else if ( obj->value[3] == WEAPON_BOWCASTER )
+	else if ( BV_IS_SET(obj->objflags, WEAPON_BOWCASTER) )
 	{
 	   ch_printf( ch, "It has %d out of %d energy bolts remaining.\n",
 	     obj->value[4], obj->value[5] );

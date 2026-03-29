@@ -984,7 +984,7 @@ void load_resetmsg( AREA_DATA *tarea, FILE *fp )
     }
     
     if ( tarea->resetmsg )
-	DISPOSE( tarea->resetmsg );
+		STR_DISPOSE( tarea->resetmsg );
     tarea->resetmsg = fread_string_nohash( fp );
     return;
 }
@@ -1069,23 +1069,27 @@ void load_helps( AREA_DATA *tarea, FILE *fp )
 
     for ( ; ; )
     {
-	CREATE( pHelp, HELP_DATA, 1 );
-	pHelp->level	= fread_number( fp );
-	pHelp->keyword	= fread_string( fp );
-	if ( pHelp->keyword[0] == '$' )
-	    break;
-	pHelp->text	= fread_string( fp );
-	if ( pHelp->keyword[0] == '\0' )
-	{
-	    STRFREE( pHelp->text );
-	    STRFREE( pHelp->keyword );
-	    DISPOSE( pHelp );
-	    continue;
-	}
+        CREATE( pHelp, HELP_DATA, 1 );
+        pHelp->level	= fread_number( fp );
+        pHelp->keyword	= fread_string( fp );
+        if ( pHelp->keyword[0] == '$' )
+        {
+            STRFREE( pHelp->keyword );
+            DISPOSE( pHelp );
+            break;
+        }
+        pHelp->text	= fread_string( fp );
+        if ( pHelp->keyword[0] == '\0' )
+        {
+            STRFREE( pHelp->text );
+            STRFREE( pHelp->keyword );
+            DISPOSE( pHelp );
+            continue;
+        }
 
-	if ( !str_cmp( pHelp->keyword, "greeting" ) )
-	    help_greeting = pHelp->text;
-	add_help( pHelp );
+        if ( !str_cmp( pHelp->keyword, "greeting" ) )
+            help_greeting = pHelp->text;
+        add_help( pHelp );
     }
     return;
 }
@@ -1285,14 +1289,16 @@ void load_mobiles( AREA_DATA *tarea, FILE *fp )
 	    pMobIndex->attacks		= 0;
 	    pMobIndex->defenses		= 0;
 	}
-        if ( letter == 'Z' ) /*  STar Wars Reality Complex Mob  */
-	{
-            ln = fread_line( fp );
-	    x1=x2=x3=x4=x5=x6=x7=x8=0;
-	    sscanf( ln, "%d %d %d %d %d %d %d %d",
-		&x1, &x2, &x3, &x4, &x5,  &x6,  &x7,  &x8);
-	    pMobIndex->vip_flags		= x1;
-        }
+    if ( letter == 'Z' ) /*  STar Wars Reality Complex Mob  */
+    {
+        fread_bitset_compat(fp, pMobIndex->vip_flags);        
+        /*ln = fread_line( fp );
+        x1=x2=x3=x4=x5=x6=x7=x8=0;
+        sscanf( ln, "%d %d %d %d %d %d %d %d",
+        &x1, &x2, &x3, &x4, &x5,  &x6,  &x7,  &x8);
+        pMobIndex->vip_flags		= x1;
+        */
+    }
         
 	letter = fread_letter( fp );
 	if ( letter == '>' )
@@ -1412,9 +1418,15 @@ void load_objects( AREA_DATA *tarea, FILE *fp )
 		&x1, &x2, &x3, &x4 );
 	pObjIndex->item_type		= x1;
 	pObjIndex->extra_flags		= x2;
-	pObjIndex->wear_flags		= x3;
 	pObjIndex->layers		= x4;
 
+    if (x3 == -9999) // Sentinel value - new BitSet wear_flags will have this value set at -9999
+        fread_bitset(fp, pObjIndex->wear_flags);
+    else
+    {
+        pObjIndex->wear_flags.reset();
+        pObjIndex->wear_flags.from_int(x3);
+    }
 	ln = fread_line( fp );
 	x1=x2=x3=x4=x5=x6=0;
 	sscanf( ln, "%d %d %d %d %d %d",
@@ -1430,7 +1442,10 @@ void load_objects( AREA_DATA *tarea, FILE *fp )
 	pObjIndex->cost			= fread_number( fp );
 	pObjIndex->rent		  	= fread_number( fp ); /* unused */
 
-	for ( ; ; )
+    if (pObjIndex->item_type == ITEM_WEAPON)
+        pObjIndex->objflags.set(pObjIndex->value[3]+WEAPON_FIRST);
+
+   for ( ; ; )
 	{
 	    letter = fread_letter( fp );
 
@@ -1910,33 +1925,36 @@ void load_shops( AREA_DATA *tarea, FILE *fp )
 
     for ( ; ; )
     {
-	MOB_INDEX_DATA *pMobIndex;
-	int iTrade;
+        MOB_INDEX_DATA *pMobIndex;
+        int iTrade;
 
-	CREATE( pShop, SHOP_DATA, 1 );
-	pShop->keeper		= fread_number( fp );
-	if ( pShop->keeper == 0 )
-	    break;
-	for ( iTrade = 0; iTrade < MAX_TRADE; iTrade++ )
-	    pShop->buy_type[iTrade]	= fread_number( fp );
-	pShop->profit_buy	= fread_number( fp );
-	pShop->profit_sell	= fread_number( fp );
-	pShop->profit_buy	= URANGE( pShop->profit_sell+5, pShop->profit_buy, 1000 );
-	pShop->profit_sell	= URANGE( 0, pShop->profit_sell, pShop->profit_buy-5 );
-	pShop->open_hour	= fread_number( fp );
-	pShop->close_hour	= fread_number( fp );
-				  fread_to_eol( fp );
-	pMobIndex		= get_mob_index( pShop->keeper );
-	pMobIndex->pShop	= pShop;
+        CREATE( pShop, SHOP_DATA, 1 );
+        pShop->keeper		= fread_number( fp );
+        if ( pShop->keeper == 0 )
+        {
+            DISPOSE(pShop);
+            break;
+        }
+        for ( iTrade = 0; iTrade < MAX_TRADE; iTrade++ )
+            pShop->buy_type[iTrade]	= fread_number( fp );
+        pShop->profit_buy	= fread_number( fp );
+        pShop->profit_sell	= fread_number( fp );
+        pShop->profit_buy	= URANGE( pShop->profit_sell+5, pShop->profit_buy, 1000 );
+        pShop->profit_sell	= URANGE( 0, pShop->profit_sell, pShop->profit_buy-5 );
+        pShop->open_hour	= fread_number( fp );
+        pShop->close_hour	= fread_number( fp );
+        fread_to_eol( fp );
+        pMobIndex		= get_mob_index( pShop->keeper );
+        pMobIndex->pShop	= pShop;
 
-	if ( !first_shop )
-	    first_shop		= pShop;
-	else
-	    last_shop->next	= pShop;
-	pShop->next		= NULL;
-	pShop->prev		= last_shop;
-	last_shop		= pShop;
-	top_shop++;
+        if ( !first_shop )
+            first_shop		= pShop;
+        else
+            last_shop->next	= pShop;
+        pShop->next		= NULL;
+        pShop->prev		= last_shop;
+        last_shop		= pShop;
+        top_shop++;
     }
     return;
 }
@@ -1956,7 +1974,10 @@ void load_repairs( AREA_DATA *tarea, FILE *fp )
 	CREATE( rShop, REPAIR_DATA, 1 );
 	rShop->keeper		= fread_number( fp );
 	if ( rShop->keeper == 0 )
+    {
+        DISPOSE(rShop);
 	    break;
+    }
 	for ( iFix = 0; iFix < MAX_FIX; iFix++ )
 	  rShop->fix_type[iFix] = fread_number( fp );
 	rShop->profit_fix	= fread_number( fp );
@@ -2604,6 +2625,7 @@ OBJ_DATA *create_object( OBJ_INDEX_DATA *pObjIndex, int level )
     obj->value[5]	= pObjIndex->value[5];
     obj->weight		= pObjIndex->weight;
     obj->cost		= pObjIndex->cost;
+    obj->objflags   = pObjIndex->objflags;
     /*
     obj->cost		= number_fuzzy( 10 )
 			* number_fuzzy( level ) * number_fuzzy( level );
@@ -2726,16 +2748,13 @@ OBJ_DATA *create_object( OBJ_INDEX_DATA *pObjIndex, int level )
 	   obj->value[1] = obj->value[2]/3;
 	if (obj->value[0] == 0)
 	   obj->value[0] = INIT_WEAPON_CONDITION;
-	switch (obj->value[3])
-	{ 
-	  case WEAPON_BLASTER: 
-	  case WEAPON_LIGHTSABER: 
-	  case WEAPON_VIBRO_BLADE:
-	  case WEAPON_FORCE_PIKE:
-	  case WEAPON_BOWCASTER:
+    if ( (BV_IS_SET(obj->objflags,WEAPON_LIGHTSABER)) || (BV_IS_SET(obj->objflags,WEAPON_VIBRO_BLADE)) 
+                || (BV_IS_SET(obj->objflags,WEAPON_FORCE_PIKE)) || (BV_IS_SET(obj->objflags,WEAPON_VIBRO_AXE))
+                || (BV_IS_SET(obj->objflags,WEAPON_BLASTER)) || (BV_IS_SET(obj->objflags,WEAPON_BOWCASTER)))	
+    { 
 	    if ( obj->value[5] <=0 )
 	      obj->value[5] = number_fuzzy(1000);
-	}
+	}    
 	obj->value[4] = obj->value[5]; 
 	break;
 
@@ -2876,7 +2895,7 @@ void free_char( CHAR_DATA *ch )
       stop_editing( ch );
 
     if ( ch->inter_editing )
-      DISPOSE( ch->inter_editing );
+      STR_DISPOSE( ch->inter_editing );
 
     stop_hunting( ch );
     stop_hating ( ch );
@@ -2890,27 +2909,26 @@ void free_char( CHAR_DATA *ch )
 	  free_note( ch->pcdata->pnote );
 	
 	STRFREE( ch->pcdata->clan_name	);
-        DISPOSE( ch->pcdata->pwd	);  /* no hash */
-	DISPOSE( ch->pcdata->email	);  /* no hash */
-	DISPOSE( ch->pcdata->bamfin	);  /* no hash */
-	DISPOSE( ch->pcdata->bamfout	);  /* no hash */
-	DISPOSE( ch->pcdata->rank	);
+    STR_DISPOSE( ch->pcdata->pwd	);  /* no hash */
+	STR_DISPOSE( ch->pcdata->email	);  /* no hash */
+	STR_DISPOSE( ch->pcdata->bamfin	);  /* no hash */
+	STR_DISPOSE( ch->pcdata->bamfout	);  /* no hash */
+	STR_DISPOSE( ch->pcdata->rank	);
 	STRFREE( ch->pcdata->title	);
 	STRFREE( ch->pcdata->bio	); 
-	DISPOSE( ch->pcdata->bestowments ); /* no hash */
-	DISPOSE( ch->pcdata->homepage	);  /* no hash */
+	STR_DISPOSE( ch->pcdata->bestowments ); /* no hash */
+	STR_DISPOSE( ch->pcdata->homepage	);  /* no hash */
 	STRFREE( ch->pcdata->authed_by	);
 	STRFREE( ch->pcdata->prompt	);
 	if ( ch->pcdata->subprompt )
 	   STRFREE( ch->pcdata->subprompt );
-        free_aliases( ch );
-	DISPOSE( ch->pcdata );
+    free_aliases( ch );
      }
 
     for ( mpact = ch->mpact; mpact; mpact = mpact_next )
     {
 	mpact_next = mpact->next;
-	DISPOSE( mpact->buf );
+	STR_DISPOSE( mpact->buf );
 	DISPOSE( mpact	    );
     }
     if( ch->pcdata )
@@ -2924,6 +2942,7 @@ void free_char( CHAR_DATA *ch )
 		STRFREE( comments->date    );
 		DISPOSE( comments          );
 		}
+	delete( ch->pcdata );
 	DISPOSE( ch );
 	return;
 }
@@ -3155,56 +3174,99 @@ int fread_number( FILE *fp )
     {
         if ( feof(fp) )
         {
-          bug("fread_number: EOF encountered on read.\n");
-          if ( fBootDb )
-            exit(1);
-          return 0;
+            bug("fread_number: EOF encountered on read.\n");
+            if ( fBootDb )
+                exit(1);
+            return 0;
         }
-	c = getc( fp );
+        c = getc( fp );
     }
     while ( isspace(c) );
 
     number = 0;
-
     sign   = FALSE;
+
     if ( c == '+' )
     {
-	c = getc( fp );
+        c = getc( fp );
     }
     else if ( c == '-' )
     {
-	sign = TRUE;
-	c = getc( fp );
+        sign = TRUE;
+        c = getc( fp );
     }
 
     if ( !isdigit(c) )
     {
-	bug( "Fread_number: bad format. (%c)", c );
-	if ( fBootDb )
-	  exit( 1 );
-	return 0;
+        bug( "Fread_number: bad format. (%c)", c );
+        if ( fBootDb )
+            exit( 1 );
+        return 0;
     }
 
     while ( isdigit(c) )
     {
         if ( feof(fp) )
         {
-          bug("fread_number: EOF encountered on read.\n");
-          if ( fBootDb )
-            exit(1);
-          return number;
+            bug("fread_number: EOF encountered on read.\n");
+            if ( fBootDb )
+                exit(1);
+            return number;
         }
-	number = number * 10 + c - '0';
-	c      = getc( fp );
+
+        int digit = c - '0';
+
+        /* Prevent signed overflow */
+        if ( number > (INT_MAX - digit) / 10 )
+        {
+            bug("fread_number: integer overflow");
+
+            number = INT_MAX;
+
+            /* consume remaining digits */
+            do
+            {
+                c = getc(fp);
+            } while (isdigit(c));
+
+            break;
+        }
+
+        number = number * 10 + digit;
+        c = getc( fp );
     }
 
+    /* Safe negation */
     if ( sign )
-	number = 0 - number;
+    {
+        if ( number == INT_MIN )
+        {
+            bug("fread_number: INT_MIN negation overflow");
+            return INT_MIN;
+        }
+        number = -number;
+    }
 
+    /* Safe recursive addition */
     if ( c == '|' )
-	number += fread_number( fp );
+    {
+        int other = fread_number( fp );
+
+        if ( (other > 0 && number > INT_MAX - other) ||
+             (other < 0 && number < INT_MIN - other) )
+        {
+            bug("fread_number: overflow on '|'");
+            number = (other > 0) ? INT_MAX : INT_MIN;
+        }
+        else
+        {
+            number += other;
+        }
+    }
     else if ( c != ' ' )
-	ungetc( c, fp );
+    {
+        ungetc( c, fp );
+    }
 
     return number;
 }
@@ -3585,7 +3647,7 @@ char *fread_word(FILE *fp)
         }
         c = getc(fp);
     }
-    while (isspace(c));
+    while (isspace((unsigned char)c));
 
     /* Handle quoted words */
     if (c == '\'' || c == '"')
@@ -3599,10 +3661,23 @@ char *fread_word(FILE *fp)
         unsigned char utf8[4];
         int len = sanitize_utf8_char(fp, c, utf8);
 
-        if (len > 0)
+        if (len == -1)
+        {
+            if (pword < word + MAX_INPUT_LENGTH - 1)
+                *pword++ = '?';
+        }
+        else
         {
             for (int i = 0; i < len; i++)
+            {
+                if (pword >= word + MAX_INPUT_LENGTH - 1)
+                {
+                    bug("fread_word: word too long");
+                    exit(1);
+                }
+
                 *pword++ = utf8[i];
+            }
         }
     }
 
@@ -3619,7 +3694,7 @@ char *fread_word(FILE *fp)
         int raw = getc(fp);
 
         /* End conditions */
-        if ((cEnd == ' ' && isspace(raw)) ||
+        if ((cEnd == ' ' && isspace((unsigned char)raw)) ||
             (cEnd != ' ' && raw == cEnd))
         {
             if (cEnd == ' ')
@@ -3631,7 +3706,11 @@ char *fread_word(FILE *fp)
         int len = sanitize_utf8_char(fp, raw, utf8);
 
         if (len == -1)
+        {
+            if (pword < word + MAX_INPUT_LENGTH - 1)
+                *pword++ = '?';
             continue;
+        }
 
         for (int i = 0; i < len; i++)
         {
@@ -4746,7 +4825,8 @@ void make_wizlist( )
   struct dirent *dentry;
   FILE *gfp;
   const char *word;
-  int ilevel, iflags;
+  int ilevel;
+  FLAG_SET iflags;
   WIZENT *wiz, *wiznext;
   char buf[MAX_STRING_LENGTH];
 
@@ -4769,14 +4849,26 @@ void make_wizlist( )
 	  ilevel = fread_number( gfp );
           fread_to_eol( gfp );
 	  word = feof( gfp ) ? "End" : fread_word( gfp );
-          if ( !str_cmp( word, "Pcflags" ) )
-	    iflags = fread_number( gfp );
-          else
-	    iflags = 0;
+
+		if ( !str_cmp( word, "Pcflags" ) )
+		{
+			int legacy = fread_number(gfp);
+
+			iflags.reset();  // ensure clean state
+			iflags = int_to_bitset(legacy);
+
+		break;				
+		}
+		else
+			iflags.reset();
+		if ( !str_cmp( word, "PcflagsEx" ) )
+			fread_bitset(gfp, iflags);
+		else
+			iflags.reset();			 
 	  FCLOSE( gfp );
-          if ( IS_SET( iflags, PCFLAG_RETIRED ) )
+          if ( BV_IS_SET( iflags, PCFLAG_RETIRED ) )
             ilevel = MAX_LEVEL - 9;
-          if ( IS_SET( iflags, PCFLAG_GUEST ) )
+          if ( BV_IS_SET( iflags, PCFLAG_GUEST ) )
             ilevel = MAX_LEVEL - 9;
 	  add_to_wizlist( dentry->d_name, ilevel );
 	}
@@ -4838,7 +4930,7 @@ void make_wizlist( )
   for ( wiz = first_wiz; wiz; wiz = wiznext )
   {
     wiznext = wiz->next;
-    DISPOSE(wiz->name);
+    STR_DISPOSE(wiz->name);
     DISPOSE(wiz);
   }
   first_wiz = NULL;
@@ -5652,7 +5744,7 @@ OBJ_INDEX_DATA *make_object( int vnum, int cvnum, char *name )
 	  pObjIndex->description[0]	= UPPER(pObjIndex->description[0]);
 	  pObjIndex->item_type		= ITEM_TRASH;
 	  pObjIndex->extra_flags	= ITEM_PROTOTYPE;
-	  pObjIndex->wear_flags		= 0;
+	  pObjIndex->wear_flags.reset();
 	  pObjIndex->value[0]		= 0;
 	  pObjIndex->value[1]		= 0;
 	  pObjIndex->value[2]		= 0;
@@ -5678,6 +5770,7 @@ OBJ_INDEX_DATA *make_object( int vnum, int cvnum, char *name )
 	  pObjIndex->value[3]		= cObjIndex->value[3];
 	  pObjIndex->weight		= cObjIndex->weight;
 	  pObjIndex->cost		= cObjIndex->cost;
+      pObjIndex->objflags   =   cObjIndex->objflags;
 	  for ( ced = cObjIndex->first_extradesc; ced; ced = ced->next )
 	  {
 		CREATE( ed, EXTRA_DESCR_DATA, 1 );
@@ -5981,7 +6074,7 @@ void load_area_file( AREA_DATA *tarea, char *filename )
 		}
 		else
 		{
-		  DISPOSE( tarea->name );
+		  STR_DISPOSE( tarea->name );
 		  tarea->name = fread_string_nohash( fpArea );
 		}
 	}

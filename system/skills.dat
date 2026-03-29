@@ -172,13 +172,13 @@ End
 Name         choke~
 Type         Spell
 Flags        4
-Target       1
+Target       5
 Minpos       7
 Slot         63
 Mana         20
 Rounds       12
 Guild        7
-Code         spell_cause_critical
+Code         spell_cause_critical_no_fighting
 Dammsg       spell~
 Wearoff      !Cause Critical!~
 Hitchar      Stretching out with the force you slowly choke your victim.~
@@ -209,7 +209,7 @@ Dice         none~
 Value        30
 Teachers     50 605~
 Affect       'l*5' 28 '8' 0
-Minlevel     60
+Minlevel     75
 End
 
 #SKILL
@@ -248,7 +248,7 @@ Hitvict      Your critical wounds close and your pain ebbs away.~
 Teachers     50~
 Affect       '' 13 '3d8+(l-6)' 0
 Alignment   1001
-Minlevel     18
+Minlevel     50
 End
 
 #SKILL
@@ -326,7 +326,7 @@ Dammsg       ~
 Wearoff      You stop focusing on the Dark Side.~
 Hitvict      Traces of red outline all those who abuse the Force.~
 Hitroom      A tint of red appears in $N's eyes, mirroring his own vision.~
-Teachers     60 7310~
+Teachers     50 7310~
 Affect       'l*24' 26 'detect evil' 4
 Alignment   1001
 Minlevel     5
@@ -347,7 +347,7 @@ Dammsg       ~
 Wearoff      The blue outlines disappear from your vision.~
 Hitvict      Traces of blue outline objects touched by the Force.~
 Hitroom      A tint of blue in $N's eyes mirrors $S own perception.~
-Teachers     60 605 6112 7310~
+Teachers     50 605 6112 7310~
 Affect       'l*24' 26 'detect magic' 16
 Minlevel     5
 End
@@ -752,7 +752,7 @@ Wearoff      You no longer see in the dark.~
 Hitchar      $N's eyes dart about as they grow accustomed to Force sight.~
 Hitvict      Heat appears red through your eyes.~
 Hitroom      $N's eyes dart about as they grow accustomed to Force sight.~
-Teachers     60 605 6112 7310~
+Teachers     50 605 6112 7310~
 Affect       'l*24' 26 'infravision' 512
 Minlevel     4
 End
@@ -915,7 +915,7 @@ Hitvict      A warm feeling fills your body.~
 Teachers     50~
 Affect       '' 13 '100' 0
 Alignment   1001
-Minlevel     30
+Minlevel     75
 End
 
 #SKILL
@@ -954,7 +954,7 @@ Hitchar      Shards of iridescent light collide to form a dazzling ball...~
 Hitroom      Shards of iridescent light collide to form a dazzling ball...~
 Dice         0~
 Value        21
-Teachers     605 60 6112 7310~
+Teachers     605 50 6112 7310~
 Minlevel     4
 End
 
@@ -1183,8 +1183,7 @@ Hitvict      A luminous aura spreads slowly over your body.~
 Hitroom      A luminous aura spreads slowly over $N's body.~
 Teachers     50~
 Affect       '(l*4)+30' 26 'sanctuary' 128
-Alignment   1001
-Minlevel     27
+Minlevel     75
 End
 
 #SKILL
@@ -1202,7 +1201,7 @@ Dammsg       scorching surge~
 Wearoff      !Scorching Surge!~
 Teachers     605~
 Alignment   -1001
-Minlevel     73
+Minlevel     75
 End
 
 #SKILL
@@ -1263,7 +1262,7 @@ Hitroom      Torrents of cascading energy form around $N.~
 Teachers     605~
 Affect       '(l*3)+14' 26 'shockshield' 67108864
 Alignment   -1001
-Minlevel     72
+Minlevel     75
 End
 
 #SKILL
@@ -1302,7 +1301,6 @@ Teachers     50~
 Affect       '' 40 '' 0
 Affect       'l*20' 40 'l/8' 0
 Affect       'l*24' 2 '1+(l/17)' 0
-Alignment   1001
 Minlevel     18
 End
 
@@ -1488,7 +1486,7 @@ Guild        0
 Code         do_bash
 Dammsg       bash~
 Wearoff      !Bash!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     47
 End
 
@@ -1517,7 +1515,7 @@ Guild        0
 Code         do_berserk
 Dammsg       ~
 Wearoff      ???~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     85
 End
 
@@ -1587,7 +1585,7 @@ Code         do_climb
 Dammsg       climb~
 Wearoff      !climb!~
 Teachers     32009 410 1983~
-Minlevel     7
+Minlevel     2
 End
 
 #SKILL
@@ -1598,7 +1596,7 @@ Guild        7
 Code         do_disguise
 Dammsg       ~
 Teachers     605 50~
-Minlevel     35
+Minlevel     50
 End
 
 #SKILL
@@ -1608,6 +1606,7 @@ Flags        0
 Guild        7
 Code         spell_null
 Dammsg       ~
+Teachers     50 605 6112 7310~
 Minlevel     20
 End
 
@@ -1648,7 +1647,7 @@ Guild        0
 Code         do_disarm
 Dammsg       ~
 Wearoff      !Disarm!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     45
 End
 
@@ -1675,7 +1674,7 @@ Guild        0
 Code         spell_null
 Dammsg       ~
 Wearoff      !Dodge!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     50
 End
 
@@ -1717,7 +1716,7 @@ Guild        0
 Code         spell_null
 Dammsg       ~
 Wearoff      !Dual Wield!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     27
 End
 
@@ -1744,7 +1743,7 @@ Guild        0
 Code         spell_null
 Dammsg       ~
 Wearoff      !Enhanced Damage!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     10
 End
 
@@ -1768,7 +1767,7 @@ Guild        0
 Code         spell_null
 Dammsg       ~
 Wearoff      !Fifth Attack!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757~
 Minlevel     140
 End
 
@@ -1814,7 +1813,7 @@ Guild        0
 Code         spell_null
 Dammsg       ~
 Wearoff      !Fourth Attack!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757~
 Minlevel     115
 End
 
@@ -1856,7 +1855,7 @@ Guild        0
 Code         do_gouge
 Dammsg       gouge~
 Wearoff      !Gouge!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     30
 End
 
@@ -1869,7 +1868,7 @@ Guild        0
 Code         spell_null
 Dammsg       ~
 Wearoff      !done!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     61
 End
 
@@ -1882,7 +1881,7 @@ Guild        0
 Code         spell_null
 Dammsg       ~
 Wearoff      !Grip!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     50
 End
 
@@ -1926,10 +1925,10 @@ Flags        0
 Minpos       8
 Rounds       12
 Guild        0
-Code         do_hitall
+Code         spell_null
 Dammsg       hit~
 Wearoff      !HitAll!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     87
 End
 
@@ -1992,7 +1991,7 @@ Guild        0
 Code         do_kick
 Dammsg       kick~
 Wearoff      !Kick!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     6
 End
 
@@ -2089,6 +2088,7 @@ Minpos       5
 Guild        2
 Code         do_makebowcaster
 Dammsg       ~
+Teachers     29919 ~
 Minlevel     40
 End
 
@@ -2132,6 +2132,17 @@ Minlevel     10
 End
 
 #SKILL
+Name         makefurniture~
+Type         Skill
+Flags        0
+Guild        2
+Code         do_say
+Dammsg       ~
+Teachers     28607 32010 206~
+Minlevel     101
+End
+
+#SKILL
 Name         makegrenade~
 Type         Skill
 Flags        0
@@ -2168,6 +2179,17 @@ Dammsg       ~
 Wearoff      !done!~
 Teachers     32010 206~
 Minlevel     80
+End
+
+#SKILL
+Name         makemedpac~
+Type         Skill
+Flags        0
+Guild        2
+Code         do_makemedpac
+Dammsg       ~
+Teachers     28607 32010 206~
+Minlevel     75
 End
 
 #SKILL
@@ -2209,9 +2231,9 @@ Code         spell_smaug
 Dammsg       ~
 Hitvict      You meditate peacefully, tuning yourself to the Force.~
 Missvict     You spend several minutes in deep concentration, but fail to find the Force.~
-Teachers     3198~
+Teachers     0~
 Affect       '' 12 'l' 0
-Minlevel     1
+Minlevel     2
 End
 
 #SKILL
@@ -2237,7 +2259,7 @@ Guild        0
 Code         do_mine
 Dammsg       ~
 Wearoff      !mine!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     90
 End
 
@@ -2251,7 +2273,7 @@ Guild        0
 Code         do_mount
 Dammsg       ~
 Wearoff      !Search!~
-Teachers     412 10509~
+Teachers     412 10509 9757 9718~
 Minlevel     7
 End
 
@@ -2278,7 +2300,7 @@ Code         spell_null
 Dammsg       ~
 Wearoff      !Parry!~
 Teachers     50 605~
-Minlevel     25
+Minlevel     35
 End
 
 #SKILL
@@ -2373,10 +2395,10 @@ Target       1
 Minpos       7
 Rounds       8
 Guild        0
-Code         do_punch
+Code         spell_null
 Dammsg       punch~
 Wearoff      !Punch!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     40
 End
 
@@ -2395,6 +2417,17 @@ Minlevel     60
 End
 
 #SKILL
+Name         repair_module~
+Type         Skill
+Flags        0
+Guild        2
+Code         do_repair_module
+Dammsg       ~
+Teachers     32010 206~
+Minlevel     110
+End
+
+#SKILL
 Name         rescue~
 Type         Skill
 Flags        0
@@ -2404,7 +2437,7 @@ Guild        0
 Code         do_rescue
 Dammsg       ~
 Wearoff      !Rescue!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     8
 End
 
@@ -2429,7 +2462,7 @@ Guild        0
 Code         do_scan
 Dammsg       ~
 Wearoff      !Scan!~
-Teachers     10340 32012 320 10509~
+Teachers     10340 32012 320 10509 9757 9718~
 Minlevel     1
 End
 
@@ -2469,7 +2502,7 @@ Guild        0
 Code         spell_null
 Dammsg       ~
 Wearoff      !Second Attack!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     45
 End
 
@@ -2609,7 +2642,7 @@ Guild        0
 Code         do_snipe
 Dammsg       ~
 Wearoff      !snipe!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     2
 End
 
@@ -2733,19 +2766,6 @@ Minlevel     50
 End
 
 #SKILL
-Name         study~
-Type         Skill
-Flags        0
-Target       4
-Rounds       12
-Guild        5
-Code         do_study
-Dammsg       ~
-Teachers     10340 32006 10104~
-Minlevel     0
-End
-
-#SKILL
 Name         stun~
 Type         Skill
 Flags        4
@@ -2768,7 +2788,7 @@ Guild        0
 Code         spell_null
 Dammsg       ~
 Wearoff      !Third Attack!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     95
 End
 
@@ -2779,10 +2799,10 @@ Flags        0
 Minpos       6
 Rounds       3
 Guild        0
-Code         do_throw
+Code         spell_null
 Dammsg       ~
 Wearoff      !throw!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     5
 End
 
@@ -2867,7 +2887,7 @@ Guild        0
 Code         spell_null
 Dammsg       ~
 Wearoff      !Blasters!~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     2
 End
 
@@ -2890,7 +2910,7 @@ Minpos       7
 Guild        0
 Code         spell_null
 Dammsg       ~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     4
 End
 
@@ -2912,7 +2932,7 @@ Flags        0
 Guild        0
 Code         spell_null
 Dammsg       ~
-Teachers     32012 32011 412 10509~
+Teachers     32012 32011 412 10509 9757 9718~
 Minlevel     3
 End
 
@@ -2949,7 +2969,7 @@ Guild        0
 Code         spell_null
 Dammsg       ~
 Wearoff      !Vibro-Blades!~
-Teachers     10340 32012 32011 412 10509~
+Teachers     10340 1340 32012 32011 412 10509 9757 9718~
 Minlevel     1
 End
 
@@ -2982,7 +3002,7 @@ Minlevel     0
 End
 
 #SKILL
-Name         bothan~
+Name         bothese~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3030,7 +3050,7 @@ Minlevel     1
 End
 
 #SKILL
-Name         devaronian~
+Name         devaronese~
 Type         Tongue
 Flags        0
 Code         spell_smaug
@@ -3039,7 +3059,7 @@ Minlevel     0
 End
 
 #SKILL
-Name         duros~
+Name         durese~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3048,7 +3068,7 @@ Minlevel     0
 End
 
 #SKILL
-Name         ewok~
+Name         ewokese~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3067,7 +3087,7 @@ Minlevel     0
 End
 
 #SKILL
-Name         firrerreo~
+Name         firrerrean~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3076,7 +3096,7 @@ Minlevel     0
 End
 
 #SKILL
-Name         gamorrean~
+Name         gamorrese~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3095,7 +3115,7 @@ Minlevel     0
 End
 
 #SKILL
-Name         gotal~
+Name         gotalse~
 Type         Tongue
 Flags        0
 Code         spell_smaug
@@ -3104,7 +3124,16 @@ Minlevel     0
 End
 
 #SKILL
-Name         hutt~
+Name         honoghran~
+Type         Tongue
+Flags        0
+Code         spell_null
+Dammsg       ~
+Minlevel     0
+End
+
+#SKILL
+Name         huttese~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3114,7 +3143,7 @@ Minlevel     1
 End
 
 #SKILL
-Name         ithorian~
+Name         ithorese~
 Type         Tongue
 Flags        0
 Code         spell_smaug
@@ -3123,7 +3152,7 @@ Minlevel     0
 End
 
 #SKILL
-Name         jawa~
+Name         jawaese~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3133,7 +3162,7 @@ Minlevel     1
 End
 
 #SKILL
-Name         kubaz~
+Name         kubazian~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3152,7 +3181,7 @@ Minlevel     1
 End
 
 #SKILL
-Name         quarren~
+Name         quarrenese~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3162,7 +3191,7 @@ Minlevel     1
 End
 
 #SKILL
-Name         rodian~
+Name         rodese~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3182,7 +3211,7 @@ Minlevel     1
 End
 
 #SKILL
-Name         sullustan~
+Name         sullustese~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3192,7 +3221,7 @@ Minlevel     1
 End
 
 #SKILL
-Name         togorian~
+Name         togorese~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3201,7 +3230,7 @@ Minlevel     0
 End
 
 #SKILL
-Name         trandoshan~
+Name         dosh~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3211,7 +3240,7 @@ Minlevel     1
 End
 
 #SKILL
-Name         twilek~
+Name         ryl~
 Type         Tongue
 Flags        0
 Code         spell_null
@@ -3231,7 +3260,7 @@ Minlevel     1
 End
 
 #SKILL
-Name         wookiee~
+Name         shyriiwook~
 Type         Tongue
 Flags        0
 Code         spell_null

@@ -2673,7 +2673,7 @@ void do_setspaceobject( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "filename" ) )
     {
-	DISPOSE( spaceobject->filename );
+	STR_DISPOSE( spaceobject->filename );
 	spaceobject->filename = strdup( argument );
 	send_to_char( "Done.\n", ch );
 	save_spaceobject( spaceobject );
@@ -5049,7 +5049,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "filename" ) )
     {
-	DISPOSE( ship->filename );
+	STR_DISPOSE( ship->filename );
 	ship->filename = str_dup( argument );
 	send_to_char( "Done.\n", ch );
 	save_ship( ship );
@@ -8955,11 +8955,11 @@ void do_target(CHAR_DATA *ch, char *argument )
     		if ( !ch->dest_buf )
     		   return;
     		SPRINTF(arg, "%s", ( const char* ) ch->dest_buf);
-    		DISPOSE( ch->dest_buf);
+    		STR_DISPOSE( ch->dest_buf);
     		break;
 
     	case SUB_TIMER_DO_ABORT:
-    		DISPOSE( ch->dest_buf );
+    		STR_DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
     		if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
     		      return;
@@ -10309,11 +10309,11 @@ void do_repairship(CHAR_DATA *ch, char *argument )
     		if ( !ch->dest_buf )
     		   return;
     		SPRINTF(arg, "%s", (const char * ) ch->dest_buf);
-    		DISPOSE( ch->dest_buf);
+    		STR_DISPOSE( ch->dest_buf);
     		break;
 
     	case SUB_TIMER_DO_ABORT:
-    		DISPOSE( ch->dest_buf );
+    		STR_DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
     		if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
     		      return;
@@ -11945,11 +11945,11 @@ void do_hmm( CHAR_DATA *ch, char *argument )
     		if ( !ch->dest_buf )
     		   return;
     		SPRINTF(arg, ch->dest_buf);
-    		DISPOSE( ch->dest_buf);
+    		STR_DISPOSE( ch->dest_buf);
     		break;
     		
     	case SUB_TIMER_DO_ABORT:
-    		DISPOSE( ch->dest_buf );
+    		STR_DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
     		if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
     		      return;    		                                   

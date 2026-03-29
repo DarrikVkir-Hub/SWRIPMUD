@@ -905,7 +905,7 @@ void new_descriptor( int new_desc )
 #endif
     memset(dnew->telopt_us,  0, sizeof(dnew->telopt_us));
     memset(dnew->telopt_him, 0, sizeof(dnew->telopt_him));
-    CREATE( dnew->outbuf, char, dnew->outsize );
+    CREATE_ARRAY( dnew->outbuf, char, dnew->outsize );
 
     SPRINTF( buf, "%s", inet_ntoa( sock.sin_addr ) );
 
@@ -1031,6 +1031,7 @@ void new_descriptor( int new_desc )
 
 
 // End Telnet Initiation
+
     /*
      * Send the greeting.
      */
@@ -1048,7 +1049,7 @@ void new_descriptor( int new_desc )
     if ( sysdata.maxplayers > sysdata.alltimemax )
     {
       if ( sysdata.time_of_max )
-        DISPOSE(sysdata.time_of_max);
+        STR_DISPOSE(sysdata.time_of_max);
       SPRINTF(buf, "%24.24s", ctime(&current_time));
       sysdata.time_of_max = str_dup(buf);
       sysdata.alltimemax = sysdata.maxplayers;
@@ -1068,7 +1069,7 @@ void free_desc( DESCRIPTOR_DATA *d )
     close( d->descriptor );
     d->descriptor = -1;
     STRFREE( d->host );
-    DISPOSE( d->outbuf );
+    DISPOSE_ARRAY( d->outbuf );
     STRFREE( d->user );    /* identd */
 
 
@@ -1080,7 +1081,7 @@ void free_desc( DESCRIPTOR_DATA *d )
 #endif
 
     if ( d->pagebuf )
-	    DISPOSE( d->pagebuf );
+	    DISPOSE_ARRAY( d->pagebuf );
     --num_descriptors;
     return;
 }
@@ -2573,7 +2574,15 @@ void write_to_buffer_raw(DESCRIPTOR_DATA *d, const unsigned char *data, int leng
         }
 
         d->outsize *= 2;
-        RECREATE(d->outbuf, char, d->outsize);
+        char *newbuf = new char[d->outsize](); // value-initialize
+
+        if (d->outbuf)
+        {
+            memcpy(newbuf, d->outbuf, d->outtop);
+            delete[] d->outbuf;
+        }
+
+        d->outbuf = newbuf;
     }
 
     /*
@@ -2716,7 +2725,15 @@ static void flush_color(DESCRIPTOR_DATA *d)
             while (d->outtop + (size_t)ln >= d->outsize)
             {
                 d->outsize *= 2;
-                RECREATE(d->outbuf, char, d->outsize);
+                char *newbuf = new char[d->outsize];
+
+                if (d->outbuf)
+                {
+                    memcpy(newbuf, d->outbuf, d->outtop); // copy valid data
+                    delete[] d->outbuf;
+                }
+
+                d->outbuf = newbuf;
             }
 
             memcpy(d->outbuf + d->outtop, colbuf, (size_t)ln);
@@ -2885,7 +2902,15 @@ static void copy_with_newlines(DESCRIPTOR_DATA *d,
         if (d->outtop + needed >= d->outsize)
         {
             d->outsize *= 2;
-            RECREATE(d->outbuf, char, d->outsize);
+            char *newbuf = new char[d->outsize];
+
+            if (d->outbuf)
+            {
+                memcpy(newbuf, d->outbuf, d->outtop); // copy valid data
+                delete[] d->outbuf;
+            }
+
+            d->outbuf = newbuf;            
         }
 
         /* unified CR/LF handling */
@@ -2914,7 +2939,15 @@ static void copy_with_newlines(DESCRIPTOR_DATA *d,
         if (d->outtop + char_len >= d->outsize)
         {
             d->outsize *= 2;
-            RECREATE(d->outbuf, char, d->outsize);
+            char *newbuf = new char[d->outsize];
+
+            if (d->outbuf)
+            {
+                memcpy(newbuf, d->outbuf, d->outtop); // copy valid data
+                delete[] d->outbuf;
+            }
+
+            d->outbuf = newbuf;
         }
 
         /* Copy full character */
@@ -2995,7 +3028,15 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
             return;
         }
         d->outsize *= 2;
-        RECREATE( d->outbuf, char, d->outsize );
+        char *newbuf = new char[d->outsize];
+
+        if (d->outbuf)
+        {
+            memcpy(newbuf, d->outbuf, d->outtop); // copy valid data
+            delete[] d->outbuf;
+        }
+
+        d->outbuf = newbuf;
     }
 
     // COLOR-AWARE COPY
@@ -3115,7 +3156,7 @@ void show_title( DESCRIPTOR_DATA *d )
 
     ch = d->character;
 
-    if ( !IS_SET( ch->pcdata->flags, PCFLAG_NOINTRO ) )
+    if ( !BV_IS_SET( ch->pcdata->flags, PCFLAG_NOINTRO ) )
     {
 	if (IS_SET(ch->act, PLR_ANSI))
 	  send_ansi_title(ch);
@@ -3418,7 +3459,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
             }
         }
 
-        DISPOSE( ch->pcdata->pwd );
+        STR_DISPOSE( ch->pcdata->pwd );
         ch->pcdata->pwd	= str_dup( pwdnew );
         output_to_descriptor( d, "\nPlease retype the password to confirm: " );
         d->connected = CON_CONFIRM_NEW_PASSWORD;
@@ -3440,7 +3481,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
         }
     }
 
-    DISPOSE(ch->pcdata->pwd);
+    STR_DISPOSE(ch->pcdata->pwd);
     ch->pcdata->pwd = str_dup(pwdnewhash);
     /*
 
@@ -3933,7 +3974,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
             {
             char_to_room( ch, get_room_index( ROOM_VNUM_SCHOOL ) );
             ch->pcdata->auth_state = 1;
-            SET_BIT(ch->pcdata->flags, PCFLAG_UNAUTHED);
+            BV_SET_BIT(ch->pcdata->flags, PCFLAG_UNAUTHED);
             }
             /* Display_prompt interprets blank as default */
     //	    ch->pcdata->prompt = STRALLOC("");
@@ -4177,7 +4218,7 @@ short check_reconnect( DESCRIPTOR_DATA *d, char *name, bool fConn )
 	    }
 	    if ( fConn == FALSE )
 	    {
-		DISPOSE( d->character->pcdata->pwd );
+		STR_DISPOSE( d->character->pcdata->pwd );
 		d->character->pcdata->pwd = str_dup( ch->pcdata->pwd );
 	    }
 	    else
@@ -4442,12 +4483,20 @@ void write_to_pager( DESCRIPTOR_DATA *d, const char *txt, int length )
       bug( "Pager overflow.  Ignoring.\n" );
       d->pagelen = 0;
       d->pagepoint = PAGEPOINT_NULL;
-      DISPOSE(d->pagebuf);
+      DISPOSE_ARRAY(d->pagebuf);
       d->pagesize = MAX_STRING_LENGTH;
       return;
     }
     d->pagesize *= 2;
-    RECREATE(d->pagebuf, char, d->pagesize);
+    char *newbuf = new char[d->pagesize];
+
+    if (d->pagebuf)
+    {
+        memcpy(newbuf, d->pagebuf, d->pagelen);
+        delete[] d->pagebuf;
+    }
+
+    d->pagebuf = newbuf;
   }
     memcpy(d->pagebuf + d->pagelen, txt, length);  
 
@@ -4478,7 +4527,7 @@ void send_to_pager( const char *txt, CHAR_DATA *ch )
     DESCRIPTOR_DATA *d = ch->desc;
     
     ch = d->original ? d->original : d->character;
-    if ( IS_NPC(ch) || !IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
+    if ( IS_NPC(ch) || !BV_IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
     {
 	    send_to_char(txt, d->character);
 	    return;
@@ -4521,7 +4570,7 @@ void send_to_pager_color( const char *txt, CHAR_DATA *ch )
       d = ch->desc;
      ch = d->original ? d->original : d->character;
 
-    if ( IS_NPC(ch) || !IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
+    if ( IS_NPC(ch) || !BV_IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
     {
         send_to_char_color(txt, d->character);
         return;
@@ -5412,7 +5461,7 @@ bool pager_output( DESCRIPTOR_DATA *d )
         d->pagelen = 0;
         d->pagepoint = PAGEPOINT_NULL;
         flush_buffer(d, TRUE);
-        DISPOSE(d->pagebuf);
+        DISPOSE_ARRAY(d->pagebuf);
         d->pagesize = MAX_STRING_LENGTH;
         return TRUE;
     }
@@ -5484,7 +5533,7 @@ bool pager_output( DESCRIPTOR_DATA *d )
         d->pagelen = 0;
         d->pagepoint = PAGEPOINT_NULL;
         flush_buffer(d, TRUE);
-        DISPOSE(d->pagebuf);
+        DISPOSE_ARRAY(d->pagebuf);
         d->pagesize = MAX_STRING_LENGTH;
         return TRUE;
     }
@@ -5648,7 +5697,7 @@ void *zlib_alloc(void *opaque, unsigned int items, unsigned int size)
 
 void zlib_free(void *opaque, void *address)
 {
-    DISPOSE(address);
+    STR_DISPOSE(address);
 }
 
 bool process_compressed(DESCRIPTOR_DATA *d)
@@ -5715,7 +5764,7 @@ bool compressStart(DESCRIPTOR_DATA *d, unsigned char telopt)
     TELLOG(d, "MCCP: START (COMPRESS%d)", telopt == TELOPT_COMPRESS2 ? 2 : 1);  
 
     CREATE(s, z_stream, 1);
-    CREATE(d->out_compress_buf, unsigned char, COMPRESS_BUF_SIZE);
+    CREATE_ARRAY(d->out_compress_buf, unsigned char, COMPRESS_BUF_SIZE);
 
     s->next_in = NULL;
     s->avail_in = 0;
@@ -5732,7 +5781,7 @@ bool compressStart(DESCRIPTOR_DATA *d, unsigned char telopt)
 
     if (deflateInit(s, 9) != Z_OK)
     {
-        DISPOSE(d->out_compress_buf);
+        STR_DISPOSE(d->out_compress_buf);
         DISPOSE(s);
         return FALSE;
     }
@@ -5780,7 +5829,7 @@ bool compressEnd(DESCRIPTOR_DATA *d)
       process_compressed(d); /* try to send any residual data */
 
     deflateEnd(d->out_compress);
-    DISPOSE(d->out_compress_buf);
+    DISPOSE_ARRAY(d->out_compress_buf);
     DISPOSE(d->out_compress);
     d->compressing = 0;
 

@@ -624,11 +624,11 @@ void talk_channel( CHAR_DATA *ch, char *argument, int channel, const char *verb 
   	    
 	    if ( channel == CHANNEL_IMMTALK && !IS_IMMORTAL(och) )
 		continue;
-            if ( channel == CHANNEL_103 && !IS_SET(och->pcdata->commandgroup,CGROUP_ADMIN ) )
+            if ( channel == CHANNEL_103 && !BV_IS_SET(och->pcdata->commandgroup,CGROUP_ADMIN ) )
 		continue;
-            if ( channel == CHANNEL_104 && !IS_SET(och->pcdata->commandgroup,CGROUP_HEAD_ADMIN ) )
+            if ( channel == CHANNEL_104 && !BV_IS_SET(och->pcdata->commandgroup,CGROUP_HEAD_ADMIN ) )
 		continue;
-            if ( channel == CHANNEL_105 && !IS_SET(och->pcdata->commandgroup,CGROUP_IMPLEMENTOR ) )
+            if ( channel == CHANNEL_105 && !BV_IS_SET(och->pcdata->commandgroup,CGROUP_IMPLEMENTOR ) )
 		continue;
             if ( channel == CHANNEL_VULGAR && NOT_AUTHED( och ) )
                 continue;

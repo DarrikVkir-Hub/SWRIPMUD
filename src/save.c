@@ -60,6 +60,7 @@ static	OBJ_DATA *	rgObjNest	[MAX_NEST];
 /*
  * Local functions.
  */
+
 void	fwrite_char	args( ( CHAR_DATA *ch, FILE *fp ) );
 void	fread_char	args( ( CHAR_DATA *ch, FILE *fp, bool preload) );
 void	write_corpses	args( ( CHAR_DATA *ch, char *name ) );
@@ -191,9 +192,13 @@ void save_char_obj( CHAR_DATA *ch )
      */
     if ( IS_SET( sysdata.save_flags, SV_BACKUP ) )
     {
-	SPRINTF( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
-				 capitalize( ch->name ) );
-	rename( strsave, strback );
+		SPRINTF( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
+					capitalize( ch->name ) );
+		if (rename(strsave, strback) != 0)
+		{
+			perror("rename failed");
+			bug("save_char_obj: backup rename failed", 0);
+		}
     }
 
     /*
@@ -215,7 +220,8 @@ void save_char_obj( CHAR_DATA *ch )
       else
       {
 	fprintf( fp, "Level        %d\n", ch->top_level );
-	fprintf( fp, "Pcflags      %d\n", ch->pcdata->flags );
+	fwrite_bitset(fp, "PcflagsEx", ch->pcdata->flags);
+//	fprintf( fp, "Pcflags      %d\n", bitset_to_int(ch->pcdata->flags) );
 	if ( ch->pcdata->r_range_lo && ch->pcdata->r_range_hi )
 	  fprintf( fp, "RoomRange    %d %d\n", ch->pcdata->r_range_lo,
 	  				       ch->pcdata->r_range_hi	);
@@ -315,6 +321,126 @@ void save_clone( CHAR_DATA *ch )
     return;
 }
 
+void fwrite_bitset(FILE *fp, const char *name, const FLAG_SET &bv)
+{
+	if (name != NULL)
+    	fprintf(fp, "%s ", name);
+
+    for (size_t word = 0; word < bv.bits.size(); word++)
+    {
+        uint64_t val = bv.bits[word];
+
+        while (val)
+        {
+            int bit = __builtin_ctzll(val);
+            fprintf(fp, "%zu ", word * 64 + bit);
+            val &= val - 1;
+        }
+    }
+
+    fprintf(fp, "-1\n");
+}
+
+void fread_bitset(FILE *fp, FLAG_SET &bv)
+{
+    bv.reset();
+
+    for (;;)
+    {
+        int bit = fread_number(fp);
+		fprintf(stderr,"DEBUG: bit read = %d\r\n", bit);
+        if (bit < 0)
+            break;
+
+        if (bit > 20000)   // pick a sane upper bound
+        {
+            bug("fread_bitset: insane bit %d", bit);
+            fread_to_eol(fp);   // discard rest of line
+            break;
+        }
+
+        bv.set((size_t)bit);
+    }
+}
+
+void call_to_stop()
+{
+	;
+}
+
+void fread_bitset_compat(FILE *fp, FLAG_SET &bv)
+{
+    bv.reset();
+
+    char *ln = fread_line(fp);
+
+    int vals[64]; // more than enough
+    int count = 0;
+	bool first = true;
+
+    char *ptr = ln;
+    while (*ptr && count < 64)
+    {
+        while (isspace(*ptr)) ++ptr;
+        if (!*ptr) break;
+
+        vals[count++] = strtol(ptr, &ptr, 10);
+		if (first && vals[0] != 0)
+			call_to_stop();
+		first = false;
+    }
+
+    if (count == 0)
+        return;
+
+    /*
+     * Check for NEW format (ends with -1)
+     */
+    if (vals[count - 1] == -1)
+    {
+        for (int i = 0; i < count - 1; ++i)
+        {
+            if (vals[i] >= 0)
+                bv.set(vals[i]);
+        }
+        return;
+    }
+
+    /*
+     * Check for OLD format (8 values, all 0/1)
+     */
+    if (count == 8)
+    {
+        bool old = true;
+        for (int i = 0; i < 8; ++i)
+        {
+            if (i != 0 && vals[i] != 0 && vals[i] != 1)
+            {
+                old = false;
+                break;
+            }
+        }
+
+        if (old)
+        {
+            for (int i = 0; i < 8; ++i)
+            {
+                if (vals[i])
+                    bv.set(i);
+            }
+            return;
+        }
+    }
+
+    /*
+     * Fallback: treat as new format without -1 (tolerant mode)
+     */
+    for (int i = 0; i < count; ++i)
+    {
+        if (vals[i] >= 0)
+            bv.set(vals[i]);
+    }
+}
 
 
 /*
@@ -441,7 +567,8 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 	  fprintf( fp, "Prompt       %s~\n",	ch->pcdata->prompt	);
 	if ( ch->pcdata->pagerlen != 24 )
 	  fprintf( fp, "Pagerlen     %d\n",	ch->pcdata->pagerlen	);
-        fprintf(fp, "Commandgroup    %d\n", ch->pcdata->commandgroup);
+//  fprintf(fp, "Commandgroup    %d\n", ch->pcdata->commandgroup);
+    fwrite_bitset( fp, "CommandGroupEx",  ch->pcdata->commandgroup  );		
         for ( pal = ch->pcdata->first_alias; pal; pal = pal->next )
         {
             if ( !pal->name || !pal->cmd || !*pal->name || !*pal->cmd )
@@ -459,8 +586,9 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 	for ( drug = 0 ; drug <=9 ; drug++ )
 	  fprintf( fp, " %d",	ch->pcdata->drug_level[drug] );
 	fprintf( fp, "\n");
-	if ( ch->pcdata->wanted_flags )
-	  fprintf( fp, "Wanted       %d\n",	ch->pcdata->wanted_flags );
+	if ( ch->pcdata->wanted_flags.any() )
+	  fwrite_bitset(fp, "WantedEx", ch->pcdata->wanted_flags);
+//	  fprintf( fp, "Wanted       %d\n",	ch->pcdata->wanted_flags );
 	
 	if ( IS_IMMORTAL( ch ) || ch->pcdata->area )
 	{
@@ -477,7 +605,7 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 	}
 	if ( ch->pcdata->clan_name && ch->pcdata->clan_name[0] != '\0' )
 	  fprintf( fp, "Clan         %s~\n",	ch->pcdata->clan_name	);
-        fprintf( fp, "Flags        %d\n",	ch->pcdata->flags	);
+	fwrite_bitset(fp, "FlagsEx", ch->pcdata->flags);
         if ( ch->pcdata->release_date > current_time )
             fprintf( fp, "Helled       %d %s~\n",
         	(int)ch->pcdata->release_date, ch->pcdata->helled_by );
@@ -654,7 +782,8 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
     if ( obj->extra_flags != obj->pIndexData->extra_flags )
 		fprintf( fp, "ExtraFlags   %d\n",	obj->extra_flags     );
     if ( obj->wear_flags != obj->pIndexData->wear_flags )
-		fprintf( fp, "WearFlags    %d\n",	obj->wear_flags	     );
+		fwrite_bitset(fp,"WearFlagsEx", obj->wear_flags);
+//		fprintf( fp, "WearFlags    %d\n",	obj->wear_flags	     );
     wear_loc = -1;
     for ( wear = 0; wear < MAX_WEAR; wear++ )
 	for ( x = 0; x < MAX_LAYERS; x++ )
@@ -683,7 +812,7 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
       fprintf( fp, "Values       %d %d %d %d %d %d\n",
 	obj->value[0], obj->value[1], obj->value[2],
 	obj->value[3], obj->value[4], obj->value[5]     );
-
+	fwrite_bitset(fp, "Objflags", obj->objflags);
     switch ( obj->item_type )
     {
     case ITEM_PILL: /* was down there with staff and wand, wrongly - Scryn */
@@ -798,7 +927,7 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
     clear_char( ch );
     loading_char = ch;
 
-    CREATE( ch->pcdata, PC_DATA, 1 );
+	ch->pcdata = new PC_DATA();
     d->character			= ch;
     ch->on				= NULL;
     ch->desc				= d;
@@ -958,7 +1087,6 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
 	ch->pcdata->o_range_lo		= 0;
 	ch->pcdata->o_range_hi		= 0;
 	ch->pcdata->wizinvis		= 0;
-        ch->pcdata->wanted_flags        = 0;
         ch->pcdata->first_alias		= NULL;
         ch->pcdata->last_alias		= NULL;
         ch->on 				= NULL;
@@ -1221,7 +1349,22 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		break;
 	    }
 	    KEY( "Clones",	ch->pcdata->clones,		fread_number( fp ) );
-            KEY(  "Commandgroup", ch->pcdata->commandgroup,     fread_number( fp ) );
+//      KEY(  "Commandgroup", ch->pcdata->commandgroup,     fread_number( fp ) );
+		if ( !str_cmp( word, "CommandGroup" ) )
+		{
+			int legacy = fread_number(fp);
+			fprintf(stderr,"DEBUG: old flags read = %d\r\n", legacy);
+			ch->pcdata->commandgroup.reset();  // ensure clean state
+			ch->pcdata->commandgroup = int_to_bitset(legacy);
+			fMatch = TRUE;
+			break;
+		}			
+		if ( !str_cmp(word, "CommandGroupEx") )
+		{
+			fread_bitset(fp, ch->pcdata->commandgroup);
+			fMatch = TRUE;
+			break;
+		}				
 	    if ( !str_cmp( word, "Condition" ) )
 	    {
 		line = fread_line( fp );
@@ -1264,20 +1407,34 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 
 	/* 'E' was moved to after 'S' */
         case 'F':
-	    KEY( "Flags",	ch->pcdata->flags,	fread_number( fp ) );
-            if ( !str_cmp( word, "Force" ) )
-	    {
-		line = fread_line( fp );
-		x1=x2=x3=x4=x5=x6=0;
-		sscanf( line, "%d %d %d %d",
-		      &x1, &x2, &x3, &x4);
-		ch->perm_frc = x1;
-		ch->mod_frc = x2;
-		ch->mana = x3;
-		ch->max_mana = x4;
-		fMatch = TRUE;
-		break;
-	    }
+			if ( !str_cmp( word, "Flags" ) )
+			{
+				int legacy = fread_number(fp);
+				fprintf(stderr,"DEBUG: flags read = %d\r\n", legacy);
+				ch->pcdata->flags.reset();  // ensure clean state
+				ch->pcdata->flags = int_to_bitset(legacy);
+				fMatch = TRUE;
+				break;
+			}
+			if ( !str_cmp(word, "FlagsEx") )
+			{
+				fread_bitset(fp, ch->pcdata->flags);
+				fMatch = TRUE;
+				break;
+			}
+				if ( !str_cmp( word, "Force" ) )
+			{
+				line = fread_line( fp );
+				x1=x2=x3=x4=x5=x6=0;
+				sscanf( line, "%d %d %d %d",
+					&x1, &x2, &x3, &x4);
+				ch->perm_frc = x1;
+				ch->mod_frc = x2;
+				ch->mana = x3;
+				ch->max_mana = x4;
+				fMatch = TRUE;
+				break;
+			}
             break;
 
 	case 'G':
@@ -1734,7 +1891,23 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	    }
 	    KEY( "Wimpy",	ch->wimpy,		fread_number( fp ) );
 	    KEY( "WizInvis",	ch->pcdata->wizinvis,	fread_number( fp ) );
-	    KEY( "Wanted",	ch->pcdata->wanted_flags,  fread_number( fp ) );
+		if ( !str_cmp( word, "Wanted" ) )
+		{
+			int legacy = fread_number(fp);
+			fprintf(stderr,"DEBUG: old flags read = %d\r\n", legacy);
+			ch->pcdata->wanted_flags.reset();  // ensure clean state
+			ch->pcdata->wanted_flags = int_to_bitset(legacy);
+			fMatch = TRUE;
+			break;		
+		}
+//	    KEY( "Wanted",	ch->pcdata->wanted_flags,  fread_number( fp ) );
+	    if ( !str_cmp( word, "Weapon" ) )		
+		{
+			fread_bitset(fp, ch->pcdata->wanted_flags);
+			fMatch = TRUE;
+			break;
+		}
+
 	    break;
 	}
 
@@ -1957,7 +2130,13 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 		fMatch = TRUE;
 	    }
 	    break;
-	    
+	case 'O':
+	    if ( !str_cmp( word, "Objflags" ) )
+	    {
+			fread_bitset(fp, obj->objflags);
+			fMatch = TRUE;
+	    }
+	    break;	    
 	case 'R':
 	    KEY( "Room", room, get_room_index(fread_number(fp)) );
 
@@ -2006,6 +2185,16 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 		obj->value[4]	= x5;
 		obj->value[5]	= x6;
 		fMatch		= TRUE;
+		if ( obj->item_type == ITEM_PIPE )
+		{
+			obj->objflags.add_int_offset(obj->value[3], PIPE_FIRST);
+			obj->value[3] = 0;
+		}
+		if ( obj->item_type == ITEM_WEAPON )
+		{
+			obj->objflags.add_int_offset(obj->value[3], WEAPON_FIRST);
+			obj->value[3] = 0;
+		}
 		break;
 	    }
 
@@ -2034,7 +2223,22 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 	    break;
 
 	case 'W':
-	    KEY( "WearFlags",	obj->wear_flags,	fread_number( fp ) );
+//	    KEY( "WearFlags",	obj->wear_flags,	fread_number( fp ) );
+		if ( !str_cmp( word, "WearFlags" ) )
+		{
+			int legacy = fread_number(fp);
+//			fprintf(stderr,"DEBUG: flags read = %d\r\n", legacy);
+			obj->wear_flags.reset();  // ensure clean state
+			obj->wear_flags = int_to_bitset(legacy);
+			fMatch = TRUE;
+			break;
+		}
+		if ( !str_cmp(word, "WearFlagsEx") )
+		{
+			fread_bitset(fp, obj->wear_flags);
+			fMatch = TRUE;
+			break;
+		}		
 	    KEY( "WearLoc",	obj->wear_loc,		fread_number( fp ) );
 	    KEY( "Weight",	obj->weight,		fread_number( fp ) );
 	    break;
@@ -2098,7 +2302,7 @@ void do_last( CHAR_DATA *ch, char *argument )
     SPRINTF( name, "%s", capitalize(arg) );
     SPRINTF( buf, "%s%c/%s", PLAYER_DIR, tolower(arg[0]), name );
     if ( stat( buf, &fst ) != -1 )
-      SPRINTF( buf, "%s was last on: %s\r", name, ctime( &fst.st_mtime ) );
+      SPRINTF( buf, "%s was last on: %s\n", name, ctime( &fst.st_mtime ) );
     else
       SPRINTF( buf, "%s was not found.\n", name );
    send_to_char( buf, ch );

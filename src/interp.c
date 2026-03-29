@@ -333,7 +333,7 @@ void interpret( CHAR_DATA *ch, char *argument )
         trust = get_trust( ch );
         for ( cmd = command_hash[LOWER(command[0])%126]; cmd; cmd = cmd->next )
             if ( !str_prefix( command, cmd->name )
-            &&   ((cmd->level <= trust && (IS_NPC(ch) || !cmd->commandgroup || (cmd->commandgroup & ch->pcdata->commandgroup)))
+            &&   ((cmd->level <= trust && (IS_NPC(ch) || !cmd->commandgroup.any() || (cmd->commandgroup.intersects(ch->pcdata->commandgroup))))
             ||  (!IS_NPC(ch) && ch->pcdata->bestowments && ch->pcdata->bestowments[0] != '\0'
             &&    is_name( cmd->name, ch->pcdata->bestowments )
             &&    cmd->level <= (trust+5)) ) )

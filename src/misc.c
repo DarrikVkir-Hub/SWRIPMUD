@@ -287,12 +287,12 @@ void do_clone( CHAR_DATA *ch, char *argument )
 	 STRFREE( ch->pcdata->clan_name );
 	 ch->pcdata->clan_name = STRALLOC( "" );
          SPRINTF( bestowments, "%s", ch->pcdata->bestowments);
-         DISPOSE( ch->pcdata->bestowments );
+         STR_DISPOSE( ch->pcdata->bestowments );
          ch->pcdata->bestowments = str_dup( "" );
          save_clone(ch);
          STRFREE( ch->pcdata->clan_name );
 			ch->pcdata->clan_name = STRALLOC( clanname );
-         DISPOSE( ch->pcdata->bestowments );
+         STR_DISPOSE( ch->pcdata->bestowments );
          ch->pcdata->bestowments = str_dup( clanname );
      }
      else
@@ -387,73 +387,21 @@ void do_ammo( CHAR_DATA *ch, char *argument )
 		  return;
 	 }
 
-	 if ( wield->value[3] == WEAPON_BLASTER )
+   if (BV_IS_SET(wield->objflags, WEAPON_BLASTER))
 	 {
 
-		if ( obj && obj->item_type != ITEM_AMMO )
-		{
-		  send_to_char( "&RYour hands are too full to reload your blaster.\n&w", ch);
-		  return;
-		}
-
-		if (obj)
-		{
-		  if ( obj->value[0] > wield->value[5] )
-		  {
-				send_to_char( "That cartridge is too big for your blaster.", ch);
-				return;
-		  }
-		  unequip_char( ch, obj );
-		  checkammo = TRUE;
-		  charge = obj->value[0];
-		  separate_obj( obj );
-		  extract_obj( obj );
-		}
-		else
-		{
-		  for ( obj = ch->last_carrying; obj; obj = obj->prev_content )
-		  {
-			  if ( obj->item_type == ITEM_AMMO)
-			  {
-					  if ( obj->value[0] > wield->value[5] )
-					  {
-						  send_to_char( "That cartridge is too big for your blaster.", ch);
-						  continue;
-					  }
-					  checkammo = TRUE;
-					  charge = obj->value[0];
-					  separate_obj( obj );
-					  extract_obj( obj );
-					  break;
-			  }
-		  }
-		}
-
-		if (!checkammo)
-		{
-		  send_to_char( "&RYou don't seem to have any ammo to reload your blaster with.\n&w", ch);
-		  return;
-		}
-
-		ch_printf( ch, "You replace your ammunition cartridge.\nYour blaster is charged with %d shots at high power to %d shots on low.\n", charge/5, charge );
-		act( AT_PLAIN, "$n replaces the ammunition cell in $p.", ch, wield, NULL, TO_ROOM );
-
-    }
-    else  if ( wield->value[3] == WEAPON_BOWCASTER )
-    {
-    
-      if ( obj && obj->item_type != ITEM_BOLT )
+      if ( obj && obj->item_type != ITEM_AMMO )
       {
-        send_to_char( "&RYour hands are too full to reload your bowcaster.\n&w", ch);
+        send_to_char( "&RYour hands are too full to reload your blaster.\n&w", ch);
         return;
       }
-    
+
       if (obj)
       {
         if ( obj->value[0] > wield->value[5] )
         {
-            send_to_char( "That cartridge is too big for your bowcaster.", ch);
-            return;
+          send_to_char( "That cartridge is too big for your blaster.", ch);
+          return;
         }
         unequip_char( ch, obj );
         checkammo = TRUE;
@@ -465,91 +413,148 @@ void do_ammo( CHAR_DATA *ch, char *argument )
       {
         for ( obj = ch->last_carrying; obj; obj = obj->prev_content )
         {
-           if ( obj->item_type == ITEM_BOLT)
-           {
-                 if ( obj->value[0] > wield->value[5] )
-                 {
-                    send_to_char( "That cartridge is too big for your bowcaster.", ch);
-                    continue;
-                 }
-                 checkammo = TRUE;
-                 charge = obj->value[0];
-                 separate_obj( obj );
-                 extract_obj( obj );
-                 break;                         
-           }  
+          if ( obj->item_type == ITEM_AMMO)
+          {
+              if ( obj->value[0] > wield->value[5] )
+              {
+                send_to_char( "That cartridge is too big for your blaster.", ch);
+                continue;
+              }
+              checkammo = TRUE;
+              charge = obj->value[0];
+              separate_obj( obj );
+              extract_obj( obj );
+              break;
+          }
         }
       }
-    
+
       if (!checkammo)
       {
-        send_to_char( "&RYou don't seem to have any quarrels to reload your bowcaster with.\n&w", ch);
+        send_to_char( "&RYou don't seem to have any ammo to reload your blaster with.\n&w", ch);
         return;
       }
+
+      ch_printf( ch, "You replace your ammunition cartridge.\nYour blaster is charged with %d shots at high power to %d shots on low.\n", charge/5, charge );
+      act( AT_PLAIN, "$n replaces the ammunition cell in $p.", ch, wield, NULL, TO_ROOM );
+
+    }
+    else if (BV_IS_SET(wield->objflags, WEAPON_BOWCASTER))
+    {
+    
+        if ( obj && obj->item_type != ITEM_BOLT )
+        {
+          send_to_char( "&RYour hands are too full to reload your bowcaster.\n&w", ch);
+          return;
+        }
       
-      ch_printf( ch, "You replace your quarrel pack.\nYour bowcaster is charged with %d energy bolts.\n", charge );
-      act( AT_PLAIN, "$n replaces the quarrels in $p.", ch, wield, NULL, TO_ROOM );
-	
+        if (obj)
+        {
+          if ( obj->value[0] > wield->value[5] )
+          {
+              send_to_char( "That cartridge is too big for your bowcaster.", ch);
+              return;
+          }
+          unequip_char( ch, obj );
+          checkammo = TRUE;
+          charge = obj->value[0];
+          separate_obj( obj );
+          extract_obj( obj );
+        }
+        else
+        {
+          for ( obj = ch->last_carrying; obj; obj = obj->prev_content )
+          {
+            if ( obj->item_type == ITEM_BOLT)
+            {
+                  if ( obj->value[0] > wield->value[5] )
+                  {
+                      send_to_char( "That cartridge is too big for your bowcaster.", ch);
+                      continue;
+                  }
+                  checkammo = TRUE;
+                  charge = obj->value[0];
+                  separate_obj( obj );
+                  extract_obj( obj );
+                  break;                         
+            }  
+          }
+        }
+      
+        if (!checkammo)
+        {
+          send_to_char( "&RYou don't seem to have any quarrels to reload your bowcaster with.\n&w", ch);
+          return;
+        }
+        
+        ch_printf( ch, "You replace your quarrel pack.\nYour bowcaster is charged with %d energy bolts.\n", charge );
+        act( AT_PLAIN, "$n replaces the quarrels in $p.", ch, wield, NULL, TO_ROOM );
+    
     }
     else
     {
     
-      if ( obj && obj->item_type != ITEM_BATTERY )
-      {
-        send_to_char( "&RYour hands are too full to replace the power cell.\n&w", ch);
-        return;
-      }
-    
-      if (obj)
-      {
-        unequip_char( ch, obj );
-        checkammo = TRUE;
-        charge = obj->value[0];
-        separate_obj( obj );
-        extract_obj( obj );
-      }
-      else
-      {
-        for ( obj = ch->last_carrying; obj; obj = obj->prev_content )
+        if ( obj && obj->item_type != ITEM_BATTERY )
         {
-           if ( obj->item_type == ITEM_BATTERY)
-           {
-                 checkammo = TRUE;
-                 charge = obj->value[0];
-                 separate_obj( obj );
-                 extract_obj( obj );
-                 break;                         
-           }  
+          send_to_char( "&RYour hands are too full to replace the power cell.\n&w", ch);
+          return;
         }
-      }
-    
-      if (!checkammo)
-      {
-        send_to_char( "&RYou don't seem to have a power cell.\n&w", ch);
-        return;
-      }
       
-      if (wield->value[3] == WEAPON_LIGHTSABER )
-      {
-         ch_printf( ch, "You replace your power cell.\nYour lightsaber is charged to %d/%d units.\n", charge, charge );
-         act( AT_PLAIN, "$n replaces the power cell in $p.", ch, wield, NULL, TO_ROOM );
-	 act( AT_PLAIN, "$p ignites with a bright glow.", ch, wield, NULL, TO_ROOM );
-      }
-      else if (wield->value[3] == WEAPON_VIBRO_BLADE )
-      {
-         ch_printf( ch, "You replace your power cell.\nYour vibro-blade is charged to %d/%d units.\n", charge, charge );
-         act( AT_PLAIN, "$n replaces the power cell in $p.", ch, wield, NULL, TO_ROOM );
-      }
-      else if (wield->value[3] == WEAPON_FORCE_PIKE )
-      {
-         ch_printf( ch, "You replace your power cell.\nYour force-pike is charged to %d/%d units.\n", charge, charge );
-         act( AT_PLAIN, "$n replaces the power cell in $p.", ch, wield, NULL, TO_ROOM );
-      }
-      else
-      {
-         ch_printf( ch, "You feel very foolish.\n" );
-         act( AT_PLAIN, "$n tries to jam a power cell into $p.", ch, wield, NULL, TO_ROOM );
-      }
+        if (obj)
+        {
+          unequip_char( ch, obj );
+          checkammo = TRUE;
+          charge = obj->value[0];
+          separate_obj( obj );
+          extract_obj( obj );
+        }
+        else
+        {
+          for ( obj = ch->last_carrying; obj; obj = obj->prev_content )
+          {
+            if ( obj->item_type == ITEM_BATTERY)
+            {
+                  checkammo = TRUE;
+                  charge = obj->value[0];
+                  separate_obj( obj );
+                  extract_obj( obj );
+                  break;                         
+            }  
+          }
+        }
+      
+        if (!checkammo)
+        {
+          send_to_char( "&RYou don't seem to have a power cell.\n&w", ch);
+          return;
+        }
+        
+        if (BV_IS_SET(wield->objflags, WEAPON_LIGHTSABER))
+        {
+          ch_printf( ch, "You replace your power cell.\nYour lightsaber is charged to %d/%d units.\n", charge, charge );
+          act( AT_PLAIN, "$n replaces the power cell in $p.", ch, wield, NULL, TO_ROOM );
+          act( AT_PLAIN, "$p ignites with a bright glow.", ch, wield, NULL, TO_ROOM );
+        }
+        else if (BV_IS_SET(wield->objflags, WEAPON_VIBRO_BLADE))
+        {
+          ch_printf( ch, "You replace your power cell.\nYour vibro-blade is charged to %d/%d units.\n", charge, charge );
+          act( AT_PLAIN, "$n replaces the power cell in $p.", ch, wield, NULL, TO_ROOM );
+        }
+        else if (BV_IS_SET(wield->objflags, WEAPON_FORCE_PIKE))
+        {
+          ch_printf( ch, "You replace your power cell.\nYour force-pike is charged to %d/%d units.\n", charge, charge );
+          act( AT_PLAIN, "$n replaces the power cell in $p.", ch, wield, NULL, TO_ROOM );
+        }
+        else if (BV_IS_SET(wield->objflags, WEAPON_VIBRO_AXE))
+        {
+          ch_printf( ch, "You replace your power cell.\nYour vibro-axe is charged to %d/%d units.\n", charge, charge );
+          act( AT_PLAIN, "$n replaces the power cell in $p.", ch, wield, NULL, TO_ROOM );
+        }
+        else
+        {
+          ch_printf( ch, "You feel very foolish.\n" );
+          act( AT_PLAIN, "$n tries to jam a power cell into $p.", ch, wield, NULL, TO_ROOM );
+        }
     }
     
     wield->value[4] = charge;
@@ -560,12 +565,12 @@ void do_setblaster( CHAR_DATA *ch, char *argument )
 {
    OBJ_DATA *wield;
    OBJ_DATA *wield2;
- 
+
    wield = get_eq_char( ch, WEAR_WIELD );
-   if( wield && !( wield->item_type == ITEM_WEAPON && wield->value[3] == WEAPON_BLASTER ) )
+   if( wield && !( wield->item_type == ITEM_WEAPON && BV_IS_SET(wield->objflags, WEAPON_BLASTER) ) )
       wield = NULL;
    wield2 = get_eq_char( ch, WEAR_DUAL_WIELD );
-   if( wield2 && !( wield2->item_type == ITEM_WEAPON && wield2->value[3] == WEAPON_BLASTER ) )
+   if( wield2 && !( wield2->item_type == ITEM_WEAPON && BV_IS_SET(wield2->objflags, WEAPON_BLASTER) ) )
       wield2 = NULL;
    
    if ( !wield && !wield2 )
@@ -1078,7 +1083,7 @@ void do_fill( CHAR_DATA *ch, char *argument )
     }
 
     if ( dest_item == ITEM_PIPE
-    &&   IS_SET( obj->value[3], PIPE_FULLOFASH ) )
+    &&   BV_IS_SET( obj->objflags, PIPE_FULLOFASH ) )
     {
 	send_to_char( "It's full of ashes, and needs to be emptied first.\n", ch );
 	return;
@@ -2178,11 +2183,11 @@ void do_tamp( CHAR_DATA *ch, char *argument )
 	send_to_char( "You can't tamp that.\n", ch );
 	return;
     }
-    if ( !IS_SET( pipe->value[3], PIPE_TAMPED ) )
+    if ( !BV_IS_SET( pipe->objflags, PIPE_TAMPED ) )
     {
 	act( AT_ACTION, "You gently tamp $p.", ch, pipe, NULL, TO_CHAR );
 	act( AT_ACTION, "$n gently tamps $p.", ch, pipe, NULL, TO_ROOM );
-	SET_BIT( pipe->value[3], PIPE_TAMPED );
+	BV_SET_BIT( pipe->objflags, PIPE_TAMPED );
 	return;
     }
     send_to_char( "It doesn't need tamping.\n", ch );
@@ -2214,7 +2219,7 @@ void do_smoke( CHAR_DATA *ch, char *argument )
 	act( AT_ACTION, "$n tries to smoke $p... (I wonder what $e's been putting his $s pipe?)", ch, pipe, NULL, TO_ROOM );
 	return;
     }
-    if ( !IS_SET( pipe->value[3], PIPE_LIT ) )
+    if ( !BV_IS_SET( pipe->objflags, PIPE_LIT ) )
     {
 	act( AT_ACTION, "You try to smoke $p, but it's not lit.", ch, pipe, NULL, TO_CHAR );
 	act( AT_ACTION, "$n tries to smoke $p, but it's not lit.", ch, pipe, NULL, TO_ROOM );
@@ -2243,12 +2248,12 @@ void do_smoke( CHAR_DATA *ch, char *argument )
 	else
 	    bug( "do_smoke: bad herb type %d", pipe->value[2] );
 
-	SET_BIT( pipe->value[3], PIPE_HOT );
+	BV_SET_BIT( pipe->objflags, PIPE_HOT );
 	if ( --pipe->value[1] < 1 )
 	{
-	   REMOVE_BIT( pipe->value[3], PIPE_LIT );
-	   SET_BIT( pipe->value[3], PIPE_DIRTY );
-	   SET_BIT( pipe->value[3], PIPE_FULLOFASH );
+	   BV_REMOVE_BIT( pipe->objflags, PIPE_LIT );
+	   BV_SET_BIT( pipe->objflags, PIPE_DIRTY );
+	   BV_SET_BIT( pipe->objflags, PIPE_FULLOFASH );
 	}
     }
 }
@@ -2278,7 +2283,7 @@ void do_light( CHAR_DATA *ch, char *argument )
 	send_to_char( "You can't light that.\n", ch );
 	return;
     }
-    if ( !IS_SET( pipe->value[3], PIPE_LIT ) )
+    if ( !BV_IS_SET( pipe->objflags, PIPE_LIT ) )
     {
 	if ( pipe->value[1] < 1 )
 	{
@@ -2288,7 +2293,7 @@ void do_light( CHAR_DATA *ch, char *argument )
 	}
 	act( AT_ACTION, "You carefully light $p.", ch, pipe, NULL, TO_CHAR );
 	act( AT_ACTION, "$n carefully lights $p.", ch, pipe, NULL, TO_ROOM );
-	SET_BIT( pipe->value[3], PIPE_LIT );
+	BV_SET_BIT( pipe->objflags, PIPE_LIT );
 	return;
     }
     send_to_char( "It's already lit.\n", ch );
@@ -2330,8 +2335,8 @@ void do_empty( CHAR_DATA *ch, char *argument )
 	case ITEM_PIPE:
 	  act( AT_ACTION, "You gently tap $p and empty it out.", ch, obj, NULL, TO_CHAR );
 	  act( AT_ACTION, "$n gently taps $p and empties it out.", ch, obj, NULL, TO_ROOM );
-	  REMOVE_BIT( obj->value[3], PIPE_FULLOFASH );
-	  REMOVE_BIT( obj->value[3], PIPE_LIT );
+	  BV_REMOVE_BIT( obj->objflags, PIPE_FULLOFASH );
+	  BV_REMOVE_BIT( obj->objflags, PIPE_LIT );
 	  obj->value[1] = 0;
 	  return;
 	case ITEM_DRINK_CON:
@@ -2898,11 +2903,11 @@ void do_train( CHAR_DATA *ch, char *argument )
     		if ( !ch->dest_buf )
     		   return;
     		SPRINTF(arg, "%s", (const char* ) ch->dest_buf);
-    		DISPOSE( ch->dest_buf);
+    		STR_DISPOSE( ch->dest_buf);
     		break;
 
     	case SUB_TIMER_DO_ABORT:
-    		DISPOSE( ch->dest_buf );
+    		STR_DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
     	        send_to_char("&RYou fail to complete your training.\n", ch);
     		return;
@@ -3029,7 +3034,7 @@ if (strcmp(pwdhash, ch->pcdata->pwd))
 */
     if ( ( obj = get_eq_char( ch, WEAR_WIELD ) ) == NULL
 
-    ||   ( obj->value[3] != WEAPON_VIBRO_BLADE ) )
+    ||   ( !BV_IS_SET(obj->objflags, WEAPON_VIBRO_BLADE) && !BV_IS_SET(obj->objflags, WEAPON_BLADE)) )
     {
 	send_to_char( "You need to wield a blade to slit your throat!.\n", ch );
 	return;

@@ -3078,7 +3078,7 @@ void room_act_update( void )
         rprog_wordlist_check(mpact->buf, supermob, mpact->ch, mpact->obj,
                              mpact->vo, ACT_PROG, room);
       room->mpact = mpact->next;
-      DISPOSE(mpact->buf);
+      STR_DISPOSE(mpact->buf);
       DISPOSE(mpact);
     }
     room->mpact = NULL;
@@ -3115,7 +3115,7 @@ void obj_act_update( void )
       oprog_wordlist_check(mpact->buf, supermob, mpact->ch, mpact->obj,
                            mpact->vo, ACT_PROG, obj);
       obj->mpact = mpact->next;
-      DISPOSE(mpact->buf);
+      STR_DISPOSE(mpact->buf);
       DISPOSE(mpact);
     }
     obj->mpact = NULL;

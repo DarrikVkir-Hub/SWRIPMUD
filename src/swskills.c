@@ -131,11 +131,11 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
            return;
       SPRINTF(arg, "%s", (const char* )ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
@@ -204,8 +204,8 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
     obj = create_object( pObjIndex, level );
     
     obj->item_type = ITEM_WEAPON;
-    SET_BIT( obj->wear_flags, ITEM_WIELD );
-    SET_BIT( obj->wear_flags, ITEM_TAKE );
+    BV_SET_BIT( obj->wear_flags, ITEM_WIELD );
+    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
     obj->level = level;
     obj->weight = 3;
     STRFREE( obj->name );
@@ -244,13 +244,21 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
     ++top_affect;
    }
     obj->value[0] = INIT_WEAPON_CONDITION;      
+    int damplus = 0;
     if( !checkstaff )
-     obj->value[3] = WEAPON_VIBRO_BLADE;
+    {
+      BV_SET_BIT(obj->objflags,WEAPON_VIBRO_BLADE);
+      damplus = BASEDAM_WEAPON_VIBRO_BLADE;
+    }
     else
-     obj->value[3] = WEAPON_FORCE_PIKE;
+    {
+      BV_SET_BIT(obj->objflags,WEAPON_FORCE_PIKE);
+      damplus = BASEDAM_WEAPON_FORCE_PIKE;
+    }
 
-    obj->value[1] = (int) (level/20+8+obj->value[3]);      /* min dmg  */
-    obj->value[2] = (int) (level/10+18+obj->value[3]);      /* max dmg */
+
+    obj->value[1] = (int) (level/20+8+damplus);      /* min dmg  */
+    obj->value[2] = (int) (level/10+18+damplus);      /* max dmg */
 
     obj->value[4] = charge;
     obj->value[5] = charge;
@@ -381,11 +389,11 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
            return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
 
              send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
@@ -494,8 +502,8 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
     obj = create_object( pObjIndex, level );
     
     obj->item_type = ITEM_WEAPON;
-    SET_BIT( obj->wear_flags, ITEM_WIELD );
-    SET_BIT( obj->wear_flags, ITEM_TAKE );
+    BV_SET_BIT( obj->wear_flags, ITEM_WIELD );
+    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
     obj->level = level;
     obj->weight = 2+level/10;
     STRFREE( obj->name );
@@ -541,7 +549,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
     obj->value[0] = INIT_WEAPON_CONDITION;       /* condition  */
     obj->value[1] = (int) (level/10+15);      /* min dmg  */
     obj->value[2] = (int) (level/5+25);      /* max dmg  */
-    obj->value[3] = WEAPON_BLASTER;
+    BV_SET_BIT(obj->objflags,WEAPON_BLASTER);
     obj->value[4] = ammo;
     obj->value[5] = 2000;
     obj->cost = obj->value[2]*50;
@@ -697,11 +705,11 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
            return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
@@ -816,8 +824,8 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
     obj = create_object( pObjIndex, level );
     
     obj->item_type = ITEM_WEAPON;
-    SET_BIT( obj->wear_flags, ITEM_WIELD );
-    SET_BIT( obj->wear_flags, ITEM_TAKE );
+    BV_SET_BIT( obj->wear_flags, ITEM_WIELD );
+    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
     SET_BIT( obj->extra_flags, ITEM_ANTI_SOLDIER );
    /*  SET_BIT( obj->extra_flags, ITEM_ANTI_THIEF ); */
     SET_BIT( obj->extra_flags, ITEM_ANTI_HUNTER );
@@ -858,7 +866,7 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
     obj->value[0] = INIT_WEAPON_CONDITION;       /* condition  */
     obj->value[1] = (int) (level/10+gemtype*2);      /* min dmg  */
     obj->value[2] = (int) (level/5+gemtype*6);      /* max dmg */
-    obj->value[3] = WEAPON_LIGHTSABER;
+    BV_SET_BIT(obj->objflags,WEAPON_LIGHTSABER);
     obj->value[4] = charge;
     obj->value[5] = charge;
     obj->cost = obj->value[2]*75;
@@ -938,11 +946,11 @@ void do_makespice( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
          return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are distracted and are unable to finish your work.\n&w", ch);
              return;
@@ -1068,11 +1076,11 @@ void do_improve_module( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
          return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are distracted and are unable to finish your work.\n&w", ch);
              return;
@@ -1212,11 +1220,11 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
            return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
@@ -1288,8 +1296,8 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
     obj = create_object( pObjIndex, level );
     
     obj->item_type = ITEM_GRENADE;
-    SET_BIT( obj->wear_flags, ITEM_HOLD );
-    SET_BIT( obj->wear_flags, ITEM_TAKE );
+    BV_SET_BIT( obj->wear_flags, ITEM_HOLD );
+    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
     obj->level = level;
     obj->weight = weight;
     STRFREE( obj->name );
@@ -1418,11 +1426,11 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
            return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
@@ -1494,8 +1502,8 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
     obj = create_object( pObjIndex, level );
     
     obj->item_type = ITEM_LANDMINE;
-    SET_BIT( obj->wear_flags, ITEM_HOLD );
-    SET_BIT( obj->wear_flags, ITEM_TAKE );
+    BV_SET_BIT( obj->wear_flags, ITEM_HOLD );
+    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
     obj->level = level;
     obj->weight = weight;
     STRFREE( obj->name );
@@ -1623,11 +1631,11 @@ void do_makelight( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
            return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
@@ -1698,7 +1706,7 @@ void do_makelight( CHAR_DATA *ch, char *argument )
     obj = create_object( pObjIndex, level );
     
     obj->item_type = ITEM_LIGHT;
-    SET_BIT( obj->wear_flags, ITEM_TAKE );
+    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
     obj->level = level;
     obj->weight = 3;
     STRFREE( obj->name );
@@ -1843,14 +1851,14 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf_2 )
            return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       SPRINTF(arg2, "%s", (const char*) ch->dest_buf_2);
-      DISPOSE( ch->dest_buf_2);
+      STR_DISPOSE( ch->dest_buf_2);
       break;
 
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
-      DISPOSE( ch->dest_buf_2 );
+      STR_DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf_2 );
       ch->substate = SUB_NONE;
              send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
@@ -1903,12 +1911,12 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
     obj = metal; 
 
     obj->item_type = ITEM_ARMOR;
-    SET_BIT( obj->wear_flags, ITEM_TAKE );
+    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
     value = get_wflag( arg );
-    if ( value < 0 || value > 31 )
-        SET_BIT( obj->wear_flags, ITEM_WEAR_NECK );
+    if ( value < 0)
+        BV_SET_BIT( obj->wear_flags, ITEM_WEAR_NECK );
     else
-        SET_BIT( obj->wear_flags, 1 << value );
+        BV_SET_BIT( obj->wear_flags, value );
     obj->level = level;
     STRFREE( obj->name );
     SPRINTF( buf, "%s", arg2 );
@@ -2039,14 +2047,14 @@ void do_makearmor( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf_2 )
            return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       SPRINTF(arg2, "%s", (const char*) ch->dest_buf_2);
-      DISPOSE( ch->dest_buf_2);
+      STR_DISPOSE( ch->dest_buf_2);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
-      DISPOSE( ch->dest_buf_2 );
+      STR_DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf_2 );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
@@ -2087,12 +2095,12 @@ void do_makearmor( CHAR_DATA *ch, char *argument )
     obj = material; 
 
     obj->item_type = ITEM_ARMOR;
-    SET_BIT( obj->wear_flags, ITEM_TAKE );
+    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
     value = get_wflag( arg );
-    if ( value < 0 || value > 31 )
-        SET_BIT( obj->wear_flags, ITEM_WEAR_BODY );                    
+    if ( value < 0 )
+        BV_SET_BIT( obj->wear_flags, ITEM_WEAR_BODY );                    
     else
-        SET_BIT( obj->wear_flags, 1 << value );
+        BV_SET_BIT( obj->wear_flags, value );
     obj->level = level;
     STRFREE( obj->name );
     SPRINTF( buf, "%s", arg2 );
@@ -2240,14 +2248,16 @@ void do_makecomlink( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
            return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       if ( !ch->dest_buf_2 )
               return;
          SPRINTF(arg2, "%s", (const char*) ch->dest_buf_2);
-         DISPOSE( ch->dest_buf_2);
+         STR_DISPOSE( ch->dest_buf_2);
          break;
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
+      if ( ch->dest_buf_2 )
+         STR_DISPOSE(ch->dest_buf_2);
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
@@ -2309,12 +2319,12 @@ void do_makecomlink( CHAR_DATA *ch, char *argument )
     obj = create_object( pObjIndex, ch->top_level );
     
     obj->item_type = ITEM_COMLINK;
-    SET_BIT( obj->wear_flags, ITEM_TAKE );
+    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
     value = get_wflag( arg );
-    if ( value < 0 || value > 31 )
-        SET_BIT( obj->wear_flags, ITEM_WEAR_NECK );                    
+    if ( value < 0 )
+        BV_SET_BIT( obj->wear_flags, ITEM_WEAR_NECK );                    
     else
-        SET_BIT( obj->wear_flags, 1 << value );
+        BV_SET_BIT( obj->wear_flags, value );
     obj->weight = 1;
     STRFREE( obj->name );
     SPRINTF( buf, "%s", arg2 );
@@ -2441,11 +2451,11 @@ void do_makeshield( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
            return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
@@ -2523,8 +2533,8 @@ void do_makeshield( CHAR_DATA *ch, char *argument )
     obj = create_object( pObjIndex, level );
     
     obj->item_type = ITEM_ARMOR;
-    SET_BIT( obj->wear_flags, ITEM_WIELD );
-    SET_BIT( obj->wear_flags, ITEM_WEAR_SHIELD );
+    BV_SET_BIT( obj->wear_flags, ITEM_WIELD );
+    BV_SET_BIT( obj->wear_flags, ITEM_WEAR_SHIELD );
     obj->level = level;
     obj->weight = 2;
     STRFREE( obj->name );
@@ -2666,14 +2676,14 @@ void do_makecontainer( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf_2 )
            return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       SPRINTF(arg2, "%s", (const char*) ch->dest_buf_2);
-      DISPOSE( ch->dest_buf_2);
+      STR_DISPOSE( ch->dest_buf_2);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
-      DISPOSE( ch->dest_buf_2 );
+      STR_DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf_2 );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
@@ -2714,12 +2724,12 @@ void do_makecontainer( CHAR_DATA *ch, char *argument )
     obj = material; 
 
     obj->item_type = ITEM_CONTAINER;
-    SET_BIT( obj->wear_flags, ITEM_TAKE );
+    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
     value = get_wflag( arg );
-    if ( value < 0 || value > 31 )
-        SET_BIT( obj->wear_flags, ITEM_HOLD );                    
+    if ( value < 0  )
+        BV_SET_BIT( obj->wear_flags, ITEM_HOLD );                    
     else
-        SET_BIT( obj->wear_flags, 1 << value );
+        BV_SET_BIT( obj->wear_flags, value );
     obj->level = level;
     STRFREE( obj->name );
     SPRINTF( buf, "%s", arg2 );
@@ -2812,11 +2822,11 @@ void do_reinforcements( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
          return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted before you can finish your call.\n", ch);
              return;
@@ -2891,11 +2901,11 @@ void do_postguard( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
          return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted before you can finish your call.\n", ch);
              return;
@@ -3148,7 +3158,7 @@ void do_disguise( CHAR_DATA *ch, char *argument )
     if ( IS_NPC(ch) )
       return;
 
-    if ( IS_SET( ch->pcdata->flags, PCFLAG_NOTITLE ))
+    if ( BV_IS_SET( ch->pcdata->flags, PCFLAG_NOTITLE ))
     {
         send_to_char( "You try but the Force resists you.\n", ch );
         return;
@@ -3381,7 +3391,7 @@ void do_snipe( CHAR_DATA *ch, char *argument )
    }
     
    wield = get_eq_char( ch, WEAR_WIELD );
-   if ( !wield || wield->item_type != ITEM_WEAPON || wield->value[3] != WEAPON_BLASTER )
+   if ( !wield || wield->item_type != ITEM_WEAPON || (!BV_IS_SET(wield->objflags,WEAPON_BLASTER) && !BV_IS_SET(wield->objflags,WEAPON_BOWCASTER) ) )
    {
 
          send_to_char( "You don't seem to be holding a blaster",ch );
@@ -4224,11 +4234,11 @@ void do_add_patrol ( CHAR_DATA *ch , char *argument )
       if ( !ch->dest_buf )
          return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted before you can finish your call.\n", ch);
              return;
@@ -4305,11 +4315,11 @@ void do_special_forces ( CHAR_DATA *ch , char *argument )
       if ( !ch->dest_buf )
          return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
 
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;
              send_to_char("&RYou are interupted before you can finish your call.\n", ch);
              return;
@@ -4385,11 +4395,11 @@ void do_elite_guard ( CHAR_DATA *ch , char *argument )
       if ( !ch->dest_buf )
          return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
 
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;
              send_to_char("&RYou are interupted before you can finish your call.\n", ch);
              return;
@@ -4685,7 +4695,7 @@ void do_smalltalk ( CHAR_DATA *ch , char *argument )
     }
     
 
-    if ( !IS_NPC(victim) || victim->vip_flags == 0 )
+    if ( !IS_NPC(victim) || !victim->vip_flags.any() )
     {
         send_to_char( "Diplomacy would be wasted on them.\n" , ch );
         return;
@@ -4811,7 +4821,7 @@ void do_propeganda ( CHAR_DATA *ch , char *argument )
     }
 
 
-    if ( victim->vip_flags == 0 )
+    if ( !victim->vip_flags.any() )
     {
         send_to_char( "Diplomacy would be wasted on them.\n" , ch );
         return;
@@ -4975,7 +4985,7 @@ void do_bribe ( CHAR_DATA *ch , char *argument )
         return;
     }
 
-    if ( victim->vip_flags == 0 )
+    if ( !victim->vip_flags.any() )
     {
         send_to_char( "Diplomacy would be wasted on them.\n" , ch );
         return;
@@ -5136,7 +5146,7 @@ void do_mass_propeganda ( CHAR_DATA *ch , char *argument )
             if (!IS_NPC(rch))
               continue;
 
-            if ( rch->vip_flags == 0 )
+            if ( !rch->vip_flags.any() )
               continue;
 
             if ( can_see( ch, rch ) )
@@ -5470,13 +5480,13 @@ void do_cutdoor( CHAR_DATA *ch, char *argument )
  int PIKE = 0;
 
    if ( ( wield = get_eq_char( ch, WEAR_WIELD ) ) == NULL ||
-            ( ( wield->value[3] != WEAPON_LIGHTSABER ) && ( wield->value[3] != WEAPON_FORCE_PIKE ) ) )
+            ( ( !BV_IS_SET(wield->objflags,WEAPON_LIGHTSABER ) && ( !BV_IS_SET(wield->objflags,WEAPON_FORCE_PIKE) ) ) ) )
  {
      send_to_char( "You need a lightsaber for that!\n", ch );
      return;
  }
 
-   if ( wield->value[3] == WEAPON_LIGHTSABER )
+   if ( BV_IS_SET(wield->objflags,WEAPON_LIGHTSABER) )
       whichweap = SABER;
    else
       whichweap = PIKE;
@@ -5704,11 +5714,11 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
            return;
       SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
@@ -5803,8 +5813,8 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
     obj = create_object( pObjIndex, level );
     
     obj->item_type = ITEM_WEAPON;
-    SET_BIT( obj->wear_flags, ITEM_WIELD );
-    SET_BIT( obj->wear_flags, ITEM_TAKE );
+    BV_SET_BIT( obj->wear_flags, ITEM_WIELD );
+    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
     obj->level = level;
     obj->weight = 2+level/7;
     STRFREE( obj->name );
@@ -5838,7 +5848,7 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
     obj->value[0] = INIT_WEAPON_CONDITION;       /* condition  */
     obj->value[1] = (int) (level/10+25);      /* min dmg  */
     obj->value[2] = (int) (level/5+25);      /* max dmg  */
-    obj->value[3] = WEAPON_BOWCASTER;
+    BV_SET_BIT(obj->objflags, WEAPON_BOWCASTER);
     obj->value[4] = ammo;
     obj->value[5] = 250;
     obj->cost = obj->value[2]*50;
@@ -5958,13 +5968,13 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
       if ( !ch->dest_buf )
            return;
       SPRINTF(arg1, "%s", (const char*) ch->dest_buf);
-      DISPOSE( ch->dest_buf);
+      STR_DISPOSE( ch->dest_buf);
       SPRINTF(arg2, "%s", (const char*) ch->dest_buf_2);
-      DISPOSE( ch->dest_buf_2);
+      STR_DISPOSE( ch->dest_buf_2);
       break;
       
      case SUB_TIMER_DO_ABORT:
-      DISPOSE( ch->dest_buf );
+      STR_DISPOSE( ch->dest_buf );
       ch->substate = SUB_NONE;                                         
              send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
              return;
@@ -6017,7 +6027,7 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
     {
 //     send_to_char( "&RYou hold up your new blaster and aim at a leftover piece of plastic.\n", ch);
 //     send_to_char( "&RYou slowly squeeze the trigger hoping for the best...\n", ch);
-       send_to_char( "&RYour blaster backfires destroying your weapon and burning your hand.\n", ch);
+       send_to_char( "&RYour new disguise backfires destroying itself and burning your hand.\n", ch);
        learn_from_failure( ch, gsn_disguise );
        return;
     }
@@ -6025,8 +6035,8 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
     obj = create_object( pObjIndex, level );
     
     obj->item_type = ITEM_DISGUISE;
-    SET_BIT( obj->wear_flags, ITEM_DISGUISE );
-    SET_BIT( obj->wear_flags, ITEM_TAKE );
+    BV_SET_BIT( obj->wear_flags, ITEM_DISGUISE );
+    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
     obj->level = level;
     STRFREE( obj->name );
     SPRINTF( buf , "%s", arg2 );
@@ -6138,11 +6148,11 @@ void do_makemedpac( CHAR_DATA *ch, char *argument )
     case 1:
  if( !ch->dest_buf ) return;
  SPRINTF( arg, "%s", (const char*) ch->dest_buf );
- DISPOSE( ch->dest_buf );
+ STR_DISPOSE( ch->dest_buf );
  break;
 
     case SUB_TIMER_DO_ABORT:
- DISPOSE( ch->dest_buf );
+ STR_DISPOSE( ch->dest_buf );
  send_to_char("&RYour work is interrupted and you fail to complete your work.\n",ch);
         return;
     }
@@ -6190,8 +6200,8 @@ void do_makemedpac( CHAR_DATA *ch, char *argument )
     SPRINTF( buf, " was left here.");
     STRFREE( cont->description );
     cont->description = STRALLOC( buf );
-    if( !CAN_WEAR( cont, 1 << wearbit ) )
- SET_BIT( cont->wear_flags, 1 << wearbit );
+    if( !CAN_WEAR( cont, wearbit ) )
+      BV_SET_BIT( cont->wear_flags, wearbit );
 
     send_to_char("&GYou hold up your newly created medpac!\n",ch);
     act( AT_PLAIN, "$n finished their newly created medpac.",ch,NULL,NULL,TO_ROOM);
@@ -6420,13 +6430,13 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 			return;
 		SPRINTF( arg,  "%s",(const char*) ch->dest_buf );
 		SPRINTF( arg2,  "%s",(const char*) ch->dest_buf_2 );
-		DISPOSE( ch->dest_buf );
-		DISPOSE( ch->dest_buf_2 );
+		STR_DISPOSE( ch->dest_buf );
+		STR_DISPOSE( ch->dest_buf_2 );
 		break;
 	case SUB_TIMER_DO_ABORT:
 		send_to_char("&RYou're interrupted and fail to complete your work.\n",ch);
-		DISPOSE( ch->dest_buf );
-		DISPOSE( ch->dest_buf_2 );
+		STR_DISPOSE( ch->dest_buf );
+		STR_DISPOSE( ch->dest_buf_2 );
 		return;
 	}
 

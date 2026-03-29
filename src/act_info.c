@@ -284,9 +284,9 @@ void show_list_to_char( OBJ_DATA *list, CHAR_DATA *ch, bool fShort, bool fShowNo
 	return;
     }
 
-    CREATE( prgpstrShow,	char*,	count + ((offcount > 0) ? offcount : 0) );
-    CREATE( prgnShow,		int,	count + ((offcount > 0) ? offcount : 0) );
-    CREATE( pitShow,		int,	count + ((offcount > 0) ? offcount : 0) );
+    CREATE_ARRAY( prgpstrShow,	char*,	count + ((offcount > 0) ? offcount : 0) );
+    CREATE_ARRAY( prgnShow,		int,	count + ((offcount > 0) ? offcount : 0) );
+    CREATE_ARRAY( pitShow,		int,	count + ((offcount > 0) ? offcount : 0) );
     nShow	= 0;
     tmp		= (offcount > 0) ? offcount : 0;
     cnt		= 0;
@@ -396,7 +396,7 @@ void show_list_to_char( OBJ_DATA *list, CHAR_DATA *ch, bool fShort, bool fShowNo
 	}
 
 	send_to_char( "\n", ch );
-	DISPOSE( prgpstrShow[iShow] );
+	STR_DISPOSE( prgpstrShow[iShow] );
     }
 
     if ( fShowNothing && nShow == 0 )
@@ -409,9 +409,9 @@ void show_list_to_char( OBJ_DATA *list, CHAR_DATA *ch, bool fShort, bool fShowNo
     /*
      * Clean up.
      */
-    DISPOSE( prgpstrShow );
-    DISPOSE( prgnShow	 );
-    DISPOSE( pitShow	 );
+    DISPOSE_ARRAY( prgpstrShow );
+    DISPOSE_ARRAY( prgnShow	 );
+    DISPOSE_ARRAY( pitShow	 );
     return;
 }
 
@@ -1015,7 +1015,7 @@ void do_look ( CHAR_DATA *ch, char *argument )
                 ch_printf( ch, "%d", ch->in_room->vnum );
                 send_to_char( "}", ch );
             }
-            if( IS_SET( ch->pcdata->flags, PCFLAG_ROOM ) )
+            if( BV_IS_SET( ch->pcdata->flags, PCFLAG_ROOM ) )
             {
                 set_char_color( AT_CYAN, ch );
                 send_to_char( "[", ch );
@@ -1656,7 +1656,8 @@ void do_examine( CHAR_DATA *ch, char *argument )
     	    STRAPP( buf, "\n" );
 
         send_to_char( buf, ch );
-	    if (obj->value[3] == WEAPON_BLASTER )
+        if (BV_IS_SET(obj->objflags, WEAPON_BLASTER) || BV_IS_SET(obj->objflags,WEAPON_BOWCASTER))
+//	    if (obj->value[3] == WEAPON_BLASTER )
 	    {
 		  if (obj->blaster_setting == BLASTER_FULL)
 	    		ch_printf( ch, "It is set on FULL power.\n");
@@ -1672,9 +1673,8 @@ void do_examine( CHAR_DATA *ch, char *argument )
 	    		ch_printf( ch, "It is set on STUN.\n");
 	  	  ch_printf( ch, "It has from %d to %d shots remaining.\n", obj->value[4]/5 , obj->value[4] );
 	    }
-	    else if (     ( obj->value[3] == WEAPON_LIGHTSABER || 
-		            obj->value[3] == WEAPON_VIBRO_BLADE ||
-		            obj->value[3] == WEAPON_FORCE_PIKE ) )
+        else if ( (BV_IS_SET(obj->objflags,WEAPON_LIGHTSABER)) || (BV_IS_SET(obj->objflags,WEAPON_VIBRO_BLADE)) 
+                || (BV_IS_SET(obj->objflags,WEAPON_FORCE_PIKE)) || (BV_IS_SET(obj->objflags,WEAPON_VIBRO_AXE)))
 	    {
 		   ch_printf( ch, "It has %d/%d units of charge remaining.\n", obj->value[4] , obj->value[5] );
 	    }        
@@ -2446,7 +2446,7 @@ void do_who( CHAR_DATA *ch, char *argument )
   bool NullCh = FALSE;
   CLAN_DATA *pClan;
   FILE *whoout;
-  PC_DATA *pcdata;
+//PC_DATA *pcdata;
 
     /*
     #define WT_IMM    0;
@@ -2483,8 +2483,7 @@ void do_who( CHAR_DATA *ch, char *argument )
     CREATE( ch, CHAR_DATA, 1 );
     ch->top_level = 1;
     ch->trust = 0;
-    CREATE( pcdata, PC_DATA, 1 );
-    ch->pcdata = pcdata;
+    ch->pcdata = new PC_DATA();
     ch->in_room = get_room_index( ROOM_VNUM_LIMBO );
   }
   /*
@@ -2822,7 +2821,7 @@ snprintf(buf, sizeof(buf),
       else
         send_to_pager( cur_who->text, ch );
       next_who = cur_who->next;
-      DISPOSE( cur_who->text );
+      STR_DISPOSE( cur_who->text );
       DISPOSE( cur_who ); 
     } 
 
@@ -2842,7 +2841,7 @@ snprintf(buf, sizeof(buf),
       else
         send_to_pager( cur_who->text, ch );
       next_who = cur_who->next;
-      DISPOSE( cur_who->text );
+      STR_DISPOSE( cur_who->text );
       DISPOSE( cur_who ); 
     } 
 
@@ -2861,7 +2860,7 @@ snprintf(buf, sizeof(buf),
       else
         send_to_pager( cur_who->text, ch );
       next_who = cur_who->next;
-      DISPOSE( cur_who->text );
+      STR_DISPOSE( cur_who->text );
       DISPOSE( cur_who ); 
     }
 
@@ -2914,7 +2913,8 @@ void do_compare( CHAR_DATA *ch, char *argument )
 	    if ( obj2->wear_loc != WEAR_NONE
 	    &&   can_see_obj( ch, obj2 )
 	    &&   obj1->item_type == obj2->item_type
-	    && ( obj1->wear_flags & obj2->wear_flags & ~ITEM_TAKE) != 0 )
+        &&  obj1->wear_flags.intersects_excluding(obj2->wear_flags, ITEM_TAKE) )
+//	    && ( obj1->wear_flags & obj2->wear_flags & ~ITEM_TAKE) != 0 )
 		break;
 	}
 
@@ -3498,7 +3498,7 @@ void do_password(CHAR_DATA *ch, char *argument)
     }
 
     /* Update character password */
-    DISPOSE(ch->pcdata->pwd);
+    STR_DISPOSE(ch->pcdata->pwd);
     ch->pcdata->pwd = str_dup(pwdnewhash);
 
     if (IS_SET(sysdata.save_flags, SV_PASSCHG))
@@ -3598,7 +3598,7 @@ void do_password(CHAR_DATA *ch, char *argument)
         }
     }
 
-    DISPOSE(ch->pcdata->pwd);
+    STR_DISPOSE(ch->pcdata->pwd);
     ch->pcdata->pwd = str_dup(pwdnew);
 
     if (IS_SET(sysdata.save_flags, SV_PASSCHG))
@@ -3953,206 +3953,206 @@ void do_config( CHAR_DATA *ch, char *argument )
     set_char_color( AT_WHITE, ch );
     if ( arg[0] == '\0' )
     {
-	send_to_char( "[ Keyword  ] Option\n", ch );
+        send_to_char( "[ Keyword  ] Option\n", ch );
 
-	send_to_char(  IS_SET(ch->act, PLR_FLEE)
-	    ? "[+FLEE     ] You flee if you get attacked.\n"
-	    : "[-flee     ] You fight back if you get attacked.\n"
-	    , ch );
+        send_to_char(  IS_SET(ch->act, PLR_FLEE)
+            ? "[+FLEE     ] You flee if you get attacked.\n"
+            : "[-flee     ] You fight back if you get attacked.\n"
+            , ch );
 
-	send_to_char(  IS_SET(ch->pcdata->flags, PCFLAG_NORECALL)
-	    ? "[+NORECALL ] You fight to the death, link-dead or not.\n"
-	    : "[-norecall ] You try to recall if fighting link-dead.\n"
-	    , ch );
+        send_to_char(  BV_IS_SET(ch->pcdata->flags, PCFLAG_NORECALL)
+            ? "[+NORECALL ] You fight to the death, link-dead or not.\n"
+            : "[-norecall ] You try to recall if fighting link-dead.\n"
+            , ch );
 
-	send_to_char(  IS_SET(ch->act, PLR_AUTOEXIT)
-	    ? "[+AUTOEXIT ] You automatically see exits.\n"
-	    : "[-autoexit ] You don't automatically see exits.\n"
-	    , ch );
+        send_to_char(  IS_SET(ch->act, PLR_AUTOEXIT)
+            ? "[+AUTOEXIT ] You automatically see exits.\n"
+            : "[-autoexit ] You don't automatically see exits.\n"
+            , ch );
 
-	send_to_char(  IS_SET(ch->act, PLR_AUTOLOOT)
-	    ? "[+AUTOLOOT ] You automatically loot corpses.\n"
-	    : "[-autoloot ] You don't automatically loot corpses.\n"
-	    , ch );
+        send_to_char(  IS_SET(ch->act, PLR_AUTOLOOT)
+            ? "[+AUTOLOOT ] You automatically loot corpses.\n"
+            : "[-autoloot ] You don't automatically loot corpses.\n"
+            , ch );
 
-	send_to_char(  IS_SET(ch->act, PLR_AUTOSAC)
-	    ? "[+AUTOSAC  ] You automatically sacrifice corpses.\n"
-	    : "[-autosac  ] You don't automatically sacrifice corpses.\n"
-	    , ch );
+        send_to_char(  IS_SET(ch->act, PLR_AUTOSAC)
+            ? "[+AUTOSAC  ] You automatically sacrifice corpses.\n"
+            : "[-autosac  ] You don't automatically sacrifice corpses.\n"
+            , ch );
 
-	send_to_char(  IS_SET(ch->act, PLR_AUTOGOLD)
-	    ? "[+AUTOCRED ] You automatically split credits from kills in groups.\n"
-	    : "[-autocred ] You don't automatically split credits from kills in groups.\n"
-	    , ch );
+        send_to_char(  IS_SET(ch->act, PLR_AUTOGOLD)
+            ? "[+AUTOCRED ] You automatically split credits from kills in groups.\n"
+            : "[-autocred ] You don't automatically split credits from kills in groups.\n"
+            , ch );
 
-        send_to_char(  IS_SET(ch->pcdata->flags, PCFLAG_GAG)       
+        send_to_char(  BV_IS_SET(ch->pcdata->flags, PCFLAG_GAG)       
             ? "[+GAG      ] You see only necessary battle text.\n"
             : "[-gag      ] You see full battle text.\n"
             , ch );
 
-        send_to_char(  IS_SET(ch->pcdata->flags, PCFLAG_PAGERON)
+        send_to_char(  BV_IS_SET(ch->pcdata->flags, PCFLAG_PAGERON)
             ? "[+PAGER    ] Long output is page-paused.\n"
             : "[-pager    ] Long output scrolls to the end.\n"
             , ch );
-	
-	send_to_char(  IS_SET(ch->act, PLR_BLANK)
-	    ? "[+BLANK    ] You have a blank line before your prompt.\n"
-	    : "[-blank    ] You have no blank line before your prompt.\n"
-	    , ch );
+        
+        send_to_char(  IS_SET(ch->act, PLR_BLANK)
+            ? "[+BLANK    ] You have a blank line before your prompt.\n"
+            : "[-blank    ] You have no blank line before your prompt.\n"
+            , ch );
 
-	send_to_char(  IS_SET(ch->act, PLR_BRIEF)
-	    ? "[+BRIEF    ] You see brief descriptions.\n"
-	    : "[-brief    ] You see long descriptions.\n"
-	    , ch );
+        send_to_char(  IS_SET(ch->act, PLR_BRIEF)
+            ? "[+BRIEF    ] You see brief descriptions.\n"
+            : "[-brief    ] You see long descriptions.\n"
+            , ch );
 
-	send_to_char(  IS_SET(ch->act, PLR_COMBINE)
-	    ? "[+COMBINE  ] You see object lists in combined format.\n"
-	    : "[-combine  ] You see object lists in single format.\n"
-	    , ch );
+        send_to_char(  IS_SET(ch->act, PLR_COMBINE)
+            ? "[+COMBINE  ] You see object lists in combined format.\n"
+            : "[-combine  ] You see object lists in single format.\n"
+            , ch );
 
-	send_to_char(  IS_SET(ch->pcdata->flags, PCFLAG_NOINTRO)
-	    ? "[+NOINTRO  ] You don't see the ascii intro screen on login.\n"
-	    : "[-nointro  ] You see the ascii intro screen on login.\n"
-	    , ch );
+        send_to_char(  BV_IS_SET(ch->pcdata->flags, PCFLAG_NOINTRO)
+            ? "[+NOINTRO  ] You don't see the ascii intro screen on login.\n"
+            : "[-nointro  ] You see the ascii intro screen on login.\n"
+            , ch );
 
-	send_to_char(  IS_SET(ch->act, PLR_PROMPT)
-	    ? "[+PROMPT   ] You have a prompt.\n"
-	    : "[-prompt   ] You don't have a prompt.\n"
-	    , ch );
+        send_to_char(  IS_SET(ch->act, PLR_PROMPT)
+            ? "[+PROMPT   ] You have a prompt.\n"
+            : "[-prompt   ] You don't have a prompt.\n"
+            , ch );
 
-	send_to_char(  IS_SET(ch->act, PLR_TELNET_GA)
-	    ? "[+TELNETGA ] You receive a telnet GA sequence.\n"
-	    : "[-telnetga ] You don't receive a telnet GA sequence.\n"
-	    , ch );
+        send_to_char(  IS_SET(ch->act, PLR_TELNET_GA)
+            ? "[+TELNETGA ] You receive a telnet GA sequence.\n"
+            : "[-telnetga ] You don't receive a telnet GA sequence.\n"
+            , ch );
 
-	send_to_char(  IS_SET(ch->act, PLR_ANSI)
-	    ? "[+ANSI     ] You receive ANSI color sequences.\n"
-	    : "[-ansi     ] You don't receive receive ANSI colors.\n"
-	    , ch );
+        send_to_char(  IS_SET(ch->act, PLR_ANSI)
+            ? "[+ANSI     ] You receive ANSI color sequences.\n"
+            : "[-ansi     ] You don't receive receive ANSI colors.\n"
+            , ch );
 
-	send_to_char(  IS_SET(ch->act, PLR_SOUND)
-	    ? "[+SOUND     ] You have MSP support.\n"
-	    : "[-sound     ] You don't have MSP support.\n"
-	    , ch );
+        send_to_char(  IS_SET(ch->act, PLR_SOUND)
+            ? "[+SOUND     ] You have MSP support.\n"
+            : "[-sound     ] You don't have MSP support.\n"
+            , ch );
 
 
-	send_to_char(  IS_SET(ch->act, PLR_SHOVEDRAG)
-	      ? "[+SHOVEDRAG] You allow yourself to be shoved and dragged around.\n"
-	      : "[-shovedrag] You'd rather not be shoved or dragged around.\n"
-	      , ch );
+        send_to_char(  IS_SET(ch->act, PLR_SHOVEDRAG)
+            ? "[+SHOVEDRAG] You allow yourself to be shoved and dragged around.\n"
+            : "[-shovedrag] You'd rather not be shoved or dragged around.\n"
+            , ch );
 
-	send_to_char(  IS_SET( ch->pcdata->flags, PCFLAG_NOSUMMON )
-	      ? "[+NOSUMMON ] You do not allow other players to summon you.\n"
-	      : "[-nosummon ] You allow other players to summon you.\n"
-	      , ch );
+        send_to_char(  BV_IS_SET( ch->pcdata->flags, PCFLAG_NOSUMMON )
+            ? "[+NOSUMMON ] You do not allow other players to summon you.\n"
+            : "[-nosummon ] You allow other players to summon you.\n"
+            , ch );
 
-	send_to_char(  IS_SET( ch->act, PLR_DONTAUTOFUEL )
-	      ? "[+dontautofuel ] You will not refuel automatically on launch.\n"
-	      : "[-dontautofuel] You refuel automatically on launch.\n"
-	      , ch );
+        send_to_char(  IS_SET( ch->act, PLR_DONTAUTOFUEL )
+            ? "[+dontautofuel ] You will not refuel automatically on launch.\n"
+            : "[-dontautofuel] You refuel automatically on launch.\n"
+            , ch );
 
-	if ( IS_IMMORTAL( ch ) )
-	  send_to_char(  IS_SET(ch->act, PLR_ROOMVNUM)
-	      ? "[+VNUM     ] You can see the VNUM of a room.\n"
-	      : "[-vnum     ] You do not see the VNUM of a room.\n"
-	      , ch );
+        if ( IS_IMMORTAL( ch ) )
+            send_to_char(  IS_SET(ch->act, PLR_ROOMVNUM)
+                ? "[+VNUM     ] You can see the VNUM of a room.\n"
+                : "[-vnum     ] You do not see the VNUM of a room.\n"
+                , ch );
 
-	if ( IS_IMMORTAL( ch ) )
-	  send_to_char(  IS_SET(ch->act, PLR_AUTOMAP)    /* maps */
-	      ? "[+MAP      ] You can see the MAP of a room.\n"
-	      : "[-map      ] You do not see the MAP of a room.\n"
-	      , ch );
+        if ( IS_IMMORTAL( ch ) )
+            send_to_char(  IS_SET(ch->act, PLR_AUTOMAP)    /* maps */
+                ? "[+MAP      ] You can see the MAP of a room.\n"
+                : "[-map      ] You do not see the MAP of a room.\n"
+                , ch );
 
-	if ( IS_IMMORTAL( ch) )             /* Added 10/16 by Kuran of SWR */
-	  send_to_char( IS_SET(ch->pcdata->flags, PCFLAG_ROOM)
-	      ? "[+ROOMFLAGS] You will see room flags.\n"
-	      : "[-roomflags] You will not see room flags.\n"
-	      , ch );
-	
-	send_to_char(  IS_SET(ch->act, PLR_SILENCE)
-	    ? "[+SILENCE  ] You are silenced.\n"
-	    : ""
-	    , ch );
+        if ( IS_IMMORTAL( ch) )             /* Added 10/16 by Kuran of SWR */
+            send_to_char( BV_IS_SET(ch->pcdata->flags, PCFLAG_ROOM)
+                ? "[+ROOMFLAGS] You will see room flags.\n"
+                : "[-roomflags] You will not see room flags.\n"
+                , ch );
+        
+        send_to_char(  IS_SET(ch->act, PLR_SILENCE)
+            ? "[+SILENCE  ] You are silenced.\n"
+            : ""
+            , ch );
 
-	send_to_char( !IS_SET(ch->act, PLR_NO_EMOTE)
-	    ? ""
-	    : "[-emote    ] You can't emote.\n"
-	    , ch );
+        send_to_char( !IS_SET(ch->act, PLR_NO_EMOTE)
+            ? ""
+            : "[-emote    ] You can't emote.\n"
+            , ch );
 
-	send_to_char( !IS_SET(ch->act, PLR_NO_TELL)
-	    ? ""
-	    : "[-tell     ] You can't use 'tell'.\n"
-	    , ch );
+        send_to_char( !IS_SET(ch->act, PLR_NO_TELL)
+            ? ""
+            : "[-tell     ] You can't use 'tell'.\n"
+            , ch );
 
-	send_to_char( !IS_SET(ch->act, PLR_LITTERBUG)
-	    ? ""
-	    : "[-litter  ] A convicted litterbug. You cannot drop anything.\n" 	    , ch );
+        send_to_char( !IS_SET(ch->act, PLR_LITTERBUG)
+            ? ""
+            : "[-litter  ] A convicted litterbug. You cannot drop anything.\n" 	    , ch );
     }
     else
     {
-	bool fSet;
-	int bit = 0;
+        bool fSet;
+        int bit = 0;
 
-	     if ( arg[0] == '+' ) fSet = TRUE;
-	else if ( arg[0] == '-' ) fSet = FALSE;
-	else
-	{
-	    send_to_char( "Config -option or +option?\n", ch );
-	    return;
-	}
+            if ( arg[0] == '+' ) fSet = TRUE;
+        else if ( arg[0] == '-' ) fSet = FALSE;
+        else
+        {
+            send_to_char( "Config -option or +option?\n", ch );
+            return;
+        }
 
-	     if ( !str_prefix( arg+1, "autoexit" ) ) bit = PLR_AUTOEXIT;
-	else if ( !str_prefix( arg+1, "autoloot" ) ) bit = PLR_AUTOLOOT;
-	else if ( !str_prefix( arg+1, "autosac"  ) ) bit = PLR_AUTOSAC;
-	else if ( !str_prefix( arg+1, "autocred" ) ) bit = PLR_AUTOGOLD;
-	else if ( !str_prefix( arg+1, "blank"    ) ) bit = PLR_BLANK;
-	else if ( !str_prefix( arg+1, "brief"    ) ) bit = PLR_BRIEF;
-	else if ( !str_prefix( arg+1, "combine"  ) ) bit = PLR_COMBINE;
-	else if ( !str_prefix( arg+1, "prompt"   ) ) bit = PLR_PROMPT;
-	else if ( !str_prefix( arg+1, "telnetga" ) ) bit = PLR_TELNET_GA;
-	else if ( !str_prefix( arg+1, "ansi"     ) ) bit = PLR_ANSI;
-	else if ( !str_prefix( arg+1, "sound"      ) ) bit = PLR_SOUND;
-	else if ( !str_prefix( arg+1, "flee"     ) ) bit = PLR_FLEE;
-	else if ( !str_prefix( arg+1, "nice"     ) ) bit = PLR_NICE;
-	else if ( !str_prefix( arg+1, "shovedrag") ) bit = PLR_SHOVEDRAG;
-	else if ( !str_prefix( arg+1, "dontautofuel") ) bit = PLR_DONTAUTOFUEL;
-	else if ( IS_IMMORTAL( ch )
-	     &&   !str_prefix( arg+1, "vnum"     ) ) bit = PLR_ROOMVNUM;
-	else if ( IS_IMMORTAL( ch )
-	     &&   !str_prefix( arg+1, "map"      ) ) bit = PLR_AUTOMAP;     /* maps */
+        if ( !str_prefix( arg+1, "autoexit" ) ) bit = PLR_AUTOEXIT;
+        else if ( !str_prefix( arg+1, "autoloot" ) ) bit = PLR_AUTOLOOT;
+        else if ( !str_prefix( arg+1, "autosac"  ) ) bit = PLR_AUTOSAC;
+        else if ( !str_prefix( arg+1, "autocred" ) ) bit = PLR_AUTOGOLD;
+        else if ( !str_prefix( arg+1, "blank"    ) ) bit = PLR_BLANK;
+        else if ( !str_prefix( arg+1, "brief"    ) ) bit = PLR_BRIEF;
+        else if ( !str_prefix( arg+1, "combine"  ) ) bit = PLR_COMBINE;
+        else if ( !str_prefix( arg+1, "prompt"   ) ) bit = PLR_PROMPT;
+        else if ( !str_prefix( arg+1, "telnetga" ) ) bit = PLR_TELNET_GA;
+        else if ( !str_prefix( arg+1, "ansi"     ) ) bit = PLR_ANSI;
+        else if ( !str_prefix( arg+1, "sound"      ) ) bit = PLR_SOUND;
+        else if ( !str_prefix( arg+1, "flee"     ) ) bit = PLR_FLEE;
+        else if ( !str_prefix( arg+1, "nice"     ) ) bit = PLR_NICE;
+        else if ( !str_prefix( arg+1, "shovedrag") ) bit = PLR_SHOVEDRAG;
+        else if ( !str_prefix( arg+1, "dontautofuel") ) bit = PLR_DONTAUTOFUEL;
+        else if ( IS_IMMORTAL( ch )
+            &&   !str_prefix( arg+1, "vnum"     ) ) bit = PLR_ROOMVNUM;
+        else if ( IS_IMMORTAL( ch )
+            &&   !str_prefix( arg+1, "map"      ) ) bit = PLR_AUTOMAP;     /* maps */
 
-	if (bit)
+	    if (bit)
         {
           
-	  if ( fSet )
-	    SET_BIT    (ch->act, bit);
-	  else
-	    REMOVE_BIT (ch->act, bit);
-	  send_to_char( "Ok.\n", ch );
-          return;
+            if ( fSet )
+                SET_BIT    (ch->act, bit);
+            else
+                REMOVE_BIT (ch->act, bit);
+            send_to_char( "Ok.\n", ch );
+            return;
         }
         else
         {
-	       if ( !str_prefix( arg+1, "norecall" ) ) bit = PCFLAG_NORECALL;
-	  else if ( !str_prefix( arg+1, "nointro"  ) ) bit = PCFLAG_NOINTRO;
-	  else if ( !str_prefix( arg+1, "nosummon" ) ) bit = PCFLAG_NOSUMMON;
-          else if ( !str_prefix( arg+1, "gag"      ) ) bit = PCFLAG_GAG; 
-          else if ( !str_prefix( arg+1, "pager"    ) ) bit = PCFLAG_PAGERON;
-          else if ( !str_prefix( arg+1, "roomflags") 
-                    && (IS_IMMORTAL(ch))) bit = PCFLAG_ROOM;
-          else
-	  {
-	    send_to_char( "Config which option?\n", ch );
-	    return;
-    	  }
+            if ( !str_prefix( arg+1, "norecall" ) ) bit = PCFLAG_NORECALL;
+            else if ( !str_prefix( arg+1, "nointro"  ) ) bit = PCFLAG_NOINTRO;
+            else if ( !str_prefix( arg+1, "nosummon" ) ) bit = PCFLAG_NOSUMMON;
+            else if ( !str_prefix( arg+1, "gag"      ) ) bit = PCFLAG_GAG; 
+            else if ( !str_prefix( arg+1, "pager"    ) ) bit = PCFLAG_PAGERON;
+            else if ( !str_prefix( arg+1, "roomflags") 
+                        && (IS_IMMORTAL(ch))) bit = PCFLAG_ROOM;
+            else
+            {
+            send_to_char( "Config which option?\n", ch );
+            return;
+            }
 
-          if ( fSet )
-	    SET_BIT    (ch->pcdata->flags, bit);
-	  else
-	    REMOVE_BIT (ch->pcdata->flags, bit);
+            if ( fSet )
+                BV_SET_BIT    (ch->pcdata->flags, bit);
+            else
+                BV_REMOVE_BIT (ch->pcdata->flags, bit);
 
-	  send_to_char( "Ok.\n", ch );
-          return;
+	       send_to_char( "Ok.\n", ch );
+            return;
         }
     }
 
@@ -4486,7 +4486,7 @@ void do_pager( CHAR_DATA *ch, char *argument )
   argument = one_argument(argument, arg);
   if ( !*arg )
   {
-    if ( IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
+    if ( BV_IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
       do_config(ch, "-pager");
     else
       do_config(ch, "+pager");
@@ -4506,7 +4506,7 @@ void do_pager( CHAR_DATA *ch, char *argument )
 
 void do_showstatistic_web( CHAR_DATA *ch, char *argument )
 {
-    PC_DATA *pcdata;
+//  PC_DATA *pcdata;
     CHAR_DATA *raceCh;
     int race, plrclass, iR, iC, iC2;
     bool chk_race = FALSE;
@@ -4538,8 +4538,7 @@ void do_showstatistic_web( CHAR_DATA *ch, char *argument )
     CREATE( raceCh, CHAR_DATA, 1 );
     raceCh->top_level = 1;
     raceCh->trust = 0;
-    CREATE( pcdata, PC_DATA, 1 );
-    raceCh->pcdata = pcdata;
+    raceCh->pcdata = new PC_DATA();
     raceCh->in_room = get_room_index( ROOM_VNUM_LIMBO );
     raceCh->perm_str = 20;
     raceCh->perm_int = 20;
@@ -4619,14 +4618,14 @@ void do_showstatistic_web( CHAR_DATA *ch, char *argument )
     	  }
     	}
     }
-    DISPOSE( raceCh->pcdata );    
+    delete( raceCh->pcdata );    
     DISPOSE( raceCh );
 }
 
 
 void do_showstatistic( CHAR_DATA *ch, char *argument )
 {
-    PC_DATA *pcdata;
+//  PC_DATA *pcdata;
     CHAR_DATA *raceCh;
     int race, plrclass, iR, iC, iC2;
     bool chk_race = FALSE;
@@ -4657,8 +4656,7 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
     CREATE( raceCh, CHAR_DATA, 1 );
     raceCh->top_level = 1;
     raceCh->trust = 0;
-    CREATE( pcdata, PC_DATA, 1 );
-    raceCh->pcdata = pcdata;
+    raceCh->pcdata = new PC_DATA();
     raceCh->in_room = get_room_index( ROOM_VNUM_LIMBO );
     raceCh->perm_str = 20;
     raceCh->perm_int = 20;
@@ -4747,7 +4745,7 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
 	  send_to_pager( buf, ch );
     	}
     }
-    DISPOSE( raceCh->pcdata );    
+    delete( raceCh->pcdata );    
     DISPOSE( raceCh );
 }
 

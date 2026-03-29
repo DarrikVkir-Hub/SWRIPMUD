@@ -1623,18 +1623,19 @@ void obj_update( void )
 
         if ( obj->item_type == ITEM_WEAPON && obj->carried_by  &&
              ( obj->wear_loc == WEAR_WIELD || obj->wear_loc == WEAR_DUAL_WIELD ) &&
-             obj->value[3] != WEAPON_BLASTER && obj->value[4] > 0 &&
-              obj->value[3] != WEAPON_BOWCASTER &&  obj->value[3] != WEAPON_FORCE_PIKE)
+			 !BV_IS_SET(obj->objflags,WEAPON_BLASTER) && !BV_IS_SET(obj->objflags,WEAPON_BOWCASTER)
+			 && !BV_IS_SET(obj->objflags,WEAPON_FORCE_PIKE) && 
+             obj->value[4] > 0 )
         {
            obj->value[4]--;
            if ( obj->value[4] <= 0 )
            {
-              if ( obj->value[3] == WEAPON_LIGHTSABER )
+              if ( BV_IS_SET(obj->objflags,WEAPON_LIGHTSABER) )
               {
                  act( AT_PLAIN, "$p fizzles and dies." , obj->carried_by, obj, NULL, TO_CHAR );
                  act( AT_PLAIN, "$n's lightsaber fizzles and dies." , obj->carried_by, NULL, NULL, TO_ROOM );
               }
-              else if ( obj->value[3] == WEAPON_VIBRO_BLADE )
+              if ( BV_IS_SET(obj->objflags,WEAPON_VIBRO_BLADE) || BV_IS_SET(obj->objflags,WEAPON_VIBRO_AXE) )
               {
                  act( AT_PLAIN, "$p stops vibrating." , obj->carried_by, obj, NULL, TO_CHAR );
               }
@@ -1643,31 +1644,31 @@ void obj_update( void )
 
 	if ( obj->item_type == ITEM_PIPE )
 	{
-	    if ( IS_SET( obj->value[3], PIPE_LIT ) )
+	    if ( BV_IS_SET( obj->objflags, PIPE_LIT ) )
 	    {
 		if ( --obj->value[1] <= 0 )
 		{
 		  obj->value[1] = 0;
-		  REMOVE_BIT( obj->value[3], PIPE_LIT );
+		  BV_REMOVE_BIT( obj->objflags, PIPE_LIT );
 		}
 		else
-		if ( IS_SET( obj->value[3], PIPE_HOT ) )
-		  REMOVE_BIT( obj->value[3], PIPE_HOT );
+		if ( BV_IS_SET( obj->objflags, PIPE_HOT ) )
+		  BV_REMOVE_BIT( obj->objflags, PIPE_HOT );
 		else
 		{
-		  if ( IS_SET( obj->value[3], PIPE_GOINGOUT ) )
+		  if ( BV_IS_SET( obj->objflags, PIPE_GOINGOUT ) )
 		  {
-		    REMOVE_BIT( obj->value[3], PIPE_LIT );
-		    REMOVE_BIT( obj->value[3], PIPE_GOINGOUT );
+		    BV_REMOVE_BIT( obj->objflags, PIPE_LIT );
+		    BV_REMOVE_BIT( obj->objflags, PIPE_GOINGOUT );
 		  }
 		  else
-		    SET_BIT( obj->value[3], PIPE_GOINGOUT );
+		    BV_SET_BIT( obj->objflags, PIPE_GOINGOUT );
 		}
-		if ( !IS_SET( obj->value[3], PIPE_LIT ) )
-		  SET_BIT( obj->value[3], PIPE_FULLOFASH );
+		if ( !BV_IS_SET( obj->objflags, PIPE_LIT ) )
+		  BV_SET_BIT( obj->objflags, PIPE_FULLOFASH );
 	    }
 	    else
-	      REMOVE_BIT( obj->value[3], PIPE_HOT );
+	      BV_REMOVE_BIT( obj->objflags, PIPE_HOT );
 	}
 
 
@@ -1726,7 +1727,7 @@ void obj_update( void )
 	{
                if (obj->in_room &&
                 obj->in_room->sector_type == SECT_AIR &&
-                (obj->wear_flags & ITEM_TAKE) )
+				BV_IS_SET(obj->wear_flags,ITEM_TAKE) )
                {
 		 ROOM_INDEX_DATA *new_room;
 		 EXIT_DATA *xit;
@@ -2020,7 +2021,7 @@ void aggr_update( void )
 	    {
                  oprog_wordlist_check( tmp_act->buf,wch, tmp_act->ch,
 				      tmp_act->obj, tmp_act->vo, ACT_PROG );
-                 DISPOSE( tmp_act->buf );
+                 STR_DISPOSE( tmp_act->buf );
             }
 	    for ( tmp_act = wch->mpact; tmp_act; tmp_act = tmp2_act )
 	    {
@@ -2048,7 +2049,7 @@ void aggr_update( void )
 		  mprog_wordlist_check( tmp_act->buf, wch, tmp_act->ch,
 					tmp_act->obj, tmp_act->vo, ACT_PROG );
 		wch->mpact = tmp_act->next;
-		DISPOSE(tmp_act->buf);
+		STR_DISPOSE(tmp_act->buf);
 		DISPOSE(tmp_act);
 	    }
 	    wch->mpactnum = 0;
@@ -2120,10 +2121,9 @@ void aggr_update( void )
 	    if ( IS_NPC(ch) && IS_SET(ch->attacks, ATCK_BACKSTAB ) )
 	    {
 		OBJ_DATA *obj;
-
 		if ( !ch->mount
     		&& (obj = get_eq_char( ch, WEAR_WIELD )) != NULL
-    		&& obj->value[3] == 11
+    		&& ( BV_IS_SET(obj->objflags,WEAPON_VIBRO_BLADE) || BV_IS_SET(obj->objflags,WEAPON_BLADE)  )
 		&& !victim->fighting
 		&& victim->hit >= victim->max_hit )
 		{

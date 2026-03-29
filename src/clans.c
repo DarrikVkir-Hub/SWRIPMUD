@@ -978,7 +978,7 @@ void do_outcast( CHAR_DATA *ch, char *argument )
     act( AT_MAGIC, "$n outcasts $N from $t", ch, clan->name, victim, TO_ROOM );
     act( AT_MAGIC, "$n outcasts you from $t", ch, clan->name, victim, TO_VICT );
     
-    DISPOSE( victim->pcdata->bestowments );
+    STR_DISPOSE( victim->pcdata->bestowments );
     victim->pcdata->bestowments = str_dup("");
     
     save_char_obj( victim );	/* clan gets saved when pfile is saved */
@@ -1237,7 +1237,7 @@ void do_setclan( CHAR_DATA *ch, char *argument )
       if( !remove( filename ) )
          send_to_char( "Old clan file deleted.\n", ch );
 
-      DISPOSE( clan->filename );
+      STR_DISPOSE( clan->filename );
       clan->filename = str_dup( argument );
       send_to_char( "Done.\n", ch );
       save_clan( clan );
@@ -1364,7 +1364,7 @@ void do_setplanet( CHAR_DATA *ch, char *argument )
             }
         }
 
-        DISPOSE( planet->filename );
+        STR_DISPOSE( planet->filename );
         planet->filename = str_dup( argument );
         send_to_char( "Done.\n", ch );
         save_planet( planet );
@@ -2341,7 +2341,7 @@ void do_resign( CHAR_DATA *ch, char *argument )
     ch_printf( ch, "You lose %ld diplomacy experience.\n", lose_exp ); 
     ch->experience[DIPLOMACY_ABILITY] -= lose_exp; 
 
-    DISPOSE( ch->pcdata->bestowments );
+    STR_DISPOSE( ch->pcdata->bestowments );
     ch->pcdata->bestowments = str_dup("");
 
     save_char_obj( ch );	/* clan gets saved when pfile is saved */
@@ -2798,8 +2798,8 @@ void do_empower ( CHAR_DATA *ch , char *argument )
 
     if ( !str_cmp( arg2, "none" ) )
     {
-        DISPOSE( victim->pcdata->bestowments );
-	victim->pcdata->bestowments = str_dup("");
+        STR_DISPOSE( victim->pcdata->bestowments );
+	    victim->pcdata->bestowments = str_dup("");
         ch_printf( ch, "Bestowments removed from %s.\n", victim->name );
         ch_printf( victim, "%s has removed your bestowed clan abilities.\n", ch->name );
         return;
@@ -2807,7 +2807,7 @@ void do_empower ( CHAR_DATA *ch , char *argument )
     else if ( !str_cmp( arg2, "pilot" ) )
     {
       SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
-      DISPOSE( victim->pcdata->bestowments );
+      STR_DISPOSE( victim->pcdata->bestowments );
       victim->pcdata->bestowments = str_dup( buf );
       ch_printf( victim, "%s has given you permission to fly clan ships.\n", 
              ch->name );
@@ -2816,7 +2816,7 @@ void do_empower ( CHAR_DATA *ch , char *argument )
     else if ( !str_cmp( arg2, "withdraw" ) )
     {
       SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
-      DISPOSE( victim->pcdata->bestowments );
+      STR_DISPOSE( victim->pcdata->bestowments );
       victim->pcdata->bestowments = str_dup( buf );
       ch_printf( victim, "%s has given you permission to withdraw clan funds.\n", 
              ch->name );
@@ -2825,7 +2825,7 @@ void do_empower ( CHAR_DATA *ch , char *argument )
     else if ( !str_cmp( arg2, "clanbuyship" ) )
     {
       SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
-      DISPOSE( victim->pcdata->bestowments );
+      STR_DISPOSE( victim->pcdata->bestowments );
       victim->pcdata->bestowments = str_dup( buf );
       ch_printf( victim, "%s has given you permission to buy clan ships.\n", 
              ch->name );
@@ -2834,7 +2834,7 @@ void do_empower ( CHAR_DATA *ch , char *argument )
     else if ( !str_cmp( arg2, "induct" ) )
     {
       SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
-      DISPOSE( victim->pcdata->bestowments );
+      STR_DISPOSE( victim->pcdata->bestowments );
       victim->pcdata->bestowments = str_dup( buf );
       ch_printf( victim, "%s has given you permission to induct new members.\n", 
              ch->name );
@@ -2843,7 +2843,7 @@ void do_empower ( CHAR_DATA *ch , char *argument )
     else if ( !str_cmp( arg2, "empower" ) )
     {
       SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
-      DISPOSE( victim->pcdata->bestowments );
+      STR_DISPOSE( victim->pcdata->bestowments );
       victim->pcdata->bestowments = str_dup( buf );
       ch_printf( victim, "%s has given you permission to empower members.\n", 
              ch->name );
@@ -2852,7 +2852,7 @@ void do_empower ( CHAR_DATA *ch , char *argument )
     else if ( !str_cmp( arg2, "salary" ) )
     {
       SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
-      DISPOSE( victim->pcdata->bestowments );
+      STR_DISPOSE( victim->pcdata->bestowments );
       victim->pcdata->bestowments = str_dup( buf );
       ch_printf( victim, "%s has given you permission to assign salaries.\n", 
              ch->name );
@@ -2861,7 +2861,7 @@ void do_empower ( CHAR_DATA *ch , char *argument )
     else if ( !str_cmp( arg2, "roster" ) )
     {
       SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
-      DISPOSE( victim->pcdata->bestowments );
+      STR_DISPOSE( victim->pcdata->bestowments );
       victim->pcdata->bestowments = str_dup( buf );
       ch_printf( victim, "%s has given you permission to access the roster.\n", 
              ch->name );
