@@ -395,7 +395,7 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( IS_SET(ch->in_room->room_flags, ROOM_PET_SHOP) )
+    if ( BV_IS_SET(ch->in_room->room_flags, ROOM_PET_SHOP) )
     {
 	char buf[MAX_STRING_LENGTH];
 	CHAR_DATA *pet;
@@ -418,13 +418,13 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	pet         = get_char_room( ch, arg );
 	ch->in_room = in_room;
 
-	if ( pet == NULL || !IS_NPC( pet ) || !IS_SET(pet->act, ACT_PET) )
+	if ( pet == NULL || !IS_NPC( pet ) || !BV_IS_SET(pet->act, ACT_PET) )
 	{
 	    send_to_char( "Sorry, you can't buy that here.\n", ch );
 	    return;
 	}
 
-	if ( IS_SET(ch->act, PLR_BOUGHT_PET) )
+	if ( BV_IS_SET(ch->act, PLR_BOUGHT_PET) )
 	{
 	    send_to_char( "You already bought one pet this level.\n", ch );
 	    return;
@@ -446,9 +446,9 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	ch->gold	-= maxgold;
 	boost_economy( ch->in_room->area, maxgold );
 	pet		= create_mobile( pet->pIndexData );
-//	SET_BIT(ch->act, PLR_BOUGHT_PET);
-	SET_BIT(pet->act, ACT_PET);
-	SET_BIT(pet->affected_by, AFF_CHARM);
+//	BV_SET_BIT(ch->act, PLR_BOUGHT_PET);
+	BV_SET_BIT(pet->act, ACT_PET);
+	BV_SET_BIT(pet->affected_by, AFF_CHARM);
 
 	argument = one_argument( argument, arg );
 	if ( arg[0] != '\0' )
@@ -719,7 +719,7 @@ void do_buy( CHAR_DATA *ch, char *argument )
 
 void do_list( CHAR_DATA *ch, char *argument )
 {
-    if ( IS_SET(ch->in_room->room_flags, ROOM_PET_SHOP) )
+    if ( BV_IS_SET(ch->in_room->room_flags, ROOM_PET_SHOP) )
     {
 	ROOM_INDEX_DATA *pRoomIndexNext;
 	CHAR_DATA *pet;
@@ -736,7 +736,7 @@ void do_list( CHAR_DATA *ch, char *argument )
 	found = FALSE;
 	for ( pet = pRoomIndexNext->first_person; pet; pet = pet->next_in_room )
 	{
-	    if ( IS_SET(pet->act, ACT_PET) && IS_NPC(pet) )
+	    if ( BV_IS_SET(pet->act, ACT_PET) && IS_NPC(pet) )
 	    {
 		if ( !found )
 		{
@@ -1894,7 +1894,7 @@ if ( IS_NPC(ch) )
 	    return;
 	}
 
-	if (!IS_SET(ch->in_room->room_flags, ROOM_PLR_SHOP) )
+	if (!BV_IS_SET(ch->in_room->room_flags, ROOM_PLR_SHOP) )
 	{
 		send_to_char( "You need to find a free shop.\n", ch);
 		return;
@@ -2109,7 +2109,8 @@ void fwrite_vendor( FILE *fp, CHAR_DATA *mob )
   if ( str_cmp( mob->short_descr, mob->pIndexData->short_descr) )
   	fprintf( fp, "Short	    %s~\n", mob->short_descr );
   fprintf( fp, "Position   %d\n", mob->position );
-  fprintf( fp, "Flags   %d\n",   mob->act );
+  fwrite_bitset(fp, "FlagsEx",mob->act);
+//  fprintf( fp, "Flags   %d\n",   mob->act );
 fprintf( fp, "END\n" );
 
   return;
@@ -2216,7 +2217,19 @@ char vnum1 [MAX_INPUT_LENGTH];
 		}
 		break;
  	case 'F':
-		KEY( "Flags", mob->act, fread_number(fp));
+		//KEY( "Flags", mob->act, fread_number(fp));
+		if ( !str_cmp( word, "Flags"  ) )
+		{
+			mob->act = int_to_bitset(fread_number( fp ));
+			fMatch = TRUE;
+			break;
+		}
+		if ( !str_cmp( word, "FlagsEx"  ) )
+		{
+			fread_bitset(fp, mob->act);
+			fMatch = TRUE;
+			break;
+		}		
 		break;
 	case 'G':
 	KEY("Gold", mob->gold, fread_number(fp));

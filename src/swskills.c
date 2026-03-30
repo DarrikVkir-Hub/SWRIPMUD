@@ -69,7 +69,7 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
                 checkbatt = FALSE;
                 checkoven = FALSE;
         
-                if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
                    send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
@@ -227,7 +227,7 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
     paf->duration           = -1;
     paf->location           = get_atype( "backstab" );
     paf->modifier           = level/3;
-    paf->bitvector          = 0;
+    paf->bitvector          = -1;
     paf->next               = NULL;
     LINK( paf, obj->first_affect, obj->last_affect, next, prev );
     ++top_affect;
@@ -238,7 +238,7 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
     paf2->duration           = -1;
     paf2->location           = get_atype( "hitroll" );
     paf2->modifier           = -2;
-    paf2->bitvector          = 0;
+    paf2->bitvector          = -1;
     paf2->next               = NULL;
     LINK( paf2, obj->first_affect, obj->last_affect, next, prev );
     ++top_affect;
@@ -311,7 +311,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
                 checkcond = FALSE;
                 checkcirc = FALSE;
   checkscope = FALSE;
-                if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
                    send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
@@ -521,7 +521,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
     paf->duration           = -1;
     paf->location           = get_atype( "hitroll" );
     paf->modifier           = URANGE( 0, 1+scope, level/30 );
-    paf->bitvector          = 0;
+    paf->bitvector          = -1;
     paf->next               = NULL;
     LINK( paf, obj->first_affect, obj->last_affect, next, prev );
     ++top_affect;
@@ -530,7 +530,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
     paf2->duration           = -1;
     paf2->location           = get_atype( "damroll" );
     paf2->modifier           = URANGE( 0, power, level/30);
-    paf2->bitvector          = 0;
+    paf2->bitvector          = -1;
     paf2->next               = NULL;
     LINK( paf2, obj->first_affect, obj->last_affect, next, prev );
     ++top_affect;
@@ -541,7 +541,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
     paf2->duration           = -1;
     paf2->location           = get_atype( "snipe" );
     paf2->modifier           = URANGE( 0, 30 , level/3);
-    paf2->bitvector          = 0;
+    paf2->bitvector          = -1;
     paf2->next               = NULL;
     LINK( paf2, obj->first_affect, obj->last_affect, next, prev );
    }
@@ -604,7 +604,7 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
                 checkgems = FALSE;
                 checkmirr = FALSE;
 
-                if ( !IS_SET( ch->in_room->room_flags, ROOM_SAFE ) || !IS_SET( ch->in_room->room_flags, ROOM_SILENCE ))
+                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) || !BV_IS_SET( ch->in_room->room_flags, ROOM_SILENCE ))
                 {
                    send_to_char( "&RYou need to be in a quiet peaceful place to craft a lightsaber.\n", ch);
                    return;
@@ -850,7 +850,7 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
     paf->duration           = -1;
     paf->location           = get_atype( "hitroll" );
     paf->modifier           = URANGE( 0, gems, level/30 );
-    paf->bitvector          = 0;
+    paf->bitvector          = -1;
     paf->next               = NULL;
     LINK( paf, obj->first_affect, obj->last_affect, next, prev );
     ++top_affect;
@@ -859,7 +859,7 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
     paf2->duration           = -1;
     paf2->location           = get_atype( "parry" );
     paf2->modifier           = ( level/3 );
-    paf2->bitvector          = 0;
+    paf2->bitvector          = -1;
     paf2->next               = NULL;
     LINK( paf2, obj->first_affect, obj->last_affect, next, prev );
     ++top_affect;
@@ -906,7 +906,7 @@ void do_makespice( CHAR_DATA *ch, char *argument )
                   return;   
                 }
              
-             if ( !IS_SET( ch->in_room->room_flags, ROOM_REFINERY ) )
+             if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_REFINERY ) )
                 {
                    send_to_char( "&RYou need to be in a refinery to create drugs from spice.\n", ch);
                    return;
@@ -1151,7 +1151,7 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
                 checkchem  = FALSE;
                 checkcirc  = FALSE;
 
-                if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
                    send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
@@ -1357,7 +1357,7 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
                 checkchem  = FALSE;
                 checkcirc  = FALSE;
 
-                if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
                    send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
@@ -1562,7 +1562,7 @@ void do_makelight( CHAR_DATA *ch, char *argument )
                 checkcirc  = FALSE;
                 checklens = FALSE;
 
-                if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
                    send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
@@ -1795,7 +1795,7 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
                 checkoven = FALSE;
                 checkmetal = FALSE;
         
-                if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
                    send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
@@ -1999,7 +1999,7 @@ void do_makearmor( CHAR_DATA *ch, char *argument )
              checksew = FALSE;
                 checkfab = FALSE;
         
-                if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
                    send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
@@ -2186,7 +2186,7 @@ void do_makecomlink( CHAR_DATA *ch, char *argument )
                 checkbatt = FALSE;
                 checkcirc = FALSE;
         
-                if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
                    send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
@@ -2382,7 +2382,7 @@ void do_makeshield( CHAR_DATA *ch, char *argument )
                 checkcirc = FALSE;
                 checkgems = FALSE;
 
-                if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
                    send_to_char( "&RYou need to be in a workshop.\n", ch);
                    return;
@@ -2628,7 +2628,7 @@ void do_makecontainer( CHAR_DATA *ch, char *argument )
              checksew = FALSE;
                 checkfab = FALSE;
         
-                if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
                    send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
@@ -2988,7 +2988,7 @@ void add_reinforcements( CHAR_DATA *ch )
             if ( mob[mob_cnt]->master )
         stop_follower( mob[mob_cnt] );
      add_follower( mob[mob_cnt], ch );
-            SET_BIT( mob[mob_cnt]->affected_by, AFF_CHARM );
+            BV_SET_BIT( mob[mob_cnt]->affected_by, AFF_CHARM );
             do_setblaster( mob[mob_cnt] , "full" );
         }
      }
@@ -3377,7 +3377,7 @@ void do_snipe( CHAR_DATA *ch, char *argument )
    bool              pfound = FALSE;
 
    
-   if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+   if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
  send_to_char( "You'll have to do that elswhere.\n", ch );
@@ -3477,7 +3477,7 @@ void do_snipe( CHAR_DATA *ch, char *argument )
  return;
     }
     
-    if ( IS_SET( victim->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( victim->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
  send_to_char( "You can't shoot them there.\n", ch );
@@ -3499,7 +3499,7 @@ void do_snipe( CHAR_DATA *ch, char *argument )
  return;
     }
     
-    if ( !IS_NPC( victim ) && IS_SET( ch->act, PLR_NICE ) )
+    if ( !IS_NPC( victim ) && BV_IS_SET( ch->act, PLR_NICE ) )
     {
       send_to_char( "You feel too nice to do that!\n", ch );
       return;
@@ -3593,10 +3593,10 @@ void do_snipe( CHAR_DATA *ch, char *argument )
    }
    if ( IS_NPC( victim ) && !char_died(victim) )
    {
-      if ( IS_SET( victim->act , ACT_SENTINEL ) )
+      if ( BV_IS_SET( victim->act , ACT_SENTINEL ) )
       {
          victim->was_sentinel = victim->in_room;
-         REMOVE_BIT( victim->act, ACT_SENTINEL );
+         BV_REMOVE_BIT( victim->act, ACT_SENTINEL );
       }
       
       start_hating( victim , ch );
@@ -3746,7 +3746,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
  return;
         }
     
-        if ( !IS_NPC( victim ) && IS_SET( ch->act, PLR_NICE ) )
+        if ( !IS_NPC( victim ) && BV_IS_SET( ch->act, PLR_NICE ) )
         {
         send_to_char( "You feel too nice to do that!\n", ch );
         return;
@@ -3756,7 +3756,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
         char_to_room( ch, was_in_room );    
 
       
-        if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+        if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
         {
             set_char_color( AT_MAGIC, ch );
             send_to_char( "You'll have to do that elswhere.\n", ch );
@@ -3810,7 +3810,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
  return;
         }
     
-        if ( !IS_NPC( victim ) && IS_SET( ch->act, PLR_NICE ) )
+        if ( !IS_NPC( victim ) && BV_IS_SET( ch->act, PLR_NICE ) )
         {
         send_to_char( "You feel too nice to do that!\n", ch );
         return;
@@ -3866,10 +3866,10 @@ void do_throw( CHAR_DATA *ch, char *argument )
     
        if ( IS_NPC( victim ) && !char_died ( victim) )
        {
-          if ( IS_SET( victim->act , ACT_SENTINEL ) )
+          if ( BV_IS_SET( victim->act , ACT_SENTINEL ) )
           {
              victim->was_sentinel = victim->in_room;
-             REMOVE_BIT( victim->act, ACT_SENTINEL );
+             BV_REMOVE_BIT( victim->act, ACT_SENTINEL );
           }
       
           start_hating( victim , ch );
@@ -3922,7 +3922,7 @@ void do_beg( CHAR_DATA *ch, char *argument )
  return;
     }
 
-    if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
  send_to_char( "This isn't a good place to do that.\n", ch );
@@ -4164,7 +4164,7 @@ void do_hijack( CHAR_DATA *ch, char *argument )
                 if ( !IS_NPC( victim ) && victim->switched )
                     continue;
 
-                if ( !IS_AWAKE(victim) || IS_SET(victim->in_room->room_flags,ROOM_SILENCE) )
+                if ( !IS_AWAKE(victim) || BV_IS_SET(victim->in_room->room_flags,ROOM_SILENCE) )
                     continue;
 
                 ch_printf(victim,"&R[alarm] %s has been hijacked!\n",ship->name);
@@ -4452,7 +4452,7 @@ void do_unjail ( CHAR_DATA *ch , char *argument )
  return;
     }
 
-    if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
  send_to_char( "This isn't a good place to do that.\n", ch );
@@ -4549,7 +4549,7 @@ void do_jail ( CHAR_DATA *ch , char *argument )
  return;
     }
 
-    if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
  send_to_char( "This isn't a good place to do that.\n", ch );
@@ -4675,7 +4675,7 @@ void do_smalltalk ( CHAR_DATA *ch , char *argument )
  return;
     }
 
-    if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
  send_to_char( "This isn't a good place to do that.\n", ch );
@@ -4801,7 +4801,7 @@ void do_propeganda ( CHAR_DATA *ch , char *argument )
  return;
     }
 
-    if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
  set_char_color( AT_MAGIC, ch );
  send_to_char( "This isn't a good place to do that.\n", ch );
@@ -4942,7 +4942,7 @@ void do_bribe ( CHAR_DATA *ch , char *argument )
       return;
     }
 
-    if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
       set_char_color( AT_MAGIC, ch );
       send_to_char( "This isn't a good place to do that.\n", ch );
@@ -5105,7 +5105,7 @@ void do_mass_propeganda ( CHAR_DATA *ch , char *argument )
         return;
     }
 
-    if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
         set_char_color( AT_MAGIC, ch );
         send_to_char( "This isn't a good place to do that.\n", ch );
@@ -5401,7 +5401,7 @@ void do_bind ( CHAR_DATA *ch , char *argument )
  return;
     }
 
-    if ( IS_SET(victim->act, PLR_AFK))
+    if ( BV_IS_SET(victim->act, PLR_AFK))
     {
       log_printf( "%s just bound %s with an afk flag on!." , ch->name, victim->name );
     }
@@ -5637,7 +5637,7 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
                 checktinder = FALSE;
                 checkoil = FALSE;
 
-                if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
                    send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
@@ -5832,7 +5832,7 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
     paf->duration           = -1;
     paf->location           = get_atype( "hitroll" );
     paf->modifier           = URANGE( 0, 1+scope, level/30 );
-    paf->bitvector          = 0;
+    paf->bitvector          = -1;
     paf->next               = NULL;
     LINK( paf, obj->first_affect, obj->last_affect, next, prev );
     ++top_affect;
@@ -5841,7 +5841,7 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
     paf2->duration           = -1;
     paf2->location           = get_atype( "damroll" );
     paf2->modifier           = URANGE( 0, power, level/30);
-    paf2->bitvector          = 0;
+    paf2->bitvector          = -1;
     paf2->next               = NULL;
     LINK( paf2, obj->first_affect, obj->last_affect, next, prev );
     ++top_affect;
@@ -5902,7 +5902,7 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
                 checkfabric = FALSE;
                 checkhair = FALSE;
                 
-                if ( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
                 {
                    send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
                    return;
@@ -6271,7 +6271,7 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 			return;
 		}
 
-		if( !IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+		if( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
 		{
 			send_to_char("You need to be in a factory to do that!\n",ch);
 			return;

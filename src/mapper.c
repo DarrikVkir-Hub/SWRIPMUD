@@ -24,6 +24,7 @@ struct map_type
     /* Recursive depth this coord was found at */
     int depth;
     int info;
+    FLAG_SET rflags;
     bool can_see;
 };
 
@@ -89,6 +90,7 @@ void clear_coord( int x, int y )
     map[x][y].vnum = 0;
     map[x][y].depth = 0;
     map[x][y].info = 0;
+    map[x][y].rflags.reset();
     map[x][y].can_see = TRUE;
 }
 
@@ -119,7 +121,7 @@ void map_exits( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoom,
     map[x][y].mapch = 'O';
     map[x][y].vnum = pRoom->vnum;
     map[x][y].depth = depth;
-    map[x][y].info = pRoom->room_flags;
+    map[x][y].rflags = pRoom->room_flags;
     map[x][y].can_see = room_is_dark( pRoom );
 
     /* This room is done, deal with it's exits */

@@ -348,7 +348,7 @@ void fread_bitset(FILE *fp, FLAG_SET &bv)
     for (;;)
     {
         int bit = fread_number(fp);
-		fprintf(stderr,"DEBUG: bit read = %d\r\n", bit);
+//		fprintf(stderr,"DEBUG: bit read = %d\r\n", bit);
         if (bit < 0)
             break;
 
@@ -495,10 +495,10 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     fprintf( fp, "Questpoints         %d\n",	ch->questpoints		);
     fprintf( fp, "Nextquest         %d\n",	ch->nextquest		);
     fprintf( fp, "Jailvnum         %d\n",	ch->pcdata->jail_vnum	);
-    if ( ch->act )
-      fprintf( fp, "Act          %d\n", ch->act			);
-    if ( ch->affected_by )
-      fprintf( fp, "AffectedBy   %d\n",	ch->affected_by		);
+    if ( ch->act.any() )
+	fwrite_bitset(fp, "ActEx", ch->act);
+    if ( ch->affected_by.any() )
+	  fwrite_bitset(fp, "AffectedByEx",ch->affected_by);
     fprintf( fp, "Position     %d\n",
         ch->position == POS_FIGHTING ? POS_STANDING : ch->position );
 
@@ -516,8 +516,7 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     fprintf( fp, "Armor        %d\n",	ch->armor		);
     if ( ch->wimpy )
       fprintf( fp, "Wimpy        %d\n",	ch->wimpy		);
-    if ( ch->deaf )
-      fprintf( fp, "Deaf         %d\n",	ch->deaf		);
+    fwrite_bitset( fp, "Channels", ch->channels );
     if ( ch->resistant )
       fprintf( fp, "Resistant    %d\n",	ch->resistant		);
     if ( ch->immune )
@@ -678,7 +677,7 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 	    continue;
 
 	if ( paf->type >= 0 && paf->type < TYPE_PERSONAL )
-	  fprintf( fp, "AffectData   '%s' %3d %3d %3d %10d\n",
+	  fprintf( fp, "AffectDataEx   '%s' %3d %3d %3d %10d\n",
 	    skill->name,
 	    paf->duration,
 	    paf->modifier,
@@ -686,7 +685,7 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
 	    paf->bitvector
 	    );
 	else
-	  fprintf( fp, "Affect       %3d %3d %3d %3d %10d\n",
+	  fprintf( fp, "AffectEx       %3d %3d %3d %3d %10d\n",
 	    paf->type,
 	    paf->duration,
 	    paf->modifier,
@@ -850,7 +849,7 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
 	 */
 	if ( paf->type < 0 || paf->type >= top_sn )
 	{
-	  fprintf( fp, "Affect       %d %d %d %d %d\n",
+	  fprintf( fp, "AffectEx       %d %d %d %d %d\n",
 	    paf->type,
 	    paf->duration,
 	     ((paf->location == APPLY_WEAPONSPELL
@@ -864,7 +863,7 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
 	    );
 	}
 	else
-	  fprintf( fp, "AffectData   '%s' %d %d %d %d\n",
+	  fprintf( fp, "AffectDataEx   '%s' %d %d %d %d\n",
 	    skill_table[paf->type]->name,
 	    paf->duration,
 	     ((paf->location == APPLY_WEAPONSPELL
@@ -927,9 +926,10 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
     ch->on				= NULL;
     ch->desc				= d;
     ch->name				= STRALLOC( name );
-    ch->act				= PLR_BLANK
-					| PLR_COMBINE
-					| PLR_PROMPT;
+    ch->act.reset();
+	BV_SET_BIT(ch->act,PLR_BLANK);	
+	BV_SET_BIT(ch->act,PLR_COMBINE);
+	BV_SET_BIT(ch->act,PLR_PROMPT);	
     ch->perm_str			= 10;
     ch->perm_int			= 10;
     ch->perm_wis			= 10;
@@ -1033,7 +1033,7 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
 		mob = fread_mobile( fp );
 		ch->pcdata->pet = mob;
 		mob->master = ch;
-		SET_BIT(mob->affected_by, AFF_CHARM);
+		BV_SET_BIT(mob->affected_by, AFF_CHARM);
 	    }
 	    else
 	    if ( !str_cmp( word, "END"    ) )	/* Done		*/
@@ -1053,10 +1053,12 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
     
     if ( !found )
     {
+			
 	ch->short_descr			= STRALLOC( "" );
 	ch->long_descr			= STRALLOC( "" );
 	ch->description			= STRALLOC( "" );
     	ch->pcdata->target		= STRALLOC( "" );
+	ch->channels.set_range(0, CHANNEL_MAX - 1);
 	ch->editor			= NULL;
         ch->nextquest 				= 0;
         ch->questpoints				= 0;
@@ -1120,7 +1122,11 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
         }
 
     }
-            
+	if ( !ch->channels.any() ) 
+	{
+		ch->channels.set_range(0, CHANNEL_MAX - 1);
+	}		     
+	
     loading_char = NULL;
     return found;
 }
@@ -1176,8 +1182,32 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	    break;
 
 	case 'A':
-	    KEY( "Act",		ch->act,		fread_number( fp ) );
-	    KEY( "AffectedBy",	ch->affected_by,	fread_number( fp ) );
+		if ( !str_cmp( word, "Act"  ) )
+		{
+			ch->act = int_to_bitset(fread_number( fp ));
+			fMatch = TRUE;
+			break;
+		}
+		if ( !str_cmp( word, "ActEx"  ) )
+		{
+			fread_bitset(fp, ch->act);
+			fMatch = TRUE;
+			break;
+		}
+//	    KEY( "Act",		ch->act,		fread_number( fp ) );
+		if ( !str_cmp( word, "AffectedBy"  ) )
+		{
+			ch->affected_by = int_to_bitset(fread_number( fp ));
+			fMatch = TRUE;
+			break;
+		}
+		if ( !str_cmp( word, "AffectedByEx"  ) )
+		{
+			fread_bitset(fp, ch->affected_by);
+			fMatch = TRUE;
+			break;
+		}
+//	    KEY( "AffectedBy",	ch->affected_by,	fread_number( fp ) );
 	    KEY( "Alignment",	ch->alignment,		fread_number( fp ) );
 	    KEY( "Armor",	ch->armor,		fread_number( fp ) );
             
@@ -1219,42 +1249,78 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
              
 	    if ( !str_cmp( word, "Affect" ) || !str_cmp( word, "AffectData" ) )
 	    {
-		AFFECT_DATA *paf;
+			AFFECT_DATA *paf;
 
-		if ( preload )
-		{
-		    fMatch = TRUE;
-		    fread_to_eol( fp );
-		    break;
-		}
-		CREATE( paf, AFFECT_DATA, 1 );
-		if ( !str_cmp( word, "Affect" ) )
-		{
-		    paf->type	= fread_number( fp );
-		}
-		else
-		{
-		    char *sname = fread_word(fp);
-
-		    if ( (sn=skill_lookup(sname)) < 0 )
-		    {
-			if ( (sn=herb_lookup(sname)) < 0 )
-			    bug( "Fread_char: unknown skill.", 0 );
+			if ( preload )
+			{
+				fMatch = TRUE;
+				fread_to_eol( fp );
+				break;
+			}
+			CREATE( paf, AFFECT_DATA, 1 );
+			if ( !str_cmp( word, "Affect" ) )
+			{
+				paf->type	= fread_number( fp );
+			}
 			else
-			    sn += TYPE_HERB;
-		    }
-		    paf->type = sn;
-		}
+			{
+				char *sname = fread_word(fp);
 
-		paf->duration	= fread_number( fp );
-		paf->modifier	= fread_number( fp );
-		paf->location	= fread_number( fp );
-		paf->bitvector	= fread_number( fp );
-		LINK(paf, ch->first_affect, ch->last_affect, next, prev );
-		fMatch = TRUE;
-		break;
+				if ( (sn=skill_lookup(sname)) < 0 )
+				{
+				if ( (sn=herb_lookup(sname)) < 0 )
+					bug( "Fread_char: unknown skill.", 0 );
+				else
+					sn += TYPE_HERB;
+				}
+				paf->type = sn;
+			}
+
+			paf->duration	= fread_number( fp );
+			paf->modifier	= fread_number( fp );
+			paf->location	= fread_number( fp );
+			paf->bitvector	= first_set_bit(fread_number( fp ));
+			LINK(paf, ch->first_affect, ch->last_affect, next, prev );
+			fMatch = TRUE;
+			break;
 	    }
+	    if ( !str_cmp( word, "AffectEx" ) || !str_cmp( word, "AffectDataEx" ) )
+	    {
+			AFFECT_DATA *paf;
 
+			if ( preload )
+			{
+				fMatch = TRUE;
+				fread_to_eol( fp );
+				break;
+			}
+			CREATE( paf, AFFECT_DATA, 1 );
+			if ( !str_cmp( word, "AffectEx" ) )
+			{
+				paf->type	= fread_number( fp );
+			}
+			else
+			{
+				char *sname = fread_word(fp);
+
+				if ( (sn=skill_lookup(sname)) < 0 )
+				{
+				if ( (sn=herb_lookup(sname)) < 0 )
+					bug( "Fread_char: unknown skill.", 0 );
+				else
+					sn += TYPE_HERB;
+				}
+				paf->type = sn;
+			}
+
+			paf->duration	= fread_number( fp );
+			paf->modifier	= fread_number( fp );
+			paf->location	= fread_number( fp );
+			paf->bitvector	= fread_number( fp );
+			LINK(paf, ch->first_affect, ch->last_affect, next, prev );
+			fMatch = TRUE;
+			break;
+	    }
 	    if ( !str_cmp( word, "AttrMod"  ) )
 	    {
 		line = fread_line( fp );
@@ -1345,10 +1411,16 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	    }
 	    KEY( "Clones",	ch->pcdata->clones,		fread_number( fp ) );
 //      KEY(  "Commandgroup", ch->pcdata->commandgroup,     fread_number( fp ) );
+		if ( !str_cmp(word, "Channels") )
+		{
+			fread_bitset(fp, ch->channels);
+			fMatch = TRUE;
+			break;
+		}
 		if ( !str_cmp( word, "CommandGroup" ) )
 		{
 			int legacy = fread_number(fp);
-			fprintf(stderr,"DEBUG: old flags read = %d\r\n", legacy);
+//			fprintf(stderr,"DEBUG: old flags read = %d\r\n", legacy);
 			ch->pcdata->commandgroup.reset();  // ensure clean state
 			ch->pcdata->commandgroup = int_to_bitset(legacy);
 			fMatch = TRUE;
@@ -1377,7 +1449,21 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 
 	case 'D':
 	    KEY( "Damroll",	ch->damroll,		fread_number( fp ) );
-	    KEY( "Deaf",	ch->deaf,		fread_number( fp ) );
+		if ( !str_cmp( word, "Deaf" ) ) // Loading legacy 'deaf' variable into the new channels BitSet.  Bits are flipped!
+		{
+			int deaf = fread_number( fp);
+			ch->channels.reset();  // clear all bits first
+
+			for ( int i = 0; i < CHANNEL_MAX; ++i )
+			{
+				if ( ((deaf >> i) & 1) == 0 )
+					BV_SET_BIT(ch->channels, i);
+			}
+			fMatch = TRUE;
+			break;
+		}		
+	    //KEY( "Deaf",	ch->deaf,		fread_number( fp ) );
+
 	    KEY( "Description",	ch->description,	fread_string( fp ) );
 	    if ( !str_cmp( word, "Druglevel"  ) )
 	    {
@@ -1897,7 +1983,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		if ( !str_cmp( word, "Wanted" ) )
 		{
 			int legacy = fread_number(fp);
-			fprintf(stderr,"DEBUG: old flags read = %d\r\n", legacy);
+//			fprintf(stderr,"DEBUG: old flags read = %d\r\n", legacy);
 			ch->pcdata->wanted_flags.reset();  // ensure clean state
 			ch->pcdata->wanted_flags = int_to_bitset(legacy);
 			fMatch = TRUE;
@@ -1919,6 +2005,11 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	    bug( buf, "Fread_char: no match: %s", word );
 	}
     }
+	if ( !ch->channels.any() ) 
+	{
+		ch->channels.set_range(0, CHANNEL_MAX - 1);
+	}			
+
 }
 
 
@@ -1983,7 +2074,7 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 		paf->duration	= fread_number( fp );
 		pafmod		= fread_number( fp );
 		paf->location	= fread_number( fp );
-		paf->bitvector	= fread_number( fp );
+		paf->bitvector	= first_set_bit(fread_number( fp ));
 		if ( paf->location == APPLY_WEAPONSPELL
 		||   paf->location == APPLY_WEARSPELL
 		||   paf->location == APPLY_REMOVESPELL )
@@ -1994,6 +2085,40 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 		fMatch				= TRUE;
 		break;
 	    }
+	    if ( !str_cmp( word, "AffectEx" ) || !str_cmp( word, "AffectDataEx" ) )
+	    {
+		AFFECT_DATA *paf;
+		int pafmod;
+
+		CREATE( paf, AFFECT_DATA, 1 );
+		if ( !str_cmp( word, "AffectEx" ) )
+		{
+		    paf->type	= fread_number( fp );
+		}
+		else
+		{
+		    int sn;
+
+		    sn = skill_lookup( fread_word( fp ) );
+		    if ( sn < 0 )
+			bug( "Fread_obj: unknown skill.", 0 );
+		    else
+			paf->type = sn;
+		}
+		paf->duration	= fread_number( fp );
+		pafmod		= fread_number( fp );
+		paf->location	= fread_number( fp );
+		paf->bitvector	= fread_number( fp );
+		if ( paf->location == APPLY_WEAPONSPELL
+		||   paf->location == APPLY_WEARSPELL
+		||   paf->location == APPLY_REMOVESPELL )
+		  paf->modifier		= slot_lookup( pafmod );
+		else
+		  paf->modifier		= pafmod;
+		LINK(paf, obj->first_affect, obj->last_affect, next, prev );
+		fMatch				= TRUE;
+		break;
+	    }		
 	    KEY( "Actiondesc",	obj->action_desc,	fread_string( fp ) );
 	    break;
 
@@ -2469,7 +2594,7 @@ if ( !(dp = opendir(STOREROOM_DIR)) )
 	    if( !storeroom )
   		continue;
   	    
-	    if ( !IS_SET( storeroom->room_flags, ROOM_CLANSTOREROOM ) )
+	    if ( !BV_IS_SET( storeroom->room_flags, ROOM_CLANSTOREROOM ) )
 	    {
               SPRINTF( buf, "%s%d", STOREROOM_DIR, storeroom->vnum );
               remove( buf );
@@ -2658,7 +2783,8 @@ if ( !(dp = opendir(VENDOR_DIR)) )
    if ( str_cmp( mob->description, mob->pIndexData->description) )
    	fprintf( fp, "Description %s~\n", mob->description );
    fprintf( fp, "Position %d\n", mob->position );
-   fprintf( fp, "Flags %d\n", mob->act );
+   fwrite_bitset(fp,"FlagsEx",mob->act);
+//   fprintf( fp, "Flags %d\n", mob->act );
  /* Might need these later --Shaddai
    de_equip_char( mob );
    re_equip_char( mob );
@@ -2742,7 +2868,19 @@ if ( !(dp = opendir(VENDOR_DIR)) )
  		}
  		break;
   	case 'F':
- 		KEY( "Flags", mob->act, fread_number( fp ));
+		if ( !str_cmp( word, "Flags"  ) )
+		{
+			mob->act = int_to_bitset(fread_number( fp ));
+			fMatch = TRUE;
+			break;
+		}
+		if ( !str_cmp( word, "FlagsEx"  ) )
+		{
+			fread_bitset(fp, mob->act);
+			fMatch = TRUE;
+			break;
+		}	
+ 		//KEY( "Flags", mob->act, fread_number( fp ));
  	case 'L':
  		KEY( "Long", mob->long_descr, fread_string(fp ) );
  		break;
@@ -2790,7 +2928,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
  	return;
    }
    mob = ch->pcdata->pet;
-   REMOVE_BIT( mob->affected_by, AFF_CHARM );
+   BV_REMOVE_BIT( mob->affected_by, AFF_CHARM );
    fwrite_mobile( fp, mob );
    FCLOSE( fp );
    fpReserve = fopen( NULL_FILE, "r" );

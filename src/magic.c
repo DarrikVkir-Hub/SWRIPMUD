@@ -1005,7 +1005,7 @@ void do_cast( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 
-	if ( IS_SET( ch->in_room->room_flags, ROOM_NO_MAGIC ) )
+	if ( BV_IS_SET( ch->in_room->room_flags, ROOM_NO_MAGIC ) )
 	{
 	    set_char_color( AT_MAGIC, ch );
 	    send_to_char( "You failed.\n", ch );
@@ -1396,7 +1396,7 @@ ch_ret obj_cast_spell( int sn, int level, CHAR_DATA *ch, CHAR_DATA *victim, OBJ_
 	return rERROR;
     }
 
-    if ( IS_SET( ch->in_room->room_flags, ROOM_NO_MAGIC ) )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_NO_MAGIC ) )
     {
 	set_char_color( AT_MAGIC, ch );
 	send_to_char( "Nothing seems to happen...\n", ch );
@@ -1677,7 +1677,7 @@ ch_ret spell_call_lightning( int sn, int level, CHAR_DATA *ch, void *vo )
 	    continue;
 	if ( vch->in_room == ch->in_room )
 	{
-            if ( !IS_NPC( vch ) && IS_SET( vch->act, PLR_WIZINVIS )
+            if ( !IS_NPC( vch ) && BV_IS_SET( vch->act, PLR_WIZINVIS )
 	    &&    vch->pcdata->wizinvis >= LEVEL_IMMORTAL )
 		continue;
 
@@ -1775,7 +1775,7 @@ ch_ret spell_change_sex( int sn, int level, CHAR_DATA *ch, void *vo )
 	af.modifier  = number_range( 0, 2 ) - victim->sex;
     }
     while ( af.modifier == 0 );
-    af.bitvector = 0;
+    af.bitvector = -1;
     affect_to_char( victim, &af );
     set_char_color( AT_MAGIC, victim );
     send_to_char( "You feel different.\n", victim );
@@ -1881,7 +1881,7 @@ ch_ret spell_chill_touch( int sn, int level, CHAR_DATA *ch, void *vo )
 	af.duration  = 14;
 	af.location  = APPLY_STR;
 	af.modifier  = -1;
-	af.bitvector = 0;
+	af.bitvector = -1;
 	affect_join( victim, &af );
     }
     else
@@ -2169,7 +2169,7 @@ ch_ret spell_dispel_evil( int sn, int level, CHAR_DATA *ch, void *vo )
 ch_ret spell_dispel_magic( int sn, int level, CHAR_DATA *ch, void *vo )
 {
     CHAR_DATA *victim = (CHAR_DATA *) vo;
-    int affected_by, cnt;
+    int affected_by;
     SKILLTYPE *skill = get_skilltype(sn);
 
     if ( IS_SET( victim->immune, RIS_MAGIC ) )
@@ -2178,7 +2178,7 @@ ch_ret spell_dispel_magic( int sn, int level, CHAR_DATA *ch, void *vo )
 	return rSPELL_FAILED;
     }
 
-    if ( victim->affected_by && ch == victim )
+    if ( !victim->affected_by.any()  && ch == victim )
     {
 	set_char_color( AT_MAGIC, ch );
 	send_to_char( "You pass your hands around your body...\n", ch );
@@ -2202,20 +2202,17 @@ ch_ret spell_dispel_magic( int sn, int level, CHAR_DATA *ch, void *vo )
 	return rSPELL_FAILED;
     }
 
-    cnt = 0;
-    for ( ;; )
+    affected_by = victim->affected_by.random_set_bit();
+
+    if (affected_by == -1)
     {
-	affected_by = 1 << number_bits( 5 );
-	if ( IS_SET(victim->affected_by, affected_by) )
-	    break;
-	if ( cnt++ > 30 )
-	{
-	    failed_casting( skill, ch, victim, NULL );
-	    return rNONE;
-	}
+        failed_casting(skill, ch, victim, NULL);
+        return rNONE;
     }
-    REMOVE_BIT(victim->affected_by, affected_by);
-    successful_casting( skill, ch, victim, NULL );
+
+    victim->affected_by.clear(affected_by);
+
+    successful_casting(skill, ch, victim, NULL);
 
     return rNONE;
 }
@@ -2233,7 +2230,7 @@ ch_ret spell_earthquake( int sn, int level, CHAR_DATA *ch, void *vo )
     ch_died = FALSE;
     retcode = rNONE;
     
-    if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
 	failed_casting( skill, ch, NULL, NULL );
 	return rSPELL_FAILED;
@@ -2255,7 +2252,7 @@ ch_ret spell_earthquake( int sn, int level, CHAR_DATA *ch, void *vo )
 	    continue;
 	if ( vch->in_room == ch->in_room )
 	{
-            if ( !IS_NPC( vch ) && IS_SET( vch->act, PLR_WIZINVIS )
+            if ( !IS_NPC( vch ) && BV_IS_SET( vch->act, PLR_WIZINVIS )
                  && vch->pcdata->wizinvis >= LEVEL_IMMORTAL )
               continue;
             
@@ -2306,7 +2303,7 @@ ch_ret spell_enchant_weapon( int sn, int level, CHAR_DATA *ch, void *vo )
     paf->duration	= -1;
     paf->location	= APPLY_HITROLL;
     paf->modifier	= level / 15;
-    paf->bitvector	= 0;
+    paf->bitvector	= -1;
     LINK( paf, obj->first_affect, obj->last_affect, next, prev );
 
     CREATE( paf, AFFECT_DATA, 1 );
@@ -2314,7 +2311,7 @@ ch_ret spell_enchant_weapon( int sn, int level, CHAR_DATA *ch, void *vo )
     paf->duration	= -1;
     paf->location	= APPLY_DAMROLL;
     paf->modifier	= level / 15;
-    paf->bitvector	= 0;
+    paf->bitvector	= -1;
     LINK( paf, obj->first_affect, obj->last_affect, next, prev );
 
     if ( IS_GOOD(ch) )
@@ -2484,7 +2481,7 @@ ch_ret spell_faerie_fog( int sn, int level, CHAR_DATA *ch, void *vo )
 
     for ( ich = ch->in_room->first_person; ich; ich = ich->next_in_room )
     {
-	if ( !IS_NPC(ich) && IS_SET(ich->act, PLR_WIZINVIS) )
+	if ( !IS_NPC(ich) && BV_IS_SET(ich->act, PLR_WIZINVIS) )
 	    continue;
 
 	if ( ich == ch || saves_spell_staff( level, ich ) )
@@ -2494,10 +2491,10 @@ ch_ret spell_faerie_fog( int sn, int level, CHAR_DATA *ch, void *vo )
 	affect_strip ( ich, gsn_mass_invis		);
 	affect_strip ( ich, gsn_sneak			);
 	if ( ich->race != RACE_DEFEL )
-	REMOVE_BIT   ( ich->affected_by, AFF_HIDE	);
-	REMOVE_BIT   ( ich->affected_by, AFF_INVISIBLE	);
+	BV_REMOVE_BIT   ( ich->affected_by, AFF_HIDE	);
+	BV_REMOVE_BIT   ( ich->affected_by, AFF_INVISIBLE	);
 	if ( !permsneak(ich) )
-	REMOVE_BIT   ( ich->affected_by, AFF_SNEAK	);
+	BV_REMOVE_BIT   ( ich->affected_by, AFF_SNEAK	);
 	act( AT_MAGIC, "$n is revealed!", ich, NULL, NULL, TO_ROOM );
 	act( AT_MAGIC, "You are revealed!", ich, NULL, NULL, TO_CHAR );
     }
@@ -2915,7 +2912,7 @@ ch_ret spell_locate_object( int sn, int level, CHAR_DATA *ch, void *vo )
 	    if ( IS_IMMORTAL( in_obj->carried_by )
 	      && !IS_NPC( in_obj->carried_by )
 	      && ( get_trust( ch ) < in_obj->carried_by->pcdata->wizinvis )
-	      && IS_SET( in_obj->carried_by->act, PLR_WIZINVIS ) )
+	      && BV_IS_SET( in_obj->carried_by->act, PLR_WIZINVIS ) )
 	      continue;
 
 	    SPRINTF( buf, "%s carried by %s.\n",
@@ -3182,7 +3179,7 @@ ch_ret spell_sleep( int sn, int level, CHAR_DATA *ch, void *vo )
 
     if ( IS_AFFECTED(victim, AFF_SLEEP)
     ||	(chance=ris_save(victim, tmp, RIS_SLEEP)) == 1000
-    ||  (victim != ch && IS_SET(victim->in_room->room_flags, ROOM_SAFE))
+    ||  (victim != ch && BV_IS_SET(victim->in_room->room_flags, ROOM_SAFE))
     ||   saves_spell_staff( chance, victim ) )
     {
 	failed_casting( skill, ch, victim, NULL );
@@ -3290,7 +3287,7 @@ ch_ret spell_weaken( int sn, int level, CHAR_DATA *ch, void *vo )
     af.duration  = (sh_int) ( level / 2 * DUR_CONV );
     af.location  = APPLY_STR;
     af.modifier  = -2;
-    af.bitvector = 0;
+    af.bitvector = -1;
     affect_to_char( victim, &af );
     set_char_color( AT_MAGIC, victim );
     send_to_char( "You feel weaker.\n", victim );
@@ -3496,7 +3493,7 @@ ch_ret spell_gas_breath( int sn, int level, CHAR_DATA *ch, void *vo )
 
     ch_died = FALSE;
 
-    if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
 	set_char_color( AT_MAGIC, ch );
 	send_to_char( "You fail to breathe.\n", ch );
@@ -3506,7 +3503,7 @@ ch_ret spell_gas_breath( int sn, int level, CHAR_DATA *ch, void *vo )
     for ( vch = ch->in_room->first_person; vch; vch = vch_next )
     {
 	vch_next = vch->next_in_room;
-        if ( !IS_NPC( vch ) && IS_SET( vch->act, PLR_WIZINVIS ) 
+        if ( !IS_NPC( vch ) && BV_IS_SET( vch->act, PLR_WIZINVIS ) 
              && vch->pcdata->wizinvis >= LEVEL_IMMORTAL )
           continue;
 
@@ -3618,10 +3615,10 @@ ch_ret spell_farsight( int sn, int level, CHAR_DATA *ch, void *vo )
     if ( ( victim = get_char_world( ch, target_name ) ) == NULL
     ||   victim == ch
     ||   !victim->in_room
-    ||   ((IS_SET(victim->in_room->room_flags, ROOM_PRIVATE)
-    ||   IS_SET(victim->in_room->room_flags, ROOM_SOLITARY)
-    ||   IS_SET(victim->in_room->room_flags, ROOM_PROTOTYPE)
-    ||	(IS_NPC(victim) && IS_SET(victim->act, ACT_PROTOTYPE))
+    ||   ((BV_IS_SET(victim->in_room->room_flags, ROOM_PRIVATE)
+    ||   BV_IS_SET(victim->in_room->room_flags, ROOM_SOLITARY)
+    ||   BV_IS_SET(victim->in_room->room_flags, ROOM_PROTOTYPE)
+    ||	(IS_NPC(victim) && BV_IS_SET(victim->act, ACT_PROTOTYPE))
     ||  (IS_NPC(victim) && saves_spell_staff( level, victim ))  
     || saving <= 50 ) && !IS_IMMORTAL(ch) ))
     {
@@ -3816,7 +3813,7 @@ ch_ret spell_remove_invis( int sn, int level, CHAR_DATA *ch, void *vo )
 
         affect_strip ( victim, gsn_invis                        );
     	affect_strip ( victim, gsn_mass_invis                   );
-    	REMOVE_BIT   ( victim->affected_by, AFF_INVISIBLE       );
+    	BV_REMOVE_BIT   ( victim->affected_by, AFF_INVISIBLE       );
     	send_to_char( "Ok.\n", ch );
     	return rNONE;
 	}
@@ -4190,7 +4187,7 @@ CHAR_DATA *make_poly_mob(CHAR_DATA *ch, int vnum)
     return NULL;
   }
   mob = create_mobile(pMobIndex);
-  SET_BIT(mob->act, ACT_POLYMORPHED);
+  BV_SET_BIT(mob->act, ACT_POLYMORPHED);
   return mob;  
 }
 
@@ -4199,13 +4196,13 @@ void do_revert(CHAR_DATA *ch, char *argument)
 
   CHAR_DATA *mob;
 
-  if ( !IS_NPC(ch) || !IS_SET(ch->act, ACT_POLYMORPHED) )
+  if ( !IS_NPC(ch) || !BV_IS_SET(ch->act, ACT_POLYMORPHED) )
   {
     send_to_char("You are not polymorphed.\n", ch);
     return;
   }
 
-  REMOVE_BIT(ch->act, ACT_POLYMORPHED);
+  BV_REMOVE_BIT(ch->act, ACT_POLYMORPHED);
 
   char_from_room(ch->desc->original);
 
@@ -4253,7 +4250,7 @@ ch_ret spell_spiral_blast( int sn, int level, CHAR_DATA *ch, void *vo )
  
     ch_died = FALSE;
 
-    if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )   
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )   
     {
         set_char_color( AT_MAGIC, ch );
         send_to_char( "You fail to breathe.\n", ch );
@@ -4269,7 +4266,7 @@ ch_ret spell_spiral_blast( int sn, int level, CHAR_DATA *ch, void *vo )
     for ( vch = ch->in_room->first_person; vch; vch = vch_next )
     {
         vch_next = vch->next_in_room;
-	if ( !IS_NPC( vch ) && IS_SET( vch->act, PLR_WIZINVIS )       
+	if ( !IS_NPC( vch ) && BV_IS_SET( vch->act, PLR_WIZINVIS )       
         && vch->pcdata->wizinvis >= LEVEL_IMMORTAL )
           continue;
  
@@ -4433,7 +4430,7 @@ ch_ret spell_area_attack( int sn, int level, CHAR_DATA *ch, void *vo )
                 ch->alignment = URANGE( -1000, ch->alignment, 1000 );
     sith_penalty( ch );
                         
-    if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
 	failed_casting( skill, ch, NULL, NULL );
 	return rSPELL_FAILED;
@@ -4449,7 +4446,7 @@ ch_ret spell_area_attack( int sn, int level, CHAR_DATA *ch, void *vo )
     {
 	vch_next = vch->next_in_room;
 
-	if ( !IS_NPC( vch ) && IS_SET( vch->act, PLR_WIZINVIS )
+	if ( !IS_NPC( vch ) && BV_IS_SET( vch->act, PLR_WIZINVIS )
 	&& vch->pcdata->wizinvis >= LEVEL_IMMORTAL )
 	   continue;
 
@@ -5673,7 +5670,7 @@ ch_ret spell_midas_touch( int sn, int level, CHAR_DATA *ch, void *vo )
 
 
     if ( ( victim->carry_weight + get_obj_weight ( obj ) ) > can_carry_w(victim) 
-    ||	(IS_NPC(victim) && IS_SET(victim->act, ACT_PROTOTYPE)))
+    ||	(IS_NPC(victim) && BV_IS_SET(victim->act, ACT_PROTOTYPE)))
     {
         ch->gold += val;
 

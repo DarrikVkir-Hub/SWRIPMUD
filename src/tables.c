@@ -1574,7 +1574,7 @@ void fwrite_skill( FILE *fpout, SKILLTYPE *skill )
 	if ( skill->teachers && skill->teachers[0] != '\0' )
 	  fprintf( fpout, "Teachers     %s~\n",	skill->teachers );
 	for ( aff = skill->affects; aff; aff = aff->next )
-	  fprintf( fpout, "Affect       '%s' %d '%s' %d\n",
+	  fprintf( fpout, "AffectEx       '%s' %d '%s' %d\n",
 	  	aff->duration, aff->location, aff->modifier, aff->bitvector );
 	if ( skill->alignment )
 	  fprintf( fpout, "Alignment   %d\n",	skill->alignment );
@@ -1750,7 +1750,6 @@ SKILLTYPE *fread_skill( FILE *fp )
     SKILLTYPE *skill;
 
     CREATE( skill, SKILLTYPE, 1 );
-    
     skill->guild = -1;
 
     for ( ; ; )
@@ -1769,17 +1768,33 @@ SKILLTYPE *fread_skill( FILE *fp )
 	    KEY( "Alignment",	skill->alignment,	fread_number( fp ) );
 	    if ( !str_cmp( word, "Affect" ) )
 	    {
-		SMAUG_AFF *aff;
+			SMAUG_AFF *aff;
 
-		CREATE( aff, SMAUG_AFF, 1 );
-		aff->duration = str_dup( fread_word( fp ) );
-		aff->location = fread_number( fp );
-		aff->modifier = str_dup( fread_word( fp ) );
-		aff->bitvector = fread_number( fp );
-		aff->next = skill->affects;
-		skill->affects = aff;
-		fMatch = TRUE;
-		break;
+			CREATE( aff, SMAUG_AFF, 1 );
+			aff->duration = str_dup( fread_word( fp ) );
+			aff->location = fread_number( fp );
+			aff->modifier = str_dup( fread_word( fp ) );
+			aff->bitvector = first_set_bit(fread_number( fp ));
+			aff->next = skill->affects;
+			skill->affects = aff;
+			fMatch = TRUE;
+			break;
+
+			aff->bitvector = fread_number( fp );
+	    }
+	    if ( !str_cmp( word, "AffectEx" ) )
+	    {
+			SMAUG_AFF *aff;
+
+			CREATE( aff, SMAUG_AFF, 1 );
+			aff->duration = str_dup( fread_word( fp ) );
+			aff->location = fread_number( fp );
+			aff->modifier = str_dup( fread_word( fp ) );
+			aff->bitvector = fread_number( fp );
+			aff->next = skill->affects;
+			skill->affects = aff;
+			fMatch = TRUE;
+			break;
 	    }
 	    break;
 
@@ -2146,7 +2161,6 @@ void fread_command( FILE *fp )
 			if ( !str_cmp( word, "CommandGroup" ) )
 			{
 				int legacy = fread_number(fp);
-				fprintf(stderr,"DEBUG: old flags read = %d\r\n", legacy);
 				command->commandgroup.reset();  // ensure clean state
 				command->commandgroup = int_to_bitset(legacy);
 				fMatch = TRUE;

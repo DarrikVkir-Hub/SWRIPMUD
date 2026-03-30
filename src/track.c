@@ -53,9 +53,9 @@ static struct bfs_queue_struct	*queue_head = NULL,
 				*room_queue = NULL;
 
 /* Utility macros */
-#define MARK(room)	(SET_BIT(	(room)->room_flags, BFS_MARK) )
-#define UNMARK(room)	(REMOVE_BIT(	(room)->room_flags, BFS_MARK) )
-#define IS_MARKED(room)	(IS_SET(	(room)->room_flags, BFS_MARK) )
+#define MARK(room)	(BV_SET_BIT(	(room)->room_flags, BFS_MARK) )
+#define UNMARK(room)	(BV_REMOVE_BIT(	(room)->room_flags, BFS_MARK) )
+#define IS_MARKED(room)	(BV_IS_SET(	(room)->room_flags, BFS_MARK) )
 
 ROOM_INDEX_DATA *toroom( ROOM_INDEX_DATA *room, sh_int door )
 {
@@ -299,7 +299,7 @@ void found_prey( CHAR_DATA *ch, CHAR_DATA *victim )
 	return;
      }
 
-     if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+     if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
      {
 	if ( number_percent( ) < 90 )
 	  return;
@@ -383,7 +383,7 @@ void hunt_victim( CHAR_DATA *ch )
 	  if ( mob_snipe( ch, ch->hunting->who ) == TRUE ) 
 	   return;
         }
-        else if ( !IS_SET( ch->act, ACT_DROID ) )
+        else if ( !BV_IS_SET( ch->act, ACT_DROID ) )
            do_hide ( ch, "" );
    }
    
@@ -399,7 +399,7 @@ void hunt_victim( CHAR_DATA *ch )
 	  if ( ( pexit = get_exit(ch->in_room, ret) ) == NULL
 	  ||   !pexit->to_room
 	  || IS_SET(pexit->exit_info, EX_CLOSED)
-	  || IS_SET(pexit->to_room->room_flags, ROOM_NO_MOB) )
+	  || BV_IS_SET(pexit->to_room->room_flags, ROOM_NO_MOB) )
 	     continue;
        }
    }
@@ -446,7 +446,7 @@ bool mob_snipe( CHAR_DATA *ch, CHAR_DATA *victim )
  if ( !ch->in_room || !victim->in_room )
         return FALSE;
    
- if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+ if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
 	return FALSE;
    
  for ( dir = 0 ; dir <= 10 ; dir++ )
@@ -499,7 +499,7 @@ bool mob_snipe( CHAR_DATA *ch, CHAR_DATA *victim )
        continue;
    }
    
-    if ( IS_SET( victim->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( victim->in_room->room_flags, ROOM_SAFE ) )
 	return FALSE;
  
     if ( is_safe( ch, victim ) )

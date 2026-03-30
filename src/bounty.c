@@ -319,7 +319,7 @@ void claim_disintigration( CHAR_DATA *ch , CHAR_DATA *victim )
 	
 	if (bounty == NULL)
 	{
-	    if ( IS_SET(victim->act , PLR_KILLER ) && !IS_NPC(ch) )
+	    if ( BV_IS_SET(victim->act , PLR_KILLER ) && !IS_NPC(ch) )
 	    {
 	       exp = URANGE(1, xp_compute(ch, victim) , ( exp_level(ch->skill_level[HUNTING_ABILITY]+1) - exp_level(ch->skill_level[HUNTING_ABILITY]) ));	
 	       gain_exp( ch , exp , HUNTING_ABILITY );
@@ -328,7 +328,7 @@ void claim_disintigration( CHAR_DATA *ch , CHAR_DATA *victim )
 	     }
 	     else if ( !IS_NPC(ch) ) 
 	     {
-	        SET_BIT(ch->act, PLR_KILLER );
+	        BV_SET_BIT(ch->act, PLR_KILLER );
 	        ch_printf( ch, "You are now wanted for the murder of %s.\n", victim->name );
 	     }
 /*	     SPRINTF( buf, "%s is Dead!", victim->name );
@@ -352,8 +352,8 @@ void claim_disintigration( CHAR_DATA *ch , CHAR_DATA *victim )
 	echo_to_all ( AT_RED , buf, 0 ); 
 */
 	
-	if ( !IS_SET(victim->act , PLR_KILLER ) )
-	       SET_BIT(ch->act, PLR_KILLER );
+	if ( !BV_IS_SET(victim->act , PLR_KILLER ) )
+	       BV_SET_BIT(ch->act, PLR_KILLER );
 	remove_disintigration(bounty);                	
 }
 

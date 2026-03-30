@@ -1735,7 +1735,7 @@ void do_shove( CHAR_DATA *ch, char *argument )
     }
 
     exit_dir = get_dir( arg2 );
-    if ( IS_SET(victim->in_room->room_flags, ROOM_SAFE)
+    if ( BV_IS_SET(victim->in_room->room_flags, ROOM_SAFE)
     &&  get_timer(victim, TIMER_SHOVEDRAG) <= 0)
     {
 	send_to_char("That character cannot be shoved right now.\n", ch);
@@ -1759,7 +1759,7 @@ void do_shove( CHAR_DATA *ch, char *argument )
           return;
         }
         
-	if ( IS_SET( ch->act, ACT_MOUNTED ) )
+	if ( BV_IS_SET( ch->act, ACT_MOUNTED ) )
    	{
           act( AT_PLAIN, "You can't go in there riding THAT.", ch, NULL, argument, TO_CHAR );
           return;
@@ -1831,7 +1831,7 @@ void do_shove( CHAR_DATA *ch, char *argument )
 	        return;
 	    }   
         
-	if ( IS_SET( ch->act, ACT_MOUNTED ) )
+	if ( BV_IS_SET( ch->act, ACT_MOUNTED ) )
    	{
           act( AT_PLAIN, "You can't go out there riding THAT.", ch, NULL, argument, TO_CHAR );
           return;
@@ -1961,7 +1961,7 @@ if (chance < number_percent( ))
       victim->position = POS_STANDING;
     WAIT_STATE(ch, 12);
     /* Remove protection from shove/drag if char shoves -- Blodkai */
-    if ( IS_SET(ch->in_room->room_flags, ROOM_SAFE)   
+    if ( BV_IS_SET(ch->in_room->room_flags, ROOM_SAFE)   
     &&   get_timer(ch, TIMER_SHOVEDRAG) <= 0 )
       add_timer( ch, TIMER_SHOVEDRAG, 10, NULL, 0 );
 }
@@ -2020,7 +2020,7 @@ void do_drag( CHAR_DATA *ch, char *argument )
 
     exit_dir = get_dir( arg2 );
 
-    if ( IS_SET(victim->in_room->room_flags, ROOM_SAFE)
+    if ( BV_IS_SET(victim->in_room->room_flags, ROOM_SAFE)
     &&   get_timer( victim, TIMER_SHOVEDRAG ) <= 0)
     {
 	send_to_char("That character cannot be dragged right now.\n", ch);
@@ -2044,7 +2044,7 @@ void do_drag( CHAR_DATA *ch, char *argument )
           return;
         }
         
-	if ( IS_SET( ch->act, ACT_MOUNTED ) )
+	if ( BV_IS_SET( ch->act, ACT_MOUNTED ) )
    	{
           act( AT_PLAIN, "You can't go in there riding THAT.", ch, NULL, argument, TO_CHAR );
           return;
@@ -2115,7 +2115,7 @@ void do_drag( CHAR_DATA *ch, char *argument )
 	        return;
 	    }   
         
-	if ( IS_SET( ch->act, ACT_MOUNTED ) )
+	if ( BV_IS_SET( ch->act, ACT_MOUNTED ) )
    	{
           act( AT_PLAIN, "You can't go out there riding THAT.", ch, NULL, argument, TO_CHAR );
           return;
@@ -2258,7 +2258,7 @@ void do_enlist( CHAR_DATA *ch, char *argument )
 		return;
 	}
         
-	if ( ! IS_SET( ch->in_room->room_flags , ROOM_RECRUIT ) )
+	if ( ! BV_IS_SET( ch->in_room->room_flags , ROOM_RECRUIT ) )
 	{
 		send_to_char( "You don't seem to be in a recruitment office.\n", ch );
 		return;
@@ -2384,7 +2384,7 @@ void do_clan_withdraw( CHAR_DATA *ch, char *argument )
     
       if ( !ch_comlink )
       {
-        if (!ch->in_room || !IS_SET(ch->in_room->room_flags, ROOM_BANK) )
+        if (!ch->in_room || !BV_IS_SET(ch->in_room->room_flags, ROOM_BANK) )
         {
           send_to_char( "You must be in a bank or have a comlink to do that!\n", ch );
           return;
@@ -2447,7 +2447,7 @@ void do_clan_donate( CHAR_DATA *ch, char *argument )
     
       if ( !ch_comlink )
       {
-        if (!ch->in_room || !IS_SET(ch->in_room->room_flags, ROOM_BANK) )
+        if (!ch->in_room || !BV_IS_SET(ch->in_room->room_flags, ROOM_BANK) )
         {
           send_to_char( "You must be in a bank or have a comlink to do that!\n", ch );
           return;
@@ -3564,7 +3564,7 @@ void do_clanfunds( CHAR_DATA *ch, char *argument )
   
   if ( !ch_comlink )
   {
-    if (!ch->in_room || !IS_SET(ch->in_room->room_flags, ROOM_BANK) )
+    if (!ch->in_room || !BV_IS_SET(ch->in_room->room_flags, ROOM_BANK) )
     {
       send_to_char( "You must be in a bank or have a comlink to do that!\n", ch );
       return;

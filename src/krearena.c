@@ -109,7 +109,7 @@ void do_bet(CHAR_DATA *ch, char *argument)
       return;
    }
 
-   if (IS_SET(ch->in_room->room_flags, ROOM_ARENA))
+   if (BV_IS_SET(ch->in_room->room_flags, ROOM_ARENA))
    {
       send_to_char("Arena players can not make bets.",ch);
       return;
@@ -134,7 +134,7 @@ void do_bet(CHAR_DATA *ch, char *argument)
       send_to_char("No such person exists in the galaxy.", ch);
    else if (ch->betted_on == ch)
       send_to_char("That doesn't make much sense, does it?\n", ch);
-   else if(ch->in_room && !(IS_SET(ch->betted_on->in_room->room_flags, ROOM_ARENA)))
+   else if(ch->in_room && !(BV_IS_SET(ch->betted_on->in_room->room_flags, ROOM_ARENA)))
       send_to_char("Sorry that person is not in the arena.\n", ch);
    else
       {
@@ -202,7 +202,7 @@ void do_arena(CHAR_DATA *ch, char *argument)
     return;
  } 
  
- if(IS_SET(ch->in_room->room_flags, ROOM_ARENA))
+ if(BV_IS_SET(ch->in_room->room_flags, ROOM_ARENA))
  { 
     send_to_char("You are in the arena already\n",ch);
     return;
@@ -263,7 +263,7 @@ void do_marena(CHAR_DATA *ch, char *argument)
    return;
  }
 
- if(IS_SET(ch->in_room->room_flags, ROOM_ARENA))
+ if(BV_IS_SET(ch->in_room->room_flags, ROOM_ARENA))
  {
     send_to_char("You are in the arena already\n",ch);
     return;
@@ -447,7 +447,7 @@ void start_game()
     if (g->ch == NULL)
       continue;
     if (1==1)  {  //yea, I know this is true all the time.  Bite me.     
-      if (g->ch->in_room && IS_SET(g->ch->in_room->room_flags, ROOM_ARENA)) {
+      if (g->ch->in_room && BV_IS_SET(g->ch->in_room->room_flags, ROOM_ARENA)) {
         send_to_char("\nThe floor falls out from below, dropping you in the arena.\n", g->ch);
         char_from_room(g->ch);
         char_to_room(g->ch, get_room_index( ARENA_START));
@@ -518,7 +518,7 @@ void find_game_winner()
     if (g->ch == NULL)
       continue;
     i = g->ch;
-    if (i->in_room && IS_SET(i->in_room->room_flags,ROOM_ARENA) && !IS_IMMORTAL(i) &&
+    if (i->in_room && BV_IS_SET(i->in_room->room_flags,ROOM_ARENA) && !IS_IMMORTAL(i) &&
 	i->hit > 0 && g->place == 0) {
       remove_from_arena(i);
       if(time_left_in_game == 1) {
@@ -608,7 +608,7 @@ void do_end_game()
        if (i == NULL)
          continue;
 
-       if (i->in_room && IS_SET(i->in_room->room_flags, ROOM_ARENA))
+       if (i->in_room && BV_IS_SET(i->in_room->room_flags, ROOM_ARENA))
        {
           remove_from_arena(i);
        }

@@ -1344,11 +1344,11 @@ void reset_area( AREA_DATA *pArea )
               {
                   ROOM_INDEX_DATA *pRoomPrev = get_room_index(pReset->arg3 - 1);
                   
-                  if ( pRoomPrev && IS_SET(pRoomPrev->room_flags, ROOM_PET_SHOP) )
-                    SET_BIT(mob->act, ACT_PET);
+                  if ( pRoomPrev && BV_IS_SET(pRoomPrev->room_flags, ROOM_PET_SHOP) )
+                    BV_SET_BIT(mob->act, ACT_PET);
               }
               if ( room_is_dark(pRoomIndex) )
-                  SET_BIT(mob->affected_by, AFF_INFRARED);
+                  BV_SET_BIT(mob->affected_by, AFF_INFRARED);
               char_to_room(mob, pRoomIndex);
               economize_mobgold(mob);
               level = URANGE(0, mob->top_level - 2, LEVEL_AVATAR);
@@ -1611,7 +1611,8 @@ void reset_area( AREA_DATA *pArea )
                             }
                             continue;
                         }
-                        plc = &pRoomIndex->room_flags;
+                        fsplc = &pRoomIndex->room_flags;
+                        plc = NULL;                        
                         break;
                   case BIT_RESET_OBJECT:
                     if ( pReset->arg1 > 0 )
@@ -1643,7 +1644,8 @@ void reset_area( AREA_DATA *pArea )
                   case BIT_RESET_MOBILE:
                       if ( !mob )
                         continue;
-                      plc = &mob->affected_by;
+                      fsplc = &to_obj->objflags;
+                      plc = NULL;
                       break;
                   default:
                       bug( "%s: Reset_area: 'B': bad options %d.", pArea->filename, pReset->arg2 );
@@ -1778,7 +1780,7 @@ void list_resets( CHAR_DATA *ch, AREA_DATA *pArea, ROOM_INDEX_DATA *pRoom,
       if ( !room )
         mob = NULL;
       if ( (room = get_room_index(pReset->arg3-1)) &&
-            IS_SET(room->room_flags, ROOM_PET_SHOP) )
+            BV_IS_SET(room->room_flags, ROOM_PET_SHOP) )
         STRAPP( pbuf, " (pet)\n" );
       else
         STRAPP( pbuf, "\n" );
@@ -1924,7 +1926,9 @@ void list_resets( CHAR_DATA *ch, AREA_DATA *pArea, ROOM_INDEX_DATA *pRoom,
         else
           rname = room->name;
         SPRINTF(pbuf, "Room %s (%d)", rname, pReset->arg1);
-        flagarray = r_flags;
+        STRAPP(pbuf, "; flag: %s [%d]\n",
+            flag_bit_name(pReset->arg3, obj_flag_table), pReset->arg3);
+        skip = true;
         break;
       case BIT_RESET_OBJECT:
         if ( pReset->arg1 > 0 )

@@ -2380,7 +2380,7 @@ void update_ship_modules( SHIP_DATA *ship )
 	 		{
 	   		  ROOM_INDEX_DATA *froom;
 	   		  if ( (froom = get_room_index(module->condition)) != NULL )
-	     		    SET_BIT( froom->room_flags, modflags[module->modification] );
+	     		    BV_SET_BIT( froom->room_flags, modflags[module->modification] );
 	 		}
 				
 			ship->modules++;
@@ -2533,7 +2533,7 @@ void do_install_module( CHAR_DATA *ch, char *argument )
 
 	if( obj->value[1] == MOD_FLAG )
 	{
-          if ( IS_SET( ch->in_room->room_flags, modflags[obj->value[3]] ) )
+          if ( BV_IS_SET( ch->in_room->room_flags, modflags[obj->value[3]] ) )
           {
             send_to_char( "&RThis item is already placed here.\n", ch);
             return;
@@ -2914,7 +2914,7 @@ void do_remove_module( CHAR_DATA *ch, char *argument )
         {
           ROOM_INDEX_DATA *froom;
           if ( (froom = get_room_index(module->condition)) != NULL )
-            REMOVE_BIT( froom->room_flags, modflags[module->modification] );
+            BV_REMOVE_BIT( froom->room_flags, modflags[module->modification] );
         }
         
         UNLINK( module, ship->first_module, ship->last_module, next, prev );

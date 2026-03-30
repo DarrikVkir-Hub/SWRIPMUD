@@ -140,7 +140,7 @@ char *format_obj_to_char( OBJ_DATA *obj, CHAR_DATA *ch, bool fShort )
     if ( IS_OBJ_STAT(obj, ITEM_HIDDEN)	  )   STRAPP( buf, "(Hidden) "	  );
     if ( IS_OBJ_STAT(obj, ITEM_BURRIED)	  )   STRAPP( buf, "(Burried) "	  );
     if ( IS_IMMORTAL(ch) && IS_OBJ_STAT(obj, ITEM_PROTOTYPE) ) STRAPP( buf, "(PROTO) "	  );
-   if( ( IS_AFFECTED( ch, AFF_DETECTTRAPS ) || IS_SET( ch->act, PLR_HOLYLIGHT ) ) && is_trapped( obj ) )
+   if( ( IS_AFFECTED( ch, AFF_DETECTTRAPS ) || BV_IS_SET( ch->act, PLR_HOLYLIGHT ) ) && is_trapped( obj ) )
         STRAPP( buf, "(Trap) "  );
 
     if ( fShort )
@@ -242,7 +242,7 @@ void show_list_to_char( OBJ_DATA *list, CHAR_DATA *ch, bool fShort, bool fShowNo
     {
     	if ( fShowNothing )
     	{
-	   if ( IS_NPC(ch) || IS_SET(ch->act, PLR_COMBINE) )
+	   if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) )
 	      send_to_char( "     ", ch );
 	   send_to_char( "Nothing.\n", ch );
 	}
@@ -277,7 +277,7 @@ void show_list_to_char( OBJ_DATA *list, CHAR_DATA *ch, bool fShort, bool fShowNo
     {
     	if ( fShowNothing )
     	{
-	   if ( IS_NPC(ch) || IS_SET(ch->act, PLR_COMBINE) )
+	   if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) )
 	      send_to_char( "     ", ch );
 	   send_to_char( "Nothing.\n", ch );
 	}
@@ -308,13 +308,13 @@ void show_list_to_char( OBJ_DATA *list, CHAR_DATA *ch, bool fShort, bool fShowNo
 	}
 	if ( obj->wear_loc == WEAR_NONE
 	&& can_see_obj( ch, obj ) 
-	&& ( ( obj->description && obj->description[0] != '\0' ) || ( IS_SET(ch->act, PLR_HOLYLIGHT) || IS_NPC(ch) ) )
+	&& ( ( obj->description && obj->description[0] != '\0' ) || ( BV_IS_SET(ch->act, PLR_HOLYLIGHT) || IS_NPC(ch) ) )
 	&& (obj->item_type != ITEM_TRAP || IS_AFFECTED(ch, AFF_DETECTTRAPS) ) )
 	{
 	    pstrShow = format_obj_to_char( obj, ch, fShort );
 	    fCombine = FALSE;
 
-	    if ( IS_NPC(ch) || IS_SET(ch->act, PLR_COMBINE) )
+	    if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) )
 	    {
 		/*
 		 * Look for duplicates, case sensitive.
@@ -389,7 +389,7 @@ void show_list_to_char( OBJ_DATA *list, CHAR_DATA *ch, bool fShort, bool fShowNo
 	if ( fShowNothing )
 	    send_to_char( "     ", ch );
 	send_to_char( prgpstrShow[iShow], ch );
-/*	if ( IS_NPC(ch) || IS_SET(ch->act, PLR_COMBINE) ) */
+/*	if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) ) */
 	{
 	    if ( prgnShow[iShow] != 1 )
 		ch_printf( ch, " (%d)", prgnShow[iShow] );
@@ -401,7 +401,7 @@ void show_list_to_char( OBJ_DATA *list, CHAR_DATA *ch, bool fShort, bool fShowNo
 
     if ( fShowNothing && nShow == 0 )
     {
-	if ( IS_NPC(ch) || IS_SET(ch->act, PLR_COMBINE) )
+	if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) )
 	    send_to_char( "     ", ch );
 	send_to_char( "Nothing.\n", ch );
     }
@@ -501,10 +501,10 @@ void show_char_to_char_0( CHAR_DATA *victim, CHAR_DATA *ch )
 						STRAPP( buf, "(Switched) " );
     }
     if ( !IS_NPC(victim)
-    && IS_SET(victim->act, PLR_AFK) )		STRAPP( buf, "[AFK] ");        
+    && BV_IS_SET(victim->act, PLR_AFK) )		STRAPP( buf, "[AFK] ");        
 
-    if ( (!IS_NPC(victim) && IS_SET(victim->act, PLR_WIZINVIS))
-      || (IS_NPC(victim) && IS_SET(victim->act, ACT_MOBINVIS)) ) 
+    if ( (!IS_NPC(victim) && BV_IS_SET(victim->act, PLR_WIZINVIS))
+      || (IS_NPC(victim) && BV_IS_SET(victim->act, ACT_MOBINVIS)) ) 
     {
         if (!IS_NPC(victim))
     snprintf(buf1, sizeof(buf1), "(Invis %d) ", victim->pcdata->wizinvis);
@@ -520,10 +520,10 @@ void show_char_to_char_0( CHAR_DATA *victim, CHAR_DATA *ch )
     if ( ( victim->mana > 10 )
     &&   ( IS_AFFECTED( ch , AFF_DETECT_MAGIC ) || IS_IMMORTAL( ch ) ) )
                                                  STRAPP( buf, "&B(Blue Aura)&w "  );   
-    if ( !IS_NPC(victim) && IS_SET(victim->act, PLR_LITTERBUG  ) )
+    if ( !IS_NPC(victim) && BV_IS_SET(victim->act, PLR_LITTERBUG  ) )
 						STRAPP( buf, "(LITTERBUG) "  );
     if ( IS_NPC(victim) && IS_IMMORTAL(ch)
-	 && IS_SET(victim->act, ACT_PROTOTYPE) ) STRAPP( buf, "(PROTO) " );
+	 && BV_IS_SET(victim->act, ACT_PROTOTYPE) ) STRAPP( buf, "(PROTO) " );
     if ( victim->desc && victim->desc->connected == CON_EDITING )
 						STRAPP( buf, "(Writing) " );
 
@@ -542,7 +542,7 @@ void show_char_to_char_0( CHAR_DATA *victim, CHAR_DATA *ch )
     *    But added back bellow so that you can see mobs too :P   -Durga 
     */
     
-    if ( !IS_NPC(victim) && !IS_SET(ch->act, PLR_BRIEF) )
+    if ( !IS_NPC(victim) && !BV_IS_SET(ch->act, PLR_BRIEF) )
 	    STRAPP( buf, "%s", victim->pcdata->title );
     else
         STRAPP( buf, "%s", PERS( victim, ch ) );  
@@ -786,7 +786,7 @@ void show_char_to_char_1( CHAR_DATA *victim, CHAR_DATA *ch )
     {
 	if ( ( obj = get_eq_char( victim, iWear ) ) != NULL
 	&&   can_see_obj( ch, obj ) && 
-	( ( obj->description && obj->description[0] != '\0' ) || ( IS_SET(ch->act, PLR_HOLYLIGHT) || IS_NPC(ch) ) ) )
+	( ( obj->description && obj->description[0] != '\0' ) || ( BV_IS_SET(ch->act, PLR_HOLYLIGHT) || IS_NPC(ch) ) ) )
 	{
 	    if ( !found )
 	    {
@@ -845,7 +845,7 @@ void show_char_to_char( CHAR_DATA *list, CHAR_DATA *ch )
 	else if ( rch->race == RACE_DEFEL )
 	{
          if ( !IS_AFFECTED(rch, AFF_INVISIBLE)
-         &&   !IS_SET(rch->act, PLR_WIZINVIS) )
+         &&   !BV_IS_SET(rch->act, PLR_WIZINVIS) )
          {
            set_char_color( AT_BLOOD, ch );
 	   send_to_char( "You see a pair of red eyes staring back at you.\n", ch );	
@@ -908,7 +908,7 @@ void show_ships_to_char( SHIP_DATA *ship, CHAR_DATA *ch )
 
 bool check_blind( CHAR_DATA *ch )
 {
-    if ( !IS_NPC(ch) && IS_SET(ch->act, PLR_HOLYLIGHT) )
+    if ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_HOLYLIGHT) )
 	return TRUE;
 	
     if ( IS_AFFECTED(ch, AFF_TRUESIGHT) )
@@ -979,7 +979,7 @@ void do_look ( CHAR_DATA *ch, char *argument )
 	return;
 
     if ( !IS_NPC(ch)
-    &&   !IS_SET(ch->act, PLR_HOLYLIGHT)
+    &&   !BV_IS_SET(ch->act, PLR_HOLYLIGHT)
     &&   !IS_AFFECTED(ch, AFF_TRUESIGHT)
     &&   room_is_dark( ch->in_room ) )
     {
@@ -1008,7 +1008,7 @@ void do_look ( CHAR_DATA *ch, char *argument )
       {
          if( ( get_trust( ch ) >= LEVEL_IMMORTAL ) )             
          {
-            if( IS_SET( ch->act, PLR_ROOMVNUM ) )
+            if( BV_IS_SET( ch->act, PLR_ROOMVNUM ) )
             {
                 set_char_color( AT_BLUE, ch );      /* Added 10/17 by Kuran of */
                 send_to_char( "{", ch );            /* SWReality */
@@ -1019,7 +1019,7 @@ void do_look ( CHAR_DATA *ch, char *argument )
             {
                 set_char_color( AT_CYAN, ch );
                 send_to_char( "[", ch );
-                send_to_char( flag_string( ch->in_room->room_flags, r_flags ), ch );
+                send_to_char( bitset_to_string( ch->in_room->room_flags, r_flags ).c_str(), ch );
                 send_to_char( "]", ch );
             }
          }
@@ -1029,17 +1029,17 @@ void do_look ( CHAR_DATA *ch, char *argument )
 	set_char_color( AT_RMDESC, ch ); 	
 	
 	if ( arg1[0] == '\0'
-	|| ( !IS_NPC(ch) && !IS_SET(ch->act, PLR_BRIEF) ) )
+	|| ( !IS_NPC(ch) && !BV_IS_SET(ch->act, PLR_BRIEF) ) )
 	    send_to_char( ch->in_room->description, ch );
  
-        if ( IS_SET( ch->in_room->room_flags, ROOM_CAN_LAND ) )
+        if ( BV_IS_SET( ch->in_room->room_flags, ROOM_CAN_LAND ) )
           send_to_char( "&GYou can rent ships here. ( Type rent )&R&W\n", ch );
 	
 	if ( is_bus_stop( ch->in_room->vnum ) )
 	  send_to_char( "&GA Serin shuttle picks up passengers here. ( Type findserin )&R&W\n", ch );
 	    
 
-	if ( !IS_NPC(ch) && IS_SET(ch->act, PLR_AUTOEXIT) )
+	if ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_AUTOEXIT) )
 	        do_exits( ch, "" );
 
 	show_ships_to_char( ch->in_room->first_ship, ch );
@@ -1466,7 +1466,7 @@ void show_condition( CHAR_DATA *ch, CHAR_DATA *victim )
 
     STRLCPY( buf, PERS(victim, ch) );
 
-    if ( (IS_NPC ( victim ) && IS_SET( victim->act , ACT_DROID ) ) ||
+    if ( (IS_NPC ( victim ) && BV_IS_SET( victim->act , ACT_DROID ) ) ||
          ( victim->race == RACE_DROID ) )
     {
     
@@ -1513,7 +1513,7 @@ void do_glance( CHAR_DATA *ch, char *argument )
 {
   char arg1 [MAX_INPUT_LENGTH];
   CHAR_DATA *victim;
-  int save_act;
+  FLAG_SET save_act;
 
   if ( !ch->desc )
     return;
@@ -1538,7 +1538,7 @@ void do_glance( CHAR_DATA *ch, char *argument )
   if ( arg1[0] == '\0' )
   {
     save_act = ch->act;
-    SET_BIT( ch->act, PLR_BRIEF );
+    BV_SET_BIT( ch->act, PLR_BRIEF );
     do_look( ch, "auto" );
     ch->act = save_act;
     return;
@@ -1820,7 +1820,7 @@ void do_exits( CHAR_DATA *ch, char *argument )
     if ( !check_blind( ch ) )
 	    return;
     if( !IS_NPC( ch )
-        && !IS_SET( ch->act, PLR_HOLYLIGHT )
+        && !BV_IS_SET( ch->act, PLR_HOLYLIGHT )
         && !IS_AFFECTED( ch, AFF_TRUESIGHT ) && !IS_AFFECTED( ch, AFF_INFRARED ) && room_is_dark( ch->in_room ) )
     {
         set_char_color( AT_DGREY, ch );
@@ -2184,7 +2184,7 @@ void do_help( CHAR_DATA *ch, char *argument )
 	    send_to_pager( "\n", ch );
     }
 
-    if ( !IS_NPC(ch) && IS_SET( ch->act , PLR_SOUND ) )
+    if ( !IS_NPC(ch) && BV_IS_SET( ch->act , PLR_SOUND ) )
         send_to_pager( "!!SOUND(help)", ch );
 
     /*
@@ -2719,7 +2719,7 @@ void do_who( CHAR_DATA *ch, char *argument )
 	  clan_name[0] = '\0';
 
 
-	if ( IS_SET(wch->act, PLR_WIZINVIS) )
+	if ( BV_IS_SET(wch->act, PLR_WIZINVIS) )
 	  SPRINTF( invis_str, "(%d) ", wch->pcdata->wizinvis );
 	else
 	  invis_str[0] = '\0';
@@ -2752,13 +2752,13 @@ snprintf(buf, sizeof(buf),
     force_char,
     race ? race : "",
     *invis_str ? invis_str : "",
-    IS_SET(wch->act, PLR_AFK) ? "[AFK] " : "",
+    BV_IS_SET(wch->act, PLR_AFK) ? "[AFK] " : "",
     safe_name,
     safe_title,
     safe_extra,
     wch->pcdata->whoCloak ? "<WC>" : "",
     safe_clan,
-    IS_SET(wch->act, PLR_KILLER) && (ch->top_level >= LEVEL_IMMORTAL)
+    BV_IS_SET(wch->act, PLR_KILLER) && (ch->top_level >= LEVEL_IMMORTAL)
         ? "&R [Wanted for Murder]&W"
         : "&W"
 );
@@ -3177,7 +3177,7 @@ void do_practice( CHAR_DATA *ch, char *argument )
 	}
 
 	for ( mob = ch->in_room->first_person; mob; mob = mob->next_in_room )
-	    if ( IS_NPC(mob) && IS_SET(mob->act, ACT_PRACTICE) )
+	    if ( IS_NPC(mob) && BV_IS_SET(mob->act, ACT_PRACTICE) )
 		break;
 
 	if ( !mob )
@@ -3690,7 +3690,7 @@ void do_channels( CHAR_DATA *ch, char *argument )
 
     if ( arg[0] == '\0' )
     {
-	if ( !IS_NPC(ch) && IS_SET(ch->act, PLR_SILENCE) )
+	if ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_SILENCE) )
 	{
 	    send_to_char( "You are silenced.\n", ch );
 	    return;
@@ -3700,48 +3700,48 @@ void do_channels( CHAR_DATA *ch, char *argument )
 
     if ( get_trust( ch ) > 2 && !NOT_AUTHED( ch ) )
     {
-        send_to_char( !IS_SET(ch->deaf, CHANNEL_AUCTION)
+        send_to_char( BV_IS_SET(ch->channels, CHANNEL_AUCTION)
             ? " +AUCTION"
             : " -auction",
             ch );
     }
 
-    send_to_char( !IS_SET(ch->deaf, CHANNEL_CHAT)
+    send_to_char( BV_IS_SET(ch->channels, CHANNEL_CHAT)
         ? " +CHAT"
         : " -chat",
         ch );
     
-    send_to_char( !IS_SET(ch->deaf, CHANNEL_OOC)
+    send_to_char( BV_IS_SET(ch->channels, CHANNEL_OOC)
     ? " +OOC"
     : " -ooc",
     ch );
 
 	if ( !IS_NPC( ch ) && ch->pcdata->clan )
 	{
- 	    send_to_char( !IS_SET(ch->deaf, CHANNEL_CLAN)
+ 	    send_to_char( BV_IS_SET(ch->channels, CHANNEL_CLAN)
 	        ? " +CLAN"
 	        : " -clan",
 	        ch );
 	}
 	
 
-	send_to_char( !IS_SET(ch->deaf, CHANNEL_QUEST)
+	send_to_char( BV_IS_SET(ch->channels, CHANNEL_QUEST)
 	    ? " +QUEST"
 	    : " -quest", 	    ch );
 
-	send_to_char( !IS_SET( ch->deaf, CHANNEL_TELLS )
+	send_to_char( BV_IS_SET( ch->channels, CHANNEL_TELLS )
 	    ? " +TELLS"
 	    : " -tells",
 	    ch );
 
-    send_to_char( !IS_SET( ch->deaf, CHANNEL_VULGAR )
+    send_to_char( BV_IS_SET( ch->channels, CHANNEL_VULGAR )
         ? " +VULGAR"
         : " -vulgar",
         ch );
 
 	if ( IS_HERO(ch) )
 	{
-	    send_to_char( !IS_SET(ch->deaf, CHANNEL_AVTALK)
+	    send_to_char( BV_IS_SET(ch->channels, CHANNEL_AVTALK)
 		? " +AVATAR"
 		: " -avatar",
 		ch );
@@ -3749,72 +3749,72 @@ void do_channels( CHAR_DATA *ch, char *argument )
 
 	if ( IS_IMMORTAL(ch) )
 	{
-	    send_to_char( !IS_SET(ch->deaf, CHANNEL_IMMTALK)
+	    send_to_char( BV_IS_SET(ch->channels, CHANNEL_IMMTALK)
 		? " +IMMTALK"
 		: " -immtalk",
 		ch );
 
-	    send_to_char( !IS_SET(ch->deaf, CHANNEL_PRAY)
+	    send_to_char( BV_IS_SET(ch->channels, CHANNEL_PRAY)
 		? " +PRAY"
 		: " -pray",
 		ch );
 	}
 
-	send_to_char( !IS_SET(ch->deaf, CHANNEL_MUSIC)
+	send_to_char( BV_IS_SET(ch->channels, CHANNEL_MUSIC)
 	    ? " +MUSIC"
 	    : " -music",
 	    ch );
 
-	send_to_char( !IS_SET(ch->deaf, CHANNEL_ASK)
+	send_to_char( BV_IS_SET(ch->channels, CHANNEL_ASK)
 	    ? " +ASK"
 	    : " -ask",
 	    ch );
 
-	send_to_char( !IS_SET(ch->deaf, CHANNEL_SHOUT)
+	send_to_char( BV_IS_SET(ch->channels, CHANNEL_SHOUT)
 	    ? " +SHOUT"
 	    : " -shout",
 	    ch );
 
-	send_to_char( !IS_SET(ch->deaf, CHANNEL_YELL)
+	send_to_char( BV_IS_SET(ch->channels, CHANNEL_YELL)
 	    ? " +YELL"
 	    : " -yell",
 	    ch );
 
-	send_to_char( !IS_SET(ch->deaf, CHANNEL_ARENA)
+	send_to_char( BV_IS_SET(ch->channels, CHANNEL_ARENA)
 	    ? " +ARENA"
 	    : " -arena",
 	    ch );
 
 	if ( IS_IMMORTAL(ch) )
 	{
-	    send_to_char( !IS_SET(ch->deaf, CHANNEL_MONITOR)
+	    send_to_char( BV_IS_SET(ch->channels, CHANNEL_MONITOR)
 		? " +MONITOR"
 		: " -monitor",
 		ch );
 	}
 
-	send_to_char( !IS_SET(ch->deaf, CHANNEL_NEWBIE)
+	send_to_char( BV_IS_SET(ch->channels, CHANNEL_NEWBIE)
 	      	? " +NEWBIE"
 		: " -newbie",
 		ch );
 
 	if ( get_trust(ch) >= sysdata.log_level )
 	{
-	    send_to_char( !IS_SET(ch->deaf, CHANNEL_LOG)
+	    send_to_char( BV_IS_SET(ch->channels, CHANNEL_LOG)
 		? " +LOG"
 		: " -log",
 		ch );
 
-	    send_to_char( !IS_SET(ch->deaf, CHANNEL_BUILD)
+	    send_to_char( BV_IS_SET(ch->channels, CHANNEL_BUILD)
 		? " +BUILD"
 		: " -build",
 		ch );
 
-        send_to_char( !IS_SET(ch->deaf, CHANNEL_COMM)
+        send_to_char( BV_IS_SET(ch->channels, CHANNEL_COMM)
         ? " +COMM"
         : " -comm",
         ch );
-        send_to_char( !IS_SET(ch->deaf, CHANNEL_NEWBIEASST)
+        send_to_char( BV_IS_SET(ch->channels, CHANNEL_NEWBIEASST)
         ? " +NEWBIEASST"
         : " -newbieasst",
         ch );
@@ -3870,57 +3870,60 @@ void do_channels( CHAR_DATA *ch, char *argument )
 
 	if (( fClear ) && ( ClearAll ))
 	{
-            REMOVE_BIT (ch->deaf, CHANNEL_AUCTION);
-            REMOVE_BIT (ch->deaf, CHANNEL_CHAT);
-            REMOVE_BIT (ch->deaf, CHANNEL_QUEST);
-       /*     REMOVE_BIT (ch->deaf, CHANNEL_IMMTALK); */
-            REMOVE_BIT (ch->deaf, CHANNEL_PRAY);
-            REMOVE_BIT (ch->deaf, CHANNEL_MUSIC);
-            REMOVE_BIT (ch->deaf, CHANNEL_ASK);
-            REMOVE_BIT (ch->deaf, CHANNEL_SHOUT);
-            REMOVE_BIT (ch->deaf, CHANNEL_YELL);
-            REMOVE_BIT (ch->deaf, CHANNEL_ARENA);
-            REMOVE_BIT (ch->deaf, CHANNEL_NEWBIEASST);
+        BV_SET_BIT (ch->channels, CHANNEL_AUCTION);
+        BV_SET_BIT (ch->channels, CHANNEL_CHAT);
+        BV_SET_BIT (ch->channels, CHANNEL_QUEST);
+        /*BV_SET_BIT (ch->channels, CHANNEL_IMMTALK); */
+        BV_SET_BIT (ch->channels, CHANNEL_PRAY);
+        BV_SET_BIT (ch->channels, CHANNEL_MUSIC);
+        BV_SET_BIT (ch->channels, CHANNEL_ASK);
+        BV_SET_BIT (ch->channels, CHANNEL_SHOUT);
+        BV_SET_BIT (ch->channels, CHANNEL_YELL);
+        BV_SET_BIT (ch->channels, CHANNEL_ARENA);
+        BV_SET_BIT (ch->channels, CHANNEL_NEWBIEASST);
 
-       /*     if (ch->pcdata->clan)
-              REMOVE_BIT (ch->deaf, CHANNEL_CLAN);
+        /*     if (ch->pcdata->clan)
+            BV_SET_BIT (ch->channels, CHANNEL_CLAN);
 
 
-            if (ch->pcdata->guild)
-              REMOVE_BIT (ch->deaf, CHANNEL_GUILD);
-       */
-            if (ch->top_level >= LEVEL_IMMORTAL)
-              REMOVE_BIT (ch->deaf, CHANNEL_AVTALK);
- 
-	    if (ch->top_level >= sysdata.log_level )
-	      REMOVE_BIT (ch->deaf, CHANNEL_COMM);
+        if (ch->pcdata->guild)
+            BV_SET_BIT (ch->channels, CHANNEL_GUILD);
+        */
+        if (ch->top_level >= LEVEL_IMMORTAL)
+            BV_SET_BIT (ch->channels, CHANNEL_AVTALK);
 
-        } else if ((!fClear) && (ClearAll))
+        if (ch->top_level >= sysdata.log_level )
+        BV_SET_BIT (ch->channels, CHANNEL_COMM);
+
+    } 
+    else if ((!fClear) && (ClearAll))
+    {
+        BV_REMOVE_BIT (ch->channels, CHANNEL_AUCTION);
+        BV_REMOVE_BIT (ch->channels, CHANNEL_CHAT);
+        BV_REMOVE_BIT (ch->channels, CHANNEL_QUEST);
+    /*     BV_REMOVE_BIT (ch->channels, CHANNEL_IMMTALK); */
+        BV_REMOVE_BIT (ch->channels, CHANNEL_PRAY);
+        BV_REMOVE_BIT (ch->channels, CHANNEL_MUSIC);
+        BV_REMOVE_BIT (ch->channels, CHANNEL_ASK);
+        BV_REMOVE_BIT (ch->channels, CHANNEL_SHOUT);
+        BV_REMOVE_BIT (ch->channels, CHANNEL_YELL);
+        BV_REMOVE_BIT (ch->channels, CHANNEL_ARENA);
+        
+        if (ch->top_level >= LEVEL_IMMORTAL)
+            BV_REMOVE_BIT (ch->channels, CHANNEL_AVTALK);
+
+        if (ch->top_level >= sysdata.log_level)
+        BV_REMOVE_BIT (ch->channels, CHANNEL_COMM);
+
+        } 
+        else if (fClear)
         {
-            SET_BIT (ch->deaf, CHANNEL_AUCTION);
-            SET_BIT (ch->deaf, CHANNEL_CHAT);
-            SET_BIT (ch->deaf, CHANNEL_QUEST);
-       /*     SET_BIT (ch->deaf, CHANNEL_IMMTALK); */
-            SET_BIT (ch->deaf, CHANNEL_PRAY);
-            SET_BIT (ch->deaf, CHANNEL_MUSIC);
-            SET_BIT (ch->deaf, CHANNEL_ASK);
-            SET_BIT (ch->deaf, CHANNEL_SHOUT);
-            SET_BIT (ch->deaf, CHANNEL_YELL);
-            SET_BIT (ch->deaf, CHANNEL_ARENA);
-          
-            if (ch->top_level >= LEVEL_IMMORTAL)
-              SET_BIT (ch->deaf, CHANNEL_AVTALK);
-
-	    if (ch->top_level >= sysdata.log_level)
-	      SET_BIT (ch->deaf, CHANNEL_COMM);
-
-         } else if (fClear)
-         {
-	    REMOVE_BIT (ch->deaf, bit);
-         } else
-         {
-	    SET_BIT    (ch->deaf, bit);
-         }
+            BV_SET_BIT (ch->channels, bit);
+        } 
+        else
+        {
+            BV_REMOVE_BIT    (ch->channels, bit);
+        }
 
 	  send_to_char( "Ok.\n", ch );
     }
@@ -3955,7 +3958,7 @@ void do_config( CHAR_DATA *ch, char *argument )
     {
         send_to_char( "[ Keyword  ] Option\n", ch );
 
-        send_to_char(  IS_SET(ch->act, PLR_FLEE)
+        send_to_char(  BV_IS_SET(ch->act, PLR_FLEE)
             ? "[+FLEE     ] You flee if you get attacked.\n"
             : "[-flee     ] You fight back if you get attacked.\n"
             , ch );
@@ -3965,22 +3968,22 @@ void do_config( CHAR_DATA *ch, char *argument )
             : "[-norecall ] You try to recall if fighting link-dead.\n"
             , ch );
 
-        send_to_char(  IS_SET(ch->act, PLR_AUTOEXIT)
+        send_to_char(  BV_IS_SET(ch->act, PLR_AUTOEXIT)
             ? "[+AUTOEXIT ] You automatically see exits.\n"
             : "[-autoexit ] You don't automatically see exits.\n"
             , ch );
 
-        send_to_char(  IS_SET(ch->act, PLR_AUTOLOOT)
+        send_to_char(  BV_IS_SET(ch->act, PLR_AUTOLOOT)
             ? "[+AUTOLOOT ] You automatically loot corpses.\n"
             : "[-autoloot ] You don't automatically loot corpses.\n"
             , ch );
 
-        send_to_char(  IS_SET(ch->act, PLR_AUTOSAC)
+        send_to_char(  BV_IS_SET(ch->act, PLR_AUTOSAC)
             ? "[+AUTOSAC  ] You automatically sacrifice corpses.\n"
             : "[-autosac  ] You don't automatically sacrifice corpses.\n"
             , ch );
 
-        send_to_char(  IS_SET(ch->act, PLR_AUTOGOLD)
+        send_to_char(  BV_IS_SET(ch->act, PLR_AUTOGOLD)
             ? "[+AUTOCRED ] You automatically split credits from kills in groups.\n"
             : "[-autocred ] You don't automatically split credits from kills in groups.\n"
             , ch );
@@ -3995,17 +3998,17 @@ void do_config( CHAR_DATA *ch, char *argument )
             : "[-pager    ] Long output scrolls to the end.\n"
             , ch );
         
-        send_to_char(  IS_SET(ch->act, PLR_BLANK)
+        send_to_char(  BV_IS_SET(ch->act, PLR_BLANK)
             ? "[+BLANK    ] You have a blank line before your prompt.\n"
             : "[-blank    ] You have no blank line before your prompt.\n"
             , ch );
 
-        send_to_char(  IS_SET(ch->act, PLR_BRIEF)
+        send_to_char(  BV_IS_SET(ch->act, PLR_BRIEF)
             ? "[+BRIEF    ] You see brief descriptions.\n"
             : "[-brief    ] You see long descriptions.\n"
             , ch );
 
-        send_to_char(  IS_SET(ch->act, PLR_COMBINE)
+        send_to_char(  BV_IS_SET(ch->act, PLR_COMBINE)
             ? "[+COMBINE  ] You see object lists in combined format.\n"
             : "[-combine  ] You see object lists in single format.\n"
             , ch );
@@ -4015,28 +4018,28 @@ void do_config( CHAR_DATA *ch, char *argument )
             : "[-nointro  ] You see the ascii intro screen on login.\n"
             , ch );
 
-        send_to_char(  IS_SET(ch->act, PLR_PROMPT)
+        send_to_char(  BV_IS_SET(ch->act, PLR_PROMPT)
             ? "[+PROMPT   ] You have a prompt.\n"
             : "[-prompt   ] You don't have a prompt.\n"
             , ch );
 
-        send_to_char(  IS_SET(ch->act, PLR_TELNET_GA)
+        send_to_char(  BV_IS_SET(ch->act, PLR_TELNET_GA)
             ? "[+TELNETGA ] You receive a telnet GA sequence.\n"
             : "[-telnetga ] You don't receive a telnet GA sequence.\n"
             , ch );
 
-        send_to_char(  IS_SET(ch->act, PLR_ANSI)
+        send_to_char(  BV_IS_SET(ch->act, PLR_ANSI)
             ? "[+ANSI     ] You receive ANSI color sequences.\n"
             : "[-ansi     ] You don't receive receive ANSI colors.\n"
             , ch );
 
-        send_to_char(  IS_SET(ch->act, PLR_SOUND)
+        send_to_char(  BV_IS_SET(ch->act, PLR_SOUND)
             ? "[+SOUND     ] You have MSP support.\n"
             : "[-sound     ] You don't have MSP support.\n"
             , ch );
 
 
-        send_to_char(  IS_SET(ch->act, PLR_SHOVEDRAG)
+        send_to_char(  BV_IS_SET(ch->act, PLR_SHOVEDRAG)
             ? "[+SHOVEDRAG] You allow yourself to be shoved and dragged around.\n"
             : "[-shovedrag] You'd rather not be shoved or dragged around.\n"
             , ch );
@@ -4046,19 +4049,19 @@ void do_config( CHAR_DATA *ch, char *argument )
             : "[-nosummon ] You allow other players to summon you.\n"
             , ch );
 
-        send_to_char(  IS_SET( ch->act, PLR_DONTAUTOFUEL )
+        send_to_char(  BV_IS_SET( ch->act, PLR_DONTAUTOFUEL )
             ? "[+dontautofuel ] You will not refuel automatically on launch.\n"
             : "[-dontautofuel] You refuel automatically on launch.\n"
             , ch );
 
         if ( IS_IMMORTAL( ch ) )
-            send_to_char(  IS_SET(ch->act, PLR_ROOMVNUM)
+            send_to_char(  BV_IS_SET(ch->act, PLR_ROOMVNUM)
                 ? "[+VNUM     ] You can see the VNUM of a room.\n"
                 : "[-vnum     ] You do not see the VNUM of a room.\n"
                 , ch );
 
         if ( IS_IMMORTAL( ch ) )
-            send_to_char(  IS_SET(ch->act, PLR_AUTOMAP)    /* maps */
+            send_to_char(  BV_IS_SET(ch->act, PLR_AUTOMAP)    /* maps */
                 ? "[+MAP      ] You can see the MAP of a room.\n"
                 : "[-map      ] You do not see the MAP of a room.\n"
                 , ch );
@@ -4069,22 +4072,22 @@ void do_config( CHAR_DATA *ch, char *argument )
                 : "[-roomflags] You will not see room flags.\n"
                 , ch );
         
-        send_to_char(  IS_SET(ch->act, PLR_SILENCE)
+        send_to_char(  BV_IS_SET(ch->act, PLR_SILENCE)
             ? "[+SILENCE  ] You are silenced.\n"
             : ""
             , ch );
 
-        send_to_char( !IS_SET(ch->act, PLR_NO_EMOTE)
+        send_to_char( !BV_IS_SET(ch->act, PLR_NO_EMOTE)
             ? ""
             : "[-emote    ] You can't emote.\n"
             , ch );
 
-        send_to_char( !IS_SET(ch->act, PLR_NO_TELL)
+        send_to_char( !BV_IS_SET(ch->act, PLR_NO_TELL)
             ? ""
             : "[-tell     ] You can't use 'tell'.\n"
             , ch );
 
-        send_to_char( !IS_SET(ch->act, PLR_LITTERBUG)
+        send_to_char( !BV_IS_SET(ch->act, PLR_LITTERBUG)
             ? ""
             : "[-litter  ] A convicted litterbug. You cannot drop anything.\n" 	    , ch );
     }
@@ -4125,9 +4128,9 @@ void do_config( CHAR_DATA *ch, char *argument )
         {
           
             if ( fSet )
-                SET_BIT    (ch->act, bit);
+                BV_SET_BIT    (ch->act, bit);
             else
-                REMOVE_BIT (ch->act, bit);
+                BV_REMOVE_BIT (ch->act, bit);
             send_to_char( "Ok.\n", ch );
             return;
         }
@@ -4220,15 +4223,15 @@ void do_afk( CHAR_DATA *ch, char *argument )
      if ( IS_NPC(ch) )
      return;
      
-     if IS_SET(ch->act, PLR_AFK)
+     if BV_IS_SET(ch->act, PLR_AFK)
      {
-    	REMOVE_BIT(ch->act, PLR_AFK);
+    	BV_REMOVE_BIT(ch->act, PLR_AFK);
 	send_to_char( "You are no longer afk.\n", ch );
 	act(AT_GREY,"$n is no longer afk.", ch, NULL, NULL, TO_ROOM);
      }
      else
      {
-	SET_BIT(ch->act, PLR_AFK);
+	BV_SET_BIT(ch->act, PLR_AFK);
 	send_to_char( "You are now afk.\n", ch );
 	act(AT_GREY,"$n is now afk.", ch, NULL, NULL, TO_ROOM);
 	return;
@@ -4444,15 +4447,15 @@ void do_whois( CHAR_DATA *ch, char *argument)
       do_comment(ch, buf2);
     }
 
-    if(IS_SET(victim->act, PLR_SILENCE) || IS_SET(victim->act, PLR_NO_EMOTE) 
-    || IS_SET(victim->act, PLR_NO_TELL) )
+    if(BV_IS_SET(victim->act, PLR_SILENCE) || BV_IS_SET(victim->act, PLR_NO_EMOTE) 
+    || BV_IS_SET(victim->act, PLR_NO_TELL) )
     {
       snprintf(buf2, sizeof(buf2), "This player has the following flags set:");
-      if(IS_SET(victim->act, PLR_SILENCE)) 
+      if(BV_IS_SET(victim->act, PLR_SILENCE)) 
         STRAPP(buf2, " silence");
-      if(IS_SET(victim->act, PLR_NO_EMOTE)) 
+      if(BV_IS_SET(victim->act, PLR_NO_EMOTE)) 
         STRAPP(buf2, " noemote");
-      if(IS_SET(victim->act, PLR_NO_TELL) )
+      if(BV_IS_SET(victim->act, PLR_NO_TELL) )
         STRAPP(buf2, " notell");
       STRAPP(buf2, ".\n");
       send_to_char(buf2, ch);

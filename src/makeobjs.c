@@ -145,7 +145,7 @@ void make_corpse( CHAR_DATA *ch, CHAR_DATA *killer )
     if ( IS_NPC(ch) )
     {
 	name		= ch->short_descr;
-        if ( IS_SET ( ch->act , ACT_DROID ) )
+        if ( BV_IS_SET ( ch->act , ACT_DROID ) )
            corpse		= create_object(get_obj_index(OBJ_VNUM_DROID_CORPSE), 0);
 	else   
 	   corpse		= create_object(get_obj_index(OBJ_VNUM_CORPSE_NPC), 0);

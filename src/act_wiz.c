@@ -399,7 +399,7 @@ void do_deny( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    SET_BIT(victim->act, PLR_DENY);
+    BV_SET_BIT(victim->act, PLR_DENY);
     send_to_char( "You are denied access!\n", victim );
     send_to_char( "OK.\n", ch );
     do_quit( victim, "" );
@@ -589,7 +589,7 @@ void do_echo( CHAR_DATA *ch, char *argument )
     int target;
     char *parg;
 
-    if ( IS_SET(ch->act, PLR_NO_EMOTE) )
+    if ( BV_IS_SET(ch->act, PLR_NO_EMOTE) )
     {
         send_to_char( "You are noemoted and can not echo.\n", ch );
 	return;
@@ -650,7 +650,7 @@ void do_recho( CHAR_DATA *ch, char *argument )
     char arg[MAX_INPUT_LENGTH];
     sh_int color;
 
-    if ( IS_SET(ch->act, PLR_NO_EMOTE) )
+    if ( BV_IS_SET(ch->act, PLR_NO_EMOTE) )
     {
         send_to_char( "You are noemoted and can not recho.\n", ch );
 	return;
@@ -739,7 +739,7 @@ void transfer_char( CHAR_DATA *ch, CHAR_DATA *victim, ROOM_INDEX_DATA *location 
    }
 
    /* If victim not in area's level range, do not transfer */
-   if( IS_NPC(ch) && !in_hard_range( victim, location->area ) && !IS_SET( location->room_flags, ROOM_PROTOTYPE ) )
+   if( IS_NPC(ch) && !in_hard_range( victim, location->area ) && !BV_IS_SET( location->room_flags, ROOM_PROTOTYPE ) )
       return;
 
    if( victim->fighting )
@@ -889,10 +889,10 @@ void do_scatter( CHAR_DATA *ch, char *argument )
     for ( ; ; ) {
       pRoomIndex = get_room_index( number_range( 0, 32767 ) );
       if ( pRoomIndex )
-      if ( !IS_SET(pRoomIndex->room_flags, ROOM_PRIVATE)
-      &&   !IS_SET(pRoomIndex->room_flags, ROOM_SOLITARY)
-      &&   !IS_SET(pRoomIndex->room_flags, ROOM_PROTOTYPE)
-      &&   !IS_SET(pRoomIndex->room_flags, ROOM_SPACECRAFT) )
+      if ( !BV_IS_SET(pRoomIndex->room_flags, ROOM_PRIVATE)
+      &&   !BV_IS_SET(pRoomIndex->room_flags, ROOM_SOLITARY)
+      &&   !BV_IS_SET(pRoomIndex->room_flags, ROOM_PROTOTYPE)
+      &&   !BV_IS_SET(pRoomIndex->room_flags, ROOM_SPACECRAFT) )
       break; }
     if ( victim->fighting ) stop_fighting( victim, TRUE );
     act( AT_MAGIC, "With the sweep of an arm, $n flings $N to the winds.", ch, NULL, victim, TO_NOTVICT );
@@ -1161,9 +1161,8 @@ void do_rstat( CHAR_DATA *ch, char *argument )
 	location->tele_vnum,
 	location->tunnel );
 
-    ch_printf( ch, "Room flags: %s\n",
-	flag_string(location->room_flags, r_flags) );
-    ch_printf( ch, "Description:\n%s", location->description );
+    ch_printf( ch, "Room flags: %s\n", bitset_to_string(location->room_flags, r_flags).c_str());
+	ch_printf( ch, "Description:\n%s", location->description );
 
     if ( location->first_extradesc )
     {
@@ -1464,7 +1463,7 @@ ch_printf( ch,
 	victim->carry_number, can_carry_n(victim), victim->carry_weight, can_carry_w(victim), victim->numattacks );
     if ( IS_NPC( victim ) )
     {	
-	ch_printf( ch, "Act flags: %s\n", flag_string(victim->act, act_flags) );
+	ch_printf( ch, "Act flags: %s\n", bitset_to_string(victim->act, act_flags).c_str() );
         ch_printf( ch, "VIP flags: %s\n", flag_string(victim->vip_flags, planet_flags, PLANET_MAX) );
     }    
     else
@@ -1473,14 +1472,14 @@ ch_printf( ch,
 	    get_age( victim ), (int) victim->pcdata->played, victim->timer, victim->act );
 	
 	ch_printf( ch, "Player flags: %s\n",
-		flag_string(victim->act, plr_flags) );
+		bitset_to_string(victim->act, plr_flags).c_str() );
 	ch_printf( ch, "Pcflags: %s\n",
 		flag_string(victim->pcdata->flags, pc_flags, PCFLAG_MAX) );
 	ch_printf( ch, "Wanted flags: %s\n",
 		flag_string(victim->pcdata->wanted_flags, planet_flags, PLANET_MAX) );
     }
     ch_printf( ch, "Affected by: %s\n",
-	affect_bit_name( victim->affected_by ) );
+	    bitset_to_string(victim->affected_by, aff_flags).c_str());
     ch_printf( ch, "Speaking: %d\n", victim->speaking );
     send_to_char("Languages: ", ch);
 
@@ -1539,7 +1538,7 @@ ch_printf( ch,
 	    affect_loc_name( paf->location ),
 	    paf->modifier,
 	    paf->duration,
-	    affect_bit_name( paf->bitvector )
+	    aff_flags[paf->bitvector].name
 	    );
     return;
 }
@@ -2516,7 +2515,7 @@ void do_return( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if (IS_SET(ch->act, ACT_POLYMORPHED))
+    if (BV_IS_SET(ch->act, ACT_POLYMORPHED))
     {
       send_to_char("Use revert to return from a polymorphed mob.\n", ch);
       return;
@@ -2526,10 +2525,10 @@ void do_return( CHAR_DATA *ch, char *argument )
 	if ( IS_NPC( ch ) && IS_AFFECTED( ch, AFF_POSSESS ) )
 	{
 		affect_strip( ch, gsn_possess );
-		REMOVE_BIT( ch->affected_by, AFF_POSSESS );
+		BV_REMOVE_BIT( ch->affected_by, AFF_POSSESS );
 	}
 /*    if ( IS_NPC( ch->desc->character ) )
-      REMOVE_BIT( ch->desc->character->affected_by, AFF_POSSESS );*/
+      BV_REMOVE_BIT( ch->desc->character->affected_by, AFF_POSSESS );*/
     ch->desc->character       = ch->desc->original;
     ch->desc->original        = NULL;
     ch->desc->character->desc = ch->desc;
@@ -2753,7 +2752,7 @@ void do_purge( CHAR_DATA *ch, char *argument )
 	for ( victim = ch->in_room->first_person; victim; victim = vnext )
 	{
 	    vnext = victim->next_in_room;
-	    if ( IS_NPC(victim) && victim != ch && !IS_SET(victim->act, ACT_POLYMORPHED))
+	    if ( IS_NPC(victim) && victim != ch && !BV_IS_SET(victim->act, ACT_POLYMORPHED))
 		extract_char( victim, TRUE );
 	}
 
@@ -2808,7 +2807,7 @@ void do_purge( CHAR_DATA *ch, char *argument )
     	return;
     }
 
-    if (IS_SET(victim->act, ACT_POLYMORPHED))
+    if (BV_IS_SET(victim->act, ACT_POLYMORPHED))
     {
       send_to_char("You cannot purge a polymorphed player.\n", ch);
       return;
@@ -3287,7 +3286,7 @@ void do_restore( CHAR_DATA *ch, char *argument )
 
     if ( get_trust( ch ) < LEVEL_LESSER 
       &&  victim != ch
-      && !( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) ) )
+      && !( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) ) )
     { 
       send_to_char( "You can't do that.\n", ch );
       return;
@@ -3377,9 +3376,9 @@ void do_freeze( CHAR_DATA *ch, char *argument )
       return;
    }
 
-   if( IS_SET( victim->act, PLR_FREEZE ) )
+   if( BV_IS_SET( victim->act, PLR_FREEZE ) )
    {
-      REMOVE_BIT( victim->act, PLR_FREEZE );
+      BV_REMOVE_BIT( victim->act, PLR_FREEZE );
       send_to_char( "Your frozen form suddenly thaws.\n", victim );
       ch_printf( ch, "%s is now unfrozen.\n", victim->name );
    }
@@ -3390,7 +3389,7 @@ void do_freeze( CHAR_DATA *ch, char *argument )
          do_return( victim->switched, "" );
          set_char_color( AT_LBLUE, victim );
       }
-      SET_BIT( victim->act, PLR_FREEZE );
+      BV_SET_BIT( victim->act, PLR_FREEZE );
       send_to_char( "A godly force turns your body to ice!\n", victim );
       ch_printf( ch, "You have frozen %s.\n", victim->name );
    }
@@ -3445,14 +3444,14 @@ void do_log( CHAR_DATA *ch, char *argument )
     /*
      * No level check, gods can log anyone.
      */
-    if ( IS_SET(victim->act, PLR_LOG) )
+    if ( BV_IS_SET(victim->act, PLR_LOG) )
     {
-	REMOVE_BIT(victim->act, PLR_LOG);
+	BV_REMOVE_BIT(victim->act, PLR_LOG);
 	send_to_char( "LOG removed.\n", ch );
     }
     else
     {
-	SET_BIT(victim->act, PLR_LOG);
+	BV_SET_BIT(victim->act, PLR_LOG);
 	send_to_char( "LOG set.\n", ch );
     }
 
@@ -3491,15 +3490,15 @@ void do_litterbug( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( IS_SET(victim->act, PLR_LITTERBUG) )
+    if ( BV_IS_SET(victim->act, PLR_LITTERBUG) )
     {
-	REMOVE_BIT(victim->act, PLR_LITTERBUG);
+	BV_REMOVE_BIT(victim->act, PLR_LITTERBUG);
 	send_to_char( "You can drop items again.\n", victim );
 	send_to_char( "LITTERBUG removed.\n", ch );
     }
     else
     {
-	SET_BIT(victim->act, PLR_LITTERBUG);
+	BV_SET_BIT(victim->act, PLR_LITTERBUG);
 	send_to_char( "You a strange force prevents you from dropping any more items!\n", victim );
 	send_to_char( "LITTERBUG set.\n", ch );
     }
@@ -3539,15 +3538,15 @@ void do_noemote( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( IS_SET(victim->act, PLR_NO_EMOTE) )
+    if ( BV_IS_SET(victim->act, PLR_NO_EMOTE) )
     {
-	REMOVE_BIT(victim->act, PLR_NO_EMOTE);
+	BV_REMOVE_BIT(victim->act, PLR_NO_EMOTE);
 	send_to_char( "You can emote again.\n", victim );
 	send_to_char( "NO_EMOTE removed.\n", ch );
     }
     else
     {
-	SET_BIT(victim->act, PLR_NO_EMOTE);
+	BV_SET_BIT(victim->act, PLR_NO_EMOTE);
 	send_to_char( "You can't emote!\n", victim );
 	send_to_char( "NO_EMOTE set.\n", ch );
     }
@@ -3588,15 +3587,15 @@ void do_notell( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( IS_SET(victim->act, PLR_NO_TELL) )
+    if ( BV_IS_SET(victim->act, PLR_NO_TELL) )
     {
-	REMOVE_BIT(victim->act, PLR_NO_TELL);
+	BV_REMOVE_BIT(victim->act, PLR_NO_TELL);
 	send_to_char( "You can tell again.\n", victim );
 	send_to_char( "NO_TELL removed.\n", ch );
     }
     else
     {
-	SET_BIT(victim->act, PLR_NO_TELL);
+	BV_SET_BIT(victim->act, PLR_NO_TELL);
 	send_to_char( "You can't tell!\n", victim );
 	send_to_char( "NO_TELL set.\n", ch );
     }
@@ -3686,13 +3685,13 @@ void do_silence( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( IS_SET(victim->act, PLR_SILENCE) )
+    if ( BV_IS_SET(victim->act, PLR_SILENCE) )
     {
 	send_to_char( "Player already silenced, use unsilence to remove.\n", ch );
     }
     else
     {
-	SET_BIT(victim->act, PLR_SILENCE);
+	BV_SET_BIT(victim->act, PLR_SILENCE);
 	send_to_char( "You can't use channels!\n", victim );
 	send_to_char( "SILENCE set.\n", ch );
     }
@@ -3731,9 +3730,9 @@ void do_unsilence( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( IS_SET(victim->act, PLR_SILENCE) )
+    if ( BV_IS_SET(victim->act, PLR_SILENCE) )
     {
-	REMOVE_BIT(victim->act, PLR_SILENCE);
+	BV_REMOVE_BIT(victim->act, PLR_SILENCE);
 	send_to_char( "You can use channels again.\n", victim );
 	send_to_char( "SILENCE removed.\n", ch );
     }
@@ -4165,15 +4164,15 @@ void do_invis( CHAR_DATA *ch, char *argument )
     if( ch->pcdata->wizinvis < 2 )
         ch->pcdata->wizinvis = ch->top_level;
 
-    if ( IS_SET(ch->act, PLR_WIZINVIS) )
+    if ( BV_IS_SET(ch->act, PLR_WIZINVIS) )
     {
-	REMOVE_BIT(ch->act, PLR_WIZINVIS);
+	BV_REMOVE_BIT(ch->act, PLR_WIZINVIS);
 	act( AT_IMMORT, "$n slowly fades into existence.", ch, NULL, NULL, TO_ROOM );
 	send_to_char( "You slowly fade back into existence.\n", ch );
     }
     else
     {
-	SET_BIT(ch->act, PLR_WIZINVIS);
+	BV_SET_BIT(ch->act, PLR_WIZINVIS);
 	act( AT_IMMORT, "$n slowly fades into thin air.", ch, NULL, NULL, TO_ROOM );
 	send_to_char( "You slowly vanish into thin air.\n", ch );
     }
@@ -4187,14 +4186,14 @@ void do_holylight( CHAR_DATA *ch, char *argument )
     if ( IS_NPC(ch) )
 	return;
 
-    if ( IS_SET(ch->act, PLR_HOLYLIGHT) )
+    if ( BV_IS_SET(ch->act, PLR_HOLYLIGHT) )
     {
-	REMOVE_BIT(ch->act, PLR_HOLYLIGHT);
+	BV_REMOVE_BIT(ch->act, PLR_HOLYLIGHT);
 	send_to_char( "Holy light mode off.\n", ch );
     }
     else
     {
-	SET_BIT(ch->act, PLR_HOLYLIGHT);
+	BV_SET_BIT(ch->act, PLR_HOLYLIGHT);
 	send_to_char( "Holy light mode on.\n", ch );
     }
 
@@ -6568,7 +6567,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
         ch_printf(ch, "Command Groups: ");
         for(i = 0; i < MAX_COMMAND_GROUP; i++)
         {
-           if (BV_IS_SET(command->commandgroup,(1<<i)))
+           if (BV_IS_SET(command->commandgroup,(i)))
              ch_printf(ch,"%s ",command_groups[i]);
         }
         ch_printf(ch,"\n");
@@ -6617,7 +6616,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
             }
             return;
         }
-        BV_TOGGLE_BIT(command->commandgroup,(1<<grp));
+        BV_TOGGLE_BIT(command->commandgroup,(grp));
         send_to_char( "Done.\n", ch );
         return;
     }

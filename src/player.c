@@ -166,8 +166,8 @@ ch_printf(ch, "\n%s\n", buf);
 	ch->pcdata->played/3600,(ch->pcdata->played%3600)/60);
     ch_printf(ch, "&cPager: &C(%c) %3d   &cAutoExit(&C%c&c)  AutoLoot(&C%c&c)  Autosac(&C%c&c)\n",
 	BV_IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) ? 'X' : ' ',
-	ch->pcdata->pagerlen, IS_SET(ch->act, PLR_AUTOEXIT) ? 'X' : ' ',
-	IS_SET(ch->act, PLR_AUTOLOOT) ? 'X' : ' ', IS_SET(ch->act, PLR_AUTOSAC) ? 'X' : ' ');
+	ch->pcdata->pagerlen, BV_IS_SET(ch->act, PLR_AUTOEXIT) ? 'X' : ' ',
+	BV_IS_SET(ch->act, PLR_AUTOLOOT) ? 'X' : ' ', BV_IS_SET(ch->act, PLR_AUTOSAC) ? 'X' : ' ');
 
     switch (ch->position)
     {
@@ -311,7 +311,7 @@ ch_printf(ch, "\n%s\n", buf);
 	send_to_char( "&C----------------------------------------------------------------------------\n", ch);
 
 	ch_printf(ch, "&cIMMORTAL DATA:  Wizinvis [&C%s&c]  Wizlevel (&C%d&c)\n",
-		IS_SET(ch->act, PLR_WIZINVIS) ? "X" : " ", ch->pcdata->wizinvis );
+		BV_IS_SET(ch->act, PLR_WIZINVIS) ? "X" : " ", ch->pcdata->wizinvis );
 
 	ch_printf(ch, "&cBamfin:  &C%s\n", (ch->pcdata->bamfin[0] != '\0')
 		? ch->pcdata->bamfin : "%s appears in a swirling mist.", ch->name);
@@ -488,7 +488,7 @@ void do_oldscore( CHAR_DATA *ch, char *argument )
 	ch_printf( ch, "You are trusted at level %d.\n",
 	    get_trust( ch ) );
 
-    if ( IS_SET(ch->act, ACT_MOBINVIS) )
+    if ( BV_IS_SET(ch->act, ACT_MOBINVIS) )
       ch_printf( ch, "You are mobinvis at level %d.\n",
     ch->mobinvis);
 
@@ -522,10 +522,10 @@ void do_oldscore( CHAR_DATA *ch, char *argument )
 
     ch_printf( ch,
 	"Autoexit: %s   Autoloot: %s   Autosac: %s   Autocred: %s\n",
-	(!IS_NPC(ch) && IS_SET(ch->act, PLR_AUTOEXIT)) ? "yes" : "no",
-	(!IS_NPC(ch) && IS_SET(ch->act, PLR_AUTOLOOT)) ? "yes" : "no",
-	(!IS_NPC(ch) && IS_SET(ch->act, PLR_AUTOSAC) ) ? "yes" : "no",
-  	(!IS_NPC(ch) && IS_SET(ch->act, PLR_AUTOGOLD)) ? "yes" : "no" );
+	(!IS_NPC(ch) && BV_IS_SET(ch->act, PLR_AUTOEXIT)) ? "yes" : "no",
+	(!IS_NPC(ch) && BV_IS_SET(ch->act, PLR_AUTOLOOT)) ? "yes" : "no",
+	(!IS_NPC(ch) && BV_IS_SET(ch->act, PLR_AUTOSAC) ) ? "yes" : "no",
+  	(!IS_NPC(ch) && BV_IS_SET(ch->act, PLR_AUTOGOLD)) ? "yes" : "no" );
 
     ch_printf( ch, "Wimpy set to %d hit points.\n", ch->wimpy );
 
@@ -657,7 +657,7 @@ void do_oldscore( CHAR_DATA *ch, char *argument )
     {
 	ch_printf( ch, "WizInvis level: %d   WizInvis is %s\n",
 			ch->pcdata->wizinvis,
-			IS_SET( ch->act, PLR_WIZINVIS ) ? "ON" : "OFF" );
+			BV_IS_SET( ch->act, PLR_WIZINVIS ) ? "ON" : "OFF" );
 	if ( ch->pcdata->r_range_lo && ch->pcdata->r_range_hi )
 	  ch_printf( ch, "Room Range: %d - %d\n", ch->pcdata->r_range_lo,
 					 	   ch->pcdata->r_range_hi	);
@@ -705,8 +705,8 @@ void do_affected ( CHAR_DATA *ch, char *argument )
     {
         set_char_color( AT_BLUE, ch );
         send_to_char( "\nImbued with:\n", ch );
-	set_char_color( AT_SCORE, ch );
-	ch_printf( ch, "%s\n", affect_bit_name( ch->affected_by ) );
+		set_char_color( AT_SCORE, ch );
+		ch_printf( ch, "%s\n", bitset_to_string(ch->affected_by, aff_flags, AFF_MAX ).c_str() );
         if ( ch->top_level >= 20 )
         {
             send_to_char( "\n", ch );

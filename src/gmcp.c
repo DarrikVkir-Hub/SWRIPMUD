@@ -531,7 +531,7 @@ void gmcp_evt_char_status(CHAR_DATA *ch)
     if (IS_IMMORTAL(ch))
     {
         changed |= gmcp_cache_set_int(d, "Char.Status.trust", get_trust(ch));
-        changed |= gmcp_cache_set_int(d, "Char.Status.wizinvis", (IS_SET(ch->act, PLR_WIZINVIS) ? 0 : ch->pcdata->wizinvis));
+        changed |= gmcp_cache_set_int(d, "Char.Status.wizinvis", (BV_IS_SET(ch->act, PLR_WIZINVIS) ? 0 : ch->pcdata->wizinvis));
         changed |= gmcp_cache_set(d, "Char.Status.Bamfin", (ch->pcdata->bamfin[0] != '\0') ? ch->pcdata->bamfin : "%s appears in a swirling mist.");
         changed |= gmcp_cache_set(d, "Char.Status.Bamfout", (ch->pcdata->bamfout[0] != '\0') ? ch->pcdata->bamfout : "%s appears in a swirling mist.");
         if (ch->pcdata->area)
@@ -593,7 +593,7 @@ void gmcp_evt_room_change(CHAR_DATA *ch)
     changed |= gmcp_cache_set(d, "Room.Info.num", buf);
 
     changed |= gmcp_cache_set(d, "Room.Info.name", room->name);
-    changed |= gmcp_cache_set_int(d, "Room.Info.rentship", (IS_SET( room->room_flags, ROOM_CAN_LAND) ? 1 : 0));
+    changed |= gmcp_cache_set_int(d, "Room.Info.rentship", (BV_IS_SET( room->room_flags, ROOM_CAN_LAND) ? 1 : 0));
     changed |= gmcp_cache_set_int(d, "Room.Info.serinstop", (is_bus_stop( ch->in_room->vnum ) ? 1 : 0));
 
 

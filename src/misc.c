@@ -96,7 +96,7 @@ void do_buyhome( CHAR_DATA *ch, char *argument )
 			}
 	  }
 
-	  if ( !IS_SET( room->room_flags , ROOM_EMPTY_HOME ) )
+	  if ( !BV_IS_SET( room->room_flags , ROOM_EMPTY_HOME ) )
 	  {
 			send_to_char( "&RThis room isn't for sale!\n&w", ch);
 			return;
@@ -120,8 +120,8 @@ void do_buyhome( CHAR_DATA *ch, char *argument )
 
 	  ch->gold -= 100000;
 
-	  REMOVE_BIT( room->room_flags , ROOM_EMPTY_HOME );
-	  SET_BIT( room->room_flags , ROOM_PLR_HOME );
+	  BV_REMOVE_BIT( room->room_flags , ROOM_EMPTY_HOME );
+	  BV_SET_BIT( room->room_flags , ROOM_PLR_HOME );
 
 	  fold_area( room->area, room->area->filename, FALSE );
 
@@ -139,7 +139,8 @@ void do_clone( CHAR_DATA *ch, char *argument )
 	  char oldbestowments[MAX_STRING_LENGTH];
           int experience[MAX_ABILITY];
           int skill_level[MAX_ABILITY];
-	  int flags, ability;
+	  FLAG_SET flags;
+    int ability;
      sh_int frc, change, change2, frc_level, low_frc = 0, mana;
      ROOM_INDEX_DATA *home;
 
@@ -241,7 +242,7 @@ void do_clone( CHAR_DATA *ch, char *argument )
      ch->mana = 100 + 100*ch->perm_frc;
 
 	  flags   = ch->act;
-	  REMOVE_BIT( ch->act, PLR_KILLER );
+	  BV_REMOVE_BIT( ch->act, PLR_KILLER );
 	  credits = ch->gold;
      if(credits <= CLONEGOLD)
      {
@@ -2362,8 +2363,8 @@ void do_empty( CHAR_DATA *ch, char *argument )
 	  }
 	  if ( arg2[0] == '\0' )
 	  {
-		if ( IS_SET( ch->in_room->room_flags, ROOM_NODROP )
-		|| ( !IS_NPC(ch) &&  IS_SET( ch->act, PLR_LITTERBUG ) ) )
+		if ( BV_IS_SET( ch->in_room->room_flags, ROOM_NODROP )
+		|| ( !IS_NPC(ch) &&  BV_IS_SET( ch->act, PLR_LITTERBUG ) ) )
 		{
 		       set_char_color( AT_MAGIC, ch );
 		       send_to_char( "A magical force stops you!\n", ch );
@@ -2371,7 +2372,7 @@ void do_empty( CHAR_DATA *ch, char *argument )
 		       send_to_char( "Someone tells you, 'No littering here!'\n", ch );
 		       return;
 		}
-		if ( IS_SET( ch->in_room->room_flags, ROOM_NODROPALL ) )
+		if ( BV_IS_SET( ch->in_room->room_flags, ROOM_NODROPALL ) )
 		{
 		   send_to_char( "You can't seem to do that here...\n", ch );
 		   return;
@@ -2699,7 +2700,7 @@ void do_hail( CHAR_DATA *ch , char *argument )
        return;
     }
     
-    if ( IS_SET( ch->in_room->room_flags , ROOM_INDOORS ) )
+    if ( BV_IS_SET( ch->in_room->room_flags , ROOM_INDOORS ) )
     {
        send_to_char( "You'll have to go outside to do that!\n", ch );
        return;
@@ -2712,7 +2713,7 @@ void do_hail( CHAR_DATA *ch , char *argument )
     }
 
     
-    if ( IS_SET( ch->in_room->room_flags , ROOM_SPACECRAFT ) )
+    if ( BV_IS_SET( ch->in_room->room_flags , ROOM_SPACECRAFT ) )
     {
        send_to_char( "You can't do that on spacecraft!\n", ch );
        return;
@@ -2741,7 +2742,7 @@ void do_hail( CHAR_DATA *ch , char *argument )
             
             if ( room != NULL )
             {
-             if ( IS_SET(room->room_flags , ROOM_HOTEL ) )
+             if ( BV_IS_SET(room->room_flags , ROOM_HOTEL ) )
                 break;   
              else 
                 room = NULL;   
@@ -2812,7 +2813,7 @@ void do_train( CHAR_DATA *ch, char *argument )
 	    	}
 
 	    	for ( mob = ch->in_room->first_person; mob; mob = mob->next_in_room )
-	       	   if ( IS_NPC(mob) && IS_SET(mob->act, ACT_TRAIN) )
+	       	   if ( IS_NPC(mob) && BV_IS_SET(mob->act, ACT_TRAIN) )
 	           {
 	              tfound = TRUE;
 	    	      break;
@@ -3083,7 +3084,7 @@ void do_bank( CHAR_DATA *ch, char *argument )
     
       if ( !ch_comlink )
       {
-        if (!ch->in_room || !IS_SET(ch->in_room->room_flags, ROOM_BANK) )
+        if (!ch->in_room || !BV_IS_SET(ch->in_room->room_flags, ROOM_BANK) )
         {
           send_to_char( "You must be in a bank or have a comlink to do that!\n", ch );
           return;
@@ -3284,13 +3285,13 @@ void do_buzz (CHAR_DATA *ch, char *arg)
 
   home = exitdat->to_room;
 
-  if ( IS_SET(home->room_flags,ROOM_EMPTY_HOME) )
+  if ( BV_IS_SET(home->room_flags,ROOM_EMPTY_HOME) )
   {
     send_to_char("&RThat home isn't owned by anyone.\n",ch);
     return;
   }
 
-  if ( !IS_SET(home->room_flags,ROOM_PLR_HOME) )
+  if ( !BV_IS_SET(home->room_flags,ROOM_PLR_HOME) )
   {
     send_to_char("&RThat isn't a home.\n",ch);
     return;
@@ -3312,7 +3313,7 @@ void do_invite(CHAR_DATA *ch, char *argument)
 
   home = ch->in_room;
 
-  if ( !IS_SET(home->room_flags,ROOM_PLR_HOME) || home != ch->plr_home )
+  if ( !BV_IS_SET(home->room_flags,ROOM_PLR_HOME) || home != ch->plr_home )
   {
     send_to_char("&RThis isn't your home!\n",ch);
     return;
@@ -3372,7 +3373,7 @@ void do_sellhome (CHAR_DATA *ch, char *argument)
     return;
   }
 
-  if ( IS_SET(ch->act,PLR_HOME_RESIDENT) )
+  if ( BV_IS_SET(ch->act,PLR_HOME_RESIDENT) )
   {
     send_to_char("&RYou are not the owner of this home.\n",ch);
     return;
@@ -3381,8 +3382,8 @@ void do_sellhome (CHAR_DATA *ch, char *argument)
   STRFREE(room->name);
   room->name = STRALLOC("An Empty Apartment");
   ch->gold += sellHomeCreditReturn;
-  REMOVE_BIT(room->room_flags,ROOM_PLR_HOME);
-  SET_BIT(room->room_flags,ROOM_EMPTY_HOME);
+  BV_REMOVE_BIT(room->room_flags,ROOM_PLR_HOME);
+  BV_SET_BIT(room->room_flags,ROOM_EMPTY_HOME);
   fold_area(room->area,room->area->filename,FALSE);
   ch->plr_home = NULL;
   do_save(ch,"");
@@ -3397,13 +3398,13 @@ void do_addresident(CHAR_DATA *ch, char *argument)
 
   home = ch->in_room;
 
-  if ( !IS_SET(home->room_flags,ROOM_PLR_HOME) || home != ch->plr_home )
+  if ( !BV_IS_SET(home->room_flags,ROOM_PLR_HOME) || home != ch->plr_home )
   {
     send_to_char("&RThis isn't your home!\n",ch);
     return;
   }
 
-  if ( IS_SET(ch->act,PLR_HOME_RESIDENT) )
+  if ( BV_IS_SET(ch->act,PLR_HOME_RESIDENT) )
   {
     send_to_char("&RYou are not the owner of this home.\n",ch);
     return;
@@ -3434,7 +3435,7 @@ void do_addresident(CHAR_DATA *ch, char *argument)
   }
 
   victim->plr_home = home;
-  SET_BIT(victim->act,PLR_HOME_RESIDENT);
+  BV_SET_BIT(victim->act,PLR_HOME_RESIDENT);
   do_save(victim,"");
 
   act(AT_PLAIN,"You add $N as a resident.",ch,NULL,victim,TO_CHAR);
@@ -3448,13 +3449,13 @@ void do_remresident(CHAR_DATA *ch, char *argument)
 
   home = ch->in_room;
 
-  if ( !IS_SET(home->room_flags,ROOM_PLR_HOME) || home != ch->plr_home )
+  if ( !BV_IS_SET(home->room_flags,ROOM_PLR_HOME) || home != ch->plr_home )
   {
     send_to_char("&RThis isn't your home!\n",ch);
     return;
   }
 
-  if ( IS_SET(ch->act,PLR_HOME_RESIDENT) )
+  if ( BV_IS_SET(ch->act,PLR_HOME_RESIDENT) )
   {
     send_to_char("&RYou are not the owner of this home.\n",ch);
     return;
@@ -3478,14 +3479,14 @@ void do_remresident(CHAR_DATA *ch, char *argument)
     return;
   }
 
-  if ( !IS_SET(victim->act,PLR_HOME_RESIDENT) || victim->plr_home != home )
+  if ( !BV_IS_SET(victim->act,PLR_HOME_RESIDENT) || victim->plr_home != home )
   {
     send_to_char("&RThat player is not a resident of your home.\n",ch);
     return;
   }
 
   victim->plr_home = NULL;
-  REMOVE_BIT(victim->act,PLR_HOME_RESIDENT);
+  BV_REMOVE_BIT(victim->act,PLR_HOME_RESIDENT);
   do_save(victim,"");
 
   act(AT_PLAIN,"You remove $N as a resident.",ch,NULL,victim,TO_CHAR);
@@ -3511,7 +3512,7 @@ void do_aquest(CHAR_DATA *ch, char *argument)
 
     if (!strcmp(arg1, "info"))
     {
-        if (IS_SET(ch->act, PLR_QUESTOR))
+        if (BV_IS_SET(ch->act, PLR_QUESTOR))
       {
           if (ch->questmob == -1 && ch->questgiver->short_descr != NULL)
           {
@@ -3550,7 +3551,7 @@ void do_aquest(CHAR_DATA *ch, char *argument)
     }
     else if (!strcmp(arg1, "time"))
     {
-        if (!IS_SET(ch->act, PLR_QUESTOR))
+        if (!BV_IS_SET(ch->act, PLR_QUESTOR))
 	{
 	    send_to_char("You aren't currently on a quest.\n",ch);
 	    if (ch->nextquest > 1)
@@ -3772,7 +3773,7 @@ QUEST_VALUE5, obj5->short_descr);
 
         act(AT_PLAIN,"$n asks $N for a quest.", ch, NULL, questman, TO_ROOM); 
 	act(AT_PLAIN,"You ask $N for a quest.",ch, NULL, questman, TO_CHAR);
-        if (IS_SET(ch->act, PLR_QUESTOR))
+        if (BV_IS_SET(ch->act, PLR_QUESTOR))
 	{
             SPRINTF(buf, "But you're already on a quest!\nBetter hurry up and finish it!");
 	    do_say(questman, buf);
@@ -3795,7 +3796,7 @@ QUEST_VALUE5, obj5->short_descr);
         if (ch->questmob > 0 || ch->questobj > 0)
 	{
             ch->countdown = number_range(10,30);
-            SET_BIT(ch->act, PLR_QUESTOR);
+            BV_SET_BIT(ch->act, PLR_QUESTOR);
 	    SPRINTF(buf, "You have %d minutes to complete this quest.",ch->countdown);
 	    do_say(questman, buf);
 	    SPRINTF(buf, "May the gods go with you!");
@@ -3816,7 +3817,7 @@ QUEST_VALUE5, obj5->short_descr);
 	    return;
 	}
 
-        if (IS_SET(ch->act, PLR_QUESTOR))
+        if (BV_IS_SET(ch->act, PLR_QUESTOR))
 	{
 	    if (ch->questmob == -1 && ch->countdown > 0)
 	    {
@@ -3830,7 +3831,7 @@ QUEST_VALUE5, obj5->short_descr);
 		SPRINTF(buf,"As a reward, I am giving you %d quest points, and %d gold.",pointreward,reward);
 		do_say(questman,buf);
 
-                REMOVE_BIT(ch->act, PLR_QUESTOR);
+                BV_REMOVE_BIT(ch->act, PLR_QUESTOR);
 	        ch->questgiver = NULL;
 	        ch->countdown = 0;
 	        ch->questmob = 0;
@@ -3871,7 +3872,7 @@ QUEST_VALUE5, obj5->short_descr);
 		    SPRINTF(buf,"As a reward, I am giving you %d quest points, and %d gold.",pointreward,reward);
 		    do_say(questman,buf);
 
-                    REMOVE_BIT(ch->act, PLR_QUESTOR);
+                    BV_REMOVE_BIT(ch->act, PLR_QUESTOR);
 	            ch->questgiver = NULL;
 	            ch->countdown = 0;
 	            ch->questmob = 0;
@@ -3952,9 +3953,9 @@ void generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 		&& IS_EVIL(vsearch)
 		&& vsearch->pShop == NULL
 		&& vsearch->rShop == NULL
-    		&& !IS_SET(vsearch->act,ACT_TRAIN)
-    		&& !IS_SET(vsearch->act,ACT_PRACTICE)
-    		&& !IS_SET(vsearch->act,ACT_IMMORTAL)
+    		&& !BV_IS_SET(vsearch->act,ACT_TRAIN)
+    		&& !BV_IS_SET(vsearch->act,ACT_PRACTICE)
+    		&& !BV_IS_SET(vsearch->act,ACT_IMMORTAL)
                 && qchance(35) && !noquest )
                 
               break;
@@ -4092,7 +4093,7 @@ void quest_update(void)
 	        return;
 	    }
 	}
-        else if (IS_SET(ch->act,PLR_QUESTOR))
+        else if (BV_IS_SET(ch->act,PLR_QUESTOR))
         {
 	    if (--ch->countdown <= 0)
 	    {
@@ -4101,7 +4102,7 @@ void quest_update(void)
 	        ch->nextquest = 30;
 	        SPRINTF(buf, "You have run out of time for your quest!\nYou may quest again in %d minutes.\n",ch->nextquest);
 	        send_to_char(buf, ch);
-                REMOVE_BIT(ch->act, PLR_QUESTOR);
+                BV_REMOVE_BIT(ch->act, PLR_QUESTOR);
                 ch->questgiver = NULL;
                 ch->countdown = 0;
                 ch->questmob = 0;

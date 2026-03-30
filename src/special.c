@@ -1194,7 +1194,7 @@ bool spec_guardian( CHAR_DATA *ch )
 	}
     }
 
-    if ( victim && IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+    if ( victim && BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
 	SPRINTF( buf, "%s is a %s!  As well as a COWARD!",
 		victim->name, crime );
@@ -1238,7 +1238,7 @@ bool spec_janitor( CHAR_DATA *ch )
 	if ( !BV_IS_SET( trash->wear_flags, ITEM_TAKE )
 	||    IS_OBJ_STAT( trash, ITEM_BURRIED ) )
 	    continue;
-    if( IS_OBJ_STAT( trash, ITEM_PROTOTYPE ) && !IS_SET( ch->act, ACT_PROTOTYPE ) )
+    if( IS_OBJ_STAT( trash, ITEM_PROTOTYPE ) && !BV_IS_SET( ch->act, ACT_PROTOTYPE ) )
         continue;        
 
     if ( trash->item_type == ITEM_DRINK_CON

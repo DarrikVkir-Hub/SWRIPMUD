@@ -235,6 +235,7 @@ extern const    flag_name   obj_attack_table[];
 #define __BITSET_H__
 
 bool str_cmp_utf8(const char *astr, const char *bstr);
+int	number_range	args( ( int from, int to ) );
 
 struct BitSet
 {
@@ -479,6 +480,29 @@ struct BitSet
                 clear(bit);
         }
     }    
+    int random_set_bit() const
+    {
+        std::vector<int> active;
+
+        for (size_t word = 0; word < bits.size(); ++word)
+        {
+            uint64_t val = bits[word];
+            if (val == 0)
+                continue;
+
+            for (int b = 0; b < 64; ++b)
+            {
+                if (val & (1ULL << b))
+                    active.push_back(word * 64 + b);
+            }
+        }
+
+        if (active.empty())
+            return -1;
+
+        return active[number_range(0, active.size() - 1)];
+    }    
+    
 };
 
 typedef BitSet FLAG_SET;
@@ -486,6 +510,24 @@ typedef BitSet FLAG_SET;
 #define BV_SET_BIT(var, bit)    ((var).set(bit))
 #define BV_REMOVE_BIT(var, bit) ((var).clear(bit))
 #define BV_TOGGLE_BIT(var, bit) ((var).toggle(bit))
+
+#define FLAG_END   -1
+
+static inline FLAG_SET make_flagset_array(const int *bits)
+{
+    FLAG_SET set;
+    set.reset();
+
+    for (int i = 0; bits[i] != FLAG_END; ++i)
+    {
+        BV_SET_BIT(set, bits[i]);
+    }
+
+    return set;
+}
+
+#define FLAGSET(...) make_flagset_array((int[]){ __VA_ARGS__, FLAG_END })
+#define FLAGSET_EMPTY make_flagset_array((int[]){ FLAG_END })
 
 static inline FLAG_SET int_to_bitset(int flags)
 {
@@ -527,6 +569,16 @@ static inline int bitset_to_int(const FLAG_SET &bv)
 
     return flags;
 }
+static inline int first_set_bit(unsigned int bits)
+{
+    for (int i = 0; i < 32; ++i)
+    {
+        if (bits & (1U << i))
+            return i;
+    }
+    return -1;
+}
+
 #endif
 
 
@@ -622,6 +674,7 @@ static inline int bitset_to_int(const FLAG_SET &bv)
 /* When adding command groups, make sure to change 
 the command_group array in const.c - DV 2-2-03 */
 enum CGroupFlags {
+    CGROUP_NONE             = -1,
     CGROUP_IMPLEMENTOR      = 0,
     CGROUP_CODER            = 1,
     CGROUP_HEAD_BUILDER     = 2,
@@ -1266,7 +1319,7 @@ extern bool	MOBtrigger;
 struct	race_type
 {
     char 	race_name	[20];	/* Race name			*/
-    int		affected;		/* Default affect bitvectors	*/
+    FLAG_SET affected;		/* Default affect bitvectors	*/
     sh_int	str_plus;		/* Str bonus/penalty		*/
     sh_int	dex_plus;		/* Dex      "			*/
     sh_int	wis_plus;		/* Wis      "			*/
@@ -1833,34 +1886,42 @@ struct	smaug_affect
  * ACT bits for mobs.
  * Used in #MOBILES.
  */
-#define ACT_IS_NPC		 BV00		/* Auto set for mobs	*/
-#define ACT_SENTINEL		 BV01		/* Stays in one room	*/
-#define ACT_SCAVENGER		 BV02		/* Picks up objects	*/
-#define ACT_AGGRESSIVE		 BV05		/* Attacks PC's		*/
-#define ACT_STAY_AREA		 BV06		/* Won't leave area	*/
-#define ACT_WIMPY		 BV07		/* Flees when hurt	*/
-#define ACT_PET			 BV08		/* Auto set for pets	*/
-#define ACT_TRAIN		 BV09		/* Can train PC's	*/
-#define ACT_PRACTICE		 BV10		/* Can practice PC's	*/
-#define ACT_IMMORTAL		 BV11		/* Cannot be killed	*/
-#define ACT_DEADLY		 BV12		/* Has a deadly poison  */
-#define ACT_POLYSELF		 BV13
-#define ACT_META_AGGR		 BV14		/* Extremely aggressive */
-#define ACT_GUARDIAN		 BV15		/* Protects master	*/
-#define ACT_RUNNING		 BV16		/* Hunts quickly	*/
-#define ACT_NOWANDER		 BV17		/* Doesn't wander	*/
-#define ACT_MOUNTABLE		 BV18		/* Can be mounted	*/
-#define ACT_MOUNTED		 BV19		/* Is mounted		*/
-#define ACT_SCHOLAR              BV20           /* Can teach languages  */
-#define ACT_SECRETIVE		 BV21		/* actions aren't seen	*/
-#define ACT_POLYMORPHED		 BV22		/* Mob is a ch		*/
-#define ACT_MOBINVIS		 BV23		/* Like wizinvis	*/
-#define ACT_NOASSIST		 BV24		/* Doesn't assist mobs	*/
-#define ACT_NOKILL               BV25           /* Mob can't die */
-#define ACT_DROID                BV26           /* mob is a droid */
-#define ACT_NOCORPSE             BV27           
-#define ACT_PROTOTYPE		 BV30		/* A prototype mob	*/
-/* 20 acts */
+enum ActFlags
+{
+    ACT_IS_NPC        = 0,   /* BV00 - Auto set for mobs        */
+    ACT_SENTINEL      = 1,   /* BV01 - Stays in one room       */
+    ACT_SCAVENGER     = 2,   /* BV02 - Picks up objects        */
+    /* 3,4 unused */
+
+    ACT_AGGRESSIVE    = 5,   /* BV05 - Attacks PC's            */
+    ACT_STAY_AREA     = 6,   /* BV06 - Won't leave area        */
+    ACT_WIMPY         = 7,   /* BV07 - Flees when hurt         */
+    ACT_PET           = 8,   /* BV08 - Auto set for pets       */
+    ACT_TRAIN         = 9,   /* BV09 - Can train PC's          */
+    ACT_PRACTICE      = 10,  /* BV10 - Can practice PC's       */
+    ACT_IMMORTAL      = 11,  /* BV11 - Cannot be killed        */
+    ACT_DEADLY        = 12,  /* BV12 - Has a deadly poison     */
+    ACT_POLYSELF      = 13,  /* BV13                           */
+    ACT_META_AGGR     = 14,  /* BV14 - Extremely aggressive    */
+    ACT_GUARDIAN      = 15,  /* BV15 - Protects master         */
+    ACT_RUNNING       = 16,  /* BV16 - Hunts quickly           */
+    ACT_NOWANDER      = 17,  /* BV17 - Doesn't wander          */
+    ACT_MOUNTABLE     = 18,  /* BV18 - Can be mounted          */
+    ACT_MOUNTED       = 19,  /* BV19 - Is mounted              */
+    ACT_SCHOLAR       = 20,  /* BV20 - Can teach languages     */
+    ACT_SECRETIVE     = 21,  /* BV21 - Actions aren't seen     */
+    ACT_POLYMORPHED   = 22,  /* BV22 - Mob is a ch             */
+    ACT_MOBINVIS      = 23,  /* BV23 - Like wizinvis           */
+    ACT_NOASSIST      = 24,  /* BV24 - Doesn't assist mobs     */
+    ACT_NOKILL        = 25,  /* BV25 - Mob can't die           */
+    ACT_DROID         = 26,  /* BV26 - Mob is a droid          */
+    ACT_NOCORPSE      = 27,  /* BV27                           */
+    /* 28,29 unused */
+
+    ACT_PROTOTYPE     = 30,   /* BV30 - A prototype mob         */
+    ACT_MAX           = 31,
+
+};
 
 /* bits for vip flags */
 enum PlanetFlags {
@@ -1900,6 +1961,46 @@ enum PlanetFlags {
  * Bits for 'affected_by'.
 / * Used in #MOBILES.
  */
+enum AffectFlags
+{
+    AFF_NONE           = -1,  /* Special: no flags */
+
+    AFF_BLIND          = 0,   /* BV00 */
+    AFF_INVISIBLE      = 1,   /* BV01 */
+    AFF_DETECT_EVIL    = 2,   /* BV02 */
+    AFF_DETECT_INVIS   = 3,   /* BV03 */
+    AFF_DETECT_MAGIC   = 4,   /* BV04 */
+    AFF_DETECT_HIDDEN  = 5,   /* BV05 */
+    AFF_WEAKEN         = 6,   /* BV06 */
+    AFF_SANCTUARY      = 7,   /* BV07 */
+    AFF_FAERIE_FIRE    = 8,   /* BV08 */
+    AFF_INFRARED       = 9,   /* BV09 */
+    AFF_CURSE          = 10,  /* BV10 */
+    AFF_ENDURANCE      = 11,  /* BV11 */
+    AFF_POISON         = 12,  /* BV12 */
+    AFF_PROTECT        = 13,  /* BV13 */
+    AFF_PARALYSIS      = 14,  /* BV14 */
+    AFF_SNEAK          = 15,  /* BV15 */
+    AFF_HIDE           = 16,  /* BV16 */
+    AFF_SLEEP          = 17,  /* BV17 */
+    AFF_CHARM          = 18,  /* BV18 */
+    AFF_FLYING         = 19,  /* BV19 */
+    AFF_PASS_DOOR      = 20,  /* BV20 */
+    AFF_FLOATING       = 21,  /* BV21 */
+    AFF_TRUESIGHT      = 22,  /* BV22 */
+    AFF_DETECTTRAPS    = 23,  /* BV23 */
+    AFF_SCRYING        = 24,  /* BV24 */
+    AFF_FIRESHIELD     = 25,  /* BV25 */
+    AFF_SHOCKSHIELD    = 26,  /* BV26 */
+    AFF_BIND           = 27,  /* BV27 */
+    AFF_ICESHIELD      = 28,  /* BV28 */
+    AFF_POSSESS        = 29,  /* BV29 */
+    AFF_BERSERK        = 30,  /* BV30 */
+    AFF_AQUA_BREATH    = 31,   /* BV31 */
+    AFF_MAX            = 32
+
+};
+/*
 #define AFF_NONE                  0
 
 #define AFF_BLIND		  BV00
@@ -1914,7 +2015,7 @@ enum PlanetFlags {
 #define AFF_INFRARED		  BV09
 #define AFF_CURSE		  BV10
 // Johnson ( Michael Shattuck ) 4/28 Start - Added 5-15-04 - DV
-//#define AFF_FLAMING		  BV11		/* Unused	*/
+//#define AFF_FLAMING		  BV11		// Unused	
 #define AFF_ENDURANCE		BV11
 // Shattuck 4/28 End
 #define AFF_POISON		  BV12
@@ -1938,8 +2039,10 @@ enum PlanetFlags {
 #define AFF_BERSERK		  BV30
 #define AFF_AQUA_BREATH		  BV31
 
-/* 31 aff's (1 left.. :P) */
-/* make that none - ugh - time for another field? :P */
+// 31 aff's (1 left.. :P) 
+// make that none - ugh - time for another field? :P 
+*/
+
 /*
  * Resistant Immune Susceptible flags
  */
@@ -2517,38 +2620,43 @@ typedef enum
  *			 Lets put it all back... ;)
  */
 
-#define ROOM_DARK		BV00
-/* BV01 now reserved for track  BV01  and hunt */
-#define ROOM_NO_MOB		BV02
-#define ROOM_INDOORS		BV03
-#define ROOM_CAN_LAND		BV04
-#define ROOM_CAN_FLY		BV05
-#define ROOM_NO_DRIVING 	BV06  
-#define ROOM_NO_MAGIC		BV07
-#define ROOM_BANK		BV08
-#define ROOM_PRIVATE		BV09
-#define ROOM_SAFE		BV10
-#define ROOM_SOLITARY		BV11
-#define ROOM_PET_SHOP		BV12
-#define ROOM_ARENA		BV13
-#define ROOM_DONATION		BV14
-#define ROOM_NODROPALL		BV15
-#define ROOM_SILENCE		BV16
-#define ROOM_LOGSPEECH		BV17
-#define ROOM_NODROP		BV18
-#define ROOM_CLANSTOREROOM	BV19
-#define ROOM_PLR_HOME		BV20
-#define ROOM_EMPTY_HOME 	BV21
-#define ROOM_TELEPORT		BV22
-#define ROOM_HOTEL      	BV23
-#define ROOM_NOFLOOR		BV24
-#define ROOM_REFINERY           BV25
-#define ROOM_FACTORY            BV26
-#define ROOM_RECRUIT            BV27
-#define ROOM_PLR_SHOP           BV28
-#define ROOM_SPACECRAFT         BV29
-#define ROOM_PROTOTYPE	     	BV30
-#define ROOM_AUCTION            BV31
+enum RoomFlags
+{
+    ROOM_DARK              = 0,   /* BV00 */
+    /* 1 reserved (BV01: track/hunt) */
+
+    ROOM_NO_MOB            = 2,   /* BV02 */
+    ROOM_INDOORS           = 3,   /* BV03 */
+    ROOM_CAN_LAND          = 4,   /* BV04 */
+    ROOM_CAN_FLY           = 5,   /* BV05 */
+    ROOM_NO_DRIVING        = 6,   /* BV06 */
+    ROOM_NO_MAGIC          = 7,   /* BV07 */
+    ROOM_BANK              = 8,   /* BV08 */
+    ROOM_PRIVATE           = 9,   /* BV09 */
+    ROOM_SAFE              = 10,  /* BV10 */
+    ROOM_SOLITARY          = 11,  /* BV11 */
+    ROOM_PET_SHOP          = 12,  /* BV12 */
+    ROOM_ARENA             = 13,  /* BV13 */
+    ROOM_DONATION          = 14,  /* BV14 */
+    ROOM_NODROPALL         = 15,  /* BV15 */
+    ROOM_SILENCE           = 16,  /* BV16 */
+    ROOM_LOGSPEECH         = 17,  /* BV17 */
+    ROOM_NODROP            = 18,  /* BV18 */
+    ROOM_CLANSTOREROOM     = 19,  /* BV19 */
+    ROOM_PLR_HOME          = 20,  /* BV20 */
+    ROOM_EMPTY_HOME        = 21,  /* BV21 */
+    ROOM_TELEPORT          = 22,  /* BV22 */
+    ROOM_HOTEL             = 23,  /* BV23 */
+    ROOM_NOFLOOR           = 24,  /* BV24 */
+    ROOM_REFINERY          = 25,  /* BV25 */
+    ROOM_FACTORY           = 26,  /* BV26 */
+    ROOM_RECRUIT           = 27,  /* BV27 */
+    ROOM_PLR_SHOP          = 28,  /* BV28 */
+    ROOM_SPACECRAFT        = 29,  /* BV29 */
+    ROOM_PROTOTYPE         = 30,  /* BV30 */
+    ROOM_AUCTION           = 31,   /* BV31 */
+    ROOM_MAX               = 32,
+};
 
 /*
  * Directions.
@@ -2655,40 +2763,45 @@ typedef enum
 /*
  * ACT bits for players.
  */
-#define PLR_IS_NPC		      BV00	/* Don't EVER set.	*/
-#define PLR_BOUGHT_PET		      BV01
-#define PLR_SHOVEDRAG		      BV02
-#define PLR_AUTOEXIT		      BV03
-#define PLR_AUTOLOOT		      BV04
-#define PLR_AUTOSAC                   BV05
-#define PLR_BLANK		      BV06
-#define PLR_QUESTOR 		      BV07
-#define PLR_BRIEF		      BV08
-#define PLR_COMBINE		      BV09
-#define PLR_PROMPT		      BV10
-#define PLR_TELNET_GA		      BV11
+ enum PlrActFlags
+{
+    PLR_IS_NPC         = 0,   /* BV00 - Don't EVER set.        */
+    PLR_BOUGHT_PET     = 1,   /* BV01                          */
+    PLR_SHOVEDRAG      = 2,   /* BV02                          */
+    PLR_AUTOEXIT       = 3,   /* BV03                          */
+    PLR_AUTOLOOT       = 4,   /* BV04                          */
+    PLR_AUTOSAC        = 5,   /* BV05                          */
+    PLR_BLANK          = 6,   /* BV06                          */
+    PLR_QUESTOR        = 7,   /* BV07                          */
+    PLR_BRIEF          = 8,   /* BV08                          */
+    PLR_COMBINE        = 9,   /* BV09                          */
+    PLR_PROMPT         = 10,  /* BV10                          */
+    PLR_TELNET_GA      = 11,  /* BV11                          */
 
-#define PLR_HOLYLIGHT		   BV12
-#define PLR_WIZINVIS		   BV13
-#define PLR_ROOMVNUM		   BV14
+    PLR_HOLYLIGHT      = 12,  /* BV12                          */
+    PLR_WIZINVIS       = 13,  /* BV13                          */
+    PLR_ROOMVNUM       = 14,  /* BV14                          */
 
-#define	PLR_SILENCE		   BV15
-#define PLR_NO_EMOTE		   BV16
-#define PLR_DONTAUTOFUEL    	   BV17
-#define PLR_NO_TELL		   BV18
-#define PLR_LOG			   BV19
-#define PLR_DENY		   BV20
-#define PLR_FREEZE		   BV21
-#define PLR_KILLER    	           BV22
-#define PLR_HOME_RESIDENT    	   BV23
-#define PLR_LITTERBUG	           BV24
-#define PLR_ANSI	           BV25
-#define PLR_SOUND	           BV26
-#define PLR_NICE	           BV27
-#define PLR_FLEE	           BV28
-#define PLR_AUTOGOLD               BV29
-#define PLR_AUTOMAP                BV30
-#define PLR_AFK                    BV31
+    PLR_SILENCE        = 15,  /* BV15                          */
+    PLR_NO_EMOTE       = 16,  /* BV16                          */
+    PLR_DONTAUTOFUEL   = 17,  /* BV17                          */
+    PLR_NO_TELL        = 18,  /* BV18                          */
+    PLR_LOG            = 19,  /* BV19                          */
+    PLR_DENY           = 20,  /* BV20                          */
+    PLR_FREEZE         = 21,  /* BV21                          */
+    PLR_KILLER         = 22,  /* BV22                          */
+    PLR_HOME_RESIDENT  = 23,  /* BV23                          */
+    PLR_LITTERBUG      = 24,  /* BV24                          */
+    PLR_ANSI           = 25,  /* BV25                          */
+    PLR_SOUND          = 26,  /* BV26                          */
+    PLR_NICE           = 27,  /* BV27                          */
+    PLR_FLEE           = 28,  /* BV28                          */
+    PLR_AUTOGOLD       = 29,  /* BV29                          */
+    PLR_AUTOMAP        = 30,  /* BV30                          */
+    PLR_AFK            = 31   /* BV31                          */
+
+};
+
 
 /* Bits for pc_data->flags. */
 
@@ -2740,6 +2853,45 @@ struct timer_data
 /*
  * Channel bits.
  */
+enum ChannelFlags
+{
+    CHANNEL_AUCTION      = 0,   // BV00
+    CHANNEL_CHAT         = 1,   // BV01
+    CHANNEL_QUEST        = 2,   // BV02
+    CHANNEL_IMMTALK      = 3,   // BV03
+    CHANNEL_MUSIC        = 4,   // BV04
+    CHANNEL_ASK          = 5,   // BV05
+    CHANNEL_SHOUT        = 6,   // BV06
+    CHANNEL_YELL         = 7,   // BV07
+    CHANNEL_MONITOR      = 8,   // BV08
+    CHANNEL_LOG          = 9,   // BV09
+    CHANNEL_104          = 10,  // BV10
+    CHANNEL_CLAN         = 11,  // BV11
+    CHANNEL_BUILD        = 12,  // BV12
+    CHANNEL_105          = 13,  // BV13
+    CHANNEL_AVTALK       = 14,  // BV14
+    CHANNEL_PRAY         = 15,  // BV15
+    CHANNEL_COUNCIL      = 16,  // BV16
+    CHANNEL_GUILD        = 17,  // BV17
+    CHANNEL_COMM         = 18,  // BV18
+    CHANNEL_TELLS        = 19,  // BV19
+    CHANNEL_ORDER        = 20,  // BV20
+    CHANNEL_NEWBIE       = 21,  // BV21
+    CHANNEL_VULGAR       = 22,  // BV22
+    CHANNEL_OOC          = 23,  // BV23
+    CHANNEL_SHIP         = 24,  // BV24
+    CHANNEL_SYSTEM       = 25,  // BV25
+    CHANNEL_SPACE        = 26,  // BV26
+    CHANNEL_103          = 27,  // BV27
+    CHANNEL_ARENA        = 28,  // BV28
+    CHANNEL_ALLCLAN      = 29,  // BV29
+    CHANNEL_NEWS         = 30,  // BV30
+    CHANNEL_NEWBIEASST   = 31,  // BV31
+    CHANNEL_CLANTALK     = CHANNEL_CLAN,
+
+    CHANNEL_MAX          = 32
+};
+/*
 #define	CHANNEL_AUCTION		   BV00
 #define	CHANNEL_CHAT		   BV01
 #define	CHANNEL_QUEST		   BV02
@@ -2773,6 +2925,7 @@ struct timer_data
 #define CHANNEL_NEWS		   BV30
 #define CHANNEL_NEWBIEASST      BV31
 #define CHANNEL_CLANTALK	   CHANNEL_CLAN
+*/
 
 /* Area defines - Scryn 8/11
  *
@@ -2809,8 +2962,8 @@ struct	mob_index_data
     sh_int		killed;
     sh_int		sex;
     sh_int		level;
-    int			act;
-    int			affected_by;
+    FLAG_SET	act;
+    FLAG_SET    affected_by;
     sh_int		alignment;
     sh_int		mobthac0;		/* Unused */
     sh_int		ac;
@@ -2955,8 +3108,8 @@ struct	char_data
     sh_int		numattacks;
     int			gold;
     long		experience[MAX_ABILITY];
-    int 		act;
-    int			affected_by;
+    FLAG_SET	act;
+    FLAG_SET	affected_by;
     int			carry_weight;
     int			carry_number;
     int			xflags;
@@ -2986,7 +3139,7 @@ struct	char_data
     sh_int		weight;
     sh_int		armor;
     sh_int		wimpy;
-    int			deaf;
+    FLAG_SET	channels;
     sh_int		perm_str;
     sh_int		perm_int;
     sh_int		perm_wis;
@@ -3425,7 +3578,7 @@ struct	room_index_data
     MAP_DATA *		map;                 /* maps */
     char *		description;
     int vnum;
-    int			room_flags;
+    FLAG_SET		room_flags;
     MPROG_ACT_LIST *	mpact;               /* mudprogs */
     int			mpactnum;            /* mudprogs */
     MPROG_DATA *	mudprogs;            /* mudprogs */
@@ -4154,12 +4307,12 @@ do								\
 /*
  * Character macros.
  */
-#define IS_NPC(ch)		((IS_SET((ch)->act, ACT_IS_NPC)) || !((ch)->pcdata))
+#define IS_NPC(ch)		((BV_IS_SET((ch)->act, ACT_IS_NPC)) || !((ch)->pcdata))
 #define IS_IMMORTAL(ch)		(get_trust((ch)) >= LEVEL_IMMORTAL)
 #define IS_GREATER(ch)		(get_trust((ch)) >= LEVEL_GREATER)
 #define IS_GOD(ch)		(get_trust((ch)) >= LEVEL_GOD)
 #define IS_HERO(ch)		(get_trust((ch)) >= LEVEL_HERO)
-#define IS_AFFECTED(ch, sn)	(IS_SET((ch)->affected_by, (sn)))
+#define IS_AFFECTED(ch, sn)	(BV_IS_SET((ch)->affected_by, (sn)))
 #define HAS_BODYPART(ch, part)	((ch)->xflags == 0 || IS_SET((ch)->xflags, (part)))
 
 #define IS_GOOD(ch)		((ch)->alignment >= 350)
@@ -4177,9 +4330,9 @@ do								\
 				    +(((ch)->mental_state > 5		    \
 				    &&(ch)->mental_state < 15) ? 1 : 0) )
 
-#define IS_OUTSIDE(ch)		(!IS_SET(				    \
+#define IS_OUTSIDE(ch)		(!BV_IS_SET(				    \
 				    (ch)->in_room->room_flags,		    \
-				    ROOM_INDOORS) && !IS_SET(               \
+				    ROOM_INDOORS) && !BV_IS_SET(               \
 				    (ch)->in_room->room_flags,              \
 				    ROOM_SPACECRAFT) )
 
@@ -4345,17 +4498,18 @@ extern	char *	const	dir_name	[];
 extern	char *	const	where_name	[];
 extern	const	sh_int	rev_dir		[];
 extern	const	int	trap_door	[];
-extern	char *	const	r_flags		[];
+extern  const flag_name r_flags     [];
+extern  const flag_name aff_flags   [];
 extern	char *	const	w_flags		[];
 extern	char *	const	o_flags		[];
 extern	char *	const	a_flags		[];
 extern	char *	const	o_types		[];
 extern	char *	const	a_types		[];
-extern	char *	const	act_flags	[];
+extern	const flag_name	act_flags	[];
 extern  char *  const   planet_flags    [];
 extern  char *  const   weapon_table    [13];
 extern  char *  const   spice_table     [];
-extern	char *	const	plr_flags	[];
+extern	const flag_name	plr_flags	[];
 extern	char *	const	pc_flags	[];
 extern	char *	const	trap_flags	[];
 extern	char *	const	ris_flags	[];

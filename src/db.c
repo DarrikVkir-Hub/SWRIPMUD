@@ -1206,13 +1206,26 @@ void load_mobiles( AREA_DATA *tarea, FILE *fp )
 	pMobIndex->long_descr[0]	= UPPER(pMobIndex->long_descr[0]);
 	pMobIndex->description[0]	= UPPER(pMobIndex->description[0]);
 
-	pMobIndex->act			= fread_number( fp ) | ACT_IS_NPC;
-	pMobIndex->affected_by		= fread_number( fp );
-	pMobIndex->pShop		= NULL;
+	x1			                = fread_number( fp ) | ACT_IS_NPC;
+	x2		                    = fread_number( fp );
+    if (x2 != -9999)
+    {
+        pMobIndex->affected_by.reset();
+        if (x2 != 0)
+            pMobIndex->affected_by = int_to_bitset(x2);
+    }
+    else
+        fread_bitset(fp,pMobIndex->affected_by);    
+   pMobIndex->pShop		= NULL;
 	pMobIndex->rShop		= NULL;
 	pMobIndex->alignment		= fread_number( fp );
 	letter				= fread_letter( fp );
-	pMobIndex->level		= fread_number( fp );
+    if (x1 != -9999)
+        pMobIndex->act = int_to_bitset(x1);
+    else
+        fread_bitset(fp,pMobIndex->act);
+    BV_SET_BIT(pMobIndex->act, ACT_IS_NPC);
+   pMobIndex->level		= fread_number( fp );
 
 	pMobIndex->mobthac0		= fread_number( fp );
 	pMobIndex->ac			= fread_number( fp );
@@ -1500,7 +1513,7 @@ void load_objects( AREA_DATA *tarea, FILE *fp )
 		  paf->modifier		= slot_lookup( fread_number(fp) );
 		else
 		  paf->modifier		= fread_number( fp );
-		paf->bitvector		= 0;
+		paf->bitvector		= -1;
 		LINK( paf, pObjIndex->first_affect, pObjIndex->last_affect,
 			   next, prev );
 		top_affect++;
@@ -1851,11 +1864,19 @@ void load_rooms( AREA_DATA *tarea, FILE *fp )
 	sscanf( ln, "%d %d %d %d %d %d",
 	      &x1, &x2, &x3, &x4, &x5, &x6 );
 
-	pRoomIndex->room_flags		= x2;
 	pRoomIndex->sector_type		= x3;
 	pRoomIndex->tele_delay		= x4;
 	pRoomIndex->tele_vnum		= x5;
 	pRoomIndex->tunnel		= x6;
+
+    if (x2 == -9999) // Sentinel value - new BitSet wear_flags will have this value set at -9999
+    {
+        fread_bitset(fp, pRoomIndex->room_flags);
+    }
+    else
+    {
+        pRoomIndex->room_flags = int_to_bitset(x2);
+    }        
 
 	if (pRoomIndex->sector_type < 0 || pRoomIndex->sector_type == SECT_MAX)
 	{
@@ -2311,7 +2332,7 @@ void fix_exits( void )
 		  fexit = TRUE;
 	    }
 	    if ( !fexit )
-	      SET_BIT( pRoomIndex->room_flags, ROOM_NO_MOB );
+	      BV_SET_BIT( pRoomIndex->room_flags, ROOM_NO_MOB );
 	}
     }
 
@@ -2847,7 +2868,7 @@ void clear_char( CHAR_DATA *ch )
     ch->dest_buf_2		= NULL;
     ch->spare_ptr		= NULL;
     ch->mount			= NULL;
-    ch->affected_by		= 0;
+    ch->affected_by.reset();
     ch->armor			= 100;
     ch->position		= POS_STANDING;
     ch->hit			= 500;
@@ -4765,7 +4786,7 @@ void log_string_plus( const char *str, sh_int log_type, sh_int level )
 	  continue;
 
 	if ( d->connected == CON_PLAYING
-	&&  !IS_SET(och->deaf, CHANNEL_LOG)
+	&&  BV_IS_SET(och->channels, CHANNEL_LOG)
 	&&   vch->top_level >= level )
 	{
 	  set_char_color( AT_LOG, vch );
@@ -5733,7 +5754,7 @@ ROOM_INDEX_DATA *make_room( int vnum )
 	pRoomIndex->vnum		= vnum;
 	pRoomIndex->name		= STRALLOC("Floating in a void");
 	pRoomIndex->description		= STRALLOC("");
-	pRoomIndex->room_flags		= ROOM_PROTOTYPE;
+	BV_SET_BIT(pRoomIndex->room_flags, ROOM_PROTOTYPE);
 	pRoomIndex->sector_type		= 1;
 	pRoomIndex->light		= 0;
 	pRoomIndex->first_exit		= NULL;
@@ -5864,8 +5885,10 @@ MOB_INDEX_DATA *make_mobile( sh_int vnum, sh_int cvnum, char *name )
 	  pMobIndex->short_descr[0]	= LOWER(pMobIndex->short_descr[0]);
 	  pMobIndex->long_descr[0]	= UPPER(pMobIndex->long_descr[0]);
 	  pMobIndex->description[0]	= UPPER(pMobIndex->description[0]);
-	  pMobIndex->act		= ACT_IS_NPC | ACT_PROTOTYPE;
-	  pMobIndex->affected_by	= 0;
+//	  pMobIndex->act		= ACT_IS_NPC | ACT_PROTOTYPE;
+      BV_SET_BIT(pMobIndex->act,ACT_IS_NPC);
+      BV_SET_BIT(pMobIndex->act,ACT_PROTOTYPE);
+      pMobIndex->affected_by.reset();
 	  pMobIndex->pShop		= NULL;
 	  pMobIndex->rShop		= NULL;
 	  pMobIndex->spec_fun		= NULL;
@@ -5908,7 +5931,8 @@ MOB_INDEX_DATA *make_mobile( sh_int vnum, sh_int cvnum, char *name )
 	  pMobIndex->short_descr	= QUICKLINK( cMobIndex->short_descr );
 	  pMobIndex->long_descr		= QUICKLINK( cMobIndex->long_descr  );
 	  pMobIndex->description	= QUICKLINK( cMobIndex->description );
-	  pMobIndex->act		= cMobIndex->act | ACT_PROTOTYPE;
+	  pMobIndex->act		= cMobIndex->act;
+      BV_SET_BIT(pMobIndex->act,ACT_PROTOTYPE);
 	  pMobIndex->affected_by	= cMobIndex->affected_by;
 	  pMobIndex->pShop		= NULL;
 	  pMobIndex->rShop		= NULL;
@@ -6036,7 +6060,7 @@ void fix_area_exits( AREA_DATA *tarea )
 		  pexit->to_room = get_room_index( pexit->vnum );
 	}
 	if ( !fexit )
-	  SET_BIT( pRoomIndex->room_flags, ROOM_NO_MOB );
+	  BV_SET_BIT( pRoomIndex->room_flags, ROOM_NO_MOB );
     }
 
 

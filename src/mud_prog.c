@@ -688,7 +688,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
   {
     if ( !str_cmp(chck, "ismobinvis") )
     {
-      return (IS_NPC(chkchar) && IS_SET(chkchar->act, ACT_MOBINVIS));
+      return (IS_NPC(chkchar) && BV_IS_SET(chkchar->act, ACT_MOBINVIS));
     }
     if ( !str_cmp(chck, "mobinvislevel") )
     {
@@ -779,7 +779,7 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     }
     if ( !str_cmp(chck, "norecall") )
     {
-/*    return IS_SET(chkchar->in_room->room_flags, ROOM_NO_RECALL) ? TRUE : FALSE;
+/*    return BV_IS_SET(chkchar->in_room->room_flags, ROOM_NO_RECALL) ? TRUE : FALSE;
 */
 return FALSE;
     }

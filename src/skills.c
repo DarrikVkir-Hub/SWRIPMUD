@@ -511,11 +511,11 @@ void do_slookup( CHAR_DATA *ch, char *argument )
 
 		STRAPP( buf, " applies" );
 		for ( x = 0; x < 32; x++ )
-		  if ( IS_SET(aff->bitvector, 1 << x) )
-		  {
-		      STRAPP( buf, " " );
-		      STRAPP( buf, "%s", a_flags[x] );
-		  }
+			if ( aff->bitvector == x)
+			{
+				STRAPP( buf, " " );
+				STRAPP( buf, "%s", aff_flags[x].name );
+			}
 	    }
 	    if ( aff->duration[0] != '\0' && aff->duration[0] != '0' )
 	    {
@@ -956,7 +956,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 		if ( (tmpbit=get_aflag( bitvector )) == -1 )
 		  ch_printf( ch, "Unknown bitvector: %s.  See AFFECTED_BY\n", bitvector );
 		else
-		  bit |= (1 << tmpbit);
+		  bit = tmpbit;
 	    }
 	    CREATE( aff, SMAUG_AFF, 1 );
 	    if ( !str_cmp( duration, "0" ) )
@@ -1818,7 +1818,7 @@ void do_steal( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
     {
 	set_char_color( AT_MAGIC, ch );
 	send_to_char( "This isn't a good place to do that.\n", ch );
@@ -2179,7 +2179,7 @@ void do_kick( CHAR_DATA *ch, char *argument )
 	return;
     }
     
-    if ( IS_SET(victim->act, PLR_AFK))
+    if ( BV_IS_SET(victim->act, PLR_AFK))
     {
       log_printf( "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
     }
@@ -2295,7 +2295,7 @@ void do_bite( CHAR_DATA *ch, char *argument )
 	return;
     }
     
-    if ( IS_SET(victim->act, PLR_AFK))
+    if ( BV_IS_SET(victim->act, PLR_AFK))
     {
       log_printf( "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
     }
@@ -2338,7 +2338,7 @@ void do_claw( CHAR_DATA *ch, char *argument )
 	return;
     }
     
-    if ( IS_SET(victim->act, PLR_AFK))
+    if ( BV_IS_SET(victim->act, PLR_AFK))
     {
       log_printf( "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
     }
@@ -2378,7 +2378,7 @@ void do_sting( CHAR_DATA *ch, char *argument )
 	return;
     }
     
-    if ( IS_SET(victim->act, PLR_AFK))
+    if ( BV_IS_SET(victim->act, PLR_AFK))
     {
       log_printf( "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
     }
@@ -2419,7 +2419,7 @@ void do_tail( CHAR_DATA *ch, char *argument )
 	return;
     }
     
-    if ( IS_SET(victim->act, PLR_AFK))
+    if ( BV_IS_SET(victim->act, PLR_AFK))
     {
       log_printf( "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
     }
@@ -2710,7 +2710,7 @@ void trip( CHAR_DATA *ch, CHAR_DATA *victim )
 	act( AT_SKILL, "$n trips your mount and you fall off!", ch, NULL, victim, TO_VICT    );
 	act( AT_SKILL, "You trip $N's mount and $N falls off!", ch, NULL, victim, TO_CHAR    );
 	act( AT_SKILL, "$n trips $N's mount and $N falls off!", ch, NULL, victim, TO_NOTVICT );
-	REMOVE_BIT( victim->mount->act, ACT_MOUNTED );
+	BV_REMOVE_BIT( victim->mount->act, ACT_MOUNTED );
 	victim->mount = NULL;
 	WAIT_STATE( ch,     2 * PULSE_VIOLENCE );
 	WAIT_STATE( victim, 2 * PULSE_VIOLENCE );
@@ -2903,15 +2903,15 @@ void do_pick( CHAR_DATA *ch, char *argument )
                     continue;
             
                 if ( !IS_NPC( victim ) && victim->switched
-                && !IS_SET(victim->switched->act, ACT_POLYMORPHED)
+                && !BV_IS_SET(victim->switched->act, ACT_POLYMORPHED)
                 && !IS_AFFECTED(victim->switched, AFF_POSSESS) )
                     continue;
                 else if ( !IS_NPC( victim ) && victim->switched
-                && (IS_SET(victim->switched->act, ACT_POLYMORPHED)
+                && (BV_IS_SET(victim->switched->act, ACT_POLYMORPHED)
                 || IS_AFFECTED(victim->switched, AFF_POSSESS) ) )
                     victim = victim->switched;
             
-                if ( !IS_AWAKE(victim) || IS_SET(victim->in_room->room_flags,ROOM_SILENCE) )
+                if ( !IS_AWAKE(victim) || BV_IS_SET(victim->in_room->room_flags,ROOM_SILENCE) )
                     continue;
             
                 if ( d->connected == CON_EDITING )
@@ -2958,15 +2958,15 @@ void do_pick( CHAR_DATA *ch, char *argument )
                     continue;
             
                 if ( !IS_NPC( victim ) && victim->switched
-                && !IS_SET(victim->switched->act, ACT_POLYMORPHED)
+                && !BV_IS_SET(victim->switched->act, ACT_POLYMORPHED)
                 && !IS_AFFECTED(victim->switched, AFF_POSSESS) )
                     continue;
                 else if ( !IS_NPC( victim ) && victim->switched
-                && (IS_SET(victim->switched->act, ACT_POLYMORPHED)
+                && (BV_IS_SET(victim->switched->act, ACT_POLYMORPHED)
                 || IS_AFFECTED(victim->switched, AFF_POSSESS) ) )
                     victim = victim->switched;
             
-                if ( !IS_AWAKE(victim) || IS_SET(victim->in_room->room_flags,ROOM_SILENCE) )
+                if ( !IS_AWAKE(victim) || BV_IS_SET(victim->in_room->room_flags,ROOM_SILENCE) )
                     continue;
             
                 if ( d->connected == CON_EDITING )
@@ -3038,15 +3038,15 @@ void do_hide( CHAR_DATA *ch, char *argument )
     send_to_char( "You make an attempt at stealth.\n", ch );
 
     if ( IS_AFFECTED(ch, AFF_HIDE) )
-	REMOVE_BIT(ch->affected_by, AFF_HIDE);
+		BV_REMOVE_BIT(ch->affected_by, AFF_HIDE);
 
     if ( IS_NPC(ch) || number_percent( ) < ch->pcdata->learned[gsn_hide] )
     {
-	SET_BIT(ch->affected_by, AFF_HIDE);
-	learn_from_success( ch, gsn_hide );
+		BV_SET_BIT(ch->affected_by, AFF_HIDE);
+		learn_from_success( ch, gsn_hide );
     }
     else
-	learn_from_failure( ch, gsn_hide );
+		learn_from_failure( ch, gsn_hide );
     return;
 }
 
@@ -3088,10 +3088,10 @@ void do_visible( CHAR_DATA *ch, char *argument )
     affect_strip ( ch, gsn_mass_invis			);
     affect_strip ( ch, gsn_sneak			);
     if (ch->race != RACE_DEFEL) /* Defel has perm hide */
-    REMOVE_BIT   ( ch->affected_by, AFF_HIDE		);
-    REMOVE_BIT   ( ch->affected_by, AFF_INVISIBLE	);
+    BV_REMOVE_BIT   ( ch->affected_by, AFF_HIDE		);
+    BV_REMOVE_BIT   ( ch->affected_by, AFF_INVISIBLE	);
     if ( !permsneak(ch) ) /* Noghri has perm sneak */
-    REMOVE_BIT   ( ch->affected_by, AFF_SNEAK		);
+    BV_REMOVE_BIT   ( ch->affected_by, AFF_SNEAK		);
     send_to_char( "Ok.\n", ch );
     return;
 }
@@ -3133,13 +3133,13 @@ void do_recall( CHAR_DATA *ch, char *argument )
     if ( ch->in_room == location )
 	return;
 
-/*    if ( IS_SET(ch->in_room->room_flags, ROOM_NO_RECALL) )
+/*    if ( BV_IS_SET(ch->in_room->room_flags, ROOM_NO_RECALL) )
     {
 	send_to_char( "For some strange reason... nothing happens.\n", ch );
 	return;
     }*/
 
-    if ( IS_SET(ch->affected_by, AFF_CURSE) )
+    if ( BV_IS_SET(ch->affected_by, AFF_CURSE) )
     {
         send_to_char("You are cursed and cannot recall!\n", ch );
         return;
@@ -3279,13 +3279,13 @@ void do_mount( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( !IS_NPC(victim) || !IS_SET(victim->act, ACT_MOUNTABLE ) )
+    if ( !IS_NPC(victim) || !BV_IS_SET(victim->act, ACT_MOUNTABLE ) )
     {
 	send_to_char( "You can't mount that!\n", ch );
 	return;
     }
 
-    if ( IS_SET(victim->act, ACT_MOUNTED ) )
+    if ( BV_IS_SET(victim->act, ACT_MOUNTED ) )
     {
 	send_to_char( "That mount already has a rider.\n", ch );
 	return;
@@ -3306,7 +3306,7 @@ void do_mount( CHAR_DATA *ch, char *argument )
     WAIT_STATE( ch, skill_table[gsn_mount]->beats );
     if ( IS_NPC(ch) || number_percent( ) < ch->pcdata->learned[gsn_mount] )
     {
-	SET_BIT( victim->act, ACT_MOUNTED );
+	BV_SET_BIT( victim->act, ACT_MOUNTED );
 	ch->mount = victim;
 	act( AT_SKILL, "You mount $N.", ch, NULL, victim, TO_CHAR );
 	act( AT_SKILL, "$n skillfully mounts $N.", ch, NULL, victim, TO_NOTVICT );
@@ -3341,7 +3341,7 @@ void do_dismount( CHAR_DATA *ch, char *argument )
 	act( AT_SKILL, "You dismount $N.", ch, NULL, victim, TO_CHAR );
 	act( AT_SKILL, "$n skillfully dismounts $N.", ch, NULL, victim, TO_NOTVICT );
 	act( AT_SKILL, "$n dismounts you.  Whew!", ch, NULL, victim, TO_VICT );
-	REMOVE_BIT( victim->act, ACT_MOUNTED );
+	BV_REMOVE_BIT( victim->act, ACT_MOUNTED );
 	ch->mount = NULL;
 	ch->position = POS_STANDING;
 	learn_from_success( ch, gsn_mount );
@@ -3352,7 +3352,7 @@ void do_dismount( CHAR_DATA *ch, char *argument )
 	act( AT_SKILL, "$n falls off of $N while dismounting.", ch, NULL, victim, TO_NOTVICT );
 	act( AT_SKILL, "$n falls off your back.", ch, NULL, victim, TO_VICT );
 	learn_from_failure( ch, gsn_mount );
-	REMOVE_BIT( victim->act, ACT_MOUNTED );
+	BV_REMOVE_BIT( victim->act, ACT_MOUNTED );
 	ch->mount = NULL;
 	ch->position = POS_SITTING;
 	global_retcode = damage( ch, ch, 1, TYPE_UNDEFINED );
@@ -4071,7 +4071,7 @@ void do_hitall( CHAR_DATA *ch, char *argument )
   sh_int nhit = 0;
   sh_int percent;
   
-  if ( IS_SET(ch->in_room->room_flags, ROOM_SAFE) )
+  if ( BV_IS_SET(ch->in_room->room_flags, ROOM_SAFE) )
   {
     send_to_char( "You cannot do that here.\n", ch);
     return;
@@ -4092,7 +4092,7 @@ void do_hitall( CHAR_DATA *ch, char *argument )
     if ( ++nvict > ch->skill_level[COMBAT_ABILITY]  / 5 )
       break;
       
-    if ( IS_SET(vch->act, PLR_AFK))
+    if ( BV_IS_SET(vch->act, PLR_AFK))
     {
       log_printf( "%s just attacked %s with HITALL with an afk flag on!." , ch->name, vch->name );
     }
@@ -4146,7 +4146,7 @@ void do_scan( CHAR_DATA *ch, char *argument )
   }
 
 	if( IS_AFFECTED( ch, AFF_BLIND ) && ( !IS_AFFECTED( ch, AFF_TRUESIGHT ) ||
-	( !IS_NPC( ch ) && !IS_SET( ch->act, PLR_HOLYLIGHT ) ) ) )
+	( !IS_NPC( ch ) && !BV_IS_SET( ch->act, PLR_HOLYLIGHT ) ) ) )
 	{
 		send_to_char( "Everything looks the same when you're blind...\n", ch );
 		return;

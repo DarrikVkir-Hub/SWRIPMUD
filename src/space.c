@@ -2828,7 +2828,7 @@ void sound_to_ship( SHIP_DATA *ship , char *argument )
         
         for ( vic = room->first_person; vic; vic = vic->next_in_room )
         {
-	   if ( !IS_NPC(vic) && IS_SET( vic->act, PLR_SOUND ) )
+	   if ( !IS_NPC(vic) && BV_IS_SET( vic->act, PLR_SOUND ) )
 	     send_to_char( argument, vic );
         }
      }  
@@ -6494,7 +6494,7 @@ void do_board( CHAR_DATA *ch, char *argument )
            return;
    }
 
-   if ( IS_SET( ch->act, ACT_MOUNTED ) && ( ch->position == POS_MOUNTED ) )
+   if ( BV_IS_SET( ch->act, ACT_MOUNTED ) && ( ch->position == POS_MOUNTED ) )
    {
           act( AT_PLAIN, "You can't go in there riding THAT.", ch, NULL, argument, TO_CHAR );
           return;
@@ -6622,7 +6622,7 @@ void do_leaveship( CHAR_DATA *ch, char *argument )
             do_look( ch , "auto" );
             if ( ship->cockpitroom && !ship->cockpitroom->first_person && !str_cmp( ship->owner, "Public" ) )
             {
-	      if ( IS_SET( ch->in_room->room_flags, ROOM_CAN_LAND ) )
+	      if ( BV_IS_SET( ch->in_room->room_flags, ROOM_CAN_LAND ) )
 	      {
       	        echo_to_room( AT_YELLOW , toroom , "The newly arrived rental is rolled into storage.\n" );
                 dumpship( ship, toroom->vnum );
@@ -6772,7 +6772,7 @@ void do_launch( CHAR_DATA *ch, char *argument )
                             price += 2500;
                     }                
                 
-		  if( IS_SET( ch->act, PLR_DONTAUTOFUEL ) )
+		  if( BV_IS_SET( ch->act, PLR_DONTAUTOFUEL ) )
 		  {
 		    if( ship->shipstate == SHIP_DISABLED )
                     {
@@ -6813,7 +6813,7 @@ void do_launch( CHAR_DATA *ch, char *argument )
 
                   }
 
-		 if( !IS_SET( ch->act, PLR_DONTAUTOFUEL ) )
+		 if( !BV_IS_SET( ch->act, PLR_DONTAUTOFUEL ) )
 		 {
 		  if(  ship_from_hanger(ship->in_room->vnum) == NULL || ship->shipclass == SHIP_PLATFORM )
                     ship->energy = ship->mod->maxenergy;
@@ -10996,7 +10996,7 @@ void do_drive( CHAR_DATA *ch, char *argument )
             return;
           }
 
-          if ( IS_SET( target->in_room->room_flags, ROOM_INDOORS ) 
+          if ( BV_IS_SET( target->in_room->room_flags, ROOM_INDOORS ) 
           || target->in_room->sector_type == SECT_INSIDE ) 
 	  {
 		send_to_char( "You can't drive indoors!\n", ch );
@@ -11036,7 +11036,7 @@ void do_drive( CHAR_DATA *ch, char *argument )
             return;
           }
           
-          if ( IS_SET( target->in_room->room_flags, ROOM_INDOORS ) 
+          if ( BV_IS_SET( target->in_room->room_flags, ROOM_INDOORS ) 
           || target->in_room->sector_type == SECT_INSIDE ) 
 	  {
 		send_to_char( "You can't drive indoors!\n", ch );
@@ -11211,15 +11211,15 @@ ch_ret drive_ship( CHAR_DATA *ch, SHIP_DATA *ship, EXIT_DATA  *pexit , int fall 
 
     if ( !fall )
     {
-        if ( IS_SET( to_room->room_flags, ROOM_INDOORS ) 
-        || IS_SET( to_room->room_flags, ROOM_SPACECRAFT )  
+        if ( BV_IS_SET( to_room->room_flags, ROOM_INDOORS ) 
+        || BV_IS_SET( to_room->room_flags, ROOM_SPACECRAFT )  
         || to_room->sector_type == SECT_INSIDE ) 
 	{
 		send_to_char( "You can't drive indoors!\n", ch );
 		return rNONE;
 	}
         
-        if ( IS_SET( to_room->room_flags, ROOM_NO_DRIVING ) ) 
+        if ( BV_IS_SET( to_room->room_flags, ROOM_NO_DRIVING ) ) 
 	{
 		send_to_char( "You can't take a vehicle through there!\n", ch );
 		return rNONE;
@@ -11839,7 +11839,7 @@ void do_rent( CHAR_DATA *ch, char *argument )
     return;
   }
 
-  if ( !IS_SET( ch->in_room->room_flags, ROOM_CAN_LAND ) )
+  if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_CAN_LAND ) )
   {
     send_to_char( "You can not rent ships here\n", ch );
     return;

@@ -31,7 +31,7 @@ extern int	top_affect;
 extern int	top_reset;
 extern int	top_ed;
 extern bool	fBootDb;
-
+#define BIT_NOTFOUND ((size_t)-1)
 
 /* planet constants for vip and wanted flags */
 
@@ -69,6 +69,82 @@ char *  const   ex_flags [] =
 "can_climb", "can_enter", "can_leave", "auto", "r4", "searchable", 
 "bashed", "bashproof", "nomob", "window", "can_look" };
 
+const flag_name r_flags[] =
+{
+    { ROOM_DARK,           "dark" },
+    { ROOM_NO_MOB,         "no_mob" },
+    { ROOM_INDOORS,        "indoors" },
+    { ROOM_CAN_LAND,       "can_land" },
+    { ROOM_CAN_FLY,        "can_fly" },
+    { ROOM_NO_DRIVING,     "no_driving" },
+    { ROOM_NO_MAGIC,       "no_magic" },
+    { ROOM_BANK,           "bank" },
+    { ROOM_PRIVATE,        "private" },
+    { ROOM_SAFE,           "safe" },
+    { ROOM_SOLITARY,       "solitary" },
+    { ROOM_PET_SHOP,       "pet_shop" },
+    { ROOM_ARENA,          "arena" },
+    { ROOM_DONATION,       "donation" },
+    { ROOM_NODROPALL,      "nodropall" },
+    { ROOM_SILENCE,        "silence" },
+    { ROOM_LOGSPEECH,      "logspeech" },
+    { ROOM_NODROP,         "nodrop" },
+    { ROOM_CLANSTOREROOM,  "clanstoreroom" },
+    { ROOM_PLR_HOME,       "plr_home" },
+    { ROOM_EMPTY_HOME,     "empty_home" },
+    { ROOM_TELEPORT,       "teleport" },
+    { ROOM_HOTEL,          "hotel" },
+    { ROOM_NOFLOOR,        "nofloor" },
+    { ROOM_REFINERY,       "refinery" },
+    { ROOM_FACTORY,        "factory" },
+    { ROOM_RECRUIT,        "recruit" },
+    { ROOM_PLR_SHOP,       "plr_shop" },
+    { ROOM_SPACECRAFT,     "spacecraft" },
+    { ROOM_PROTOTYPE,      "prototype" },
+    { ROOM_AUCTION,        "auction" },
+	{ ROOM_MAX,				"max"},
+
+    { (size_t)-1, nullptr } // terminator
+};
+
+const flag_name aff_flags[] =
+{
+    { AFF_BLIND,          "blind" },
+    { AFF_INVISIBLE,      "invisible" },
+    { AFF_DETECT_EVIL,    "detect_evil" },
+    { AFF_DETECT_INVIS,   "detect_invis" },
+    { AFF_DETECT_MAGIC,   "detect_magic" },
+    { AFF_DETECT_HIDDEN,  "detect_hidden" },
+    { AFF_WEAKEN,         "weaken" },
+    { AFF_SANCTUARY,      "sanctuary" },
+    { AFF_FAERIE_FIRE,    "faerie_fire" },
+    { AFF_INFRARED,       "infrared" },
+    { AFF_CURSE,          "curse" },
+    { AFF_ENDURANCE,      "endurance" },
+    { AFF_POISON,         "poison" },
+    { AFF_PROTECT,        "protect" },
+    { AFF_PARALYSIS,      "paralysis" },
+    { AFF_SNEAK,          "sneak" },
+    { AFF_HIDE,           "hide" },
+    { AFF_SLEEP,          "sleep" },
+    { AFF_CHARM,          "charm" },
+    { AFF_FLYING,         "flying" },
+    { AFF_PASS_DOOR,      "pass_door" },
+    { AFF_FLOATING,       "floating" },
+    { AFF_TRUESIGHT,      "truesight" },
+    { AFF_DETECTTRAPS,    "detecttraps" },
+    { AFF_SCRYING,        "scrying" },
+    { AFF_FIRESHIELD,     "fireshield" },
+    { AFF_SHOCKSHIELD,    "shockshield" },
+    { AFF_BIND,           "bind" },
+    { AFF_ICESHIELD,      "iceshield" },
+    { AFF_POSSESS,        "possess" },
+    { AFF_BERSERK,        "berserk" },
+    { AFF_AQUA_BREATH,    "aqua_breath" },
+	{ AFF_MAX,			  "aff_max"},
+	{ (size_t)-1, nullptr } // terminator
+};
+/*
 char *	const	r_flags	[] =
 {
 "dark", "reserved", "nomob", "indoors", "can_land", "can_fly", "no_drive",
@@ -77,7 +153,7 @@ char *	const	r_flags	[] =
 "plr_home", "empty_home", "teleport", "hotel", "nofloor", "refinery", "factory",
 "recruit", "plr_shop", "spacecraft", "prototype", "auction"
 };
-
+*/
 char *	const	o_flags	[] =
 {
 "glow", "hum", "dark", "hutt_size", "contraband", "invis", "magic", "nodrop", "bless",
@@ -149,6 +225,39 @@ char *	const	a_flags [] =
 "scrying", "fireshield", "shockshield", "r1", "iceshield", "possess", 
 "berserk", "aqua_breath" };
 
+const flag_name act_flags[] =
+{
+    { ACT_IS_NPC,        "npc" },
+    { ACT_SENTINEL,      "sentinel" },
+    { ACT_SCAVENGER,     "scavenger" },
+    { ACT_AGGRESSIVE,    "aggressive" },
+    { ACT_STAY_AREA,     "stay_area" },
+    { ACT_WIMPY,         "wimpy" },
+    { ACT_PET,           "pet" },
+    { ACT_TRAIN,         "train" },
+    { ACT_PRACTICE,      "practice" },
+    { ACT_IMMORTAL,      "immortal" },
+    { ACT_DEADLY,        "deadly" },
+    { ACT_POLYSELF,      "polyself" },
+    { ACT_META_AGGR,     "meta_aggr" },
+    { ACT_GUARDIAN,      "guardian" },
+    { ACT_RUNNING,       "running" },
+    { ACT_NOWANDER,      "nowander" },
+    { ACT_MOUNTABLE,     "mountable" },
+    { ACT_MOUNTED,       "mounted" },
+    { ACT_SCHOLAR,       "scholar" },
+    { ACT_SECRETIVE,     "secretive" },
+    { ACT_POLYMORPHED,   "polymorphed" },
+    { ACT_MOBINVIS,      "mobinvis" },
+    { ACT_NOASSIST,      "noassist" },
+    { ACT_NOKILL,        "nokill" },
+    { ACT_DROID,         "droid" },
+    { ACT_NOCORPSE,      "nocorpse" },
+    { ACT_PROTOTYPE,     "prototype" },
+
+    { (size_t)-1, nullptr } // terminator
+};
+/*
 char *	const	act_flags [] =
 {
 "npc", "sentinel", "scavenger", "r3", "r3", "aggressive", "stayarea",
@@ -156,7 +265,7 @@ char *	const	act_flags [] =
 "meta_aggr", "guardian", "running", "nowander", "mountable", "mounted", "scholar",
 "secretive", "polymorphed", "mobinvis", "noassist", "nokill", "droid", "nocorpse", 
 "r28", "r29", "prototype", "r31" };
-
+*/
 char *	const	pc_flags [] =
 {
 "r1", "deadly", "unauthed", "norecall", "nointro", "gag", "retired", "guest",
@@ -165,6 +274,46 @@ char *	const	pc_flags [] =
 "r25"
 };
 
+const flag_name plr_flags[] =
+{
+    { PLR_IS_NPC,        "npc" },
+    { PLR_BOUGHT_PET,    "bought_pet" },
+    { PLR_SHOVEDRAG,     "shovedrag" },
+    { PLR_AUTOEXIT,      "autoexit" },
+    { PLR_AUTOLOOT,      "autoloot" },
+    { PLR_AUTOSAC,       "autosac" },
+    { PLR_BLANK,         "blank" },
+    { PLR_QUESTOR,       "questor" },
+    { PLR_BRIEF,         "brief" },
+    { PLR_COMBINE,       "combine" },
+    { PLR_PROMPT,        "prompt" },
+    { PLR_TELNET_GA,     "telnet_ga" },
+
+    { PLR_HOLYLIGHT,     "holylight" },
+    { PLR_WIZINVIS,      "wizinvis" },
+    { PLR_ROOMVNUM,      "roomvnum" },
+
+    { PLR_SILENCE,       "silence" },
+    { PLR_NO_EMOTE,      "no_emote" },
+    { PLR_DONTAUTOFUEL,  "dontautofuel" },
+    { PLR_NO_TELL,       "no_tell" },
+    { PLR_LOG,           "log" },
+    { PLR_DENY,          "deny" },
+    { PLR_FREEZE,        "freeze" },
+    { PLR_KILLER,        "killer" },
+    { PLR_HOME_RESIDENT, "home_resident" },
+    { PLR_LITTERBUG,     "litterbug" },
+    { PLR_ANSI,          "ansi" },
+    { PLR_SOUND,         "sound" },
+    { PLR_NICE,          "nice" },
+    { PLR_FLEE,          "flee" },
+    { PLR_AUTOGOLD,      "autogold" },
+    { PLR_AUTOMAP,       "automap" },
+    { PLR_AFK,           "afk" },
+
+    { (size_t)-1, nullptr } // terminator
+};
+/*
 char *	const	plr_flags [] =
 {
 "npc", "boughtpet", "shovedrag", "autoexits", "autoloot", "autosac", "blank", 
@@ -173,7 +322,7 @@ char *	const	plr_flags [] =
 "deny", "freeze", "killer","homeresident", "litterbug", "ansi", "rip", "nice", 
 "flee" ,"autocred", "automap", "afk"
 };
-
+*/
 char *	const	trap_flags [] =
 {
    "room", "obj", "enter", "leave", "open", "close", "get", "put", "pick",
@@ -365,7 +514,7 @@ size_t get_flag_partial(const char *input,
                         size_t end = (size_t)-1)
 {
     if (!input || *input == '\0')
-        return (size_t)-1;
+        return BIT_NOTFOUND;
 
     // 1. Exact match first
     for (size_t i = 0; table[i].name != nullptr; ++i)
@@ -375,7 +524,7 @@ size_t get_flag_partial(const char *input,
         if (bit < start)
             continue;
 
-        if (end != (size_t)-1 && bit >= end)
+        if (end != BIT_NOTFOUND && bit >= end)
             continue;
 
         if (!str_cmp_utf8(input, table[i].name))
@@ -383,7 +532,7 @@ size_t get_flag_partial(const char *input,
     }
 
     // 2. Prefix match
-    size_t match = (size_t)-1;
+    size_t match = BIT_NOTFOUND;
 
     for (size_t i = 0; table[i].name != nullptr; ++i)
     {
@@ -392,7 +541,7 @@ size_t get_flag_partial(const char *input,
         if (bit < start)
             continue;
 
-        if (end != (size_t)-1 && bit >= end)
+        if (end != BIT_NOTFOUND && bit >= end)
             continue;
 
         if (!strncasecmp(input, table[i].name, strlen(input)))
@@ -561,12 +710,12 @@ int get_otype( char *type )
 
 int get_aflag( char *flag )
 {
-    int x;
-
-    for ( x = 0; x < 32; x++ )
-      if ( !str_cmp( flag, a_flags[x] ) )
-        return x;
-    return -1;
+	size_t ret;
+	ret = get_flag_partial(flag,aff_flags);
+	if (ret == BIT_NOTFOUND)
+	  	return -1;
+	else
+		return ret;
 }
 
 int get_trapflag( char *flag )
@@ -619,14 +768,9 @@ int get_exflag( char *flag )
     return -1;
 }
 
-int get_rflag( char *flag )
+size_t get_rflag( char *flag )
 {
-    int x;
-    
-    for ( x = 0; x < 32; x++ )
-      if ( !str_cmp( flag, r_flags[x] ) )
-        return x;
-    return -1;
+	return get_flag_partial(flag, r_flags);
 }
 
 int get_mpflag( char *flag )
@@ -694,12 +838,12 @@ int get_wflag( char *flag )
 
 int get_actflag( char *flag )
 {
-    int x;
-
-    for ( x = 0; x < 32; x++ )
-      if ( !str_cmp( flag, act_flags[x] ) )
-        return x;
-    return -1;
+	size_t ret;
+	ret = get_flag_partial(flag,act_flags);
+	if (ret == BIT_NOTFOUND)
+	  	return -1;
+	else
+		return ret;
 }
 
 int get_vip_flag( char *flag )
@@ -733,12 +877,12 @@ int get_pcflag( char *flag )
 }
 int get_plrflag( char *flag )
 {
-    int x;
-
-    for ( x = 0; x < 32; x++ )
-      if ( !str_cmp( flag, plr_flags[x] ) )
-        return x;
-    return -1;
+	size_t ret;
+	ret = get_flag_partial(flag,plr_flags);
+	if (ret == BIT_NOTFOUND)
+	  	return -1;
+	else
+		return ret;
 }
 
 int get_risflag( char *flag )
@@ -1057,7 +1201,7 @@ void do_goto( CHAR_DATA *ch, char *argument )
 	}
 	
 	if ( ( ch->in_room->vnum < pArea->low_r_vnum
-	||   ch->in_room->vnum > pArea->hi_r_vnum ) && !IS_SET(ch->in_room->room_flags , ROOM_HOTEL) )
+	||   ch->in_room->vnum > pArea->hi_r_vnum ) && !BV_IS_SET(ch->in_room->room_flags , ROOM_HOTEL) )
 	{
 	      send_to_char( "Builders can only use goto from a hotel or in their zone.\n", ch );
 	      return;
@@ -1069,7 +1213,7 @@ void do_goto( CHAR_DATA *ch, char *argument )
     if ( ch->fighting )
 	stop_fighting( ch, TRUE );
 
-    if ( !IS_SET(ch->act, PLR_WIZINVIS) )
+    if ( !BV_IS_SET(ch->act, PLR_WIZINVIS) )
     {
          if (ch->pcdata && ch->pcdata->bamfout[0] != '\0')
                act( AT_IMMORT, "$T", ch, NULL, ch->pcdata->bamfout ,  TO_ROOM );
@@ -1087,7 +1231,7 @@ void do_goto( CHAR_DATA *ch, char *argument )
     }
     char_to_room( ch, location );
 
-   if ( !IS_SET(ch->act, PLR_WIZINVIS) )
+   if ( !BV_IS_SET(ch->act, PLR_WIZINVIS) )
    {
          if (ch->pcdata && ch->pcdata->bamfin[0] != '\0')
              act( AT_IMMORT, "$T", ch, NULL, ch->pcdata->bamfin ,  TO_ROOM );
@@ -1123,7 +1267,8 @@ void do_mset( CHAR_DATA *ch, char *argument )
     int  num,size,plus;
     char char1,char2;
     CHAR_DATA *victim;
-    int value, i;
+    int value;
+	int i;
     int minattr, maxattr;
     bool lockvictim;
     char *origarg = argument;
@@ -1161,7 +1306,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	  }
 	  STRFREE( victim->description );
 	  victim->description = copy_buffer( ch );
-	  if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	  if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  {
 		STRFREE( victim->pIndexData->description );
 		victim->pIndexData->description = QUICKLINK( victim->description );
@@ -1337,7 +1482,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->perm_str = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->perm_str = value;
 	return;
     }
@@ -1352,7 +1497,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->perm_int = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->perm_int = value;
 	return;
     }
@@ -1367,7 +1512,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->perm_wis = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->perm_wis = value;
 	return;
     }
@@ -1382,7 +1527,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->perm_dex = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->perm_dex = value;
 	return;
     }
@@ -1397,7 +1542,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->perm_con = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->perm_con = value;
 	return;
     }
@@ -1412,7 +1557,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->perm_cha = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->perm_cha = value;
 	return;
     }
@@ -1427,7 +1572,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->perm_lck = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->perm_lck = value;
 	return;
     }
@@ -1442,7 +1587,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->perm_frc = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->perm_frc = value;
 	return;
     }
@@ -1457,7 +1602,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->saving_poison_death = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->saving_poison_death = value;
 	return;
     }
@@ -1472,7 +1617,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->saving_wand = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->saving_wand = value;
 	return;
     }
@@ -1487,7 +1632,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->saving_para_petri = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->saving_para_petri = value;
 	return;
     }
@@ -1502,7 +1647,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->saving_breath = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->saving_breath = value;
 	return;
     }
@@ -1517,7 +1662,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->saving_spell_staff = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->saving_spell_staff = value;
 	return;
     }
@@ -1532,7 +1677,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->sex = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->sex = value;
 	return;
     }
@@ -1555,7 +1700,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->race = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->race = value;
 	return;
     }
@@ -1570,7 +1715,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->armor = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->ac = value;
 	return;
     }
@@ -1599,7 +1744,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	victim->armor = (sh_int) ( 100-value*2.5 );
 	victim->hitroll = value/5;
 	victim->damroll = value/5;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	{
 	  victim->pIndexData->level = value;
 	  victim->pIndexData->ac = (sh_int ) ( 100-value*2.5 );
@@ -1642,7 +1787,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
           }
           return;
         }
-        BV_TOGGLE_BIT(victim->pcdata->commandgroup,(1<<value));
+        BV_TOGGLE_BIT(victim->pcdata->commandgroup,(value));
         send_to_char("Ok.\n",ch);
         return;
     }  
@@ -1662,7 +1807,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->numattacks = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->numattacks = value;
 	return;
     }
@@ -1672,7 +1817,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	if ( !can_mmodify( ch, victim ) )
 	  return;
 	victim->gold = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->gold = value;
 	return;
     }
@@ -1695,7 +1840,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	if ( !can_mmodify( ch, victim ) )
 	  return;
 	victim->hitroll = URANGE(0, value, 85);
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->hitroll = victim->hitroll;
 	return;
     }
@@ -1705,7 +1850,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	if ( !can_mmodify( ch, victim ) )
 	  return;
 	victim->damroll = URANGE(0, value, 65);
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->damroll = victim->damroll;
 	return;
     }
@@ -1801,7 +1946,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->alignment = value;
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->alignment = value;
 	return;
     }
@@ -2012,7 +2157,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 
 	STRFREE( victim->name );
 	victim->name = STRALLOC( arg3 );
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	{
 	   STRFREE( victim->pIndexData->player_name );
 	   victim->pIndexData->player_name = QUICKLINK( victim->name );
@@ -2108,7 +2253,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
     {
 	STRFREE( victim->short_descr );
 	victim->short_descr = STRALLOC( arg3 );
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	{
 	   STRFREE( victim->pIndexData->short_descr );
 	   victim->pIndexData->short_descr = QUICKLINK( victim->short_descr );
@@ -2122,7 +2267,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	SPRINTF( buf, "%s", arg3 );
 	STRAPP( buf, "\n" );
 	victim->long_descr = STRALLOC( buf );
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	{
 	   STRFREE( victim->pIndexData->long_descr );
 	   victim->pIndexData->long_descr = QUICKLINK( victim->long_descr );
@@ -2136,7 +2281,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	{
 	   STRFREE( victim->description );
 	   victim->description = STRALLOC( arg3 );
-	   if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	   if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	   {
 	      STRFREE(victim->pIndexData->description );
 	      victim->pIndexData->description = QUICKLINK( victim->description );
@@ -2180,7 +2325,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
         {
           victim->spec_fun = NULL;
 	  send_to_char( "Special function removed.\n", ch );
-	  if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	  if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	    victim->pIndexData->spec_fun = victim->spec_fun;
 	  return;
         }
@@ -2190,7 +2335,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    send_to_char( "No such spec fun.\n", ch );
 	    return;
 	}
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->spec_fun = victim->spec_fun;
 	return;
     }
@@ -2209,7 +2354,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
         {
           victim->spec_2 = NULL;
 	  send_to_char( "Special function removed.\n", ch );
-	  if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	  if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	    victim->pIndexData->spec_2 = victim->spec_2;
 	  return;
         }
@@ -2219,7 +2364,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    send_to_char( "No such spec fun.\n", ch );
 	    return;
 	}
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->spec_2 = victim->spec_2;
 	return;
     }
@@ -2267,39 +2412,39 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	}
 	while ( argument[0] != '\0' )
 	{
-           pcflag = FALSE;
-	   argument = one_argument( argument, arg3 );
-	   value = IS_NPC( victim) ? get_actflag( arg3 ) : get_plrflag( arg3 );
+        pcflag = FALSE;
+	   	argument = one_argument( argument, arg3 );
+	   	value = IS_NPC( victim) ? get_actflag( arg3 ) : get_plrflag( arg3 );
 
-	   if ( !IS_NPC( victim ) && ( value < 0 || value > 31 ) )
+	   if ( !IS_NPC( victim ) && ( value < 0 ) )
            {
-             pcflag = TRUE;
-	     value = get_pcflag( arg3 );
+             	pcflag = TRUE;
+	    	 	value = get_pcflag( arg3 );
            }
-	   if ( value < 0 || value > 31 )
+	   if ( value < 0 )
 	     ch_printf( ch, "Unknown flag: %s\n", arg3 );
 	   else
 	   {
-	     if ( IS_NPC(victim) && 1 << value == ACT_IS_NPC )
+	     if ( IS_NPC(victim) && value == ACT_IS_NPC )
 	       send_to_char( "If that could be changed, it would cause many problems.\n", ch );
 	     else
-	     if ( IS_NPC(victim) && 1 << value == ACT_POLYMORPHED )
+	     if ( IS_NPC(victim) && value == ACT_POLYMORPHED )
 	       send_to_char( "Changing that would be a _bad_ thing.\n", ch);
 	     else
 	     {
 		if ( pcflag )
-		  BV_TOGGLE_BIT( victim->pcdata->flags, 1 << value );
+		  BV_TOGGLE_BIT( victim->pcdata->flags, value );
 		else
 		{ 
-		  TOGGLE_BIT( victim->act, 1 << value );
+		  BV_TOGGLE_BIT( victim->act, value );
 		  /* NPC check added by Gorog */
-		  if ( IS_NPC(victim) && (1 << value == ACT_PROTOTYPE) )
+		  if ( IS_NPC(victim) && (value == ACT_PROTOTYPE) )
 		    victim->pIndexData->act = victim->act;
 		}
 	     }
 	   }
 	}
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->act = victim->act; 
 	return;
     }
@@ -2361,7 +2506,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 //	   else
 	     BV_TOGGLE_BIT( victim->vip_flags, value );
         }
-        if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+        if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  		victim->pIndexData->vip_flags = victim->vip_flags; 
 	return;
     }
@@ -2386,12 +2531,12 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	{
 	   argument = one_argument( argument, arg3 );
 	   value = get_aflag( arg3 );
-	   if ( value < 0 || value > 31 )
+	   if ( value < 0 )
 	     ch_printf( ch, "Unknown flag: %s\n", arg3 );
 	   else
-	     TOGGLE_BIT( victim->affected_by, 1 << value );
+	     BV_TOGGLE_BIT( victim->affected_by, value );
 	}
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->affected_by = victim->affected_by; 
 	return;
     }
@@ -2533,7 +2678,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	   else
 		TOGGLE_BIT( victim->resistant, 1 << value );
 	}
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	   victim->pIndexData->resistant = victim->resistant; 
 	return;
     }
@@ -2561,7 +2706,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    else
 		TOGGLE_BIT( victim->immune, 1 << value );
 	}
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	    victim->pIndexData->immune = victim->immune; 
 	return;
     }
@@ -2589,7 +2734,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    else
 		TOGGLE_BIT( victim->susceptible, 1 << value );
 	}
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	    victim->pIndexData->susceptible = victim->susceptible; 
 	return;
     }
@@ -2617,7 +2762,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    else
 		TOGGLE_BIT( victim->xflags, 1 << value );
 	}
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	    victim->pIndexData->xflags = victim->xflags; 
 	return;
     }
@@ -2647,7 +2792,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    else
 		TOGGLE_BIT( victim->attacks, 1 << value );
 	}
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	    victim->pIndexData->attacks = victim->attacks; 
 	return;
     }
@@ -2676,7 +2821,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    else
 		TOGGLE_BIT( victim->defenses, 1 << value );
 	}
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	    victim->pIndexData->defenses = victim->defenses; 
 	return;
     }
@@ -2696,7 +2841,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->position = value;
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	    victim->pIndexData->position = victim->position; 
 	send_to_char( "Done.\n", ch );
 	return;
@@ -2717,7 +2862,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	victim->defposition = value;
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	    victim->pIndexData->defposition = victim->defposition; 
 	send_to_char( "Done.\n", ch );
 	return;
@@ -2784,7 +2929,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    send_to_char( "Number of hitpoint dice range is 0 to 30000.\n", ch );
 	    return;
 	}
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->hitnodice = value;
 	send_to_char( "Done.\n", ch );
 	return;
@@ -2804,7 +2949,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    send_to_char( "Hitpoint dice size range is 0 to 30000.\n", ch );
 	    return;
 	}
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->hitsizedice = value;
 	send_to_char( "Done.\n", ch );
 	return;
@@ -2824,7 +2969,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    send_to_char( "Hitpoint bonus range is 0 to 30000.\n", ch );
 	    return;
 	}
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->hitplus = value;
 	send_to_char( "Done.\n", ch );
 	return;
@@ -2844,7 +2989,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    send_to_char( "Number of damage dice range is 0 to 100.\n", ch );
 	    return;
 	}
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->damnodice = value;
 	send_to_char( "Done.\n", ch );
 	return;
@@ -2864,7 +3009,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    send_to_char( "Damage dice size range is 0 to 100.\n", ch );
 	    return;
 	}
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->damsizedice = value;
 	send_to_char( "Done.\n", ch );
 	return;
@@ -2885,7 +3030,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 
-	if ( IS_NPC( victim ) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	  victim->pIndexData->damplus = value;
 	send_to_char( "Done.\n", ch );
 	return;
@@ -2959,7 +3104,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 				victim->speaking = race_table[victim->race].language;
 		}
 		else
-			if ( IS_SET( victim->act, ACT_PROTOTYPE ) )
+			if ( BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 				victim->pIndexData->speaks = victim->speaks;
 		send_to_char( "Done.\n", ch );
 		return;
@@ -2990,7 +3135,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 		else
 			victim->speaking = value;
 
-		if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+		if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 			victim->pIndexData->speaking = victim->speaking;
 		send_to_char( "Done.\n", ch );
 		return;
@@ -3574,86 +3719,92 @@ void do_oset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "affect" ) )
     {
-	AFFECT_DATA *paf;
-	sh_int loc;
-	int bitv;
+		AFFECT_DATA *paf;
+		sh_int loc;
 
-	argument = one_argument( argument, arg2 );
-	if ( arg2[0] == '\0' || !argument || argument[0] == 0 )
-	{
-	   send_to_char( "Usage: oset <object> affect <field> <value>\n", ch );
-           send_to_char( "Affect Fields:\n", ch );
-           send_to_char( "none        strength    dexterity   intelligence  wisdom       constitution\n", ch );
-           send_to_char( "sex         level       age         height        weight       force\n", ch );
-           send_to_char( "hit         move        credits     experience    armor        hitroll\n", ch );
-           send_to_char( "damroll     save_para   save_rod    save_poison   save_breath  save_power\n", ch );
-           send_to_char( "charisma    resistant   immune      susceptible   affected     luck\n", ch );
-           send_to_char( "backstab    pick        track       steal         sneak        hide\n", ch );
-           send_to_char( "detrap      dodge       peek        scan          gouge        search\n", ch );
-           send_to_char( "mount       disarm      kick        parry         bash         stun\n", ch );
-           send_to_char( "punch       climb       grip        scribe        brew\n", ch );
-	   return;
-	}
-	loc = get_atype( arg2 );
-	if ( loc < 1 )
-	{
-	     ch_printf( ch, "Unknown field: %s\n", arg2 );
-	     return;	
-	}
-	if ( loc >= APPLY_AFFECT && loc < APPLY_WEAPONSPELL )
-	{
-	   bitv = 0;
-	   while ( argument[0] != '\0' )
-	   {
-		argument = one_argument( argument, arg3 );
+		argument = one_argument( argument, arg2 );
+		if ( arg2[0] == '\0' || !argument || argument[0] == 0 )
+		{
+			send_to_char( "Usage: oset <object> affect <field> <value>\n", ch );
+			send_to_char( "Affect Fields:\n", ch );
+			send_to_char( "none        strength    dexterity   intelligence  wisdom       constitution\n", ch );
+			send_to_char( "sex         level       age         height        weight       force\n", ch );
+			send_to_char( "hit         move        credits     experience    armor        hitroll\n", ch );
+			send_to_char( "damroll     save_para   save_rod    save_poison   save_breath  save_power\n", ch );
+			send_to_char( "charisma    resistant   immune      susceptible   affected     luck\n", ch );
+			send_to_char( "backstab    pick        track       steal         sneak        hide\n", ch );
+			send_to_char( "detrap      dodge       peek        scan          gouge        search\n", ch );
+			send_to_char( "mount       disarm      kick        parry         bash         stun\n", ch );
+			send_to_char( "punch       climb       grip        scribe        brew\n", ch );
+			return;
+		}
+		loc = get_atype( arg2 );
+		if ( loc < 1 )
+		{
+			ch_printf( ch, "Unknown field: %s\n", arg2 );
+			return;	
+		}
 		if ( loc == APPLY_AFFECT )
-		  value = get_aflag( arg3 );
-		else
-		  value = get_risflag( arg3 );
-		if ( value < 0 || value > 31 )
-		  ch_printf( ch, "Unknown flag: %s\n", arg3 );
-		else
-		  SET_BIT( bitv, 1 << value );
-	   }
-	   if ( !bitv )
-	     return;
-	   value = bitv;
-	}
-	else
-	{
-	   argument = one_argument( argument, arg3 );
-	   value = atoi( arg3 );
-	}
-	CREATE( paf, AFFECT_DATA, 1 );
-	paf->type		= -1;
-	paf->duration		= -1;
-	paf->location		= loc;
-	paf->modifier		= value;
-	paf->bitvector		= 0;
-	paf->next		= NULL;
-	if( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
-	{
-		if( loc != APPLY_WEARSPELL && loc != APPLY_REMOVESPELL && loc != APPLY_STRIPSN && loc != APPLY_WEAPONSPELL )
 		{
-		CHAR_DATA *vch;
-		OBJ_DATA *eq;
-
-		for( vch = first_char; vch; vch = vch->next )
-		{
-			for( eq = vch->first_carrying; eq; eq = eq->next_content )
+			argument = one_argument( argument, arg3 );
+			if (argument[0] != '\0')
+				send_to_char("Only one affect flag allowed per affect, ignoring any more.\n", ch);
+			value = get_aflag( arg3 );
+			if (value < 0)
 			{
-				if( eq->pIndexData == obj->pIndexData && eq->wear_loc != WEAR_NONE )
-					affect_modify( vch, paf, TRUE );
+				ch_printf(ch, "Unknown flag: %s\n", arg3);
+				return;
 			}
 		}
+		else if ( loc > APPLY_AFFECT && loc < APPLY_WEAPONSPELL )
+		{
+			argument = one_argument(argument, arg3);
+
+			value = get_risflag(arg3);
+			if (value < 0)
+			{
+				ch_printf(ch, "Unknown flag: %s\n", arg3);
+				return;
+			}
+
+			if (argument[0] != '\0')
+				send_to_char("Only one resistance flag allowed per affect, ignoring any more.\n", ch);
 		}
-		LINK( paf, obj->pIndexData->first_affect, obj->pIndexData->last_affect, next, prev );
-	}
-	else
-		LINK( paf, obj->first_affect, obj->last_affect, next, prev );
-	++top_affect;
-	send_to_char( "Done.\n", ch );
-	return;
+		else
+		{
+			argument = one_argument( argument, arg3 );
+			value = atoi( arg3 );
+		}
+		CREATE( paf, AFFECT_DATA, 1 );
+		paf->type		= -1;
+		paf->duration		= -1;
+		paf->location		= loc;
+		paf->modifier		= value;
+		paf->bitvector		= -1;
+		paf->next		= NULL;
+		if( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
+		{
+			if( loc != APPLY_WEARSPELL && loc != APPLY_REMOVESPELL && loc != APPLY_STRIPSN && loc != APPLY_WEAPONSPELL )
+			{
+			CHAR_DATA *vch;
+			OBJ_DATA *eq;
+
+			for( vch = first_char; vch; vch = vch->next )
+			{
+				for( eq = vch->first_carrying; eq; eq = eq->next_content )
+				{
+					if( eq->pIndexData == obj->pIndexData && eq->wear_loc != WEAR_NONE )
+						affect_modify( vch, paf, TRUE );
+				}
+			}
+			}
+			LINK( paf, obj->pIndexData->first_affect, obj->pIndexData->last_affect, next, prev );
+		}
+		else
+			LINK( paf, obj->first_affect, obj->last_affect, next, prev );
+		++top_affect;
+		send_to_char( "Done.\n", ch );
+		return;
     }
 
     if ( !str_cmp( arg2, "rmaffect" ) )
@@ -4085,13 +4236,20 @@ void do_rset( CHAR_DATA *ch, char *argument )
 	/*
 	 * Protect from messing up prototype flag
 	 */
-	if ( IS_SET( location->room_flags, ROOM_PROTOTYPE ) )
+	if ( BV_IS_SET( location->room_flags, ROOM_PROTOTYPE ) )
 	  proto = TRUE;
 	else
 	  proto = FALSE;
-	location->room_flags	= value;
+
+	BV_SET_BIT(location->room_flags, value);
+/*	  
+	  int bit = get_rflag(value);
+	  if (bit != BIT_NOTFOUND)
+		BV_SET_BIT(location->room_flags, bit);
+		*/
 	if ( proto )
-	  SET_BIT( location->room_flags, ROOM_PROTOTYPE );
+
+	  BV_SET_BIT( location->room_flags, ROOM_PROTOTYPE );
 	return;
     }
 
@@ -4386,7 +4544,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
     EXTRA_DESCR_DATA	*ed;
     char		dir;
     EXIT_DATA		*xit, *texit;
-    int			value;
+    size_t		value;
     int			edir, ekey, evnum;
     char		*origarg = argument;
 
@@ -4633,13 +4791,13 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	{
 	   argument = one_argument( argument, arg2 );
 	   value = get_rflag( arg2 );
-	   if ( value < 0 || value > 31 )
+	   if ( value < 0 || value == BIT_NOTFOUND )
 	     ch_printf( ch, "Unknown flag: %s\n", arg2 );
-	   else if ( 1 << value == ROOM_PLR_HOME && get_trust(ch) < LEVEL_SUPREME )
+	   else if ( value == ROOM_PLR_HOME && get_trust(ch) < LEVEL_SUPREME )
 	       send_to_char( "If you want to build a player home use the 'empty_home' flag instead.\n", ch );
 	   else
 	   {
-	       TOGGLE_BIT( location->room_flags, 1 << value );
+	       BV_TOGGLE_BIT( location->room_flags, value );
 	   }
 	}
 	return;
@@ -6077,7 +6235,7 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 	if ( (pMobIndex = get_mob_index( vnum )) == NULL )
 	  continue;
 	if ( install )
-	  REMOVE_BIT( pMobIndex->act, ACT_PROTOTYPE );
+	  BV_REMOVE_BIT( pMobIndex->act, ACT_PROTOTYPE );
 	if ( pMobIndex->perm_str != 13	||   pMobIndex->perm_int   != 13
 	||   pMobIndex->perm_wis != 13	||   pMobIndex->perm_dex   != 13
 	||   pMobIndex->perm_con != 13	||   pMobIndex->perm_cha   != 13
@@ -6097,12 +6255,14 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 	fprintf( fpout,	"%s~\n",	pMobIndex->short_descr		);
 	fprintf( fpout,	"%s~\n",	strip_cr(pMobIndex->long_descr)	);
 	fprintf( fpout, "%s~\n",	strip_cr(pMobIndex->description));
-	fprintf( fpout, "%d %d %d %c\n",pMobIndex->act,
-					pMobIndex->affected_by,
+	fprintf( fpout, "%d %d %d %c\n",
+					-9999,
+					-9999,
 					pMobIndex->alignment,
 					complexmob ? 'Z' : 'S'		);
 		/* C changed to Z for swreality vip_flags  */
-					
+	fwrite_bitset(fpout,NULL, pMobIndex->act);
+	fwrite_bitset(fpout,NULL, pMobIndex->affected_by);	
 	fprintf( fpout, "%d %d %d ",	pMobIndex->level,
 					pMobIndex->mobthac0,
 					pMobIndex->ac			);
@@ -6139,7 +6299,8 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 					-9999,
 					pMobIndex->speaking,
 					pMobIndex->numattacks );
-	  fwrite_bitset(fpout, NULL, pMobIndex->speaks);	  
+	  fwrite_bitset(fpout, NULL, pMobIndex->speaks);
+
 	  fprintf( fpout, "%d %d %d %d %d %d %d %d\n",
 					pMobIndex->hitroll,
 					pMobIndex->damroll,
@@ -6270,12 +6431,12 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 	    OBJ_DATA  *obj, *obj_next;
 
 	    /* remove prototype flag from room */
-	    REMOVE_BIT( room->room_flags, ROOM_PROTOTYPE );
+	    BV_REMOVE_BIT( room->room_flags, ROOM_PROTOTYPE );
 	    /* purge room of (prototyped) mobiles */
 	    for ( victim = room->first_person; victim; victim = vnext )
 	    {
 		vnext = victim->next_in_room;
-		if ( IS_NPC(victim) && IS_SET( victim->act, ACT_PROTOTYPE ) )
+		if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 		  extract_char( victim, TRUE );
 	    }
 	    /* purge room of (prototyped) objects */
@@ -6290,14 +6451,15 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 	fprintf( fpout, "%s~\n",	room->name			);
 	fprintf( fpout, "%s~\n",	strip_cr( room->description )	);
 	if ( (room->tele_delay > 0 && room->tele_vnum > 0) || room->tunnel > 0 )
-	  fprintf( fpout, "0 %d %d %d %d %d\n",	room->room_flags,
+	  fprintf( fpout, "0 %d %d %d %d %d\n",	-9999,
 						room->sector_type,
 						room->tele_delay,
 						room->tele_vnum,
 						room->tunnel		);
 	else
-	  fprintf( fpout, "0 %d %d\n",	room->room_flags,
+	  fprintf( fpout, "0 %d %d\n",	-9999,
 					room->sector_type	);
+	fwrite_bitset(fpout, NULL, room->room_flags);
 	for ( xit = room->first_exit; xit; xit = xit->next )
 	{
 	   if ( IS_SET(xit->exit_info, EX_PORTAL) ) /* don't fold portals */
@@ -7689,7 +7851,7 @@ void do_mpedit( CHAR_DATA *ch, char *argument )
     if ( !can_mmodify( ch, victim ) )
 	return;
 
-    if ( !IS_SET( victim->act, ACT_PROTOTYPE ) )
+    if ( !BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
     {
 	send_to_char( "A mobile must have a prototype flag to be mpset.\n", ch );
 	return;

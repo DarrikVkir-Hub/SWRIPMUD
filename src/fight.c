@@ -322,7 +322,7 @@ void violence_update( void )
 
         retcode = rNONE;
 
-	if ( IS_SET(ch->in_room->room_flags, ROOM_SAFE ) )
+	if ( BV_IS_SET(ch->in_room->room_flags, ROOM_SAFE ) )
 	{
 	   log_printf( "violence_update: %s fighting %s in a SAFE room.",
 	   	ch->name, victim->name );
@@ -385,7 +385,7 @@ void violence_update( void )
 		 * NPC's assist NPC's of same type or 12.5% chance regardless.
 		 */
 		if ( IS_NPC(rch) && !IS_AFFECTED(rch, AFF_CHARM)
-		&&  !IS_SET(rch->act, ACT_NOASSIST) )
+		&&  !BV_IS_SET(rch->act, ACT_NOASSIST) )
 		{
 		    if ( char_died(ch) )
 			break;
@@ -434,7 +434,7 @@ ch_ret multi_hit( CHAR_DATA *ch, CHAR_DATA *victim, int dt )
     if ( !IS_NPC(ch) && !IS_NPC(victim) )
       add_timer( ch, TIMER_RECENTFIGHT, 20, NULL, 0 );
 
-    if ( !IS_NPC(ch) && IS_SET( ch->act, PLR_NICE ) && !IS_NPC( victim ) )
+    if ( !IS_NPC(ch) && BV_IS_SET( ch->act, PLR_NICE ) && !IS_NPC( victim ) )
       return rNONE;
 
     if ( (retcode = one_hit( ch, victim, dt )) != rNONE )
@@ -1084,7 +1084,7 @@ ch_ret one_hit( CHAR_DATA *ch, CHAR_DATA *victim, int dt )
         * Each successful hit casts a spell
         * Adjusted for FUSS - DV 3-14-26
         */
-   if( wield && !IS_SET( victim->immune, RIS_MAGIC ) && !IS_SET( victim->in_room->room_flags, ROOM_NO_MAGIC ) )
+   if( wield && !IS_SET( victim->immune, RIS_MAGIC ) && !BV_IS_SET( victim->in_room->room_flags, ROOM_NO_MAGIC ) )
    {
       AFFECT_DATA *aff;
 
@@ -1279,7 +1279,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
 
     if ( dam && npcvict && ch != victim )
     {
-	if ( !IS_SET( victim->act, ACT_SENTINEL ) )
+	if ( !BV_IS_SET( victim->act, ACT_SENTINEL ) )
  	{
 	   if ( victim->hunting )
 	   {
@@ -1361,13 +1361,13 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
 	{
 	    affect_strip( ch, gsn_invis );
 	    affect_strip( ch, gsn_mass_invis );
-	    REMOVE_BIT( ch->affected_by, AFF_INVISIBLE );
+	    BV_REMOVE_BIT( ch->affected_by, AFF_INVISIBLE );
 	act( AT_MAGIC, "$n fades into existence.", ch, NULL, NULL, TO_ROOM );
 	}
 
 	/* Take away Hide */
 	if ( IS_AFFECTED(ch, AFF_HIDE) && ch->race != RACE_DEFEL )
-	     REMOVE_BIT(ch->affected_by, AFF_HIDE);
+	     BV_REMOVE_BIT(ch->affected_by, AFF_HIDE);
 	/*
 	 * Damage modifiers.
 	 */
@@ -1485,12 +1485,12 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
     if( !IS_NPC(victim) && victim->top_level >= LEVEL_IMMORTAL && victim->hit < 1)
       victim->hit = 1;
 
-    if (IS_SET(victim->in_room->room_flags, ROOM_ARENA) && victim->hit < 1) {
+    if (BV_IS_SET(victim->in_room->room_flags, ROOM_ARENA) && victim->hit < 1) {
       stop_fighting(victim, TRUE);
       remove_from_arena(victim);
     }
 
-    if ( IS_NPC(victim) && IS_SET(victim->act,ACT_IMMORTAL) )
+    if ( IS_NPC(victim) && BV_IS_SET(victim->act,ACT_IMMORTAL) )
       victim->hit = victim->max_hit;
 
     /* Make sure newbies dont die */
@@ -1557,9 +1557,9 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
 	    if ( skill->die_room && skill->die_room[0] != '\0' )
 	      act( AT_DEAD, skill->die_room, ch, NULL, victim, TO_NOTVICT );
 	}
-	if ( IS_NPC(victim) && IS_SET( victim->act, ACT_NOKILL )  )
+	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_NOKILL )  )
 	   act( AT_YELLOW, "$n flees for $s life ... barely escaping certain death!", victim, 0, 0, TO_ROOM );
-	else if ( (IS_NPC(victim) && IS_SET( victim->act, ACT_DROID ) ) || (!IS_NPC(victim) && victim->race == RACE_DROID ) )
+	else if ( (IS_NPC(victim) && BV_IS_SET( victim->act, ACT_DROID ) ) || (!IS_NPC(victim) && victim->race == RACE_DROID ) )
 	   act( AT_DEAD, "$n EXPLODES into many small pieces!", victim, 0, 0, TO_ROOM );
 	else
 	   act( AT_DEAD, "$n is DEAD!", victim, 0, 0, TO_ROOM );
@@ -1609,7 +1609,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
        OBJ_DATA *obj_next;
 //     int cnt=0;
     
-//     REMOVE_BIT( victim->act, PLR_ATTACKER ); Removed to add PLR_DONTAUTOFUEL
+//     BV_REMOVE_BIT( victim->act, PLR_ATTACKER ); Removed to add PLR_DONTAUTOFUEL
        
        stop_fighting( victim, TRUE );
        
@@ -1695,7 +1695,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
          if ( !IS_NPC( victim ) && victim->pcdata->clan )
            update_member( victim );
 
-	if ( victim->in_room != ch->in_room || !IS_NPC(victim) || !IS_SET( victim->act, ACT_NOKILL )  )
+	if ( victim->in_room != ch->in_room || !IS_NPC(victim) || !BV_IS_SET( victim->act, ACT_NOKILL )  )
 	   loot = legal_loot( ch, victim );
         else
            loot = FALSE;
@@ -1709,7 +1709,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
 	if ( !IS_NPC(ch) && loot )
 	{
 	   /* Autogold by Scryn 8/12 */
-	    if ( IS_SET(ch->act, PLR_AUTOGOLD) )
+	    if ( BV_IS_SET(ch->act, PLR_AUTOGOLD) )
 	    {
 		init_gold = ch->gold;
 		do_get( ch, "credits corpse" );
@@ -1721,12 +1721,12 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
 		  do_split( ch, buf1 );
 		} 
 	    }
-	    if ( IS_SET(ch->act, PLR_AUTOLOOT) )
+	    if ( BV_IS_SET(ch->act, PLR_AUTOLOOT) )
 		do_get( ch, "all corpse" );
 	    else
 		do_look( ch, "in corpse" );
 
-	    if ( IS_SET(ch->act, PLR_AUTOSAC) )
+	    if ( BV_IS_SET(ch->act, PLR_AUTOSAC) )
 		do_sacrifice( ch, "corpse" );
 	}
     if (IS_NPC(ch) && loot)
@@ -1774,7 +1774,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
      */
     if ( npcvict && dam > 0 )
     {
-	if ( ( IS_SET(victim->act, ACT_WIMPY) && number_bits( 1 ) == 0
+	if ( ( BV_IS_SET(victim->act, ACT_WIMPY) && number_bits( 1 ) == 0
 	&&   victim->hit < victim->max_hit / 2 )
 	||   ( IS_AFFECTED(victim, AFF_CHARM) && victim->master
 	&&     victim->master->in_room != victim->in_room ) )
@@ -1791,7 +1791,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
     &&   victim->wait == 0 )
 	do_flee( victim, "" );
     else
-    if ( !npcvict && IS_SET( victim->act, PLR_FLEE ) )
+    if ( !npcvict && BV_IS_SET( victim->act, PLR_FLEE ) )
 	do_flee( victim, "" );
 
     tail_chain( );
@@ -1807,7 +1807,7 @@ bool is_safe( CHAR_DATA *ch, CHAR_DATA *victim )
     if ( who_fighting( ch ) == ch )
 	return FALSE;
                  
-    if ( IS_SET( victim->in_room->room_flags, ROOM_SAFE ) )
+    if ( BV_IS_SET( victim->in_room->room_flags, ROOM_SAFE ) )
     {
 	set_char_color( AT_MAGIC, ch );
 	send_to_char( "You'll have to do that elswhere.\n", ch );
@@ -1861,23 +1861,23 @@ void check_killer( CHAR_DATA *ch, CHAR_DATA *victim )
     /*
     * Charm-o-rama.
     */
-    if ( IS_SET(ch->affected_by, AFF_CHARM) )
+    if ( BV_IS_SET(ch->affected_by, AFF_CHARM) )
     {
-	if ( !ch->master )
-	{
-	    char buf[MAX_STRING_LENGTH];
+        if ( !ch->master )
+        {
+            char buf[MAX_STRING_LENGTH];
 
-	    SPRINTF( buf, "Check_killer: %s bad AFF_CHARM",
-		IS_NPC(ch) ? ch->short_descr : ch->name );
-	    bug( buf, 0 );
-	    affect_strip( ch, gsn_charm_person );
-	    REMOVE_BIT( ch->affected_by, AFF_CHARM );
-	    return;
-	}
+            SPRINTF( buf, "Check_killer: %s bad AFF_CHARM",
+            IS_NPC(ch) ? ch->short_descr : ch->name );
+            bug( buf, 0 );
+            affect_strip( ch, gsn_charm_person );
+            BV_REMOVE_BIT( ch->affected_by, AFF_CHARM );
+            return;
+        }
 
-	/* stop_follower( ch ); */
-	if ( ch->master )
-	  check_killer( ch->master, victim );
+        /* stop_follower( ch ); */
+        if ( ch->master )
+        check_killer( ch->master, victim );
     }
     
     if ( IS_NPC(victim) )
@@ -1952,7 +1952,7 @@ void update_pos( CHAR_DATA *victim )
 	{
 	  act( AT_ACTION, "$n falls from $N.",
 		victim, NULL, victim->mount, TO_ROOM );
-	  REMOVE_BIT( victim->mount->act, ACT_MOUNTED );
+	  BV_REMOVE_BIT( victim->mount->act, ACT_MOUNTED );
 	  victim->mount = NULL;
 	}
 	victim->position = POS_DEAD;
@@ -1971,7 +1971,7 @@ void update_pos( CHAR_DATA *victim )
     {
 	act( AT_ACTION, "$n falls unconscious from $N.",
 		victim, NULL, victim->mount, TO_ROOM );
-	REMOVE_BIT( victim->mount->act, ACT_MOUNTED );
+	BV_REMOVE_BIT( victim->mount->act, ACT_MOUNTED );
 	victim->mount = NULL;
     }
     return;
@@ -2138,7 +2138,7 @@ void raw_kill( CHAR_DATA *ch, CHAR_DATA *victim )
         claim_disintigration( ch , victim );
 
 /* Take care of polymorphed chars */
-    if(IS_NPC(victim) && IS_SET(victim->act, ACT_POLYMORPHED))
+    if(IS_NPC(victim) && BV_IS_SET(victim->act, ACT_POLYMORPHED))
     {
       char_from_room(victim->desc->original);
       char_to_room(victim->desc->original, victim->in_room);
@@ -2157,17 +2157,17 @@ void raw_kill( CHAR_DATA *ch, CHAR_DATA *victim )
           victim->in_room->area->planet->pop_support = -100;
     }
     
-if ( !IS_NPC(victim) || !IS_SET( victim->act, ACT_NOKILL  ) )
+if ( !IS_NPC(victim) || !BV_IS_SET( victim->act, ACT_NOKILL  ) )
         mprog_death_trigger( ch, victim );
 if ( char_died(victim) )
       return;
 
-if ( !IS_NPC(victim) || !IS_SET( victim->act, ACT_NOKILL  ) )
+if ( !IS_NPC(victim) || !BV_IS_SET( victim->act, ACT_NOKILL  ) )
     rprog_death_trigger( ch, victim );
 if ( char_died(victim) )
     return;
 
-if ( !IS_NPC(victim) || ( !IS_SET( victim->act, ACT_NOKILL  ) && !IS_SET( victim->act, ACT_NOCORPSE ) ) )
+if ( !IS_NPC(victim) || ( !BV_IS_SET( victim->act, ACT_NOKILL  ) && !BV_IS_SET( victim->act, ACT_NOCORPSE ) ) )
     make_corpse( victim, ch );
 else
 {
@@ -2226,8 +2226,8 @@ else
       STRFREE( room->name );
       room->name = STRALLOC( "An Empty Apartment" );
 
-      REMOVE_BIT( room->room_flags , ROOM_PLR_HOME );
-      SET_BIT( room->room_flags , ROOM_EMPTY_HOME );
+      BV_REMOVE_BIT( room->room_flags , ROOM_PLR_HOME );
+      BV_SET_BIT( room->room_flags , ROOM_EMPTY_HOME );
      
       fold_area( room->area, room->area->filename, FALSE );      
     }
@@ -2344,7 +2344,6 @@ else
     }
     while ( victim->first_affect )
 	affect_remove( victim, victim->first_affect );
-    victim->affected_by	= race_table[victim->race].affected;
     victim->resistant   = 0;
     victim->susceptible = 0;
     victim->immune      = 0;
@@ -2759,7 +2758,7 @@ void do_kill( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( victim->vip_flags.any() && !IS_SET( victim->act, ACT_DROID )  )
+    if ( victim->vip_flags.any() && !BV_IS_SET( victim->act, ACT_DROID )  )
        ch->alignment -= 10;
 
     WAIT_STATE( ch, 1 * PULSE_VIOLENCE );
@@ -2803,12 +2802,12 @@ void do_murder( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( !IS_SET(ch->in_room->room_flags, ROOM_ARENA))
+    if ( !BV_IS_SET(ch->in_room->room_flags, ROOM_ARENA))
     {
       log_printf( "%s: murder %s" , ch->name, arg );
     }
 
-    if ( IS_SET(victim->act, PLR_AFK))
+    if ( BV_IS_SET(victim->act, PLR_AFK))
     {
       log_printf( "%s just attacked %s with an afk flag on!." , ch->name, victim->name );
     }
@@ -2831,13 +2830,13 @@ void do_murder( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( !IS_NPC( victim ) && IS_SET( ch->act, PLR_NICE ) )
+    if ( !IS_NPC( victim ) && BV_IS_SET( ch->act, PLR_NICE ) )
     {
       send_to_char( "You feel too nice to do that!\n", ch );
       return;
     }
 
-    if ( !IS_SET( victim->act, ACT_DROID )  )
+    if ( !BV_IS_SET( victim->act, ACT_DROID )  )
         ch->alignment = URANGE( -1000, ch->alignment - 10, 1000 );
     
     WAIT_STATE( ch, 1 * PULSE_VIOLENCE );
@@ -2900,13 +2899,13 @@ void do_flee( CHAR_DATA *ch, char *argument )
 	|| ( IS_SET(pexit->exit_info, EX_CLOSED)
 	&&   !IS_AFFECTED( ch, AFF_PASS_DOOR ) )
 	|| ( IS_NPC(ch)
-	&&   IS_SET(pexit->to_room->room_flags, ROOM_NO_MOB) ) )
+	&&   BV_IS_SET(pexit->to_room->room_flags, ROOM_NO_MOB) ) )
 	    continue;
  
       if ( !permsneak(ch) )
       {
 	affect_strip ( ch, gsn_sneak );
-        REMOVE_BIT   ( ch->affected_by, AFF_SNEAK );
+        BV_REMOVE_BIT   ( ch->affected_by, AFF_SNEAK );
       }
 	if ( ch->mount && ch->mount->fighting )
 	    stop_fighting( ch->mount, TRUE );
@@ -2971,11 +2970,11 @@ bool get_cover( CHAR_DATA *ch )
 	|| ( IS_SET(pexit->exit_info, EX_CLOSED)
 	&&   !IS_AFFECTED( ch, AFF_PASS_DOOR ) )
 	|| ( IS_NPC(ch)
-	&&   IS_SET(pexit->to_room->room_flags, ROOM_NO_MOB) ) )
+	&&   BV_IS_SET(pexit->to_room->room_flags, ROOM_NO_MOB) ) )
 	    continue;
  
         affect_strip ( ch, gsn_sneak );
-        REMOVE_BIT   ( ch->affected_by, AFF_SNEAK );
+        BV_REMOVE_BIT   ( ch->affected_by, AFF_SNEAK );
 	if ( ch->mount && ch->mount->fighting )
 	    stop_fighting( ch->mount, TRUE );
 	move_char( ch, pexit, 0 );

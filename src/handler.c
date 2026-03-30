@@ -121,10 +121,10 @@ void room_explode_1( OBJ_DATA *obj , CHAR_DATA *xch, ROOM_INDEX_DATA *room , int
           OBJ_DATA  *robj_next;
           int dam;
 
-    	  if ( IS_SET( room->room_flags, BFS_MARK ) )
+    	  if ( BV_IS_SET( room->room_flags, BFS_MARK ) )
     	     return;
     	  
-    	  SET_BIT( room->room_flags , BFS_MARK );
+    	  BV_SET_BIT( room->room_flags , BFS_MARK );
     	                        
     	  for ( rch = room->first_person ; rch ;  rch = rnext )
     	  {  
@@ -136,10 +136,10 @@ void room_explode_1( OBJ_DATA *obj , CHAR_DATA *xch, ROOM_INDEX_DATA *room , int
             {
                 if ( IS_NPC( rch ) )
                 {
-                    if ( IS_SET( rch->act , ACT_SENTINEL ) )
+                    if ( BV_IS_SET( rch->act , ACT_SENTINEL ) )
                     {
                         rch->was_sentinel = rch->in_room;
-                        REMOVE_BIT( rch->act, ACT_SENTINEL );
+                        BV_REMOVE_BIT( rch->act, ACT_SENTINEL );
                     }
                     start_hating( rch , xch );
                     start_hunting( rch , xch );
@@ -181,10 +181,10 @@ void room_explode_1( OBJ_DATA *obj , CHAR_DATA *xch, ROOM_INDEX_DATA *room , int
 void room_explode_2( ROOM_INDEX_DATA *room , int blast )
 {
 
-    	  if ( !IS_SET( room->room_flags, BFS_MARK ) )
+    	  if ( !BV_IS_SET( room->room_flags, BFS_MARK ) )
     	     return;
     	  
-    	  REMOVE_BIT( room->room_flags , BFS_MARK );
+    	  BV_REMOVE_BIT( room->room_flags , BFS_MARK );
     	                        
           if ( blast > 0 ) 
           {
@@ -207,7 +207,7 @@ void room_explode_2( ROOM_INDEX_DATA *room , int blast )
 bool is_wizvis( CHAR_DATA *ch , CHAR_DATA *victim )
 {
     if ( !IS_NPC(victim)
-    &&   IS_SET(victim->act, PLR_WIZINVIS)
+    &&   BV_IS_SET(victim->act, PLR_WIZINVIS)
     &&   get_trust( ch ) < victim->pcdata->wizinvis )
 	return FALSE;
 	
@@ -532,7 +532,7 @@ bool can_take_proto( CHAR_DATA *ch )
   if ( IS_IMMORTAL(ch) )
     return TRUE;
   else
-  if ( IS_NPC(ch) && IS_SET(ch->act, ACT_PROTOTYPE) )
+  if ( IS_NPC(ch) && BV_IS_SET(ch->act, ACT_PROTOTYPE) )
     return TRUE;
   else
     return FALSE;
@@ -653,28 +653,30 @@ void affect_modify( CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd )
 
     if ( fAdd )
     {
-	SET_BIT( ch->affected_by, paf->bitvector );
+        if (paf->bitvector != AFF_NONE)
+	        BV_SET_BIT( ch->affected_by, paf->bitvector );
     }
     else
     {
-	REMOVE_BIT( ch->affected_by, paf->bitvector );
-	/*
-	 * might be an idea to have a duration removespell which returns
-	 * the spell after the duration... but would have to store
-	 * the removed spell's information somewhere...		-Thoric
-	 */
-	if ( (paf->location % REVERSE_APPLY) == APPLY_REMOVESPELL )
-	  return;
-	switch( paf->location % REVERSE_APPLY )
-	{
-	  case APPLY_AFFECT:        REMOVE_BIT( ch->affected_by, mod );	return;
-	  case APPLY_RESISTANT:     REMOVE_BIT( ch->resistant, mod );	return;
-	  case APPLY_IMMUNE:        REMOVE_BIT( ch->immune, mod );	return;
-	  case APPLY_SUSCEPTIBLE:   REMOVE_BIT( ch->susceptible, mod );	return;
-	  case APPLY_WEARSPELL:	    /* affect only on wear */		return;
-	  case APPLY_REMOVE:	    SET_BIT( ch->affected_by, mod );	return;
-	}
-	mod = 0 - mod;
+        if (paf->bitvector != AFF_NONE)        
+            BV_REMOVE_BIT( ch->affected_by, paf->bitvector );
+        /*
+        * might be an idea to have a duration removespell which returns
+        * the spell after the duration... but would have to store
+        * the removed spell's information somewhere...		-Thoric
+        */
+        if ( (paf->location % REVERSE_APPLY) == APPLY_REMOVESPELL )
+        return;
+        switch( paf->location % REVERSE_APPLY )
+        {
+        case APPLY_AFFECT:        BV_REMOVE_BIT( ch->affected_by, mod );	return;
+        case APPLY_RESISTANT:     REMOVE_BIT( ch->resistant, mod );	return;
+        case APPLY_IMMUNE:        REMOVE_BIT( ch->immune, mod );	return;
+        case APPLY_SUSCEPTIBLE:   REMOVE_BIT( ch->susceptible, mod );	return;
+        case APPLY_WEARSPELL:	    /* affect only on wear */		return;
+        case APPLY_REMOVE:	    BV_SET_BIT( ch->affected_by, mod );	return;
+        }
+        mod = 0 - mod;
     }
 
     switch ( paf->location % REVERSE_APPLY )
@@ -714,12 +716,12 @@ void affect_modify( CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd )
     case APPLY_SAVING_PARA:   ch->saving_para_petri	+= mod;	break;
     case APPLY_SAVING_BREATH: ch->saving_breath		+= mod;	break;
     case APPLY_SAVING_SPELL:  ch->saving_spell_staff	+= mod;	break;
-    case APPLY_AFFECT:        SET_BIT( ch->affected_by, mod );	break;
+    case APPLY_AFFECT:        BV_SET_BIT( ch->affected_by, mod );	break;
     case APPLY_RESISTANT:     SET_BIT( ch->resistant, mod );	break;
     case APPLY_IMMUNE:        SET_BIT( ch->immune, mod );	break;
     case APPLY_SUSCEPTIBLE:   SET_BIT( ch->susceptible, mod );	break;
     case APPLY_WEAPONSPELL:	/* see fight.c */		break;
-    case APPLY_REMOVE:	      REMOVE_BIT(ch->affected_by, mod);	break;
+    case APPLY_REMOVE:	      BV_REMOVE_BIT(ch->affected_by, mod);	break;
 
     case APPLY_FULL:
 	if ( !IS_NPC(ch) )
@@ -756,7 +758,7 @@ void affect_modify( CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd )
 /* spell cast upon wear/removal of an object	-Thoric */
     case APPLY_WEARSPELL:
     case APPLY_REMOVESPELL:
-	if ( IS_SET(ch->in_room->room_flags, ROOM_NO_MAGIC)
+	if ( BV_IS_SET(ch->in_room->room_flags, ROOM_NO_MAGIC)
 	||   IS_SET(ch->immune, RIS_MAGIC)
 	||   saving_char == ch		/* so save/quit doesn't trigger */
 	||   loading_char == ch )	/* so loading doesn't trigger */
@@ -1115,7 +1117,7 @@ void char_to_room( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex )
 	++ch->in_room->light;
 
     if ( !IS_NPC(ch)
-    &&    IS_SET(ch->in_room->room_flags, ROOM_SAFE)
+    &&    BV_IS_SET(ch->in_room->room_flags, ROOM_SAFE)
     &&    get_timer(ch, TIMER_SHOVEDRAG) <= 0 )
        add_timer( ch, TIMER_SHOVEDRAG, 10, NULL, 0 );  /*-30 Seconds-*/
 
@@ -1123,7 +1125,7 @@ void char_to_room( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex )
      * Delayed Teleport rooms					-Thoric
      * Should be the last thing checked in this function
      */
-    if ( IS_SET( ch->in_room->room_flags, ROOM_TELEPORT )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_TELEPORT )
     &&	 ch->in_room->tele_delay > 0 )
     {
 	TELEPORT_DATA *tele;
@@ -1160,7 +1162,7 @@ OBJ_DATA *obj_to_char( OBJ_DATA *obj, CHAR_DATA *ch )
 
     if( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
     {
-        if( !IS_IMMORTAL( ch ) && ( !IS_NPC( ch ) || !IS_SET( ch->act, ACT_PROTOTYPE ) ) )
+        if( !IS_IMMORTAL( ch ) && ( !IS_NPC( ch ) || !BV_IS_SET( ch->act, ACT_PROTOTYPE ) ) )
             return obj_to_room( obj, ch->in_room );
     }
 
@@ -1696,7 +1698,7 @@ void extract_char( CHAR_DATA *ch, bool fPull )
 
     stop_fighting( ch, TRUE );
 
-    if (IS_SET(ch->in_room->room_flags, ROOM_ARENA))
+    if (BV_IS_SET(ch->in_room->room_flags, ROOM_ARENA))
     {
         ch->hit = ch->max_hit;
         ch->mana = ch->max_mana;
@@ -1706,12 +1708,12 @@ void extract_char( CHAR_DATA *ch, bool fPull )
 
     if ( ch->mount )
     {
-	REMOVE_BIT( ch->mount->act, ACT_MOUNTED );
+	BV_REMOVE_BIT( ch->mount->act, ACT_MOUNTED );
 	ch->mount = NULL;
 	ch->position = POS_STANDING;
     }
 
-    if ( IS_NPC(ch) && IS_SET( ch->act, ACT_MOUNTED ) )
+    if ( IS_NPC(ch) && BV_IS_SET( ch->act, ACT_MOUNTED ) )
 	for ( wch = first_char; wch; wch = wch->next )
 	{
 	   if ( wch->mount == ch )
@@ -1727,7 +1729,7 @@ void extract_char( CHAR_DATA *ch, bool fPull )
 			wch, NULL, ch, TO_CHAR );
 	    }
 	}
-    REMOVE_BIT( ch->act, ACT_MOUNTED );
+    BV_REMOVE_BIT( ch->act, ACT_MOUNTED );
 
     while ( (obj = ch->last_carrying) != NULL )
 	extract_obj( obj );
@@ -1757,7 +1759,7 @@ void extract_char( CHAR_DATA *ch, bool fPull )
 	--nummobsloaded;
     }
 
-    if ( ch->desc && ch->desc->original && IS_SET(ch->act, ACT_POLYMORPHED))
+    if ( ch->desc && ch->desc->original && BV_IS_SET(ch->act, ACT_POLYMORPHED))
         do_revert( ch, "" );
 
     if ( ch->desc && ch->desc->original )
@@ -2352,7 +2354,7 @@ bool room_is_dark( ROOM_INDEX_DATA *pRoomIndex )
     if ( pRoomIndex->light > 0 )
 	return FALSE;
 
-    if ( IS_SET(pRoomIndex->room_flags, ROOM_DARK) )
+    if ( BV_IS_SET(pRoomIndex->room_flags, ROOM_DARK) )
 	return TRUE;
 
     if ( pRoomIndex->sector_type == SECT_INSIDE
@@ -2388,7 +2390,7 @@ bool room_is_private( CHAR_DATA *ch , ROOM_INDEX_DATA *pRoomIndex )
 	return FALSE;
     }
     
-    if ( IS_SET(pRoomIndex->room_flags, ROOM_PLR_HOME) && ch->plr_home != pRoomIndex)
+    if ( BV_IS_SET(pRoomIndex->room_flags, ROOM_PLR_HOME) && ch->plr_home != pRoomIndex)
         return TRUE; 
     
     count = 0;
@@ -2396,10 +2398,10 @@ bool room_is_private( CHAR_DATA *ch , ROOM_INDEX_DATA *pRoomIndex )
     for ( rch = pRoomIndex->first_person; rch; rch = rch->next_in_room )
 	count++;
 
-    if ( IS_SET(pRoomIndex->room_flags, ROOM_PRIVATE)  && count >= 2 )
+    if ( BV_IS_SET(pRoomIndex->room_flags, ROOM_PRIVATE)  && count >= 2 )
 	return TRUE;
 
-    if ( IS_SET(pRoomIndex->room_flags, ROOM_SOLITARY) && count >= 1 )
+    if ( BV_IS_SET(pRoomIndex->room_flags, ROOM_SOLITARY) && count >= 1 )
 	return TRUE;
     if (ch->top_level == LEVEL_SUPREME ? 0: (pRoomIndex->vnum == IMP_ROOM1?1:(pRoomIndex->vnum == IMP_ROOM2?1:0)))
       return TRUE;
@@ -2423,7 +2425,7 @@ bool can_see( CHAR_DATA *ch, CHAR_DATA *victim )
     {
       if ( IS_AFFECTED(victim, AFF_INVISIBLE)
       ||   IS_AFFECTED(victim, AFF_HIDE)
-      ||   IS_SET(victim->act, PLR_WIZINVIS) ) 
+      ||   BV_IS_SET(victim->act, PLR_WIZINVIS) ) 
 	return FALSE;
       else
 	return TRUE;
@@ -2433,7 +2435,7 @@ bool can_see( CHAR_DATA *ch, CHAR_DATA *victim )
 	return TRUE;
 
     if ( !IS_NPC(victim)
-    &&   IS_SET(victim->act, PLR_WIZINVIS)
+    &&   BV_IS_SET(victim->act, PLR_WIZINVIS)
     &&   get_trust( ch ) < victim->pcdata->wizinvis )
 	return FALSE;
 
@@ -2445,7 +2447,7 @@ bool can_see( CHAR_DATA *ch, CHAR_DATA *victim )
 
     /* SB */
     if ( IS_NPC(victim)   
-    &&   IS_SET(victim->act, ACT_MOBINVIS)
+    &&   BV_IS_SET(victim->act, ACT_MOBINVIS)
     &&   get_trust( ch ) < victim->mobinvis )
         return FALSE;
 
@@ -2454,7 +2456,7 @@ bool can_see( CHAR_DATA *ch, CHAR_DATA *victim )
     &&  (!victim->switched || !IS_AFFECTED(victim->switched, AFF_POSSESS)) )
 	return FALSE;
 
-    if ( !IS_NPC(ch) && IS_SET(ch->act, PLR_HOLYLIGHT) )
+    if ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_HOLYLIGHT) )
 	return TRUE;
 	
     /* The miracle cure for blindness? -- Altrag */
@@ -2492,7 +2494,7 @@ bool can_see( CHAR_DATA *ch, CHAR_DATA *victim )
  */
 bool can_see_obj( CHAR_DATA *ch, OBJ_DATA *obj )
 {
-    if ( !IS_NPC(ch) && IS_SET(ch->act, PLR_HOLYLIGHT) )
+    if ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_HOLYLIGHT) )
 	return TRUE;
 	
     if ( IS_OBJ_STAT( obj, ITEM_BURRIED ) )
@@ -2507,7 +2509,7 @@ bool can_see_obj( CHAR_DATA *ch, OBJ_DATA *obj )
     if ( IS_OBJ_STAT(obj, ITEM_HIDDEN) )
 	return FALSE;
 /*
-    if ( ( !obj->description || obj->description[0] == '\0' ) && !IS_SET(ch->act, PLR_HOLYLIGHT) && !IS_NPC(ch) )
+    if ( ( !obj->description || obj->description[0] == '\0' ) && !BV_IS_SET(ch->act, PLR_HOLYLIGHT) && !IS_NPC(ch) )
         return FALSE;
 */
     if ( obj->item_type == ITEM_LIGHT && obj->value[2] != 0 )
@@ -2644,47 +2646,10 @@ char *affect_loc_name( int location )
 /*
  * Return ascii name of an affect bit vector.
  */
-char *affect_bit_name( int vector )
+char *affect_bit_name_obs( int vector )
 {
-    static char buf[512];
-
-    buf[0] = '\0';
-    if ( vector & AFF_BLIND         ) STRAPP( buf, " blind"         );
-    if ( vector & AFF_INVISIBLE     ) STRAPP( buf, " invisible"     );
-    if ( vector & AFF_DETECT_EVIL   ) STRAPP( buf, " detect_evil"   );
-    if ( vector & AFF_DETECT_INVIS  ) STRAPP( buf, " detect_invis"  );
-    if ( vector & AFF_DETECT_MAGIC  ) STRAPP( buf, " detect_magic"  );
-    if ( vector & AFF_DETECT_HIDDEN ) STRAPP( buf, " detect_hidden" );
-    if ( vector & AFF_WEAKEN        ) STRAPP( buf, " weaken"        );
-    if ( vector & AFF_SANCTUARY     ) STRAPP( buf, " sanctuary"     );
-    if ( vector & AFF_FAERIE_FIRE   ) STRAPP( buf, " faerie_fire"   );
-    if ( vector & AFF_INFRARED      ) STRAPP( buf, " infrared"      );
-    if ( vector & AFF_CURSE         ) STRAPP( buf, " curse"         );
-	// Johnson ( Michael Shattuck ) 4/28 Start - Added 5-15-04 - DV
-	//if ( vector & AFF_FLAMING       ) STRAPP( buf, " flaming"       );
-	if ( vector & AFF_ENDURANCE		) STRAPP( buf, " endurance"		);
-	// Shattuck 4/28 End
-    if ( vector & AFF_POISON        ) STRAPP( buf, " poison"        );
-    if ( vector & AFF_PROTECT       ) STRAPP( buf, " protect"       );
-    if ( vector & AFF_PARALYSIS     ) STRAPP( buf, " paralysis"     );
-    if ( vector & AFF_SLEEP         ) STRAPP( buf, " sleep"         );
-    if ( vector & AFF_SNEAK         ) STRAPP( buf, " sneak"         );
-    if ( vector & AFF_HIDE          ) STRAPP( buf, " stealth"          );
-    if ( vector & AFF_CHARM         ) STRAPP( buf, " charm"         );
-    if ( vector & AFF_POSSESS       ) STRAPP( buf, " possess"       );
-    if ( vector & AFF_FLYING        ) STRAPP( buf, " flying"        );
-    if ( vector & AFF_PASS_DOOR     ) STRAPP( buf, " pass_door"     );
-    if ( vector & AFF_FLOATING      ) STRAPP( buf, " floating"      );
-    if ( vector & AFF_TRUESIGHT     ) STRAPP( buf, " true_sight"    );
-    if ( vector & AFF_DETECTTRAPS   ) STRAPP( buf, " detect_traps"  );
-    if ( vector & AFF_SCRYING       ) STRAPP( buf, " scrying"       );
-    if ( vector & AFF_FIRESHIELD    ) STRAPP( buf, " fireshield"    );
-    if ( vector & AFF_SHOCKSHIELD   ) STRAPP( buf, " shockshield"   );
-    if ( vector & AFF_ICESHIELD     ) STRAPP( buf, " iceshield"     );
-    if ( vector & AFF_POSSESS       ) STRAPP( buf, " possess"       );
-    if ( vector & AFF_BERSERK       ) STRAPP( buf, " berserk"       );
-    if ( vector & AFF_AQUA_BREATH   ) STRAPP( buf, " aqua_breath"   );
-    return ( buf[0] != '\0' ) ? buf+1 : (char *) "none";
+    // Obsolete, use bitset_to_string.c_str()
+    return "";
 }
 
 
@@ -2994,7 +2959,7 @@ void clean_room( ROOM_INDEX_DATA *room )
    }
    room->first_exit = NULL;
    room->last_exit = NULL;
-   room->room_flags = 0;
+   room->room_flags.reset();
    room->sector_type = 0;
    room->light = 0;
 }
@@ -3071,7 +3036,7 @@ void clean_mob( MOB_INDEX_DATA *mob )
 	}
 	mob->count	 = 0;	   mob->killed		= 0;
 	mob->sex	 = 0;	   mob->level	        = 0;
-	mob->act	 = 0;	   mob->affected_by	= 0;
+	mob->act.reset();	   mob->affected_by.reset();
 	mob->alignment	 = 0;	   mob->mobthac0	= 0;
 	mob->ac		 = 0;	   mob->hitnodice	= 0;
 	mob->hitsizedice = 0;	   mob->hitplus		= 0;

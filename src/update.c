@@ -356,7 +356,7 @@ void advance_level( CHAR_DATA *ch , int ability)
     }
 
     if ( !IS_NPC(ch) )
-	REMOVE_BIT( ch->act, PLR_BOUGHT_PET );
+	BV_REMOVE_BIT( ch->act, PLR_BOUGHT_PET );
 
     return;
 }   
@@ -819,8 +819,8 @@ void mobile_update( void )
 	  continue;
 	}
 
-	if ( !IS_SET( ch->act, ACT_RUNNING )
-	&&   !IS_SET( ch->act, ACT_SENTINEL )
+	if ( !BV_IS_SET( ch->act, ACT_RUNNING )
+	&&   !BV_IS_SET( ch->act, ACT_SENTINEL )
 	&&   !ch->fighting && ch->hunting )
 	{
 	  if (  ch->top_level < 20 )
@@ -839,19 +839,19 @@ void mobile_update( void )
 	  continue;
 	}  
         else if ( !ch->fighting && !ch->hunting 
-        && !IS_SET( ch->act, ACT_RUNNING)
+        && !BV_IS_SET( ch->act, ACT_RUNNING)
         && ch->was_sentinel && ch->position >= POS_STANDING )
 	{
 	   act( AT_ACTION, "$n leaves.", ch, NULL, NULL, TO_ROOM );
 	   char_from_room( ch );
 	   char_to_room( ch , ch->was_sentinel );
 	   act( AT_ACTION, "$n arrives.", ch, NULL, NULL, TO_ROOM );
-	   SET_BIT( ch->act , ACT_SENTINEL );            
+	   BV_SET_BIT( ch->act , ACT_SENTINEL );            
 	   ch->was_sentinel = NULL;
 	}
 	
 	/* Examine call for special procedure */
-	if ( !IS_SET( ch->act, ACT_RUNNING )
+	if ( !BV_IS_SET( ch->act, ACT_RUNNING )
 	&&    ch->spec_fun )
 	{
 	    if ( (*ch->spec_fun) ( ch ) )
@@ -860,7 +860,7 @@ void mobile_update( void )
 		continue;
 	}
         
-        if ( !IS_SET( ch->act, ACT_RUNNING )
+        if ( !BV_IS_SET( ch->act, ACT_RUNNING )
 	&&    ch->spec_2 )
 	{
 	    if ( (*ch->spec_2) ( ch ) )
@@ -887,15 +887,15 @@ void mobile_update( void )
 	    continue;
         
         
-	if ( IS_SET(ch->act, ACT_MOUNTED ) )
+	if ( BV_IS_SET(ch->act, ACT_MOUNTED ) )
 	{
-	    if ( IS_SET(ch->act, ACT_AGGRESSIVE) )
+	    if ( BV_IS_SET(ch->act, ACT_AGGRESSIVE) )
 		do_emote( ch, "snarls and growls." );
 	    continue;
 	}
 
-	if ( IS_SET(ch->in_room->room_flags, ROOM_SAFE )
-	&&   IS_SET(ch->act, ACT_AGGRESSIVE) )
+	if ( BV_IS_SET(ch->in_room->room_flags, ROOM_SAFE )
+	&&   BV_IS_SET(ch->act, ACT_AGGRESSIVE) )
 	    do_emote( ch, "glares around and snarls." );
 
 
@@ -923,7 +923,7 @@ void mobile_update( void )
 	  continue;
 
 	/* Scavenge */
-	if ( IS_SET(ch->act, ACT_SCAVENGER)
+	if ( BV_IS_SET(ch->act, ACT_SCAVENGER)
 	&&   ch->in_room->first_content
 	&&   number_bits( 2 ) == 0 )
 	{
@@ -935,7 +935,7 @@ void mobile_update( void )
 	    obj_best    = NULL;
 		for( obj = ch->in_room->first_content; obj; obj = obj->next_content )
 		{
-			if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) && !IS_SET( ch->act, ACT_PROTOTYPE ) )
+			if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) && !BV_IS_SET( ch->act, ACT_PROTOTYPE ) )
 				continue;
 			if( CAN_WEAR( obj, ITEM_TAKE ) && obj->cost > max && !IS_OBJ_STAT( obj, ITEM_BURRIED ) )
 			{
@@ -953,19 +953,19 @@ void mobile_update( void )
 	}
 
 	/* Wander */
-	if ( !IS_SET(ch->act, ACT_RUNNING)
-		&&   !IS_SET(ch->act, ACT_SENTINEL)
-		&&   !IS_SET(ch->act, ACT_PROTOTYPE)
-		&& !IS_SET( ch->act, ACT_NOWANDER )
-		&& !IS_SET( ch->act, ACT_PET )		
+	if ( !BV_IS_SET(ch->act, ACT_RUNNING)
+		&&   !BV_IS_SET(ch->act, ACT_SENTINEL)
+		&&   !BV_IS_SET(ch->act, ACT_PROTOTYPE)
+		&& !BV_IS_SET( ch->act, ACT_NOWANDER )
+		&& !BV_IS_SET( ch->act, ACT_PET )		
 		&& ( door = number_bits( 5 ) ) <= 9
 		&& ( pexit = get_exit(ch->in_room, door) ) != NULL
 		&&   pexit->to_room && get_room_index( pexit->vnum )
 		&& !IS_SET( pexit->exit_info, EX_WINDOW )	
 		&& ( !IS_SET(pexit->exit_info, EX_CLOSED ) 
 			|| ( IS_AFFECTED( ch, AFF_PASS_DOOR ) && !IS_SET( pexit->exit_info, EX_NOPASSDOOR ) ) )
-		&&   !IS_SET(pexit->to_room->room_flags, ROOM_NO_MOB)
-		&& ( !IS_SET(ch->act, ACT_STAY_AREA)
+		&&   !BV_IS_SET(pexit->to_room->room_flags, ROOM_NO_MOB)
+		&& ( !BV_IS_SET(ch->act, ACT_STAY_AREA)
 		||   pexit->to_room->area == ch->in_room->area ) )
 	{
 	    retcode = move_char( ch, pexit, 0 );
@@ -975,7 +975,7 @@ void mobile_update( void )
 						continue - Kahn */
 	    if ( char_died(ch) )
 	      continue;
-	    if ( retcode != rNONE || IS_SET(ch->act, ACT_SENTINEL)
+	    if ( retcode != rNONE || BV_IS_SET(ch->act, ACT_SENTINEL)
 	    ||    ch->position < POS_STANDING )
 	        continue;
 	}
@@ -987,7 +987,7 @@ void mobile_update( void )
 		&&   pexit->to_room
 		&& !IS_SET( pexit->exit_info, EX_WINDOW )	
 		&&   !IS_SET(pexit->exit_info, EX_CLOSED)
-		&&   !IS_SET(pexit->to_room->room_flags, ROOM_NO_MOB) )
+		&&   !BV_IS_SET(pexit->to_room->room_flags, ROOM_NO_MOB) )
 	{
 	    CHAR_DATA *rch;
 	    bool found;
@@ -1866,9 +1866,9 @@ void char_check( void )
 		continue;
 
 	    /* running mobs	-Thoric */
-	    if ( IS_SET(ch->act, ACT_RUNNING) )
+	    if ( BV_IS_SET(ch->act, ACT_RUNNING) )
 	    {
-		if ( !IS_SET( ch->act, ACT_SENTINEL )
+		if ( !BV_IS_SET( ch->act, ACT_SENTINEL )
 		&&   !ch->fighting && ch->hunting )
 		{
 		    WAIT_STATE( ch, 2 * PULSE_VIOLENCE );
@@ -1891,20 +1891,20 @@ void char_check( void )
 			continue;
 		}
 
-		if ( !IS_SET(ch->act, ACT_SENTINEL)
-		&&   !IS_SET(ch->act, ACT_PROTOTYPE)
+		if ( !BV_IS_SET(ch->act, ACT_SENTINEL)
+		&&   !BV_IS_SET(ch->act, ACT_PROTOTYPE)
 		&& ( door = number_bits( 4 ) ) <= 9
 		&& ( pexit = get_exit(ch->in_room, door) ) != NULL
 		&&   pexit->to_room
 		&&   !IS_SET(pexit->exit_info, EX_CLOSED)
-		&&   !IS_SET(pexit->to_room->room_flags, ROOM_NO_MOB)
-		&& ( !IS_SET(ch->act, ACT_STAY_AREA)
+		&&   !BV_IS_SET(pexit->to_room->room_flags, ROOM_NO_MOB)
+		&& ( !BV_IS_SET(ch->act, ACT_STAY_AREA)
 		||   pexit->to_room->area == ch->in_room->area ) )
 		{
 		    retcode = move_char( ch, pexit, 0 );
 		    if ( char_died(ch) )
 			continue;
-		    if ( retcode != rNONE || IS_SET(ch->act, ACT_SENTINEL)
+		    if ( retcode != rNONE || BV_IS_SET(ch->act, ACT_SENTINEL)
 		    ||    ch->position < POS_STANDING )
 			continue;
 		}
@@ -1916,7 +1916,7 @@ void char_check( void )
 	    if ( ch->mount
 	    &&   ch->in_room != ch->mount->in_room )
 	    {
-		REMOVE_BIT( ch->mount->act, ACT_MOUNTED );
+		BV_REMOVE_BIT( ch->mount->act, ACT_MOUNTED );
 		ch->mount = NULL;
 		ch->position = POS_STANDING;
 		send_to_char( "No longer upon your mount, you fall to the ground...\nOUCH!\n", ch );
@@ -2078,12 +2078,12 @@ void aggr_update( void )
 	    ||   ch->fighting
 	    ||   IS_AFFECTED(ch, AFF_CHARM)
 	    ||   !IS_AWAKE(ch)
-	    ||   ( IS_SET(ch->act, ACT_WIMPY) ) )
+	    ||   ( BV_IS_SET(ch->act, ACT_WIMPY) ) )
 		continue;
    	
-	    if ( !IS_SET(ch->act, ACT_AGGRESSIVE)
-	    ||    IS_SET(ch->act, ACT_MOUNTED)
-	    ||    IS_SET(ch->in_room->room_flags, ROOM_SAFE ) )
+	    if ( !BV_IS_SET(ch->act, ACT_AGGRESSIVE)
+	    ||    BV_IS_SET(ch->act, ACT_MOUNTED)
+	    ||    BV_IS_SET(ch->in_room->room_flags, ROOM_SAFE ) )
 		continue;
 
 	for ( wch = ch->in_room->first_person; wch; wch = ch_next )
@@ -2105,7 +2105,7 @@ void aggr_update( void )
     	    ||   !can_see( ch, wch ) )
 	      continue;
 
-	    if ( IS_SET(wch->act, ACT_AGGRESSIVE) )
+	    if ( BV_IS_SET(wch->act, ACT_AGGRESSIVE) )
 			continue;
 	    victim = wch;
 

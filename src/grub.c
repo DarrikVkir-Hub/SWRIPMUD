@@ -1402,9 +1402,9 @@ if (!str_cmp(arg1, "rf"))
          {
             if (pRoom->vnum >= lo && pRoom->vnum <= hi)
             {
-            if ( match == (match & pRoom->room_flags) 
-            && hit_cou < DIAG_RF_MAX_SIZE)
-	       vnum[hit_cou++] = pRoom->vnum;
+               if (BV_IS_SET(pRoom->room_flags,match)
+               && hit_cou < DIAG_RF_MAX_SIZE)
+	               vnum[hit_cou++] = pRoom->vnum;
             }
          }
    }

@@ -489,7 +489,7 @@ sh_int encumbrance( CHAR_DATA *ch, sh_int move )
  */
 bool will_fall( CHAR_DATA *ch, int fall )
 {
-    if ( IS_SET( ch->in_room->room_flags, ROOM_NOFLOOR )
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_NOFLOOR )
     &&   CAN_GO(ch, DIR_DOWN)
     && (!IS_AFFECTED( ch, AFF_FLYING )
     || ( ch->mount && !IS_AFFECTED( ch->mount, AFF_FLYING ) ) ) )
@@ -640,7 +640,7 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
     retcode = rNONE;
     txt = NULL;
 
-    if ( IS_NPC(ch) && IS_SET( ch->act, ACT_MOUNTED ) )
+    if ( IS_NPC(ch) && BV_IS_SET( ch->act, ACT_MOUNTED ) )
       return retcode;
 
     in_room = ch->in_room;
@@ -676,12 +676,12 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
     }
 
     if ( IS_SET(pexit->exit_info, EX_NOMOB)
-	&& IS_NPC(ch) && !IS_SET(ch->act, ACT_SCAVENGER) )
+	&& IS_NPC(ch) && !BV_IS_SET(ch->act, ACT_SCAVENGER) )
     {
 		act( AT_PLAIN, "Mobs can't enter there.", ch, NULL, NULL, TO_CHAR );
 		return rNONE;
     }
-    if( IS_SET( to_room->room_flags, ROOM_NO_MOB ) && IS_NPC( ch ) && !IS_SET(ch->act, ACT_SCAVENGER) )
+    if( BV_IS_SET( to_room->room_flags, ROOM_NO_MOB ) && IS_NPC( ch ) && !BV_IS_SET(ch->act, ACT_SCAVENGER) )
     { 
       act( AT_PLAIN, "Mobs can't enter there.", ch, NULL, NULL, TO_CHAR );
       return rNONE;
@@ -991,7 +991,7 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
     /* check for traps on exit - later */
 
     if ( !IS_AFFECTED(ch, AFF_SNEAK)
-    && ( IS_NPC(ch) || !IS_SET(ch->act, PLR_WIZINVIS) ) )
+    && ( IS_NPC(ch) || !BV_IS_SET(ch->act, PLR_WIZINVIS) ) )
     {
       if ( fall )
         txt = "falls";
@@ -1075,7 +1075,7 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
 
 		char_to_room( ch, to_room );
 		if ( !IS_AFFECTED(ch, AFF_SNEAK)
-		&& ( IS_NPC(ch) || !IS_SET(ch->act, PLR_WIZINVIS) ) )
+		&& ( IS_NPC(ch) || !BV_IS_SET(ch->act, PLR_WIZINVIS) ) )
 		{
 		if ( fall )
 			txt = "falls";
@@ -1170,7 +1170,7 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
 	if (!IS_NPC(ch))
 		gmcp_evt_room_change(ch);
     if ( brief ) 
-      SET_BIT( ch->act, PLR_BRIEF );
+      BV_SET_BIT( ch->act, PLR_BRIEF );
 
 
     /* BIG ugly looping problem here when the character is mptransed back

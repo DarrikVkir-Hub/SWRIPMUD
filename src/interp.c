@@ -289,12 +289,12 @@ void interpret( CHAR_DATA *ch, char *argument )
 
         timer = get_timerptr( ch, TIMER_DO_FUN );
 
-        /* REMOVE_BIT( ch->affected_by, AFF_HIDE ); */
+        /* BV_REMOVE_BIT( ch->affected_by, AFF_HIDE ); */
 
         /*
         * Implement freeze command.
         */
-        if ( !IS_NPC(ch) && IS_SET(ch->act, PLR_FREEZE) )
+        if ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_FREEZE) )
         {
             send_to_char( "You're totally frozen!\n", ch );
             return;
@@ -345,9 +345,9 @@ void interpret( CHAR_DATA *ch, char *argument )
         /*
         * Turn off afk bit when any command performed.
         */
-        if ( IS_SET ( ch->act, PLR_AFK)  && (str_cmp(command, "AFK")))
+        if ( BV_IS_SET ( ch->act, PLR_AFK)  && (str_cmp(command, "AFK")))
         {
-            REMOVE_BIT( ch->act, PLR_AFK );
+            BV_REMOVE_BIT( ch->act, PLR_AFK );
                 act( AT_GREY, "$n is no longer afk.", ch, NULL, NULL, TO_ROOM );
         }
     }
@@ -362,7 +362,7 @@ void interpret( CHAR_DATA *ch, char *argument )
 
     loglvl = found ? cmd->log : LOG_NORMAL;
 
-    if ( ( !IS_NPC(ch) && IS_SET(ch->act, PLR_LOG) )
+    if ( ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_LOG) )
     ||   fLogAll
     ||	 loglvl == LOG_BUILD
     ||   loglvl == LOG_HIGH
@@ -373,7 +373,7 @@ void interpret( CHAR_DATA *ch, char *argument )
         * file only, and not spam the log channel to death	-Thoric
         */
         if ( fLogAll && loglvl == LOG_NORMAL
-        &&  (IS_NPC(ch) || !IS_SET(ch->act, PLR_LOG)) )
+        &&  (IS_NPC(ch) || !BV_IS_SET(ch->act, PLR_LOG)) )
         loglvl = LOG_ALL;
 
       /* Added by Narn to show who is switched into a mob that executes
@@ -533,7 +533,7 @@ bool check_social( CHAR_DATA *ch, char *command, char *argument )
     if ( (social=find_social(command)) == NULL )
 	return FALSE;
 
-    if ( !IS_NPC(ch) && IS_SET(ch->act, PLR_NO_EMOTE) )
+    if ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_NO_EMOTE) )
     {
 	send_to_char( "You are anti-social!\n", ch );
 	return TRUE;
@@ -596,7 +596,7 @@ bool check_social( CHAR_DATA *ch, char *command, char *argument )
 	    switch ( number_bits( 4 ) )
 	    {
 	    case 0:
-		if ( !IS_SET(ch->in_room->room_flags, ROOM_SAFE )
+		if ( !BV_IS_SET(ch->in_room->room_flags, ROOM_SAFE )
 		&&    IS_EVIL(ch) )
 		{
          	  if ( !str_cmp( social->name, "slap" ) || !str_cmp( social->name, "punch" ) )

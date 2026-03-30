@@ -542,13 +542,13 @@ void game_loop( )
 	    }
 	    else 
 	    if (( d->character ? d->character->top_level <= LEVEL_IMMORTAL : FALSE) &&
-	    ( d->idle > 7200 ) && !IS_SET(d->character->act, PLR_AFK))		  /* 30 minutes  */
+	    ( d->idle > 7200 ) && !BV_IS_SET(d->character->act, PLR_AFK))		  /* 30 minutes  */
 	    {
             if( (d->character && d->character->in_room) ? d->character->top_level <= LEVEL_IMMORTAL : FALSE)
             {
                 output_to_descriptor( d,
                 "Idle 30 Minutes. Activating AFK Flag\n");
-                SET_BIT(d->character->act, PLR_AFK);
+                BV_SET_BIT(d->character->act, PLR_AFK);
                 act(AT_GREY,"$n is now afk due to idle time.", d->character, NULL, NULL, TO_ROOM);
                 continue;
             }
@@ -2270,12 +2270,12 @@ bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt )
     if ( fPrompt && !mud_down && d->connected == CON_PLAYING )
     {
 	ch = d->original ? d->original : d->character;
-	if ( IS_SET(ch->act, PLR_BLANK) )
+	if ( BV_IS_SET(ch->act, PLR_BLANK) )
 	    output_to_descriptor( d, "\n" );
 
-	if ( IS_SET(ch->act, PLR_PROMPT) )
+	if ( BV_IS_SET(ch->act, PLR_PROMPT) )
 	    display_prompt(d);
-	if ( IS_SET(ch->act, PLR_TELNET_GA) )
+	if ( BV_IS_SET(ch->act, PLR_TELNET_GA) )
 	    output_to_descriptor( d, (const char *) go_ahead_str );
     }
 
@@ -2835,7 +2835,7 @@ int make_color_sequence(const char *col, char *buf, DESCRIPTOR_DATA *d, int *con
     if (consumed) *consumed = 2;
 
     och = (d->original ? d->original : d->character);
-    ansi = (!IS_NPC(och) && IS_SET(och->act, PLR_ANSI));
+    ansi = (!IS_NPC(och) && BV_IS_SET(och->act, PLR_ANSI));
 
     col++;
 
@@ -3158,7 +3158,7 @@ void show_title( DESCRIPTOR_DATA *d )
 
     if ( !BV_IS_SET( ch->pcdata->flags, PCFLAG_NOINTRO ) )
     {
-	if (IS_SET(ch->act, PLR_ANSI))
+	if (BV_IS_SET(ch->act, PLR_ANSI))
 	  send_ansi_title(ch);
 	else
 	  send_ascii_title(ch);
@@ -3275,7 +3275,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
                     return;
                 }
         }
-        if ( IS_SET(ch->act, PLR_DENY) )
+        if ( BV_IS_SET(ch->act, PLR_DENY) )
         {
             log_printf_plus( LOG_COMM, sysdata.log_level, "Denying access to %s@%s.", argument, d->host );
             if (d->newstate != 0)
@@ -3694,7 +3694,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
         case CON_GET_WANT_RIPANSI:
         switch ( argument[0] )
         {
-        case 'a': case 'A': SET_BIT(ch->act,PLR_ANSI);  break;
+        case 'a': case 'A': BV_SET_BIT(ch->act,PLR_ANSI);  break;
         case 'n': case 'N': break;
         default:
             output_to_descriptor( d, "Invalid selection.\nANSI or NONE? " );
@@ -3708,7 +3708,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
     case CON_GET_MSP:
         switch ( argument[0] )
         {
-        case 'y': case 'Y': SET_BIT(ch->act,PLR_SOUND);  break;
+        case 'y': case 'Y': BV_SET_BIT(ch->act,PLR_SOUND);  break;
         case 'n': case 'N': break;
         default:
             output_to_descriptor( d, "Invalid selection.\nYES or NO? " );
@@ -3791,7 +3791,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
         break;
     */
         case CON_PRESS_ENTER:
-        if ( IS_SET(ch->act, PLR_ANSI) )
+        if ( BV_IS_SET(ch->act, PLR_ANSI) )
         send_to_pager( "\033[2J", ch );
         else
         send_to_pager( "\014", ch );
@@ -3821,7 +3821,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
         add_char( ch );
         d->connected	= CON_PLAYING;
             
-            if ( !IS_NPC(ch) && IS_SET( ch->act , PLR_SOUND ) )
+            if ( !IS_NPC(ch) && BV_IS_SET( ch->act , PLR_SOUND ) )
             send_to_char( "!!MUSIC(starwars.mid V=100)" , ch );
             
             
@@ -3834,7 +3834,8 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
             
             ch->perm_lck = number_range(6, 20);
                 ch->perm_frc = number_range(-800, 20);
-            ch->affected_by	  = race_table[ch->race].affected;
+            ch->affected_by = race_table[ch->race].affected;
+//          SET_BIT(ch->affected_by, race_table[ch->race].affected);
             ch->perm_lck	 += race_table[ch->race].lck_plus;
             ch->perm_frc	 += race_table[ch->race].frc_plus;
                 
@@ -3930,8 +3931,8 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 
                 /* Added by Narn.  Start new characters with autoexit and autgold
                 already turned on.  Very few people don't use those. */
-                SET_BIT( ch->act, PLR_AUTOGOLD ); 
-                SET_BIT( ch->act, PLR_AUTOEXIT ); 
+                BV_SET_BIT( ch->act, PLR_AUTOGOLD ); 
+                BV_SET_BIT( ch->act, PLR_AUTOEXIT ); 
                 
                 /* New players don't have to earn some eq */
                 
@@ -3987,13 +3988,13 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
             char_to_room( ch, get_room_index(6) );
         }
         else if ( ch->in_room && !IS_IMMORTAL( ch ) 
-                && !IS_SET( ch->in_room->room_flags, ROOM_SPACECRAFT )
+                && !BV_IS_SET( ch->in_room->room_flags, ROOM_SPACECRAFT )
                 && ch->in_room != get_room_index(6) )
         {
             char_to_room( ch, ch->in_room );
         }
         else if ( ch->in_room && !IS_IMMORTAL( ch )  
-                && IS_SET( ch->in_room->room_flags, ROOM_SPACECRAFT )
+                && BV_IS_SET( ch->in_room->room_flags, ROOM_SPACECRAFT )
                 && ch->in_room != get_room_index(6) )
         {
             SHIP_DATA *ship;
@@ -4009,10 +4010,10 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
         }
 
 
-        if ( IS_SET(ch->act, ACT_POLYMORPHED) )
-        REMOVE_BIT(ch->act, ACT_POLYMORPHED);
-        if ( IS_SET(ch->act, PLR_QUESTOR) )
-        REMOVE_BIT(ch->act, PLR_QUESTOR);
+        if ( BV_IS_SET(ch->act, ACT_POLYMORPHED) )
+        BV_REMOVE_BIT(ch->act, ACT_POLYMORPHED);
+        if ( BV_IS_SET(ch->act, PLR_QUESTOR) )
+        BV_REMOVE_BIT(ch->act, PLR_QUESTOR);
 
 
 
@@ -4598,7 +4599,7 @@ void set_char_color(sh_int AType, CHAR_DATA *ch)
     d = ch->desc;
     och = (d->original ? d->original : ch);
 
-    if (!IS_NPC(och) && IS_SET(och->act, PLR_ANSI))
+    if (!IS_NPC(och) && BV_IS_SET(och->act, PLR_ANSI))
     {
         unsigned char newcolor;
 
@@ -4633,7 +4634,7 @@ void set_pager_color( sh_int AType, CHAR_DATA *ch )
       return;
     
     och = (ch->desc->original ? ch->desc->original : ch);
-    if ( IS_NPC(och) || !IS_SET(och->act, PLR_ANSI) )
+    if ( IS_NPC(och) || !BV_IS_SET(och->act, PLR_ANSI) )
         return;
 
     /* ✅ Only store pager color state */
@@ -5008,7 +5009,7 @@ void act( sh_int AType, const char *format, CHAR_DATA *ch,
      * ACT_SECRETIVE mobs do not broadcast actions to the room.
      * Only the mob itself should see the message.
      */
-    if ( IS_NPC(ch) && IS_SET(ch->act, ACT_SECRETIVE) && type != TO_CHAR )
+    if ( IS_NPC(ch) && BV_IS_SET(ch->act, ACT_SECRETIVE) && type != TO_CHAR )
         return;
 
     /*
@@ -5242,7 +5243,7 @@ void display_prompt( DESCRIPTOR_DATA *d )
 {
   CHAR_DATA *ch = d->character;
   CHAR_DATA *och = (d->original ? d->original : d->character);
-  bool ansi = (!IS_NPC(och) && IS_SET(och->act, PLR_ANSI));
+  bool ansi = (!IS_NPC(och) && BV_IS_SET(och->act, PLR_ANSI));
   const char *prompt;
   char buf[MAX_STRING_LENGTH];
   char *pbuf = buf;
@@ -5365,20 +5366,20 @@ void display_prompt( DESCRIPTOR_DATA *d )
                 stat = ch->in_room->vnum;
                 break;
             case 'R':
-                if ( IS_SET(och->act, PLR_ROOMVNUM) )
+                if ( BV_IS_SET(och->act, PLR_ROOMVNUM) )
                     snprintf( pbuf, MAX_STRING_LENGTH, "<#%d> ", ch->in_room->vnum );
                 break;
             case 'i':
-                if ( (!IS_NPC(ch) && IS_SET(ch->act, PLR_WIZINVIS)) ||
-                    (IS_NPC(ch) && IS_SET(ch->act, ACT_MOBINVIS)) )
+                if ( (!IS_NPC(ch) && BV_IS_SET(ch->act, PLR_WIZINVIS)) ||
+                    (IS_NPC(ch) && BV_IS_SET(ch->act, ACT_MOBINVIS)) )
                 snprintf( pbuf, MAX_STRING_LENGTH, "(Invis %d) ", ( IS_NPC( ch ) ? ch->mobinvis : ch->pcdata->wizinvis ) );
                 else
                 if ( IS_AFFECTED(ch, AFF_INVISIBLE) )
                     snprintf( pbuf, MAX_STRING_LENGTH, "(Invis) ");
                 break;
             case 'I':
-                stat = (IS_NPC(ch) ? (IS_SET(ch->act, ACT_MOBINVIS) ? ch->mobinvis : 0)
-                    : (IS_SET(ch->act, PLR_WIZINVIS) ? ch->pcdata->wizinvis : 0));
+                stat = (IS_NPC(ch) ? (BV_IS_SET(ch->act, ACT_MOBINVIS) ? ch->mobinvis : 0)
+                    : (BV_IS_SET(ch->act, PLR_WIZINVIS) ? ch->pcdata->wizinvis : 0));
                 break;
         }
         if ( stat != (int) 0x80000000 )
@@ -5524,13 +5525,13 @@ bool pager_output( DESCRIPTOR_DATA *d )
 
     d->pagecmd = -1;
 
-    if ( IS_SET( ch->act, PLR_ANSI ) )
+    if ( BV_IS_SET( ch->act, PLR_ANSI ) )
     {
         set_char_color( AT_LBLUE, ch );
     }
     send_to_char("(C)ontinue, (R)efresh, (B)ack, (Q)uit: [C] ", ch);
 
-    if ( IS_SET( ch->act, PLR_ANSI ) )
+    if ( BV_IS_SET( ch->act, PLR_ANSI ) )
     {
         d->rendercolor = d->pagecolor;
         d->has_rendercolor = true;

@@ -203,7 +203,7 @@ void do_mpasound( CHAR_DATA *ch, char *argument )
 {
     ROOM_INDEX_DATA *was_in_room;
     EXIT_DATA       *pexit;
-    int		     actflags;
+    FLAG_SET	     actflags;
 
     if (!ch )
     {
@@ -227,7 +227,7 @@ void do_mpasound( CHAR_DATA *ch, char *argument )
     }
 
     actflags = ch->act;
-    REMOVE_BIT(ch->act, ACT_SECRETIVE);
+    BV_REMOVE_BIT(ch->act, ACT_SECRETIVE);
     was_in_room = ch->in_room;
     for ( pexit = was_in_room->first_exit; pexit; pexit = pexit->next )
     {
@@ -387,7 +387,7 @@ void do_mpechoaround( CHAR_DATA *ch, char *argument )
 {
     char       arg[ MAX_INPUT_LENGTH ];
     CHAR_DATA *victim;
-    int        actflags;
+    FLAG_SET   actflags;
     sh_int     color;
  
     if ( IS_AFFECTED( ch, AFF_CHARM ) )
@@ -414,7 +414,7 @@ void do_mpechoaround( CHAR_DATA *ch, char *argument )
     }
  
     actflags = ch->act;
-    REMOVE_BIT(ch->act, ACT_SECRETIVE);
+    BV_REMOVE_BIT(ch->act, ACT_SECRETIVE);
 
     if ( (color = get_color(argument)) )
     {
@@ -434,7 +434,7 @@ void do_mpechoat( CHAR_DATA *ch, char *argument )
 {
     char       arg[ MAX_INPUT_LENGTH ];
     CHAR_DATA *victim;
-    int        actflags;
+    FLAG_SET   actflags;
     sh_int     color;
  
     if ( IS_AFFECTED( ch, AFF_CHARM ) )
@@ -461,7 +461,7 @@ void do_mpechoat( CHAR_DATA *ch, char *argument )
     }
  
     actflags = ch->act;
-    REMOVE_BIT(ch->act, ACT_SECRETIVE);
+    BV_REMOVE_BIT(ch->act, ACT_SECRETIVE);
 
     if ( (color = get_color(argument)) )
     {
@@ -481,7 +481,7 @@ void do_mpecho( CHAR_DATA *ch, char *argument )
 {
     char       arg1 [MAX_INPUT_LENGTH];
     sh_int     color;
-    int        actflags;
+    FLAG_SET   actflags;
  
     if ( IS_AFFECTED( ch, AFF_CHARM ) )
 	return;
@@ -499,7 +499,7 @@ void do_mpecho( CHAR_DATA *ch, char *argument )
     }
  
     actflags = ch->act;
-    REMOVE_BIT(ch->act, ACT_SECRETIVE);
+    BV_REMOVE_BIT(ch->act, ACT_SECRETIVE);
 
     if ( (color = get_color(argument)) )
     {
@@ -734,15 +734,15 @@ void do_mpinvis( CHAR_DATA *ch, char *argument )
     if ( ch->mobinvis < 2 )
       ch->mobinvis = ch->top_level;
  
-    if ( IS_SET(ch->act, ACT_MOBINVIS) )
+    if ( BV_IS_SET(ch->act, ACT_MOBINVIS) )
     {
-        REMOVE_BIT(ch->act, ACT_MOBINVIS);
+        BV_REMOVE_BIT(ch->act, ACT_MOBINVIS);
 	act(AT_IMMORT, "$n slowly fades into existence.", ch, NULL, NULL,TO_ROOM );
 	send_to_char( "You slowly fade back into existence.\n", ch );       
     }
     else
     {
-        SET_BIT(ch->act, ACT_MOBINVIS);
+        BV_SET_BIT(ch->act, ACT_MOBINVIS);
 	act( AT_IMMORT, "$n slowly fades into thin air.", ch, NULL, NULL, TO_ROOM );
         send_to_char( "You slowly vanish into thin air.\n", ch );
     }
@@ -938,7 +938,7 @@ void do_mptransfer( CHAR_DATA *ch, char *argument )
 
 /* If victim not in area's level range, do not transfer */
     if ( !in_hard_range( victim, location->area ) 
-    &&   !IS_SET( location->room_flags, ROOM_PROTOTYPE ) )
+    &&   !BV_IS_SET( location->room_flags, ROOM_PROTOTYPE ) )
       return;
 
     transfer_char( ch, victim, location );
@@ -1845,7 +1845,7 @@ ch_ret simple_damage( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
      */
     if ( npcvict && dam > 0 )
     {
-	if ( ( IS_SET(victim->act, ACT_WIMPY) && number_bits( 1 ) == 0
+	if ( ( BV_IS_SET(victim->act, ACT_WIMPY) && number_bits( 1 ) == 0
 	&&   victim->hit < victim->max_hit / 2 )
 	||   ( IS_AFFECTED(victim, AFF_CHARM) && victim->master
 	&&     victim->master->in_room != victim->in_room ) )
@@ -1862,7 +1862,7 @@ ch_ret simple_damage( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
     &&   victim->wait == 0 )
 	do_flee( victim, "" );
     else
-    if ( !npcvict && IS_SET( victim->act, PLR_FLEE ) )
+    if ( !npcvict && BV_IS_SET( victim->act, PLR_FLEE ) )
 	do_flee( victim, "" );
 
     tail_chain( );
