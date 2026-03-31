@@ -77,7 +77,7 @@ const	struct	race_type	race_table	[MAX_RACE]	=
 	"Verpine",	FLAGSET_EMPTY,	0,	0,	+1,	+5,	-1,	0,	0,	0,	0,	0,	0,	0,	0,	     LANG_VERPINE
     },//-cmbt
     {
-	"Defel",	FLAGSET(AFF_HIDE+AFF_SNEAK),+1,	+3,	-3,	-3,	+1,	0,	0,	0,	+15,	0,	0, 0,	0,	     LANG_DEFEL
+	"Defel",	FLAGSET(AFF_HIDE,AFF_SNEAK),+1,	+3,	-3,	-3,	+1,	0,	0,	0,	+15,	0,	0, 0,	0,	     LANG_DEFEL
     },
     {
 	"Trandoshan",	FLAGSET(AFF_INFRARED),	+3,	-1,	0,	0,	+6,	-1,	0,	0,	+35,	0,	0, 0,	0,	     LANG_TRANDOSHAN
@@ -86,7 +86,7 @@ const	struct	race_type	race_table	[MAX_RACE]	=
 	"Chadra-Fan",	FLAGSET(AFF_INFRARED),	-3,	+3,	0,	+2,	-1,	0,	0,	0,	-85,	0,	0, 0,	0,	     LANG_CHADRA_FAN
     },
     {
-	"Quarren",	FLAGSET(AFF_AQUA_BREATH+AFF_INFRARED),	-1,	+1,	0,	+1,	-1,	0,	0,	0,	-10,	0,	0, 0,	0,	     LANG_MON_CALAMARI
+	"Quarren",	FLAGSET(AFF_AQUA_BREATH,AFF_INFRARED),	-1,	+1,	0,	+1,	-1,	0,	0,	0,	-10,	0,	0, 0,	0,	     LANG_MON_CALAMARI
     },
     {
 	"Sullustan",	FLAGSET_EMPTY,		 -2,	0,	+2,	+5,	0,	+1,	0,	0,	0,	0,	0,	0,	0,	     LANG_SULLUSTAN
@@ -104,7 +104,7 @@ const	struct	race_type	race_table	[MAX_RACE]	=
 	"Gotal",	FLAGSET(AFF_DETECT_MAGIC),	 -1,	0,	+1,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	     LANG_GOTAL
     },
     {   
-    	"Droid",           FLAGSET(AFF_AQUA_BREATH+AFF_INFRARED),          0, -2, +1, +4, -4, +1, 0, 0, 0, 0, 0, RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_BINARY
+    	"Droid",           FLAGSET(AFF_AQUA_BREATH,AFF_INFRARED),          0, -2, +1, +4, -4, +1, 0, 0, 0, 0, 0, RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_BINARY
     },
 //"Firrerreo", "Barabel", "Bothan", "Togorian", "Dug", "Kubaz", "Selonian", "Gran", "Yevetha", "Gand", "Duros", "Coynite",
     {
@@ -115,10 +115,10 @@ const	struct	race_type	race_table	[MAX_RACE]	=
 	"Barabel",		FLAGSET_EMPTY,	+5,	-1,	-1,	1,	+5,	-4,	0,	0,	+220,	0, 0, 0,	0,	     LANG_BARABEL
     },//++cmbt, -dip/lead
     {
-	"Bothan",	FLAGSET(AFF_SNEAK|AFF_SCRYING),	0,	+3,	-3,	+4,	-4,	+4,	0,	0,	0,	0,	0,	0,	0,	     LANG_BOTHAN + LANG_COMMON
+	"Bothan",	FLAGSET(AFF_SNEAK,AFF_SCRYING),	0,	+3,	-3,	+4,	-4,	+4,	0,	0,	0,	0,	0,	0,	0,	     LANG_BOTHAN + LANG_COMMON
     },//++lead/dip, -eng
     {
-	"Togorian",	FLAGSET(AFF_DETECT_HIDDEN|AFF_SNEAK),	+4,	+4,	0,	0,	-2,	-11,	0,	0,	+40,	0,	0, 0,	0,	     LANG_TOGORIAN
+	"Togorian",	FLAGSET(AFF_DETECT_HIDDEN,AFF_SNEAK),	+4,	+4,	0,	0,	-2,	-11,	0,	0,	+40,	0,	0, 0,	0,	     LANG_TOGORIAN
     },//++cmbt,+bh
     {
 	"Dug",	FLAGSET(AFF_SNEAK),	-2,	+5,	-1,	0,	-1,	-2,	0,	0,	-15,	0,	0,	0,	0,	     LANG_HUTT
@@ -145,25 +145,25 @@ const	struct	race_type	race_table	[MAX_RACE]	=
 	"Coynite",	FLAGSET(AFF_SNEAK),	+4,	+2,	+1,	0,	+1,	-3,	0,	0,	+30,	0,	0,	0,	0,	     LANG_COYNITE
     },//++combat/lead, +bh, -piloting/dip
     {
-	"Protocal Droid",	FLAGSET(AFF_AQUA_BREATH+AFF_INFRARED),	-5,	-5,	+5,	+5,	0,	+5,	0,	0,	0,	0,	0,	RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_BINARY
+	"Protocal Droid",	FLAGSET(AFF_AQUA_BREATH,AFF_INFRARED),	-5,	-5,	+5,	+5,	0,	+5,	0,	0,	0,	0,	0,	RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_BINARY
     },//(+)dip
 	{
-	"Assassin Droid",	FLAGSET(AFF_AQUA_BREATH+AFF_INFRARED),	+4,	+5,	-10,	+2,	+3,	-9,	0,	0,	100,	0,	RIS_NONMAGIC,	0,	0,	     LANG_BINARY
+	"Assassin Droid",	FLAGSET(AFF_AQUA_BREATH,AFF_INFRARED),	+4,	+5,	-10,	+2,	+3,	-9,	0,	0,	100,	0,	RIS_NONMAGIC,	0,	0,	     LANG_BINARY
     },//++BH,++combat
     {
-	"Gladiator Droid",	FLAGSET(AFF_AQUA_BREATH+AFF_INFRARED),	+5,	+3,	-9,	-6,	+4,	-9,	0,	0,	150,	0,	RIS_NONMAGIC,	RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_BINARY
+	"Gladiator Droid",	FLAGSET(AFF_AQUA_BREATH,AFF_INFRARED),	+5,	+3,	-9,	-6,	+4,	-9,	0,	0,	150,	0,	RIS_NONMAGIC,	RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_BINARY
     },//(+)combat
     {
-	"Astromech",	FLAGSET(AFF_AQUA_BREATH+AFF_INFRARED),	0,	-5,	-6,	+5,	-6,	0,	0,	0,	0,	0,	0,	RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_BINARY
+	"Astromech",	FLAGSET(AFF_AQUA_BREATH,AFF_INFRARED),	0,	-5,	-6,	+5,	-6,	0,	0,	0,	0,	0,	0,	RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_BINARY
     },//(+)pil
 	{
-	"Interrogation Droid",	FLAGSET(AFF_AQUA_BREATH+AFF_INFRARED+AFF_FLYING+AFF_FLOATING),	0,	+4,	-9,	+5,	+1,	-5,	0,	0,	0,	0,	0,	RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_BINARY
+	"Interrogation Droid",	FLAGSET(AFF_AQUA_BREATH,AFF_INFRARED,AFF_FLYING,AFF_FLOATING),	0,	+4,	-9,	+5,	+1,	-5,	0,	0,	0,	0,	0,	RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_BINARY
     },//(+)lead
     {
-	"God",	FLAGSET(AFF_AQUA_BREATH+AFF_INFRARED+AFF_FLYING+AFF_FLOATING),	+5,	+5,	+5,	+5,	+5,	+5,	+5,	+5,	2000,	5000,	0,	RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_COMMON
+	"God",	FLAGSET(AFF_AQUA_BREATH,AFF_INFRARED,AFF_FLYING,AFF_FLOATING),	+5,	+5,	+5,	+5,	+5,	+5,	+5,	+5,	2000,	5000,	0,	RIS_SLEEP+RIS_ELECTRICITY,	0,	     LANG_COMMON
     },//(+)lead
 	{
-    "Noghri",	FLAGSET(AFF_HIDE|AFF_DETECT_HIDDEN|AFF_SNEAK),	-1,	+8,	+2,	+2,	-1,	-3,	2,	0,	0,	0,	0,	0,	0,	     LANG_NOGHRI
+    "Noghri",	FLAGSET(AFF_DETECT_HIDDEN,AFF_SNEAK),	-1,	+8,	+2,	+2,	-1,	-3,	2,	0,	0,	0,	0,	0,	0,	     LANG_NOGHRI
     }//(+)lead    
     /*  race name	   DEF_AFF      st dx ws in cn ch lk fc hp mn re su 	RESTRICTION  LANGUAGE */
 

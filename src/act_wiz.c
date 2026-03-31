@@ -1531,15 +1531,20 @@ ch_printf( ch,
 	flag_string(victim->defenses, defense_flags) );
     for ( paf = victim->first_affect; paf; paf = paf->next )
 	if ( (skill=get_skilltype(paf->type)) != NULL )
+    {
 	  ch_printf( ch,
-	    "%s: '%s' modifies %s by %d for %d rounds with bits %s.\n",
+	    "%s: '%s' modifies %s by %d for %d rounds",
 	    skill_tname[skill->type],
 	    skill->name,
 	    affect_loc_name( paf->location ),
 	    paf->modifier,
-	    paf->duration,
-	    aff_flags[paf->bitvector].name
+	    paf->duration
 	    );
+        if (paf->bitvector < 0 || paf->bitvector >= AFF_MAX)
+            ch_printf(ch, ".\n", paf->bitvector);
+        else
+            ch_printf(ch, " with bits %s.\n", aff_flags[paf->bitvector].name);
+    }
     return;
 }
 
@@ -4261,6 +4266,55 @@ void do_rassign( CHAR_DATA *ch, char *argument )
     return;
 }
 
+bool check_area_conflict( AREA_DATA * area, int low_range, int hi_range )
+{
+   if( low_range < area->low_r_vnum && area->low_r_vnum < hi_range )
+      return TRUE;
+   if( low_range < area->low_m_vnum && area->low_m_vnum < hi_range )
+      return TRUE;
+   if( low_range < area->low_o_vnum && area->low_o_vnum < hi_range )
+      return TRUE;
+
+   if( low_range < area->hi_r_vnum && area->hi_r_vnum < hi_range )
+      return TRUE;
+   if( low_range < area->hi_m_vnum && area->hi_m_vnum < hi_range )
+      return TRUE;
+   if( low_range < area->hi_o_vnum && area->hi_o_vnum < hi_range )
+      return TRUE;
+
+   if( ( low_range >= area->low_r_vnum ) && ( low_range <= area->hi_r_vnum ) )
+      return TRUE;
+   if( ( low_range >= area->low_m_vnum ) && ( low_range <= area->hi_m_vnum ) )
+      return TRUE;
+   if( ( low_range >= area->low_o_vnum ) && ( low_range <= area->hi_o_vnum ) )
+      return TRUE;
+
+   if( ( hi_range <= area->hi_r_vnum ) && ( hi_range >= area->low_r_vnum ) )
+      return TRUE;
+   if( ( hi_range <= area->hi_m_vnum ) && ( hi_range >= area->low_m_vnum ) )
+      return TRUE;
+   if( ( hi_range <= area->hi_o_vnum ) && ( hi_range >= area->low_o_vnum ) )
+      return TRUE;
+
+   return FALSE;
+}
+
+/* Runs the entire list, easier to call in places that have to check them all */
+bool check_area_conflicts( int lo, int hi )
+{
+   AREA_DATA *area;
+
+   for( area = first_area; area; area = area->next )
+      if( check_area_conflict( area, lo, hi ) )
+         return TRUE;
+
+   for( area = first_build; area; area = area->next )
+      if( check_area_conflict( area, lo, hi ) )
+         return TRUE;
+
+   return FALSE;
+}
+
 void do_vassign( CHAR_DATA *ch, char *argument )
 {
     char arg1[MAX_INPUT_LENGTH];
@@ -4276,32 +4330,37 @@ void do_vassign( CHAR_DATA *ch, char *argument )
 
     if ( arg1[0] == '\0' || r_lo < 0 || r_hi < 0 )
     {
-	send_to_char( "Syntax: vassign <who> <low> <high>\n", ch );
-	return;
+        send_to_char( "Syntax: vassign <who> <low> <high>\n", ch );
+        return;
     }
     if ( (victim = get_char_world( ch, arg1 )) == NULL )
     {
-	send_to_char( "They don't seem to be around.\n", ch );
-	return;
+        send_to_char( "They don't seem to be around.\n", ch );
+        return;
     }
     if ( IS_NPC( victim ) || get_trust( victim ) < LEVEL_CREATOR )
     {
-	send_to_char( "They wouldn't know what to do with a vnum range.\n", ch );
-	return;
+        send_to_char( "They wouldn't know what to do with a vnum range.\n", ch );
+        return;
     }
     if ( r_lo > r_hi )
     {
-	send_to_char( "Unacceptable room range.\n", ch );
-	return;
+        send_to_char( "Unacceptable room range.\n", ch );
+        return;
     }
+    if( check_area_conflicts( r_lo, r_hi ) )
+    {
+        send_to_char( "That vnum range conflicts with another area. Check the zones or vnums command.\r\n", ch );
+        return;
+    }    
     if ( r_lo == 0 )
        r_hi = 0;
     victim->pcdata->r_range_lo = r_lo;
     victim->pcdata->r_range_hi = r_hi;
-        victim->pcdata->o_range_lo = r_lo;
-            victim->pcdata->o_range_hi = r_hi;
+    victim->pcdata->o_range_lo = r_lo;
+    victim->pcdata->o_range_hi = r_hi;
     victim->pcdata->m_range_lo = r_lo;
-        victim->pcdata->m_range_hi = r_hi;
+    victim->pcdata->m_range_hi = r_hi;
                      
     assign_area( victim );
     send_to_char( "Done.\n", ch );
@@ -4316,13 +4375,13 @@ void do_vassign( CHAR_DATA *ch, char *argument )
 
     if (r_lo == 0)				/* Scryn 8/12/95 */
     {
-	REMOVE_BIT ( victim->pcdata->area->status, AREA_LOADED );
-	SET_BIT( victim->pcdata->area->status, AREA_DELETED );
+        REMOVE_BIT ( victim->pcdata->area->status, AREA_LOADED );
+        SET_BIT( victim->pcdata->area->status, AREA_DELETED );
     }
     else
     {
         SET_BIT( victim->pcdata->area->status, AREA_LOADED );
-	REMOVE_BIT( victim->pcdata->area->status, AREA_DELETED );
+        REMOVE_BIT( victim->pcdata->area->status, AREA_DELETED );
     }
     return;
 }

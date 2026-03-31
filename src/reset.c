@@ -925,13 +925,24 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
       int value;
       argument = one_argument(argument, arg);
       value = (*flfunc)(arg);
-      if ( value < 0 || value > 31 )
+      if ( !str_prefix(option, "door") )      
       {
-        send_to_char( "Reset: BIT: bad flag\n", ch );
-        return;
+        if ( value < 0 || value > 31 )
+        {
+          send_to_char( "Reset: BIT: bad flag\n", ch );
+          return;
+        }
+        SET_BIT(flags, 1 << value);
       }
-      SET_BIT(flags, 1 << value);
-    }
+      else
+      {
+        if ( value < 0  )
+        {
+          send_to_char( "Reset: BIT: bad flag\n", ch );
+          return;
+        }
+        SET_BIT(flags, value);
+      }    }
     if ( !flags )
     {
       send_to_char( "Set which flags?\n", ch );

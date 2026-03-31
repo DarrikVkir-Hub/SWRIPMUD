@@ -230,6 +230,54 @@ struct flag_name
 extern  const   flag_name   obj_flag_table[];
 extern const    flag_name   obj_attack_table[];
 
+/*
+ * FLAG SYSTEM STATUS
+ *
+ * BitSet:
+    PCData Flags
+    Object flags (wear, weapon, extra, magic)
+    Language flags
+    VIP flags
+    Wanted flags
+    Command group
+    Channel flags
+    Room flags
+    Player Act flags
+    Mobile Act flags
+    Affect flags
+
+    { Flags to continue to convert: }
+    *There's likely some bugs I introduced by trying to split affect into bitset and keep ris at bitmask.
+    Resistance flags
+    *The remaining important flags
+    Attack Flags
+    Defense flags
+
+    
+    [ Someday ]
+    Part Flags
+
+    [Likely never]
+    *Very simple, therefore little demand
+    System/Autosave flags
+    Area loaded flags
+    Area flags
+    Wrap flags
+    RIS_000 flags
+    
+    *These touch all sorts of things and it's a large project
+    Mprog flags
+    Trap Flags
+    Trigger Flags
+    Tele flags
+    Exit flags
+
+
+ * RULE:
+ *   BitSet fields use INDEX/enum (not 1 << index)
+ *   Bitmask fields use (1 << index)
+ */
+
 // bitset implementation
 #ifndef __BITSET_H__
 #define __BITSET_H__
@@ -673,7 +721,7 @@ static inline int first_set_bit(unsigned int bits)
 
 /* When adding command groups, make sure to change 
 the command_group array in const.c - DV 2-2-03 */
-enum CGroupFlags {
+typedef enum {
     CGROUP_NONE             = -1,
     CGROUP_IMPLEMENTOR      = 0,
     CGROUP_CODER            = 1,
@@ -686,7 +734,7 @@ enum CGroupFlags {
     CGROUP_ADMIN            = 8,
     CGROUP_QUEST_MASTER     = 9,
     MAX_COMMAND_GROUP       = 10,
-};
+} CGroupFlags;
 
 
 #include "alias.h"
@@ -845,7 +893,7 @@ typedef enum
   SUB_TIMER_DO_ABORT = 128, SUB_TIMER_CANT_ABORT
 } char_substates;
 
-enum TelnetState
+typedef enum 
 {
     TS_DATA,
     TS_IAC,
@@ -856,7 +904,7 @@ enum TelnetState
     TS_SB,
     TS_SB_DATA,
     TS_SB_IAC
-};
+} TelnetState;
 
 typedef enum
 {
@@ -1111,7 +1159,7 @@ struct  frc_app_type
 #define RACE_SULLUSTAN         16  /* big mistake was causing mass chaos */
 #define RACE_QUARREN           15
 
-enum LangFlags
+typedef enum 
 {
     LANG_UNKNOWN            = -1,
     LANG_COMMON             = 0,  /* Human base language */
@@ -1154,7 +1202,7 @@ enum LangFlags
     LANG_MAGICAL            = 37,
 
     LANG_MAX                = 38,
-};
+} LangFlags;
 #define VALID_LANG(lang) (is_valid_lang(lang))
 
 
@@ -1886,7 +1934,7 @@ struct	smaug_affect
  * ACT bits for mobs.
  * Used in #MOBILES.
  */
-enum ActFlags
+typedef enum 
 {
     ACT_IS_NPC        = 0,   /* BV00 - Auto set for mobs        */
     ACT_SENTINEL      = 1,   /* BV01 - Stays in one room       */
@@ -1921,10 +1969,10 @@ enum ActFlags
     ACT_PROTOTYPE     = 30,   /* BV30 - A prototype mob         */
     ACT_MAX           = 31,
 
-};
+} ActFlags;
 
 /* bits for vip flags */
-enum PlanetFlags {
+typedef enum  {
     PLANET_CORUSCANT            = 1,
     PLANET_KASHYYYK          	= 2,
     PLANET_RYLOTH            	= 3,
@@ -1955,13 +2003,13 @@ enum PlanetFlags {
     PLANET_FALLEEN		        = 28,
     PLANET_ETTI		            = 29,
     PLANET_MAX                  = 30,
-};
+} PlanetFlags;
 
 /*
  * Bits for 'affected_by'.
 / * Used in #MOBILES.
  */
-enum AffectFlags
+typedef enum 
 {
     AFF_NONE           = -1,  /* Special: no flags */
 
@@ -1999,7 +2047,7 @@ enum AffectFlags
     AFF_AQUA_BREATH    = 31,   /* BV31 */
     AFF_MAX            = 32
 
-};
+} AffectFlags;
 /*
 #define AFF_NONE                  0
 
@@ -2191,7 +2239,7 @@ enum AffectFlags
 /*
  * Pipe flags
  */
-enum ObjFlags {
+typedef enum  {
     PIPE_FIRST          = 0,
     PIPE_TAMPED		    = 1,
     PIPE_LIT		    = 2,
@@ -2258,7 +2306,7 @@ enum ObjFlags {
     ITEM_LIGHTNING_BLADE = 294,
     ITEM_MAGIC_FLAG_MAX = 295,
     ITEM_MAX            = 296,
-};
+} ObjFlags;
 
 #define BASEDAM_WEAPON_NONE     	0
 #define BASEDAM_WEAPON_VIBRO_AXE	1
@@ -2514,7 +2562,7 @@ typedef enum
  * Used in #OBJECTS.
  */
 
-enum WearFlags{
+typedef enum {
     ITEM_TAKE               = 0,
     ITEM_WEAR_FINGER	    = 1,
     ITEM_WEAR_NECK		    = 2,
@@ -2538,7 +2586,7 @@ enum WearFlags{
     ITEM_WEAR_OVER		    = 20,
     ITEM_WEAR_DISGUISE      = 21,
     ITEM_WEAR_MAX           = 22,
-};
+} WearFlags;
 
 /*
  * Apply types (for affects).
@@ -2620,7 +2668,7 @@ typedef enum
  *			 Lets put it all back... ;)
  */
 
-enum RoomFlags
+typedef enum 
 {
     ROOM_DARK              = 0,   /* BV00 */
     /* 1 reserved (BV01: track/hunt) */
@@ -2656,7 +2704,7 @@ enum RoomFlags
     ROOM_PROTOTYPE         = 30,  /* BV30 */
     ROOM_AUCTION           = 31,   /* BV31 */
     ROOM_MAX               = 32,
-};
+} RoomFlags;
 
 /*
  * Directions.
@@ -2763,7 +2811,7 @@ typedef enum
 /*
  * ACT bits for players.
  */
- enum PlrActFlags
+ typedef enum 
 {
     PLR_IS_NPC         = 0,   /* BV00 - Don't EVER set.        */
     PLR_BOUGHT_PET     = 1,   /* BV01                          */
@@ -2800,12 +2848,12 @@ typedef enum
     PLR_AUTOMAP        = 30,  /* BV30                          */
     PLR_AFK            = 31   /* BV31                          */
 
-};
+} PlrActFlags;
 
 
 /* Bits for pc_data->flags. */
 
-enum PlayerFlags {
+typedef enum  {
     PCFLAG_R0           = 0,
     PCFLAG_R1           = 1,
     PCFLAG_R2           = 2,
@@ -2821,7 +2869,7 @@ enum PlayerFlags {
     PCFLAG_ROOM         = 12,
     PCFLAG_DND          = 13,
     PCFLAG_MAX          = 32,
-};
+} PlayerFlags;
 
 /* Retired and guest imms. */
 #define IS_RETIRED(ch) ((ch)->pcdata && BV_IS_SET((ch)->pcdata->flags, PCFLAG_RETIRED))
@@ -2853,7 +2901,7 @@ struct timer_data
 /*
  * Channel bits.
  */
-enum ChannelFlags
+typedef enum 
 {
     CHANNEL_AUCTION      = 0,   // BV00
     CHANNEL_CHAT         = 1,   // BV01
@@ -2890,7 +2938,7 @@ enum ChannelFlags
     CHANNEL_CLANTALK     = CHANNEL_CLAN,
 
     CHANNEL_MAX          = 32
-};
+} ChannelFlags;
 /*
 #define	CHANNEL_AUCTION		   BV00
 #define	CHANNEL_CHAT		   BV01
@@ -4343,7 +4391,7 @@ do								\
 #define IS_CLANNED(ch)		(!IS_NPC((ch))				    \
 				&& (ch)->pcdata->clan			    )
 
-#define WAIT_STATE(ch, npulse)	((ch)->wait = UMAX((ch)->wait, (npulse)))
+#define WAIT_STATE(ch, npulse)	((ch)->wait += UMAX((ch)->wait, (npulse)))
 
 
 #define EXIT(ch, door)		( get_exit( (ch)->in_room, door ) )

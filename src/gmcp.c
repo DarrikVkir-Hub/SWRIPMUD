@@ -34,6 +34,33 @@
 
 #include "mud.h"
 
+/*
+Additional things to add:
+Character class/ability
+Character configs
+Character position/status
+Character drug/addictions
+Character languages
+Character affect data
+
+Combat data:
+Target data (name, status)
+
+Ships:
+Ship status
+Target status
+System data
+Hyperspace jump data
+
+Character Skills
+Character Items
+Room data
+People in room
+objects in room
+Ships in room
+
+*/
+
 void handle_gmcp(DESCRIPTOR_DATA *d, unsigned char *data, int len);
 void send_gmcp(DESCRIPTOR_DATA *d, const char *msg);
 void dispatch_gmcp(DESCRIPTOR_DATA *d, const char *module, const char *data);

@@ -2854,6 +2854,7 @@ int make_color_sequence(const char *col, char *buf, DESCRIPTOR_DATA *d, int *con
     {
         buf[0] = *col;
         buf[1] = '\0';
+        if (consumed) *consumed = 2;
         return 1;
     }
 
@@ -3083,7 +3084,13 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
         /* ========================= */
         int consumed = 0;
 
-        make_color_sequence(colstr, colbuf, d, &consumed); 
+        int ln = make_color_sequence(colstr, colbuf, d, &consumed); 
+
+        if (ln > 0)
+        {
+            flush_color(d);
+            copy_with_newlines(d, colbuf, ln);
+        }
 
         /* advance past color code */
         if (consumed <= 0)
@@ -6017,16 +6024,20 @@ char *wrap_text_ex(const char *txt, int width, int flags, int indent)
         {
             if (txt[i+1] == '&')
             {
-                if (wlen < WORD_MAX - 1 && wcol < VIS_MAX) 
+                if (wlen < WORD_MAX - 2 && wcol < VIS_MAX)
                 {
+                    /* store BOTH characters */
                     word[wlen++] = '&';
+                    word[wlen++] = '&';
+
+                    /* but count as ONE visible char */
                     vis_to_raw[wcol] = wlen - 1;
-                    wcol++; 
+                    wcol++;
                 }
                 else
                     goto flush_word;
 
-                i++;
+                i++; /* skip second '&' */
                 continue;
             }
 

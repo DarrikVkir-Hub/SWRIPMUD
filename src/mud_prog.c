@@ -758,12 +758,12 @@ int mprog_do_ifcheck( char *ifcheck, CHAR_DATA *mob, CHAR_DATA *actor,
     {
 	int value = get_aflag(rval);
       
-	if ( value < 0 || value > 31 )
+	if ( value < 0 )
 	{
 	    progbug("Unknown affect being checked", mob);
 	    return BERR;
 	}
-	return IS_AFFECTED(chkchar, 1 << value) ? TRUE : FALSE;
+	return IS_AFFECTED(chkchar, value) ? TRUE : FALSE;
     }
     if ( !str_cmp(chck, "hitprcnt") )
     {

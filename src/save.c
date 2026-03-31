@@ -1197,7 +1197,12 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 //	    KEY( "Act",		ch->act,		fread_number( fp ) );
 		if ( !str_cmp( word, "AffectedBy"  ) )
 		{
-			ch->affected_by = int_to_bitset(fread_number( fp ));
+			int x = -1;
+			x = (fread_number( fp ));
+			if (x == 0)
+			  ch->affected_by.reset();
+			else
+				ch->affected_by = int_to_bitset(x);
 			fMatch = TRUE;
 			break;
 		}

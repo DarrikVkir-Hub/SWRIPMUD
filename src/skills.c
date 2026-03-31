@@ -3072,6 +3072,9 @@ bool permsneak( CHAR_DATA *ch )
 		case RACE_COYNITE:
 		  return TRUE;
 		  break;
+		case RACE_NOGHRI:
+		  return TRUE;
+		  break;		  
 		default:
 		  return FALSE;
 	}

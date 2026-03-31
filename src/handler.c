@@ -3155,12 +3155,12 @@ void showaffect( CHAR_DATA *ch, AFFECT_DATA *paf )
 	      case APPLY_AFFECT:
 		SPRINTF( buf, "Affects %s by",
 		  affect_loc_name( paf->location ) );
-		for ( x = 0; x < 32 ; x++ )
-		if ( IS_SET( paf->modifier, 1 << x ) )
-		{
-		  STRAPP( buf, " " );
-		  STRAPP( buf, "%s", a_flags[x] );
-		}
+		for ( x = 0; x < AFF_MAX ; x++ )
+		    if ( IS_SET( paf->modifier, x ) )
+		    {
+		        STRAPP( buf, " " );
+		        STRAPP( buf, "%s", a_flags[x] );
+		    }
 		STRAPP( buf, "\n" );
 		break;
 	      case APPLY_WEAPONSPELL:
