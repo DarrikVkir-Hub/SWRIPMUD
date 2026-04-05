@@ -2493,23 +2493,23 @@ void do_install_module( CHAR_DATA *ch, char *argument )
 
       if ( obj->value[1] != MOD_FLAG )
       {
-	if ( obj->item_type==ITEM_FIGHTERCOMP && ship->shipclass != FIGHTER_SHIP )
-	{
-		send_to_char( "That module is designed for a fighter.\n",ch);
-		return;
-	}
+          if ( obj->item_type==ITEM_FIGHTERCOMP && ship->shipclass != FIGHTER_SHIP )
+          {
+            send_to_char( "That module is designed for a fighter.\n",ch);
+            return;
+          }
 
-	if ( obj->item_type==ITEM_MIDCOMP && ship->shipclass != MIDSIZE_SHIP )
-	{
-		send_to_char( "That module is designed for a midship.\n",ch);
-		return;
-	}
+          if ( obj->item_type==ITEM_MIDCOMP && ship->shipclass != MIDSIZE_SHIP )
+          {
+            send_to_char( "That module is designed for a midship.\n",ch);
+            return;
+          }
 
-	if ( obj->item_type==ITEM_CAPITALCOMP && ship->shipclass != CAPITAL_SHIP )
-	{
-		send_to_char( "That module is designed for a capital ship.\n",ch);
-		return;
-	}
+          if ( obj->item_type==ITEM_CAPITALCOMP && ship->shipclass != CAPITAL_SHIP )
+          {
+            send_to_char( "That module is designed for a capital ship.\n",ch);
+            return;
+          }
       }
   if ( obj->value[1] == MOD_FLAG )
     if ( ship == ship_from_cockpit( ch->in_room->vnum ) )

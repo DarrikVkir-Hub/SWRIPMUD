@@ -59,16 +59,29 @@ ROOM_INDEX_DATA * vroom_hash [64];
  */
 bool	has_key		args( ( CHAR_DATA *ch, int key ) );
 
-
-char *	const		sect_names[SECT_MAX][2] =
+char *	const		sect_names[SECT_MAX+1] =
 {
-    { "In A Room","inside"	},	{ "A City Street","cities"      },
-    { "In A Field","fields"	},	{ "In A Forest","forests"	},
-    { "Hill",	"hills"		},	{ "On A Mountain","mountains"	},
-    { "In The Water","waters"	},	{ "In Rough Water","waters"	},
-    { "Underwater", "underwaters" },	{ "In The Air",	"air"		},
-    { "In A Desert","deserts"	},	{ "Somewhere",	"unknown"	},
-    { "Ocean floor", "Ocean floor" },	{ "Underground", "underground"	}
+    { "In A Room"	},	{ "A City Street"      },
+    { "In A Field"	},	{ "In A Forest"	},
+    { "Hill"		},	{ "On A Mountain"	},
+    { "In The Water"},	{ "In Rough Water"	},
+    { "Underwater" 	},	{ "In The Air"		},
+    { "In A Desert"	},	{ "Somewhere"	},
+    { "Ocean floor" },	{ "Underground"	},
+	nullptr
+};
+
+
+char *	const		sect_types[SECT_MAX+1] =
+{
+    { "inside"		},	{ "cities"      },
+    { "fields"		},	{ "forests"	},
+    { "hills"		},	{ "mountains"	},
+    { "waters"		},	{ "waters"	},
+    { "underwaters" },	{ "air"		},
+    { "deserts"		},	{ "unknown"	},
+    { "ocean floor" },	{ "underground"	},
+	nullptr
 };
 
 
@@ -313,7 +326,7 @@ void decorate_room( ROOM_INDEX_DATA *room )
     if ( room->description )
       STRFREE( room->description );
 
-    room->name	= STRALLOC( sect_names[sector][0] );
+    room->name	= STRALLOC( sect_names[sector] );
     buf[0] = '\0';
     nRand = number_range( 1, UMIN(8,sent_total[sector]) );
 
@@ -1062,94 +1075,95 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
 		char_from_room( ch );
 		if ( ch->mount )
 		{
-		rprog_leave_trigger( ch->mount );
-		if( char_died(ch) )
-			return global_retcode;
-		if( ch->mount )
-		{
-			char_from_room( ch->mount );
-			char_to_room( ch->mount, to_room );
+			rprog_leave_trigger( ch->mount );
+			if( char_died(ch) )
+				return global_retcode;
+			if( ch->mount )
+			{
+				char_from_room( ch->mount );
+				char_to_room( ch->mount, to_room );
+			}
 		}
-		}
-
 
 		char_to_room( ch, to_room );
+
 		if ( !IS_AFFECTED(ch, AFF_SNEAK)
 		&& ( IS_NPC(ch) || !BV_IS_SET(ch->act, PLR_WIZINVIS) ) )
 		{
-		if ( fall )
-			txt = "falls";
-		else
-		if ( ch->mount )
-		{
-		if ( IS_AFFECTED( ch->mount, AFF_FLOATING ) )
-		txt = "floats in";
-		else
-		if ( IS_AFFECTED( ch->mount, AFF_FLYING ) )
-		txt = "flys in";
-		else
-		txt = "rides in";
-		}
-		else
-		{
-		if ( IS_AFFECTED( ch, AFF_FLOATING ) )
-		{
-		if ( drunk )
-			txt = "floats in unsteadily";
-		else
-			txt = "floats in";
-		}
-		else
-		if ( IS_AFFECTED( ch, AFF_FLYING ) )
-		{
-		if ( drunk )
-			txt = "flys in shakily";
-		else
-			txt = "flys in";
-		}
-		else
-		if ( ch->position == POS_SHOVE )
-			txt = "is shoved in";
-		else
-		if ( ch->position == POS_DRAG )
-		txt = "is dragged in";
-		else
-		{
-		if ( drunk )
-			txt = "stumbles drunkenly in";
-		else
-			txt = "arrives";
-		}
-		}
-		switch( door )
-		{
-		default: dtxt = "somewhere";	break;
-		case 0:  dtxt = "the south";	break;
-		case 1:  dtxt = "the west";	break;
-		case 2:  dtxt = "the north";	break;
-		case 3:  dtxt = "the east";	break;
-		case 4:  dtxt = "below";		break;
-		case 5:  dtxt = "above";		break;
-		case 6:  dtxt = "the south-west";	break;
-		case 7:  dtxt = "the south-east";	break;
-		case 8:  dtxt = "the north-west";	break;
-		case 9:  dtxt = "the north-east";	break;
-		}
-		if ( ch->mount )
-		{
-		SPRINTF( buf, "$n %s from %s upon $N.", txt, dtxt );
-		act( AT_ACTION, buf, ch, NULL, ch->mount, TO_ROOM );
-		}
-		else
-		{
-		SPRINTF( buf, "$n %s from %s.", txt, dtxt );
-		act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
-		}
+			if ( fall )
+				txt = "falls";
+			else
+			if ( ch->mount )
+			{
+				if ( IS_AFFECTED( ch->mount, AFF_FLOATING ) )
+					txt = "floats in";
+				else
+					if ( IS_AFFECTED( ch->mount, AFF_FLYING ) )
+						txt = "flys in";
+					else
+						txt = "rides in";
+			}
+			else
+			{
+				if ( IS_AFFECTED( ch, AFF_FLOATING ) )
+				{
+					if ( drunk )
+						txt = "floats in unsteadily";
+					else
+						txt = "floats in";
+				}
+				else
+				if ( IS_AFFECTED( ch, AFF_FLYING ) )
+				{
+					if ( drunk )
+						txt = "flys in shakily";
+					else
+						txt = "flys in";
+				}
+				else
+				if ( ch->position == POS_SHOVE )
+					txt = "is shoved in";
+				else
+				if ( ch->position == POS_DRAG )
+					txt = "is dragged in";
+				else
+				{
+					if ( drunk )
+						txt = "stumbles drunkenly in";
+					else
+						txt = "arrives";
+				}
+			}
+			switch( door )
+			{
+				default: dtxt = "somewhere";	break;
+				case 0:  dtxt = "the south";	break;
+				case 1:  dtxt = "the west";	break;
+				case 2:  dtxt = "the north";	break;
+				case 3:  dtxt = "the east";	break;
+				case 4:  dtxt = "below";		break;
+				case 5:  dtxt = "above";		break;
+				case 6:  dtxt = "the south-west";	break;
+				case 7:  dtxt = "the south-east";	break;
+				case 8:  dtxt = "the north-west";	break;
+				case 9:  dtxt = "the north-east";	break;
+			}
+			if ( ch->mount )
+			{
+				SPRINTF( buf, "$n %s from %s upon $N.", txt, dtxt );
+				act( AT_ACTION, buf, ch, NULL, ch->mount, TO_ROOM );
+			}
+			else
+			{
+				SPRINTF( buf, "$n %s from %s.", txt, dtxt );
+				act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
+			}
 		}
 	}
 	else
 		bug( "%s failed to find destination vnum %d", ch->name, to_room->vnum);
-    if ( !IS_IMMORTAL(ch)
+
+	if ( !IS_IMMORTAL(ch)
     &&  !IS_NPC(ch)
     &&  ch->in_room->area != to_room->area )
     {

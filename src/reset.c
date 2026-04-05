@@ -51,7 +51,7 @@ int		get_trapflag	args( ( char *flag ) );
 int		get_exflag	args( ( char *flag ) );
 int		get_rflag	args( ( char *flag ) );
 extern	char *	const		wear_locs[];
-extern	char *	const		ex_flags[];
+extern	const char *	const		ex_flags[];
 
 bool is_room_reset  args( ( RESET_DATA *pReset, ROOM_INDEX_DATA *aRoom,
                             AREA_DATA *pArea ) );
@@ -1896,7 +1896,7 @@ void list_resets( CHAR_DATA *ch, AREA_DATA *pArea, ROOM_INDEX_DATA *pRoom,
     case 'B':
       {
       bool skip = false;
-      char * const *flagarray;
+      const char * const *flagarray;
       
       STRAPP(pbuf, "BIT: ");
 
@@ -1984,7 +1984,7 @@ void list_resets( CHAR_DATA *ch, AREA_DATA *pArea, ROOM_INDEX_DATA *pRoom,
         if (!skip)
         {
           if ( flagarray )
-            STRAPP(pbuf, "; flags: %s [%d]\n", flag_string(pReset->arg3, flagarray), pReset->arg3);
+            STRAPP(pbuf, "; flags: %s [%d]\n", flag_string(pReset->arg3, (char* const*)flagarray), pReset->arg3);
           else
             STRAPP(pbuf, "; flags %d\n", pReset->arg3);
         }

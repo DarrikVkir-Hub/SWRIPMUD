@@ -293,7 +293,7 @@ ch_printf(ch, "\n%s\n", buf);
 	}
     ch_printf( ch, "%s\n", buf );
     ch_printf( ch, "&cWANTED ON: &C%s\n",
-             flag_string(ch->pcdata->wanted_flags, planet_flags, PLANET_MAX) );
+             bitset_to_string(ch->pcdata->wanted_flags, planet_flags).c_str() );
 
     if ( ch->pcdata->bestowments && ch->pcdata->bestowments[0] != '\0' )
 	ch_printf( ch, "&cYou are bestowed with the command(s): &C%s.\n",

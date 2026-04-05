@@ -69,36 +69,36 @@ void  explode( OBJ_DATA *obj )
     	        for ( xch = first_char; xch; xch = xch->next )
     	           if ( !IS_NPC( xch ) && nifty_is_name( obj->armed_by, xch->name ) )
     	           {
-    	               if ( objcont->carried_by )
-	               {
-      	                act( AT_WHITE, "$p EXPLODES in $n's hands!", objcont->carried_by, obj, NULL, TO_ROOM );
-                        act( AT_WHITE, "$p EXPLODES in your hands!", objcont->carried_by, obj, NULL, TO_CHAR );
-                        room = objcont->carried_by->in_room;
-                        held = TRUE;
-			            xch = objcont->carried_by;
-	               }
-	               else if ( objcont->in_room )
-	                   room = objcont->in_room;
-	               else 
-	                   room = NULL;
-	                   
-	               if ( room )
-	               {
-			  char buf[MAX_STRING_LENGTH];
+                        if ( objcont->carried_by )
+                        {
+                            act( AT_WHITE, "$p EXPLODES in $n's hands!", objcont->carried_by, obj, NULL, TO_ROOM );
+                            act( AT_WHITE, "$p EXPLODES in your hands!", objcont->carried_by, obj, NULL, TO_CHAR );
+                            room = objcont->carried_by->in_room;
+                            held = TRUE;
+                            xch = objcont->carried_by;
+                        }
+                        else if ( objcont->in_room )
+                            room = objcont->in_room;
+                        else 
+                            room = NULL;
+                            
+                        if ( room )
+                        {
+                            char buf[MAX_STRING_LENGTH];
 
-    	                      if( !held )
-			      {
-				  SPRINTF( buf, "%s EXPLODES!\n", objcont->short_descr );
-				  echo_to_room( AT_BLOOD, room, buf );
-			      }
-			      else
-			      {
-				  SPRINTF( buf, "%s EXLODES in %s'shands!\n", objcont->short_descr, xch->name );
-				  echo_to_room( AT_BLOOD, room, buf );
-			      }
-	                      room_explode( obj , xch, room );
-	               }
-		      break;
+                            if( !held )
+                            {
+                                SPRINTF( buf, "%s EXPLODES!\n", objcont->short_descr );
+                                echo_to_room( AT_BLOOD, room, buf );
+                            }
+                            else
+                            {
+                                SPRINTF( buf, "%s EXLODES in %s'shands!\n", objcont->short_descr, xch->name );
+                                echo_to_room( AT_BLOOD, room, buf );
+                            }
+                            room_explode( obj , xch, room );
+                        }
+                        break;
     	           }           
     	    }
             make_scraps(obj);
@@ -1139,6 +1139,12 @@ void char_to_room( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex )
 	tele->room		= pRoomIndex;
 	tele->timer		= pRoomIndex->tele_delay;
     }
+
+    if (olc_room_in_edit_mode(ch))
+    {
+        olc_room_edit_switch_to_room(ch, ch->in_room);
+    }
+
     if (!IS_NPC(ch))
         gmcp_evt_room_change(ch);
     return;
@@ -1574,6 +1580,7 @@ void obj_from_obj( OBJ_DATA *obj )
  */
 void extract_obj( OBJ_DATA *obj )
 {
+    call_to_stop();
     OBJ_DATA *obj_content;
 
     if ( !obj )
@@ -2907,8 +2914,10 @@ void extract_exit( ROOM_INDEX_DATA *room, EXIT_DATA *pexit )
     UNLINK( pexit, room->first_exit, room->last_exit, next, prev );
     if ( pexit->rexit )
       pexit->rexit->rexit = NULL;
-    STRFREE( pexit->keyword );
-    STRFREE( pexit->description );
+    if (pexit->keyword)
+        STRFREE( pexit->keyword );
+    if (pexit->description) 
+        STRFREE( pexit->description );
     DISPOSE( pexit );
 }
 

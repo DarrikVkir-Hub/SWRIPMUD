@@ -31,7 +31,7 @@
  */
 
 void subtract_times( struct timeval *etime, struct timeval *stime );
-
+bool olc_try_inline_interpret(CHAR_DATA* ch, char* command, char* argument, OlcInterpretStage stage);
 
 
 bool	check_social	args( ( CHAR_DATA *ch, char *command,
@@ -209,6 +209,30 @@ char  * parse_target( CHAR_DATA *ch, char *oldstring )
     return (multicommand); 
  } 
 
+bool command_is_authorized_for_char(CHAR_DATA* ch, CMDTYPE* cmd)
+{
+    int trust;
+
+    if (!ch || !cmd)
+        return false;
+
+    trust = get_trust(ch);
+
+    if (cmd->level <= trust
+    && (IS_NPC(ch)
+    || !cmd->commandgroup.any()
+    || cmd->commandgroup.intersects(ch->pcdata->commandgroup)))
+        return true;
+
+    if (!IS_NPC(ch)
+    && ch->pcdata->bestowments
+    && ch->pcdata->bestowments[0] != '\0'
+    && is_name(cmd->name, ch->pcdata->bestowments)
+    && cmd->level <= (trust + 5))
+        return true;
+
+    return false;
+}
 
 void interpret( CHAR_DATA *ch, char *argument )
 {
@@ -217,7 +241,6 @@ void interpret( CHAR_DATA *ch, char *argument )
     char logname[MAX_INPUT_LENGTH];
     TIMER *timer = NULL;
     CMDTYPE *cmd = NULL;
-    int trust;
     int loglvl;
     bool found;
     struct timeval time_used;
@@ -330,7 +353,14 @@ void interpret( CHAR_DATA *ch, char *argument )
         * Look for command in command table.
         * Check for council powers and/or bestowments
         */
-        trust = get_trust( ch );
+        for ( cmd = command_hash[LOWER(command[0])%126]; cmd; cmd = cmd->next )
+            if ( !str_prefix( command, cmd->name )
+            &&   command_is_authorized_for_char(ch, cmd) )
+            {
+                found = TRUE;
+                break;
+            }
+/*        trust = get_trust( ch );
         for ( cmd = command_hash[LOWER(command[0])%126]; cmd; cmd = cmd->next )
             if ( !str_prefix( command, cmd->name )
             &&   ((cmd->level <= trust && (IS_NPC(ch) || !cmd->commandgroup.any() || (cmd->commandgroup.intersects(ch->pcdata->commandgroup))))
@@ -341,7 +371,7 @@ void interpret( CHAR_DATA *ch, char *argument )
                 found = TRUE;
                 break;
             }
-
+*/
         /*
         * Turn off afk bit when any command performed.
         */
@@ -417,6 +447,9 @@ void interpret( CHAR_DATA *ch, char *argument )
         }
     }
 
+    if (olc_try_inline_interpret(ch, command, argument, OlcInterpretStage::EARLY))
+        return;
+
     /*
      * Look for command in skill and socials table.
      */
@@ -445,9 +478,16 @@ void interpret( CHAR_DATA *ch, char *argument )
                 move_char( ch, pexit, 0 );
                 return;
             }
-            send_to_char( "Huh?\n", ch );
         }
+    }
+
+    if (olc_try_inline_interpret(ch, command, argument, OlcInterpretStage::LATE)) // Needs to be after the above as room inline editing allows for movement - DV 4-5-26
         return;
+
+    if (!found)  // Need to move this return below the olc edit checking, otherwise if an olc 
+    {            // short command doesn't match something in the command table, it won't reach it - DV
+        send_to_char( "Huh?\n", ch );
+        return; 
     }
 
     /*

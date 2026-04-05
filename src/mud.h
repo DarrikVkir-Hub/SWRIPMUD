@@ -33,6 +33,8 @@
 #include <bit>
 #include <string>
 #include <sstream>
+#include <functional>
+#include <typeindex>
 
 
 #define MCCP
@@ -176,6 +178,7 @@ typedef struct	member_data		MEMBER_DATA; /* Individual member data */
 typedef struct	member_list		MEMBER_LIST; /* List of members in clan */
 typedef struct  membersort_data         MS_DATA;     /* List for sorted roster list */
 typedef struct  tracker_data    TRACKER_DATA;
+typedef struct  OlcSession      OLC_SESSION;
 
 /*
  * Function types.
@@ -629,6 +632,17 @@ static inline int first_set_bit(unsigned int bits)
 
 #endif
 
+static inline const flag_name* find_flag(const flag_name* table, const std::string& name)
+{
+    for (size_t i = 0; table[i].name != nullptr; ++i)
+    {
+        if (!str_cmp_utf8(name.c_str(), table[i].name))
+            return &table[i];
+    }
+    return nullptr;
+}
+
+
 
 /*
  * String and memory management parameters.
@@ -1051,6 +1065,8 @@ struct	descriptor_data
     gmcp_sub_t gmcp_subs[MAX_GMCP_SUBS];
     int gmcp_sub_count;
     gmcp_cache_t gmcp_cache;
+
+    OlcSession* olc = nullptr;
 
 };
 
@@ -3357,29 +3373,27 @@ struct	obj_index_data
 {
     OBJ_INDEX_DATA *	next;
     OBJ_INDEX_DATA *	next_sort;
-    EXTRA_DESCR_DATA *	first_extradesc;
+    EXTRA_DESCR_DATA *	first_extradesc; 
     EXTRA_DESCR_DATA *	last_extradesc;
-    AFFECT_DATA *	first_affect;
+    AFFECT_DATA *	first_affect; 
     AFFECT_DATA *	last_affect;
     MPROG_DATA *	mudprogs;               /* objprogs */
     int			progtypes;              /* objprogs */
-    char *		name;
-    char *		short_descr;
-    char *		description;
-    char *		action_desc;
-    int			vnum;
-    sh_int              level;
-    sh_int		item_type;
-//  int			extra_flags;
-//  int			magic_flags; /*Need more bitvectors for spells - Scryn*/
-    FLAG_SET    wear_flags;
-    sh_int		count;
-    sh_int		weight;
-    int			cost;
-    int			value	[6];
-    FLAG_SET    objflags;
-    int			serial;
-    sh_int		layers;
+    char *		name; 
+    char *		short_descr; 
+    char *		description; 
+    char *		action_desc; 
+    int			vnum; 
+    sh_int      level; 
+    sh_int		item_type; 
+    FLAG_SET    wear_flags; 
+    sh_int		count; 
+    sh_int		weight; 
+    int			cost; 
+    int			value	[6]; 
+    FLAG_SET    objflags; 
+    int			serial; 
+    sh_int		layers; 
     int			rent;			/* Unused */
 };
 
@@ -3389,42 +3403,44 @@ struct	obj_index_data
  */
 struct	obj_data
 {
-    OBJ_DATA *		next;
-    OBJ_DATA *		prev;
-    OBJ_DATA *		next_content;
-    OBJ_DATA *		prev_content;
-    OBJ_DATA *		first_content;
-    OBJ_DATA *		last_content;
-    OBJ_DATA *		in_obj;
-    CHAR_DATA *		carried_by;
-    EXTRA_DESCR_DATA *	first_extradesc;
+    OBJ_DATA *		next; // Handled by clone_object
+    OBJ_DATA *		prev; // Handled by clone_object
+    OBJ_DATA *		next_content; // editing objects should not touch this
+    OBJ_DATA *		prev_content; // editing objects should not touch this
+    OBJ_DATA *		first_content; // editing objects should not touch this
+    OBJ_DATA *		last_content; // editing objects should not touch this
+    OBJ_DATA *		in_obj;  // editing objects should not touch this
+    CHAR_DATA *		carried_by;  // editing objects should not touch this
+    EXTRA_DESCR_DATA *	first_extradesc; // Uses edit_buffer to edit
     EXTRA_DESCR_DATA *	last_extradesc;
-    AFFECT_DATA *	first_affect;
+    AFFECT_DATA *	first_affect;  // AFFECT_DATA - multiple fields, so works similarly to how exits do in rooms.
     AFFECT_DATA *	last_affect;
-    OBJ_INDEX_DATA *	pIndexData;
-    ROOM_INDEX_DATA *	in_room;
-    char *		armed_by;
-    char *		name;
-    char *		short_descr;
-    char *		description;
-    char *		action_desc;
-    sh_int		item_type;
-    sh_int		mpscriptpos;
-//  int			extra_flags;
-//  int			magic_flags; /*Need more bitvectors for spells - Scryn*/
-    FLAG_SET    wear_flags; 
-    int                 blaster_setting;
-    MPROG_ACT_LIST *	mpact;		/* mudprogs */
-    int			mpactnum;	/* mudprogs */
-    int 		wear_loc;
-    sh_int		weight;
-    int			cost;
-    sh_int		level;
-    sh_int		timer;
-    int			value	[6];
-    FLAG_SET    objflags;
-    sh_int		count;		/* support for object grouping */
-    int			serial;		/* serial number	       */
+    OBJ_INDEX_DATA *	pIndexData;  // This is the prototype object editing objects should not change this.  
+                                     // If the prototype flag is set in objflags, then when committing changes the pIndexData should also have the same changes  made
+    ROOM_INDEX_DATA *	in_room;  // editing objects should not touch this
+    char *		armed_by;  // editing objects should not touch this
+    char *		name;  // Direct STRALLOC string assignment
+    char *		short_descr; // direct STRALLOC string assignment
+    char *		description; // Uses edit_buffer to edit if no argument, if there is an argument direct STRALLOC assignment
+    char *		action_desc; // direct STRALLOC string assignment
+    sh_int		item_type; // enum - enum names are in const char* o_types[].
+    sh_int		mpscriptpos; /* objprogs - ignored for the OLC for now  - working copy should not touch it*/
+    FLAG_SET    wear_flags;  // BitSet flags - but the flag names are in const char* w_flags
+    int                 blaster_setting; // Unnecessary to handle this through object editing
+    MPROG_ACT_LIST *	mpact;		 /* objprogs - ignored for the OLC for now  - working copy should not touch it*/
+    int			mpactnum;	 /* objprogs - ignored for the OLC for now  - working copy should not touch it*/
+    int 		wear_loc; // Manual editing of this is okay, but should never touch the pIndexData
+    sh_int		weight; // straight integer with only INT_MIN and INT_MAX retricting it
+    int			cost;  // straight integer with only INT_MIN and INT_MAX retricting it
+    sh_int		level; // straight integer with only INT_MIN and INT_MAX retricting it
+    sh_int		timer; // Manual editing of this is okay, but should never touch the pIndexData
+    int			value	[6];  // six different integer values - straight integer with only INT_MIN and INT_MAX retricting it
+    FLAG_SET    objflags;   // BitSet flags - this includes weapontypes, which can also be set with a different command, between WEAPON_FIRST and WEAPON_MAX
+                            // objflag's names are set up in const flag_name obj_flag_table[].  flag_name being defined as (bit, name)
+                            // weapontypes entry uses the same obj_flag_table but is restricted between WEAPON_FIRST and WEAPON_MAX, inclusive.
+    sh_int		count;		// straight integer with only INT_MIN and INT_MAX retricting it
+    int			serial;		// object insance tracker - not edited directly, only touched when cloning an object 
+                            // - clone_obj should be used when making a working copy so that it's handled correctly
 };
 
 
@@ -3633,7 +3649,7 @@ struct	room_index_data
     sh_int		mpscriptpos;
     int			progtypes;           /* mudprogs */
     sh_int		light;
-    sh_int		sector_type;
+    int		sector_type;
     int			tele_vnum;
     sh_int		tele_delay;
     sh_int		tunnel;		     /* max people that will fit */
@@ -4547,6 +4563,7 @@ extern	char *	const	where_name	[];
 extern	const	sh_int	rev_dir		[];
 extern	const	int	trap_door	[];
 extern  const flag_name r_flags     [];
+extern char *	const	sect_types[SECT_MAX+1];
 extern  const flag_name aff_flags   [];
 extern	char *	const	w_flags		[];
 extern	char *	const	o_flags		[];
@@ -4554,8 +4571,8 @@ extern	char *	const	a_flags		[];
 extern	char *	const	o_types		[];
 extern	char *	const	a_types		[];
 extern	const flag_name	act_flags	[];
-extern  char *  const   planet_flags    [];
-extern  char *  const   weapon_table    [13];
+extern  const flag_name planet_flags    [];
+extern  char *  const   weapon_table    [14];
 extern  char *  const   spice_table     [];
 extern	const flag_name	plr_flags	[];
 extern	char *	const	pc_flags	[];
@@ -4684,6 +4701,11 @@ extern		struct act_prog_data *	mob_act_list;
  * Command functions.
  * Defined in act_*.c (mostly).
  */
+DECLARE_DO_FUN( do_redit2 );
+DECLARE_DO_FUN( do_oedit );
+DECLARE_DO_FUN( do_olc );
+DECLARE_DO_FUN( do_olcset );
+DECLARE_DO_FUN( do_olcshow );
 DECLARE_DO_FUN( do_mccpstat );
 DECLARE_DO_FUN( do_repair_module );
 DECLARE_DO_FUN( do_maketemplateship);
@@ -4702,6 +4724,7 @@ DECLARE_DO_FUN( do_focusalias   );
 DECLARE_DO_FUN( do_unfocusalias   );
 DECLARE_DO_FUN( do_marena       );
 DECLARE_DO_FUN( do_mchallenge   );
+DECLARE_DO_FUN( do_medit        );
 DECLARE_DO_FUN( do_members      );
 DECLARE_DO_FUN( do_roster       );
 DECLARE_DO_FUN( do_scatter );
@@ -5638,7 +5661,7 @@ int     get_vip_flag    args( ( char *flag ) );
 int     get_wanted_flag args( ( char *flag ) );
 
 extern char  *  const           wear_locs [];
-extern  char *  const           ex_flags[];
+extern const char *  const           ex_flags[];
 
 /* clans.c */
 CL *	get_clan		args( ( char *name ) );
@@ -6234,6 +6257,26 @@ CHAR_DATA *  fread_vendor  args ( ( FILE *fp ) );
 void load_vendors args( ( void ) );
 void save_vendor args (( CHAR_DATA *ch ));
 
+/* olc.c */
+void do_redit2(CHAR_DATA* ch, char* argument);
+void do_olcset(CHAR_DATA* ch, char* argument);
+void do_olcshow(CHAR_DATA* ch, char* argument);
+bool bitset_apply_from_string(BitSet& bs, const std::string& input, const flag_name* table);
+std::string enum_to_string_legacy(int value, const char* const* table);
+bool enum_from_string_legacy(const std::string& input, int& out, const char* const* table);
+EXTRA_DESCR_DATA* olc_room_get_or_create_extra_desc(ROOM_INDEX_DATA* room, const std::string& keyword);
+bool olc_room_remove_extra_desc(ROOM_INDEX_DATA* room, const char* keyword);
+EXTRA_DESCR_DATA* olc_room_clone_extra_descs(EXTRA_DESCR_DATA* src);
+bool olc_room_in_edit_mode(CHAR_DATA* ch);
+void olc_room_edit_enter(CHAR_DATA* ch);
+void olc_room_edit_leave(CHAR_DATA* ch, bool save);
+bool olc_room_edit_revert(CHAR_DATA* ch);
+bool olc_room_edit_interpret(CHAR_DATA* ch, char* command, char* argument);
+bool olc_room_commit_current(CHAR_DATA* ch);
+void olc_room_discard_current_room_working_copy(CHAR_DATA* ch);
+void olc_room_edit_switch_to_room(CHAR_DATA* ch, ROOM_INDEX_DATA* room);
+void olc_room_preview(CHAR_DATA* ch, ROOM_INDEX_DATA* room, const char* argument);
+
 
 #undef	SK
 #undef	CO
@@ -6329,11 +6372,11 @@ extern	const   char *  ris_strings[];
 extern	const   char    control_page_a[];
 extern	const   char    control_help_page[];
 
-#define SH_INT 1
-#define INT 2
-#define CHAR 3
-#define STRING 4
-#define SPECIAL 5
+//#define SH_INT 1
+//#define INT 2
+//#define CHAR 3
+//#define STRING 4
+//#define SPECIAL 5
 
 
 #define NO_PAGE    0
@@ -6552,3 +6595,619 @@ extern void do_trivia_chat(CHAR_DATA *ch, char *argument);
 #define VCHECK_OBJ 1
 #define VCHECK_MOB 2
 bool is_valid_vnum( int vnum, short type );
+
+// New OLC definitions
+
+template<typename T>
+T* field_as(void* obj, size_t offset)
+{
+    return reinterpret_cast<T*>((char*)obj + offset);
+}
+
+template<typename T>
+bool set_int_field(T& field, const std::string& value, int min = INT_MIN, int max = INT_MAX)
+{
+    try
+    {
+        int v = std::stoi(value);
+        if (v < min || v > max)
+            return false;
+
+        field = v;
+        return true;
+    }
+    catch (...)
+    {
+        return false;
+    }
+}
+
+inline std::string get_int_field(int value)
+{
+    return std::to_string(value);
+}
+
+inline bool set_str_field(char*& field, const std::string& value)
+{
+    if (field)
+        STRFREE(field);
+
+    field = STRALLOC(const_cast<char*>(value.c_str()));
+    return true;
+}
+
+inline std::string get_str_field(char* field)
+{
+    return field ? field : "";
+}
+
+inline bool set_enum_legacy_field(int& field, const std::string& value, const char* const* table)
+{
+    int val;
+    if (!enum_from_string_legacy(value, val, table))
+        return false;
+
+    field = val;
+    return true;
+}
+
+inline std::string get_enum_legacy_field(int field, const char* const* table)
+{
+    return enum_to_string_legacy(field, table);
+}
+
+inline bool set_flag_field(BitSet& bs, const std::string& value, const flag_name* table)
+{
+    return bitset_apply_from_string(bs, value, table);
+}
+
+inline std::string get_flag_field(const BitSet& bs, const flag_name* table)
+{
+    return bitset_to_string(bs, table);
+}
+
+int dir_lookup(const std::string& dir);
+bool olc_room_delete_exit(ROOM_INDEX_DATA* room, int dir);
+EXIT_DATA* find_exit(ROOM_INDEX_DATA* room, int dir);
+EXIT_DATA* olc_room_create_exit(ROOM_INDEX_DATA* room, int dir, int vnum);
+void olc_room_exit_link_two_way(EXIT_DATA* ex, ROOM_INDEX_DATA* from);
+std::string olc_format_columns(const std::vector<std::string>& items, int term_width, int indent);
+std::vector<std::string> flag_values_vec(const char* const* table);
+bool olc_room_edit_exit_field(CHAR_DATA* ch, ROOM_INDEX_DATA* room);
+bool olc_room_edit_bexit_field(CHAR_DATA* ch, ROOM_INDEX_DATA* room);
+std::string olc_room_exit_list_summary(void* obj);
+bool olc_room_edit_extradesc_field(CHAR_DATA* ch, ROOM_INDEX_DATA* room);
+std::string olc_room_extradesc_list_summary(void* obj);
+
+inline bool bitset_apply_from_legacy_string(BitSet& bs, const std::string& input, const char* const* table)
+{
+    std::istringstream iss(input);
+    std::string token;
+    bool changed = false;
+
+    while (iss >> token)
+    {
+        if (token.empty())
+            continue;
+
+        char op = 0;
+
+        if (token[0] == '+' || token[0] == '-' || token[0] == '!')
+        {
+            op = token[0];
+            token.erase(0, 1);
+        }
+
+        if (token.empty())
+            continue;
+
+        int bit = -1;
+        for (int i = 0; table && table[i] != nullptr; ++i)
+        {
+            if (!str_cmp_utf8(token.c_str(), table[i]))
+            {
+                bit = i;
+                break;
+            }
+        }
+
+        if (bit < 0)
+            continue;
+
+        switch (op)
+        {
+            case '-':
+                bs.clear(bit);
+                break;
+            case '!':
+                bs.toggle(bit);
+                break;
+            case '+':
+            default:
+                bs.set(bit);
+                break;
+        }
+
+        changed = true;
+    }
+
+    return changed;
+}
+
+inline std::string get_legacy_flag_field(const BitSet& bs, const char* const* table)
+{
+    std::string out;
+
+    if (!table)
+        return out;
+
+    for (int i = 0; table[i] != nullptr; ++i)
+    {
+        if (bs.test(i))
+        {
+            if (!out.empty())
+                out += " ";
+            out += table[i];
+        }
+    }
+
+    return out.empty() ? "none" : out;
+}
+
+enum class OlcEditMode
+{
+    NONE,
+    ROOM_INLINE,
+    OBJECT_INLINE,
+    MOBILE_INLINE,
+};
+
+struct OlcPendingMobPrototypeChanges
+{
+    bool hitnodice_set = false;
+    sh_int hitnodice = 0;
+
+    bool hitsizedice_set = false;
+    sh_int hitsizedice = 0;
+
+    bool damnodice_set = false;
+    sh_int damnodice = 0;
+
+    bool damsizedice_set = false;
+    sh_int damsizedice = 0;
+};
+
+enum class OlcExitSideEffectType
+{
+    UPSERT_REVERSE,
+    DELETE_REVERSE
+};
+
+struct OlcPendingExitSideEffect
+{
+    OlcExitSideEffectType type = OlcExitSideEffectType::UPSERT_REVERSE;
+
+    int from_room_vnum = 0;
+    int from_dir = -1;
+    int to_room_vnum = 0;
+
+    /* Desired final reverse-exit state on save */
+    int final_vnum = 0;          /* usually from_room_vnum */
+    int final_rvnum = 0;         /* usually to_room_vnum */
+    int final_key = -1;
+    int final_exit_info = 0;
+    std::string final_keyword;
+
+    bool initialized = false;
+};
+
+enum class OlcValueType
+{
+    INT,
+    STRING,
+    ENUM,
+    FLAG,
+    EDITOR,        // long text / editor-driven
+    LIST,          // extradesc, etc
+    BOOL,
+};
+
+enum class OlcMetaType
+{
+    NONE,
+    FLAG_TABLE,     // BitSet (flag_name[])
+    ENUM_FLAG,      // enum using flag_name[]
+    ENUM_LEGACY,     // enum using const char*[]
+    EXTRA_DESC_LIST,
+    EXIT_LIST,
+    OBJ_AFFECT_LIST,
+    MOB_AFFECT_LIST,    
+    LIST,
+};
+
+struct OlcField
+{
+    const char* name;
+    OlcValueType value_type;
+    const void* meta = nullptr;
+    OlcMetaType meta_type = OlcMetaType::NONE;
+
+    std::function<bool(CHAR_DATA* ch, void* obj)> editor = nullptr;
+    std::function<bool(void* obj, const std::string& value)> setter = nullptr;
+    std::function<std::string(void* obj)> getter = nullptr;
+    std::function<bool(CHAR_DATA* ch, void* obj, const std::string& value)> editor_setter = nullptr;    
+    std::function<std::string(CHAR_DATA* ch, void* obj)> contextual_getter = nullptr;
+
+    int editor_substate = 0;
+
+    const char* help = nullptr;
+    int min_int = INT_MIN;
+    int max_int = INT_MAX;
+    bool editor_takes_argument = false;
+    
+    OlcField(
+        const char* n,
+        OlcValueType value_type,
+        const void* m,
+        OlcMetaType mt,
+        std::function<bool(CHAR_DATA* ch, void* obj)> e,
+        std::function<bool(void*, const std::string&)> s,
+        std::function<std::string(void*)> g,
+        std::function<bool(CHAR_DATA* ch, void* obj, const std::string& value)> ess,
+        std::function<std::string(CHAR_DATA* ch, void* obj)> cg,
+        int es,
+        const char* h = nullptr,
+        int minv = INT_MIN,
+        int maxv = INT_MAX,
+        bool editor_arg = false
+    )
+        : name(n),
+          value_type(value_type),
+          meta(m),
+          meta_type(mt),
+          editor(std::move(e)),
+          setter(std::move(s)),
+          getter(std::move(g)),
+          editor_setter(std::move(ess)),
+          contextual_getter(std::move(cg)),
+          editor_substate(es),
+          help(h),
+          min_int(minv),
+          max_int(maxv),
+          editor_takes_argument(editor_arg)
+    {}    
+};
+
+template <typename T, typename M>
+using olc_member_ptr = M T::*;
+
+template <typename T, typename M>
+OlcField make_olc_int_field(
+    const char* name,
+    olc_member_ptr<T, M> member,
+    const char* help,
+    int minv = INT_MIN,
+    int maxv = INT_MAX)
+{
+    static_assert(std::is_integral<M>::value || std::is_enum<M>::value,
+                  "make_olc_int_field requires an integral or enum member");
+
+    return OlcField{
+        name,
+        OlcValueType::INT,
+        nullptr,
+        OlcMetaType::NONE,
+        nullptr,
+        [member, minv, maxv](void* obj, const std::string& value) -> bool
+        {
+            auto typed = static_cast<T*>(obj);
+            return set_int_field(typed->*member, value, minv, maxv);
+        },
+        [member](void* obj) -> std::string
+        {
+            auto typed = static_cast<T*>(obj);
+            return get_int_field(typed->*member);
+        },
+        nullptr,
+        nullptr,
+        0,
+        help,
+        minv,
+        maxv,
+        false
+    };
+}
+template <typename T>
+OlcField make_olc_string_field(
+    const char* name,
+    olc_member_ptr<T, char*> member,
+    const char* help)
+{
+    return OlcField{
+        name,
+        OlcValueType::STRING,
+        nullptr,
+        OlcMetaType::NONE,
+        nullptr,
+        [member](void* obj, const std::string& value) -> bool
+        {
+            auto typed = static_cast<T*>(obj);
+            return set_str_field(typed->*member, value);
+        },
+        [member](void* obj) -> std::string
+        {
+            auto typed = static_cast<T*>(obj);
+            return get_str_field(typed->*member);
+        },
+        nullptr,
+        nullptr,
+        0,
+        help,
+        INT_MIN,
+        INT_MAX,
+        false
+    };
+}
+template <typename T, typename M>
+OlcField make_olc_enum_legacy_field(
+    const char* name,
+    olc_member_ptr<T, M> member,
+    const char* const* table,
+    const char* help)
+{
+    static_assert(std::is_integral<M>::value || std::is_enum<M>::value,
+                  "make_olc_enum_legacy_field requires an integral or enum member");
+
+    return OlcField{
+        name,
+        OlcValueType::ENUM,
+        (const void*)table,
+        OlcMetaType::ENUM_LEGACY,
+        nullptr,
+        [member, table](void* obj, const std::string& value) -> bool
+        {
+            auto typed = static_cast<T*>(obj);
+
+            int temp = 0;
+            if (!set_enum_legacy_field(temp, value, table))
+                return false;
+
+            typed->*member = static_cast<M>(temp);
+            return true;
+        },
+        [member, table](void* obj) -> std::string
+        {
+            auto typed = static_cast<T*>(obj);
+            return get_enum_legacy_field(static_cast<int>(typed->*member), table);
+        },
+        nullptr,
+        nullptr,
+        0,
+        help,
+        INT_MIN,
+        INT_MAX,
+        false
+    };
+}
+template <typename T, typename M>
+OlcField make_olc_flag_field(
+    const char* name,
+    olc_member_ptr<T, M> member,
+    const flag_name* table,
+    const char* help)
+{
+    return OlcField{
+        name,
+        OlcValueType::FLAG,
+        (const void*)table,
+        OlcMetaType::FLAG_TABLE,
+        nullptr,
+        [member, table](void* obj, const std::string& value) -> bool
+        {
+            auto typed = static_cast<T*>(obj);
+            return set_flag_field(typed->*member, value, table);
+        },
+        [member, table](void* obj) -> std::string
+        {
+            auto typed = static_cast<T*>(obj);
+            return get_flag_field(typed->*member, table);
+        },
+        nullptr,
+        nullptr,
+        0,
+        help,
+        INT_MIN,
+        INT_MAX,
+        false
+    };
+}
+template <typename T>
+OlcField make_olc_editor_field(
+    const char* name,
+    olc_member_ptr<T, char*> member,
+    int substate_val,
+    const char* help)
+{
+    return OlcField{
+        name,
+        OlcValueType::EDITOR,
+        nullptr,
+        OlcMetaType::NONE,
+        [member, substate_val](CHAR_DATA* ch, void* obj) -> bool
+        {
+            auto typed = static_cast<T*>(obj);
+            ch->substate = substate_val;
+            ch->dest_buf = typed;
+            ch->last_cmd = do_olcset;
+            start_editing(ch, typed->*member);
+            return true;
+        },
+        nullptr,
+        [member](void* obj) -> std::string
+        {
+            auto typed = static_cast<T*>(obj);
+            return (typed->*member) ? (typed->*member) : "";
+        },
+        [member](CHAR_DATA* /*ch*/, void* obj, const std::string& value) -> bool
+        {
+            auto typed = static_cast<T*>(obj);
+            return set_str_field(typed->*member, value);
+        },
+        nullptr,
+        substate_val,
+        help,
+        INT_MIN,
+        INT_MAX,
+        false
+    };
+}
+template <typename T>
+OlcField make_olc_custom_editor_field(
+    const char* name,
+    OlcMetaType meta_type,
+    std::function<bool(CHAR_DATA* ch, T* obj)> editor,
+    std::function<std::string(T* obj)> getter,
+    int editor_substate,
+    const char* help,
+    bool editor_takes_argument = true)
+{
+    return OlcField{
+        name,
+        OlcValueType::EDITOR,
+        nullptr,
+        meta_type,
+        [editor](CHAR_DATA* ch, void* obj) -> bool
+        {
+            return editor(ch, static_cast<T*>(obj));
+        },
+        nullptr,
+        [getter](void* obj) -> std::string
+        {
+            return getter(static_cast<T*>(obj));
+        },
+        nullptr,
+        nullptr,
+        editor_substate,
+        help,
+        INT_MIN,
+        INT_MAX,
+        editor_takes_argument
+    };
+}
+template <typename T>
+OlcField make_olc_bool_field(
+    const char* name,
+    olc_member_ptr<T, bool> member,
+    const char* help)
+{
+    return OlcField{
+        name,
+        OlcValueType::BOOL,
+        nullptr,
+        OlcMetaType::NONE,
+        nullptr,
+        [member](void* obj, const std::string& value) -> bool
+        {
+            auto typed = static_cast<T*>(obj);
+            return set_bool_field(typed->*member, value);
+        },
+        [member](void* obj) -> std::string
+        {
+            auto typed = static_cast<T*>(obj);
+            return get_bool_field(typed->*member);
+        },
+        nullptr,
+        nullptr,
+        0,
+        help,
+        INT_MIN,
+        INT_MAX,
+        false
+    };
+}
+template <typename T>
+OlcField make_olc_legacy_flag_field(
+    const char* name,
+    olc_member_ptr<T, BitSet> member,
+    const char* const* table,
+    const char* help)
+{
+    return OlcField{
+        name,
+        OlcValueType::FLAG,
+        (const void*)table,
+        OlcMetaType::ENUM_LEGACY,
+        nullptr,
+        [member, table](void* obj, const std::string& value) -> bool
+        {
+            auto typed = static_cast<T*>(obj);
+            return bitset_apply_from_legacy_string(typed->*member, value, table);
+        },
+        [member, table](void* obj) -> std::string
+        {
+            auto typed = static_cast<T*>(obj);
+            return get_legacy_flag_field(typed->*member, table);
+        },
+        nullptr,
+        nullptr,
+        0,
+        help,
+        INT_MIN,
+        INT_MAX,
+        false
+    };
+}
+
+struct OlcSchema
+{
+    const char* name;
+    const std::vector<OlcField>* fields;
+};
+
+enum class OlcInterpretStage
+{
+    EARLY,   /* before skill/social/auto-exit handling */
+    LATE     /* after those checks, before "Huh?" */
+};
+
+struct OlcOps
+{
+    /* Core lifecycle */
+    void* (*clone)(const void* src) = nullptr;
+    void  (*free_clone)(void* obj) = nullptr;
+    void  (*apply_changes)(void* original, void* working) = nullptr;
+    void  (*save)(CHAR_DATA* ch, void* original) = nullptr;
+
+    /* Optional hooks */
+    void  (*after_commit)(CHAR_DATA* ch, void* original, void* working) = nullptr;
+    void  (*after_revert)(CHAR_DATA* ch, void* original, void* working) = nullptr;
+
+    /* Optional inline interpret hook */
+    bool (*inline_interpret)(CHAR_DATA* ch, char* command, char* argument) = nullptr;
+    OlcInterpretStage inline_interpret_stage = OlcInterpretStage::EARLY;    
+};
+
+struct OlcSession
+{
+    void* working_copy = nullptr;     // cloned object
+    void* original = nullptr;         // live object
+    void* original_clone = nullptr;   // revert snapshot
+    const OlcSchema* schema = nullptr;
+    const OlcOps* ops = nullptr;
+    std::string last_cmd_arg;
+
+    bool dirty = false;
+
+    std::vector<OlcPendingExitSideEffect> pending_exit_side_effects;
+    OlcPendingMobPrototypeChanges pending_mob_proto;
+
+    OlcEditMode mode = OlcEditMode::NONE;
+    ROOM_INDEX_DATA* anchor_room = nullptr;   // room-inline feature only
+};
+
+void olc_start(CHAR_DATA* ch, void* target, const OlcSchema* schema, const OlcOps* ops);
+void olc_stop(CHAR_DATA* ch, bool save);
+
+void olc_set(CHAR_DATA* ch, const std::string& field, const std::string& value);
+void olc_show(CHAR_DATA* ch, const std::string& field, const std::string& value);
+

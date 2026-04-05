@@ -997,376 +997,376 @@ void do_look ( CHAR_DATA *ch, char *argument )
 
     if ( arg1[0] == '\0' || !str_cmp( arg1, "auto" ) )
     {
-       SHIP_DATA * ship;
+        SHIP_DATA * ship;
+        
+        /* 'look' or 'look auto' */
+        set_char_color( AT_RMNAME, ch);
+        send_to_char( ch->in_room->name, ch);
+        send_to_char(" ", ch);
+
+        if( !ch->desc->original )
+        {
+            if( ( get_trust( ch ) >= LEVEL_IMMORTAL ) )             
+            {
+                if( BV_IS_SET( ch->act, PLR_ROOMVNUM ) )
+                {
+                    set_char_color( AT_BLUE, ch );      /* Added 10/17 by Kuran of */
+                    send_to_char( "{", ch );            /* SWReality */
+                    ch_printf( ch, "%d", ch->in_room->vnum );
+                    send_to_char( "}", ch );
+                }
+                if( BV_IS_SET( ch->pcdata->flags, PCFLAG_ROOM ) )
+                {
+                    set_char_color( AT_CYAN, ch );
+                    send_to_char( "[", ch );
+                    send_to_char( bitset_to_string( ch->in_room->room_flags, r_flags ).c_str(), ch );
+                    send_to_char( "]", ch );
+                }
+            }
+        }
+
+        send_to_char( "\n", ch );
+        set_char_color( AT_RMDESC, ch ); 	
+        
+        if ( arg1[0] == '\0'
+        || ( !IS_NPC(ch) && !BV_IS_SET(ch->act, PLR_BRIEF) ) )
+            send_to_char( ch->in_room->description, ch );
     
-	/* 'look' or 'look auto' */
-	set_char_color( AT_RMNAME, ch);
-	send_to_char( ch->in_room->name, ch);
-	send_to_char(" ", ch);
-
-      if( !ch->desc->original )
-      {
-         if( ( get_trust( ch ) >= LEVEL_IMMORTAL ) )             
-         {
-            if( BV_IS_SET( ch->act, PLR_ROOMVNUM ) )
-            {
-                set_char_color( AT_BLUE, ch );      /* Added 10/17 by Kuran of */
-                send_to_char( "{", ch );            /* SWReality */
-                ch_printf( ch, "%d", ch->in_room->vnum );
-                send_to_char( "}", ch );
-            }
-            if( BV_IS_SET( ch->pcdata->flags, PCFLAG_ROOM ) )
-            {
-                set_char_color( AT_CYAN, ch );
-                send_to_char( "[", ch );
-                send_to_char( bitset_to_string( ch->in_room->room_flags, r_flags ).c_str(), ch );
-                send_to_char( "]", ch );
-            }
-         }
-      }
-
-	send_to_char( "\n", ch );
-	set_char_color( AT_RMDESC, ch ); 	
-	
-	if ( arg1[0] == '\0'
-	|| ( !IS_NPC(ch) && !BV_IS_SET(ch->act, PLR_BRIEF) ) )
-	    send_to_char( ch->in_room->description, ch );
- 
         if ( BV_IS_SET( ch->in_room->room_flags, ROOM_CAN_LAND ) )
-          send_to_char( "&GYou can rent ships here. ( Type rent )&R&W\n", ch );
-	
-	if ( is_bus_stop( ch->in_room->vnum ) )
-	  send_to_char( "&GA Serin shuttle picks up passengers here. ( Type findserin )&R&W\n", ch );
-	    
+            send_to_char( "&GYou can rent ships here. ( Type rent )&R&W\n", ch );
+        
+        if ( is_bus_stop( ch->in_room->vnum ) )
+        send_to_char( "&GA Serin shuttle picks up passengers here. ( Type findserin )&R&W\n", ch );
+            
 
-	if ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_AUTOEXIT) )
-	        do_exits( ch, "" );
+        if ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_AUTOEXIT) )
+                do_exits( ch, "" );
 
-	show_ships_to_char( ch->in_room->first_ship, ch );
-	show_list_to_char( ch->in_room->first_content, ch, FALSE, FALSE );
-	show_char_to_char( ch->in_room->first_person,  ch );
-	
-	if ( str_cmp( arg1, "auto" ) )
-	if (   (ship = ship_from_cockpit(ch->in_room->vnum))  != NULL )
-	{
-	      set_char_color(  AT_WHITE, ch );
-    	                 ch_printf( ch , "\nThrough the transparisteel windows you see:\n" );
-    	           
-	      if ( ship->location || ship->shipstate == SHIP_LANDED )
-	      {
-	          ROOM_INDEX_DATA *to_room;
-	      
-	          if ( (to_room = get_room_index( ship->location ) ) != NULL )
-	          {
-	            ch_printf( ch, "\n" );
-	            original = ch->in_room;
-                    char_from_room( ch );
-                    char_to_room( ch, to_room );
-                    do_glance( ch, "" );	
-                    char_from_room( ch );
-                    char_to_room( ch, original );
-                  }
-                  else
-	            ch_printf( ch, "no room?\n" );
-	      }
-	      else if (ship->spaceobject )
-	      {
-//	           MISSILE_DATA *missile;
-	           SHIP_DATA *target;
-	           
-    	           set_char_color(  AT_GREEN, ch );
-		  for( spaceobject = first_spaceobject; spaceobject; spaceobject = spaceobject->next )
-    	           if ( space_in_range( ship, spaceobject) && spaceobject->name && str_cmp(spaceobject->name,"") ) 
-    	                 ch_printf(ch, "%s\n" , 
-    	                        spaceobject->name);
-   	         for ( target = first_ship; target; target = target->next )
-                   {
-                        if ( target != ship && target->spaceobject )
+        show_ships_to_char( ch->in_room->first_ship, ch );
+        show_list_to_char( ch->in_room->first_content, ch, FALSE, FALSE );
+        show_char_to_char( ch->in_room->first_person,  ch );
+        
+        if ( str_cmp( arg1, "auto" ) )
+            if (   (ship = ship_from_cockpit(ch->in_room->vnum))  != NULL )
+            {
+                set_char_color(  AT_WHITE, ch );
+                                ch_printf( ch , "\nThrough the transparisteel windows you see:\n" );
+                        
+                if ( ship->location || ship->shipstate == SHIP_LANDED )
+                {
+                    ROOM_INDEX_DATA *to_room;
+                
+                    if ( (to_room = get_room_index( ship->location ) ) != NULL )
+                    {
+                        ch_printf( ch, "\n" );
+                        original = ch->in_room;
+                            char_from_room( ch );
+                            char_to_room( ch, to_room );
+                            do_glance( ch, "" );	
+                            char_from_room( ch );
+                            char_to_room( ch, original );
+                        }
+                        else
+                        ch_printf( ch, "no room?\n" );
+                }
+                else if (ship->spaceobject )
+                {
+                    //MISSILE_DATA *missile;
+                    SHIP_DATA *target;
+                    
+                        set_char_color(  AT_GREEN, ch );
+                    for( spaceobject = first_spaceobject; spaceobject; spaceobject = spaceobject->next )
+                        if ( space_in_range( ship, spaceobject) && spaceobject->name && str_cmp(spaceobject->name,"") ) 
+                                ch_printf(ch, "%s\n" , 
+                                        spaceobject->name);
+                    for ( target = first_ship; target; target = target->next )
                         {
-                          if ( abs((int) ( target->vx - ship->vx )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+1) &&
-                          abs( (int) ( target->vy - ship->vy )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+1) &&
-                          abs( (int) ( target->vz - ship->vz )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+1) )
+                                if ( target != ship && target->spaceobject )
+                                {
+                                if ( abs((int) ( target->vx - ship->vx )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+1) &&
+                                abs( (int) ( target->vy - ship->vy )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+1) &&
+                                abs( (int) ( target->vz - ship->vz )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+1) )
 
-                            ch_printf(ch, "%s    %.0f %.0f %.0f\n",
-                              target->name,
-			      (target->vx - ship->vx),
-			      (target->vy - ship->vy),
-			      (target->vz - ship->vz));
+                                    ch_printf(ch, "%s    %.0f %.0f %.0f\n",
+                                    target->name,
+                        (target->vx - ship->vx),
+                        (target->vy - ship->vy),
+                        (target->vz - ship->vz));
 
 
-                         else if ( abs( (int) ( target->vx - ship->vx )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+3) &&
-                         abs((int) ( target->vy - ship->vy )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+3) &&
-                         abs((int) ( target->vz - ship->vz )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+3) )
-                         {
-                           if ( target->shipclass == FIGHTER_SHIP )
-                            ch_printf(ch, "A small metallic mass    %.0f %.0f %.0f\n",
-			      (target->vx - ship->vx),
-			      (target->vy - ship->vy),
-			      (target->vz - ship->vz));
-                           if ( target->shipclass == MIDSIZE_SHIP )
-                            ch_printf(ch, "A goodsize metallic mass    %.0f %.0f %.0f\n",
-			      (target->vx - ship->vx),
-			      (target->vy - ship->vy),
-			      (target->vz - ship->vz));
-                           if ( target->shipclass == SHIP_DEBRIS )
-                            ch_printf(ch, "scattered metallic reflections    %.0f %.0f %.0f\n",
-			      (target->vx - ship->vx),
-			      (target->vy - ship->vy),
-			      (target->vz - ship->vz));
-                           else if ( target->shipclass >= CAPITAL_SHIP )
-                            ch_printf(ch, "A huge metallic mass    %.0f %.0f %.0f\n",
-			      (target->vx - ship->vx),
-			      (target->vy - ship->vy),
-			      (target->vz - ship->vz));
-                         }
+                                else if ( abs( (int) ( target->vx - ship->vx )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+3) &&
+                                abs((int) ( target->vy - ship->vy )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+3) &&
+                                abs((int) ( target->vz - ship->vz )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+3) )
+                                {
+                                if ( target->shipclass == FIGHTER_SHIP )
+                                    ch_printf(ch, "A small metallic mass    %.0f %.0f %.0f\n",
+                        (target->vx - ship->vx),
+                        (target->vy - ship->vy),
+                        (target->vz - ship->vz));
+                                if ( target->shipclass == MIDSIZE_SHIP )
+                                    ch_printf(ch, "A goodsize metallic mass    %.0f %.0f %.0f\n",
+                        (target->vx - ship->vx),
+                        (target->vy - ship->vy),
+                        (target->vz - ship->vz));
+                                if ( target->shipclass == SHIP_DEBRIS )
+                                    ch_printf(ch, "scattered metallic reflections    %.0f %.0f %.0f\n",
+                        (target->vx - ship->vx),
+                        (target->vy - ship->vy),
+                        (target->vz - ship->vz));
+                                else if ( target->shipclass >= CAPITAL_SHIP )
+                                    ch_printf(ch, "A huge metallic mass    %.0f %.0f %.0f\n",
+                        (target->vx - ship->vx),
+                        (target->vy - ship->vy),
+                        (target->vz - ship->vz));
+                                }
 
-                       }
+                            }
 
-                   }
-                   ch_printf(ch,"\n");
+                        }
+                        ch_printf(ch,"\n");
 
-/*
-    	           for ( missile = ship->spaceobject->first_missile; missile; missile = missile->next_in_spaceobject )
-                   {        
-                           ch_printf(ch, "%s\n", 
-                           	missile->missiletype == CONCUSSION_MISSILE ? "A Concusion Missile" : 
-    			        ( missile->missiletype ==  PROTON_TORPEDO ? "A Torpedo" : 
-    			        ( missile->missiletype ==  HEAVY_ROCKET ? "A Heavy Rocket" : "A Heavy Bomb" ) ) );
-                   }
-*/                     
-	      }
-	      
-	      
-	}
-	
-	return;
+                        /*
+                        for ( missile = ship->spaceobject->first_missile; missile; missile = missile->next_in_spaceobject )
+                        {        
+                                ch_printf(ch, "%s\n", 
+                                    missile->missiletype == CONCUSSION_MISSILE ? "A Concusion Missile" : 
+                                ( missile->missiletype ==  PROTON_TORPEDO ? "A Torpedo" : 
+                                ( missile->missiletype ==  HEAVY_ROCKET ? "A Heavy Rocket" : "A Heavy Bomb" ) ) );
+                        }
+                        */                     
+                }
+                
+                
+            }
+        
+        return;
     }
 
     if ( !str_cmp( arg1, "under" ) )
     {
-	int count;
+        int count;
 
-	/* 'look under' */
-	if ( arg2[0] == '\0' )
-	{
-	    send_to_char( "Look beneath what?\n", ch );
-	    return;
-	}
+        /* 'look under' */
+        if ( arg2[0] == '\0' )
+        {
+            send_to_char( "Look beneath what?\n", ch );
+            return;
+        }
 
-	if ( ( obj = get_obj_here( ch, arg2 ) ) == NULL )
-	{
-	    send_to_char( "You do not see that here.\n", ch );
-	    return;
-	}
-	if ( ch->carry_weight + obj->weight > can_carry_w( ch ) )
-	{
-	    send_to_char( "It's too heavy for you to look under.\n", ch );
-	    return;
-	}
-	count = obj->count;
-	obj->count = 1;
-	act( AT_PLAIN, "You lift $p and look beneath it:", ch, obj, NULL, TO_CHAR );
-	act( AT_PLAIN, "$n lifts $p and looks beneath it:", ch, obj, NULL, TO_ROOM );
-	obj->count = count;
-	if ( IS_OBJ_STAT( obj, ITEM_COVERING ) )
-	   show_list_to_char( obj->first_content, ch, TRUE, TRUE );
-	else
-	   send_to_char( "Nothing.\n", ch );
-	if ( doexaprog ) oprog_examine_trigger( ch, obj );
-	return;
+        if ( ( obj = get_obj_here( ch, arg2 ) ) == NULL )
+        {
+            send_to_char( "You do not see that here.\n", ch );
+            return;
+        }
+        if ( ch->carry_weight + obj->weight > can_carry_w( ch ) )
+        {
+            send_to_char( "It's too heavy for you to look under.\n", ch );
+            return;
+        }
+        count = obj->count;
+        obj->count = 1;
+        act( AT_PLAIN, "You lift $p and look beneath it:", ch, obj, NULL, TO_CHAR );
+        act( AT_PLAIN, "$n lifts $p and looks beneath it:", ch, obj, NULL, TO_ROOM );
+        obj->count = count;
+        if ( IS_OBJ_STAT( obj, ITEM_COVERING ) )
+        show_list_to_char( obj->first_content, ch, TRUE, TRUE );
+        else
+        send_to_char( "Nothing.\n", ch );
+        if ( doexaprog ) oprog_examine_trigger( ch, obj );
+        return;
     }
 
     if ( !str_cmp( arg1, "i" ) || !str_cmp( arg1, "in" ) )
     {
-	int count;
+        int count;
 
-	/* 'look in' */
-	if ( arg2[0] == '\0' )
-	{
-	    send_to_char( "Look in what?\n", ch );
-	    return;
-	}
+        /* 'look in' */
+        if ( arg2[0] == '\0' )
+        {
+            send_to_char( "Look in what?\n", ch );
+            return;
+        }
 
-	if ( ( obj = get_obj_here( ch, arg2 ) ) == NULL )
-	{
-	    send_to_char( "You do not see that here.\n", ch );
-	    return;
-	}
+        if ( ( obj = get_obj_here( ch, arg2 ) ) == NULL )
+        {
+            send_to_char( "You do not see that here.\n", ch );
+            return;
+        }
 
-	switch ( obj->item_type )
-	{
-	default:
-	    send_to_char( "That is not a container.\n", ch );
-	    break;
+        switch ( obj->item_type )
+        {
+        default:
+            send_to_char( "That is not a container.\n", ch );
+            break;
 
-	case ITEM_DRINK_CON:
-	    if ( obj->value[1] <= 0 )
-	    {
-		send_to_char( "It is empty.\n", ch );
-	        if ( doexaprog ) oprog_examine_trigger( ch, obj );
-		break;
-	    }
+        case ITEM_DRINK_CON:
+            if ( obj->value[1] <= 0 )
+            {
+                send_to_char( "It is empty.\n", ch );
+                if ( doexaprog ) oprog_examine_trigger( ch, obj );
+                break;
+            }
 
-	    ch_printf( ch, "It's %s full of a %s liquid.\n",
-		obj->value[1] <     obj->value[0] / 4
-		    ? "less than" :
-		obj->value[1] < 3 * obj->value[0] / 4
-		    ? "about"     : "more than",
-		liq_table[obj->value[2]].liq_color
-		);
+            ch_printf( ch, "It's %s full of a %s liquid.\n",
+            obj->value[1] <     obj->value[0] / 4
+                ? "less than" :
+            obj->value[1] < 3 * obj->value[0] / 4
+                ? "about"     : "more than",
+            liq_table[obj->value[2]].liq_color
+            );
 
-	    if ( doexaprog ) oprog_examine_trigger( ch, obj );
-	    break;
+            if ( doexaprog ) oprog_examine_trigger( ch, obj );
+            break;
 
-	case ITEM_PORTAL:
-	    for ( pexit = ch->in_room->first_exit; pexit; pexit = pexit->next )
-	    {
-		if ( pexit->vdir == DIR_PORTAL
-		&&   IS_SET(pexit->exit_info, EX_PORTAL) )
-		{
-		    if ( room_is_private( ch, pexit->to_room )
-		    &&   get_trust(ch) < sysdata.level_override_private )
-		    {
-			set_char_color( AT_WHITE, ch );
-			send_to_char( "That room is private buster!\n", ch );
-			return;
-		    }
-		    original = ch->in_room;
-		    char_from_room( ch );
-		    char_to_room( ch, pexit->to_room );
-		    do_look( ch, "auto" );
-		    char_from_room( ch );
-		    char_to_room( ch, original );
-		    return;
-		}
-	    }
-	    send_to_char( "You see a swirling chaos...\n", ch );
-	    break;
-	case ITEM_CONTAINER:
-	case ITEM_CORPSE_NPC:
-	case ITEM_CORPSE_PC:
-	case ITEM_DROID_CORPSE:
-	    if ( IS_SET(obj->value[1], CONT_CLOSED) )
-	    {
-		send_to_char( "It is closed.\n", ch );
-		break;
-	    }
+        case ITEM_PORTAL:
+            for ( pexit = ch->in_room->first_exit; pexit; pexit = pexit->next )
+            {
+            if ( pexit->vdir == DIR_PORTAL
+            &&   IS_SET(pexit->exit_info, EX_PORTAL) )
+            {
+                if ( room_is_private( ch, pexit->to_room )
+                &&   get_trust(ch) < sysdata.level_override_private )
+                {
+                set_char_color( AT_WHITE, ch );
+                send_to_char( "That room is private buster!\n", ch );
+                return;
+                }
+                original = ch->in_room;
+                char_from_room( ch );
+                char_to_room( ch, pexit->to_room );
+                do_look( ch, "auto" );
+                char_from_room( ch );
+                char_to_room( ch, original );
+                return;
+            }
+            }
+            send_to_char( "You see a swirling chaos...\n", ch );
+            break;
+        case ITEM_CONTAINER:
+        case ITEM_CORPSE_NPC:
+        case ITEM_CORPSE_PC:
+        case ITEM_DROID_CORPSE:
+            if ( IS_SET(obj->value[1], CONT_CLOSED) )
+            {
+            send_to_char( "It is closed.\n", ch );
+            break;
+            }
 
-	    count = obj->count;
-	    obj->count = 1;
-	    act( AT_PLAIN, "$p contains:", ch, obj, NULL, TO_CHAR );
-	    obj->count = count;
-	    show_list_to_char( obj->first_content, ch, TRUE, TRUE );
-	    if ( doexaprog ) oprog_examine_trigger( ch, obj );
-	    break;
-	}
-	return;
+            count = obj->count;
+            obj->count = 1;
+            act( AT_PLAIN, "$p contains:", ch, obj, NULL, TO_CHAR );
+            obj->count = count;
+            show_list_to_char( obj->first_content, ch, TRUE, TRUE );
+            if ( doexaprog ) oprog_examine_trigger( ch, obj );
+            break;
+        }
+        return;
     }
 
     if ( (pdesc=get_extra_descr(arg1, ch->in_room->first_extradesc)) != NULL )
     {
-	send_to_char( "\n", ch );
-	send_to_char( pdesc, ch );
-	return;
+        send_to_char( "\n", ch );
+        send_to_char( pdesc, ch );
+        return;
     }
 
     door = get_door( arg1 );
     if ( ( pexit = find_door( ch, arg1, TRUE ) ) != NULL )
     {
-      if ( pexit->keyword )
-      {
-	  if ( IS_SET(pexit->exit_info, EX_CLOSED)
-	  &&  !IS_SET(pexit->exit_info, EX_WINDOW) )
-	  {
-	      if ( IS_SET(pexit->exit_info, EX_SECRET)
-	      &&   door != -1 )
-		send_to_char( "Nothing special there.\n", ch );
-	      else
-		act( AT_PLAIN, "The $d is closed.", ch, NULL, pexit->keyword, TO_CHAR );
-	      return;
-	  }
-	  if ( IS_SET( pexit->exit_info, EX_BASHED ) )
-	      act(AT_RED, "The $d has been bashed from its hinges!",ch, NULL, pexit->keyword, TO_CHAR);
-      }
-
-      if ( pexit->description && pexit->description[0] != '\0' )
-  	send_to_char( pexit->description, ch );
-      else
-	send_to_char( "Nothing special there.\n", ch );
-
-      /*
-       * Ability to look into the next room			-Thoric
-       */
-      if ( pexit->to_room
-      && ( IS_AFFECTED( ch, AFF_SCRYING )
-      ||   IS_SET( pexit->exit_info, EX_xLOOK )
-      ||   get_trust(ch) >= LEVEL_IMMORTAL ) )
-      {
-        if ( !IS_SET( pexit->exit_info, EX_xLOOK )
-        &&    get_trust( ch ) < LEVEL_IMMORTAL )
+        if ( pexit->keyword )
         {
-  	  set_char_color( AT_MAGIC, ch );
-	  send_to_char( "You attempt to scry...\n", ch );
-          /* Change by Narn, Sept 96 to allow characters who don't have the
-             scry spell to benefit from objects that are affected by scry.
-          */
-	  if (!IS_NPC(ch) )
-          {
-/*          int percent = ch->pcdata->learned[ skill_lookup("scry") ];
-            if ( percent < 10 )
-*/            int percent = 99;
- 
-	    if(  number_percent( ) > percent ) 
-	    {
-	      send_to_char( "You fail.\n", ch );
-	      return;
-	    }
-          }
-        }
-        if ( room_is_private( ch, pexit->to_room )
-        &&   get_trust(ch) < sysdata.level_override_private )
+        if ( IS_SET(pexit->exit_info, EX_CLOSED)
+        &&  !IS_SET(pexit->exit_info, EX_WINDOW) )
         {
-	  set_char_color( AT_WHITE, ch );
-	  send_to_char( "That room is private buster!\n", ch );
-	  return;
+            if ( IS_SET(pexit->exit_info, EX_SECRET)
+            &&   door != -1 )
+            send_to_char( "Nothing special there.\n", ch );
+            else
+            act( AT_PLAIN, "The $d is closed.", ch, NULL, pexit->keyword, TO_CHAR );
+            return;
         }
-        original = ch->in_room;
-        if ( pexit->distance > 1 )
-        {  
-           ROOM_INDEX_DATA * to_room;
-           if ( (to_room=generate_exit(ch->in_room, &pexit)) != NULL )
-           {
-              char_from_room( ch );
-              char_to_room( ch, to_room );
-           }
-           else
-           {
-              char_from_room( ch );
-              char_to_room( ch, pexit->to_room );
-           }
+        if ( IS_SET( pexit->exit_info, EX_BASHED ) )
+            act(AT_RED, "The $d has been bashed from its hinges!",ch, NULL, pexit->keyword, TO_CHAR);
         }
+
+        if ( pexit->description && pexit->description[0] != '\0' )
+        send_to_char( pexit->description, ch );
         else
+        send_to_char( "Nothing special there.\n", ch );
+
+        /*
+        * Ability to look into the next room			-Thoric
+        */
+        if ( pexit->to_room
+        && ( IS_AFFECTED( ch, AFF_SCRYING )
+        ||   IS_SET( pexit->exit_info, EX_xLOOK )
+        ||   get_trust(ch) >= LEVEL_IMMORTAL ) )
         {
-           char_from_room( ch );
-           char_to_room( ch, pexit->to_room );
+            if ( !IS_SET( pexit->exit_info, EX_xLOOK )
+            &&    get_trust( ch ) < LEVEL_IMMORTAL )
+            {
+                set_char_color( AT_MAGIC, ch );
+                send_to_char( "You attempt to scry...\n", ch );
+            /* Change by Narn, Sept 96 to allow characters who don't have the
+                scry spell to benefit from objects that are affected by scry.
+            */
+                if (!IS_NPC(ch) )
+                {
+                /*int percent = ch->pcdata->learned[ skill_lookup("scry") ];
+                if ( percent < 10 )
+                */  int percent = 99;
+            
+                    if(  number_percent( ) > percent ) 
+                    {
+                        send_to_char( "You fail.\n", ch );
+                        return;
+                    }
+                }
+            }
+            if ( room_is_private( ch, pexit->to_room )
+            &&   get_trust(ch) < sysdata.level_override_private )
+            {
+                set_char_color( AT_WHITE, ch );
+                send_to_char( "That room is private buster!\n", ch );
+                return;
+            }
+            original = ch->in_room;
+            if ( pexit->distance > 1 )
+            {  
+                ROOM_INDEX_DATA * to_room;
+                if ( (to_room=generate_exit(ch->in_room, &pexit)) != NULL )
+                {
+                    char_from_room( ch );
+                    char_to_room( ch, to_room );
+                }
+                else
+                {
+                    char_from_room( ch );
+                    char_to_room( ch, pexit->to_room );
+                }
+            }
+            else
+            {
+                char_from_room( ch );
+                char_to_room( ch, pexit->to_room );
+            }
+            do_look( ch, "auto" );
+            char_from_room( ch );
+            char_to_room( ch, original );
         }
-        do_look( ch, "auto" );
-        char_from_room( ch );
-        char_to_room( ch, original );
-      }
-      return;
+        return;
     }
     else
-    if ( door != -1 )
-    {
-	send_to_char( "Nothing special there.\n", ch );
-	return;
-    }
+        if ( door != -1 )
+        {
+        send_to_char( "Nothing special there.\n", ch );
+        return;
+        }
 
     if ( ( victim = get_char_room( ch, arg1 ) ) != NULL )
     {
-	show_char_to_char_1( victim, ch );
-	return;
+        show_char_to_char_1( victim, ch );
+        return;
     }
 
 
@@ -1374,79 +1374,79 @@ void do_look ( CHAR_DATA *ch, char *argument )
     number = number_argument( arg1, arg );
     for ( cnt = 0, obj = ch->last_carrying; obj; obj = obj->prev_content )
     {
-	if ( can_see_obj( ch, obj ) )
-	{
-	    if ( (pdesc=get_extra_descr(arg, obj->first_extradesc)) != NULL )
-	    {
-		if ( (cnt += obj->count) < number )
-		  continue;
-		send_to_char( pdesc, ch );
-	        if ( doexaprog ) oprog_examine_trigger( ch, obj );
-		return;
-	    }
+        if ( can_see_obj( ch, obj ) )
+        {
+            if ( (pdesc=get_extra_descr(arg, obj->first_extradesc)) != NULL )
+            {
+            if ( (cnt += obj->count) < number )
+            continue;
+            send_to_char( pdesc, ch );
+                if ( doexaprog ) oprog_examine_trigger( ch, obj );
+            return;
+            }
 
-	    if ( (pdesc=get_extra_descr(arg, obj->pIndexData->first_extradesc)) != NULL )
-	    {
-		if ( (cnt += obj->count) < number )
-		  continue;
-		send_to_char( pdesc, ch );
-	        if ( doexaprog ) oprog_examine_trigger( ch, obj );
-		return;
-	    }
-	    
-	    if ( nifty_is_name_prefix( arg, obj->name ) )
-	    {
-		if ( (cnt += obj->count) < number )
-		  continue;
-		pdesc = get_extra_descr( obj->name, obj->pIndexData->first_extradesc );
-		if ( !pdesc )
-		  pdesc = get_extra_descr( obj->name, obj->first_extradesc );
-		if ( !pdesc )
-		  send_to_char( "You see nothing special.\r\n", ch );
-		else
-		  send_to_char( pdesc, ch );
-		if ( doexaprog ) oprog_examine_trigger( ch, obj );
-		  return;
-	    }
-	}
+            if ( (pdesc=get_extra_descr(arg, obj->pIndexData->first_extradesc)) != NULL )
+            {
+            if ( (cnt += obj->count) < number )
+            continue;
+            send_to_char( pdesc, ch );
+                if ( doexaprog ) oprog_examine_trigger( ch, obj );
+            return;
+            }
+            
+            if ( nifty_is_name_prefix( arg, obj->name ) )
+            {
+            if ( (cnt += obj->count) < number )
+            continue;
+            pdesc = get_extra_descr( obj->name, obj->pIndexData->first_extradesc );
+            if ( !pdesc )
+            pdesc = get_extra_descr( obj->name, obj->first_extradesc );
+            if ( !pdesc )
+            send_to_char( "You see nothing special.\r\n", ch );
+            else
+            send_to_char( pdesc, ch );
+            if ( doexaprog ) oprog_examine_trigger( ch, obj );
+            return;
+            }
+        }
     }
 
     for ( obj = ch->in_room->last_content; obj; obj = obj->prev_content )
     {
-	if ( can_see_obj( ch, obj ) )
-	{
-	    if ( (pdesc=get_extra_descr(arg, obj->first_extradesc)) != NULL )
-	    {
-		if ( (cnt += obj->count) < number )
-		  continue;
-		send_to_char( pdesc, ch );
-	        if ( doexaprog ) oprog_examine_trigger( ch, obj );
-		return;
-	    }
+        if ( can_see_obj( ch, obj ) )
+        {
+            if ( (pdesc=get_extra_descr(arg, obj->first_extradesc)) != NULL )
+            {
+            if ( (cnt += obj->count) < number )
+            continue;
+            send_to_char( pdesc, ch );
+                if ( doexaprog ) oprog_examine_trigger( ch, obj );
+            return;
+            }
 
-	    if ( (pdesc=get_extra_descr(arg, obj->pIndexData->first_extradesc)) != NULL )
-	    {
-		if ( (cnt += obj->count) < number )
-		  continue;
-		send_to_char( pdesc, ch );
-	        if ( doexaprog ) oprog_examine_trigger( ch, obj );
-		return;
-	    }
-	    if ( nifty_is_name_prefix( arg, obj->name ) )
-	    {
-		if ( (cnt += obj->count) < number )
-		  continue;
-		pdesc = get_extra_descr( obj->name, obj->pIndexData->first_extradesc );
-		if ( !pdesc )
-		  pdesc = get_extra_descr( obj->name, obj->first_extradesc );
-		if ( !pdesc )
-		  send_to_char( "You see nothing special.\r\n", ch );
-		else
-		  send_to_char( pdesc, ch );
-		if ( doexaprog ) oprog_examine_trigger( ch, obj );
-		  return;
-	    }
-	}
+            if ( (pdesc=get_extra_descr(arg, obj->pIndexData->first_extradesc)) != NULL )
+            {
+            if ( (cnt += obj->count) < number )
+            continue;
+            send_to_char( pdesc, ch );
+                if ( doexaprog ) oprog_examine_trigger( ch, obj );
+            return;
+            }
+            if ( nifty_is_name_prefix( arg, obj->name ) )
+            {
+            if ( (cnt += obj->count) < number )
+            continue;
+            pdesc = get_extra_descr( obj->name, obj->pIndexData->first_extradesc );
+            if ( !pdesc )
+            pdesc = get_extra_descr( obj->name, obj->first_extradesc );
+            if ( !pdesc )
+            send_to_char( "You see nothing special.\r\n", ch );
+            else
+            send_to_char( pdesc, ch );
+            if ( doexaprog ) oprog_examine_trigger( ch, obj );
+            return;
+            }
+        }
     }
 
     send_to_char( "You do not see that here.\n", ch );
@@ -1838,30 +1838,30 @@ void do_exits( CHAR_DATA *ch, char *argument )
 	    found = TRUE;
 	    if ( !fAuto )
 	    {	
-		if ( IS_SET(pexit->exit_info, EX_CLOSED) )
-		{
-		    STRAPP( buf, "%-5s - (closed)\n",
-		    capitalize( dir_name[pexit->vdir] ) );
-		}
-		else if ( IS_SET(pexit->exit_info, EX_WINDOW) )
-		{
-		    STRAPP( buf, "%-5s - (window)\n",
-		    capitalize( dir_name[pexit->vdir] ) );
-		}
-		else if ( IS_SET(pexit->exit_info, EX_xAUTO) )
-		{
-		   STRAPP( buf, "%-5s - %s\n",
-		    capitalize( pexit->keyword ),
-		    room_is_dark( pexit->to_room )
-			?  "Too dark to tell"
-			: pexit->to_room->name );
-		}
-		else
-		    STRAPP( buf, "%-5s - %s\n",
-		    capitalize( dir_name[pexit->vdir] ),
-		    room_is_dark( pexit->to_room )
-			?  "Too dark to tell"
-			: pexit->to_room->name );
+            if ( IS_SET(pexit->exit_info, EX_CLOSED) )
+            {
+                STRAPP( buf, "%-5s - (closed)\n",
+                capitalize( dir_name[pexit->vdir] ) );
+            }
+            else if ( IS_SET(pexit->exit_info, EX_WINDOW) )
+            {
+                STRAPP( buf, "%-5s - (window)\n",
+                capitalize( dir_name[pexit->vdir] ) );
+            }
+            else if ( IS_SET(pexit->exit_info, EX_xAUTO) )
+            {
+            STRAPP( buf, "%-5s - %s\n",
+                capitalize( pexit->keyword ),
+                room_is_dark( pexit->to_room )
+                ?  "Too dark to tell"
+                : pexit->to_room->name );
+            }
+            else
+                STRAPP( buf, "%-5s - %s\n",
+                capitalize( dir_name[pexit->vdir] ),
+                room_is_dark( pexit->to_room )
+                ?  "Too dark to tell"
+                : pexit->to_room->name );
 	    }
 	    else
 	    {

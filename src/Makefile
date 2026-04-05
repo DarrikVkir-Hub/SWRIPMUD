@@ -11,7 +11,8 @@ C_FILES = act_comm.c act_info.c act_move.c act_obj.c act_wiz.c boards.c \
 	  handler.c hashstr.c id.c interp.c magic.c makeobjs.c \
 	  misc.c mud_comm.c mud_prog.c krearena.c player.c requests.c \
 	  reset.c save.c shops.c skills.c special.c tables.c track.c update.c \
-	  space.c space2.c bounty.c swskills.c alias.c grub.c mapper.c templateparse.c trivia.c gmcp.c
+	  space.c space2.c bounty.c swskills.c alias.c grub.c mapper.c templateparse.c \
+	  trivia.c gmcp.c olc.c
 
 O_FILES = $(C_FILES:.c=.o)
 

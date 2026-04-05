@@ -1206,26 +1206,34 @@ void load_mobiles( AREA_DATA *tarea, FILE *fp )
 	pMobIndex->long_descr[0]	= UPPER(pMobIndex->long_descr[0]);
 	pMobIndex->description[0]	= UPPER(pMobIndex->description[0]);
 
-	x1			                = fread_number( fp ) | ACT_IS_NPC;
+	x1			                = fread_number( fp );
 	x2		                    = fread_number( fp );
+    pMobIndex->pShop		= NULL;
+	pMobIndex->rShop		= NULL;
+	pMobIndex->alignment		= fread_number( fp );
+	letter				= fread_letter( fp );    
+
+    if (x1 != -9999)
+    {
+        if ( x1 != 0 )
+            pMobIndex->act = int_to_bitset(x1);
+        else
+            pMobIndex->act.reset();
+    }
+    else
+        fread_bitset(fp,pMobIndex->act);
+
     if (x2 != -9999)
     {
         pMobIndex->affected_by.reset();
         if (x2 != 0)
             pMobIndex->affected_by = int_to_bitset(x2);
     }
-    else
-        fread_bitset(fp,pMobIndex->affected_by);    
-   pMobIndex->pShop		= NULL;
-	pMobIndex->rShop		= NULL;
-	pMobIndex->alignment		= fread_number( fp );
-	letter				= fread_letter( fp );
-    if (x1 != -9999)
-        pMobIndex->act = int_to_bitset(x1);
-    else
-        fread_bitset(fp,pMobIndex->act);
+    else 
+        fread_bitset(fp,pMobIndex->affected_by);      
+
     BV_SET_BIT(pMobIndex->act, ACT_IS_NPC);
-   pMobIndex->level		= fread_number( fp );
+    pMobIndex->level		= fread_number( fp );
 
 	pMobIndex->mobthac0		= fread_number( fp );
 	pMobIndex->ac			= fread_number( fp );
@@ -1456,16 +1464,16 @@ void load_objects( AREA_DATA *tarea, FILE *fp )
 		&x1, &x2, &x3, &x4 );
 	pObjIndex->item_type		= x1;
 	pObjIndex->layers		= x4;
-    if (x2 != 0) call_to_stop();
+//  if (x2 != 0) call_to_stop();
     if (x3 == -9999 ) // Sentinel value - new BitSet wear_flags will have this value set at -9999
     {
         fread_bitset(fp, pObjIndex->wear_flags);
-
     }
     else
     {
         pObjIndex->wear_flags.reset();
-        pObjIndex->wear_flags.from_int(x3);
+        if (x3 != 0)
+            pObjIndex->wear_flags.from_int(x3);
     }
     if (x2 == -9999) // Sentinel value - new BitSet wear_flags will have this value set at -9999
     {
@@ -1473,7 +1481,9 @@ void load_objects( AREA_DATA *tarea, FILE *fp )
     }
     else
     {
-        int_into_bitset_offset(pObjIndex->objflags, x2, ITEM_FIRST);
+        pObjIndex->objflags.reset();
+        if ( x2 != 0)
+            int_into_bitset_offset(pObjIndex->objflags, x2, ITEM_FIRST);
     }
 
 	ln = fread_line( fp );
@@ -1875,7 +1885,9 @@ void load_rooms( AREA_DATA *tarea, FILE *fp )
     }
     else
     {
-        pRoomIndex->room_flags = int_to_bitset(x2);
+        pRoomIndex->room_flags.reset();
+        if ( x2 != 0)
+            pRoomIndex->room_flags = int_to_bitset(x2);
     }        
 
 	if (pRoomIndex->sector_type < 0 || pRoomIndex->sector_type == SECT_MAX)
@@ -2342,20 +2354,20 @@ void fix_exits( void )
 	for ( pRoomIndex  = room_index_hash[iHash];
 	      pRoomIndex;
 	      pRoomIndex  = pRoomIndex->next )
-	{
-	    for ( pexit = pRoomIndex->first_exit; pexit; pexit = pexit->next )
-	    {
-		if ( pexit->to_room && !pexit->rexit )
-		{
-		   rev_exit = get_exit_to( pexit->to_room, rev_dir[pexit->vdir], pRoomIndex->vnum );
-		   if ( rev_exit )
-		   {
-			pexit->rexit	= rev_exit;
-			rev_exit->rexit	= pexit;
-		   }
-		}
-	    }
-	}
+        {
+            for ( pexit = pRoomIndex->first_exit; pexit; pexit = pexit->next )
+            {
+            if ( pexit->to_room && !pexit->rexit )
+            {
+            rev_exit = get_exit_to( pexit->to_room, rev_dir[pexit->vdir], pRoomIndex->vnum );
+            if ( rev_exit )
+            {
+                pexit->rexit	= rev_exit;
+                rev_exit->rexit	= pexit;
+            }
+            }
+            }
+        }
     }
 
     return;

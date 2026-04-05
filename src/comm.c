@@ -5531,7 +5531,7 @@ bool pager_output( DESCRIPTOR_DATA *d )
     }
 
     d->pagecmd = -1;
-
+    d->pagecolor = d->rendercolor;
     if ( BV_IS_SET( ch->act, PLR_ANSI ) )
     {
         set_char_color( AT_LBLUE, ch );
@@ -5543,6 +5543,7 @@ bool pager_output( DESCRIPTOR_DATA *d )
         d->rendercolor = d->pagecolor;
         d->has_rendercolor = true;
     }    
+    flush_color(d);
     flush_buffer(d, FALSE);    
     return TRUE;
 }

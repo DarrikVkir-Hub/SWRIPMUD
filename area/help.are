@@ -416,6 +416,17 @@ Be sure you get a reason for an ordered pk before you do it.
 105 '104.REMOVE'~
 ~
 
+105 911~
+Pray for the many who died this day.
+Tuesday, September 11th, 2001.
+ 
+I pledge allegiance to the flag of the United States of America
+and to the republic, for which it stands: One nation, Under God,
+indivisible, with liberty and justice for all.
+ 
+We shall overcome.
+~
+
 1 A~
 &C                       MOVING THROUGHOUT GAME:
 &W                     ---------------------------
@@ -466,11 +477,14 @@ See BESTOWAREA
 ~
 
 1 ACCELERATE VELOCITY SPEED~
-&CSyntax &W:&Y Speed (speed)
-&CSyntax &W:&Y Accelerate (speed) 
-&CSyntax &W:&Y Velocity (speed) 
- 
-&cThis command sets your ships speed when not in hyperspace. 
+&CSyntax &W: &YSpeed (speed) <accel> 
+&CSyntax &W: &YAccelerate (speed) <accel> 
+&CSyntax &W: &YVelocity (speed) <accel> 
+&c 
+This command sets your ships speed when not in hyperspace.
+The accel argument is optional, and sets your rate of 
+acceleration. It will automatically accelerate at maximum
+if not used. 
 ~
 
 101 ACTFLAGS~
@@ -710,6 +724,13 @@ are afk.  It can be toggled on or off by typing &Yafk&c, and will also go
 off automatically when you enter any command. 
  
 &RAlso see&W:&P Help identify
+ 
+ 
+&RIf you use AFK in your title, you will be considered acting
+OOCly. Titles are for roleplay purposes only. If you
+REALLY are afk, use the flag. That's what it's there for.
+are afk, use the flag. That's what it's there for.
+&R&W
 ~
 
 1 AID~
@@ -843,18 +864,57 @@ to be recharged.  To recharge a blaster, you must find an ammunition cell.
 &R&W
 ~
 
+1 AMMOMODULES~
+&YInformation on the ammo modules of RiP.
+ 
+&cRockets, missiles, torpedos, and chaff are ammo modules.
+These are purchased in module shops ( KSY-Kuat Shipyard and
+the Space mall, over the Merchant Asteroid ).  
+These are chaff, rockets, missiles and torpedos. 
+These are installed in the engine room of a ship or from 
+the outside.  These do not take up internal or external 
+space, but require you to have a launcher with enough 
+space to hold them.  One projectile launcher can hold 
+6 missiles, 4 torpedoes, or 3 rockets.  One chaff launcher
+can hold 8 chaff.  Launchers can be purchased on KSY. 
+ 
+&RSEE ALSO: &Pmodules, install_module, remove_module, show_module
+~
+
 104 AMOT~
 ~
 
 0 AMOTD~
-Yoda has been installed in Dagobah. Exar kun has been replaced with the
-evil spirit on Yavin. All skills are taught by one of these two (forcer
-skills) 
+&r.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
  
-The level restriction on Dagobah Yoda's room has been removed.
+&WA new cargo system is being worked on at this very moment.
+moment. Please pardon our dust and bear with us as we
+make the necessary changes.
  
-Clones now have memory up to the point they died.  You may bounty your
-killer.
+&r.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
+ 
+&zPlease see the new "&wRP_Points&z" Helpfile. 
+ 
+&r.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
+ 
+&zPlease see the new rule, number 29, &Whelp Log_yourself&r
+ 
+.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
+ 
+ 
+&RClan Ships are for clans. Not individual clan members. Anybody seen
+owning a clan only ship WILL lose said ship.
+ 
+&r.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
+ 
+&wBe Aware: &WA gamewide quest is in the infancy stages and 
+will begin to see rumors in game leading to a large prize.
+The more of you that participate will make the prize larger.
+ 
+&RDouble RP Points will be handed out for RP that is a part of
+this story. 
+ 
+&r.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
 ~
 
 0 ANSI~
@@ -982,7 +1042,7 @@ The area must be folded to make these changes permanent.
 See FOLDAREA, ASTAT, ECONOMY
 ~
 
-1 ASSASSIN DROID ASSASSINDROIDS ASSASSIN_DROIDS 'ASSASSIN DROIDS'~
+1 ASSASSIN ASSASSINDROIDS ASSASSIN_DROIDS~
 &COrigin&W:&Y Various
 &c
     The name given to any number of droid types which are programmed seek
@@ -1025,7 +1085,7 @@ Reset frequency: frequency with which the area resets
 See ASET
 ~
 
-1 ASTROMECH DROID 'ASTROMECH DROIDS'~
+1 ASTROMECH ASTROMECH_DROID~
 &COrigin&W:&Y Various
 &c
      These small droids were designed for use with small starfighters.
@@ -1102,7 +1162,7 @@ Authorize <player> no -- denies a player's name and also forces them to
 leave the game.
 ~
 
-102 AUTOPILOT~
+5 AUTOPILOT~
 &CSyntax &W:&Y Autopilot
 &c
 &YAUTOPILOT&c allows the owner or designated pilots to toggle the ship's
@@ -1220,9 +1280,6 @@ parts to the Kubaz. Being a moral race by nature, they have a deep
 respect for the Jedi Knights. 
  
 &RAlso Type&W:&Y SHOWSTAT BARABEL
-~
-
-102 BAS~
 ~
 
 0 BASH~
@@ -1436,6 +1493,11 @@ All hired hits will be verified by an immortal BEFORE it is carried out.
 If a hunter carries out a hit without immortal approval, that hunter may
 Lose its position and its hunter levels.  A system will be set up to make
 Communication between immortals and hunters easier.  &R&w
+
+&YBE WARNED&w: &cAll bounties will be placed via the bounty command.
+Period. There is no exception. There will be no more generic
+bounties. As you have proven not to be able to handle them, you will not be
+allowed to collect on them.
  
 &RSee also&W:&P Help Addbounty
 ~
@@ -1552,22 +1614,22 @@ If you are less than level 102 most of this information is useless to
 you. You can skip ahead to HELP BUILD2
 ***************************************************************************
 
-ZONES  				Gives you 3 lists of  zones being built, 
-				newly added zones, and permanent zones.
+ZONES  ????Gives you 3 lists of  zones being built, 
+????newly added zones, and permanent zones.
 
-CHECKVNUM  ALL  <min> <max>	Gives you a list of conflicting mobs
-				objects and rooms between zonenumbers
-				<min> and <max>
+CHECKVNUM  ALL  <min> <max>?Gives you a list of conflicting mobs
+????objects and rooms between zonenumbers
+????<min> and <max>
 
 VASSIGN <player> <min> <max>    Creates a new area named <playername>.are
-				and assigns it to the <player>. The vnums
-				for the rooms, mobs and objects in the 
+????and assigns it to the <player>. The vnums
+????for the rooms, mobs and objects in the 
                                 area will be between <min> and <max>.
-			
+???
 ***************************************************************************
 
 see HELP BUILD2
-										  
+??????????  
 ~
 
 1 BUILD2 BUILDING2 BUILDER2~
@@ -1590,7 +1652,7 @@ REDIT FLAGS <flag> <flag> ..    Type redit flag by itself fo a flag list.
 REDIT BEXIT <dir> <room>        Creates a two way exit to <room>
 REDIT EXFLAGS <flag> <flag>..   Type redit exflags by itself for choices.
 
-SAVEAREA			Saves your area .. do this alot :)
+SAVEAREA???Saves your area .. do this alot :)
 
 ***************************************************************************
 
@@ -1659,21 +1721,35 @@ SAVEAREA                           Do this alot
 ***************************************************************************
 ~
 
-1 BUILDERS BUILDER~
-&c 
-To apply to build for Star Wars: Rise in Power: 
+101 BUILDING_CARGO_ITEMS~
+&cCargo type items are items posessing unique item values that affect
+supply and demand on a planet.  These items are sold by normal vendors who
+buy only CARGO items. The items, when bought and sold, will contribute to
+the planet's supply. Also, the planet's current supply of items will play
+a factor in determining the price as well as the player's Charisma. Hutts
+and Jawa currently receive a trading bonus. To make such an item, remember
+that &YValue0&c determines the item category or type while &YValue1&c
+determines the quantity of the trade good within the crate.  The item's
+set cost is for &yone unit&c and &yValue1&c's value determines how many of
+an item are "in" the object. So - &Y An item with a cost of 50 and a
+Value1 of 100 will have an initial value of 5000.&C The final selling and
+buying price is affected by the other factors mentioned above. 
  
-Send an email to Darrik@swrip.net. 
-Include your past experience 
-    ( Not necessary for hiring, we just like to know ) 
-Past characters on the mud, if any. 
-And 3 sample room descriptions. If you wish, you can 
-include mobs and objects in each room, if you like. 
+===========================================================================
+&YValue0 Categories&c
+0                    Ores/Metals/Gases
+1                    Food/Water
+2                    Electronics/Droid Parts/Ship Parts
+3                    Weapons/Munitions
+4                    Medicinal Supplies/Bacta
+5                    Cloth/Clothing/Armor
+6                    Luxury Type Items/Treasure/Gems
+7                    Refined Spice/Unrefined Spice
  
-We are curently looking for builders! Feel free to apply! 
+&RIt is most important that you do not set the Value0 above 7. The game
+will Crash.
+ 
 &R&w
-A final thought. Any applications sent using anything other than third
-person perespective will be thrown out.
 ~
 
 0 BUY LIST SELL VALUE~
@@ -1818,26 +1894,45 @@ capital system, however, may.
 &cGalactic Empire&O                                     Coruscant
 &cNew Republic&O                                         Calamari
 &cAssassins Guild                                    &OOrd Mantell
-&cBlack Sun&O                                           Coruscant
-&c   Xizor Fleet Systems&O                            Asteroid 1234
-&cOutlaw Techs&O                                           Hoth 
-&cTriad Syndicate&O                                       Bespin 
+&CTriad Syndicate&O                           Merchant Asteroid
+&cCorporate Sector Authority&O                          Etti IV
  
-&R&WNote: &YUnmanned capital ships in safe sectors may NOT be sabotaged or
-      otherwise harmed.
+&R&wNote: &YUnmanned capital ships in safe sectors may NOT be sabotaged
+/or otherwise harmed.
 &WNote: &YUnmanned ships that are used deliberate in a battle are fair game
 while that battle lasts.&R&w 
+&BSee also: &cCapitalrules2&R&W 
+~
+
+1 CAPITALRULES2~
+&CCapital ships parked in a home system may not be 'snuck aboard', whether
+by fakesignal or other means, unless, &bthere is another manned ship or
+platform in the same home system.&C Unmanned capital class ships outside
+of home system, are of course, still fair game.  You have been warned. 
 ~
 
 1 CARGO~
-&cThis is in progress.
+Cargo trading is now partially implemented in game. Nearly all planets will
+have vendors with which to trade. The price is affected by your charisma,
+supply, and demand. Some items are not needed on all planets. Plans are in
+progress for a skill to show  you what is needed on a planet. 
+~
+
+1 CARGOTYPES~
+&YCargo types for cargo system.
+&c
+0 - Ore
+1 - Food
+2 - Electronics
+3 - Weapons
+4 - Medical
+5 - Clothing
+6 - Luxuries
+7 - Spice
+8 - Water
+9 - Special
  
-You will be able to transport cargo from planet to planet, buying and 
-selling depending on the planet, at certain prices. The plan is to have 
-clans able to build things using that cargo, to protect their planets. 
- 
-As I said, this is a work in progress, it will be a while before it is 
-completed. 
+&RSEE ALSO&W: &Pcargo&R&w
 ~
 
 0 CAST FEEL~
@@ -1899,45 +1994,32 @@ with technological items.
 &RAlso type&W:&Y showstat chadra-fan
 ~
 
-1 CHANGES~
-&c
-New Space System is in! Help NEWSPACE for answers on the changes and how to
-fly!. 
- 
-Chaos has a purse option, for quests and such. 
- 
-Ships will no longer refuel when taking off from midships and cap ships.
-You will need to use the fuel command fromthe hanger.
- 
-Ships has been changed. It will only show t hose ships you have access to.
- 
-I have added two new wearlocs, over and floating.  Over can be used 
-with makearmor... closing a piece you have in your over wearloc will 
-keep others from seeing what you have worn under it. Floating objects
-are only found in the game. There are only two, currently. However, 
-floating containers do not affect your weight. 
+0 CHANGES~
+&RMost recent at bottom&R&c 
 
-Economy is being 'tweaked' to work properly.  Hail, quit, and launch
-have been modified to cost, or cost more, credits.  Those credits 
-will be output through selling items, delivering packages and repoping
-mobs with credits, as it should. I will continue tweaking it until I 
-have it working properly, and realistically. 
+&cPlanets reset to accurate galactic positions.
 
-The Serins have been completely revamped. each has its own route. Use the
-findserin command to see them.
+Newbie Assistant channel added for selected Newbie Assistants.
 
-Ship AI is smarter. Don't underestimate them. 
+Myrkyr added.  Dathomir removed.
 
-I have completed coding the basic modules, the ones governing ship stats. 
-Although I have built the items themselves for Z-100s, I still have far to
-go, and can not work fast on them.  I was going to have the help of a
-builder on the matter, but alas, Zilbringi appears to have disappeared. 
-Such is life. 
- 
-drag <person> out will work, now, for dragging people out of ships. 
-Oh, shove <person> in <ship and shove <person> out will work too :P 
+Who cloaking re-activated.
 
-&PSee Also: &WOLDCHANGES, OLDCHANGES2, OLDCHANGES3&R&w
+Repairship turret works again.  Also, ion turrets may be bought.
+
+The rent command can be used at landing pads to rent ships.
+
+Transferownership command in.  Be careful.  Read the help file.
+
+Ordership command is in:  help ordership 
+
+Acceleration has been added. This is defined by your ships stats.
+&PSpeed&c works differently. 
+
+Removed hunger and thirst.  Food and water may be added again later with
+benefits, affects, etc.
+
+&PSee Also: &WOLDCHANGES OLDCHANGES2 OLDCHANGES3 OLDCHANGES4&R&w
 ~
 
 1 CHANGESOLD OLDCHANGES~
@@ -2085,6 +2167,11 @@ channels.
 used for real world chatting as opposed to roleplaying. 
  
 &RNote&W: Most channels now require a comlink.
+     &W Music is OOC. &w
+ 
+&r-&RAnother Note:&R&W
+Vulgarity in ALL forms is for the &rVULGAR &R&Wchannel.
+&CThat does mean any and all. From &YAss&C to &YFuck&C.
 ~
 
 101 CHECK CECKV CHECKVNUMS~
@@ -2121,72 +2208,77 @@ This nasty spell allows you to choke the life from your victim.
 requires a piercing weapon, and can only be used during combat.
 ~
 
-1 'CIVILIAN UPGRADES' CIVILIANUPG~
-.
-&CCivilian Upgrades:
+1 CIVILIANUPG2~
+&R&W&CStarfighter maxes:
  
-&cshields:    &W100 units for 200k
-&chull:       &W4000 units for 500k
-&cspeed:      &W25 units for 100k
-&cenergy:     &W1000 units for 200k
-&clasers:     &W1 for 100k
-&chyperspeed: &W25 units for 150k
-&cmissiles:   &W1 missile for 20k
-&ctorpedos:   &W1 torpedo for 30k
-&crockets:    &W1 rocket for 75k
-&cchaff:      &Winstallation and 10 chaff for 100k
-            &Weach addition chaff is 5k
-            &Wif a launcher is already installed,
-            &W(chaff is > 0) 1 chaff for 5k
-&ctractor:    &WInstallation for 1m
-&calarm:      &WInstallation for 500k
+         &cLasers: &G4
+ &cMissiles-types: &G12 missiles, 6 torpedos, or 4 rockets
+        &cShields: &G100
+          &cSpeed: &G120
+     &cHyperspeed: &G150
+           &cHull: &G1000
+        &cSensors: &G100
+     &cAstroarray: &G100
+           &cComm: &G100
+         &cEnergy: &G6000
  
-&cSensors:    &W5k a point
-&cAstroArray: &W10k a point
-&cComm:       &W10k a point
+&R&W&CMidShip maxes:
  
-&RAlso See&W: &PCIVILIANUPG2
+         &cLasers: &G6
+ &cMissiles-types: &G20 missiles, 10 torpedos, or 6 rockets 
+        &cShields: &G300
+          &cSpeed: &G90
+     &cHyperspeed: &G200
+           &cHull: &G2500
+        &cSensors: &G150
+     &cAstroarray: &G100
+           &cComm: &G150
+         &cEnergy: &G10000
+ 
+&R&W&CCapShip maxes:
+         &cLasers: &G8
+ &cMissiles-types: &G60 missiles, 30 torpedos, or 20 rockets
+        &cShields: &G500
+          &cSpeed: &G30
+     &cHyperspeed: &G150
+           &cHull: &G10000
+        &cSensors: &G150
+     &cAstroarray: &G150
+           &cComm: &G200
+         &cEnergy: &G15000
+ 
+&R&W&MThese amounts are for basic civilian upgrades. These 
+numbers can be surpassed by &RMILITARYUPG2&R&W&M amounts 
+which are attainable black-market military modifications. 
+
+&GSEE ALSO: &R&W&YCIVILIANUPG, MILITARYUPG, MILITARYUPG2  
 ~
 
-1 CIVILIANUPG2~
-&CStarfighter maxes:
-&c          lasers:&W 4
-&c  missiles-types:&W 12 missiles, 6 torpedos, or 4 rockets
-&c         shields:&W 100
-&c           speed:&W 120
-&c      hyperspeed:&W 150
-&c            hull:&W 1000
-&c         sensors:&W 100
-&c      Astroarray:&W 100
-&c            Comm:&W 100
+0 CIVIMPRANKS~
+&cThese are Imperial Non-Military Organizations' ranks and equivalencies.
  
-&CMidShip maxes:
-&c          lasers:&W 6
-&c  missiles-types:&W 20 missiles, 10 torpedos, or 6 rockets
-&c         shields:&W 300
-&c           speed:&W 90
-&c      hyperspeed:&W 200
-&c            hull:&W 2500
-&c         sensors:&W 150
-&c      astroarray:&W 100
-&c            comm:&W 150
- 
-&CCapShip maxes:
-&c          lasers:&W 8
-&c  missiles-types:&W 60 missiles, 30 torpedos, or 20 rockets
-&c         shields:&W 500
-&c           speed:&W 30
-&c      hyperspeed:&W 150
-&c            hull:&W 10000
-&c         sensors:&W 150
-&c      astroarray:&W 150
-&c            comm:&W 200
+                                     Imp Corrections Imperial  
+     Gvmt-Regional   Gvmt-Ministries && Penal Systems Academy      Pay Grd
+HC-3 Grand Admiral                                                  
+HC-2 Grand Moff 
+HC-1 Moff            Minister        
+ C-1 Sector Adjutant Dep. Minister   Warden           Provost Gen. 5000 
+ O-6                                 Asst Warden      Ass Pvst Gen 4000 
+ O-5                 Adjutant        Correctional Off              3000 
+ O-4 Governor        Aide                                          2000 
+ O-3                                 Cptn of the Guards            1000 
+ O-2 Prefect         Agent                                         900 
+ O-1                                 Senior Guard     Senior Tutor 800 
+ E-6                                 Guard                         700 
+ E-4                                 Guard Apprentice              500 
+  
+Military Ranks you may access via &WHELP IMPRANKS &R&w 
 ~
 
 1 CLAN CLANS ORGANIZATION ORGANIZATIONS ORGANISATION ORGANISATIONS~
 &CThe following are commands used with clans or organizations:
  
-&Yclans &c....... shows a list of organizations. 
+&Yclans&c....... shows a list of organizations. this command is IC.&n
 &Ydonate &c...... donates money to the clan funds. 
 &Ywithdraw &c.... withdraws money from the clan funds. 
 &Ynewclan &c..... allows crimelords to start a new crime clan
@@ -2207,14 +2299,12 @@ requires a piercing weapon, and can only be used during combat.
 ~
 
 1 'CLAN CREATION'~
-&CClan Creation:
-&c
-A clan will start out as an rp clan.  It wont exist in the clan list, but
-it exists in roleplay.  After a few weeks, if the clan is growing and has
-achieved a good amount of members, that clan may be added as a coded clan,
-with ships, funds, and a clan channel. An immortal does not have to be 
-consulted to start a rp clan, although if an administrator has a problem 
-with it, he or she may ask you to disband. 
+&CClan Creation:   &cClan creation is simple.  10 members and 10 million
+credits are needed. When these requirements are met, contact a head admin
+or higher and tell  them the main focus of your clan, clan name, and the
+initial leader. Good luck, and have fun. &R&WNOTE: &RALL&R&W clan
+creations will now require an application be filed to Robert and Sonja
+before a clan can be created. &R&W 
 ~
 
 0 CLANTALK~
@@ -2334,6 +2424,19 @@ sneak by other players, makes the smuggler a popular choice.
  
 &cThis skill enables you to climb into and out of rooms that have no floors
 or require it. 
+ 
+&RNote&c: This is an automatic skill, used when moving up or down.&R&w
+~
+
+1 CLOAK~
+Syntax&w : &Ycloak &w<&YTitle&w>&C
+
+This forcer skill allows a forcer to totally change his/her
+appearance.  This includes his/her voice.
+
+&RNote: PLease keep cloaking disguises&Y IC&R, if you are unsure,
+ask an imm.  Only under admin approved conditions may a forcer
+cloak as another player.&R&W
 ~
 
 1 CLONES CLONE CLONING~
@@ -2346,6 +2449,13 @@ only way to continue a character is to have a clone.
  
 &RNote: &WAs of March 2nd, clones have no memory
       of their past lives.
+ 
+ 
+&Y*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*
+&RNote:&W As of 10/13/02, cloning has been re-instated.
+      You have a maximum of &R2&W clones per character.
+      The cost per level is 50000 credits.
+&Y*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*!*&R&W
 ~
 
 101 CMDTABLE~
@@ -2508,6 +2618,17 @@ Syntax: comment read <player> #
 Comment write puts you into the buffer, and the commands work just like
 writing a note.  You may only read and post comments on players currently
 online (works on link-dead players as well).
+~
+
+1 COMMON_SENSE~
+Use your common sense in dealing with the game. Be familliar with the
+rules. If something has been listed as illegal, and what you are about to
+do MAY be considered illegal, check an immortal if there is no helpfile.
+If there is no helpfile, the immortal tells you it is fine, then there is
+no problem. If there is no helpfile, the immortal tells you it is wrong,
+and you do it anyways, you will be referred to this helpfile. If you are
+unable to contact an immortal and what you do is found to be wrong upon
+re-examination, expect some form of punishment. 
 ~
 
 1 COMMUNICATION~
@@ -2742,6 +2863,19 @@ Af'el Starsystem          None
 Chad Starsystem           None
 ~
 
+101 COPYDESC~
+&R&W&YCopydesc&R&W&g (vnum to be copied) (starting vnum) (ending vnum)
+example "copydesc 203 100 150" 
+
+  The Copydesc command takes the room description of the Vnum to be copied,
+and  will copy the description to the rooms from the Starting Vnum room,
+through and including the Ending Vnum room. This helps speed up the
+process of entering  the room descriptions for generic rooms within your
+area, like streets.   
+ 
+ &R&W&YALSO: &R&WREDIT, MSET, OSET
+~
+
 1 CORELLIA~
 &CSystem &W:&Y Corellian
 &CInhabitants &W:&W Human, Drall, Selonian
@@ -2932,11 +3066,40 @@ Ported to SMAUG by Vir of Eternal Struggle
 Arena Code by LrdElder 10/24/98
 Bug fixes and modifications to SWRiP by Ulysses
 
+Wanted Help Files 1.0 by Xerves 8/24/99 
+Xerves is/was admin/owner of Rafermand- http://www.rafermand.net 
+
 SW: Rise in Power MUD Codebase v1.0 (c) 2001 was created by Mark Miller (
 Darrik Vequir ) with the advice and input of his staff. 
 
 see HELP DIKU, HELP SMAUG, HELP MERC, HELP SWREALITY, and HELP SWRIP for
 more detailed credits. 
+~
+
+1 CSARANKS~
+&CThe Corporate Sector Authority Business Structure
+&cThis is the ranking system that should be used within the CSA.
+
+&CBoard of Directors
+&c------------------
+&CChief Executive Officer   (Ldr)
+&CChief of Internal Affairs (1st)
+&CChief Operations Officer  (2nd)
+
+Security Div. (ESPO)          Pay
+&c--------------------          ---&C
+Chief of Security             1000
+Asst. Chief of Security       900
+Commander                     700
+Lieutenant                    600
+Sergeant/Flight Specialist    500
+Officer/pilot                 400
+Recruit                       300
+
+Sales and Engineering         Pay&c
+---------------------         -----&C
+Senior Engineer               800
+Engineer                      600
 ~
 
 102 CSET~
@@ -3333,6 +3496,9 @@ must also be wielding a weapon.  Can only be used during combat.
 your name.  Great for impersonating others.
  
 &RNote:&r Please keep disguises &YIC&r, if you are unsure, ask an Imm.
+&r      Unless you are a forcer, you are not allowed to disguise
+&r      as another race. For example, an ewok can't disguise as
+&r      a human citizen.
 ~
 
 101 DMESG~
@@ -3442,9 +3608,12 @@ Lead.&Y      106     56       56        56      56      106     150&g
  
 ~
 
+104 DROID_UPGRADED~
+~
+
 1 DROID_UPGRADES~
-&BYou are now able to upgrade your droid player for the price of half a
-million credits per level. There is a maximum of 75 levels able to be
+&BYou are now able to upgrade your droid player for the price of 1
+million credits per level. There is a maximum of 25 levels able to be
 added to your droid's memory. Consider it a memory limit. To have this
 done, politely request an admin or above to work with your character.&w 
 ~
@@ -3682,6 +3851,25 @@ See ASET, FOLDAREA
  
 &cThis skill allows you to call an elite guard to your location.  Elite
 guards act like posted guards, but are much stronger and experienced.
+ 
+&RSee also&w: &PRule 9&R&W
+~
+
+1 EMIT~
+&R&cEmit is in the game so that good roleplayers can set the background
+setting of rp, or to play something that they can't do nearly as well with
+emotes. It is however NOT for people to force another person into doing
+something that he/she is not doing on their own, or say something that
+he/she is not going to say. Its also not a toy, which means you do not
+emit things like emit &R&rI am now lord of the universe!&R&c or some other
+thing that has nothing to do with roleplay. Abuse of this command will
+earn you a punishment determined by the Imm at the time of abuse dependent
+on how you were abusing the command. Please, when using the emit command
+use some common sense and think if it would be appropriate for roleplay.
+If its not, don't use it, if its emiting a statement for another person,
+or an emote that the other person would normally do himself, then don't
+use it. If however you want to roleplay with a mob, or want to place
+background things in, then have at it. Thank you.&R&W 
 ~
 
 1 EMOTE SOCIAL ,~
@@ -3981,6 +4169,12 @@ irresistible to the opposite sex.
 Syntax : feel farsight <victim>
 
 Gives a room description of victims location.
+&RNOTE: Unless you have met, received a name, spent considerable time with
+the person you are farsighting, do not expect to be able to know that
+person well enough to reach out across the cosmos and detect ONE force aura
+out of millions of billions of different force auras. As yoda says "All
+things have the force." That means rocks, critters, bugs, and just about
+everything you can think of. This rule WILL be enforced.
 ~
 
 1 FATIGUE~
@@ -4065,8 +4259,31 @@ Resets a character's saving throws and mentalstate.  Should probably
 not be done while the character is equipped.
 ~
 
+1 FLAGMODULES~
+&YInformation on the 'flag' modules of RiP.
+ 
+&cYou can add a hotel, refinery, or factory flag to your ship, whether
+it be a old, built, ship, or a virtual ship, with flag modules. 
+ 
+Purchase one of these modules at the KSY and go to the room in your 
+ship that you wish to install it in.  &W*Do not try to install this 
+module while outside your ship, or from the usual spot in the engine 
+room, unless you wish to install the flag there!*&c  In the room you 
+wish to install the flag, use the install_module command.  The module
+will be added to the module list and the flag will be added.  You can
+remove this flag by going to your engine room and using the remove_ 
+module command.  This will remove the flag and return the module to 
+your inventory. 
+
+&RNote&c: You can not install flag modules in the control rooms of ships. 
+This includes the cockpit, pilotseat, co-pilot seat, gunseat, navseat, and
+engine room. 
+ 
+&RSEE ALSO: &Pmodules, install_module, remove_module, show_modules&R&W
+~
+
 1 FLAGPRICES~
-&YOn ships:
+&R&W&YOn Ships:&R&W(&RNO LONGER BEING INSTALLED&R&W)
 &BBacta - 100,000
 &BHotel - 100,000
 Home - 100,000
@@ -4097,6 +4314,10 @@ government boards on them.
  
 To rename your ship, there's a new command 'renameship' 
 to be used at the normal upgrade site for ships.
+ 
+&R&W&GShip flags are no longer being installed. This includes 
+ALL objects, doors, and flags that you might want inside one.
+We are phasing them out to make for the new ship code.
 ~
 
 0 FLAMESTRIKE~
@@ -4194,6 +4415,11 @@ Note that the level required to use force on mobs can be different
 than the level required to use force on players, and can be adjusted
 via 'cset' (see 'help cset').
  
+ 
+&Y*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+&RNote:&z Be aware that immortals can and will remove force or
+slay your character if proper RP is not exhibited. 
+&Y*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 ~
 
 1 'FORCE IMBUE'~
@@ -4255,6 +4481,11 @@ the following system.
          Dark Jedi may join any group.
          RP correctly your forcer correctly, or
          your force will be removed. No excuses.
+ 
+&Y*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+&RNote:&z Be aware that immortals can and will remove force or
+slay your character if proper RP is not exhibited. 
+&Y*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 ~
 
 1 FORCE_RP~
@@ -4304,6 +4535,15 @@ by someone with access to player files.
  
 ~
 
+1 FORUM~
+The official message forum for Star Wars: Rise in Power is now located
+at:
+ 
+http://swrip.betterbox.net/forum/ 
+ 
+Immortals: Please notify me when you have signed up with a user name.
+~
+
 101 FQUIT~
 Syntax:  fquit <character>
  
@@ -4320,6 +4560,28 @@ It stays invisible to players throughout their lifetime.  You never truly
 know how strong you are in the force.  This is another stat that cannot be
 raised by any trainer. 
 &R&W
+~
+
+1 FUNNY~
+Log: Darrik: echo Norum looks at you.
+Norum looks at you.
+Kintak%
+Norum looks at you.
+<VULGAR> Drake: 'FUCK!... ASS!'
+Kintak% take blaster dual
+Kintak% You get Blastech assault carbine from  Dual Shoulder Slung Carbine
+Holsters
+Kintak% take blaster dual
+Kintak% I see nothing like that in the dual.
+Kintak% wear blaster
+Kintak% You dual-wield Blastech assault carbine.
+Kintak% wear blaster
+Kintak% You do not have that item.
+Kintak%
+Raiver blinks, completely surprised.
+Log: Kintak: murder norum
+Kintak% murder norum
+Kintak% They aren't here.
 ~
 
 1 G~
@@ -4414,6 +4676,10 @@ the Gand have certain regenerative properties.
 &cThis skill will attempt to retrieve information about a character, such
 as their location, skill focus, organization they belong to, and others.
 It takes time to use, and will only work on players. 
+ 
+&RNote: This skill is only to be used if you&Y ICly&R know
+the player's name. Abuse of this skill will result in
+punishment deemed appropriate by the ADMIN.
 ~
 
 102 GETCREDITS~
@@ -4424,7 +4690,31 @@ typing the &YGETCREDITS&c command.  Keep in mind, this only works if
 someone has actually bought something. 
 ~
 
-1 GLADIATOR DROID 'GLADIATOR DROID'~
+0 GILES~
+If you're reading this, you've probably not got a bio or a description.
+ 
+If you think back, really far, to when you first made your character....one
+of the first things you had to do was read every rule (Help rules, help
+rules2)
+ 
+Then....if you understood and accepted the rules, you had to say "I
+understand", and then moved to the next part of the academy.
+ 
+Rule 7 (help rule_7) is quite concise in it's expectations of Bios and
+Descriptions.
+ 
+So you either:
+a) Didn't understand the rules when you said "I understand"
+b) Chose not to follow said rules
+c) Have a deathwish
+ 
+In any case, make writing a GOOD bio/desc the next thing you do.
+Unless, of course, you want (c) to be a reality.
+ 
+Giles - Your friendly neighbourhood nazi.
+~
+
+1 GLADIATOR GLADIATOR_DROID~
 &COrigin&W:&Y Various
 &c
      Any droid which is programmed for armed combat in a controlled 
@@ -4516,32 +4806,38 @@ and have developed a healthy trade route with the Herglics.
 ~
 
 -1 GREETING~
-.               _________________      ____         __________
- .       .    /                 |    /    \    .  |          \
-     .       /    ______   _____| . /      \      |    ___    |     .   
-             \    \    |   |       /   /\   \     |   |___>   |
-           .  \    \   |   |      /   /__\   \  . |         _/          
- .     ________>    |  |   | .   /            \   |   |\    \_______    
-      |            /   |   |    /    ______    \  |   | \           |
-      |___________/    |___|   /____/      \____\ |___|  \__________|   
+.              _________________      ____         __________
+ .       .    /                 |    /    \    .  |          \ .
+     .       /    ______   _____| . /      \      |    ___    |     .  
+             \    \    |   |       /   /\   \     |   |___>   |  .
+           .  \    \   |   |      /   /__\   \  . |         _/         
+ .     ________>    |  |   | .   /            \   |   |\    \_______   
+      |            /   |   |    /    ______    \  |   | \**REALITY**|
+      |___________/    |___|   /____/      \____\ |___|  \__________|  
   .     ____    __  . _____   ____      .  __________   .  _________
-       \    \  /  \  /    /  /    \       |          \    /         |      
+       \    \  /  \  /    /  /    \       |          \    /         |     
         \    \/    \/    /  /      \      |    ___    |  /    ______|  .
          \              /  /   /\   \ .   |   |___>   |  \    \
-   .      \            /  /   /__\   \    |         _/.   \    \      
+   .      \            /  /   /__\   \    |         _/.   \    \      .
            \    /\    /  /            \   |   |\    \______>    |   .
             \  /  \  /  /    ______    \  |   | \              /      
- .       .   \/    \/  /____/      \____\ |___|  \____________/  
-
-                                                         *** REALITY ***
-
+ .       .   \/    \/  /____/      \____\ |___|  \____________/  .    .
+==========================================================================
+                              -*R-I-S-E*-                              
+                                -*I-N*-                            
+                             -*P-O-W-E-R*-                     
+ 
+                     (:::::::]{+++++++++++++++++++++-
+ 
 Star Wars: Rise in Power
 based on SWReality 1.0 by Sean (Durga the Hutt) Cooper -
 specs@golden.net
-Original SMAUG 1.0 written by Thoric (Derek Snider) with help from 
-Altrag, Blodkai, Narn, Haus, Scryn, Swordbearer, Rennard, Tricops and Gorog.
-Original MERC 2.1 code by Hatchet, Furey, and Kahn. Original DikuMUD code by:
-Hans Staerfeldt, Katja Nyboe, Tom Madsen, Michael Seifert && Sebastian Hammer
+Original SMAUG 1.0 written by Thoric (Derek Snider) with help from
+Altrag, Blodkai, Narn, Haus, Scryn, Swordbearer, Rennard, Tricops and
+Gorog. Original MERC 2.1 code by Hatchet, Furey, and Kahn. Original DikuMUD
+code by: Hans Staerfeldt, Katja Nyboe, Tom Madsen, Michael Seifert
+Sebastian Hammer.
+ 
 Star Wars and Star Wars names are a copyright of Lucasfilm ltd.
 
  
@@ -4835,8 +5131,12 @@ cockpit of a ship.
 ~
 
 1 HITALL~
-Syntax: hitall
+.
+Syntax: &Yhitall&C
  
+This skill initiates combat, attempting to hit all visible
+enemies in the same room as you.  Only grouped party members
+are safe from your hitall.
 ~
 
 1 HLIST~
@@ -4979,12 +5279,8 @@ at creation and gain between 6 and 19 hp per gained level, depending on
 class, race and CON.  Equipment can also add to your total hp.
 ~
 
-1 'HRD' 'HUMAN REPLICANT DROID'~
-&pHuman Replicant Droid:
- 
-&YOnly assassin droids will be allowed to roleplay as HRDs, and even
-then only with the express permission of a Head Admin. Gladiator droids
-and protocal droids and the like will not be allowed to.
+1 HRD~
+HRD's are not permitted at all.
 ~
 
 101 HSET~
@@ -5154,6 +5450,38 @@ questions should be there for answering, but yes there are times
 here there are questions only an imm or a fellow player can answer.
 However Excessive abuse of OOC will result in possibly being silenced.
 &g
+ 
+&RNotice: If you reveal the locations of mobs on OOC, you will be slain.
+&w
+~
+
+0 IC_ACTIONS~
+&z&cAny actions taken by your character must be IC.  This means any pk,
+any flight, any speech ( which is not labeled with an OOC )... 
+everything. 
+ 
+&z&cThese rules are all within the IC_ACTIONS rule:
+ 
+1.  &zShip destruction must be done for IC reasons. 
+        &RHelp ship_destruction.&c 
+ 
+2. &zAvoiding a code restriction by doing something OOC is illegal. 
+        &RHelp code_avoiding.&c 
+ 
+3. &zPK is done for IC reasons. The killer will be punished. 
+        &RHelp PK.&c 
+ 
+4. &zInformation must be passed along MUD channels. 
+        &RHelp Nonmud_information.&c 
+ 
+5. &zUsing any OOC knowledge or method to further your own character 
+        is not permitted in any way shape or form, and will be punished.
+        &RHelp oocgain&c 
+ 
+6. &zAbuse of vendor mobs is not tolerated. 
+        &RHelp Vendor_Abuse&c 
+ 
+&RSEE ALSO: &PHelp rules&R&W 
 ~
 
 1 IDENTIFY ID~
@@ -5176,6 +5504,10 @@ Example:
  
            &Ysystem Requesting ID from &R&W<&Yship name&R&W>&Y. 
 &R&W
+~
+
+1 IDIOT~
+Kahann
 ~
 
 101 IFCHECKS~
@@ -5339,59 +5671,80 @@ Of this rule can result right up to and including slaying and siteban.
 ~
 
 101 IMOTD~
-&W----- &RHelp Files to Read &W----- 
-       &Y* &WHelp Oldnews &Y* 
-       &Y* &R&WHelp Changes &Y* 
-&W----- ----- ------ ----- ----- 
-
-&RNews &W-----
- &Y* &WBuilders need 104+ permission to make area changes. &Y* 
- &Y* &BImm alts must completely justify a pkill.&Y * 
- &Y* &WDo not change stock ship names.&Y * 
- &Y* &WAdd area ideas on the 100 board. &Y* 
- &Y* &CChanges to IMOTD, AMOTD, MOTD. &Y* 
- &Y* &W100 Board cleaned. &Y* 
- &Y* &GWroona system added, report bugs. &Y* 
+&B.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
  
-&RWelcome New Imms &W-----
- &Y* &BBuilder Sardog
+&YPlease continue to check the board at 100 and the Forum for
+announcements.
  
-^z&PPost questions to the Head Admins on the board north of room
-100.^x&R&W
-&pA note from Uly:
-&z---&Y*Don't* savearea non-prototype areas, just foldarea them.
+&B.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
  
-&RAny immortal who is informed of a family playing here, loggin onto the
-same ip, MUST post it on the multiplay board. &R&w
+&RAll builders are expected to post status reports on the
+Message Forum. &P(Help Forum)&R Posting there not only tells
+the other imms how far you're at, but gives us proof you're
+actually working. All Deadlines will hold firm.
+ 
+&B.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
+^g&YUNTIL ALL THE IMMORTALS ARE NO LONGER CURSING ON OOC, NO MORTAL CAN
+REASONABLY BE PUNISHED FOR BREAKING THE RULE.^rWE NEED TO LEAD BY EXAMPLE
+HERE.^x
+&B.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
+&CMortals &wSHOULD NOT OWN CLAN SHIPS&C. Those ships are for the clan
+only. Yes, they can be pilots of them, but the clan needs to be the
+owner. Anyone I see with a clan ship personally owned for more than a few
+days (enough time to get it transitioned to clan) will lose the ship and
+I'll have it destroyed. I'm not playing games with this.
+ 
+-Sonja
+&B.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
+&RAdmins are reminded that it is legal to persue someone to their homebase
+planet to recapture or kill. It is not legal to camp out on the planet and
+grab anyone walking out of the base OR go in force to slaughter
+everyone.
+ 
+Simply put. &PYou may pursue, you may not camp or
+invade.&R&B
+&B.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
+&YATTENTION: 
+&cYes. I'm planning a game wide quest. I intend to release the
+beginnings of the story in two weeks. I'm letting them know 
+it exists in advance so that it can generate interst and try to 
+give the dwindling pbase a kick in the ass. Anyone who wants
+in on this fun little venture should email me 
+@ &Bsonja_of_rip@earthlink.net&c so that I can start
+handing out assignments and get your ideas. 
+- Sonja
+&B.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
 ~
 
 1 IMPRANKS~
 &cThese are the Imperial Military's ranks and equivalencies.
-Yes, we stole this from Sote. 
  
-&CArmy            &YNavy            &PPilot Corps   &WStormtroopers 
-&cMaster General  &OGrand Admiral   &p-----------   &w----------- 
-&cMajor General   &OHigh Admiral    &p-----------   &w----------- 
-&cGeneral         &OFleet Admiral   &p-----------   &wGeneral 
-&cBrig. General   &OAdmiral         &pWing Cmdr.    &w----------- 
-&cField Marshal   &OVice Admiral    &pGeneral       &w----------- 
-&cMarshal         &ORear Admiral    &p-----------   &w----------- 
-&cSr. Colonel     &OCommodore       &p-----------   &w----------- 
-&cColonel         &OLine Captain    &pColonel       &wColonel 
-&cLt. Colonel     &OCaptain         &p-----------   &w----------- 
-&cMajor           &OCommander       &pCommander     &wMajor  
-&cCaptain         &OLt. Cmdr.       &pLt. Cmdr.     &wCaptain  
-&c1st Lieutenant  &OLieutenant      &pLieutenant    &w----------- 
-&c2nd Lieutenant  &OEnsign          &pFlight Off.   &wLieutenant 
-&cCadet           &OCadet           &pFlight Cad.   &w----------- 
-  
-&cMasterSergeant  &OSr. Petty Off.                &wMaster Sergeant 
-&cSergeant        &OPetty Officer                 &wSergeant 
-&cLance Corporal  &OMidshipman                    &wLance Corporal 
-&cCorporal        &OJr. Midshipman                &wCorporal 
-&cPrivate 1st     &OSr. Deckman                   &wPrivate 
-&cPrivate         &ODeckman                       &wRecruit 
-&cRecruit         &ORecruit 
+HC-4 Navy            Pilot Corps     Army            ImpSec Bureau Pay Grd
+HC-3 Grand Admiral   -----------     Grand General   -----------   
+HC-2 -----------     -----------     -----------     -----------   
+HC-1                                                 General       
+ C-5 Fleet Admiral   Force Marshall  Cmnd Gen                      9000 
+ C-4 Admiral         Chief Marshall  General                       8000 
+ C-3 Vice Admiral    Marshall        Lt. General                   7000 
+ C-2 Rear Admiral    Vice Marshall   Mjr General                   6000 
+ C-1 Commodore       Commodore       Brig. Gen       Lt. General   5000 
+ O-6 Captain         Captain         Colonel         Colonel       4000 
+ O-5 Commander       Wing Commander  Lt Colonel      Lt Colonel    3000 
+ O-4 Lt. Commander   Lt. Commander   Major           Major         2000 
+ O-3 Lieutenant      Flt Lieutenant  Captain         Captain       1000 
+ O-2 Ltnt (Jr)       Flight Officer  1st Ltnt        1st Ltnt      900 
+ O-1 Ensign                          2nd Ltnt        2nd Ltnt      800 
+ 
+ W-1 Warrant Off.    Warrant Off.    Warrant Off.    Warrant Off.  900 
+ 
+ E-6 Chf Petty Off.                  Srgt Major      Srgt Major    700 
+ E-5 Petty Officer   Flight Srgt     Sergeant        Sergeant      600 
+ E-4 Leading Crewman Flight Corporal Corporal        Corporal      500 
+ E-3 Able Crewman                    Pvt 1st Class                 300 
+ E-2 Crewman         Flight Cadet    Private                       200 
+ E-1 Recruit         Recruit         Recruit                       100 
+
+Non-Military ranks you may access via &WHELP CIVIMPRANKS &R&w 
 ~
 
 101 INDUCT OUTCAST~
@@ -5461,6 +5814,18 @@ Installarea renames the installed area file from 'author.are.file' to
  
 ~
 
+1 INSTALL_MODULE~
+&CSyntax: &YInstall_module <module name> [ship] 
+&c 
+This will install a module, depending on space remaining, into
+the designated ship.  This command requires ship maintenance.
+ 
+It can be used from outside the ship, which requires ownership
+or from inside the engine room, where the [ship] is not needed.
+ 
+&RSEE ALSO&W: &Pshow_module, remove_module, upgrades&R&W 
+~
+
 101 INSTAROOM INSTAZONE~
 Syntax:  instaroom
  
@@ -5506,7 +5871,7 @@ will gain an advantage over time.
 &R&W
 ~
 
-1 INTERROGATION DROID 'INTERROGATION DROID'~
+1 INTERROGATION INTERROGATION_DROID~
 &COrigin&W:&Y Various
 &c
      A spherical droid with a built-in repulsorlift, it has many devices 
@@ -5610,6 +5975,16 @@ them out of prison will have to do this as well, to avoid the person
 relogging back into the prison.  This can also be done with &YUNJAIL&c.
 ~
 
+0 JAILING~
+&cYou may not keep a player in jail for more than 24 hours without the
+willingness of the inmate.  Forcing a player to hang around a jail when
+they can not escape or suicide and, while in jail, can not play the 
+game, is not acceptable.  
+ 
+This applies to all clans, not just governments.
+DV 9-15-03
+~
+
 0 JAWA JAWAS~
 &COrigin: &YTatooine
  
@@ -5671,8 +6046,19 @@ These are simply the qualifications to make you eligible.  Read help
 &Pforcers&c for the restrictions for promotions. 
 ~
 
-1 JUMPVECTOR~
+1 JEDI_COUNCIL~
+We now have a functional Jedi Council for Jedi who do not wish to expressly
+work within the confines of the Rebel Alliance. These Jedi are considered
+the judges of the galaxy, impartial to good citizens across the cosmos.
+Fighting evil in all forms, they stand fast against the Empire even if not
+working directly with the Rebellion. They simply exist, protecting
+innocents, righting wrongs, and fighting the evil that exists in the
+galaxy no matter what form it takes. 
+~
+
+1 JUMPVECTOR ENTRYVECTOR~
 &CSyntax &R&W: &YJumpvector &R&W<&YShip&R&W> 
+&CSyntax &W: &YEntryvector &W<&YShip&W> 
  
 &cThis gives you a ships course that has hypered out 
 from near your position.
@@ -5967,6 +6353,17 @@ See OSET and ITEMVALUES.  * = not yet implemented.
 &YSteal&c attempts to steal credits, or an object, from a mob or player.
 ~
 
+108 LIGHTSABER CRAFTING " MAKELIGHTSABER "~
+Syntax&w:&Y makelightsaber &w<&Yname&w>&C
+
+This skill allows a forcer to create his/her very own
+lightsaber.  The proper items needed need to be found
+by the forcer.
+~
+
+108 LIGHTSABER CRAFTING "MAKESABER"~
+~
+
 1 LIMBER~
 &CSyntax &R&W: &YLimber
  
@@ -6033,6 +6430,10 @@ password... etc).  Use FORCE to make the character do your bidding.
 See FORCE.
 ~
 
+104 LODIC~
+Garbage.
+~
+
 101 LOG SNOOP~
 Syntax:  log   <character>
 Syntax:  log   all
@@ -6056,6 +6457,28 @@ players  name and a percentage sign (i.e. Mudder%)
  
 SNOOP yourself to cancel all outstanding snoops.
  
+~
+
+1 LOG_YOURSELF~
+&R&cYou and only you are responsible for logging events that happen to you
+in game.  If you are illegally pkilled, you will not be restored without a
+log to back up your story. Logs must be submitted in a timely manner,
+unaltered.  There is no exception to this rule.  
+ 
+&YTo Be Clear&W: &RYou will NOT be restored without a log.&R&W
+~
+
+101 LOOP~
+syntax &R&W&YLoop&R&W&g (Command) (StartNum) (EndNum) (Parameters) 
+example "loop mset 22000 22100 flags prototype"
+ 
+The loop command allows you to perform a building command multiple times
+until the EndNum has been reached. The Command field accepts any building
+command, like mset, redit, oset, and will perform the Parameters provided
+on the vnums between and including the StartNum and the EndNum. It can 
+help speed up your building if used properly.
+ 
+ &R&W&YALSO: &R&WMSET, OSET, REDIT&R&W
 ~
 
 1 LUCK LCK~
@@ -6119,6 +6542,17 @@ Used to create a board file, which can then be defined using 'bset'.
 See BSET, BSTAT and BOARDS
 ~
 
+1 MAKEBOWCASTER~
+&CSyntax &W: &YMakebowcaster &W<&YName&W>
+ 
+&cThis is a wookiee only skill for creating bowcaster weapons.
+It is taught on Kashyyyk by an old wookiee, but not all of its
+parts are sold on that planet.
+ 
+&CRequirements&W : &YOven, Toolkit, Duraplast Tubing, Oil,
+               Crossbow Bundle, and Tinder
+~
+
 101 MAKECLAN~
 Syntax:  makeclan <clan name>
 Example: makeclan Retribution
@@ -6142,6 +6576,8 @@ battery, some circuitry, and a crystal.
  
 &cThis skill is used to make containers that can be worn all over the body.
  The better you skill, the better the containers.
+
+&CRequirements&w : &Y Needle and Thread, Material
  
 &RNote:&r Different fabrics are worn on different layers.  There are four
 layers. 
@@ -6163,6 +6599,18 @@ See SETCOUNCIL
  
 &cThis allows you to make a flashlight using a toolkit, a battery, a lens,
 some circuitry, and some chemicals.
+~
+
+0 MAKEFURNITURE~
+Syntax: Makefurniture <type> <name>
+ 
+The type is either Couch or Chair. A chair holds 1 person, a couch holds up
+to 4 people.
+ 
+Tools needed: Needle and thread, and a toolkit.
+Requirements: Chair - Katasik Metal, and Synthafabric. 
+Requirements: Couch - Katasik Metal, Bothan Mesh, Bantha Hide, and
+Durasteel Plating.
 ~
 
 1 MAKEGRENADE~
@@ -6193,6 +6641,15 @@ circuitry and some chemicals.
  
 &cThis allows you to make a landmine using a toolkit, a drinking container,
 a battery, some circuitry, and some chemicals.
+~
+
+0 MAKEMEDPAC MAKEMEDPACK~
+Syntax: Makemedpac <medpack name>
+ 
+When adept this will create a medpack with 3-5 uses per medpack.
+ 
+Tools Required: A toolkit
+Requirements: An empty drink container, and a chemestry set.
 ~
 
 101 MAKEREPAIR~
@@ -6287,6 +6744,17 @@ whether you can move the ship or not, that ship is considered
 manned. &R&w
 ~
 
+1 MARKET~
+&W&wSyntax:&Y Market&y <Planet Name>&R&W
+&R&gExample: Market Coruscant
+ 
+The market command will show you a the production, depletion, and current
+supply values of any given planet.  The information can then be used with
+the cargo system to gain valuable profits.
+ 
+&R&YALSO:&W CARGO&R&W
+~
+
 1 MASK~
 &CSyntax &W:&Y feel mask
  
@@ -6320,6 +6788,54 @@ See MSET or OSET.
 We all know this, but put up with you anyways!
 ~
 
+101 MEDIT~
+Syntax:
+  medit <mobile>
+
+Description:
+  Medit allows you to edit mobiles (NPCs) using an inline editing
+system. Changes are made to a working copy  All changes are made on
+a temporary copy until you choose to commit them.
+
+  This prevents accidental damage to live objects and allows safe editing,
+review, and rollback of changes.
+
+  If the mobile has the prototype flag set, committed changes
+  will also be applied to the mobile's prototype.
+
+Commands:
+  show [field]        Shows mobile or a single field.
+  help [field]        Shows help or valid values.
+  <field> <value>     Sets a field to a new value.
+  commit              Applies changes to the mobile.
+
+  - use this before removing the proto flag if you are finished editing the
+    prototype
+  revert              Restores pre-edit state.
+  - (only back to the last commit).
+  stop save           Saves changes and exits.
+  stop abort          Exits without saving.
+
+Common Fields:
+  name short long description
+  level race sex alignment
+  hit maxhit force move
+  hitroll damroll numattacks
+  position defposition affected
+  All editable fields can be listed by typing 'help' when in editing mode.
+
+Special Functions:
+  spec <name>         Set primary special function.
+  spec2 <name>        Set secondary special.
+  spec none           Remove special function.
+Notes:
+  Flags support + - and ! modifiers.
+  Use 'medit help <field>' for valid values.
+  Changes remain local until commit or stop save.
+
+SEE ALSO : OEDIT RWALK
+~
+
 1 MEDITATE~
 .
 &CSyntax &W:&Y Meditate
@@ -6347,6 +6863,17 @@ Players   (Current # link-live players) Maxplrs (max players this reboot)
 MaxEver   (Max # of players ever)       Topsn   (top sn used) (top sn open)
 MaxEver time recorded at:   (date and time max users was reached)
  
+~
+
+1 MEMORIAL~
+Pray for the many who died this day.
+Tuesday, September 11th, 2001.
+ 
+I pledge allegiance to the flag of the United States of America
+and to the republic for which it stands: one nation under God,
+indivisible, with liberty and justice for all.
+ 
+We shall overcome.
 ~
 
 101 MENU~
@@ -6396,60 +6923,51 @@ MFIND finds all mobile types with a particular name.
 OFIND finds all object types with a particular name.
 ~
 
-1 'MILITARY UPGRADES' MILITARYUPG~
-&CMilitary Upgrades
- 
-&cshields:    &W100 units for 1m
-&chull:       &W4000 units for 1.5m
-&cspeed:      &W25 units for 750k
-&cenergy:     &W1000 units for 1m
-&clasers:     &W1 for 500k
-&chyperspeed: &W25 units for 500k
- 
-&cmissiles:   &W1 missile for 60k
-&ctorpedos:   &W1 torpedo for 90k
-&crockets:    &W1 rocket for 200k
- 
-&cSensors:    &W50k a point
-&cAstroArray: &W30k a point
-&cComm:       &W30k a point
- 
-&RSee also&W:&P MILITARYUPG2
-~
-
 1 MILITARYUPG2~
-&CStarfighter maxes:
-&c          lasers: &W4
-&c  missiles-types: &W16 missiles, 8 torpedos, or 6 rockets
-&c         shields: &W150
-&c           speed: &W150
-&c      hyperspeed: &W255
-&c            hull: &W1500
-&c         sensors: &W150
-&c      Astroarray: &W150
-&c            Comm: &W150
+&R&W&CStarfighter maxes:
  
-&CMidShip maxes:
-&c          lasers: &W8
-&c  missiles-types: &W30 missiles, 15 torpedos, or 10 rockets
-&c         shields: &W500
-&c           speed: &W120
-&c      hyperspeed: &W255
-&c            hull: &W4500
-&c         sensors: &W200
-&c      astroarray: &W200
-&c            comm: &W200
+          &cLasers: &G4
+  &cMissiles-types: &G16 missiles, 8 torpedos, or 6 rockets
+         &cShields: &G150
+           &cSpeed: &G150
+      &cHyperspeed: &G255
+            &cHull: &G1500
+         &cSensors: &G150
+      &cAstroarray: &G150
+            &cComm: &G150
+          &cEnergy: &G10000
  
-&CCapShip maxes:
-&c          lasers: &W10
-&c  missiles-types: &W30 missiles, 30 torpedos, AND 30 rockets
-&c         shields: &W1000
-&c           speed: &W85
-&c      hyperspeed: &W255
-&c            hull: &W20000
-&c         sensors: &W255
-&c      astroarray: &W255
-&c            comm: &W255
+&R&W&CMidShip maxes:
+ 
+          &cLasers: &G8
+  &cMissiles-types: &G30 missiles, 15 torpedos, or 10 rockets 
+         &cShields: &G500
+           &cSpeed: &G120
+      &cHyperspeed: &G255
+            &cHull: &G4500
+         &cSensors: &G200
+      &cAstroarray: &G200
+            &cComm: &G200
+          &cEnergy: &G18000
+ 
+&R&W&CCapShip maxes:
+ 
+          &cLasers: &G10
+  &cMissiles-types: &G40 missiles, 30 torpedos, or 30 rockets
+         &cShields: &G1000
+           &cSpeed: &G85
+      &cHyperspeed: &G255
+            &cHull: &G20000
+         &cSensors: &G255
+      &cAstroarray: &G255
+            &cComm: &G255
+          &cEnergy: &G30000
+ 
+&R&WThese amounts are for black-market military upgrades. 
+For smaller fees, the basic after market upgrades can be 
+found in &RCIVILIANUPG2&R&W. 
+ 
+&R&W&GSEE ALSO:&R&W&Y MILITARYUPG, CIVILIANUPG, CIVILIANUPG2 
 ~
 
 1 MINE~
@@ -6474,8 +6992,8 @@ parameter for the level of the object to be invoked.
 
 101 MLIST~
 Syntax: mlist
-      :	mlist <first mob>
-      :	mlist <first mob> <last mob>
+      :?mlist <first mob>
+      :?mlist <first mob> <last mob>
 
 This command will list all of the prototype mobs in your area, when used 
 with no arguments.  When used with a single argument it will list all 
@@ -6492,6 +7010,17 @@ choose an option in the menu, type the number of the section followed by the
 desired letter, and any variables that may follow.
 
 See MENU for generic menu commands.
+~
+
+1 MOBDEATH~
+One of our more whiney morts has suggested a helpfile depicting what
+happens when you go near aggressive mobs. I call it
+mobdeath.
+If you attack a mob, or if it attacks you, you can die. Deal with
+it.
+~
+
+110 MOBDEATH LEVEL 1~
 ~
 
 -1 MOBPROG MOBPROGRAMS OBJPROG ROOMPROG MUDPROG~
@@ -6528,6 +7057,29 @@ Hour          <hour>              [loops as Script for an hour from start hour]
 For mobs, see also: MPSTAT, MPEDIT, TRIGGER, MPCOMMANDS, IFCHECKS, VARIABLES.
 ~
 
+1 MODULES MODULE~
+&YInformation on the module upgrade system 
+ 
+&cThere are currently three types of modules, but more 
+should be upcoming as they are coded. 
+ 
+&PAmmomodules: &cChaff, rockets, missiles, torpedos.
+&PPartmodules: &cUpgrades to ship stats.
+&PFlagmodules: &cModules to add flags to ships.
+ 
+Currently, there is only one module shop that contains 
+all types of modules, on Kuat Shipyard. This shop lies 
+s sw of the hangar.  The first parts retailer holds
+flag modules, the other to the west holds all others. 
+ 
+&WRemember that all modules require the ship maintenance 
+skill to install and remove&c
+ 
+&RSEE ALSO&W: &Pammomodules, partmodules, flagmodules, 
+          install_module, remove_module, show_module,
+          upgrades&R&W
+~
+
 0 MON_CALAMARI 'MON CALAMARI'~
 &COrigin&W: &YMon Calamari
  
@@ -6558,54 +7110,12 @@ moronic.
 ~
 
 -1 MOTD~
-I have spent 2 years dedicating much of my time to Rise in Power. 
-I have brought it from an almost-stock Mud to (one of) the best 
-SWR's currently out there.  I took the job, and then took over, 
-because programming is unquestionably my favorite thing to do.  
-I pushed to open RiP because two previous imms that quit RiP opened
-up their own Mud, and I considered us in friendly competition 
-( We were all friends ).  That Mud, of course, is The Dark hand.  
-When I heard it opened, I bugged Uly and Kuthlan until they agreed
-that we should open too.  We chose the name, and Rise in Power was
-born.  Administration was never something I enjoyed, but I appear
-to have been good at it, and being good at things is my second 
-favorite thing.  Players were always a plus.  I enjoyed having them
-to find my bugs.  Probably why I got so upset when the players kept
-whining when I was trying to fix it.
-Anyway, I have spent enough time running a Mud, and not enough time
-coding one.  I simply can not spend the time I want coding when I 
-have to administrate, and I have found I can not trust other 
-administrators to run my Mud for me.  I cared too much.  I will keep
-this account, and I will continue working on the code.  I will 
-release the current version, after I clean it up, although I may 
-remove some of my newer, buggy features, as I want to release 
-something stable.  
-I will keep this copy up as long as I can, at the very least until 
-I get my code copyrighted and then release it.  I will run the 
-changing copy on another port, because I plan on taking on big 
-projects that will make the game unplayable while I create them, 
-and to do so on this copy would defeat the purpose of keeping it 
-up for your enjoyment.  I will not administrate, but I will stay 
-online and monitor, and ban anyone who makes the game unenjoyable 
-for others... the mass pkers, for example.
-Any builders that wish their areas can surely ask for them via email. 
-Any builders who wish their areas to be included in the code release,
-please inform me of this.  I will not release any areas that I do 
-not have permission to release.
-I will make new releases when I am satisfied I have made enough 
-changes to warrant a new release.  I hope you all enjoy the code that
-I have spent so much time on.
-Lastly, I hope you have all enjoyed having me as the owner of RiP.  
-I do hope someone out there creates a new Mud to follow in creating 
-a community for you all.
-I will keep the swrip.net email address so you all can reach me for 
-whatever reason.  My icq is #23751994, but do not expect me to 
-authorize just anyone.  You can send me messages without authorization,
-of course.  I ask that those of you who do know my AIM to keep it 
-to yourselves, as I have tried to use it for my personal life only. 
+&Y-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*&z&W 
+&cThe mud has completed its move.  Thank you for your understanding.
  
-Thank you,
-Darrik Vequir
+&RAttention:&c The forums have been readded.  Help forum for more
+information. 
+&Y-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*&R&w 
 ~
 
 101 MOTDS~
@@ -7147,6 +7657,27 @@ i.e. Luke, Vader, Han are well known names.
 i.e. Fish Head, Supermanguy, are just plain stupid.
 i.e. Jake, Michael, Jessica are too common a
 name.
+ 
+ 
+&RIf you create with a name that is not appropriate you WILL be made to
+re-create. No arguments will be accepted and no leeway given because
+you are level 50 or even level 150. It is your responsibility to
+choose a name that follows the guidelines. Failure to do so will
+only result in having to start over. 
+ 
+&YSave time later. Choose an RP appropriate name and avoid
+problems.
+ 
+&GPlease see http://www.rancorpit.com/character_names.shtml for some
+suggestions.&R&W
+ 
+&GAlso, you may check this wonderful naming guide at
+&Bhttp://www.slicerhq.com/guide/guide_naming.php&w
+ 
+&R&WCharacter names from books are strictly &RILLEGAL&R&W to be used. Do 
+not attempt to play a character with a book name. If you leave the academy
+with such a name, you will be &RSLAIN&R&W immediately without question. You
+are forewarned.
 ~
 
 1 'NAR SHADDAA'~
@@ -7263,6 +7794,9 @@ Lists the vnum range for rooms/mobs/objects in prototype areas that have been
 loaded.
 ~
 
+107 NEW_BUILDING_RULES~
+~
+
 -1 NMOTD~
 Please read the motd.
 ~
@@ -7275,7 +7809,9 @@ This flag will cause the mob that has it to appear to flee before it
 dies... It will still give experience but won't leave a corpse lying
 around. 
  
-use: mset <mob#> flags nokill
+ 
+use: mset <mob#> flags
+nokill
 ~
 
 1 NONMUD_INFORMATION NON-MUD_INFORMATION RULE_11~
@@ -7483,6 +8019,56 @@ Use           <percentage>        [see 'help useprog' for details]
 For objects see also: OPSTAT, OPEDIT, TRIGGER, OPCOMMANDS, IFCHECKS, VARIABLES.
 ~
 
+101 OEDIT~
+Syntax:
+  oedit <object>
+
+Description:
+  Oedit allows you to create and modify objects using an inline editing
+system.  All changes are made on a temporary copy until you choose to
+commit them.
+
+  This prevents accidental damage to live objects and allows safe editing,
+review, and rollback of changes.
+
+Commands:
+  show [field]        Shows object or a single field.
+  help [field]        Shows help or valid values for a field.
+  <field> <value>     Sets a field to a new value.
+  commit              Applies changes to the live object
+  - use this before removing the proto flag if you are finished editing the
+    prototype
+  revert              Restores object to pre-edit state (only back to the
+last commit).
+  stop save           Saves changes and exits.
+  stop abort          Exits without saving.
+
+Fields:
+  name short description action
+  type wearflags flags
+  wearloc weight cost level timer count
+  value0 value1 value2 value3 value4 value5
+  extradesc affect
+Notes:
+  Fields requiring text editing will enter the line editor.
+  Extradesc and affect use their own command interfaces.
+  Use 'oedit help <field>' for detailed field information.
+Extra Descriptions:
+  extradesc <keyword>      Create or edit description.
+  extradesc -<keyword>     Remove description.
+
+Affects:                       Examples:
+  affect add <field> <value>   oedit blaster
+  affect #<n> delete           oedit short a worn DL-44 blaster
+  affect #<n> location <field> oedit flags glow prototype
+  affect #<n> modifier <value> oedit extradesc markings
+  affect #<n> duration <value> oedit affect add strength 2
+  affect #<n> type <value>     oedit commit
+  affect #<n> bitvector <value>
+
+SEE ALSO : OSET RWALK MEDIT
+~
+
 1 OFFICER~
 ~
 
@@ -7573,6 +8159,26 @@ See also: HELP OGRUB
  
 ~
 
+101 OLC~
+
+Syntax: olc
+
+The OLC command provides a unified interface for editing rooms,
+objects, and mobiles. It acts as a front-end to the new OLC
+rwalk, oedit, and medit commands while preserving permissions.
+
+Entering an editor:
+olc r(oom) edits your current room
+olc o(bject) edits an object in room or world
+olc m(obile) edits a mobile in room or world
+
+The new OLC uses a schema-driven system. Available fields, valid values,
+and help text are determined automatically by the editor type.
+This allows consistent editing across all supported data types.
+
+SEE ALSO : RWALK OEDIT MEDIT
+~
+
 1 OLDCHANGES3~
 You can use a number argument in info, target, etc. 2.barloz, for example.
 Ships will now drop debris after being blown to pieces. 
@@ -7595,6 +8201,47 @@ aliasfocus/unfocusalias is in, see help file.
 draw is in, an area mapper. see help file. 
 Your last-bought pet will now save with you. 
 Dismiss will un-dominate mobs with you as their master. 
+~
+
+1 OLDCHANGES4~
+&c
+New Space System is in! Help NEWSPACE for answers on the changes and how to
+fly!. 
+ 
+Chaos has a purse option, for quests and such. 
+ 
+Ships will no longer refuel when taking off from midships and cap ships.
+You will need to use the fuel command fromthe hanger.
+ 
+Ships has been changed. It will only show t hose ships you have access to.
+ 
+I have added two new wearlocs, over and floating.  Over can be used 
+with makearmor... closing a piece you have in your over wearloc will 
+keep others from seeing what you have worn under it. Floating objects
+are only found in the game. There are only two, currently. However, 
+floating containers do not affect your weight. 
+
+Economy is being 'tweaked' to work properly.  Hail, quit, and launch
+have been modified to cost, or cost more, credits.  Those credits 
+will be output through selling items, delivering packages and repoping
+mobs with credits, as it should. I will continue tweaking it until I 
+have it working properly, and realistically. 
+
+The Serins have been completely revamped. each has its own route. Use the
+findserin command to see them.
+
+Ship AI is smarter. Don't underestimate them. 
+
+I have completed coding the basic modules, the ones governing ship stats. 
+Although I have built the items themselves for Z-100s, I still have far to
+go, and can not work fast on them.  I was going to have the help of a
+builder on the matter, but alas, Zilbringi appears to have disappeared. 
+Such is life. 
+ 
+drag <person> out will work, now, for dragging people out of ships. 
+Oh, shove <person> in <ship and shove <person> out will work too :P 
+
+&PSee Also: &WOLDCHANGES, OLDCHANGES2, OLDCHANGES3&w
 ~
 
 101 OLDNEWS~
@@ -7632,8 +8279,8 @@ Oldscore shows the score information in a different way than 'score'.
 
 101 OLIST~
 Syntax: olist
-      :	olist <first object>
-      :	olist <first object> <last object>
+      :?olist <first object>
+      :?olist <first object> <last object>
 
 This command will list all of the prototype objects in your area, when used 
 with no arguments.  When used with a single argument it will list all 
@@ -7650,6 +8297,18 @@ choose an option in the menu, type the number of the section followed by the
 desired letter, and any variables that may follow.
 
 See MENU for generic menu commands.
+~
+
+1 OOCGAIN~
+&cApparently we have need of this helpfile. &RANY&c method of OOC actions
+for IC gain is illegal and punishable by slay. If you are caught doing so,
+expect to be slain. If you are caught assisting someone else in this
+method, expect to be balzhured. Examples of things you are not to do would
+be having another character hold items for you while you suicide and then
+passing them on to the new character. Another example is oocly passing on
+the location of Honoghr and telling five friends who all proceed to go to
+Honoghr. Cheating in this manner will not be tolerated and punishments
+regarding this will be dealt swiftly.
 ~
 
 101 OPEDIT~
@@ -7754,6 +8413,25 @@ will incur the same penalty as if they attacked you directly.
 Most charmed creatures lose their aggressive nature (while charmed). 
  
 If your charmed creature engages in combat, that will break the charm. 
+~
+
+1 ORDERSHIP~
+&CSyntax: &Yordership <template #> <ship name> 
+&CSyntax: &Yordership info
+&c
+&YOrdership info&c gives a list of templates.
+ordership 1000 <random word >... 
+I will add a keyword at a later time to list them.
+Ordership can be used: 
+Kuat Shipyard 
+Coruscant Shipyard 
+Mon Calamari Shipyard 
+ 
+Ships will be created with no modules.  Modules are purchased
+at the module shop. 
+Kuat Shipyard Shop: 2sw from landing bay. 
+ 
+&RSEE ALSO&W: &PShow_module, install_module, remove_module&R&W
 ~
 
 101 OSET~
@@ -7897,6 +8575,31 @@ Used for attacking:
 CLAWS    HORNS   TUSKS  TAILATTACK   SHARPSCALES
 ~
 
+1 PARTMODULES~
+&YInformation on the 'part modules' of RiP.
+ 
+&cModules to adjust your ship stats are the part modules.  These 
+include hyperdrives, sublight drives, lasers, ions, shields, hull,
+launchers, manuevering jets, etc. 
+ 
+These modules take up space in your ship.  Each ship has a certain
+amount of external module space and internal module space.  Comm,
+sensor, and astro array are the only items that take up internal 
+module space.  The rest take external module space.  The only 
+exception to this is hull, which does not take up space, but does 
+affect both your ability to manuever and accelerate. 
+ 
+Each module has its size, type, and modification displayed in a shops 
+list.  Read this carefully, as there is a different between midsize 
+and fighter modules. 
+ 
+You can mix and match your modules to create a ship that you want to 
+fly.  Want fast and weak? You can do it.  Want slow and strong?  You 
+can do that as well. 
+ 
+&RSEE ALSO: &Pmodules, install_module, remove_module, show_module&R&W 
+~
+
 0 'PASS DOOR'~
 Syntax: feel 'pass door'
 
@@ -7974,9 +8677,8 @@ Cruiser to one of the faction clan's custom ships.
 0 PIRATE PIRATING~
 &g Pirates are allowed to raid ships belonging to other players with intent
 of looting cargo and credits. They are allowed to disable the ship in
-order to gain  access, but not to kill the individual. Pirates can &RNOT&g
-pkill unless out of self defense. Failure to abide by these rules will
-result in punishment to be determined by the Admin.  
+order to gain access. If you resist the pirates it is the same as a
+mugging. You may be killed. 
 ~
 
 1 PLACEVENDOR~
@@ -8121,7 +8823,7 @@ by one half.
 These powers may be used simultaneously for cumulative effect.
 ~
 
-1 PROTOCOL DROID 'PROTOCOL DROID'~
+1 PROTOCOL_DROID PROTOCOL~
 &COrigin&W:&Y Various
 &c
      A humanoid robot programmed in diplomacy, interpretation, and 
@@ -8264,6 +8966,23 @@ involved decides you would have died if you had not, you will be
 slayed. There are no exceptions to this rule. &R&w
 ~
 
+110 QUOTE~
+~
+
+1 QUOTES~
+&G.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
+ 
+&g(&GOOC&g) &YSherotis: is there a command to transfer mud money to rl 
+                money??? &w- &R01&w/&R21&w/&R03
+
+&g(&GOOC&g)&Y Ornog: can an Imm teach me some BHer
+                skills? &w- &R02&w/&R08&w/&R03
+
+   &R&WSonja&R&Y>&R&W *hops* &R&W&g-&R&W&R 05&R&W&g/&R&W&R27&R&W&G/&R&W&R03
+
+&G.:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:..:|:.
+~
+
 1 RACE RACES~
 &W0.  &cHuman                &W19. &cDevaronian
 &W1.  &cWookiee              &W20. &cGotal
@@ -8285,6 +9004,17 @@ slayed. There are no exceptions to this rule. &R&w
 &W17. &cFalleen              &W36. &cGladiator Droid
 &W18. &cIthorian             &W37. &cAstromech Droid
                          &W38. &cInterrogation Droid
+~
+
+1 RANDOM_ATTACK RANDOM~
+&CRandomly issueing an attack command is illegal&R&W
+  &R&W&g Entering a chain of commands such as:         
+&GScan w, scan w, murder/bs/scorch joe,scan n, look, murder/bs/scorch joe
+&R&W&g is &RIllegal&R&W.
+ 
+&R&W&g In the event you issue a command to murder/attack a player, you must
+first see them in the room. Failure to comply will result in punishment to
+be decided by the staff. Options are hell, balzhur, slay, even banning. 
 ~
 
 101 RANK~
@@ -8340,31 +9070,58 @@ They are not currently functional.
  
 ~
 
+104 REBEL ALLIANCE~
+&R
+The Rebel Alliance, or Rebellion:
+--------------------------------------------------------------------------
+&R&W
+&C
+The Rebels are a "liberal" yet militant political organisation dedicated to
+ending the tyranical ruling of the Empire. Fighting for a good cause, 
+preserving the rights of all races, equality and all that.
+The Rebels do not make a habbit of mass killings of Imperials,
+however if it happens to occur in a major battle or raid, so be it.
+The Rebel Alliance seeks to restore democratic leadership within the
+galaxy, something similar to that of the Old Republic. Rebel Members
+are expected to fund themselves as all funds gained through
+population taxes and revenue are generally redirected to "the cause".
+Rebel Members for the most part follow moral laws. A number of Rebels have
+been known to attempt to fund themselves (and the Alliance itself) in
+ways
+looked down upon due to their underhandedness by the  Alliance
+leadership.
+Rebels are largely into spy networks such as the Bothans, they use
+this information to mount smallattacks on imperial convoys or small
+garrisions. 
+ 
+&G
+ALSO SEE: help the empire
+help corporate sector authority, et al.
+~
+
 1 REBELRANKS~
-These are the typical Rebel military ranks. 
-Yes, we stole these from Sote. 
- 
-&GArmy/SpecForce   &WNavy            &CPilot Corps 
-&gMajor General    &wFleet Admiral   &c----------- 
-&gBrig. General    &wAdmiral         &cWing Cmdr. 
-&gGeneral          &wVice Admiral    &cGeneral 
-&gLt. General      &wRear Admiral    &c----------- 
-&gSr. Colonel      &wCommodore       &c----------- 
-&gColonel          &wCaptain         &cColonel 
-&gLt. Colonel      &wCommander       &cCommander 
-&gMajor            &wLt. Cmdr.       &cLt. Cmdr. 
-&gCaptain          &wLieutenant      &cCaptain 
-&g1st Lieutenant   &wEnsign          &cLieutenant 
-&g2nd Lieutenant                   &cFlight Off. 
-                                 &cFlight Cad. 
- 
-&gMaster Sergeant  &wSr. Petty Off. 
-&gSergeant         &wPetty Officer 
-&gLance Corporal   &wMidshipman 
-&gCorporal         &wJr. Midshipman 
-&gPrivate 1st      &wSr. Deckman 
-&gPrivate          &wDeckman 
-&gRecruit          &wRecruit 
+&cThese are the Rebel Alliance Armed Force's ranks and equivalencies.
+         Navy        Fighter Corps      Army
+     -------------   --------------  ------------
+ C-5 Fleet Admiral   Force Marshall  Cmnd Gen                      4500
+ C-4 Admiral         Chief Marshall  General                       4000
+ C-3 Vice Admiral    Marshall        Lt. General                   3500
+ C-2 Rear Admiral    Vice Marshall   Mjr General                   3000
+ C-1 Commodore       Commodore       Brig. Gen                     2500
+ O-6 Captain         Captain         Colonel                       2000
+ O-5 Commander       Wing Commander  Lt Colonel                    1500
+ O-4 Lt. Commander   Lt. Commander   Major                         1000
+ O-3 Lieutenant      Flt Lieutenant  Captain                       500
+ O-2 Ltnt (Jr)       Flight Officer  1st Ltnt                      450
+ O-1 Ensign                          2nd Ltnt                      400
+ W-1 Warrant Off.    Warrant Off.    Warrant Off.                  450
+ E-6 Chf Petty Off.                  Srgt Major                    350
+ E-5 Petty Officer   Flight Srgt     Sergeant                      300
+ E-4 Leading Crewman Flight Corporal Corporal                      250
+ E-3 Able Crewman                    Pvt 1st Class                 150
+ E-2 Crewman         Flight Cadet    Private                       100
+ E-1 Recruit         Recruit         Recruit                        50
+&R&w
 ~
 
 101 REBOOT SHUTDOWN WIZLOCK~
@@ -8450,6 +9207,21 @@ See GOTO
 104 REMOVE~
 ~
 
+1 REMOVE_MODULE~
+&CSyntax: &YRemove_module <module #> [ship] 
+&c
+This will remove a module into the designated ship.
+This command requires ship maintenance. 
+The module # is shown in &Pshow_module&c
+ 
+It can be used from outside the ship, which requires ownership
+or from inside the engine room, where the [ship] is not needed.
+When inside the ship, only the owner or added pilots may remove
+modules.
+
+&RSEE ALSO&W: &Pshow_module, install_module, upgrades&R&W 
+~
+
 1 REMPILOT ADDPILOT~
 .
 &CSyntax : &YAddpilot (name)
@@ -8460,6 +9232,23 @@ allow either players or an entire clan access to your ship (You must type
 the clan's whole name to give them access).
  
 This must be done in the cockpit of the ship
+~
+
+1 RENAMESHIP~
+&YRENAMESHIP
+ 
+&cUse the renameship command to rename your personal vessel to
+something Rply appropriate to your character and to the Star
+Wars Universe. You may &CNOT&c use color in this, as it becomes
+difficult for immortals to fix your ship when problems arrive.
+If your ship is found with color in the name, you will be made
+to rename the ship at your own expense.
+ 
+ 
+&RUseage:&c renameship <the name you want here>
+ 
+&RBe warned. This will cost you 50,000 credits each time you change
+the name of your vessel.
 ~
 
 1 REPAIR~
@@ -8638,6 +9427,14 @@ restricted to.
 See CEDIT
 ~
 
+1 RETELL~
+Syntax: retell (message)
+ 
+Retell is used to send a tell to the last person you sent a tell to. This
+is set with the TELL command, not with REPLY. Only when you send a TELL,
+retell will then send to that person. 
+~
+
 101 RETIRE~
 Syntax:  retire <immortal>
  
@@ -8681,8 +9478,8 @@ PARALYSIS
 
 101 RLIST~
 Syntax: rlist
-      :	rlist <first room>
-      :	rlist <first room> <last room>
+      :?rlist <first room>
+      :?rlist <first room> <last room>
 
 This command will list all of the prototype rooms in your area, when used 
 with no arguments.  When used with a single argument it will list all 
@@ -8702,8 +9499,10 @@ See MENU for generic menu commands.
 ~
 
 1 ROBERT~
-If you need something mail me.
-Robert@swrip.net
+I hate you. No, not all of you, just you in particular. Maybe if you had
+not undressed. Sadly it is too late.
+If you still need assistance...try arrogantbastard@drunkenbastards.com. It
+is the email I check most often.
 ~
 
 104 ROBERT LEVEL 1~
@@ -8915,6 +9714,42 @@ are online is a slayable offense.  I will begin to deal with these harshly.
 There will not be a warning beyond this message. &R&w
 ~
 
+1 RP_POINTS~
+&YRP Points&R&c
+ 
+By posting Roleplay on the message forum, you can earn points
+called &CRP Points&c which you can collect and turn in
+that will allow you to "tweak" your character. 
+ 
+Points will carry over from character to character, and all
+points will be earned through posting on the message
+forum in the appropriate thread.
+ 
+====================================================================
+&RRewards Breakdown&c
+====================================================================
+ 
+1 RP Point   = 250,000 Credits (Good for Clones or whatever you like)
+1 RP Point   = 10% in any skill
+5 RP Points  = 1 Luck Point (Up to 20)
+10 RP Points = 1 Application Only Race
+25 RP Points = 1 Force Point
+~
+
+101 RP_POINTS2~
+&YRP Points (cont.)
+ 
+&cMy database of current RP points for characters are kept by the player's
+forum name only. please acquire this information from them, or make them 
+create a forum nickname if they want their points. it makes things much 
+easier to deal with. Also, please try to make sure that all nominations 
+have logs of the RP. that will end any possibilities of a dispute. 
+ 
+&R&W&G http://www.johnnyrags.net/swrip/rppoints.html
+ 
+&RDoc&R&W
+~
+
 101 RRESET~
 Syntax: rreset <list|edit|delete|add|insert|place>
 Syntax: rreset remove <#>
@@ -8934,62 +9769,128 @@ Syntax: rreset random <last dir>
 ~
 
 1 RULES POLICY LAWS~
-&c
-Breaking rules will have consequences.
+&z&cBreaking rules will have consequences. 
  
-&c1.  &WDo not advertise another mud. 
-    &RHelp&R advertising
+1.  &zDo not advertise another mud. 
+        &RHelp advertising&c 
  
-&c2.  &WNo Muliplaying.  &RHelp&R Multiplay
+2.  &zNo Multiplaying. &RHelp Multiplay&c 
  
-&c3.  &WShip destruction must be done for IC reasons. 
-    &RHelp&R ship_destruction.
+3.  &zBios and descriptions are required. &RHelp Bio.&c
  
-&c4.  &WPaid killing will be done by the Hunters. &RHelp&R Bounties.
+4.  &zAll of your character's actions must be IC! 
+        &RHelp IC_ACTIONS&c 
  
-&c5.  &WUsing QUIT or AFK to avoid a situation is illegal.  
-     &RHelp Quitting 
+5.  &zPaid killing will be done by the Hunters. &RHelp Bounties.&c
  
-&c6.  &WShip owning is limited.  &RHelp&R ship_limits.
+6.  &zUsing QUIT or AFK to avoid a situation is illegal. 
+        &RHelp Quitting&c 
  
-&c7.  &WBios and descriptions are required. &RHelp&R Bio.
+7.  &zCapital Ships may not be destroyed under certain conditions. 
+        &RHelp Manned, Help CapitalRules&c 
  
-&c8.  &GCapital Ships may be destroyed now, with exceptions.
-    &RHelp Manned, Help CapitalRules
+8.  &zGuards can only be posted in clan or private areas. 
+        &RHelp Guard_posting.&c 
  
-&c9.  &WGuards can only be posted in clan or private areas.  
-    &RHelp&R Guard_posting. 
+9. &zBug abuse is a slayable offense. &RHelp Bug_abuse.&c 
  
-&c10. &WAvoiding a code restriction by doing something OOC is illegal.
-    &Rhelp&R code_avoiding.
- 
-&c11. &WInformation must be passed along MUD channels.  
-    &RHelp&R Nonmud_information.
- 
-&c12. &WPK is done for IC reasons. The killer will be punished.  
-    &RHelp&R PK.
- 
-&c13. &WBug abuse is a slayable offense. &RHelp&R Bug_abuse.
- 
-&c14. &WImmortals work hard and deserve your respect.  &RHelp&R Rule_14. 
+10. &zImmortals work hard and deserve your respect.  &RHelp Rule_14.&c
   
-&c15. &WTitles must be visible to all players. &RHelp&R title_restrictions.
+11. &zTitles must be visible to all players. 
+    &zTitles are IC ( when in the room ) and should be treated as such.
+        &RHelp Title_Restrictions&c 
  
-&c16. &WNames on channels are not known IC unless met before. 
-    &RHelp&R RP_Channels.
+12. &zNames on channels are not known IC unless met before. 
+        &RHelp RP_Channels.&c 
  
-&c17. &WTriggers are illegal, conditionally. &RHelp triggers&R&c 
- 
-&c18. &WUsing arena to get out of hell is slay offense, no excuse. 
-&YSee Help Rules2&R&W
+&RSee Also &PHelp Rules2&R&W 
 ~
 
 1 RULES2 RULES_2 MORE_RULES~
-&c19. &zInfiltrating clans as a newbie to assassinate members is illegal.
-        &RHelp Infiltrate&R&W
+&z&cBreaking rules will have consequences. 
  
-&c20. &zKilling a player simply because you want their ship is illegal. 
-        &RHelp Ship_Related_PK.&R&W
+13. &zTriggers are illegal, conditionally. &RHelp triggers&c
+ 
+14. &zUsing arena while in hell or jail is a slay offense.&c
+ 
+15. &zInfiltrating clans to assassinate members is illegal.
+        &RHelp Infiltrate&c 
+ 
+16. &zKilling a player simply because you want their ship is illegal.
+        &RHelp Ship_Related_PK.&c 
+ 
+17. &zIdling while on triggers is Illegal. 
+        &RHelp Triggers_2&c 
+ 
+18. &zEmit is only to be used to further RP. Abuse will result in 
+       helling. 
+        &RHelp Emit&c 
+ 
+19. &zRandomly, or intentionaly entering a command that results 
+        in death of a character, in a chain of events is illegal. 
+        &RHelp random_attack&c 
+ 
+20. &zUse your common sense in all judgements. 
+        &RHelp Common_Sense&c 
+ 
+21. &zYour restore is in your hands. Log yourself. 
+        &RHelp Log_yourself&c 
+ 
+22. &zClan ships being personally owned. 
+        &RHelp Ship_Limits&c 
+ 
+23. &zJailing is now limited. 
+        &RHelp Jailing&c 
+ 
+&RSee Also &PHelp Rules&R&W 
+~
+
+100 RWALK REDIT2~
+RWALK
+ 
+Syntax: rwalk
+        rwalk stop save
+        rwalk stop abort
+ 
+Rwalk enters room editing mode for your current room.
+While active, you can edit the room directly without 
+using 'redit'.
+ 
+You may move while editing. When you leave a room,
+its changes are committed to but will not save the area,
+and editing continues in the new room.
+ 
+Walking around with this mode on will not create rooms, so you will want to
+batch create rooms before starting if you are in a new area.
+
+Commands:
+  help             Show this help
+  show [field]     Display OLC data
+  look [target]    Preview the room
+  commit           Apply changes to the live room
+  revert           Restore pre-edit state
+  stop save        Save area and exit
+  stop abort       Discard changes and exit
+ 
+Field Editing:
+ 
+Enter field names directly:
+  name Main Hall
+  description - enter into a buffer to edit the description
+  flags indoors safe
+  sector city
+  exit east 1024
+  bexit west 1000
+ 
+Notes:
+- Directions (n, e, s, w, etc.) always move you.
+- Changes will be committed to everytime you move or enter 
+  'commit' or 'stop save'.  However, it will not save the area.
+- 'commit' allows use of new exits immediately.
+- 'revert' only affects the current room.
+- Each room is edited independently.
+ 
+SEE ALSO : REDIT OEDIT MEDIT
 ~
 
 1 RYLOTH~
@@ -9019,6 +9920,15 @@ instead of repairs, of course.
 clan funds, so dont be overgenerous!
 ~
 
+0 SARDOG FISH~
+A head admin, with ample knowledge of the mud.  If you ask nicely, he will
+help all he can. More than willing to pass judgement where needed.  Past
+immortal experience includes Builder (SWRIP), Builder (another mud based
+on SoT series), Roleplay Admin (SoT), and Admin (SWRIP).  He smells fishy,
+but don't let that bother you.  Can be seen occassionally galvanting
+crazily with a bouncing bunee-bug! 
+~
+
 1 SAVE~
 Syntax:  Save
  
@@ -9035,6 +9945,9 @@ Some objects (such as keys) may not be saved.
 ~
 
 103 SAVE AMOTD~
+~
+
+107 SAVE CIVILIANUPG2~
 ~
 
 105 SAVE DOCK~
@@ -9207,7 +10120,7 @@ auditory anomalies caused by the burrows.
 
 101 SETBOOT~
 Syntax: setboot time <hour> <minute>
- 	setboot manual <0|1>
+ ?setboot manual <0|1>
 
 The setboot command is useful for planning a reboot, (to save you from 
 the trouble of all those echos :) ) and for the daily boot.  The manual
@@ -9361,18 +10274,12 @@ Ships often, and we prefer them to remain alive to learn how to 'ID'.
 ~
 
 1 SHIP_MAXES SHIP_LIMITS RULE_6~
-&c
-A player can ONLY own 1 starfighter and 1 midship.  Capital 
-ships and platforms are unlimited, if you can afford them and 
-find an immortal to make them for you. 
+&c &RAs of August 16th, the virtual shipcode has been installed.  There is
+no longer a need to limit the number of ships/player.  If this should
+change, you will be notified in the MOTD. 
  
-Anyone found breaking this limit will have ALL ships of that 
-Particular type removed from that player's ownership. 
- 
-&RUnder no circumstances should a criminal family own more than 10 fighters
-and midships combined. Also, these new ships are for characters, not
-clans. I do not want the clans buying them. 
-&R&w
+&CALL clan ships marked in &rRed&C or&G Green&C are to be owned by 
+the clan ONLY, not personally owned by players in the clan.&R&W 
 ~
 
 1 SHIP_RELATED_PK SHIP_PK RULE_20~
@@ -9514,6 +10421,17 @@ give a datatable of their maxlevels (based on those attributes).
 profession, so the player can compare what is best for them.
  
 &RAlso see&W:&P help races, help classes
+~
+
+1 SHOW_MODULE~
+&CSyntax: &YShow_module [ship]
+&c 
+This will show a list of installed modules, and the amount of 
+space used. 
+ 
+It can be used from outside the ship, which requires ownership 
+or from inside the engine room, where the [ship] is not needed. 
+&RSEE ALSO&W: &Pinstall_module, remove_module, upgrades&R&W 
 ~
 
 0 SIT~
@@ -9683,12 +10601,16 @@ Removes a character's inebriation and all affects of alcohol.
 ~
 
 1 SONJA~
+&G
 I am Sonja. I'm the bitch. I'm not just a bitch, I'm the Bitch, and it's
-MRS. Bitch to you. I have a short fuse, and if you're reading it, it's
-more than likely you're on the burning end of said fuse. I'm responsible
-for keeping you guys in line, and I'm responsible for making certain
-things run smoothly. Don't push my buttons and we'll all get along fine..
-just fine..  
+MRS. Bitch to you. I have a short fuse, and if you're reading this,
+it's more than likely you're on the burning end of said fuse. I'm
+responsible for keeping you guys in line, and I'm responsible for making
+certain things run smoothly. Don't push my buttons and we'll all get along
+fine ... just fine.
+ 
+ 
+&BSonja's Mud Email: &R&Csonja_of_rip@earthlink.net&R&w
 ~
 
 1 SOUND~
@@ -10016,38 +10938,6 @@ any problems you may have as his time allows.
 ~
 
 1 SWRIPC CHRONICLES~
-&c
-   The Star Wars : Rise In Power Chronicles, or SWRIPC, is an ongoing 
-epic whose content is decided primarily by you, the active roleplayer. 
-You see, SWRIPC is a story which is continuously updated to tell the  
-story of the events which take place here, on RIP. This story revolves 
-around a central group of characters from the MUD, which is always 
-changing and evolving. This group interacts with others in strange and
-destined ways, creating intruiging tangents and subplots for 
-storylines. The SWRIPC also keeps a continuous eye on the ever 
-struggling Rebel Alliance and the Empire, aswell as an idle 
-eye on the Neutral clans, such as the Assassins Guild. This story will
-be decided by three things. 
-A) The emails you send me with ideas, suggestions, and events. 
-B) The ideas I come up with to tie you all together.
-C) The events of the MUD, such as deaths and conflicts.
- 
-   My email box is always open, and ready to receive ANY ideas or
-suggestions you may have, and I always want to be updated about 
-roleplay events and occurances. What if your character dies? No 
-problem! Send me details of his death, and we'll make him go out in
-style! In addition to this, at regular intervals, I'll be personally
-selecting an organization or character that has shown excellant ideas,
-initiative, or action in their roleplay and single him/her/them out in
-an exclusive story I'll entitle "Tales of _________". For example, 
-should someone, say Magellan, make a superbly impressive bounty and 
-take someone out? "Tales of the Bounty Hunters : Volume I - Magellan's 
-Hunt" would be released detailing a wonderful story about him and 
-making him even more famous than he is! 
- 
-    So please, participate, because the SWRIPC is only as good as YOU 
-MAKE IT! Email me, Caspian, at avatar.is@home.com with anything you 
-want, even if it's just a question. 
 ~
 
 1 TAKEDRUG DRUG DRUGS SPICE RHYLL~
@@ -10112,6 +11002,17 @@ level of the teacher's wisdom will determine how adept the student becomes
 when he learns this skill.
 ~
 
+1 THE_WORD_NO~
+&G"No": Noun, A negative vote or decision.
+  
+&YWhen an immortal makes a decision on something, this does not mean
+there is an appeals process. Once they say "no" that is it.
+ 
+&GThere is no longer any excuse. When questioning an immortal decision,
+you will now be referred to this helpfile and be asked one simple
+question. &Y"What part of 'no' do you not understand?"
+~
+
 101 THINK~
 Syntax:  think <message>
  
@@ -10157,6 +11058,12 @@ Returns the time required to execute the specified command for that
 instance of its execution.
 ~
 
+0 TIMELINE~
+Star Wars: Rise in Power is currently set to take place just after Episode
+III (soon to be released in theaters) and just before Episode IV (A new
+hope, made oh so many years ago). 
+~
+
 0 TITLE~
 Syntax: title <string>
 
@@ -10164,6 +11071,8 @@ Sets your title to a given string.
 
 The game supplies a title when your character is created and when you
 advance a level.  You can use TITLE to set your title to something else.
+ 
+Note: Titles in black are unacceptable.
 ~
 
 1 TITLE_RESTRICTIONS RULE_15~
@@ -10178,6 +11087,13 @@ Also, titles must be seen by all players.  This means that several of the
 darker colors which can not be seen by many players can not be used on 
 the name part of  your Title.  This includes &zgrey&R&w, &xblack&R&w, 
 and &bDark Blue&R&w.
+ 
+&Y
+Please Note: Placing the AFK flag in your title by any other means than
+using the AFK command. Editing your title to contain the information is
+not permitted.  Only the AFK command garantees that you will not
+be attacked while away as it is &RHard Coded&Y to prevent such 
+an event. 
 ~
 
 1 TOGORIAN TOGORIANS~
@@ -10342,6 +11258,16 @@ TRANSFER transfers the target character, or ALL player characters,
 to your current location (default) or to a specified location.
 ~
 
+1 TRANSFEROWNERSHIP~
+&CSyntax: &Ytransferownership '<new owner>' <ship name>
+&c
+This will transfer ownership of your ship to another owner.  
+Be very careful, because it does not recognize misspelling 
+the <new owner>... This is to cover future features. &R&W 
+&RThe <new owner> field is VERY specific.  Be sure you spell it correctly.
+Clan names need to be typed in full, no abbreviations.&R&W
+~
+
 101 TRAPFLAGS~
 Flags to describe a trap and what triggers it:
 
@@ -10423,6 +11349,27 @@ Anyone caught using Triggers will be dealt with however the Imms see fit.
 A classic misunderstanding:
 You may use triggers to train your stats such as wisdom, dexterity, etc.
 That is perfectly legal.
+&R See also, Help Triggers_2&w
+~
+
+0 TRIGGERS_2~
+Trigger Clarification:
+ 
+ 
+ 
+ Triggers are NOT allowed to keep your character online. 
+Triggers are NOT allowed to give you the freedom to go watch a movie and
+leave your character active.
+You may NOT leave your computer unattended while on a trigger, that is what
+the AFK flag/command is for.
+ 
+&RIN the event you are found running a trigger, and are not responsive you
+will be punished. Punishment varries with the level of your trigger
+running at the time, and what it is to accomplish. Punishment is up to the
+Immortal, and all descisions are final.
+&w
+&C
+IGNORANCE is not an excuse.&w
 ~
 
 101 'TRUE SIGHT'~
@@ -10464,6 +11411,33 @@ Edward G. Sollers, Garry Spiegle, Stephen D. Sullivan, Ralph Wagner, Jim
 Ward, Jean Wells, Bill Wilkerson, Donald Paterson, and Frank Mentzer.
 
       DIKUMud's concepts were directly based on TSR's D&&D concepts.
+~
+
+107 TTRANKS~
+&c____- TT Tech Engineering -___________________ 
+&c| Chief Executive Owner                 -1000 | 
+&c| Chief Of Operations                   -1000 | 
+&c|------Transportation and Delivery------------| 
+&c| Chief of Transportation               -1000 | 
+&c| Ast. Chief of Transportation          - 800 | 
+&c| Freighter Captain                     - 500 | 
+&c| Freighter Pilot                       - 400 | 
+&c| Senior Pilot                          - 200 | 
+&c| Pilot                                 - 100 | 
+&c|--------Engineering Department---------------| 
+&c| Chief of Engineering                  -1000 | 
+&c| Ast. Chief of Engineering             - 800 | 
+&c| Master Engineer                       - 500 | 
+&c| Senior Engineer                       - 300 | 
+&c| Engineer                              - 100 | 
+&c|-------------Security Division---------------| 
+&c| Chief of Security                     -1000 | 
+&c| Ast. Chief of Security                - 800 | 
+&c| Commander                             - 500 | 
+&c| Lieutenant                            - 400 | 
+&c| Sergeant                              - 200 | 
+&c| Officer                               - 100 | 
+&c \_____ Recruits = See Board for work _______/ &R&W
 ~
 
 0 TWI'LEK TWI'LEKS TWILEK~
@@ -10515,19 +11489,33 @@ NOTE: It could be quite dangerous to unfold an area that is already loaded,
 ~
 
 1 UPGRADES~
-&cA new system of upgrades is being implemented, due to the power
-differences between the two most powerful clans and the rest of the
-galaxy.
-&CTwo new help files have been added. 
-&P
-military upgrades 
-civilian upgrades 
 &c
-The two main clans will use civilian prices, but military maxes.
-Due to the significant price increases, and the fact that the GTC doesnt do
-anything, they will now get 5% of what they sell.  
-
-&RSee Also&W: &PChangesUPG, UPGRADESHIP
+Upgrading is now done through modules.  Whether purchasing or 
+buying a ship, modules is the way to upgrade.  Old ships, pre- 
+virtual, only have a very small amount of space for modules, 
+and therefore to upgrade. 
+ 
+The command &Psshow_module&c will give you a list of the 
+modules installed in your ship.  &PInstall_module&c will 
+install a module, and &PRemove_module&c will remove one. See 
+their help files for more information. 
+ 
+The space for modules can be seen in the &Pstatus&c screen. 
+Maxintmodules covers Comm, Sensor, and Astro Array.  Hull does 
+not use space, but slows your ship down.  Maxextmodules is 
+everything else. &PShow_module&c shows how much space you have 
+used of your module space. 
+ 
+The mission/cargo system will use the remaining space left
+after modules, so if you plan on running missions, leave some
+space! 
+ 
+See &Pordership&c for information on where to buy a ship, and
+where to upgrade. 
+ 
+&RSEE ALSO&W: &Pshow_module, install_module, 
+              remove_module, ordership&R&W 
+              &Pmodules&R&w
 ~
 
 1 UPGRADESHIP~
@@ -10622,6 +11610,28 @@ the second set of coordinates for planets and other
 space objects show these. 
 ~
 
+1 VENDOR_ABUSE~
+&RAbuse of vendors will no longer be tolerated. Abuse of a vendor includes,
+and is not limited to the following:
+ 
+&W          Dominating a vendor and forcing them to give you their
+&W          inventory.
+ 
+&W          Seducing a vendor and forcing them to give you their
+&W          inventory.
+ 
+&W          Charming a vendor and forcing them to give you their
+&W          inventory.
+ 
+&RThis rule applies ONLY to mobiles in game where something is sold.
+Not only does it remove that item from the mobile's inventory
+until the area is reset or in some cases, the entire mud
+rebooted, but it makes it so that no one else can purchase from 
+that vendor.
+ 
+&WAnyone caught doing this will be first balzhured then slain.
+~
+
 0 VENTRILOQUATE~
 Syntax: feel ventriloquate <speaker> <message>
 
@@ -10681,6 +11691,17 @@ well as their level.  Allows location of objects via vnum instead of
 by keyword, useful for locating rekeyed and renamed objects.
  
 See OWHERE
+~
+
+1 VULGAR~
+&CVULGAR
+ 
+&cThe Vulgar channel has been added for anyone over level 50. 
+Anything goes on this channel, and it is completely OOC. If you don't
+like what you're hearing.. by all means. Turn it off.
+ 
+ 
+&RNo matter what, RULE 14 (immortal respect), still applies.
 ~
 
 2 WAR WARTALK~
@@ -10931,11 +11952,13 @@ non-prototype zone in the mud.
 ~
 
 -1 _DIEMSG_~
-...Everything begins to fade to black
-
-...and then
-
-...nothing.
+&R&W&C ...Soft whispers of nothing fill your head as life   
+rushes from your frail body.
+ 
+&R&W&R..Torrents of pain rush through your fleshly being like a   
+tidal wave.  Suddenly, the pain and the whispers cease.&R&W
+ 
+&R&W....Finally, you are one with the force.
 ~
 
 0 $~

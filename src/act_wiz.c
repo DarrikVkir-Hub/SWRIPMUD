@@ -1464,7 +1464,7 @@ ch_printf( ch,
     if ( IS_NPC( victim ) )
     {	
 	ch_printf( ch, "Act flags: %s\n", bitset_to_string(victim->act, act_flags).c_str() );
-        ch_printf( ch, "VIP flags: %s\n", flag_string(victim->vip_flags, planet_flags, PLANET_MAX) );
+        ch_printf( ch, "VIP flags: %s\n", bitset_to_string(victim->vip_flags, planet_flags).c_str() );
     }    
     else
     { 
@@ -1476,7 +1476,7 @@ ch_printf( ch,
 	ch_printf( ch, "Pcflags: %s\n",
 		flag_string(victim->pcdata->flags, pc_flags, PCFLAG_MAX) );
 	ch_printf( ch, "Wanted flags: %s\n",
-		flag_string(victim->pcdata->wanted_flags, planet_flags, PLANET_MAX) );
+		bitset_to_string(victim->pcdata->wanted_flags, planet_flags).c_str() );
     }
     ch_printf( ch, "Affected by: %s\n",
 	    bitset_to_string(victim->affected_by, aff_flags).c_str());

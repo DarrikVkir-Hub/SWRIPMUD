@@ -447,6 +447,7 @@ DO_FUN *skill_function( char *name )
         if ( !str_cmp( name, "do_mchallenge" ))		return do_mchallenge;
 	if ( !str_cmp( name, "do_mcreate" ))		return do_mcreate;
 	if ( !str_cmp( name, "do_mdelete" ))		return do_mdelete;
+	if ( !str_cmp( name, "do_medit" ))			return do_medit;	
 	if ( !str_cmp( name, "do_memory" ))		return do_memory;
 	if ( !str_cmp( name, "do_members" ))		return do_members;
 	if ( !str_cmp( name, "do_mfind" ))		return do_mfind;
@@ -518,8 +519,12 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_oassign" ))		return do_oassign;
 	if ( !str_cmp( name, "do_ocreate" ))		return do_ocreate;
 	if ( !str_cmp( name, "do_odelete" ))		return do_odelete;
+	if ( !str_cmp( name, "do_oedit" ))		return do_oedit;
 	if ( !str_cmp( name, "do_ofind" ))		return do_ofind;
 	if ( !str_cmp( name, "do_ogrub" ))		return do_ogrub;
+	if ( !str_cmp( name, "do_olc" ))		return do_olc;	
+	if ( !str_cmp( name, "do_olcset" ))		return do_olcset;
+	if ( !str_cmp( name, "do_olcshow" ))		return do_olcshow;		
 	if ( !str_cmp( name, "do_oinvoke" ))		return do_oinvoke;
 	if ( !str_cmp( name, "do_oldscore" ))		return do_oldscore;
 	if ( !str_cmp( name, "do_olist" ))		return do_olist;
@@ -583,7 +588,8 @@ DO_FUN *skill_function( char *name )
 	if ( !str_cmp( name, "do_recall" ))              return do_recall;
 	if ( !str_cmp( name, "do_recite" ))		return do_recite;
 	if ( !str_cmp( name, "do_recite" ))             return do_recite;
-        if ( !str_cmp( name, "do_redit" ))              return do_redit;
+    if ( !str_cmp( name, "do_redit" ))              return do_redit;
+    if ( !str_cmp( name, "do_redit2" ))              return do_redit2;
 	if ( !str_cmp( name, "do_refuel" ))             return do_refuel; 
 	if ( !str_cmp( name, "do_reinforcements" ))	return do_reinforcements;
 	if ( !str_cmp( name, "do_regoto" ))		return do_regoto;
@@ -1211,6 +1217,7 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_massign )		return "do_massign";
     if ( skill == do_mcreate )		return "do_mcreate";
     if ( skill == do_mdelete )		return "do_mdelete";
+    if ( skill == do_medit )		return "do_medit";	
     if ( skill == do_memory )		return "do_memory";
     if ( skill == do_members )          return "do_members";
     if ( skill == do_mfind )		return "do_mfind";
@@ -1273,8 +1280,12 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_oassign )		return "do_oassign";
     if ( skill == do_ocreate )		return "do_ocreate";
     if ( skill == do_odelete )		return "do_odelete";
+    if ( skill == do_oedit )		return "do_oedit";
     if ( skill == do_ofind )		return "do_ofind";
     if ( skill == do_ogrub )		return "do_ogrub";
+    if ( skill == do_olc )		return "do_olc";		
+    if ( skill == do_olcset )		return "do_olcset";	
+    if ( skill == do_olcshow )		return "do_olcshow";		
     if ( skill == do_oinvoke )		return "do_oinvoke";
     if ( skill == do_oldscore )		return "do_oldscore";
     if ( skill == do_olist )		return "do_olist";
@@ -1321,6 +1332,7 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_recho )		return "do_recho";
     if ( skill == do_recite )		return "do_recite";
     if ( skill == do_redit )		return "do_redit";
+    if ( skill == do_redit2 )		return "do_redit2";	
     if ( skill == do_regoto )		return "do_regoto";
     if ( skill == do_rembounty )        return "do_rembounty";
     if ( skill == do_remove )		return "do_remove";

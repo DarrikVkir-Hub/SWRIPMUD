@@ -743,8 +743,8 @@ bool go_read( CHAR_DATA *ch, int dis_num, int op_num, int sor_ind,
 
   for (po=first_object; po; po=po->next)   /* Loop through all objects   */
   {
-      if ( !ok_otype[po->item_type] )      /* don't process useless stuff*/
-         continue;
+//    if ( !ok_otype[po->item_type] )      /* don't process useless stuff*/ // Commented this out so I can actually use this to find rare item types.
+//         continue;
       memset(&r, 0, sizeof r);
       if ( !go_read_names( ch, po, &r, np_sw, nm_sw, ng_sw ) )
          continue;

@@ -35,39 +35,67 @@ extern bool	fBootDb;
 
 /* planet constants for vip and wanted flags */
 
-char *  const   planet_flags [] =
+const flag_name  planet_flags [] =
 {
-  "coruscant", "kashyyyk", "ryloth", "rodia", "nal hutta", "mon calamari",
-  "honoghr", "gamorr", "tatooine", "adari", "byss", "endor", "roche", "af'el", "trandosh",
-  "chad", "", "corellia", "hoth", "asteroid", "bespin", "kuat", "socorro", "corulag", "hapes", "wroona",
-  "roche", "dathomir", "sullust", "falleen", "etti", "p30", "p31"  
+    { PLANET_CORUSCANT, "coruscant" },
+    { PLANET_KASHYYYK          	, "kashyyyk"},
+    { PLANET_RYLOTH            	, "ryloth"},
+    { PLANET_RODIA             	, "rodia"},
+    { PLANET_NAL_HUTTA            , "nal hutta"},
+    { PLANET_MON_CALAMARI       	, "mon calamari"},
+    { PLANET_HONOGHR              , "honoghr" },
+    { PLANET_GAMORR               , "gamorr"},
+    { PLANET_TATOOINE             , "tatooine"},
+    { PLANET_ADARI            	, "adari"},
+    { PLANET_BYSS		            , "byss"},
+    { PLANET_ENDOR		        , "endor"},
+    { PLANET_ROCHE		        , "roche"},
+    { PLANET_AF_EL		        , "af'el"},
+    { PLANET_TRANDOSH		        , "trandosh"},
+    { PLANET_CHAD		            , "chad"},
+    { PLANET_CORELLIA		        , "corellia"},
+    { PLANET_HOTH		            , "hoth"},
+    { PLANET_ASTEROID		        , "asteroid"},
+    { PLANET_BESPIN   		    , "bespin"},
+    { PLANET_KUAT     		    , "kuat"},
+    { PLANET_SOCORRO 		        , "socorro"},
+    { PLANET_CORULAG 		        , "corulag"},
+    { PLANET_HAPES   		        , "hapes"},
+    { PLANET_WROONA  		        , "wroona"},
+    { PLANET_DATHOMIR  		    , "dathomir"},
+    { PLANET_SULLUST		        , "sullust"},
+    { PLANET_FALLEEN		        , "falleen"},
+    { PLANET_ETTI		            , "etti"},
+    { PLANET_MAX                  , "planet_max"},
+
+    { (size_t)-1, nullptr } // terminator	
 };
 
-char *  const   weapon_table    [13] =
+char *  const   weapon_table    [14] =
 {
     "none",
     "vibro-axe",  "vibro-blade",  "lightsaber", "whip", "claw",
     "blaster",  "w7", "bludgeon", "bowcaster", "w10",
-    "force pike", "w12"
+    "force pike", "w12", nullptr
 };
 
 char *  const   spice_table    [] =
 {
-    "glitterstim", "carsanum", "ryll","andris","lumni","lycin","s6","s7","s8","s9"
+    "glitterstim", "carsanum", "ryll","andris","lumni","lycin","s6","s7","s8","s9", nullptr
 };
 
-char *  const   crystal_table    [8] =
+char *  const   crystal_table    [9] =
 {
-    "non-adegan", "kathracite", "relacite", "danite", "mephite", "ponite", "illum", "corusca"
+    "non-adegan", "kathracite", "relacite", "danite", "mephite", "ponite", "illum", "corusca", nullptr
 };
                 	    
 
-char *  const   ex_flags [] = 
+const char *  const   ex_flags [] = 
 { 
 "isdoor", "closed", "locked", "secret", "swim", "pickproof", "fly", "climb",
 "dig", "r1", "nopassdoor", "hidden", "passage", "portal", "r2", "r3",
 "can_climb", "can_enter", "can_leave", "auto", "r4", "searchable", 
-"bashed", "bashproof", "nomob", "window", "can_look" };
+"bashed", "bashproof", "nomob", "window", "can_look", nullptr };
 
 const flag_name r_flags[] =
 {
@@ -144,23 +172,14 @@ const flag_name aff_flags[] =
 	{ AFF_MAX,			  "aff_max"},
 	{ (size_t)-1, nullptr } // terminator
 };
-/*
-char *	const	r_flags	[] =
-{
-"dark", "reserved", "nomob", "indoors", "can_land", "can_fly", "no_drive",
-"nomagic", "bank", "private", "safe", "remove_this_flag", "petshop", "arena",
-"donation", "nodropall", "silence", "logspeech", "nodrop", "clanstoreroom",
-"plr_home", "empty_home", "teleport", "hotel", "nofloor", "refinery", "factory",
-"recruit", "plr_shop", "spacecraft", "prototype", "auction"
-};
-*/
+
 char *	const	o_flags	[] =
 {
 "glow", "hum", "dark", "hutt_size", "contraband", "invis", "magic", "nodrop", "bless",
 "antigood", "antievil", "antineutral", "noremove", "inventory",
 "antisoldier", "twohands", "antihunter", "antijedi", "small_size", "large_size",
 "donation", "clanobject", "anticitizen", "antisith", "antipilot", 
-"hidden", "poisoned", "covering", "deathrot", "burried", "prototype", "human_size"
+"hidden", "poisoned", "covering", "deathrot", "burried", "prototype", "human_size", nullptr
 };
 /*
 char *	const	mag_flags	[] =
@@ -174,7 +193,7 @@ char *	const	w_flags	[] =
 "take", "finger", "neck", "body", "head", "legs", "feet", "hands", "arms",
 "shield", "about", "waist", "wrist", "wield", "hold", "_dual_", "ears", "eyes",
 "_missile_", "floating","over","disguise","maxwear","r5","r6",
-"r7","r8","r9","r10","r11","r12","r13"
+"r7","r8","r9","r10","r11","r12","r13", nullptr
 };
 
 char *	const	area_flags	[] =
@@ -182,7 +201,7 @@ char *	const	area_flags	[] =
 "nopkill", "noquest", "changed", "r3", "r4", "r5", "r6", "r7", "r8",
 "r9", "r10", "r11", "r12", "r13", "r14", "r15", "r16", "r17",
 "r18", "r19","r20","r21","r22","r23","r24",
-"r25","r26","r27","r28","r29","r30","r31"
+"r25","r26","r27","r28","r29","r30","r31", nullptr
 };
 
 char *	const	o_types	[] =
@@ -200,7 +219,7 @@ char *	const	o_types	[] =
 "fabric", "rare_metal", "magnet",  "thread", "spice", "smut", "device", "spacecraft",
 "grenade", "landmine", "government", "droid_corpse", "bolt", "scope", 
 "fightercomp", "midcomp", "capitalcomp","chemical", "disguise",
-"disguise_fabric", "hair", "stun_grenade", "cargo"
+"disguise_fabric", "hair", "stun_grenade", "cargo", nullptr,
 };
 
 char *	const	a_types	[] =
@@ -213,7 +232,7 @@ char *	const	a_types	[] =
 "steal", "sneak", "hide", "palm", "detrap", "dodge", "peek", "scan", "gouge",
 "search", "mount", "disarm", "kick", "parry", "bash", "stun", "punch", "climb",
 "grip", "scribe", "brew", "wearspell", "removespell", "mentalstate", "emotion",
-"stripsn", "remove", "dig", "full", "thirst", "drunk", "blood", "snipe"
+"stripsn", "remove", "dig", "full", "thirst", "drunk", "blood", "snipe", nullptr
 };
 
 char *	const	a_flags [] =
@@ -223,7 +242,7 @@ char *	const	a_flags [] =
 "endurance", "poison", "protect", "paralysis", "sneak", "hide", "sleep",
 "charm", "flying", "pass_door", "floating", "truesight", "detect_traps",
 "scrying", "fireshield", "shockshield", "r1", "iceshield", "possess", 
-"berserk", "aqua_breath" };
+"berserk", "aqua_breath", nullptr };
 
 const flag_name act_flags[] =
 {
@@ -271,7 +290,7 @@ char *	const	pc_flags [] =
 "r1", "deadly", "unauthed", "norecall", "nointro", "gag", "retired", "guest",
 "nosummon", "pageron", "notitled", "room", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "r13",
 "r14", "r15", "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23", "r24",
-"r25"
+"r25", nullptr
 };
 
 const flag_name plr_flags[] =
@@ -328,7 +347,7 @@ char *	const	trap_flags [] =
    "room", "obj", "enter", "leave", "open", "close", "get", "put", "pick",
    "unlock", "north", "south", "east", "west", "up", "down", "examine",
    "northeast", "northwest", "southeast", "southwest", "r6", "r7", "r8",
-   "r9", "r10", "r11", "r12", "r13", "r14", "r15"
+   "r9", "r10", "r11", "r12", "r13", "r14", "r15", nullptr
 };
 
 char *	const	wear_locs [] =
@@ -336,7 +355,7 @@ char *	const	wear_locs [] =
 "light", "finger1", "finger2", "neck1", "neck2", "body", "head", "legs",
 "feet", "hands", "arms", "shield", "about", "waist", "wrist1", "wrist2",
 "wield", "hold", "dual_wield", "ears", "eyes", "missile_wield", "floating", 
-"over"
+"over", nullptr
 };
 
 char *	const	ris_flags [] =
@@ -344,7 +363,7 @@ char *	const	ris_flags [] =
 "fire", "cold", "electricity", "energy", "blunt", "pierce", "slash", "acid",
 "poison", "drain", "sleep", "charm", "hold", "nonmagic", "plus1", "plus2",
 "plus3", "plus4", "plus5", "plus6", "magic", "paralysis", "steal", "r2", "r3",
-"r4", "r5", "r6", "r7", "r8", "r9", "r10"
+"r4", "r5", "r6", "r7", "r8", "r9", "r10", nullptr
 };
 
 char *	const	trig_flags [] =
@@ -353,7 +372,7 @@ char *	const	trig_flags [] =
 "d_down", "door", "container", "open", "close", "passage", "oload", "mload",
 "teleport", "teleportall", "teleportplus", "death", "cast", "fakeblade",
 "rand4", "rand6", "trapdoor", "anotherroom", "usedial", "absolutevnum",
-"showroomdesc", "autoreturn", "r2", "r3"
+"showroomdesc", "autoreturn", "r2", "r3", nullptr
 };
 
 char *	const	part_flags [] =
@@ -362,7 +381,7 @@ char *	const	part_flags [] =
 "ear", "eye", "long_tongue", "eyestalks", "tentacles", "fins", "wings",
 "tail", "scales", "claws", "fangs", "horns", "tusks", "tailattack",
 "sharpscales", "beak", "haunches", "hooves", "paws", "forelegs", "feathers",
-"r1", "r2"
+"r1", "r2", nullptr
 };
 
 char *	const	attack_flags [] =
@@ -370,7 +389,7 @@ char *	const	attack_flags [] =
 "bite", "claws", "tail", "sting", "punch", "kick", 
 "trip", "r7", "stun", "r9", "backstab", "r11", "r12", "r13", "r14", "r15", "r16", "r17", 
 "r18", "r19", "r20", "r21", "r22", "r23", "r24", "r25", "r26", "r27", "r28", "r29",
-"r30", "r31"
+"r30", "r31", nullptr
 };
 
 char *	const	defense_flags [] =
@@ -378,7 +397,7 @@ char *	const	defense_flags [] =
 "parry", "dodge", "r2", "r3", "r4" ,"r5",
 "r6", "r7", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "r16", "r17", 
 "r18", "disarm", "r20", "grip", "r22", "r23", "r24", "r25", "r26", "r27", "r28", "r29",
-"r30", "r31"
+"r30", "r31", nullptr
 };
 
 /*
@@ -399,7 +418,7 @@ char *	const	mprog_flags [] =
 "act", "speech", "rand", "fight", "death", "hitprcnt", "entry", "greet",
 "allgreet", "give", "bribe", "hour", "time", "wear", "remove", "sac",
 "look", "exa", "zap", "get", "drop", "damage", "repair", "randiw",
-"speechiw", "pull", "push", "sleep", "rest", "leave", "script", "use"
+"speechiw", "pull", "push", "sleep", "rest", "leave", "script", "use", nullptr
 };
 
 
@@ -407,6 +426,9 @@ char *flag_string( int bitvector, char * const flagarray[] )
 {
     static char buf[MAX_STRING_LENGTH];
     int x;
+
+	if (bitvector < 0 )
+	  return "";
 
     buf[0] = '\0';
     for ( x = 0; x < 32 ; x++ )
@@ -848,22 +870,22 @@ int get_actflag( char *flag )
 
 int get_vip_flag( char *flag )
 {
-    int x;
-
-    for ( x = 0; x < PLANET_MAX; x++ )
-      if ( !str_cmp( flag, planet_flags[x] ) )
-        return x;
-    return -1;
+	size_t ret;
+	ret = get_flag_partial(flag,planet_flags);
+	if (ret == BIT_NOTFOUND)
+	  	return -1;
+	else
+		return ret;	
 }
 
 int get_wanted_flag( char *flag )
 {
-    int x;
-
-    for ( x = 0; x < PLANET_MAX; x++ )
-      if ( !str_cmp( flag, planet_flags[x] ) )
-        return x;
-    return -1;
+	size_t ret;
+	ret = get_flag_partial(flag,planet_flags);
+	if (ret == BIT_NOTFOUND)
+	  	return -1;
+	else
+		return ret;	
 }
 
 int get_pcflag( char *flag )
@@ -997,62 +1019,91 @@ void smush_tilde( char *str )
 
 void start_editing( CHAR_DATA *ch, char *data )
 {
-	EDITOR_DATA *edit;
-	sh_int lines, size, lpos;
-	char c;
-	
-	if ( !ch->desc )
-	{
-	   bug( "Fatal: start_editing: no desc", 0 );
-	   return;
-	}
-	if ( ch->substate == SUB_RESTRICTED )
-	   bug( "NOT GOOD: start_editing: ch->substate == SUB_RESTRICTED", 0 );
+    EDITOR_DATA *edit;
+    sh_int lines, size, lpos;
+    char c;
 
-	set_char_color( AT_GREEN, ch );
-	send_to_char( "Begin entering your text (/? =help /s =save /c =clear /l =list /f =format)\n", ch );
-	send_to_char( "--------------------------------------------------------------------------\n> ", ch );
-	if ( ch->editor )
-	  stop_editing( ch );
-	
-	CREATE( edit, EDITOR_DATA, 1 );
-	edit->numlines = 0;
-	edit->on_line  = 0;
-	edit->size     = 0;
-	size = 0;  lpos = 0;  lines = 0;
-	if ( !data )
-	    bug("editor: data is NULL!\n",0);
-	else
-	for ( ;; )
-	{  
-	   c = data[size++];
-	   if ( c == '\0' )
-	   {
-		edit->line[lines][lpos] = '\0';
-		break;
-	   }
-	   else
-	   if ( c == '\r' );
-	   else
-	   if ( c == '\n' || lpos > 78)
-	   {
-		edit->line[lines][lpos] = '\0';
-		lines++;
-		lpos = 0;
-	   }
-	   else
-	     edit->line[lines][lpos++] = c;
-	   if ( lines >= 49 || size > 4096 )
-	   {
-		edit->line[lines][lpos] = '\0';
-		break;
-	   }	   
-	}
-	edit->numlines = lines;
-	edit->size = size;
-	edit->on_line = lines;
-	ch->editor = edit;
-	ch->desc->connected = CON_EDITING;
+    if ( !ch->desc )
+    {
+        bug( "Fatal: start_editing: no desc", 0 );
+        return;
+    }
+
+    if ( ch->substate == SUB_RESTRICTED )
+        bug( "NOT GOOD: start_editing: ch->substate == SUB_RESTRICTED", 0 );
+
+    set_char_color( AT_GREEN, ch );
+    send_to_char( "Begin entering your text (/? =help /s =save /c =clear /l =list /f =format)\n", ch );
+    send_to_char( "--------------------------------------------------------------------------\n> ", ch );
+
+    if ( ch->editor )
+        stop_editing( ch );
+
+    CREATE( edit, EDITOR_DATA, 1 );
+    edit->numlines = 0;
+    edit->on_line  = 0;
+    edit->size     = 0;
+
+    size = 0;
+    lpos = 0;
+    lines = 0;
+
+    if ( !data )
+        bug("editor: data is NULL!\n", 0);
+    else
+    for ( ;; )
+    {
+        c = data[size++];
+
+        if ( c == '\0' )
+        {
+            edit->line[lines][lpos] = '\0';
+
+            /* Count final unterminated line if it has content,
+               or count the first blank line for empty text. */
+            if ( lpos > 0 || lines == 0 )
+                lines++;
+
+            break;
+        }
+        else if ( c == '\r' )
+        {
+            ;
+        }
+        else if ( c == '\n' || lpos > 78 )
+        {
+            edit->line[lines][lpos] = '\0';
+            lines++;
+            lpos = 0;
+
+            if ( lines >= 49 )
+                break;
+
+            /* If wrapping because of width, keep current char when not newline */
+            if ( c != '\n' )
+                edit->line[lines][lpos++] = c;
+        }
+        else
+        {
+            edit->line[lines][lpos++] = c;
+        }
+
+        if ( lines >= 49 || size > 4096 )
+        {
+            edit->line[lines][lpos] = '\0';
+
+            if ( lpos > 0 && lines < 50 )
+                lines++;
+
+            break;
+        }
+    }
+
+    edit->numlines = lines;
+    edit->size = size;
+    edit->on_line = lines;
+    ch->editor = edit;
+    ch->desc->connected = CON_EDITING;
 }
 
 char *copy_buffer( CHAR_DATA *ch )
@@ -4556,33 +4607,35 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     switch( ch->substate )
     {
-	default:
-	  break;
-	case SUB_ROOM_DESC:
-	  location = (ROOM_INDEX_DATA *) ch->dest_buf;
-	  if ( !location )
-	  {
-		bug( "redit: sub_room_desc: NULL ch->dest_buf", 0 );
-		location = ch->in_room;
-	  }
-	  STRFREE( location->description );
-	  location->description = copy_buffer( ch );
-	  stop_editing( ch );
-	  ch->substate = ch->tempnum;
-	  return;
-	case SUB_ROOM_EXTRA:
-	  ed = (EXTRA_DESCR_DATA *) ch->dest_buf;
-	  if ( !ed )
-	  {
-		bug( "redit: sub_room_extra: NULL ch->dest_buf", 0 );
-		stop_editing( ch );
-		return;
-	  }
-	  STRFREE( ed->description );
-	  ed->description = copy_buffer( ch );
-	  stop_editing( ch );
-	  ch->substate = ch->tempnum;
-	  return;
+		default:
+			break;
+		case SUB_ROOM_DESC:
+			location = (ROOM_INDEX_DATA *) ch->dest_buf;
+			if ( !location )
+			{
+				bug( "redit: sub_room_desc: NULL ch->dest_buf", 0 );
+				location = ch->in_room;
+			}
+			STRFREE( location->description );
+			location->description = copy_buffer( ch );
+			stop_editing( ch );
+			ch->substate = ch->tempnum;
+			if (ch->desc && ch->desc->olc)
+    			ch->desc->olc->dirty = true;
+			return;
+		case SUB_ROOM_EXTRA:
+			ed = (EXTRA_DESCR_DATA *) ch->dest_buf;
+			if ( !ed )
+			{
+				bug( "redit: sub_room_extra: NULL ch->dest_buf", 0 );
+				stop_editing( ch );
+				return;
+			}
+			STRFREE( ed->description );
+			ed->description = copy_buffer( ch );
+			stop_editing( ch );
+			ch->substate = ch->tempnum;
+			return;
     }
 
     location = ch->in_room;
@@ -5140,9 +5193,9 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	{
 	    if ( xit )
 	    {
-		extract_exit(location, xit);
-		send_to_char( "Exit removed.\n", ch );
-		return;
+			extract_exit(location, xit);
+			send_to_char( "Exit removed.\n", ch );
+			return;
 	    }
 	    send_to_char( "No exit in that direction.\n", ch );
 	    return;
@@ -5550,7 +5603,7 @@ void do_mcreate( CHAR_DATA *ch, char *argument )
     act( AT_IMMORT, "You wave your arms about, and $N appears at your command!", ch, NULL, mob, TO_CHAR );
 }
 
-
+#define MAX_BUFFER_LINES 48
 /*
  * Simple but nice and handle line editor.			-Thoric
  */
@@ -5670,57 +5723,217 @@ void edit_buffer( CHAR_DATA *ch, char *argument )
          return;
     }
         
-    if ( !str_cmp( cmd+1, "f" ) )
+	if ( !str_cmp( cmd+1, "f" ) )
 	{
-	    char   temp_buf[5000];
-	    int    ep, old_p, end_mark; 
-	    int    p = 0;
-	    
-		temp_buf[0] = '\0';
+		const int wrap_width = 75;
+		char new_lines[MAX_BUFFER_LINES][MAX_INPUT_LENGTH];
+		bool buffer_full = false;
+		int new_numlines = 0;
+		int old_numlines = edit->numlines;
 
-		for (x = 0; x < edit->numlines; x++)
+		auto store_raw_line = [&](const char *text)
 		{
-			STRAPP(temp_buf, "%s ", edit->line[x]);
-		}
-	    
-	    temp_buf[p] = '\0';
-	    end_mark = p;
-	    p = 75;
-	    old_p =0;
-	    edit->on_line =0;
-	    edit->numlines =0;
-	    
-	    while ( old_p < end_mark )
-	    {
-	        while ( temp_buf[p] != ' ' && temp_buf[p] != '\0' && p > old_p )
-	          p--;
-	          
-	        if ( p == old_p )
-	          p +=75;
-	        
-	        if ( p > end_mark )
-	          p = end_mark;
-	        
-	        ep =0;
-	        for ( x= old_p ; x < p ; x++ )  
-	        {
-	           edit->line[edit->on_line][ep] = temp_buf[x];
-                   ep++;
-                }
-                edit->line[edit->on_line][ep] = '\0';
+			size_t len = 0;
 
-	        edit->on_line++;
-	        edit->numlines++;
-	        
-	        old_p = p+1 ;
-	        p += 75;
-	        
-	    }
-	    
-	    send_to_char( "OK.\n> ", ch );
-	    return;
-	}
-	
+			if (new_numlines >= max_buf_lines)
+			{
+				buffer_full = true;
+				return;
+			}
+
+			if (!text)
+				text = "";
+
+			len = strlen(text);
+
+			/* strip trailing CR/LF */
+			while (len > 0 && (text[len - 1] == '\r' || text[len - 1] == '\n'))
+				len--;
+
+			if (len > MAX_INPUT_LENGTH - 2)
+				len = MAX_INPUT_LENGTH - 2;
+
+			memcpy(new_lines[new_numlines], text, len);
+//			new_lines[new_numlines][len++] = '\n';
+			new_lines[new_numlines][len] = '\0';
+
+			new_numlines++;
+		};
+
+		auto is_blank_line = [](const char *s) -> bool
+		{
+			if (!s)
+				return true;
+
+			while (*s)
+			{
+				if (*s != ' ' && *s != '\t' && *s != '\r' && *s != '\n')
+					return false;
+				++s;
+			}
+			return true;
+		};
+
+		auto ends_with_colon = [](const char *s) -> bool
+		{
+			int len;
+
+			if (!s)
+				return false;
+
+			len = strlen(s);
+			while (len > 0 && (s[len - 1] == ' ' || s[len - 1] == '\t' ||
+							s[len - 1] == '\r' || s[len - 1] == '\n'))
+				len--;
+
+			return (len > 0 && s[len - 1] == ':');
+		};
+
+		auto is_indented_line = [](const char *s) -> bool
+		{
+			return (s && (s[0] == ' ' || s[0] == '\t'));
+		};
+
+		auto is_bullet_or_special_line = [](const char *s) -> bool
+		{
+			if (!s || !*s)
+				return false;
+
+			if (s[0] == '-' || s[0] == '*' || s[0] == '>')
+				return true;
+
+			if (isdigit((unsigned char)s[0]))
+			{
+				int i = 0;
+				while (isdigit((unsigned char)s[i]))
+					i++;
+
+				if (s[i] == '.' || s[i] == ')' || s[i] == ':')
+					return true;
+			}
+
+			return false;
+		};
+
+		auto wrap_and_store_line = [&](const char *text)
+		{
+			int old_p, end_mark, p;
+
+			if (!text || !*text)
+			{
+				store_raw_line("");
+				return;
+			}
+
+			end_mark = strlen(text);
+			old_p = 0;
+
+			while (old_p < end_mark)
+			{
+				int break_p;
+				char wrapped[MAX_INPUT_LENGTH];
+				int ep = 0;
+
+				if (new_numlines >= max_buf_lines)
+				{
+					buffer_full = true;
+					return;
+				}
+
+				p = old_p + wrap_width;
+				if (p > end_mark)
+					p = end_mark;
+
+				break_p = p;
+
+				while (break_p > old_p &&
+					text[break_p] != ' ' &&
+					text[break_p] != '\0')
+				{
+					break_p--;
+				}
+
+				if (break_p == old_p)
+					break_p = p;
+
+				if (break_p > end_mark)
+					break_p = end_mark;
+
+				for (x = old_p; x < break_p && ep < MAX_INPUT_LENGTH - 2; x++)
+					wrapped[ep++] = text[x];
+
+				while (ep > 0 && wrapped[ep - 1] == ' ')
+					ep--;
+
+				wrapped[ep] = '\0';
+				store_raw_line(wrapped);
+
+				old_p = break_p;
+				while (old_p < end_mark && text[old_p] == ' ')
+					old_p++;
+			}
+		};
+
+		for (x = 0; x < old_numlines && !buffer_full; x++)
+		{
+			char clean[MAX_INPUT_LENGTH];
+			int src = 0;
+			int dst = 0;
+			int visible_len;
+
+			while (edit->line[x][src] != '\0' && dst < MAX_INPUT_LENGTH - 1)
+			{
+				if (edit->line[x][src] != '\r' && edit->line[x][src] != '\n')
+					clean[dst++] = edit->line[x][src];
+				src++;
+			}
+			clean[dst] = '\0';
+
+			visible_len = dst;
+
+			if (is_blank_line(clean))
+			{
+				store_raw_line("");
+				continue;
+			}
+
+			/* preserve deliberate/manual structure */
+			if (is_indented_line(clean) ||
+				ends_with_colon(clean) ||
+				is_bullet_or_special_line(clean) ||
+				visible_len < wrap_width)
+			{
+				store_raw_line(clean);
+				continue;
+			}
+
+			/* only long unstructured lines get wrapped */
+			wrap_and_store_line(clean);
+		}
+
+		/* copy rebuilt buffer back */
+		edit->on_line = 0;
+		edit->numlines = 0;
+
+		for (x = 0; x < new_numlines; x++)
+		{
+			size_t len = strlen(new_lines[x]);
+			if (len > MAX_INPUT_LENGTH - 1)
+				len = MAX_INPUT_LENGTH - 1;
+
+			memcpy(edit->line[x], new_lines[x], len);
+			edit->line[x][len] = '\0';
+
+			edit->on_line++;
+			edit->numlines++;
+		}
+
+		if (buffer_full)
+			send_to_char( "Buffer full.\n", ch );
+
+		send_to_char( "OK.\n> ", ch );
+		return;
+	}	
 	if ( !str_cmp( cmd+1, "i" ) )
 	{
 	    if ( edit->numlines >= max_buf_lines )
@@ -5848,55 +6061,185 @@ void edit_buffer( CHAR_DATA *ch, char *argument )
 	}
    }
 
-   if ( edit->size + strlen(argument) + 1 >= MAX_STRING_LENGTH - 1 )
-	send_to_char( "You buffer is full.\n", ch );
-   else
-   {
-        int b_end;
-        int bm = 75;
-        int bp = 0;
-        int ep =0;
-
-	SPRINTF( buf, "%s", argument );
-	
-	b_end = strlen(buf);
-        
-	while ( bp < b_end )
+	if ( edit->size + strlen(argument) + 1 >= MAX_STRING_LENGTH - 1 )
+		send_to_char( "You buffer is full.\n", ch );
+	else
 	{
-	    while ( buf[bm] != ' ' && bm > bp )
-	       bm--;
-	       
-	    if ( bm == bp ) 
-	       bm += 75;
-	    
-	    if ( bm > b_end )
-	       bm = b_end;
-	    
-	    ep=0;
-	    while ( bp < bm )
-	    {
-	        edit->line[edit->on_line][ep] = buf[bp];
-	        bp++;
-	        ep++;      
-            }
-            
-            bm = bp+75;
-            bp ++;
-            
-            edit->line[edit->on_line][ep] = '\0';
-            edit->on_line++;
-            
-            if ( edit->on_line > edit->numlines )
-	       edit->numlines++;
-	    if ( edit->numlines > max_buf_lines )
-	    {
-	        edit->numlines = max_buf_lines;
-	        send_to_char( "Buffer full.\n", ch );
-	        save = TRUE;
-	        break;
-	    }
+		char clean[MAX_STRING_LENGTH];
+		char *src;
+		int insert_at;
+		int lines_needed = 0;
+
+		/* Normalize input:
+		   - convert CR/LF/TAB to spaces
+		   - collapse repeated spaces caused by paste wrapping
+		*/
+		{
+			size_t s = 0;
+			size_t dpos = 0;
+
+			while (argument[s] != '\0' && dpos < sizeof(clean) - 1)
+			{
+				unsigned char c = (unsigned char)argument[s++];
+
+				if (c == '\r' || c == '\n' || c == '\t')
+					c = ' ';
+/*
+				if (c == ' ')
+				{
+					if (last_was_space)
+						continue;
+					last_was_space = true;
+				}
+				else
+				{
+					last_was_space = false;
+				}
+*/
+				clean[dpos++] = (char)c;
+			}
+
+			/* trim trailing space */
+			while (dpos > 0 && clean[dpos - 1] == ' ')
+				dpos--;
+
+			clean[dpos] = '\0';
+		}
+
+		insert_at = edit->on_line;
+		if (insert_at < 0)
+			insert_at = 0;
+		if (insert_at > edit->numlines)
+			insert_at = edit->numlines;
+
+		/* First pass: determine how many wrapped lines will be needed */
+		src = clean;
+		if (*src == '\0')
+		{
+			lines_needed = 1;
+		}
+		else
+		{
+			while (*src)
+			{
+				int count = 75;
+				char *breakp;
+
+				if ((int)strlen(src) <= count)
+				{
+					lines_needed++;
+					break;
+				}
+
+				breakp = src + count;
+				while (breakp > src && *breakp != ' ')
+					breakp--;
+
+				if (breakp == src)
+					breakp = src + count;
+
+				lines_needed++;
+				src = breakp;
+				while (*src == ' ')
+					src++;
+			}
+		}
+
+		/* Make room if inserting in the middle and more than one line is needed */
+		if (lines_needed > 1 && insert_at < edit->numlines)
+		{
+			int shift = lines_needed - 1;
+
+			if (edit->numlines + shift > max_buf_lines)
+				shift = max_buf_lines - edit->numlines;
+
+			if (shift < lines_needed - 1)
+			{
+				send_to_char("Buffer full.\n", ch);
+				save = TRUE;
+			}
+
+			for (x = edit->numlines - 1; x > insert_at; x--)
+			{
+				if (x + shift >= max_buf_lines)
+					continue;
+
+				memmove(edit->line[x + shift],
+						edit->line[x],
+						strlen(edit->line[x]) + 1);
+			}
+
+			edit->numlines += shift;
+			if (edit->numlines > max_buf_lines)
+				edit->numlines = max_buf_lines;
+		}
+
+		/* Second pass: write wrapped lines into buffer */
+		src = clean;
+
+		if (*src == '\0')
+		{
+			edit->line[insert_at][0] = '\0';
+			insert_at++;
+		}
+		else
+		{
+			while (*src && insert_at < max_buf_lines)
+			{
+				char out[MAX_INPUT_LENGTH];
+				int ep = 0;
+
+				if ((int)strlen(src) <= 75)
+				{
+					size_t len = strlen(src);
+					if (len > MAX_INPUT_LENGTH - 1)
+						len = MAX_INPUT_LENGTH - 1;
+
+					memcpy(edit->line[insert_at], src, len);
+					edit->line[insert_at][len] = '\0';
+					insert_at++;
+					break;
+				}
+				else
+				{
+					char *breakp = src + 75;
+
+					while (breakp > src && *breakp != ' ')
+						breakp--;
+
+					if (breakp == src)
+						breakp = src + 75;
+
+					while (src < breakp && ep < MAX_INPUT_LENGTH - 1)
+						out[ep++] = *src++;
+
+					while (ep > 0 && out[ep - 1] == ' ')
+						ep--;
+
+					out[ep] = '\0';
+
+					memcpy(edit->line[insert_at], out, ep + 1);
+					insert_at++;
+
+					while (*src == ' ')
+						src++;
+				}
+			}
+		}
+
+		edit->on_line = insert_at;
+
+		/* If we appended beyond previous end, grow numlines */
+		if (edit->on_line > edit->numlines)
+			edit->numlines = edit->on_line;
+
+		if (edit->numlines > max_buf_lines)
+		{
+			edit->numlines = max_buf_lines;
+			send_to_char( "Buffer full.\n", ch );
+			save = TRUE;
+		}
 	}
-   }
 
    if ( save )
    {
