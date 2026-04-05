@@ -585,23 +585,23 @@ void gain_addiction( CHAR_DATA *ch )
   
        if ( ch->pcdata->addiction[drug] > ch->pcdata->drug_level[drug]+200 )
        {      
-           ch_printf ( ch, "You feel like you are going to die. You NEED %s\n.",   spice_table[drug] );
+           ch_printf ( ch, "You feel like you are going to die. You NEED %s\n.",   get_flag_name(spice_table, drug, SPICE_MAX) );
            worsen_mental_state( ch, 2 );
            damage(ch, ch, 5, TYPE_UNDEFINED);
        }
        else if ( ch->pcdata->addiction[drug] > ch->pcdata->drug_level[drug]+100 )
        {      
-           ch_printf ( ch, "You need some %s.\n",   spice_table[drug] );
+           ch_printf ( ch, "You need some %s.\n",   get_flag_name(spice_table, drug, SPICE_MAX) );
            worsen_mental_state( ch, 2 );
        }
        else if ( ch->pcdata->addiction[drug] > ch->pcdata->drug_level[drug]+50 )
        {      
-           ch_printf ( ch, "You really crave some %s.\n",   spice_table[drug] );
+           ch_printf ( ch, "You really crave some %s.\n",   get_flag_name(spice_table, drug, SPICE_MAX) );
            worsen_mental_state( ch, 1 );
        }
        else if ( ch->pcdata->addiction[drug] > ch->pcdata->drug_level[drug]+25 )
        {      
-           ch_printf ( ch, "Some more %s would feel quite nice.\n",   spice_table[drug] );
+           ch_printf ( ch, "Some more %s would feel quite nice.\n",   get_flag_name(spice_table, drug, SPICE_MAX) );
        }
        else if ( ch->pcdata->addiction[drug] < ch->pcdata->drug_level[drug]-50 )
        {       

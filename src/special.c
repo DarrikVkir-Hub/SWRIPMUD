@@ -723,7 +723,7 @@ bool spec_police( CHAR_DATA *ch )
           {
               ROOM_INDEX_DATA *jail = NULL;
               
-              SPRINTF( buf , "Hey you're wanted on %s!", planet_flags[vip].name );
+              SPRINTF( buf , "Hey you're wanted on %s!", get_flag_name(planet_flags, vip, PLANET_MAX) );
                   do_say( ch , buf );                 
               BV_REMOVE_BIT( victim->pcdata->wanted_flags , vip ); 	                   
               if ( ch->top_level >= victim->top_level ) 
@@ -793,7 +793,7 @@ bool spec_police_attack( CHAR_DATA *ch )
 	for ( size_t vip = 0 ; vip < PLANET_MAX ; vip++ )
           if ( BV_IS_SET ( ch->vip_flags , vip ) &&  BV_IS_SET( victim->pcdata->wanted_flags , vip) ) 
           {
-              SPRINTF( buf , "Hey you're wanted on %s!", planet_flags[vip].name );
+              SPRINTF( buf , "Hey you're wanted on %s!", get_flag_name(planet_flags, vip, PLANET_MAX) );
                   do_say( ch , buf );                 
               BV_REMOVE_BIT( victim->pcdata->wanted_flags , vip ); 	                   
               multi_hit( ch, victim, TYPE_UNDEFINED );
@@ -861,7 +861,7 @@ bool spec_police_fine( CHAR_DATA *ch )
 	for ( size_t vip = 0 ; vip < PLANET_MAX ; vip++ )
           if ( BV_IS_SET ( ch->vip_flags , vip ) &&  BV_IS_SET( victim->pcdata->wanted_flags , vip) ) 
           {
-              SPRINTF( buf , "Hey you're wanted on %s!", planet_flags[vip].name );
+              SPRINTF( buf , "Hey you're wanted on %s!", get_flag_name(planet_flags, vip, PLANET_MAX) );
                   do_say( ch , buf );
               act( AT_ACTION, "$n fines $N an enormous amount of money.", ch, NULL, victim, TO_NOTVICT );
     	      act( AT_ACTION, "$n fines you an enourmous amount of money.",   ch, NULL, victim, TO_VICT    );
@@ -901,7 +901,7 @@ bool spec_police_jail( CHAR_DATA *ch )
 	for ( size_t vip = 0 ; vip < PLANET_MAX ; vip++ )
           if ( BV_IS_SET ( ch->vip_flags , vip ) &&  BV_IS_SET( victim->pcdata->wanted_flags , vip) ) 
           {
-              SPRINTF( buf , "Hey you're wanted on %s!", planet_flags[vip].name );
+              SPRINTF( buf , "Hey you're wanted on %s!", get_flag_name(planet_flags, vip, PLANET_MAX) );
                   do_say( ch , buf );                 
               
               if( vip == PLANET_ADARI )

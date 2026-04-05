@@ -230,8 +230,26 @@ struct flag_name
     const char *name;
 };
 
+#define FLAG_TABLE_COUNT(x) (static_cast<int>(sizeof(x) / sizeof((x)[0])) - 1)
+
 extern  const   flag_name   obj_flag_table[];
 extern const    flag_name   obj_attack_table[];
+
+inline const char* flag_name_at(const flag_name* table, int index, int count)
+{
+    if (!table || index < 0 || index >= count)
+        return nullptr;
+
+    return table[index].name;
+}
+
+inline const char* get_flag_name(const flag_name* table, int index, int count)
+{
+    if (!table || index < 0 || index >= count)
+        return nullptr;
+
+    return table[index].name;
+}
 
 /*
  * FLAG SYSTEM STATUS
@@ -1133,47 +1151,52 @@ struct  frc_app_type
 #define FORCE_ABILITY		7
 
 /* the races */
-#define RACE_HUMAN	    0
-#define RACE_WOOKIEE		1
-#define RACE_TWI_LEK		2
-#define RACE_RODIAN		3
-#define RACE_HUTT		4
-#define RACE_MON_CALAMARI	5
-#define RACE_NOGHRI		40
-#define RACE_SHISTAVANEN        6
-#define RACE_GAMORREAN		7
-#define RACE_JAWA		8
-#define RACE_ADARIAN            9
-#define RACE_EWOK              10
-#define RACE_VERPINE           11
-#define RACE_DEFEL             12
-#define RACE_TRANDOSHAN        13
-#define RACE_CHADRA_FAN        14
-#define RACE_FALLEEN           17
-#define RACE_ITHORIAN          18
-#define RACE_DEVARONIAN        19
-#define RACE_GOTAL             20
-#define RACE_DROID             21
-#define RACE_FIRRERREO		22
-#define RACE_BARABEL		23
-#define RACE_BOTHAN		24
-#define RACE_TOGARIAN		25
-#define RACE_DUG		26
-#define RACE_KUBAZ		27
-#define RACE_SELONIAN		28
-#define RACE_GRAN		29
-#define RACE_YEVETHA		30
-#define RACE_GAND		31
-#define RACE_DUROS		32
-#define RACE_COYNITE		33
-#define RACE_PROTOCAL_DROID	34
-#define RACE_ASSASSIN_DROID	35
-#define RACE_GLADIATOR_DROID	36
-#define RACE_ASTROMECH_DROID	37
-#define RACE_INTERROGATION_DROID 38
-#define RACE_GOD 		39
-#define RACE_SULLUSTAN         16  /* big mistake was causing mass chaos */
-#define RACE_QUARREN           15
+typedef enum
+{
+    RACE_HUMAN                = 0,
+    RACE_WOOKIEE              = 1,
+    RACE_TWI_LEK              = 2,
+    RACE_RODIAN               = 3,
+    RACE_HUTT                 = 4,
+    RACE_MON_CALAMARI         = 5,
+    RACE_SHISTAVANEN          = 6,
+    RACE_GAMORREAN            = 7,
+    RACE_JAWA                 = 8,
+    RACE_ADARIAN              = 9,
+    RACE_EWOK                 = 10,
+    RACE_VERPINE              = 11,
+    RACE_DEFEL                = 12,
+    RACE_TRANDOSHAN           = 13,
+    RACE_CHADRA_FAN           = 14,
+    RACE_QUARREN              = 15,
+    RACE_SULLUSTAN            = 16,
+    RACE_FALLEEN              = 17,
+    RACE_ITHORIAN             = 18,
+    RACE_DEVARONIAN           = 19,
+    RACE_GOTAL                = 20,
+    RACE_DROID                = 21,
+    RACE_FIRRERREO            = 22,
+    RACE_BARABEL              = 23,
+    RACE_BOTHAN               = 24,
+    RACE_TOGARIAN             = 25,
+    RACE_DUG                  = 26,
+    RACE_KUBAZ                = 27,
+    RACE_SELONIAN             = 28,
+    RACE_GRAN                 = 29,
+    RACE_YEVETHA              = 30,
+    RACE_GAND                 = 31,
+    RACE_DUROS                = 32,
+    RACE_COYNITE              = 33,
+    RACE_PROTOCAL_DROID       = 34,
+    RACE_ASSASSIN_DROID       = 35,
+    RACE_GLADIATOR_DROID      = 36,
+    RACE_ASTROMECH_DROID      = 37,
+    RACE_INTERROGATION_DROID  = 38,
+    RACE_GOD                  = 39,
+    RACE_NOGHRI               = 40,
+
+    MAX_NPC_RACE_ENUM         = MAX_NPC_RACE
+} NpcRace;
 
 typedef enum 
 {
@@ -1421,7 +1444,7 @@ typedef enum {STRTYPE_PILOTSEAT, STRTYPE_ENTRANCE, STRTYPE_COSEAT, STRTYPE_ENGIN
 	      STRTYPE_GUNSEAT, STRTYPE_HANGAR, STRTYPE_COCKPIT, STRTYPE_DEFAULT } strtypes;
 typedef enum {CARGOTYPE_ORE, CARGOTYPE_FOOD, CARGOTYPE_ELECTRONICS, CARGOTYPE_WEAPONS, 
 	      CARGOTYPE_MEDICAL, CARGOTYPE_CLOTHING, CARGOTYPE_LUXURIES, CARGOTYPE_SPICE,
-	      CARGOTYPE_WATER, CARGOTYPE_SPECIAL, CARGOTYPE_DEFAULT } cargotypes;
+	      CARGOTYPE_WATER, CARGOTYPE_SPECIAL, CARGOTYPE_MAX } cargotypes;
 	     // If you add to CARGOTYPE, also add to the cargodefaults array in space2.h - DV 3-15-04
 	     
 #define STR_AREAVNUM 2700
@@ -1988,37 +2011,37 @@ typedef enum
 } ActFlags;
 
 /* bits for vip flags */
-typedef enum  {
-    PLANET_CORUSCANT            = 1,
-    PLANET_KASHYYYK          	= 2,
-    PLANET_RYLOTH            	= 3,
-    PLANET_RODIA             	= 4,
-    PLANET_NAL_HUTTA            = 5,
-    PLANET_MON_CALAMARI       	= 6,
-    PLANET_HONOGHR              = 7,
-    PLANET_GAMORR               = 8,
-    PLANET_TATOOINE             = 9,
-    PLANET_ADARI            	= 10,
-    PLANET_BYSS		            = 11,
-    PLANET_ENDOR		        = 12,
-    PLANET_ROCHE		        = 13,
-    PLANET_AF_EL		        = 14,
-    PLANET_TRANDOSH		        = 15,
-    PLANET_CHAD		            = 16,
-    PLANET_CORELLIA		        = 17,
-    PLANET_HOTH		            = 18,
-    PLANET_ASTEROID		        = 19,
-    PLANET_BESPIN   		    = 20,
-    PLANET_KUAT     		    = 21,
-    PLANET_SOCORRO 		        = 22,
-    PLANET_CORULAG 		        = 23,
-    PLANET_HAPES   		        = 24,
-    PLANET_WROONA  		        = 25,
-    PLANET_DATHOMIR  		    = 26,
-    PLANET_SULLUST		        = 27,
-    PLANET_FALLEEN		        = 28,
-    PLANET_ETTI		            = 29,
-    PLANET_MAX                  = 30,
+typedef enum {
+    PLANET_CORUSCANT        = 0,
+    PLANET_KASHYYYK         = 1,
+    PLANET_RYLOTH           = 2,
+    PLANET_RODIA            = 3,
+    PLANET_NAL_HUTTA        = 4,
+    PLANET_MON_CALAMARI     = 5,
+    PLANET_HONOGHR          = 6,
+    PLANET_GAMORR           = 7,
+    PLANET_TATOOINE         = 8,
+    PLANET_ADARI            = 9,
+    PLANET_BYSS             = 10,
+    PLANET_ENDOR            = 11,
+    PLANET_ROCHE            = 12,
+    PLANET_AF_EL            = 13,
+    PLANET_TRANDOSH         = 14,
+    PLANET_CHAD             = 15,
+    PLANET_CORELLIA         = 16,
+    PLANET_HOTH             = 17,
+    PLANET_ASTEROID         = 18,
+    PLANET_BESPIN           = 19,
+    PLANET_KUAT             = 20,
+    PLANET_SOCORRO          = 21,
+    PLANET_CORULAG          = 22,
+    PLANET_HAPES            = 23,
+    PLANET_WROONA           = 24,
+    PLANET_DATHOMIR         = 25,
+    PLANET_SULLUST          = 26,
+    PLANET_FALLEEN          = 27,
+    PLANET_ETTI             = 28,
+    PLANET_MAX              = 29
 } PlanetFlags;
 
 /*
@@ -2489,7 +2512,7 @@ typedef enum
   ITEM_GRENADE, ITEM_LANDMINE, ITEM_GOVERNMENT, ITEM_DROID_CORPSE, ITEM_BOLT, ITEM_SCOPE, 
   ITEM_FIGHTERCOMP, ITEM_MIDCOMP, ITEM_CAPITALCOMP, ITEM_CHEMICAL,
   ITEM_DISGUISE, ITEM_DIS_FABRIC, ITEM_HAIR, ITEM_STUNGRENADE,
-  ITEM_CARGO, ITEM_TRACKINGDEVICE
+  ITEM_CARGO, ITEM_TRACKINGDEVICE, ITEMTYPE_MAX
 } item_types;
 
 /* Blaster settings - only saves on characters */
@@ -2556,12 +2579,15 @@ typedef enum
 #define TELE_TRANSALLPLUS	BV02
 
 /* drug types */
-#define SPICE_GLITTERSTIM        0
-#define SPICE_CARSANUM           1
-#define SPICE_RYLL               2
-#define SPICE_ANDRIS             3
-#define SPICE_LUMNI		 4
-#define SPICE_LYCIN		 5		// Johnson ( Michael Shattuck ) 4/30/04 - Added 5-15-04 - D
+enum {
+    SPICE_GLITTERSTIM,
+    SPICE_CARSANUM,
+    SPICE_RYLL,
+    SPICE_ANDRIS,
+    SPICE_LUMNI,
+    SPICE_LYCIN,
+    SPICE_MAX
+};
 
 /* crystal types */
 #define GEM_NON_ADEGEN          0
@@ -2790,7 +2816,7 @@ typedef enum
   WEAR_NECK_2, WEAR_BODY, WEAR_HEAD, WEAR_LEGS, WEAR_FEET, WEAR_HANDS,
   WEAR_ARMS, WEAR_SHIELD, WEAR_ABOUT, WEAR_WAIST, WEAR_WRIST_L, WEAR_WRIST_R,
   WEAR_WIELD, WEAR_HOLD, WEAR_DUAL_WIELD, WEAR_EARS, WEAR_EYES,
-  WEAR_MISSILE_WIELD, WEAR_FLOATING, WEAR_OVER, MAX_WEAR, WEAR_DISGUISE
+  WEAR_MISSILE_WIELD, WEAR_FLOATING, WEAR_OVER, MAX_WEAR, WEAR_DISGUISE, WEAR_MAX
 } wear_locations;
 
 /* Board Types */
@@ -3689,7 +3715,7 @@ typedef enum
 typedef enum
 {
   SKILL_UNKNOWN, SKILL_SPELL, SKILL_SKILL, SKILL_WEAPON, SKILL_TONGUE,
-  SKILL_HERB
+  SKILL_HERB, SKILL_MAX
 } skill_types;
 
 
@@ -4552,42 +4578,40 @@ extern  const	struct	frc_app_type	frc_app		[26];
 
 extern	const	struct	race_type	race_table	[MAX_RACE];
 extern	const	struct	liq_type	liq_table	[LIQ_MAX];
-extern	char *	const			attack_table	[13];
+extern	char *	const			    attack_table	[13];
 extern	char *  const	        	ability_name	[MAX_ABILITY];
 
 
-extern	char *	const	skill_tname	[];
+extern	const flag_name	skill_tname	[];
 extern	sh_int	const	movement_loss	[SECT_MAX];
 extern	char *	const	dir_name	[];
-extern	char *	const	where_name	[];
+extern	const flag_name	where_name	[];
 extern	const	sh_int	rev_dir		[];
 extern	const	int	trap_door	[];
 extern  const flag_name r_flags     [];
-extern char *	const	sect_types[SECT_MAX+1];
+extern  const flag_name	sect_types[];
 extern  const flag_name aff_flags   [];
-extern	char *	const	w_flags		[];
-extern	char *	const	o_flags		[];
-extern	char *	const	a_flags		[];
-extern	char *	const	o_types		[];
-extern	char *	const	a_types		[];
+extern	const flag_name	w_flags		[];
+extern	const flag_name	a_flags		[];
+extern	const flag_name	o_types		[];
+extern	const flag_name	a_types		[];
 extern	const flag_name	act_flags	[];
-extern  const flag_name planet_flags    [];
-extern  char *  const   weapon_table    [14];
-extern  char *  const   spice_table     [];
+extern  const flag_name planet_flags[];
+extern  const flag_name spice_table [];
 extern	const flag_name	plr_flags	[];
-extern	char *	const	pc_flags	[];
+extern	const flag_name	pc_flags	[];
 extern	char *	const	trap_flags	[];
 extern	char *	const	ris_flags	[];
 extern	char *	const	trig_flags	[];
 extern	char *	const	part_flags	[];
-extern	char *	const	npc_race	[];
-extern  char *  const   command_groups  []; 
+extern	const flag_name	npc_race	[];
+extern  const flag_name command_groups  []; 
 extern	char *	const	defense_flags	[];
 extern	char *	const	attack_flags	[];
 extern	char *	const	area_flags	[];
-extern  char *  const   cargo_names     [];
+extern  const flag_name cargo_names     [];
 extern  int     const   modflags	[MAXMODFLAG];
-extern	int	const	lang_array      [];
+extern	int	    const	lang_array      [];
 extern const flag_name lang_names[];
 
 /*
@@ -4711,6 +4735,7 @@ DECLARE_DO_FUN( do_repair_module );
 DECLARE_DO_FUN( do_maketemplateship);
 DECLARE_DO_FUN( do_ordership);
 DECLARE_DO_FUN( do_ahelp );
+DECLARE_DO_FUN( do_alinks );
 DECLARE_DO_FUN( do_improve_module );
 DECLARE_DO_FUN( do_install_module );
 DECLARE_DO_FUN( do_remove_module );
@@ -5660,7 +5685,7 @@ char *	strip_cr	args( ( char *str  ) );
 int     get_vip_flag    args( ( char *flag ) );
 int     get_wanted_flag args( ( char *flag ) );
 
-extern char  *  const           wear_locs [];
+extern const flag_name           wear_locs [];
 extern const char *  const           ex_flags[];
 
 /* clans.c */
@@ -6264,6 +6289,8 @@ void do_olcshow(CHAR_DATA* ch, char* argument);
 bool bitset_apply_from_string(BitSet& bs, const std::string& input, const flag_name* table);
 std::string enum_to_string_legacy(int value, const char* const* table);
 bool enum_from_string_legacy(const std::string& input, int& out, const char* const* table);
+std::string enum_to_string_flag(int value, const flag_name *table);
+bool enum_from_string_flag(const std::string& input, int& out, const flag_name *table);
 EXTRA_DESCR_DATA* olc_room_get_or_create_extra_desc(ROOM_INDEX_DATA* room, const std::string& keyword);
 bool olc_room_remove_extra_desc(ROOM_INDEX_DATA* room, const char* keyword);
 EXTRA_DESCR_DATA* olc_room_clone_extra_descs(EXTRA_DESCR_DATA* src);
@@ -6656,6 +6683,21 @@ inline std::string get_enum_legacy_field(int field, const char* const* table)
     return enum_to_string_legacy(field, table);
 }
 
+inline std::string get_enum_flag_field(int field, const flag_name *table)
+{
+    return enum_to_string_flag(field, table);
+}
+
+inline bool set_enum_flag_field(int& field, const std::string& value, const flag_name *table)
+{
+    int val;
+    if (!enum_from_string_flag(value, val, table))
+        return false;
+
+    field = val;
+    return true;
+}
+
 inline bool set_flag_field(BitSet& bs, const std::string& value, const flag_name* table)
 {
     return bitset_apply_from_string(bs, value, table);
@@ -6979,6 +7021,47 @@ OlcField make_olc_enum_legacy_field(
         {
             auto typed = static_cast<T*>(obj);
             return get_enum_legacy_field(static_cast<int>(typed->*member), table);
+        },
+        nullptr,
+        nullptr,
+        0,
+        help,
+        INT_MIN,
+        INT_MAX,
+        false
+    };
+}
+template <typename T, typename M>
+OlcField make_olc_enum_flag_field(
+    const char* name,
+    olc_member_ptr<T, M> member,
+    const flag_name* table,
+    const char* help)
+{
+    static_assert(std::is_integral<M>::value || std::is_enum<M>::value,
+                  "make_olc_enum_flag_field requires an integral or enum member");
+
+    return OlcField{
+        name,
+        OlcValueType::ENUM,
+        (const void*)table,
+        OlcMetaType::ENUM_FLAG,
+        nullptr,
+        [member, table](void* obj, const std::string& value) -> bool
+        {
+            auto typed = static_cast<T*>(obj);
+
+            int temp = 0;
+            if (!set_enum_flag_field(temp, value, table))
+                return false;
+
+            typed->*member = static_cast<M>(temp);
+            return true;
+        },
+        [member, table](void* obj) -> std::string
+        {
+            auto typed = static_cast<T*>(obj);
+            return get_enum_flag_field(static_cast<int>(typed->*member), table);
         },
         nullptr,
         nullptr,

@@ -59,29 +59,45 @@ ROOM_INDEX_DATA * vroom_hash [64];
  */
 bool	has_key		args( ( CHAR_DATA *ch, int key ) );
 
-char *	const		sect_names[SECT_MAX+1] =
+const flag_name		sect_names[] =
 {
-    { "In A Room"	},	{ "A City Street"      },
-    { "In A Field"	},	{ "In A Forest"	},
-    { "Hill"		},	{ "On A Mountain"	},
-    { "In The Water"},	{ "In Rough Water"	},
-    { "Underwater" 	},	{ "In The Air"		},
-    { "In A Desert"	},	{ "Somewhere"	},
-    { "Ocean floor" },	{ "Underground"	},
-	nullptr
+    { SECT_INSIDE, 			"In A Room"	},	
+	{ SECT_CITY, 			"A City Street" },
+    { SECT_FIELD, 			"In A Field"	},	
+	{ SECT_FOREST, 			"In A Forest"	},
+    { SECT_HILLS, 			"Hill"		},	
+	{ SECT_MOUNTAIN, 		"On A Mountain" },
+    { SECT_WATER_SWIM, 		"In The Water"},	
+	{ SECT_WATER_NOSWIM,	"In Rough Water"},
+    { SECT_UNDERWATER, 		"Underwater" 	},	
+	{ SECT_AIR, 			"In The Air"  },
+    { SECT_DESERT, 			"In A Desert"	},	
+	{ SECT_DUNNO, 			"Somewhere"	},
+    { SECT_OCEANFLOOR, 		"Ocean floor" },	
+	{ SECT_UNDERGROUND, 	"Underground"	},
+	{ SECT_MAX,				"Sect_Max"},
+    { (size_t)-1, nullptr } // terminator		
+
 };
 
-
-char *	const		sect_types[SECT_MAX+1] =
+const flag_name		sect_types[] =
 {
-    { "inside"		},	{ "cities"      },
-    { "fields"		},	{ "forests"	},
-    { "hills"		},	{ "mountains"	},
-    { "waters"		},	{ "waters"	},
-    { "underwaters" },	{ "air"		},
-    { "deserts"		},	{ "unknown"	},
-    { "ocean floor" },	{ "underground"	},
-	nullptr
+    { SECT_INSIDE, 			"inside"		},	
+	{ SECT_CITY, 			"cities"      },
+    { SECT_FIELD, 			"fields"		},	
+	{ SECT_FOREST, 			"forests"		},
+    { SECT_HILLS, 			"hills"		},	
+	{ SECT_MOUNTAIN, 		"mountains"	},
+    { SECT_WATER_SWIM, 		"waters"		},	
+	{ SECT_WATER_NOSWIM, 	"waters"		},
+    { SECT_UNDERWATER, 		"underwaters" },	
+	{ SECT_AIR, 			"air"			},
+    { SECT_DESERT, 			"deserts"		},	
+	{ SECT_DUNNO, 			"unknown"		},
+    { SECT_OCEANFLOOR, 		"ocean floor" },	
+	{ SECT_UNDERGROUND, 	"underground"	},
+	{ SECT_MAX,				"sect_max"},	
+	{ (size_t)-1, nullptr } // terminator	
 };
 
 
@@ -326,7 +342,7 @@ void decorate_room( ROOM_INDEX_DATA *room )
     if ( room->description )
       STRFREE( room->description );
 
-    room->name	= STRALLOC( sect_names[sector] );
+    room->name	= STRALLOC( (char*)get_flag_name(sect_names, sector, SECT_MAX) );
     buf[0] = '\0';
     nRand = number_range( 1, UMIN(8,sent_total[sector]) );
 

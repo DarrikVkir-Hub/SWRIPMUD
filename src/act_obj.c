@@ -1270,7 +1270,7 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, int wear_bit )
 				send_to_char( "You cannot wield that.\n", ch );
 				break;
 				default:
-					ch_printf( ch, "You cannot wear that on your %s.\n", w_flags[bit] );			
+					ch_printf( ch, "You cannot wear that on your %s.\n", get_flag_name(w_flags, bit, ITEM_WEAR_MAX) );
 			}
 	    }
 	    return;
@@ -2455,7 +2455,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
 	    send_to_char( buf, ch );
            
             SPRINTF( buf, "Worn on: %s\n", 
-                     flag_string(obj->wear_flags , w_flags, ITEM_WEAR_MAX ) );
+                     bitset_to_string(obj->wear_flags , w_flags ).c_str());
             send_to_char( buf, ch );
 
 	    set_char_color( AT_BLUE, ch );

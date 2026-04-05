@@ -266,7 +266,7 @@ ch_printf(ch, "\n%s\n", buf);
     for ( drug = 0; drug <= 9; drug++ )
 		if ( ch->pcdata->drug_level[drug] > 0 )
 		{
-			ch_printf( ch, "%s&c(&C%d&c/&C%d&c) ", spice_table[drug],
+			ch_printf( ch, "%s&c(&C%d&c/&C%d&c) ", get_flag_name(spice_table, drug, SPICE_MAX),
 										ch->pcdata->drug_level[drug],
 										ch->pcdata->addiction[drug] );
 		}
@@ -462,7 +462,7 @@ char *
 get_race( CHAR_DATA *ch)
 {
     if ( ch->race < MAX_NPC_RACE && ch->race >= 0)
-	return ( npc_race[ch->race] );
+	return (char*)( get_flag_name(npc_race, ch->race, MAX_NPC_RACE) );
     return ("Unknown");
 }
 
@@ -786,7 +786,7 @@ void do_equipment( CHAR_DATA *ch, char *argument )
 	for ( obj = ch->first_carrying; obj; obj = obj->next_content )
 	   if ( obj->wear_loc == iWear )
 	   {
-		send_to_char( where_name[iWear], ch );
+		send_to_char( get_flag_name(where_name, iWear, WEAR_MAX), ch );
 		if ( can_see_obj( ch, obj ) )
 		{
 		    send_to_char( format_obj_to_char( obj, ch, TRUE ), ch );

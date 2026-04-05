@@ -1889,7 +1889,7 @@ void check_killer( CHAR_DATA *ch, CHAR_DATA *victim )
             if ( BV_IS_SET(victim->vip_flags , x ) )
             {
                 BV_SET_BIT(ch->pcdata->wanted_flags, x );
-                ch_printf( ch, "&YYou are now wanted on %s.&w\n", planet_flags[x] );
+                ch_printf( ch, "&YYou are now wanted on %s.&w\n", get_flag_name(planet_flags, x, PLANET_MAX) );
             }
         }      
         if ( ch->pcdata->clan )

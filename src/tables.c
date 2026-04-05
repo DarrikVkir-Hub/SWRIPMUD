@@ -44,7 +44,19 @@ int top_herb;
 SKILLTYPE *		skill_table	[MAX_SKILL];
 SKILLTYPE *		herb_table	[MAX_HERB];
 
-char * const skill_tname[] = { "unknown", "Spell", "Skill", "Weapon", "Tongue", "Herb" };
+//char * const skill_tname[] = { "unknown", "Spell", "Skill", "Weapon", "Tongue", "Herb" };
+const flag_name  skill_tname [] =
+{
+	{ SKILL_UNKNOWN, "unknown" },
+	{ SKILL_SPELL, "Spell" },
+	{ SKILL_SKILL, "Skill" },
+	{ SKILL_WEAPON, "Weapon" },
+	{ SKILL_TONGUE, "Tongue" },
+	{ SKILL_HERB, "Herb" },
+	{ SKILL_MAX, "Max"},
+	
+    { (size_t)-1, nullptr } // terminator	
+};
 
 SPELL_FUN *spell_function( char *name )
 {
@@ -167,6 +179,7 @@ DO_FUN *skill_function( char *name )
         if ( !str_cmp( name, "do_ahelp" ))              return do_ahelp;
 	if ( !str_cmp( name, "do_aid" ))		return do_aid;
 	if ( !str_cmp( name, "do_alias" ))		return do_alias;
+	if ( !str_cmp( name, "do_alinks" ))		return do_alinks;
 	if ( !str_cmp( name, "do_allclantalk" ))	return do_allclantalk;
 	if ( !str_cmp( name, "do_allow" ))		return do_allow;
 	if ( !str_cmp( name, "do_allships" ))		return do_allships;
@@ -915,7 +928,8 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_i105 )     return "do_i105";
     if ( skill == do_aquest )     return "do_aquest";
     if ( skill == do_alias )	return "do_alias";
-    if ( skill == do_viewskills) return "do_viewskills";
+    if ( skill == do_alinks )	return "do_alinks";
+	if ( skill == do_viewskills) return "do_viewskills";
     if ( skill == do_teach )     return "do_teach";
     if ( skill == do_gather_intelligence )     return "do_gather_intelligence";
     if ( skill == do_add_patrol )     return "do_add_patrol";
@@ -1520,7 +1534,7 @@ void fwrite_skill( FILE *fpout, SKILLTYPE *skill )
 	SMAUG_AFF *aff;
 
 	fprintf( fpout, "Name         %s~\n",	skill->name	);
-	fprintf( fpout, "Type         %s\n",	skill_tname[skill->type]);
+	fprintf( fpout, "Type         %s\n",	flag_name_at(skill_tname, skill->type, SKILL_MAX));
 	fprintf( fpout, "Flags        %d\n",	skill->flags	);
 	if ( skill->target )
 	  fprintf( fpout, "Target       %d\n",	skill->target	);
@@ -1702,17 +1716,7 @@ void save_socials()
 
 int get_skill( char *skilltype )
 {
-    if ( !str_cmp( skilltype, "Spell" ) )
-      return SKILL_SPELL;
-    if ( !str_cmp( skilltype, "Skill" ) )
-      return SKILL_SKILL;
-    if ( !str_cmp( skilltype, "Weapon" ) )
-      return SKILL_WEAPON;
-    if ( !str_cmp( skilltype, "Tongue" ) )
-      return SKILL_TONGUE;
-    if ( !str_cmp( skilltype, "Herb" ) )
-      return SKILL_HERB;
-    return SKILL_UNKNOWN;
+	return find_flag(skill_tname,skilltype)->bit;
 }
 
 /*

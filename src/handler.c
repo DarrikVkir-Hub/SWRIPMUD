@@ -2563,7 +2563,7 @@ char *item_type_name( OBJ_DATA *obj )
 	return "(unknown)";
     }
 
-    return o_types[obj->item_type];
+    return (char*)get_flag_name(o_types, obj->item_type, ITEMTYPE_MAX);
 }
 
 
@@ -2669,39 +2669,6 @@ const char *extra_bit_name( FLAG_SET extra_flags )
     return bitset_to_string(extra_flags, obj_flag_table,
                              ITEM_FIRST,
                              ITEM_MAX).c_str();    
-/*    static char buf[512];
-
-    buf[0] = '\0';
-    if ( extra_flags & ITEM_GLOW         ) STRAPP( buf, " glow"         );
-    if ( extra_flags & ITEM_HUM          ) STRAPP( buf, " hum"          );
-    if ( extra_flags & ITEM_DARK         ) STRAPP( buf, " dark"         );
-    if ( extra_flags & ITEM_HUTT_SIZE    ) STRAPP( buf, " hutt_size"    );
-    if ( extra_flags & ITEM_CONTRABAND   ) STRAPP( buf, " contraband"   );
-    if ( extra_flags & ITEM_INVIS        ) STRAPP( buf, " invis"        );
-    if ( extra_flags & ITEM_MAGIC        ) STRAPP( buf, " magic"        );
-    if ( extra_flags & ITEM_NODROP       ) STRAPP( buf, " nodrop"       );
-    if ( extra_flags & ITEM_BLESS        ) STRAPP( buf, " bless"        );
-    if ( extra_flags & ITEM_ANTI_GOOD    ) STRAPP( buf, " anti-good"    );
-    if ( extra_flags & ITEM_ANTI_EVIL    ) STRAPP( buf, " anti-evil"    );
-    if ( extra_flags & ITEM_ANTI_NEUTRAL ) STRAPP( buf, " anti-neutral" );
-    if ( extra_flags & ITEM_NOREMOVE     ) STRAPP( buf, " noremove"     );
-    if ( extra_flags & ITEM_INVENTORY    ) STRAPP( buf, " inventory"    );
-    if ( extra_flags & ITEM_DEATHROT	 ) STRAPP( buf, " deathrot"	);
-    if ( extra_flags & ITEM_ANTI_SOLDIER ) STRAPP( buf, " anti-soldier" );
-    if ( extra_flags & ITEM_TWO_HANDS    ) STRAPP( buf, " two-hands"    );
-    if ( extra_flags & ITEM_ANTI_HUNTER  ) STRAPP( buf, " anti-hunter"  );
-    if ( extra_flags & ITEM_ANTI_JEDI    ) STRAPP( buf, " anti-jedi"    );
-    if ( extra_flags & ITEM_ANTI_SITH    ) STRAPP( buf, " anti-sith"    );
-    if ( extra_flags & ITEM_ANTI_PILOT   ) STRAPP( buf, " anti-pilot"   );
-    if ( extra_flags & ITEM_SMALL_SIZE   ) STRAPP( buf, " small_size"   );
-    if ( extra_flags & ITEM_LARGE_SIZE   ) STRAPP( buf, " large_size"   );
-    if ( extra_flags & ITEM_DONATION     ) STRAPP( buf, " donation"     );
-    if ( extra_flags & ITEM_CLANOBJECT   ) STRAPP( buf, " clan"         );
-    if ( extra_flags & ITEM_ANTI_CITIZEN ) STRAPP( buf, " anti-citizen" );
-    if ( extra_flags & ITEM_PROTOTYPE    ) STRAPP( buf, " prototype"    );
-    if ( extra_flags & ITEM_HUMAN_SIZE   ) STRAPP( buf, " human_size"   );
-    return ( buf[0] != '\0' ) ? buf+1 : (char* )"none";
-    */
 }
 
 /*
@@ -3168,7 +3135,7 @@ void showaffect( CHAR_DATA *ch, AFFECT_DATA *paf )
 		    if ( IS_SET( paf->modifier, x ) )
 		    {
 		        STRAPP( buf, " " );
-		        STRAPP( buf, "%s", a_flags[x] );
+		        STRAPP( buf, "%s", get_flag_name(a_flags, x, AFF_MAX) );
 		    }
 		STRAPP( buf, "\n" );
 		break;

@@ -37,7 +37,7 @@ extern bool	fBootDb;
 
 const flag_name  planet_flags [] =
 {
-    { PLANET_CORUSCANT, "coruscant" },
+    { PLANET_CORUSCANT, 		 "coruscant" },
     { PLANET_KASHYYYK          	, "kashyyyk"},
     { PLANET_RYLOTH            	, "ryloth"},
     { PLANET_RODIA             	, "rodia"},
@@ -71,17 +71,17 @@ const flag_name  planet_flags [] =
     { (size_t)-1, nullptr } // terminator	
 };
 
-char *  const   weapon_table    [14] =
+const flag_name  spice_table [] =
 {
-    "none",
-    "vibro-axe",  "vibro-blade",  "lightsaber", "whip", "claw",
-    "blaster",  "w7", "bludgeon", "bowcaster", "w10",
-    "force pike", "w12", nullptr
-};
+    { SPICE_GLITTERSTIM, "glitterstim" },
+    { SPICE_CARSANUM          	, "corsanum"},
+    { SPICE_RYLL            	, "ryll"},
+    { SPICE_ANDRIS             	, "andris"},
+    { SPICE_LUMNI            , "lumni"},
+    { SPICE_LYCIN       	, "lycin"},
+	{ SPICE_MAX,				"_spice_max_"},
 
-char *  const   spice_table    [] =
-{
-    "glitterstim", "carsanum", "ryll","andris","lumni","lycin","s6","s7","s8","s9", nullptr
+    { (size_t)-1, nullptr } // terminator	
 };
 
 char *  const   crystal_table    [9] =
@@ -173,27 +173,33 @@ const flag_name aff_flags[] =
 	{ (size_t)-1, nullptr } // terminator
 };
 
-char *	const	o_flags	[] =
+const flag_name  w_flags [] =
 {
-"glow", "hum", "dark", "hutt_size", "contraband", "invis", "magic", "nodrop", "bless",
-"antigood", "antievil", "antineutral", "noremove", "inventory",
-"antisoldier", "twohands", "antihunter", "antijedi", "small_size", "large_size",
-"donation", "clanobject", "anticitizen", "antisith", "antipilot", 
-"hidden", "poisoned", "covering", "deathrot", "burried", "prototype", "human_size", nullptr
-};
-/*
-char *	const	mag_flags	[] =
-{
-"returning", "backstabber", "bane", "loyal", "haste", "drain", 
-"lightning_blade" 
-};
-*/
-char *	const	w_flags	[] =
-{
-"take", "finger", "neck", "body", "head", "legs", "feet", "hands", "arms",
-"shield", "about", "waist", "wrist", "wield", "hold", "_dual_", "ears", "eyes",
-"_missile_", "floating","over","disguise","maxwear","r5","r6",
-"r7","r8","r9","r10","r11","r12","r13", nullptr
+    { ITEM_TAKE                 , "take"},
+    { ITEM_WEAR_FINGER	    	, "finger"},
+    { ITEM_WEAR_NECK		    , "neck"},
+    { ITEM_WEAR_BODY		    , "body"},
+    { ITEM_WEAR_HEAD		    , "head"},
+    { ITEM_WEAR_LEGS		    , "legs"},
+    { ITEM_WEAR_FEET		    , "feet"},
+    { ITEM_WEAR_HANDS		    , "hands"},
+    { ITEM_WEAR_ARMS		    , "arms"},
+    { ITEM_WEAR_SHIELD	    	, "shield"},
+    { ITEM_WEAR_ABOUT		    , "about"},
+    { ITEM_WEAR_WAIST		    , "waist"},
+    { ITEM_WEAR_WRIST		    , "wrist"},
+    { ITEM_WIELD		        , "wield"},
+    { ITEM_HOLD		        	, "hold"},
+    { ITEM_DUAL_WIELD		    , "_dual_"},
+    { ITEM_WEAR_EARS		    , "ears"},
+    { ITEM_WEAR_EYES		    , "eyes"},
+    { ITEM_MISSILE_WIELD	    , "_missile_"},
+    { ITEM_WEAR_FLOATING	    , "floating"},
+    { ITEM_WEAR_OVER		    , "over"},
+    { ITEM_WEAR_DISGUISE      	, "disguise"},
+    { ITEM_WEAR_MAX           	, "maxwear"},
+	
+    { (size_t)-1, nullptr } // terminator	
 };
 
 char *	const	area_flags	[] =
@@ -204,45 +210,223 @@ char *	const	area_flags	[] =
 "r25","r26","r27","r28","r29","r30","r31", nullptr
 };
 
-char *	const	o_types	[] =
+const flag_name o_types[] =
 {
-"none", "light", "scroll", "_wand", "staff", "weapon", "_fireweapon", "missile",
-"treasure", "armor", "potion", "rope", "furniture", "trash", "_oldtrap",
-"container", "_note", "drinkcon", "key", "food", "money", "pen", "_boat",
-"corpse", "corpse_pc", "fountain", "pill", "_blood", "_bloodstain",
-"scraps", "_pipe", "_herbcon", "_herb", "_incense", "fire", "book", "switch",
-"lever", "_pullchain", "button", "dial", "_rune", "_runepouch", "_match", "trap",
-"map", "_portal", "paper", "_tinder", "lockpick", "_spike", "_disease", "_oil",
-"fuel", "_shortbow", "_longbow", "_crossbow", "ammo", "_quiver", "shovel",
-"salve", "rawspice", "lens", "crystal", "duraplast", "battery", 
-"toolkit", "durasteel", "oven", "mirror", "circuit", "superconductor", "comlink", "medpac",
-"fabric", "rare_metal", "magnet",  "thread", "spice", "smut", "device", "spacecraft",
-"grenade", "landmine", "government", "droid_corpse", "bolt", "scope", 
-"fightercomp", "midcomp", "capitalcomp","chemical", "disguise",
-"disguise_fabric", "hair", "stun_grenade", "cargo", nullptr,
+    { ITEM_NONE,             "none" },
+    { ITEM_LIGHT,            "light" },
+    { ITEM_SCROLL,           "scroll" },
+    { ITEM_WAND,             "_wand" },
+    { ITEM_STAFF,            "staff" },
+    { ITEM_WEAPON,           "weapon" },
+    { ITEM_FIREWEAPON,       "_fireweapon" },
+    { ITEM_MISSILE,          "missile" },
+    { ITEM_TREASURE,         "treasure" },
+    { ITEM_ARMOR,            "armor" },
+    { ITEM_POTION,           "potion" },
+    { ITEM_ROPE,             "rope" },
+    { ITEM_FURNITURE,        "furniture" },
+    { ITEM_TRASH,            "trash" },
+    { ITEM_OLDTRAP,          "_oldtrap" },
+    { ITEM_CONTAINER,        "container" },
+    { ITEM_NOTE,             "_note" },
+    { ITEM_DRINK_CON,        "drinkcon" },
+    { ITEM_KEY,              "key" },
+    { ITEM_FOOD,             "food" },
+    { ITEM_MONEY,            "money" },
+    { ITEM_PEN,              "pen" },
+    { ITEM_BOAT,             "_boat" },
+    { ITEM_CORPSE_NPC,       "corpse" },
+    { ITEM_CORPSE_PC,        "corpse_pc" },
+    { ITEM_FOUNTAIN,         "fountain" },
+    { ITEM_PILL,             "pill" },
+    { ITEM_BLOOD,            "_blood" },
+    { ITEM_BLOODSTAIN,       "_bloodstain" },
+    { ITEM_SCRAPS,           "scraps" },
+    { ITEM_PIPE,             "_pipe" },
+    { ITEM_HERB_CON,         "_herbcon" },
+    { ITEM_HERB,             "_herb" },
+    { ITEM_INCENSE,          "_incense" },
+    { ITEM_FIRE,             "fire" },
+    { ITEM_BOOK,             "book" },
+    { ITEM_SWITCH,           "switch" },
+    { ITEM_LEVER,            "lever" },
+    { ITEM_PULLCHAIN,        "_pullchain" },
+    { ITEM_BUTTON,           "button" },
+    { ITEM_DIAL,             "dial" },
+    { ITEM_RUNE,             "_rune" },
+    { ITEM_RUNEPOUCH,        "_runepouch" },
+    { ITEM_MATCH,            "_match" },
+    { ITEM_TRAP,             "trap" },
+    { ITEM_MAP,              "map" },
+    { ITEM_PORTAL,           "_portal" },
+    { ITEM_PAPER,            "paper" },
+    { ITEM_TINDER,           "_tinder" },
+    { ITEM_LOCKPICK,         "lockpick" },
+    { ITEM_SPIKE,            "_spike" },
+    { ITEM_DISEASE,          "_disease" },
+    { ITEM_OIL,              "_oil" },
+    { ITEM_FUEL,             "fuel" },
+    { ITEM_SHORT_BOW,        "_shortbow" },
+    { ITEM_LONG_BOW,         "_longbow" },
+    { ITEM_CROSSBOW,         "_crossbow" },
+    { ITEM_AMMO,             "ammo" },
+    { ITEM_QUIVER,           "_quiver" },
+    { ITEM_SHOVEL,           "shovel" },
+    { ITEM_SALVE,            "salve" },
+    { ITEM_RAWSPICE,         "rawspice" },
+    { ITEM_LENS,             "lens" },
+    { ITEM_CRYSTAL,          "crystal" },
+    { ITEM_DURAPLAST,        "duraplast" },
+    { ITEM_BATTERY,          "battery" },
+    { ITEM_TOOLKIT,          "toolkit" },
+    { ITEM_DURASTEEL,        "durasteel" },
+    { ITEM_OVEN,             "oven" },
+    { ITEM_MIRROR,           "mirror" },
+    { ITEM_CIRCUIT,          "circuit" },
+    { ITEM_SUPERCONDUCTOR,   "superconductor" },
+    { ITEM_COMLINK,          "comlink" },
+    { ITEM_MEDPAC,           "medpac" },
+    { ITEM_FABRIC,           "fabric" },
+    { ITEM_RARE_METAL,       "rare_metal" },
+    { ITEM_MAGNET,           "magnet" },
+    { ITEM_THREAD,           "thread" },
+    { ITEM_SPICE,            "spice" },
+    { ITEM_SMUT,             "smut" },
+    { ITEM_DEVICE,           "device" },
+    { ITEM_SPACECRAFT,       "spacecraft" },
+    { ITEM_GRENADE,          "grenade" },
+    { ITEM_LANDMINE,         "landmine" },
+    { ITEM_GOVERNMENT,       "government" },
+    { ITEM_DROID_CORPSE,     "droid_corpse" },
+    { ITEM_BOLT,             "bolt" },
+    { ITEM_SCOPE,            "scope" },
+    { ITEM_FIGHTERCOMP,      "fightercomp" },
+    { ITEM_MIDCOMP,          "midcomp" },
+    { ITEM_CAPITALCOMP,      "capitalcomp" },
+    { ITEM_CHEMICAL,         "chemical" },
+    { ITEM_DISGUISE,         "disguise" },
+    { ITEM_DIS_FABRIC,       "disguise_fabric" },
+    { ITEM_HAIR,             "hair" },
+    { ITEM_STUNGRENADE,      "stun_grenade" },
+    { ITEM_CARGO,            "cargo" },
+    { ITEM_TRACKINGDEVICE,   "_tracking device_" },
+	{ ITEM_MAX,				 "_item max_"},
+
+    { (size_t)-1, nullptr } // terminator	
 };
 
-char *	const	a_types	[] =
+const flag_name a_types[] =
 {
-"none", "strength", "dexterity", "intelligence", "wisdom", "constitution",
-"sex", "null", "level", "age", "height", "weight", "force", "hit", "move",
-"credits", "experience", "armor", "hitroll", "damroll", "save_poison", "save_rod",
-"save_para", "save_breath", "save_spell", "charisma", "affected", "resistant",
-"immune", "susceptible", "weaponspell", "luck", "backstab", "pick", "track",
-"steal", "sneak", "hide", "palm", "detrap", "dodge", "peek", "scan", "gouge",
-"search", "mount", "disarm", "kick", "parry", "bash", "stun", "punch", "climb",
-"grip", "scribe", "brew", "wearspell", "removespell", "mentalstate", "emotion",
-"stripsn", "remove", "dig", "full", "thirst", "drunk", "blood", "snipe", nullptr
+    { APPLY_NONE,            "none" },
+    { APPLY_STR,             "strength" },
+    { APPLY_DEX,             "dexterity" },
+    { APPLY_INT,             "intelligence" },
+    { APPLY_WIS,             "wisdom" },
+    { APPLY_CON,             "constitution" },
+    { APPLY_SEX,             "sex" },
+    { APPLY_NULL,            "null" },
+    { APPLY_LEVEL,           "level" },
+    { APPLY_AGE,             "age" },
+    { APPLY_HEIGHT,          "height" },
+    { APPLY_WEIGHT,          "weight" },
+    { APPLY_MANA,            "force" },
+    { APPLY_HIT,             "hit" },
+    { APPLY_MOVE,            "move" },
+    { APPLY_GOLD,            "credits" }, 
+    { APPLY_EXP,             "experience" },
+    { APPLY_AC,              "armor" },
+    { APPLY_HITROLL,         "hitroll" },
+    { APPLY_DAMROLL,         "damroll" },
+    { APPLY_SAVING_POISON,   "save_poison" },
+    { APPLY_SAVING_ROD,      "save_rod" },
+    { APPLY_SAVING_PARA,     "save_para" },
+    { APPLY_SAVING_BREATH,   "save_breath" },
+    { APPLY_SAVING_SPELL,    "save_spell" },
+    { APPLY_CHA,             "charisma" },
+    { APPLY_AFFECT,          "affected" },
+    { APPLY_RESISTANT,       "resistant" },
+    { APPLY_IMMUNE,          "immune" },
+    { APPLY_SUSCEPTIBLE,     "susceptible" },
+    { APPLY_WEAPONSPELL,     "weaponspell" },
+    { APPLY_LCK,             "luck" },
+    { APPLY_BACKSTAB,        "backstab" },
+    { APPLY_PICK,            "pick" },
+    { APPLY_TRACK,           "track" },
+    { APPLY_STEAL,           "steal" },
+    { APPLY_SNEAK,           "sneak" },
+    { APPLY_HIDE,            "hide" },
+    { APPLY_PALM,            "palm" },
+    { APPLY_DETRAP,          "detrap" },
+    { APPLY_DODGE,           "dodge" },
+    { APPLY_PEEK,            "peek" },
+    { APPLY_SCAN,            "scan" },
+    { APPLY_GOUGE,           "gouge" },
+    { APPLY_SEARCH,          "search" },
+    { APPLY_MOUNT,           "mount" },
+    { APPLY_DISARM,          "disarm" },
+    { APPLY_KICK,            "kick" },
+    { APPLY_PARRY,           "parry" },
+    { APPLY_BASH,            "bash" },
+    { APPLY_STUN,            "stun" },
+    { APPLY_PUNCH,           "punch" },
+    { APPLY_CLIMB,           "climb" },
+    { APPLY_GRIP,            "grip" },
+    { APPLY_SCRIBE,          "scribe" },
+    { APPLY_BREW,            "brew" },
+    { APPLY_WEARSPELL,       "wearspell" },
+    { APPLY_REMOVESPELL,     "removespell" },
+    { APPLY_MENTALSTATE,     "mentalstate" }, 
+    { APPLY_EMOTION,         "emotion" },
+    { APPLY_STRIPSN,         "stripsn" },
+    { APPLY_REMOVE,          "remove" },
+    { APPLY_DIG,             "dig" },
+    { APPLY_FULL,            "full" },
+    { APPLY_THIRST,          "thirst" },
+    { APPLY_DRUNK,           "drunk" },
+    { APPLY_BLOOD,           "blood" },
+    { APPLY_SNIPE,           "snipe" },
+	{ MAX_APPLY_TYPE, 		 "max_apply_type"},
+    { (size_t)-1, nullptr } // terminator	
 };
 
-char *	const	a_flags [] =
+
+const flag_name a_flags[] =
 {
-"blind", "invisible", "detect_evil", "detect_invis", "detect_magic",
-"detect_hidden", "weaken", "sanctuary", "faerie_fire", "infrared", "curse",
-"endurance", "poison", "protect", "paralysis", "sneak", "hide", "sleep",
-"charm", "flying", "pass_door", "floating", "truesight", "detect_traps",
-"scrying", "fireshield", "shockshield", "r1", "iceshield", "possess", 
-"berserk", "aqua_breath", nullptr };
+    { AFF_BLIND,         "blind" },
+    { AFF_INVISIBLE,     "invisible" },
+    { AFF_DETECT_EVIL,   "detect_evil" },
+    { AFF_DETECT_INVIS,  "detect_invis" },
+    { AFF_DETECT_MAGIC,  "detect_magic" },
+    { AFF_DETECT_HIDDEN, "detect_hidden" },
+    { AFF_WEAKEN,        "weaken" },
+    { AFF_SANCTUARY,     "sanctuary" },
+    { AFF_FAERIE_FIRE,   "faerie_fire" },
+    { AFF_INFRARED,      "infrared" },
+    { AFF_CURSE,         "curse" },
+    { AFF_ENDURANCE,     "endurance" },
+    { AFF_POISON,        "poison" },
+    { AFF_PROTECT,       "protect" },
+    { AFF_PARALYSIS,     "paralysis" },
+    { AFF_SNEAK,         "sneak" },
+    { AFF_HIDE,          "hide" },
+    { AFF_SLEEP,         "sleep" },
+    { AFF_CHARM,         "charm" },
+    { AFF_FLYING,        "flying" },
+    { AFF_PASS_DOOR,     "pass_door" },
+    { AFF_FLOATING,      "floating" },
+    { AFF_TRUESIGHT,     "truesight" },
+    { AFF_DETECTTRAPS,   "detect_traps" },
+    { AFF_SCRYING,       "scrying" },
+    { AFF_FIRESHIELD,    "fireshield" },
+    { AFF_SHOCKSHIELD,   "shockshield" },
+    { AFF_BIND,          "r1" },
+    { AFF_ICESHIELD,     "iceshield" },
+    { AFF_POSSESS,       "possess" },
+    { AFF_BERSERK,       "berserk" },
+    { AFF_AQUA_BREATH,   "aqua_breath" },
+	{ AFF_MAX,			 "_affect_max_"},
+    { (size_t)-1, nullptr } // terminator	
+};
 
 const flag_name act_flags[] =
 {
@@ -276,22 +460,27 @@ const flag_name act_flags[] =
 
     { (size_t)-1, nullptr } // terminator
 };
-/*
-char *	const	act_flags [] =
+
+const flag_name pc_flags[] =
 {
-"npc", "sentinel", "scavenger", "r3", "r3", "aggressive", "stayarea",
-"wimpy", "pet", "train", "practice", "immortal", "deadly", "polyself",
-"meta_aggr", "guardian", "running", "nowander", "mountable", "mounted", "scholar",
-"secretive", "polymorphed", "mobinvis", "noassist", "nokill", "droid", "nocorpse", 
-"r28", "r29", "prototype", "r31" };
-*/
-char *	const	pc_flags [] =
-{
-"r1", "deadly", "unauthed", "norecall", "nointro", "gag", "retired", "guest",
-"nosummon", "pageron", "notitled", "room", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "r13",
-"r14", "r15", "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23", "r24",
-"r25", nullptr
-};
+    { PCFLAG_R0,       "r0" },
+    { PCFLAG_R1,       "r1" },
+    { PCFLAG_R2,       "deadly" },
+    { PCFLAG_UNAUTHED, "unauthed" },
+    { PCFLAG_NORECALL, "norecall" },
+    { PCFLAG_NOINTRO,  "nointro" },
+    { PCFLAG_GAG,      "gag" },
+    { PCFLAG_RETIRED,  "retired" },
+    { PCFLAG_GUEST,    "guest" },
+    { PCFLAG_NOSUMMON, "nosummon" },
+    { PCFLAG_PAGERON,  "pageron" },
+    { PCFLAG_NOTITLE,  "notitled" },
+    { PCFLAG_ROOM,     "room" },
+    { PCFLAG_DND,      "dnd" },
+	{ PCFLAG_MAX, 	   "_pcflag_max"},
+
+    { (size_t)-1, nullptr } // terminator
+};	
 
 const flag_name plr_flags[] =
 {
@@ -332,16 +521,7 @@ const flag_name plr_flags[] =
 
     { (size_t)-1, nullptr } // terminator
 };
-/*
-char *	const	plr_flags [] =
-{
-"npc", "boughtpet", "shovedrag", "autoexits", "autoloot", "autosac", "blank", 
-"outcast", "brief", "combine", "prompt", "telnet_ga", "holylight", 
-"wizinvis", "roomvnum","silence", "noemote", "attacker", "notell", "log", 
-"deny", "freeze", "killer","homeresident", "litterbug", "ansi", "rip", "nice", 
-"flee" ,"autocred", "automap", "afk"
-};
-*/
+
 char *	const	trap_flags [] =
 {
    "room", "obj", "enter", "leave", "open", "close", "get", "put", "pick",
@@ -350,12 +530,37 @@ char *	const	trap_flags [] =
    "r9", "r10", "r11", "r12", "r13", "r14", "r15", nullptr
 };
 
-char *	const	wear_locs [] =
+const flag_name wear_locs[] =
 {
-"light", "finger1", "finger2", "neck1", "neck2", "body", "head", "legs",
-"feet", "hands", "arms", "shield", "about", "waist", "wrist1", "wrist2",
-"wield", "hold", "dual_wield", "ears", "eyes", "missile_wield", "floating", 
-"over", nullptr
+    { WEAR_LIGHT,          "light" },
+    { WEAR_FINGER_L,       "finger1" },
+    { WEAR_FINGER_R,       "finger2" },
+    { WEAR_NECK_1,         "neck1" },
+    { WEAR_NECK_2,         "neck2" },
+    { WEAR_BODY,           "body" },
+    { WEAR_HEAD,           "head" },
+    { WEAR_LEGS,           "legs" },
+    { WEAR_FEET,           "feet" },
+    { WEAR_HANDS,          "hands" },
+    { WEAR_ARMS,           "arms" },
+    { WEAR_SHIELD,         "shield" },
+    { WEAR_ABOUT,          "about" },
+    { WEAR_WAIST,          "waist" },
+    { WEAR_WRIST_L,        "wrist1" },
+    { WEAR_WRIST_R,        "wrist2" },
+    { WEAR_WIELD,          "wield" },
+    { WEAR_HOLD,           "hold" },
+    { WEAR_DUAL_WIELD,     "dual_wield" },
+    { WEAR_EARS,           "ears" },
+    { WEAR_EYES,           "eyes" },
+    { WEAR_MISSILE_WIELD,  "missile_wield" },
+    { WEAR_FLOATING,       "floating" },
+    { WEAR_OVER,           "over" },
+	{ MAX_WEAR,				"_max_wear_"},
+	{ WEAR_DISGUISE,        "disguise"},
+    { WEAR_MAX,          "_wear_max_"},	
+
+    { (size_t)-1, nullptr } // terminator
 };
 
 char *	const	ris_flags [] =
@@ -722,24 +927,30 @@ bool can_medit( CHAR_DATA *ch, MOB_INDEX_DATA *mob )
 
 int get_otype( char *type )
 {
-    unsigned int x;
-
-    for ( x = 0; x < (sizeof(o_types) / sizeof(o_types[0]) ); x++ )
-      if ( !str_cmp( type, o_types[x] ) )
-        return x;
-    return -1;
+	const flag_name* x;
+	x = find_flag(o_types, type);
+	if (!x)
+		return -1;
+	return x->bit;
 }
 
 int get_aflag( char *flag )
 {
-	size_t ret;
-	ret = get_flag_partial(flag,aff_flags);
-	if (ret == BIT_NOTFOUND)
-	  	return -1;
-	else
-		return ret;
+	const flag_name* x;
+	x = find_flag(aff_flags, flag);
+	if (!x)
+		return -1;
+	return x->bit;		
 }
 
+int get_spice_flag( char *flag )
+{
+	const flag_name* x;
+	x = find_flag(spice_table, flag);
+	if (!x)
+		return -1;
+	return x->bit;		
+}
 int get_trapflag( char *flag )
 {
     int x;
@@ -752,22 +963,20 @@ int get_trapflag( char *flag )
 
 int get_atype( char *type )
 {
-    int x;
-
-    for ( x = 0; x < MAX_APPLY_TYPE; x++ )
-      if ( !str_cmp( type, a_types[x] ) )
-        return x;
-    return -1;
+	const flag_name* x;
+	x = find_flag(a_types, type);
+	if (!x)
+		return -1;
+	return x->bit;
 }
 
 int get_npc_race( char *type )
 {
-    int x;
-
-    for ( x = 0; x < MAX_NPC_RACE; x++ )
-      if ( !str_cmp( type, npc_race[x] ) )
-        return x;
-    return -1;
+	const flag_name* x;
+	x = find_flag(npc_race, type);
+	if (!x)
+		return -1;
+	return x->bit;	
 }
 
 int get_wearloc( char *type )
@@ -775,7 +984,7 @@ int get_wearloc( char *type )
     int x;
     
     for ( x = 0; x < MAX_WEAR; x++ )
-      if ( !str_cmp( type, wear_locs[x] ) )
+      if ( !str_cmp( type, wear_locs[x].name ) )
         return x;
     return -1;
 }
@@ -792,7 +1001,11 @@ int get_exflag( char *flag )
 
 size_t get_rflag( char *flag )
 {
-	return get_flag_partial(flag, r_flags);
+	const flag_name* x;
+	x = find_flag(r_flags, flag);
+	if (!x)
+		return -1;
+	return x->bit;			
 }
 
 int get_mpflag( char *flag )
@@ -809,14 +1022,6 @@ int get_mpflag( char *flag )
 int get_oflag( char *flag )
 {
 	return get_flag_partial(flag, obj_flag_table, ITEM_FIRST, ITEM_MAX);
-/*
-	int x;
-
-    for ( x = 0; x < 32; x++ )
-      if ( !str_cmp( flag, o_flags[x] ) )
-        return x;
-    return -1;
-*/
 }
 
 size_t get_flag(const char *flag, const flag_name *table)
@@ -850,12 +1055,11 @@ int get_areaflag( char *flag )
 
 int get_wflag( char *flag )
 {
-    int x;
-
-    for ( x = 0; x < ITEM_WEAR_MAX; x++ )
-      if ( !str_cmp( flag, w_flags[x] ) )
-        return x;
-    return -1;
+	const flag_name* x;
+	x = find_flag(w_flags, flag);
+	if (!x)
+		return -1;
+	return x->bit;
 }
 
 int get_actflag( char *flag )
@@ -890,12 +1094,11 @@ int get_wanted_flag( char *flag )
 
 int get_pcflag( char *flag )
 {
-    int x;
-
-    for ( x = 0; x < 32; x++ )
-      if ( !str_cmp( flag, pc_flags[x] ) )
-        return x;
-    return -1;
+	const flag_name* x;
+	x = find_flag(pc_flags, flag);
+	if (!x)
+		return -1;
+	return x->bit;	
 }
 int get_plrflag( char *flag )
 {
@@ -1833,7 +2036,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
         {
           send_to_char("Command Groups: \n",ch);
           for (i = 0; i <  MAX_COMMAND_GROUP; i++) {
-            SPRINTF(buf,"%d) %s\n",i, command_groups[i]); 
+            SPRINTF(buf,"%d) %s\n",i, get_flag_name(command_groups, i, MAX_COMMAND_GROUP)); 
             send_to_char(buf,ch);
           }
           return;
@@ -4128,12 +4331,9 @@ void do_oset( CHAR_DATA *ch, char *argument )
 	    if ( !str_cmp( arg2, "grade" ) )          tmp = 1;
 	    if ( !str_cmp( arg2, "spicetype" ) )
 	    {
-		unsigned int x;
 
 		value = -1;
-		for ( x = 0; x < sizeof( spice_table ) / sizeof( spice_table[0] ); x++ )
-		  if ( !str_cmp( arg3, spice_table[x] ) )
-		    value = x;
+		value = get_spice_flag(arg3);
 		if ( value < 0 )
 		{
 		    send_to_char( "Unknown spice type.\n", ch );
@@ -4306,8 +4506,8 @@ void do_rset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "sector" ) )
     {
-	location->sector_type	= value;
-	return;
+		location->sector_type	= value;
+		return;
     }
 
     /*
@@ -4439,7 +4639,7 @@ char *sprint_reset( CHAR_DATA *ch, RESET_DATA *pReset, sh_int num, bool rlist )
 	  			objname,
 	  			pReset->arg1,
 	  			mobname,
-	  			wear_locs[pReset->arg3],
+	  			get_flag_name(wear_locs,pReset->arg3, WEAR_MAX),
 	  			pReset->arg2 );
 	  	if ( n < 0 || n >= (int)sizeof(buf) )
 			  	  buf[sizeof(buf)-1] = '\0';
@@ -9064,4 +9264,146 @@ bool is_valid_vnum( int vnum, short type )
       }
    }
    return isValid;
+}
+
+/* Lists all exits that links the specified area with others.
+ * Idea for it after a talk with Iliana - Luc 11/2000
+ * Modified to include a "reverse" option similar to Smaug 1.8, plus provided
+ * a colorized version.  Slightly reworked the logic too. - Luc 06/2007
+ */
+void do_alinks( CHAR_DATA* ch,  char* argument )
+{
+   static const char *dirs[] = { "n", "e", "s", "w", "u", "d", "ne", "nw", "se", "sw", "--" };
+   char buf[MAX_INPUT_LENGTH];
+   AREA_DATA *area;
+   AREA_DATA *target;
+   ROOM_INDEX_DATA *room;
+   EXIT_DATA *rexit;
+   FLAG_SET fmask;
+   FLAG_SET dummy;
+   int rnum, dnum, count, detail;
+   bool rev = FALSE;
+   bool ex_found;
+   bool rm_found;
+
+   argument = one_argument( argument, buf );
+   if( !buf[0] )
+   {
+      send_to_char( "&wPlease see the related helpfile.\r\n", ch );
+      return;
+   }
+
+   for( area = first_area, target = NULL; area; area = area->next )
+   {
+      if( IS_SET( area->status, AREA_DELETED ) )
+         continue;
+      if( !str_cmp( area->filename, buf ) )
+      {
+         target = area;
+         break;
+      }
+   }
+
+   if( !target )
+   {
+      send_to_char( "&wNo areas found with the supplied name.\r\n", ch );
+      return;
+   }
+
+   count = detail = 0;
+   if( *argument != '\0' )
+   {
+      if( !str_prefix( argument, "detailed" ) )
+         detail = 1;
+      else if( !str_prefix( argument, "names" ) )
+         detail = 2;
+      else if( !str_prefix( argument, "reverse" ) )
+         rev = TRUE, detail = 1;
+   }
+   ch_printf( ch, "&wListing all links from &W%s &wto &W%s&w...\r\n\r\n",
+              rev ? "&wthe world" : area->name, rev ? area->name : "&wthe world" );
+
+   fmask.reset();
+   BV_SET_BIT( fmask, ROOM_NO_MOB );
+   BV_SET_BIT( fmask, ROOM_PRIVATE );
+   BV_SET_BIT( fmask, ROOM_SOLITARY );
+   BV_SET_BIT( fmask, ROOM_NOFLOOR );
+   BV_SET_BIT( fmask, ROOM_PROTOTYPE );
+
+   for( area = first_area; area; area = area->next )
+   {
+      if( IS_SET( area->status, AREA_DELETED ) )
+         continue;
+      if( rev ? area == target : area != target )
+         continue;
+      rm_found = FALSE;
+      for( rnum = area->low_r_vnum; rnum <= area->hi_r_vnum; rnum++ )
+      {
+         room = get_room_index( rnum );
+         if( !room )
+            continue;
+         ex_found = FALSE;
+         for( rexit = room->first_exit; rexit; rexit = rexit->next )
+         {
+            if( rev ? rexit->to_room->area == target : rexit->to_room->area != target )
+            {
+               /*
+                * exit is an inter-area link involving the target area 
+                */
+               count++;
+               if( !ex_found )
+               {
+                  /*
+                   * print room's data only once, the same with area names 
+                   */
+                  if( !rm_found && rev )
+                     ch_printf( ch, "&W%s &c- &W%s\r\n\r\n", area->filename, area->name );
+                  ch_printf( ch, "  &G%d &c- &w%s", room->vnum, room->name );
+                  {
+                     for( size_t i = 0; i < room->room_flags.size(); i++ )
+						if (fmask.test(i) && room->room_flags.test(i))
+							dummy.set(i);
+//                        dummy.bits[i] = room->room_flags.bits[i] & fmask.bits[i];
+                     ch_printf( ch, " &c- &O%s", bitset_to_string( dummy, r_flags ).c_str() );
+                  }
+                  send_to_char( "\r\n", ch );
+               }
+               dnum = UMIN( rexit->vdir, 10 );
+               if( detail == 0 )
+                  ch_printf( ch, "%s&C%s:&g%d&O%s%s%s", ex_found ? " " : "    ", dirs[dnum], rexit->vnum,
+                             "", rexit->key <= 0 ? "" : "k",
+                             rexit->exit_info ? "f" : "" );
+               else if( detail == 1 )
+               {
+                  ch_printf( ch, "    &C%-2s&c:&g%d&O%s &c- %s%s", dirs[dnum], rexit->vnum,
+                             "", rev ? "&w" : "&W",
+                             rev ? rexit->to_room->name : rexit->to_room->area->name );
+                  if( rexit->exit_info )
+                     ch_printf( ch, " &c- &O%s", flag_string( rexit->exit_info, (char* const*)(ex_flags) ) );
+                  if( rexit->key > 0 )
+                     ch_printf( ch, " &ckey:&W%d", rexit->key );
+                  send_to_char( "\r\n", ch );
+               }
+               else
+                  ch_printf( ch, "    &C%-2s&c:&g%d&O%s%s%s &c- &W%s &c- &w%s\r\n", dirs[dnum], rexit->vnum,
+                             "", rexit->key <= 0 ? "" : "k",
+                             rexit->exit_info ? "f" : "", rexit->to_room->area->name, rexit->to_room->name );
+               ex_found = TRUE;
+            }
+         }
+
+         if( ex_found )
+         {
+            if( detail == 0 )
+               send_to_char( "\r\n", ch );
+            rm_found = TRUE;
+         }
+      }
+      if( rm_found )
+         send_to_char( "\r\n", ch );
+   }
+   if( count )
+      ch_printf( ch, "&wFound &C%d&w link(s).\r\n", count );
+   else
+      send_to_char( "&wNo links exists.\r\n", ch );
 }

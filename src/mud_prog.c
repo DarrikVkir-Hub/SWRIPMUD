@@ -813,7 +813,7 @@ return FALSE;
     if ( !str_cmp(chck, "race") )
     {
       if ( IS_NPC(chkchar) )
-        return mprog_seval(npc_race[chkchar->race], opr, rval, mob);
+        return mprog_seval((char*)get_flag_name(npc_race, chkchar->race, MAX_NPC_RACE), opr, rval, mob);
       return mprog_seval((char *)race_table[chkchar->race].race_name, opr,
           rval, mob);
     }
@@ -835,7 +835,7 @@ return FALSE;
     {
       if ( IS_NPC(chkchar) )
         return FALSE;
-      return mprog_seval(npc_race[chkchar->race], opr, rval, mob);
+      return mprog_seval((char *)get_flag_name(npc_race, chkchar->race, MAX_NPC_RACE), opr, rval, mob);
     }
     if ( !str_cmp(chck, "council") ||  !str_cmp(chck, "senator") )
     {

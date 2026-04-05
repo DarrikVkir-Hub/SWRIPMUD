@@ -1495,11 +1495,11 @@ void do_shopstat( CHAR_DATA *ch, char *argument )
 
     ch_printf( ch, "Keeper: %d  %s\n", shop->keeper, mob->short_descr );
     ch_printf( ch, "buy0 [%s]  buy1 [%s]  buy2 [%s]  buy3 [%s]  buy4 [%s]\n",
-		o_types[shop->buy_type[0]],
-		o_types[shop->buy_type[1]],
-		o_types[shop->buy_type[2]],
-		o_types[shop->buy_type[3]],
-		o_types[shop->buy_type[4]] );
+		get_flag_name(o_types, shop->buy_type[0], ITEMTYPE_MAX),
+		get_flag_name(o_types, shop->buy_type[1], ITEMTYPE_MAX),
+		get_flag_name(o_types, shop->buy_type[2], ITEMTYPE_MAX),
+		get_flag_name(o_types, shop->buy_type[3], ITEMTYPE_MAX),
+		get_flag_name(o_types, shop->buy_type[4], ITEMTYPE_MAX) );
     ch_printf( ch, "Profit:  buy %3d%%  sell %3d%%\n",
 			shop->profit_buy,
 			shop->profit_sell );
@@ -1761,9 +1761,9 @@ void do_repairstat( CHAR_DATA *ch, char *argument )
 
     ch_printf( ch, "Keeper: %d  %s\n", repair->keeper, mob->short_descr );
     ch_printf( ch, "fix0 [%s]  fix1 [%s]  fix2 [%s]\n",
-			o_types[repair->fix_type[0]],
-			o_types[repair->fix_type[1]],
-			o_types[repair->fix_type[2]] );
+			get_flag_name(o_types, repair->fix_type[0], ITEMTYPE_MAX),
+			get_flag_name(o_types, repair->fix_type[1], ITEMTYPE_MAX),
+			get_flag_name(o_types, repair->fix_type[2], ITEMTYPE_MAX) );
     ch_printf( ch, "Profit: %3d%%  Type: %d\n",
 			repair->profit_fix,
 			repair->shop_type );

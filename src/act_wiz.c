@@ -1265,9 +1265,8 @@ void do_ostat( CHAR_DATA *ch, char *argument )
 	ch_printf( ch, "Action description: %s.\n", obj->action_desc );
 
     ch_printf( ch, "Wear flags : %s : Proto: %s\n", 
-        flag_string(obj->wear_flags, w_flags, ITEM_WEAR_MAX), 
-        flag_string(obj->pIndexData->wear_flags, w_flags, ITEM_WEAR_MAX) );
-//  ch_printf( ch, "Extra flags: %s\n", flag_string(obj->extra_flags, o_flags) );
+        bitset_to_string(obj->wear_flags, w_flags).c_str(), 
+        bitset_to_string(obj->pIndexData->wear_flags, w_flags).c_str() );
 
     ch_printf( ch, "Number: %d/%d.  Weight: %d/%d.  Layers: %d\n",
 	1,           get_obj_number( obj ),
@@ -1418,13 +1417,13 @@ ch_printf( ch,
       int i;
       for(i = 0; i < MAX_COMMAND_GROUP; i++) {
         if (!IS_NPC(victim) && BV_IS_SET(victim->pcdata->commandgroup,(1<<i)))
-          ch_printf(ch,"%s ",command_groups[i]);
+          ch_printf(ch,"%s ",get_flag_name(command_groups, i, MAX_COMMAND_GROUP));
       }
     }
     ch_printf(ch,"\n");
     if (  victim->race  < MAX_NPC_RACE  && victim->race  >= 0 )
 	ch_printf( ch, "Race: %s\n",
-	  npc_race[victim->race] );
+	  get_flag_name(npc_race, victim->race, MAX_NPC_RACE) );
     ch_printf( ch, "Hitroll: %d   Damroll: %d   Position: %d   Wimpy: %d \n",
 	GET_HITROLL(victim), GET_DAMROLL(victim),
 	victim->position,    victim->wimpy );
@@ -1474,7 +1473,7 @@ ch_printf( ch,
 	ch_printf( ch, "Player flags: %s\n",
 		bitset_to_string(victim->act, plr_flags).c_str() );
 	ch_printf( ch, "Pcflags: %s\n",
-		flag_string(victim->pcdata->flags, pc_flags, PCFLAG_MAX) );
+		bitset_to_string(victim->pcdata->flags, pc_flags).c_str() );
 	ch_printf( ch, "Wanted flags: %s\n",
 		bitset_to_string(victim->pcdata->wanted_flags, planet_flags).c_str() );
     }
@@ -1534,7 +1533,7 @@ ch_printf( ch,
     {
 	  ch_printf( ch,
 	    "%s: '%s' modifies %s by %d for %d rounds",
-	    skill_tname[skill->type],
+	    flag_name_at(skill_tname,skill->type,SKILL_MAX),
 	    skill->name,
 	    affect_loc_name( paf->location ),
 	    paf->modifier,
@@ -6627,7 +6626,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
         for(i = 0; i < MAX_COMMAND_GROUP; i++)
         {
            if (BV_IS_SET(command->commandgroup,(i)))
-             ch_printf(ch,"%s ",command_groups[i]);
+             ch_printf(ch,"%s ",get_flag_name(command_groups, i, MAX_COMMAND_GROUP));
         }
         ch_printf(ch,"\n");
 	return;
@@ -6670,7 +6669,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
         {
             send_to_char("Command Groups: \n",ch);
             for (i = 0; i <  MAX_COMMAND_GROUP; i++) {
-              SPRINTF(buf,"%d) %s\n",i, command_groups[i]);
+              SPRINTF(buf,"%d) %s\n",i, get_flag_name(command_groups, i, MAX_COMMAND_GROUP));
               send_to_char(buf,ch);
             }
             return;

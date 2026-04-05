@@ -21,22 +21,22 @@
 * 			New OLC Schema-based System				                       *
 ****************************************************************************/
 
-// --------------INDEX----------------
-// OLC defines, enums, and structs
-// OLCSCHEMA Olc Schema declarations
-// GENERIC - generic format, string, flag handling that is not OLC specific
-// GENERICOLCSTRING generic string functions - generic functions but dealing with OLC variables
-// OLC_FORMAT olc_format olc specific format handling
-// ROOM_OLC room_olc OlcOps functions
-// OLC_ROOM olc_room specific functions
-// OBJECT_OLC object_olc OlcOps functions
-// OLC_OBJECT olc_object specific functions
-// MOBILE_OLC mobile_olc OlcOps functions
-// OLC_MOBILE olc_mobile specific functions
-// OLC_GENERIC olc_generic functions
-// OLC_SHOW olc_show functions
-// Session Control OLC_START OLC_STOP OLC_SET
-// DO_COMMANDS DO_OLCSET DO_?EDIT DO_OLC
+    // --------------INDEX----------------
+    // OLC defines, enums, and structs
+    // OLCSCHEMA Olc Schema declarations
+    // GENERIC - generic format, string, flag handling that is not OLC specific
+    // GENERICOLCSTRING generic format functions but dealing with OLC variables
+    // OLC_FORMAT olc_format olc specific format handling
+    // ROOM_OLC room_olc OlcOps functions
+    // OLC_ROOM olc_room specific functions
+    // OBJECT_OLC object_olc OlcOps functions
+    // OLC_OBJECT olc_object specific functions
+    // MOBILE_OLC mobile_olc OlcOps functions
+    // OLC_MOBILE olc_mobile specific functions
+    // OLC_GENERIC olc_generic functions
+    // OLC_SHOW olc_show functions
+    // Session Control OLC_START OLC_STOP OLC_SET
+    // DO_COMMANDS DO_OLCSET DO_?EDIT DO_OLC
 
 
 #include <typeinfo>
@@ -55,7 +55,6 @@ extern size_t visible_length(const char *txt);
 extern char *wrap_text_ex(const char *txt, int width, int flags, int indent);
 extern int get_exflag( char *flag );
 extern int get_risflag( char *flag );
-//extern char *	const		sect_types[SECT_MAX];
 extern int get_npc_race( char *type );
 extern size_t get_langflag(char *flag);
 extern bool command_is_authorized_for_char(CHAR_DATA* ch, CMDTYPE* cmd);
@@ -219,7 +218,7 @@ const OlcSchema* get_room_schema()
             [](ROOM_INDEX_DATA* room) -> std::string { return olc_room_extradesc_list_summary(room); }, SUB_ROOM_EXTRA,
             "These provide extra 'look' targets that can provide more description",
             true ),
-        make_olc_enum_legacy_field<ROOM_INDEX_DATA>( "sector_type", &ROOM_INDEX_DATA::sector_type, sect_types, 
+        make_olc_enum_flag_field<ROOM_INDEX_DATA>( "sector_type", &ROOM_INDEX_DATA::sector_type, sect_types, 
             "Room Terrain - Determines ambiance messages" ),
         make_olc_flag_field<ROOM_INDEX_DATA>( "flags", &ROOM_INDEX_DATA::room_flags, r_flags, 
             "Room flags: See HELP ROOMFLAGS for flag meaning" ),
@@ -253,8 +252,8 @@ const OlcSchema* get_object_schema()
         make_olc_string_field<OBJ_DATA>( "short", &OBJ_DATA::short_descr, "Short description" ),
         make_olc_editor_field<OBJ_DATA>( "description", &OBJ_DATA::description, SUB_OBJ_LONG, "Long object description" ),
         make_olc_string_field<OBJ_DATA>( "action", &OBJ_DATA::action_desc, "Action description" ),
-        make_olc_enum_legacy_field<OBJ_DATA>( "type", &OBJ_DATA::item_type, o_types, "Object type" ),
-        make_olc_legacy_flag_field<OBJ_DATA>( "wearflags", &OBJ_DATA::wear_flags, w_flags, "Wear flags" ),
+        make_olc_enum_flag_field<OBJ_DATA>( "type", &OBJ_DATA::item_type, o_types, "Object type" ),
+        make_olc_flag_field<OBJ_DATA>( "wearflags", &OBJ_DATA::wear_flags, w_flags, "Wear flags" ),
         make_olc_flag_field<OBJ_DATA>( "flags", &OBJ_DATA::objflags, obj_flag_table, "Object flags" ),
         make_olc_int_field<OBJ_DATA>( "wearloc", &OBJ_DATA::wear_loc, "Current wear location" ),
         make_olc_int_field<OBJ_DATA>( "weight", &OBJ_DATA::weight, "Weight" ),
@@ -306,8 +305,8 @@ const OlcSchema* get_mobile_schema()
             [](void* obj) -> std::string {
                 auto mob = static_cast<CHAR_DATA*>(obj);
                 int r = mob->race;
-                if (r >= 0 && r < MAX_NPC_RACE && npc_race[r])
-                    return npc_race[r];
+                if (r >= 0 && r < MAX_NPC_RACE)
+                    return get_flag_name(npc_race, r, MAX_NPC_RACE);
                 return std::to_string(r);
             },
             nullptr, nullptr, 0, "NPC race", INT_MIN, INT_MAX, false },
@@ -569,10 +568,40 @@ bool enum_from_string_legacy(const std::string& input, int& out, const char* con
     return false;
 }
 
+bool enum_from_string_flag(const std::string& input, int& out, const flag_name *table)
+{
+    const flag_name *f;
+    f = find_flag(table,input);
+    if (!f)
+        return false;
+    out = f->bit;
+    return true;
+}
+
 std::string enum_to_string_legacy(int value, const char* const* table)
 {
-    if (value >= 0 && table[value] != nullptr)
-        return table[value];
+    if (!table || value < 0)
+        return std::to_string(value);
+
+    for (int i = 0; table[i] != nullptr; ++i)
+    {
+        if (i == value)
+            return table[i];
+    }
+
+    return std::to_string(value);
+}
+
+std::string enum_to_string_flag(int value, const flag_name *table)
+{
+    if (!table || value < 0)
+        return std::to_string(value);
+
+    for (int i = 0; table[i].name != nullptr; ++i)
+    {
+        if (i == value)
+            return table[i].name;
+    }
 
     return std::to_string(value);
 }
@@ -3947,7 +3976,7 @@ std::string olc_object_affect_list_summary(OBJ_DATA* obj)
         out += "=";
 
         if (af->location >= 0 && af->location < MAX_APPLY_TYPE)
-            out += a_types[af->location];
+            out += get_flag_name(a_types, af->location, MAX_APPLY_TYPE);
         else
             out += "?";
     }
@@ -3957,8 +3986,8 @@ std::string olc_object_affect_list_summary(OBJ_DATA* obj)
 
 static std::string olc_object_affect_location_name(int loc)
 {
-    if (loc >= 0 && loc < MAX_APPLY_TYPE && a_types[loc])
-        return a_types[loc];
+    if (loc >= 0 && loc < MAX_APPLY_TYPE)
+        return a_types[loc].name;
 
     return std::to_string(loc);
 }
@@ -4764,7 +4793,7 @@ static const OlcOps mobile_olc_ops =
 // --------------------------------------------
 
 
-extern char* const npc_race[];
+extern const flag_name npc_race[];
 extern const flag_name act_flags[];
 extern const flag_name aff_flags[];
 extern const flag_name vip_flag_table[];
@@ -7109,8 +7138,8 @@ void olc_show_room(CHAR_DATA* ch, ROOM_INDEX_DATA* room, bool show_help, int ter
 
     {
         std::string sector =
-            (room->sector_type >= 0 && sect_types[room->sector_type])
-                ? sect_types[room->sector_type]
+            (room->sector_type >= 0)
+                ? get_flag_name(sect_types, room->sector_type, SECT_MAX)
                 : std::to_string(room->sector_type);
 
         auto lines = olc_format_line(
@@ -7490,8 +7519,8 @@ static void olc_show_object(CHAR_DATA* ch, OBJ_DATA* obj, bool help_only_mode, i
 
     olc_show_object_compare_line(
         ch, "Type",
-        enum_to_string_legacy(obj->item_type, o_types),
-        proto ? enum_to_string_legacy(proto->item_type, o_types) : "",
+        enum_to_string_flag(obj->item_type, o_types),
+        proto ? enum_to_string_flag(proto->item_type, o_types) : "",
         !(proto && obj->item_type == proto->item_type),
         label_width, term_width, OLC_COL_ENUM
     );
@@ -7506,8 +7535,8 @@ static void olc_show_object(CHAR_DATA* ch, OBJ_DATA* obj, bool help_only_mode, i
 
     olc_show_object_compare_line(
         ch, "Wear Flags",
-        get_legacy_flag_field(obj->wear_flags, w_flags),
-        proto ? get_legacy_flag_field(proto->wear_flags, w_flags) : "",
+        get_flag_field(obj->wear_flags, w_flags),
+        proto ? get_flag_field(proto->wear_flags, w_flags) : "",
         !(proto && obj->wear_flags == proto->wear_flags),
         label_width, term_width, OLC_COL_LIST
     );

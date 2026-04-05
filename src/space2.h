@@ -75,10 +75,21 @@ struct templatetype templatetypes[MAX_TEMPLATETYPE] =
 };
 
 #define MAX_CARGO_NAMES 10
-
-char *  const   cargo_names [MAX_CARGO_NAMES] = 
-{ "ore", "food", "electronics", "weapons", "medical", "clothing", "luxuries", 
-  "spice", "water", "special"
+#define CARGOTYPE_DEFAULT CARGOTYPE_MAX
+const flag_name cargo_names[] =
+{
+    { CARGOTYPE_ORE,         "ore" },
+    { CARGOTYPE_FOOD,        "food" },
+    { CARGOTYPE_ELECTRONICS, "electronics" },
+    { CARGOTYPE_WEAPONS,     "weapons" },
+    { CARGOTYPE_MEDICAL,     "medical" },
+    { CARGOTYPE_CLOTHING,    "clothing" },
+    { CARGOTYPE_LUXURIES,    "luxuries" },
+    { CARGOTYPE_SPICE,       "spice" },
+    { CARGOTYPE_WATER,       "water" },
+    { CARGOTYPE_SPECIAL,     "special" },
+    { CARGOTYPE_MAX,         "_cargotype max_"},
+	  { (size_t)-1, nullptr } // terminator
 };
 
 //Price defaults for each cargo type.

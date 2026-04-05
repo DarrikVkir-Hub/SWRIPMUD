@@ -28,34 +28,37 @@
 
 ROOM_INDEX_DATA *generate_exit( ROOM_INDEX_DATA *in_room, EXIT_DATA **pexit );
 
-char *	const	where_name	[] =
+const flag_name  where_name [] =
 {
-    "<used as light>     ",
-    "<worn on finger>    ",
-    "<worn on finger>    ",
-    "<worn around neck>  ",
-    "<worn around neck>  ",
-    "<worn on body>      ",
-    "<worn on head>      ",
-    "<worn on legs>      ",
-    "<worn on feet>      ",
-    "<worn on hands>     ",
-    "<worn on arms>      ",
-    "<energy shield>     ",
-    "<worn about body>   ",
-    "<worn about waist>  ",
-    "<worn around wrist> ",
-    "<worn around wrist> ",
-    "<wielded>           ",
-    "<held>              ",
-    "<dual wielded>      ",
-    "<worn on ears>      ",
-    "<worn on eyes>      ",
-    "<missile wielded>   ",
-    "<floating>		 ",
-    "<worn over body>	 "
-};
-
+	{ WEAR_LIGHT,           "<used as light>     "},
+	{ WEAR_FINGER_L,        "<worn on finger>    ",},
+	{ WEAR_FINGER_R,        "<worn on finger>    "},
+	{ WEAR_NECK_1,          "<worn around neck>  "},
+  	{ WEAR_NECK_2,          "<worn around neck>  "},
+	{ WEAR_BODY,            "<worn on body>      "},
+	{ WEAR_HEAD,            "<worn on head>      "},
+	{ WEAR_LEGS,            "<worn on legs>      "},
+	{ WEAR_FEET,            "<worn on feet>      "},
+	{ WEAR_HANDS,           "<worn on hands>     "},
+  	{ WEAR_ARMS,            "<worn on arms>      "},
+	{ WEAR_SHIELD,          "<energy shield>     "},
+	{ WEAR_ABOUT,           "<worn about body>   "},
+	{ WEAR_WAIST,           "<worn about waist>  "},
+	{ WEAR_WRIST_L,         "<worn around wrist> "},
+	{ WEAR_WRIST_R,         "<worn around wrist> "},
+  	{ WEAR_WIELD,           "<wielded>           "},
+	{ WEAR_HOLD,            "<held>              "},
+	{ WEAR_DUAL_WIELD,      "<dual wielded>      "},
+	{ WEAR_EARS,            "<worn on ears>      "},
+	{ WEAR_EYES,            "<worn on eyes>      "},
+  	{ WEAR_MISSILE_WIELD,   "<missile wielded>   "},
+	{ WEAR_FLOATING,        "<floating>		     "},
+	{ WEAR_OVER,            "<worn over body>	 "},
+	{ MAX_WEAR, },
+	{ WEAR_DISGUISE,        "<disguise>          "},
+    { WEAR_MAX,          "max                 "},
+    { (size_t)-1, nullptr } // terminator	
+};    
 
 /*
  * Local functions.
@@ -765,7 +768,7 @@ void show_char_to_char_1( CHAR_DATA *victim, CHAR_DATA *ch )
     act( AT_ACTION, "$n looks at $N.",  ch, NULL, victim, TO_NOTVICT );
     }
 
-    ch_printf( ch, "%s is a %s %s\n", PERS(victim, ch), get_sex( victim ), npc_race[victim->race] );
+    ch_printf( ch, "%s is a %s %s\n", PERS(victim, ch), get_sex( victim ), get_flag_name(npc_race, victim->race, MAX_NPC_RACE) );
 
     if ( victim->description[0] != '\0' )
     {
@@ -794,7 +797,7 @@ void show_char_to_char_1( CHAR_DATA *victim, CHAR_DATA *ch )
 		act( AT_PLAIN, "$N is using:", ch, NULL, victim, TO_CHAR );
 		found = TRUE;
 	    }
-	    send_to_char( where_name[iWear], ch );
+	    send_to_char( get_flag_name(where_name, iWear, WEAR_MAX), ch );
 	    send_to_char( format_obj_to_char( obj, ch, TRUE ), ch );
 	    send_to_char( "\n", ch );
 	}
@@ -802,7 +805,7 @@ void show_char_to_char_1( CHAR_DATA *victim, CHAR_DATA *ch )
    }
    else
    {
-	    send_to_char( where_name[WEAR_OVER], ch );
+	    send_to_char( get_flag_name(where_name, WEAR_OVER, WEAR_MAX), ch );
 	    send_to_char( format_obj_to_char( obj, ch, TRUE ), ch );
 	    send_to_char( "\n", ch );
    }   	
@@ -3132,7 +3135,7 @@ void do_practice( CHAR_DATA *ch, char *argument )
 		    send_to_pager( "\n&r", ch );
 		pager_printf( ch,
 "&R--------------------------------%ss---------------------------------\n&r",
-			 skill_tname[skill_table[sn]->type]);
+			 get_flag_name(skill_tname, skill_table[sn]->type, SKILL_MAX));
 		col = cnt = 0;
 	    }
 	    lasttype = skill_table[sn]->type;
@@ -3211,7 +3214,7 @@ void do_practice( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 
-	if ( is_name( skill_tname[skill_table[sn]->type], CANT_PRAC ) )
+	if ( is_name( get_flag_name(skill_tname,skill_table[sn]->type,SKILL_MAX), CANT_PRAC ) )
 	{
 	    act( AT_TELL, "$n tells you 'I do not know how to teach that.'",  
 		  mob, NULL, ch, TO_VICT );
@@ -3338,7 +3341,7 @@ void do_teach( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 
-	if ( is_name( skill_tname[skill_table[sn]->type], CANT_PRAC ) )
+	if ( is_name( get_flag_name(skill_tname, skill_table[sn]->type,SKILL_MAX), CANT_PRAC ) )
 	{
 	    act( AT_TELL, "You are unable to teach that skill.",  
 		  victim, NULL, ch, TO_VICT );
@@ -4377,7 +4380,7 @@ void do_whois( CHAR_DATA *ch, char *argument)
 	victim->name,
 	victim->sex == SEX_MALE ? "male" :
 	victim->sex == SEX_FEMALE ? "female" : "neutral",
-	npc_race[victim->race]);
+	get_flag_name(npc_race, victim->race, MAX_NPC_RACE));
     ch_printf(ch, " in room %d.\n",
 	victim->in_room->vnum);
   }

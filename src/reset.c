@@ -50,7 +50,6 @@ int		get_wearloc	args( ( char *type ) );
 int		get_trapflag	args( ( char *flag ) );
 int		get_exflag	args( ( char *flag ) );
 int		get_rflag	args( ( char *flag ) );
-extern	char *	const		wear_locs[];
 extern	const char *	const		ex_flags[];
 
 bool is_room_reset  args( ( RESET_DATA *pReset, ROOM_INDEX_DATA *aRoom,
@@ -1805,7 +1804,7 @@ void list_resets( CHAR_DATA *ch, AREA_DATA *pArea, ROOM_INDEX_DATA *pRoom,
       else
         oname = obj->name;
       SPRINTF( pbuf, "%s (%d) -> %s (%s) [%d]", oname, pReset->arg1, mname,
-          (pReset->command == 'G' ? "carry" : wear_locs[pReset->arg3]),
+          (pReset->command == 'G' ? "carry" : get_flag_name(wear_locs, pReset->arg3, WEAR_MAX)),
           pReset->arg2 );
       if ( mob && mob->pShop )
         STRAPP( pbuf, " (shop)\n" );
@@ -1974,7 +1973,10 @@ void list_resets( CHAR_DATA *ch, AREA_DATA *pArea, ROOM_INDEX_DATA *pRoom,
           rname = mname;
         SPRINTF(pbuf, "Mobile %s (%d)", rname,
             (pReset->arg1 > 0 ? pReset->arg1 : mob ? mob->vnum : 0));
-        flagarray = a_flags;
+        STRAPP(pbuf, "; flag: %s [%d]\n",
+            flag_bit_name(pReset->arg3, a_flags), pReset->arg3);            
+        flagarray = NULL;
+        skip = true;
         break;
       default:
         SPRINTF(pbuf, "bad type %d", pReset->arg2 & BIT_RESET_TYPE_MASK);

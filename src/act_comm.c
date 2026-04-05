@@ -283,9 +283,9 @@ std::string lang_string(CHAR_DATA *ch,  CHAR_DATA *vch)
         knows_language(vch, lang, ch) &&
         (!IS_NPC(ch) || lang != LANG_COMMON))
     {
-        if (lang >= 0 && lang < LANG_MAX && lang_names[lang].name)
+        if (lang >= 0 && lang < LANG_MAX )
         {
-            std::string result = lang_names[lang].name;
+            std::string result = get_flag_name(lang_names, lang, LANG_MAX);
             if (!result.empty())
                 result[0] = toupper(result[0]);
             return result;
@@ -1200,7 +1200,7 @@ void do_say(CHAR_DATA *ch, char *argument)
             (!IS_NPC(ch) || ch->speaking != LANG_UNKNOWN))
         {
             SPRINTF(sbuflang, "$n says in %s, '$t'",
-                    capitalize(lang_names[lang].name));
+                    capitalize(get_flag_name(lang_names, lang, LANG_MAX)));
             act(AT_SAY, sbuflang, ch, sbuf, vch, TO_VICT);
         }
         else
@@ -2671,7 +2671,7 @@ void init_language_sn()
 {
     for (int i = 0; i < LANG_MAX; ++i)
     {
-        const char *name = lang_names[i].name;
+        const char *name = get_flag_name(lang_names, i, LANG_MAX);
 
         if (!name)
         {
@@ -2889,16 +2889,6 @@ const struct flag_name channel_names[] =
     { (size_t)-1, nullptr } // terminator    
 };
 
-/*
-char * const lang_names[] = { "common", "wookiee", "twilek", "rodian", "hutt",
-							 "mon calamari", "shistavanen", "ewok", "ithorian",
-							 "gotal", "devaronian", "barabel", "firrerreo",
-							 "bothan", "gamorrean", "togorian", "kubaz",
-							 "jawa", "clan", "adarian", "verpine", "defel", 
-							 "trandoshan", "chadra-fan", "quarren", "sullustan", 
-							 "falleen", "binary", "yevethan", "gand", "duros", 
-							 "coynite", "" };
-*/
 void do_speak(CHAR_DATA *ch, char *argument)
 {
     char arg[MAX_INPUT_LENGTH];
@@ -2995,7 +2985,7 @@ void do_speak(CHAR_DATA *ch, char *argument)
     // --- New language selection logic ---
     for (int lang = 0; lang < LANG_MAX; ++lang)
     {
-        const char *name = lang_names[lang].name;
+        const char *name = get_flag_name(lang_names, lang, LANG_MAX);
         if (!name)
             continue;
 
@@ -3055,10 +3045,10 @@ void do_languages(CHAR_DATA *ch, char *argument)
             if (lang == LANG_CLAN)
                 continue;
 
-            if (!lang_names[lang].name)
+            if (!get_flag_name(lang_names, lang, LANG_MAX))
                 continue;
 
-            if (!str_prefix(arg2, lang_names[lang].name))
+            if (!str_prefix(arg2, get_flag_name(lang_names, lang, LANG_MAX)))
                 break;
         }
 
@@ -3093,7 +3083,7 @@ void do_languages(CHAR_DATA *ch, char *argument)
             ch->pcdata->learned[sn] >= 99)
         {
             act(AT_PLAIN, "You are already fluent in $t.",
-                ch, lang_names[lang].name, NULL, TO_CHAR);
+                ch, get_flag_name(lang_names, lang, LANG_MAX), NULL, TO_CHAR);
             return;
         }
 
@@ -3130,15 +3120,15 @@ void do_languages(CHAR_DATA *ch, char *argument)
         BV_SET_BIT(ch->speaks, lang);
 
         if (ch->pcdata->learned[sn] == prct)
-            act(AT_PLAIN, "You begin lessons in $t.", ch, lang_names[lang].name, NULL, TO_CHAR);
+            act(AT_PLAIN, "You begin lessons in $t.", ch, get_flag_name(lang_names, lang, LANG_MAX), NULL, TO_CHAR);
         else if (ch->pcdata->learned[sn] < 60)
-            act(AT_PLAIN, "You continue lessons in $t.", ch, lang_names[lang].name, NULL, TO_CHAR);
+            act(AT_PLAIN, "You continue lessons in $t.", ch, get_flag_name(lang_names, lang, LANG_MAX), NULL, TO_CHAR);
         else if (ch->pcdata->learned[sn] < 60 + prct)
-            act(AT_PLAIN, "You feel you can start communicating in $t.", ch, lang_names[lang].name, NULL, TO_CHAR);
+            act(AT_PLAIN, "You feel you can start communicating in $t.", ch, get_flag_name(lang_names, lang, LANG_MAX), NULL, TO_CHAR);
         else if (ch->pcdata->learned[sn] < 99)
-            act(AT_PLAIN, "You become more fluent in $t.", ch, lang_names[lang].name, NULL, TO_CHAR);
+            act(AT_PLAIN, "You become more fluent in $t.", ch, get_flag_name(lang_names, lang, LANG_MAX), NULL, TO_CHAR);
         else
-            act(AT_PLAIN, "You now speak perfect $t.", ch, lang_names[lang].name, NULL, TO_CHAR);
+            act(AT_PLAIN, "You now speak perfect $t.", ch, get_flag_name(lang_names, lang, LANG_MAX), NULL, TO_CHAR);
 
         return;
     }
@@ -3149,7 +3139,7 @@ void do_languages(CHAR_DATA *ch, char *argument)
         if (!VALID_LANG(lang))
             continue;
 
-        if (!lang_names[lang].name)
+        if (!get_flag_name(lang_names, lang, LANG_MAX))
             continue;
 
         if (ch->speaking == lang || (IS_NPC(ch) && ch->speaking == 0))
@@ -3164,7 +3154,7 @@ void do_languages(CHAR_DATA *ch, char *argument)
         else
             ch_printf(ch, "(%3d) ", ch->pcdata->learned[sn]);
 
-        send_to_char(lang_names[lang].name, ch);
+        send_to_char(get_flag_name(lang_names, lang, LANG_MAX), ch);
         send_to_char("\n", ch);
     }
 

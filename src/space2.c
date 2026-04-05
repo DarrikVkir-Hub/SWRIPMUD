@@ -3790,11 +3790,7 @@ return TRUE;
 
 char *get_cargo_name( int cargotype )
 {
-  
-  if ( cargotype > MAX_CARGO_NAMES )
-    return NULL;
-    
-  return cargo_names[cargotype];
+  return (char*)get_flag_name(cargo_names, cargotype, MAX_CARGO_NAMES);
 }
 
 bool check_cargo( SHIP_DATA *ship, int cargotype, int nummod )

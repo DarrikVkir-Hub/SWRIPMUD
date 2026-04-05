@@ -1571,7 +1571,7 @@ for (po=first_object; po; po=po->next)
        ch_printf(ch, "   first_content=%s\n", buf);
        SPRINTF(buf, "%s", po->last_content ? po->last_content->name : "NULL");
        ch_printf(ch, "   last_content=%s\n", buf);
-       ch_printf(ch, "Flags: %s\n", bitset_to_string(po->objflags, obj_flag_table));
+       ch_printf(ch, "Flags: %s\n", bitset_to_string(po->objflags, obj_flag_table).c_str());
 /*  
      ch_printf(ch, 
        "\nINDEX_DATA vnum=%d name=%s level=%d extra_flags=%d\n",

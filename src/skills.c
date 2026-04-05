@@ -440,7 +440,7 @@ void do_slookup( CHAR_DATA *ch, char *argument )
 	}
 
 	ch_printf( ch, "Sn: %4d Slot: %4d %s: '%-20s'\n",
-	    sn, skill->slot, skill_tname[skill->type], skill->name );
+	    sn, skill->slot, get_flag_name(skill_tname,skill->type, SKILL_MAX), skill->name );
 	if ( skill->flags )
 	{
 	    int x;
@@ -466,7 +466,7 @@ void do_slookup( CHAR_DATA *ch, char *argument )
 	    ch_printf( ch, "Difficulty: %d\n", (int) skill->difficulty );
 
 	ch_printf( ch, "Type: %s  Target: %s  Minpos: %d  Mana: %d  Beats: %d\n",
-		skill_tname[skill->type],
+		get_flag_name(skill_tname, skill->type, SKILL_MAX),
 		target_type[URANGE(TAR_IGNORE, skill->target, TAR_OBJ_INV)],
 		skill->minimum_position,
 		skill->min_mana,
@@ -497,7 +497,7 @@ void do_slookup( CHAR_DATA *ch, char *argument )
 	    if ( aff->location )
 	    {
 		STRAPP( buf, " modifies " );
-		STRAPP( buf, "%s", a_types[aff->location % REVERSE_APPLY] );
+		STRAPP( buf, "%s", get_flag_name(a_types, aff->location % REVERSE_APPLY, MAX_APPLY_TYPE) );
 		STRAPP( buf, " by '" );
 		STRAPP( buf, "%s", aff->modifier );
 		if ( aff->bitvector )
@@ -514,7 +514,7 @@ void do_slookup( CHAR_DATA *ch, char *argument )
 			if ( aff->bitvector == x)
 			{
 				STRAPP( buf, " " );
-				STRAPP( buf, "%s", aff_flags[x].name );
+				STRAPP( buf, "%s", get_flag_name(aff_flags, x, AFF_MAX) );
 			}
 	    }
 	    if ( aff->duration[0] != '\0' && aff->duration[0] != '0' )
