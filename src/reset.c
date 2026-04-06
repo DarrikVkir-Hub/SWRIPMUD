@@ -1974,7 +1974,7 @@ void list_resets( CHAR_DATA *ch, AREA_DATA *pArea, ROOM_INDEX_DATA *pRoom,
         SPRINTF(pbuf, "Mobile %s (%d)", rname,
             (pReset->arg1 > 0 ? pReset->arg1 : mob ? mob->vnum : 0));
         STRAPP(pbuf, "; flag: %s [%d]\n",
-            flag_bit_name(pReset->arg3, a_flags), pReset->arg3);            
+            flag_bit_name(pReset->arg3, aff_flags), pReset->arg3);            
         flagarray = NULL;
         skip = true;
         break;

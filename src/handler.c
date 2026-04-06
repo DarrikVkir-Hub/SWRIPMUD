@@ -666,7 +666,7 @@ void affect_modify( CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd )
         * the removed spell's information somewhere...		-Thoric
         */
         if ( (paf->location % REVERSE_APPLY) == APPLY_REMOVESPELL )
-        return;
+            return;
         switch( paf->location % REVERSE_APPLY )
         {
         case APPLY_AFFECT:        BV_REMOVE_BIT( ch->affected_by, mod );	return;
@@ -3135,7 +3135,7 @@ void showaffect( CHAR_DATA *ch, AFFECT_DATA *paf )
 		    if ( IS_SET( paf->modifier, x ) )
 		    {
 		        STRAPP( buf, " " );
-		        STRAPP( buf, "%s", get_flag_name(a_flags, x, AFF_MAX) );
+		        STRAPP( buf, "%s", get_flag_name(aff_flags, x, AFF_MAX) );
 		    }
 		STRAPP( buf, "\n" );
 		break;

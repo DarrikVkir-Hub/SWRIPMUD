@@ -235,21 +235,14 @@ struct flag_name
 extern  const   flag_name   obj_flag_table[];
 extern const    flag_name   obj_attack_table[];
 
-inline const char* flag_name_at(const flag_name* table, int index, int count)
-{
-    if (!table || index < 0 || index >= count)
-        return nullptr;
-
-    return table[index].name;
-}
-
 inline const char* get_flag_name(const flag_name* table, int index, int count)
 {
     if (!table || index < 0 || index >= count)
-        return nullptr;
+        return "none";
 
     return table[index].name;
 }
+
 
 /*
  * FLAG SYSTEM STATUS
@@ -582,7 +575,7 @@ typedef BitSet FLAG_SET;
 
 #define FLAG_END   -1
 
-static inline FLAG_SET make_flagset_array(const int *bits)
+static inline FLAG_SET make_flagset_array(const int *bits) // Takes an array of ints/enums and returns a BitSet with those bits set
 {
     FLAG_SET set;
     set.reset();
@@ -598,7 +591,7 @@ static inline FLAG_SET make_flagset_array(const int *bits)
 #define FLAGSET(...) make_flagset_array((int[]){ __VA_ARGS__, FLAG_END })
 #define FLAGSET_EMPTY make_flagset_array((int[]){ FLAG_END })
 
-static inline FLAG_SET int_to_bitset(int flags)
+static inline FLAG_SET int_to_bitset(int flags) // Takes a bitmask and turns it into a bitset
 {
     FLAG_SET bv;
     for (int i = 0; i < 32; i++)
@@ -607,7 +600,7 @@ static inline FLAG_SET int_to_bitset(int flags)
     return bv;
 }
 
-static inline void int_into_bitset_offset(FLAG_SET &bv, int flags, size_t offset)
+static inline void int_into_bitset_offset(FLAG_SET &bv, int flags, size_t offset) // Does the same as int_to_bitset, but offsets by a certain number.
 {
     for (size_t i = 0; i < 32; ++i)
     {
@@ -616,7 +609,7 @@ static inline void int_into_bitset_offset(FLAG_SET &bv, int flags, size_t offset
     }
 }
 
-static inline int bitset_to_int(const FLAG_SET &bv)
+static inline int bitset_to_int(const FLAG_SET &bv) // Takes a BitSet and turns it into a bitmask - only works for the first 32 bits.
 {
     int flags = 0;
 
@@ -638,7 +631,7 @@ static inline int bitset_to_int(const FLAG_SET &bv)
 
     return flags;
 }
-static inline int first_set_bit(unsigned int bits)
+static inline int first_set_bit(unsigned int bits) // Takes a bitmask and returns the enum to match the first bit set
 {
     for (int i = 0; i < 32; ++i)
     {
@@ -650,7 +643,7 @@ static inline int first_set_bit(unsigned int bits)
 
 #endif
 
-static inline const flag_name* find_flag(const flag_name* table, const std::string& name)
+static inline const flag_name* find_flag(const flag_name* table, const std::string& name) // Returns a link to the flag_name that matches the string in the provided table.
 {
     for (size_t i = 0; table[i].name != nullptr; ++i)
     {
@@ -2087,48 +2080,6 @@ typedef enum
     AFF_MAX            = 32
 
 } AffectFlags;
-/*
-#define AFF_NONE                  0
-
-#define AFF_BLIND		  BV00
-#define AFF_INVISIBLE		  BV01
-#define AFF_DETECT_EVIL		  BV02
-#define AFF_DETECT_INVIS	  BV03
-#define AFF_DETECT_MAGIC	  BV04
-#define AFF_DETECT_HIDDEN	  BV05
-#define AFF_WEAKEN		  BV06
-#define AFF_SANCTUARY		  BV07
-#define AFF_FAERIE_FIRE		  BV08
-#define AFF_INFRARED		  BV09
-#define AFF_CURSE		  BV10
-// Johnson ( Michael Shattuck ) 4/28 Start - Added 5-15-04 - DV
-//#define AFF_FLAMING		  BV11		// Unused	
-#define AFF_ENDURANCE		BV11
-// Shattuck 4/28 End
-#define AFF_POISON		  BV12
-#define AFF_PROTECT		  BV13
-#define AFF_PARALYSIS		  BV14
-#define AFF_SNEAK		  BV15
-#define AFF_HIDE		  BV16
-#define AFF_SLEEP		  BV17
-#define AFF_CHARM		  BV18
-#define AFF_FLYING		  BV19
-#define AFF_PASS_DOOR		  BV20
-#define AFF_FLOATING		  BV21
-#define AFF_TRUESIGHT		  BV22
-#define AFF_DETECTTRAPS		  BV23
-#define AFF_SCRYING	          BV24
-#define AFF_FIRESHIELD	          BV25
-#define AFF_SHOCKSHIELD	          BV26
-#define AFF_BIND                  BV27
-#define AFF_ICESHIELD  		  BV28
-#define AFF_POSSESS		  BV29
-#define AFF_BERSERK		  BV30
-#define AFF_AQUA_BREATH		  BV31
-
-// 31 aff's (1 left.. :P) 
-// make that none - ugh - time for another field? :P 
-*/
 
 /*
  * Resistant Immune Susceptible flags
@@ -2276,7 +2227,7 @@ typedef enum
 #define SV_BACKUP		  BV12
 
 /*
- * Pipe flags
+ * item flags - includes pipe flags and weapon flags
  */
 typedef enum  {
     PIPE_FIRST          = 0,
@@ -2347,6 +2298,7 @@ typedef enum  {
     ITEM_MAX            = 296,
 } ObjFlags;
 
+// Hacked this in as weapon dam used to rely on the enum position of the weapon - but they are a lot higher now DV 4-5-26
 #define BASEDAM_WEAPON_NONE     	0
 #define BASEDAM_WEAPON_VIBRO_AXE	1
 #define BASEDAM_WEAPON_VIBRO_BLADE	2
@@ -2981,41 +2933,6 @@ typedef enum
 
     CHANNEL_MAX          = 32
 } ChannelFlags;
-/*
-#define	CHANNEL_AUCTION		   BV00
-#define	CHANNEL_CHAT		   BV01
-#define	CHANNEL_QUEST		   BV02
-#define	CHANNEL_IMMTALK		   BV03
-#define	CHANNEL_MUSIC		   BV04
-#define	CHANNEL_ASK		   BV05
-#define	CHANNEL_SHOUT		   BV06
-#define	CHANNEL_YELL		   BV07
-#define CHANNEL_MONITOR		   BV08
-#define CHANNEL_LOG		   BV09
-#define CHANNEL_104		   BV10
-#define CHANNEL_CLAN		   BV11
-#define CHANNEL_BUILD		   BV12
-#define CHANNEL_105		   BV13
-#define CHANNEL_AVTALK		   BV14
-#define CHANNEL_PRAY		   BV15
-#define CHANNEL_COUNCIL 	   BV16
-#define CHANNEL_GUILD              BV17
-#define CHANNEL_COMM		   BV18
-#define CHANNEL_TELLS		   BV19
-#define CHANNEL_ORDER              BV20
-#define CHANNEL_NEWBIE             BV21
-#define CHANNEL_VULGAR            BV22
-#define CHANNEL_OOC                BV23
-#define CHANNEL_SHIP               BV24
-#define CHANNEL_SYSTEM             BV25
-#define CHANNEL_SPACE              BV26
-#define CHANNEL_103		   BV27
-#define CHANNEL_ARENA		    BV28
-#define CHANNEL_ALLCLAN		   BV29
-#define CHANNEL_NEWS		   BV30
-#define CHANNEL_NEWBIEASST      BV31
-#define CHANNEL_CLANTALK	   CHANNEL_CLAN
-*/
 
 /* Area defines - Scryn 8/11
  *
@@ -4191,7 +4108,7 @@ do                                                             \
 #define CREATE_ARRAY(result, type, number)                     \
 do                                                             \
 {                                                              \
-    (result) = new type[(number)](); /* value-init */      \
+    (result) = new type[(number)](); /* value-init */          \
 } while(0)
 
 #define DISPOSE(point)                                         \
@@ -4209,188 +4126,188 @@ do                                                             \
     }                                                          \
 } while(0)
 
-#define DISPOSE_ARRAY(ptr) \
+#define DISPOSE_ARRAY(ptr)                                      \
 do { delete[] (ptr); (ptr) = NULL; } while(0)
 
-#define CREATE_OLD(result, type, number)				\
-do								\
-{								\
+#define CREATE_OLD(result, type, number)				        \
+do								                                \
+{								                                \
    if (!((result) = (type *) calloc ((number), sizeof(type))))	\
-	{ perror("malloc failure"); abort(); }			\
+	{ perror("malloc failure"); abort(); }			            \
 } while(0)
 
-#define RECREATE_OLD(result,type,number)				\
-do								\
-{								\
+#define RECREATE_OLD(result,type,number)				        \
+do								                                \
+{								                                \
   if (!((result) = (type *) realloc ((result), sizeof(type) * (number))))\
-	{ perror("realloc failure"); abort(); }			\
+	{ perror("realloc failure"); abort(); }			            \
 } while(0)
 
 
-#define STR_DISPOSE(point) 						\
-do								\
-{								\
-  if (!(point))							\
-  {								\
-    bug( "Freeing null pointer" ); \
+#define STR_DISPOSE(point) 						                \
+do								                                \
+{								                                \
+  if (!(point))							                        \
+  {								                                \
+    bug( "Freeing null pointer" );                              \
     fprintf( stderr, "DISPOSEing NULL in %s, line %d\n", __FILE__, __LINE__ ); \
-  }								\
-  else                                      \
-  {                                         \
-                              \
-      free( (point) );                   \
-      point = NULL;							            \
-  }                                         \
+  }								                                \
+  else                                                          \
+  {                                                             \
+                                                                \
+      free( (point) );                                          \
+      point = NULL;							                    \
+  }                                                             \
 } while(0)
 
 #ifdef HASHSTR
 #define STRALLOC(point)		str_alloc((point))
 #define QUICKLINK(point)	quick_link((point))
 //#define QUICKMATCH(p1, p2)	(int) (p1) == (int) (p2)
-#define STRFREE(point)						              \
-do								                              \
+#define STRFREE(point)						                    \
+do								                                \
 {								                                \
-  if (!(point))							                    \
-  {								                              \
-    bug( "Freeing null pointer" );	 			      \
+  if (!(point))							                        \
+  {								                                \
+    bug( "Freeing null pointer" );	 			                \
     fprintf( stderr, "STRFREEing NULL in %s, line %d\n", __FILE__, __LINE__ ); \
-  }								                              \
-  else if (str_free((point))==-1) 				    \
+  }								                                \
+  else if (str_free((point))==-1) 				                \
       fprintf( stderr, "STRFREEing bad pointer in %s, line %d\n", __FILE__, __LINE__ ); \
 } while(0)
 #else
 #define STRALLOC(point)		str_dup((point))
 #define QUICKLINK(point)	str_dup((point))
 //#define QUICKMATCH(p1, p2)	strcmp((p1), (p2)) == 0
-#define STRFREE(point)						\
-do								\
-{								\
-  if (!(point))							\
-  {								\
-	bug( "Freeing null pointer" );				\
+#define STRFREE(point)						                    \
+do								                                \
+{								                                \
+  if (!(point))							                        \
+  {								                                \
+	bug( "Freeing null pointer" );				                \
 	fprintf( stderr, "STRFREEing NULL in %s, line %d\n", __FILE__, __LINE__ ); \
-  }								\
-  else free((point));						\
+  }								                                \
+  else free((point));						                    \
 } while(0)
 #endif
 
 /* double-linked list handling macros -Thoric */
 
-#define LINK(link, first, last, next, prev)			\
-do								\
-{								\
-    if ( !(first) )						\
-      (first)			= (link);			\
-    else							\
-      (last)->next		= (link);			\
-    (link)->next		= NULL;				\
-    (link)->prev		= (last);			\
-    (last)			= (link);			\
+#define LINK(link, first, last, next, prev)			            \
+do								                                \
+{								                                \
+    if ( !(first) )						                        \
+      (first)			= (link);			                    \
+    else							                            \
+      (last)->next		= (link);			                    \
+    (link)->next		= NULL;				                    \
+    (link)->prev		= (last);			                    \
+    (last)			= (link);			                        \
 } while(0)
 
-#define INSERT(link, insert, first, next, prev)			\
-do								\
-{								\
-    (link)->prev		= (insert)->prev;		\
-    if ( !(insert)->prev )					\
-      (first)			= (link);			\
-    else							\
-      (insert)->prev->next	= (link);			\
-    (insert)->prev		= (link);			\
-    (link)->next		= (insert);			\
+#define INSERT(link, insert, first, next, prev)			        \
+do								                                \
+{								                                \
+    (link)->prev		= (insert)->prev;		                \
+    if ( !(insert)->prev )					                    \
+      (first)			= (link);			                    \
+    else							                            \
+      (insert)->prev->next	= (link);			                \
+    (insert)->prev		= (link);			                    \
+    (link)->next		= (insert);			                    \
 } while(0)
 
-#define UNLINK(link, first, last, next, prev)			\
-do								\
-{								\
-    if ( !(link)->prev )					\
-      (first)			= (link)->next;			\
-    else							\
-      (link)->prev->next	= (link)->next;			\
-    if ( !(link)->next )					\
-      (last)			= (link)->prev;			\
-    else							\
-      (link)->next->prev	= (link)->prev;			\
+#define UNLINK(link, first, last, next, prev)			        \
+do								                                \
+{								                                \
+    if ( !(link)->prev )					                    \
+      (first)			= (link)->next;			                \
+    else							                            \
+      (link)->prev->next	= (link)->next;			            \
+    if ( !(link)->next )					                    \
+      (last)			= (link)->prev;			                \
+    else							                            \
+      (link)->next->prev	= (link)->prev;			            \
 } while(0)
 
 
-#define CHECK_LINKS(first, last, next, prev, type)		\
-do {								\
-  type *ptr, *pptr = NULL;					\
-  if ( !(first) && !(last) )					\
-    break;							\
-  if ( !(first) )						\
-  {								\
-    bug( "CHECK_LINKS: last with NULL first!  %s.",		\
-        __STRING(first) );					\
-    for ( ptr = (last); ptr->prev; ptr = ptr->prev );		\
-    (first) = ptr;						\
-  }								\
-  else if ( !(last) )						\
-  {								\
-    bug( "CHECK_LINKS: first with NULL last!  %s.",		\
-        __STRING(first) );					\
-    for ( ptr = (first); ptr->next; ptr = ptr->next );		\
-    (last) = ptr;						\
-  }								\
-  if ( (first) )						\
-  {								\
-    for ( ptr = (first); ptr; ptr = ptr->next )			\
-    {								\
-      if ( ptr->prev != pptr )					\
-      {								\
-        bug( "CHECK_LINKS(%s): %p:->prev != %p.  Fixing.",	\
-            __STRING(first), ptr, pptr );			\
-        ptr->prev = pptr;					\
-      }								\
-      if ( ptr->prev && ptr->prev->next != ptr )		\
-      {								\
+#define CHECK_LINKS(first, last, next, prev, type)		        \
+do {								                            \
+  type *ptr, *pptr = NULL;					                    \
+  if ( !(first) && !(last) )					                \
+    break;							                            \
+  if ( !(first) )						                        \
+  {								                                \
+    bug( "CHECK_LINKS: last with NULL first!  %s.",		        \
+        __STRING(first) );					                    \
+    for ( ptr = (last); ptr->prev; ptr = ptr->prev );		    \
+    (first) = ptr;						                        \
+  }								                                \
+  else if ( !(last) )						                    \
+  {								                                \
+    bug( "CHECK_LINKS: first with NULL last!  %s.",		        \
+        __STRING(first) );					                    \
+    for ( ptr = (first); ptr->next; ptr = ptr->next );		    \
+    (last) = ptr;						                        \
+  }								                                \
+  if ( (first) )						                        \
+  {								                                \
+    for ( ptr = (first); ptr; ptr = ptr->next )			        \
+    {								                            \
+      if ( ptr->prev != pptr )					                \
+      {								                            \
+        bug( "CHECK_LINKS(%s): %p:->prev != %p.  Fixing.",	    \
+            __STRING(first), ptr, pptr );			            \
+        ptr->prev = pptr;					                    \
+      }								                            \
+      if ( ptr->prev && ptr->prev->next != ptr )		        \
+      {								                            \
         bug( "CHECK_LINKS(%s): %p:->prev->next != %p.  Fixing.",\
-            __STRING(first), ptr, ptr );			\
-        ptr->prev->next = ptr;					\
-      }								\
-      pptr = ptr;						\
-    }								\
-    pptr = NULL;						\
-  }								\
-  if ( (last) )							\
-  {								\
-    for ( ptr = (last); ptr; ptr = ptr->prev )			\
-    {								\
-      if ( ptr->next != pptr )					\
-      {								\
-        bug( "CHECK_LINKS (%s): %p:->next != %p.  Fixing.",	\
-            __STRING(first), ptr, pptr );			\
-        ptr->next = pptr;					\
-      }								\
-      if ( ptr->next && ptr->next->prev != ptr )		\
-      {								\
+            __STRING(first), ptr, ptr );			            \
+        ptr->prev->next = ptr;					                \
+      }								                            \
+      pptr = ptr;						                        \
+    }								                            \
+    pptr = NULL;						                        \
+  }								                                \
+  if ( (last) )							                        \
+  {								                                \
+    for ( ptr = (last); ptr; ptr = ptr->prev )			        \
+    {								                            \
+      if ( ptr->next != pptr )					                \
+      {								                            \
+        bug( "CHECK_LINKS (%s): %p:->next != %p.  Fixing.",	    \
+            __STRING(first), ptr, pptr );			            \
+        ptr->next = pptr;					                    \
+      }								                            \
+      if ( ptr->next && ptr->next->prev != ptr )		        \
+      {								                            \
         bug( "CHECK_LINKS(%s): %p:->next->prev != %p.  Fixing.",\
-            __STRING(first), ptr, ptr );			\
-        ptr->next->prev = ptr;					\
-      }								\
-      pptr = ptr;						\
-    }								\
-  }								\
+            __STRING(first), ptr, ptr );			            \
+        ptr->next->prev = ptr;					                \
+      }								                            \
+      pptr = ptr;						                        \
+    }								                            \
+  }								                                \
 } while(0)
 
 
-#define ASSIGN_GSN(gsn, skill)					\
-do								\
-{								\
-    if ( ((gsn) = skill_lookup((skill))) == -1 )		\
-	fprintf( stderr, "ASSIGN_GSN: Skill %s not found.\n",	\
-		(skill) );					\
+#define ASSIGN_GSN(gsn, skill)					                \
+do								                                \
+{								                                \
+    if ( ((gsn) = skill_lookup((skill))) == -1 )		        \
+	fprintf( stderr, "ASSIGN_GSN: Skill %s not found.\n",	    \
+		(skill) );					                            \
 } while(0)
 
-#define CHECK_SUBRESTRICTED(ch)					\
-do								\
-{								\
-    if ( (ch)->substate == SUB_RESTRICTED )			\
-    {								\
+#define CHECK_SUBRESTRICTED(ch)					                \
+do								                                \
+{								                                \
+    if ( (ch)->substate == SUB_RESTRICTED )			            \
+    {								                            \
 	send_to_char( "You cannot use this command from within another command.\n", ch );	\
-	return;							\
-    }								\
+	return;							                            \
+    }								                            \
 } while(0)
 
 
@@ -4587,12 +4504,12 @@ extern	sh_int	const	movement_loss	[SECT_MAX];
 extern	char *	const	dir_name	[];
 extern	const flag_name	where_name	[];
 extern	const	sh_int	rev_dir		[];
-extern	const	int	trap_door	[];
+extern	const	int	    trap_door	[];
 extern  const flag_name r_flags     [];
-extern  const flag_name	sect_types[];
+extern  const flag_name	sect_types  [];
 extern  const flag_name aff_flags   [];
 extern	const flag_name	w_flags		[];
-extern	const flag_name	a_flags		[];
+//extern	const flag_name	a_flags		[];
 extern	const flag_name	o_types		[];
 extern	const flag_name	a_types		[];
 extern	const flag_name	act_flags	[];
@@ -6303,7 +6220,18 @@ bool olc_room_commit_current(CHAR_DATA* ch);
 void olc_room_discard_current_room_working_copy(CHAR_DATA* ch);
 void olc_room_edit_switch_to_room(CHAR_DATA* ch, ROOM_INDEX_DATA* room);
 void olc_room_preview(CHAR_DATA* ch, ROOM_INDEX_DATA* room, const char* argument);
-
+int dir_lookup(const std::string& dir);
+bool olc_room_delete_exit(ROOM_INDEX_DATA* room, int dir);
+EXIT_DATA* find_exit(ROOM_INDEX_DATA* room, int dir);
+EXIT_DATA* olc_room_create_exit(ROOM_INDEX_DATA* room, int dir, int vnum);
+void olc_room_exit_link_two_way(EXIT_DATA* ex, ROOM_INDEX_DATA* from);
+std::string olc_format_columns(const std::vector<std::string>& items, int term_width, int indent);
+std::vector<std::string> flag_values_vec(const char* const* table);
+bool olc_room_edit_exit_field(CHAR_DATA* ch, ROOM_INDEX_DATA* room);
+bool olc_room_edit_bexit_field(CHAR_DATA* ch, ROOM_INDEX_DATA* room);
+std::string olc_room_exit_list_summary(void* obj);
+bool olc_room_edit_extradesc_field(CHAR_DATA* ch, ROOM_INDEX_DATA* room);
+std::string olc_room_extradesc_list_summary(void* obj);
 
 #undef	SK
 #undef	CO
@@ -6622,675 +6550,4 @@ extern void do_trivia_chat(CHAR_DATA *ch, char *argument);
 #define VCHECK_OBJ 1
 #define VCHECK_MOB 2
 bool is_valid_vnum( int vnum, short type );
-
-// New OLC definitions
-
-template<typename T>
-T* field_as(void* obj, size_t offset)
-{
-    return reinterpret_cast<T*>((char*)obj + offset);
-}
-
-template<typename T>
-bool set_int_field(T& field, const std::string& value, int min = INT_MIN, int max = INT_MAX)
-{
-    try
-    {
-        int v = std::stoi(value);
-        if (v < min || v > max)
-            return false;
-
-        field = v;
-        return true;
-    }
-    catch (...)
-    {
-        return false;
-    }
-}
-
-inline std::string get_int_field(int value)
-{
-    return std::to_string(value);
-}
-
-inline bool set_str_field(char*& field, const std::string& value)
-{
-    if (field)
-        STRFREE(field);
-
-    field = STRALLOC(const_cast<char*>(value.c_str()));
-    return true;
-}
-
-inline std::string get_str_field(char* field)
-{
-    return field ? field : "";
-}
-
-inline bool set_enum_legacy_field(int& field, const std::string& value, const char* const* table)
-{
-    int val;
-    if (!enum_from_string_legacy(value, val, table))
-        return false;
-
-    field = val;
-    return true;
-}
-
-inline std::string get_enum_legacy_field(int field, const char* const* table)
-{
-    return enum_to_string_legacy(field, table);
-}
-
-inline std::string get_enum_flag_field(int field, const flag_name *table)
-{
-    return enum_to_string_flag(field, table);
-}
-
-inline bool set_enum_flag_field(int& field, const std::string& value, const flag_name *table)
-{
-    int val;
-    if (!enum_from_string_flag(value, val, table))
-        return false;
-
-    field = val;
-    return true;
-}
-
-inline bool set_flag_field(BitSet& bs, const std::string& value, const flag_name* table)
-{
-    return bitset_apply_from_string(bs, value, table);
-}
-
-inline std::string get_flag_field(const BitSet& bs, const flag_name* table)
-{
-    return bitset_to_string(bs, table);
-}
-
-int dir_lookup(const std::string& dir);
-bool olc_room_delete_exit(ROOM_INDEX_DATA* room, int dir);
-EXIT_DATA* find_exit(ROOM_INDEX_DATA* room, int dir);
-EXIT_DATA* olc_room_create_exit(ROOM_INDEX_DATA* room, int dir, int vnum);
-void olc_room_exit_link_two_way(EXIT_DATA* ex, ROOM_INDEX_DATA* from);
-std::string olc_format_columns(const std::vector<std::string>& items, int term_width, int indent);
-std::vector<std::string> flag_values_vec(const char* const* table);
-bool olc_room_edit_exit_field(CHAR_DATA* ch, ROOM_INDEX_DATA* room);
-bool olc_room_edit_bexit_field(CHAR_DATA* ch, ROOM_INDEX_DATA* room);
-std::string olc_room_exit_list_summary(void* obj);
-bool olc_room_edit_extradesc_field(CHAR_DATA* ch, ROOM_INDEX_DATA* room);
-std::string olc_room_extradesc_list_summary(void* obj);
-
-inline bool bitset_apply_from_legacy_string(BitSet& bs, const std::string& input, const char* const* table)
-{
-    std::istringstream iss(input);
-    std::string token;
-    bool changed = false;
-
-    while (iss >> token)
-    {
-        if (token.empty())
-            continue;
-
-        char op = 0;
-
-        if (token[0] == '+' || token[0] == '-' || token[0] == '!')
-        {
-            op = token[0];
-            token.erase(0, 1);
-        }
-
-        if (token.empty())
-            continue;
-
-        int bit = -1;
-        for (int i = 0; table && table[i] != nullptr; ++i)
-        {
-            if (!str_cmp_utf8(token.c_str(), table[i]))
-            {
-                bit = i;
-                break;
-            }
-        }
-
-        if (bit < 0)
-            continue;
-
-        switch (op)
-        {
-            case '-':
-                bs.clear(bit);
-                break;
-            case '!':
-                bs.toggle(bit);
-                break;
-            case '+':
-            default:
-                bs.set(bit);
-                break;
-        }
-
-        changed = true;
-    }
-
-    return changed;
-}
-
-inline std::string get_legacy_flag_field(const BitSet& bs, const char* const* table)
-{
-    std::string out;
-
-    if (!table)
-        return out;
-
-    for (int i = 0; table[i] != nullptr; ++i)
-    {
-        if (bs.test(i))
-        {
-            if (!out.empty())
-                out += " ";
-            out += table[i];
-        }
-    }
-
-    return out.empty() ? "none" : out;
-}
-
-enum class OlcEditMode
-{
-    NONE,
-    ROOM_INLINE,
-    OBJECT_INLINE,
-    MOBILE_INLINE,
-};
-
-struct OlcPendingMobPrototypeChanges
-{
-    bool hitnodice_set = false;
-    sh_int hitnodice = 0;
-
-    bool hitsizedice_set = false;
-    sh_int hitsizedice = 0;
-
-    bool damnodice_set = false;
-    sh_int damnodice = 0;
-
-    bool damsizedice_set = false;
-    sh_int damsizedice = 0;
-};
-
-enum class OlcExitSideEffectType
-{
-    UPSERT_REVERSE,
-    DELETE_REVERSE
-};
-
-struct OlcPendingExitSideEffect
-{
-    OlcExitSideEffectType type = OlcExitSideEffectType::UPSERT_REVERSE;
-
-    int from_room_vnum = 0;
-    int from_dir = -1;
-    int to_room_vnum = 0;
-
-    /* Desired final reverse-exit state on save */
-    int final_vnum = 0;          /* usually from_room_vnum */
-    int final_rvnum = 0;         /* usually to_room_vnum */
-    int final_key = -1;
-    int final_exit_info = 0;
-    std::string final_keyword;
-
-    bool initialized = false;
-};
-
-enum class OlcValueType
-{
-    INT,
-    STRING,
-    ENUM,
-    FLAG,
-    EDITOR,        // long text / editor-driven
-    LIST,          // extradesc, etc
-    BOOL,
-};
-
-enum class OlcMetaType
-{
-    NONE,
-    FLAG_TABLE,     // BitSet (flag_name[])
-    ENUM_FLAG,      // enum using flag_name[]
-    ENUM_LEGACY,     // enum using const char*[]
-    EXTRA_DESC_LIST,
-    EXIT_LIST,
-    OBJ_AFFECT_LIST,
-    MOB_AFFECT_LIST,    
-    LIST,
-};
-
-struct OlcField
-{
-    const char* name;
-    OlcValueType value_type;
-    const void* meta = nullptr;
-    OlcMetaType meta_type = OlcMetaType::NONE;
-
-    std::function<bool(CHAR_DATA* ch, void* obj)> editor = nullptr;
-    std::function<bool(void* obj, const std::string& value)> setter = nullptr;
-    std::function<std::string(void* obj)> getter = nullptr;
-    std::function<bool(CHAR_DATA* ch, void* obj, const std::string& value)> editor_setter = nullptr;    
-    std::function<std::string(CHAR_DATA* ch, void* obj)> contextual_getter = nullptr;
-
-    int editor_substate = 0;
-
-    const char* help = nullptr;
-    int min_int = INT_MIN;
-    int max_int = INT_MAX;
-    bool editor_takes_argument = false;
-    
-    OlcField(
-        const char* n,
-        OlcValueType value_type,
-        const void* m,
-        OlcMetaType mt,
-        std::function<bool(CHAR_DATA* ch, void* obj)> e,
-        std::function<bool(void*, const std::string&)> s,
-        std::function<std::string(void*)> g,
-        std::function<bool(CHAR_DATA* ch, void* obj, const std::string& value)> ess,
-        std::function<std::string(CHAR_DATA* ch, void* obj)> cg,
-        int es,
-        const char* h = nullptr,
-        int minv = INT_MIN,
-        int maxv = INT_MAX,
-        bool editor_arg = false
-    )
-        : name(n),
-          value_type(value_type),
-          meta(m),
-          meta_type(mt),
-          editor(std::move(e)),
-          setter(std::move(s)),
-          getter(std::move(g)),
-          editor_setter(std::move(ess)),
-          contextual_getter(std::move(cg)),
-          editor_substate(es),
-          help(h),
-          min_int(minv),
-          max_int(maxv),
-          editor_takes_argument(editor_arg)
-    {}    
-};
-
-template <typename T, typename M>
-using olc_member_ptr = M T::*;
-
-template <typename T, typename M>
-OlcField make_olc_int_field(
-    const char* name,
-    olc_member_ptr<T, M> member,
-    const char* help,
-    int minv = INT_MIN,
-    int maxv = INT_MAX)
-{
-    static_assert(std::is_integral<M>::value || std::is_enum<M>::value,
-                  "make_olc_int_field requires an integral or enum member");
-
-    return OlcField{
-        name,
-        OlcValueType::INT,
-        nullptr,
-        OlcMetaType::NONE,
-        nullptr,
-        [member, minv, maxv](void* obj, const std::string& value) -> bool
-        {
-            auto typed = static_cast<T*>(obj);
-            return set_int_field(typed->*member, value, minv, maxv);
-        },
-        [member](void* obj) -> std::string
-        {
-            auto typed = static_cast<T*>(obj);
-            return get_int_field(typed->*member);
-        },
-        nullptr,
-        nullptr,
-        0,
-        help,
-        minv,
-        maxv,
-        false
-    };
-}
-template <typename T>
-OlcField make_olc_string_field(
-    const char* name,
-    olc_member_ptr<T, char*> member,
-    const char* help)
-{
-    return OlcField{
-        name,
-        OlcValueType::STRING,
-        nullptr,
-        OlcMetaType::NONE,
-        nullptr,
-        [member](void* obj, const std::string& value) -> bool
-        {
-            auto typed = static_cast<T*>(obj);
-            return set_str_field(typed->*member, value);
-        },
-        [member](void* obj) -> std::string
-        {
-            auto typed = static_cast<T*>(obj);
-            return get_str_field(typed->*member);
-        },
-        nullptr,
-        nullptr,
-        0,
-        help,
-        INT_MIN,
-        INT_MAX,
-        false
-    };
-}
-template <typename T, typename M>
-OlcField make_olc_enum_legacy_field(
-    const char* name,
-    olc_member_ptr<T, M> member,
-    const char* const* table,
-    const char* help)
-{
-    static_assert(std::is_integral<M>::value || std::is_enum<M>::value,
-                  "make_olc_enum_legacy_field requires an integral or enum member");
-
-    return OlcField{
-        name,
-        OlcValueType::ENUM,
-        (const void*)table,
-        OlcMetaType::ENUM_LEGACY,
-        nullptr,
-        [member, table](void* obj, const std::string& value) -> bool
-        {
-            auto typed = static_cast<T*>(obj);
-
-            int temp = 0;
-            if (!set_enum_legacy_field(temp, value, table))
-                return false;
-
-            typed->*member = static_cast<M>(temp);
-            return true;
-        },
-        [member, table](void* obj) -> std::string
-        {
-            auto typed = static_cast<T*>(obj);
-            return get_enum_legacy_field(static_cast<int>(typed->*member), table);
-        },
-        nullptr,
-        nullptr,
-        0,
-        help,
-        INT_MIN,
-        INT_MAX,
-        false
-    };
-}
-template <typename T, typename M>
-OlcField make_olc_enum_flag_field(
-    const char* name,
-    olc_member_ptr<T, M> member,
-    const flag_name* table,
-    const char* help)
-{
-    static_assert(std::is_integral<M>::value || std::is_enum<M>::value,
-                  "make_olc_enum_flag_field requires an integral or enum member");
-
-    return OlcField{
-        name,
-        OlcValueType::ENUM,
-        (const void*)table,
-        OlcMetaType::ENUM_FLAG,
-        nullptr,
-        [member, table](void* obj, const std::string& value) -> bool
-        {
-            auto typed = static_cast<T*>(obj);
-
-            int temp = 0;
-            if (!set_enum_flag_field(temp, value, table))
-                return false;
-
-            typed->*member = static_cast<M>(temp);
-            return true;
-        },
-        [member, table](void* obj) -> std::string
-        {
-            auto typed = static_cast<T*>(obj);
-            return get_enum_flag_field(static_cast<int>(typed->*member), table);
-        },
-        nullptr,
-        nullptr,
-        0,
-        help,
-        INT_MIN,
-        INT_MAX,
-        false
-    };
-}
-template <typename T, typename M>
-OlcField make_olc_flag_field(
-    const char* name,
-    olc_member_ptr<T, M> member,
-    const flag_name* table,
-    const char* help)
-{
-    return OlcField{
-        name,
-        OlcValueType::FLAG,
-        (const void*)table,
-        OlcMetaType::FLAG_TABLE,
-        nullptr,
-        [member, table](void* obj, const std::string& value) -> bool
-        {
-            auto typed = static_cast<T*>(obj);
-            return set_flag_field(typed->*member, value, table);
-        },
-        [member, table](void* obj) -> std::string
-        {
-            auto typed = static_cast<T*>(obj);
-            return get_flag_field(typed->*member, table);
-        },
-        nullptr,
-        nullptr,
-        0,
-        help,
-        INT_MIN,
-        INT_MAX,
-        false
-    };
-}
-template <typename T>
-OlcField make_olc_editor_field(
-    const char* name,
-    olc_member_ptr<T, char*> member,
-    int substate_val,
-    const char* help)
-{
-    return OlcField{
-        name,
-        OlcValueType::EDITOR,
-        nullptr,
-        OlcMetaType::NONE,
-        [member, substate_val](CHAR_DATA* ch, void* obj) -> bool
-        {
-            auto typed = static_cast<T*>(obj);
-            ch->substate = substate_val;
-            ch->dest_buf = typed;
-            ch->last_cmd = do_olcset;
-            start_editing(ch, typed->*member);
-            return true;
-        },
-        nullptr,
-        [member](void* obj) -> std::string
-        {
-            auto typed = static_cast<T*>(obj);
-            return (typed->*member) ? (typed->*member) : "";
-        },
-        [member](CHAR_DATA* /*ch*/, void* obj, const std::string& value) -> bool
-        {
-            auto typed = static_cast<T*>(obj);
-            return set_str_field(typed->*member, value);
-        },
-        nullptr,
-        substate_val,
-        help,
-        INT_MIN,
-        INT_MAX,
-        false
-    };
-}
-template <typename T>
-OlcField make_olc_custom_editor_field(
-    const char* name,
-    OlcMetaType meta_type,
-    std::function<bool(CHAR_DATA* ch, T* obj)> editor,
-    std::function<std::string(T* obj)> getter,
-    int editor_substate,
-    const char* help,
-    bool editor_takes_argument = true)
-{
-    return OlcField{
-        name,
-        OlcValueType::EDITOR,
-        nullptr,
-        meta_type,
-        [editor](CHAR_DATA* ch, void* obj) -> bool
-        {
-            return editor(ch, static_cast<T*>(obj));
-        },
-        nullptr,
-        [getter](void* obj) -> std::string
-        {
-            return getter(static_cast<T*>(obj));
-        },
-        nullptr,
-        nullptr,
-        editor_substate,
-        help,
-        INT_MIN,
-        INT_MAX,
-        editor_takes_argument
-    };
-}
-template <typename T>
-OlcField make_olc_bool_field(
-    const char* name,
-    olc_member_ptr<T, bool> member,
-    const char* help)
-{
-    return OlcField{
-        name,
-        OlcValueType::BOOL,
-        nullptr,
-        OlcMetaType::NONE,
-        nullptr,
-        [member](void* obj, const std::string& value) -> bool
-        {
-            auto typed = static_cast<T*>(obj);
-            return set_bool_field(typed->*member, value);
-        },
-        [member](void* obj) -> std::string
-        {
-            auto typed = static_cast<T*>(obj);
-            return get_bool_field(typed->*member);
-        },
-        nullptr,
-        nullptr,
-        0,
-        help,
-        INT_MIN,
-        INT_MAX,
-        false
-    };
-}
-template <typename T>
-OlcField make_olc_legacy_flag_field(
-    const char* name,
-    olc_member_ptr<T, BitSet> member,
-    const char* const* table,
-    const char* help)
-{
-    return OlcField{
-        name,
-        OlcValueType::FLAG,
-        (const void*)table,
-        OlcMetaType::ENUM_LEGACY,
-        nullptr,
-        [member, table](void* obj, const std::string& value) -> bool
-        {
-            auto typed = static_cast<T*>(obj);
-            return bitset_apply_from_legacy_string(typed->*member, value, table);
-        },
-        [member, table](void* obj) -> std::string
-        {
-            auto typed = static_cast<T*>(obj);
-            return get_legacy_flag_field(typed->*member, table);
-        },
-        nullptr,
-        nullptr,
-        0,
-        help,
-        INT_MIN,
-        INT_MAX,
-        false
-    };
-}
-
-struct OlcSchema
-{
-    const char* name;
-    const std::vector<OlcField>* fields;
-};
-
-enum class OlcInterpretStage
-{
-    EARLY,   /* before skill/social/auto-exit handling */
-    LATE     /* after those checks, before "Huh?" */
-};
-
-struct OlcOps
-{
-    /* Core lifecycle */
-    void* (*clone)(const void* src) = nullptr;
-    void  (*free_clone)(void* obj) = nullptr;
-    void  (*apply_changes)(void* original, void* working) = nullptr;
-    void  (*save)(CHAR_DATA* ch, void* original) = nullptr;
-
-    /* Optional hooks */
-    void  (*after_commit)(CHAR_DATA* ch, void* original, void* working) = nullptr;
-    void  (*after_revert)(CHAR_DATA* ch, void* original, void* working) = nullptr;
-
-    /* Optional inline interpret hook */
-    bool (*inline_interpret)(CHAR_DATA* ch, char* command, char* argument) = nullptr;
-    OlcInterpretStage inline_interpret_stage = OlcInterpretStage::EARLY;    
-};
-
-struct OlcSession
-{
-    void* working_copy = nullptr;     // cloned object
-    void* original = nullptr;         // live object
-    void* original_clone = nullptr;   // revert snapshot
-    const OlcSchema* schema = nullptr;
-    const OlcOps* ops = nullptr;
-    std::string last_cmd_arg;
-
-    bool dirty = false;
-
-    std::vector<OlcPendingExitSideEffect> pending_exit_side_effects;
-    OlcPendingMobPrototypeChanges pending_mob_proto;
-
-    OlcEditMode mode = OlcEditMode::NONE;
-    ROOM_INDEX_DATA* anchor_room = nullptr;   // room-inline feature only
-};
-
-void olc_start(CHAR_DATA* ch, void* target, const OlcSchema* schema, const OlcOps* ops);
-void olc_stop(CHAR_DATA* ch, bool save);
-
-void olc_set(CHAR_DATA* ch, const std::string& field, const std::string& value);
-void olc_show(CHAR_DATA* ch, const std::string& field, const std::string& value);
 

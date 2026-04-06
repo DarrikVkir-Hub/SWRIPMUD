@@ -33,6 +33,8 @@ extern int	top_ed;
 extern bool	fBootDb;
 #define BIT_NOTFOUND ((size_t)-1)
 
+extern bool olc_set_dirty(CHAR_DATA *ch);
+
 /* planet constants for vip and wanted flags */
 
 const flag_name  planet_flags [] =
@@ -389,44 +391,6 @@ const flag_name a_types[] =
     { (size_t)-1, nullptr } // terminator	
 };
 
-
-const flag_name a_flags[] =
-{
-    { AFF_BLIND,         "blind" },
-    { AFF_INVISIBLE,     "invisible" },
-    { AFF_DETECT_EVIL,   "detect_evil" },
-    { AFF_DETECT_INVIS,  "detect_invis" },
-    { AFF_DETECT_MAGIC,  "detect_magic" },
-    { AFF_DETECT_HIDDEN, "detect_hidden" },
-    { AFF_WEAKEN,        "weaken" },
-    { AFF_SANCTUARY,     "sanctuary" },
-    { AFF_FAERIE_FIRE,   "faerie_fire" },
-    { AFF_INFRARED,      "infrared" },
-    { AFF_CURSE,         "curse" },
-    { AFF_ENDURANCE,     "endurance" },
-    { AFF_POISON,        "poison" },
-    { AFF_PROTECT,       "protect" },
-    { AFF_PARALYSIS,     "paralysis" },
-    { AFF_SNEAK,         "sneak" },
-    { AFF_HIDE,          "hide" },
-    { AFF_SLEEP,         "sleep" },
-    { AFF_CHARM,         "charm" },
-    { AFF_FLYING,        "flying" },
-    { AFF_PASS_DOOR,     "pass_door" },
-    { AFF_FLOATING,      "floating" },
-    { AFF_TRUESIGHT,     "truesight" },
-    { AFF_DETECTTRAPS,   "detect_traps" },
-    { AFF_SCRYING,       "scrying" },
-    { AFF_FIRESHIELD,    "fireshield" },
-    { AFF_SHOCKSHIELD,   "shockshield" },
-    { AFF_BIND,          "r1" },
-    { AFF_ICESHIELD,     "iceshield" },
-    { AFF_POSSESS,       "possess" },
-    { AFF_BERSERK,       "berserk" },
-    { AFF_AQUA_BREATH,   "aqua_breath" },
-	{ AFF_MAX,			 "_affect_max_"},
-    { (size_t)-1, nullptr } // terminator	
-};
 
 const flag_name act_flags[] =
 {
@@ -4820,8 +4784,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 			location->description = copy_buffer( ch );
 			stop_editing( ch );
 			ch->substate = ch->tempnum;
-			if (ch->desc && ch->desc->olc)
-    			ch->desc->olc->dirty = true;
+			olc_set_dirty(ch);
 			return;
 		case SUB_ROOM_EXTRA:
 			ed = (EXTRA_DESCR_DATA *) ch->dest_buf;

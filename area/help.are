@@ -695,6 +695,57 @@ Note - Hold and Flaming are current not in use.
 See also: OSET AFFECTTYPES
 ~
 
+101 AFFECTS~
+
+&CAffects&c on &Yobjects&c are applied when the object is equipped, and are
+removed again when the object is unequipped.
+&CAffects&c on &Ymobiles&c are always on, unless you set a duration
+&cEach affect has four important parts:
+&Ylocation&w - what kind of effect is applied
+&Ymodifier&w - the amount, flag, or spell number used
+&Ybitvector&w - a direct AFF flag added to affected_by
+&Yduration&w - ignored for worn object affects, but determines how long an
+affect lasts on a mob when first created
+
+&YLOCATION&w controls how &YMODIFIER&w is interpreted:
+&cFor stat and condition applies, &YMODIFIER&w is a number:&w
+strength, dexterity, intelligence, wisdom, constitution, charisma,
+luck, force, hit, move, armor, hitroll, damroll, saves, height,
+weight, full, thirst, drunk, mentalstate, emotion, blood, etc
+&YExample:&c location = strength, modifier = 2 &w--- Adds +2 strength while
+worn.
+
+Some &YLOCATION&c values treat &YMODIFIER&c as a flag instead of a number:
+&caffected&w = an AFF_* flag
+&cresistant&w = a RIS flag
+&cimmune&w = a RIS flag
+&csusceptible&w = a RIS flag
+&cremove&w = an AFF_* flag to suppress while worn
+&YExamples:&c location = affected, modifier = invisible &w--- Grants that
+affect while worn.
+  &clocation = remove,   modifier = sneak
+          &w--- Removes that affect while worn, and restores it on removal.
+&YBITVECTOR&c is separate from &YLOCATION&c. If bitvector is set to an AFF
+flag, that flag is added directly to affected_by while the item is worn,
+and removed when it is taken off.
+&cSpecial &YLOCATION&c values:
+&cwearspell   &w- Casts the spell (sn#) in modifier when item is worn.
+&cremovespell &w- Casts the spell (sn#) in modifier when item is removed.
+&cstripsn     &w- Removes the spell (sn#) in modifier from the wearer.
+
+&cSkill &YLOCATIONS&c applies use MODIFIER as a skill bonus:
+&wbackstab, pick, track, steal, sneak, hide, detrap, dodge,
+peek, scan, gouge, search, mount, disarm, kick, parry,
+bash, stun, punch, climb, grip, snipe, brew, scribe
+&cNotes:
+APPLY_NONE does nothing unless bitvector is used. Level, age, gold, and
+experience are not generally used here.
+Most numeric applies are reversed automatically on removal. Flag applies
+are also removed automatically on removal.
+
+&RSEE ALSO: &WAFFECTED_BY&w
+~
+
 101 AFFECTTYPES APPLYTYPES~
 none        strength    dexterity   intelligence  wisdom       constitution
 sex         level       age         height        weight       mana     
@@ -8160,7 +8211,6 @@ See also: HELP OGRUB
 ~
 
 101 OLC~
-
 Syntax: olc
 
 The OLC command provides a unified interface for editing rooms,

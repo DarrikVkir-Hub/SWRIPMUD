@@ -1529,21 +1529,24 @@ ch_printf( ch,
     ch_printf( ch, "Defenses   : %s\n",
 	flag_string(victim->defenses, defense_flags) );
     for ( paf = victim->first_affect; paf; paf = paf->next )
-	if ( (skill=get_skilltype(paf->type)) != NULL )
     {
-	  ch_printf( ch,
-	    "%s: '%s' modifies %s by %d for %d rounds",
-	    flag_name_at(skill_tname,skill->type,SKILL_MAX),
-	    skill->name,
-	    affect_loc_name( paf->location ),
-	    paf->modifier,
-	    paf->duration
-	    );
-        if (paf->bitvector < 0 || paf->bitvector >= AFF_MAX)
-            ch_printf(ch, ".\n", paf->bitvector);
-        else
-            ch_printf(ch, " with bits %s.\n", aff_flags[paf->bitvector].name);
-    }
+        skill=get_skilltype(paf->type);
+        {
+        ch_printf( ch,
+            "%s: '%s' modifies %s by %d(%s) for %d rounds",
+            skill ? get_flag_name(skill_tname,skill->type,SKILL_MAX) : "none",
+            skill ? skill->name : "none",
+            affect_loc_name( paf->location ),
+            paf->modifier,
+            get_flag_name(aff_flags, paf->modifier, AFF_MAX),
+            paf->duration
+            );
+            if (paf->bitvector < 0 || paf->bitvector >= AFF_MAX)
+                ch_printf(ch, ".\n", paf->bitvector);
+            else
+                ch_printf(ch, " with bits %s.\n", aff_flags[paf->bitvector].name);
+        }
+    }   
     return;
 }
 

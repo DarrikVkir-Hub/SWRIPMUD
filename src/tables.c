@@ -1534,7 +1534,7 @@ void fwrite_skill( FILE *fpout, SKILLTYPE *skill )
 	SMAUG_AFF *aff;
 
 	fprintf( fpout, "Name         %s~\n",	skill->name	);
-	fprintf( fpout, "Type         %s\n",	flag_name_at(skill_tname, skill->type, SKILL_MAX));
+	fprintf( fpout, "Type         %s\n",	get_flag_name(skill_tname, skill->type, SKILL_MAX));
 	fprintf( fpout, "Flags        %d\n",	skill->flags	);
 	if ( skill->target )
 	  fprintf( fpout, "Target       %d\n",	skill->target	);
