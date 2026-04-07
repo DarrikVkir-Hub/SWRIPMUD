@@ -1377,7 +1377,7 @@ void do_goto( CHAR_DATA *ch, char *argument )
 		return;
 	}	
 
-	location = make_room( vnum );
+	location = make_room( ch->game, vnum );
 	if ( !location )
 	{
 	  bug( "Goto: make_room failed", 0 );
@@ -2214,7 +2214,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 
       STR_DISPOSE( victim->pcdata->pwd );
       victim->pcdata->pwd = str_dup( pwdnew );
-      if ( IS_SET(sysdata.save_flags, SV_PASSCHG) )
+      if ( BV_IS_SET(sysdata.save_flags, SV_PASSCHG) )
  	save_char_obj( victim );
       send_to_char( "Ok.\n", ch );
       ch_printf( victim, "Your password has been changed by %s.\n", ch->name );
@@ -5672,7 +5672,7 @@ void do_ocreate( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
-    pObjIndex = make_object( vnum, cvnum, argument );
+    pObjIndex = make_object( ch->game, vnum, cvnum, argument );
     if ( !pObjIndex )
     {
 	send_to_char( "Error.\n", ch );
@@ -5753,14 +5753,19 @@ void do_mcreate( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
-    pMobIndex = make_mobile( vnum, cvnum, argument );
+    pMobIndex = make_mobile( ch->game,vnum, cvnum, argument );
     if ( !pMobIndex )
     {
 	send_to_char( "Error.\n", ch );
 	log_string( "do_mcreate: make_mobile failed." );
 	return;
     }
-    mob = create_mobile( pMobIndex );
+	if ( !ch->game )
+	{
+		send_to_char( "You must be in a game to invoke a mobile.\n", ch );
+		return;
+	}
+    mob = create_mobile( ch->game, pMobIndex );
     char_to_room( mob, ch->in_room );
     act( AT_IMMORT, "$n waves $s arms about, and $N appears at $s command!", ch, NULL, mob, TO_ROOM );
     act( AT_IMMORT, "You wave your arms about, and $N appears at your command!", ch, NULL, mob, TO_CHAR );
@@ -7177,6 +7182,12 @@ void do_loadarea( CHAR_DATA *ch, char *argument )
 	return;
     }
 
+	if (!ch->game)
+	{
+		send_to_char( "You must be in a game to load an area.\n", ch );
+		return;
+	}
+
     if ( argument[0] == '\0' )
 	tarea = ch->pcdata->area;
     else
@@ -7216,7 +7227,7 @@ void do_loadarea( CHAR_DATA *ch, char *argument )
     }
     SPRINTF( filename, "%s%s", BUILD_DIR, tarea->filename );
     send_to_char( "Loading...\n", ch );
-    load_area_file( tarea, filename );
+    load_area_file( ch->game, tarea, filename );
     send_to_char( "Linking exits...\n", ch );
     fix_area_exits( tarea );
     if ( tarea->first_reset )
@@ -7224,7 +7235,7 @@ void do_loadarea( CHAR_DATA *ch, char *argument )
 	tmp = tarea->nplayer;
 	tarea->nplayer = 0;
 	send_to_char( "Resetting area...\n", ch );
-	reset_area( tarea );
+	reset_area( ch->game, tarea );
 	tarea->nplayer = tmp;
     }
     send_to_char( "Done.\n", ch );
@@ -7251,7 +7262,7 @@ void do_unfoldarea( CHAR_DATA *ch, char *argument )
     }
 
     fBootDb = TRUE;
-    load_area_file( last_area, argument );
+    load_area_file( ch->game, last_area, argument );
     fBootDb = FALSE;
     return;
 }
@@ -7325,6 +7336,12 @@ void do_installarea( CHAR_DATA *ch, char *argument )
 	return;
     }
 
+	if (!ch->game)
+	{
+	    send_to_char( "You must be in a game to install an area.\n", ch );
+	    return;
+	}
+
     for ( tarea = first_build; tarea; tarea = tarea->next )
     {
 	if ( !str_cmp( tarea->filename, arg ) )
@@ -7368,7 +7385,7 @@ void do_installarea( CHAR_DATA *ch, char *argument )
 	  send_to_char( "Resetting new area.\n", ch );
 	  num = tarea->nplayer;
 	  tarea->nplayer = 0;
-	  reset_area( tarea );
+	  reset_area( ch->game, tarea );
 	  tarea->nplayer = num;
 	  send_to_char( "Renaming author's building file.\n", ch );
 	  SPRINTF( buf, "%s%s.installed", BUILD_DIR, tarea->filename );

@@ -815,6 +815,74 @@ typedef enum
 #define WT_AVATAR 1
 #define WT_NEWBIE 3
 
+struct system_data
+{
+    private:
+    std::string guild_overseer;
+    std::string guild_advisor;
+    std::string time_of_max;
+    long currentshipID = 0;
+    public:
+    int maxplayers = 0;
+    int alltimemax = 0;
+
+    bool no_name_resolving = false;
+    bool deny_new_players = false;
+    bool wait_for_auth = false;
+
+    sh_int read_all_mail = LEVEL_DEMI;
+    sh_int read_mail_free = LEVEL_IMMORTAL;
+    sh_int write_mail_free = LEVEL_IMMORTAL;
+    sh_int take_others_mail = LEVEL_DEMI;
+
+    sh_int muse_level = LEVEL_DEMI;
+    sh_int think_level = LEVEL_HIGOD;
+    sh_int build_level = LEVEL_DEMI;
+    sh_int log_level = LEVEL_LOG;
+    sh_int level_modify_proto = LEVEL_LESSER;
+    sh_int level_override_private = LEVEL_GREATER;
+    sh_int level_mset_player = LEVEL_LESSER;
+    sh_int stun_plr_vs_plr = 15;
+    sh_int stun_regular = 15;
+    sh_int dam_plr_vs_plr = 100;
+    sh_int dam_plr_vs_mob = 100;
+    sh_int dam_mob_vs_plr = 100;
+    sh_int dam_mob_vs_mob = 100;
+    sh_int level_getobjnotake = LEVEL_GREATER;
+    sh_int level_forcepc = LEVEL_GREATER;
+    sh_int max_sn = 0;
+
+    FLAG_SET save_flags;
+    sh_int save_frequency = 20;
+
+    long get_and_increment_shipID() { long currID = currentshipID; currentshipID++; return currID; };
+    long get_current_shipID() { return currentshipID; };
+    void set_current_shipID(int id) { currentshipID = id; };    
+    void set_time_of_max(const char* time) { time_of_max = time; };
+    void set_guild_overseer(const char* name) { guild_overseer = name; };
+    void set_guild_advisor(const char* name) { guild_advisor = name; };
+    const char *get_guild_overseer() { return guild_overseer.c_str(); };
+    const char *get_guild_advisor() { return guild_advisor.c_str(); };
+    const char *get_time_of_max() { return time_of_max.c_str(); };
+    bool empty_time_of_max() { return time_of_max.empty(); };
+    bool empty_guild_overseer() { return guild_overseer.empty(); };
+    bool empty_guild_advisor() { return guild_advisor.empty(); };
+};
+
+// Very much in progress, but global GameContext struct to hold all the global data.  This is an attempt to instance the game state.
+
+class GameContext
+{
+    system_data sysdata;
+//    DescriptorList descriptors;
+//    WorldState world;
+//    SkillTable skills;
+//    TimeInfoData time_info;
+    public:
+    system_data* get_sysdata() { return &sysdata; };
+
+};
+
 /*
  * do_who output structure -- Narn
  */ 
@@ -831,6 +899,7 @@ struct who_data
  */
 struct	ban_data
 {
+    GameContext *	game = NULL;   /* Pointer to our game context */
     BAN_DATA *	next;
     BAN_DATA *	prev;
     char *	name;     int		level;
@@ -966,6 +1035,7 @@ typedef struct
  */
 struct	descriptor_data
 {
+    GameContext *	game = NULL;   /* Pointer to our game context */
     DESCRIPTOR_DATA *	next;
     DESCRIPTOR_DATA *	prev;
     DESCRIPTOR_DATA *	snoop_by;
@@ -1324,6 +1394,7 @@ typedef enum
  */
 struct	help_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     HELP_DATA *	next;
     HELP_DATA * prev;
     sh_int	level;
@@ -1340,6 +1411,7 @@ struct	help_data
 
 struct	shop_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     SHOP_DATA *	next;			/* Next shop in list		*/
     SHOP_DATA * prev;			/* Previous shop in list	*/
     int		keeper;			/* Vnum of shop keeper mob	*/
@@ -1356,6 +1428,7 @@ struct	shop_data
 
 struct	repairshop_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     REPAIR_DATA * next;			/* Next shop in list		*/
     REPAIR_DATA * prev;			/* Previous shop in list	*/
     int		  keeper;		/* Vnum of shop keeper mob	*/
@@ -1459,6 +1532,8 @@ struct membersort_data
 
 struct member_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
+
 	char 		*name;	/* Name of member */
 	char		*since;	/* Member since */
 	char		*laston;/* Member since */
@@ -1499,6 +1574,7 @@ struct cargo_data
 
 struct space_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     SPACE_DATA * next;
     SPACE_DATA * prev;
     PLANET_DATA * planet;
@@ -1532,6 +1608,7 @@ struct space_data
 
 struct  bounty_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     BOUNTY_DATA * next;
     BOUNTY_DATA * prev;
     char * 	  target;
@@ -1541,6 +1618,7 @@ struct  bounty_data
 
 struct guard_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     GUARD_DATA * next;
     GUARD_DATA * prev;
     GUARD_DATA * next_on_planet;
@@ -1552,6 +1630,7 @@ struct guard_data
 
 struct  senate_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     SENATE_DATA * next;
     SENATE_DATA * prev;
     char * 	  name;
@@ -1559,6 +1638,7 @@ struct  senate_data
 
 struct  storeroom
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     STOREROOM    * next;
     STOREROOM    * prev;
     int vnum;
@@ -1567,6 +1647,7 @@ struct  storeroom
 
 struct  planet_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     PLANET_DATA    * next;
     PLANET_DATA    * prev;
     PLANET_DATA    * next_in_system;
@@ -1589,6 +1670,7 @@ struct  planet_data
 
 struct	clan_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     CLAN_DATA * next;		/* next clan in list			*/
     CLAN_DATA * prev;		/* previous clan in list		*/
     CLAN_DATA * next_subclan;
@@ -1705,6 +1787,7 @@ struct module_data
 
 struct ship_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
 	// Johnson 6-24 Begin
 	TRACKER_DATA *trackers;
 	// Johnson 6-24 End
@@ -1840,6 +1923,7 @@ struct ship_data
 
 struct missile_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     MISSILE_DATA * next;
     MISSILE_DATA * prev;
     MISSILE_DATA * next_in_spaceobject;
@@ -1857,6 +1941,7 @@ struct missile_data
 
 struct tourney_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     int    open;
     int    low_level;
     int    hi_level;
@@ -1867,6 +1952,7 @@ struct tourney_data
  */
 struct	note_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     NOTE_DATA *	next;
     NOTE_DATA * prev;
     char *	sender;
@@ -1882,6 +1968,7 @@ struct	note_data
 
 struct	board_data
 {
+    GameContext *game = NULL;   /* Pointer to our game context */
     BOARD_DATA * next;			/* Next board in list		   */
     BOARD_DATA * prev;			/* Previous board in list	   */
     NOTE_DATA *  first_note;		/* First note on board		   */
@@ -2212,6 +2299,25 @@ typedef enum
 /*
  * Autosave flags
  */
+enum save_flag_bits
+{
+    SV_DEATH = 0,
+    SV_KILL,
+    SV_PASSCHG,
+    SV_DROP,
+    SV_PUT,
+    SV_GIVE,
+    SV_AUTO,
+    SV_ZAPDROP,
+    SV_AUCTION,
+    SV_GET,
+    SV_RECEIVE,
+    SV_IDLE,
+    SV_BACKUP,
+
+    SV_MAX
+};
+/*
 #define SV_DEATH		  BV00
 #define SV_KILL			  BV01
 #define SV_PASSCHG		  BV02
@@ -2225,7 +2331,7 @@ typedef enum
 #define SV_RECEIVE		  BV10
 #define SV_IDLE			  BV11
 #define SV_BACKUP		  BV12
-
+*/
 /*
  * item flags - includes pipe flags and weapon flags
  */
@@ -2952,6 +3058,7 @@ typedef enum
  */
 struct	mob_index_data
 {
+    GameContext *   game = NULL;
     MOB_INDEX_DATA *	next;
     MOB_INDEX_DATA *	next_sort;
     SPEC_FUN *		spec_fun;
@@ -3054,6 +3161,7 @@ struct	extracted_char_data
  */
 struct	char_data
 {
+    GameContext *   game = NULL;
     CHAR_DATA *		next;
     CHAR_DATA *		prev;
     CHAR_DATA *		next_in_room;
@@ -3314,6 +3422,7 @@ struct	extra_descr_data
  */
 struct	obj_index_data
 {
+    GameContext *   game = NULL;
     OBJ_INDEX_DATA *	next;
     OBJ_INDEX_DATA *	next_sort;
     EXTRA_DESCR_DATA *	first_extradesc; 
@@ -3346,6 +3455,7 @@ struct	obj_index_data
  */
 struct	obj_data
 {
+    GameContext *   game = NULL;
     OBJ_DATA *		next; // Handled by clone_object
     OBJ_DATA *		prev; // Handled by clone_object
     OBJ_DATA *		next_content; // editing objects should not touch this
@@ -3457,6 +3567,7 @@ struct	reset_data
  */
 struct	area_data
 {
+    GameContext *   game = NULL;
     AREA_DATA *		next;
     AREA_DATA *		prev;
     AREA_DATA *		next_sort;
@@ -3527,47 +3638,49 @@ struct	godlist_data
 /*
  * Used to keep track of system settings and statistics		-Thoric
  */
+/*
 struct	system_data
 {
-    int		maxplayers;		/* Maximum players this boot   */
-    int		alltimemax;		/* Maximum players ever	  */
-    char *	time_of_max;		/* Time of max ever */
-    bool	NO_NAME_RESOLVING;	/* Hostnames are not resolved  */
-    bool    	DENY_NEW_PLAYERS;	/* New players cannot connect  */
-    bool	WAIT_FOR_AUTH;		/* New players must be auth'ed */
-    sh_int	read_all_mail;		/* Read all player mail(was 54)*/
-    sh_int	read_mail_free;		/* Read mail for free (was 51) */
-    sh_int	write_mail_free;	/* Write mail for free(was 51) */
-    sh_int	take_others_mail;	/* Take others mail (was 54)   */
-    sh_int	muse_level;		/* Level of muse channel */
-    sh_int	think_level;		/* Level of think channel LEVEL_HIGOD*/
-    sh_int	build_level;		/* Level of build channel LEVEL_BUILD*/
-    sh_int	log_level;		/* Level of log channel LEVEL LOG*/
-    sh_int	level_modify_proto;	/* Level to modify prototype stuff LEVEL_LESSER */
-    sh_int	level_override_private;	/* override private flag */
-    sh_int	level_mset_player;	/* Level to mset a player */
-    sh_int	stun_plr_vs_plr;	/* Stun mod player vs. player */
-    sh_int	stun_regular;		/* Stun difficult */
-    sh_int	dam_plr_vs_plr;		/* Damage mod player vs. player */
-    sh_int	dam_plr_vs_mob;		/* Damage mod player vs. mobile */
-    sh_int	dam_mob_vs_plr;		/* Damage mod mobile vs. player */
-    sh_int	dam_mob_vs_mob;		/* Damage mod mobile vs. mobile */
-    sh_int	level_getobjnotake;     /* Get objects without take flag */
-    sh_int      level_forcepc;          /* The level at which you can use force on players. */
-    sh_int	max_sn;			/* Max skills */
-    char       *guild_overseer;         /* Pointer to char containing the name of the */
-    char       *guild_advisor;		/* guild overseer and advisor. */ 
-    int		save_flags;		/* Toggles for saving conditions */
-    sh_int	save_frequency;		/* How old to autosave someone */
-    long int	currentshipID;		/* The next number to set for ShipIDs */
+    int		maxplayers;		// Maximum players this boot   
+    int		alltimemax;		// Maximum players ever	  
+    char *	time_of_max;		// Time of max ever
+    bool	NO_NAME_RESOLVING;	// Hostnames are not resolved  
+    bool    	DENY_NEW_PLAYERS;	// New players cannot connect  
+    bool	WAIT_FOR_AUTH;		// New players must be auth'ed
+    sh_int	read_all_mail;		// Read all player mail(was 54)
+    sh_int	read_mail_free;		// Read mail for free (was 51)
+    sh_int	write_mail_free;		// Write mail for free(was 51) 
+    sh_int	take_others_mail;		// Take others mail (was 54)   
+    sh_int	muse_level;		// Level of muse channel 
+    sh_int	think_level;		// Level of think channel LEVEL_HIGOD
+    sh_int	build_level;		// Level of build channel LEVEL_BUILD
+    sh_int	log_level;		// Level of log channel LEVEL LOG
+    sh_int	level_modify_proto;		// Level to modify prototype stuff LEVEL_LESSER 
+    sh_int	level_override_private;		// override private flag 
+    sh_int	level_mset_player;		// Level to mset a player 
+    sh_int	stun_plr_vs_plr;		// Stun mod player vs. player 
+    sh_int	stun_regular;		// Stun difficult 
+    sh_int	dam_plr_vs_plr;		// Damage mod player vs. player 
+    sh_int	dam_plr_vs_mob;		// Damage mod player vs. mobile 
+    sh_int	dam_mob_vs_plr;		// Damage mod mobile vs. player 
+    sh_int	dam_mob_vs_mob;		// Damage mod mobile vs. mobile 
+    sh_int	level_getobjnotake;     // Get objects without take flag 
+    sh_int      level_forcepc;          // The level at which you can use force on players. 
+    sh_int	max_sn;			            // Max skills 
+    char       *guild_overseer;         // Pointer to char containing the name of the 
+    char       *guild_advisor;		// guild overseer and advisor. 
+    FLAG_SET	save_flags;		// Toggles for saving conditions 
+    sh_int	save_frequency;		// How old to autosave someone 
+    long int	currentshipID;		// The next number to set for ShipIDs 
 };
-
+*/
 
 /*
  * Room type.
  */
 struct	room_index_data
 {
+    GameContext *   game = NULL;
     ROOM_INDEX_DATA *	next;
     ROOM_INDEX_DATA *	next_sort;
     CHAR_DATA *		first_person;
@@ -3603,6 +3716,7 @@ struct	room_index_data
  */
 struct	teleport_data
 {
+    GameContext *game = NULL;
     TELEPORT_DATA *	next;
     TELEPORT_DATA *	prev;
     ROOM_INDEX_DATA *	room;
@@ -3693,6 +3807,7 @@ struct	skill_type
 
 struct  auction_data
 {
+    GameContext *   game = NULL;
     OBJ_DATA  * item;   /* a pointer to the item */
     CHAR_DATA * seller; /* a pointer to the seller - which may NOT quit */
     CHAR_DATA * buyer;  /* a pointer to the buyer - which may NOT quit */
@@ -5516,7 +5631,7 @@ extern "C" char *crypt(const char *key, const char *salt);
 #define WRAP_NO_WRAP           BV05  /* disable wrapping entirely */
 
 /* act_comm.c */
-void init_language_sn();
+void init_language_sn(GameContext *game);
 bool is_valid_lang(size_t lang);
 FLAG_SET make_all_languages(void);
 int     closed          args( ( int d ) );
@@ -5554,7 +5669,7 @@ void	show_list_to_char	args( ( OBJ_DATA *list, CHAR_DATA *ch,
 void do_showstatistic_web( CHAR_DATA *ch, char *argument );
 
 /* act_move.c */
-void	clear_vrooms	args( ( void ) );
+void	clear_vrooms	args( ( GameContext *game ) );
 ED *	find_door	args( ( CHAR_DATA *ch, char *arg, bool quiet ) );
 ED *	get_exit	args( ( ROOM_INDEX_DATA *room, sh_int dir ) );
 ED *	get_exit_to	args( ( ROOM_INDEX_DATA *room, sh_int dir, int vnum ) );
@@ -5578,7 +5693,7 @@ RID *	find_location	args( ( CHAR_DATA *ch, char *arg ) );
 void    echo_to_room    args( ( sh_int AT_COLOR, ROOM_INDEX_DATA *room, char *argument ) );
 void	echo_to_all	args( ( sh_int AT_COLOR, char *argument,
 				sh_int tar ) );
-void   	get_reboot_string args( ( void ) );
+void   	get_reboot_string args( ( GameContext *game ) );
 struct tm *update_time  args( ( struct tm *old_time ) );
 void	free_social	args( ( SOCIALTYPE *social ) );
 void	add_social	args( ( SOCIALTYPE *social ) );
@@ -5587,7 +5702,7 @@ void	unlink_command	args( ( CMDTYPE *command ) );
 void	add_command	args( ( CMDTYPE *command ) );
 
 /* boards.c */
-void	load_boards	args( ( void ) );
+void	load_boards	args( ( GameContext *game ) );
 BD *	get_board	args( ( OBJ_DATA *obj ) );
 void	free_note	args( ( NOTE_DATA *pnote ) );
 
@@ -5607,12 +5722,12 @@ extern const char *  const           ex_flags[];
 
 /* clans.c */
 CL *	get_clan		args( ( char *name ) );
-void	load_clans		args( ( void ) );
+void	load_clans		args( ( GameContext *game ) );
 void	save_clan		args( ( CLAN_DATA *clan ) );
-void	load_senate		args( ( void ) );
-void	save_senate		args( ( void ) );
+void	load_senate		args( ( GameContext *game ) );
+void	save_senate		args( ( GameContext *game ) );
 PLANET_DATA *	get_planet	args( ( char *name ) );
-void	load_planets		args( ( void ) );
+void	load_planets		args( ( GameContext *game ) );
 void	save_planet		args( ( PLANET_DATA *planet ) );
 float   get_taxes               args( ( PLANET_DATA *planet ) );
 bool 	load_member_list	args( ( char *filename ) );
@@ -5621,42 +5736,42 @@ void	remove_member		args( ( CHAR_DATA *ch ) );
 
 /* bounty.c */
 BOUNTY_DATA  * get_disintigration   args( ( char *target ) );
-void        load_bounties   args( ( void ) );
-void        save_bounties   args( ( void ) );
-void        save_disintigrations   args( ( void ) );
+void        load_bounties   args( ( GameContext *game ) );
+void        save_bounties   args( ( GameContext *game ) );
+void        save_disintigrations   args( ( GameContext *game ) );
 void        remove_disintigration   args( ( BOUNTY_DATA *bounty ) );
 void	    claim_disintigration    args( ( CHAR_DATA *ch , CHAR_DATA *victim ) );
 bool        is_disintigration args( ( CHAR_DATA *victim ) );
 
 /* space.c */
-SH        *  get_ship          	    args( ( char *name ) );
-SH        *  get_ship_from_filename args( ( char *name ) );
-void         load_ships        	    args( ( void ) );
+SH        *  get_ship          	    args( ( GameContext *game, char *name ) );
+SH        *  get_ship_from_filename args( ( GameContext *game, char *name ) );
+void         load_ships        	    args( ( GameContext *game ) );
 void         save_ship      	    args( ( SHIP_DATA *ship ) );
-void         load_space             args( ( void ) );
+void         load_space             args( ( GameContext *game ) );
 void         save_spaceobject        args( ( SPACE_DATA *spaceobject ) );
-SPACE_DATA * spaceobject_from_name   args( ( char *name ) );
-SPACE_DATA * spaceobject_from_vnum   args( ( int vnum ) );
-SHIP_DATA  * ship_from_obj          args( ( int vnum ) );
-SHIP_DATA  * ship_from_entrance     args( ( int vnum ) );
-SHIP_DATA  * ship_from_hanger       args( ( int vnum ) );
-SHIP_DATA  * ship_from_cockpit      args( ( int vnum ) );
-SHIP_DATA  * ship_from_navseat      args( ( int vnum ) );
-SHIP_DATA  * ship_from_coseat       args( ( int vnum ) );
-SHIP_DATA  * ship_from_pilotseat    args( ( int vnum ) );
-SHIP_DATA  * ship_from_gunseat      args( ( int vnum ) );
-SHIP_DATA  * ship_from_turret       args( ( int vnum ) );
-SHIP_DATA  * ship_from_engine       args( ( int vnum ) );
-SHIP_DATA  * ship_from_room         args( ( int vnum ) );
-SHIP_DATA  * ship_from_pilot        args( ( char *name ) );
-SHIP_DATA  * get_ship_here          args( ( char *name , SHIP_DATA *eShip) );
+SPACE_DATA * spaceobject_from_name   args( ( GameContext *game, char *name ) );
+SPACE_DATA * spaceobject_from_vnum   args( ( GameContext *game, int vnum ) );
+SHIP_DATA  * ship_from_obj          args( ( GameContext *game, int vnum ) );
+SHIP_DATA  * ship_from_entrance     args( ( GameContext *game, int vnum ) );
+SHIP_DATA  * ship_from_hanger       args( ( GameContext *game, int vnum ) );
+SHIP_DATA  * ship_from_cockpit      args( ( GameContext *game, int vnum ) );
+SHIP_DATA  * ship_from_navseat      args( ( GameContext *game, int vnum ) );
+SHIP_DATA  * ship_from_coseat       args( ( GameContext *game, int vnum ) );
+SHIP_DATA  * ship_from_pilotseat    args( ( GameContext *game, int vnum ) );
+SHIP_DATA  * ship_from_gunseat      args( ( GameContext *game, int vnum ) );
+SHIP_DATA  * ship_from_turret       args( ( GameContext *game, int vnum ) );
+SHIP_DATA  * ship_from_engine       args( ( GameContext *game, int vnum ) );
+SHIP_DATA  * ship_from_room         args( ( GameContext *game, int vnum ) );
+SHIP_DATA  * ship_from_pilot        args( ( GameContext *game, char *name ) );
+SHIP_DATA  * get_ship_here          args( ( GameContext *game, char *name , SHIP_DATA *eShip) );
 void         showspaceobject         args( ( CHAR_DATA *ch , SPACE_DATA *spaceobject ) );
-void         update_space           args( ( void ) );
-void         quest_update           args( ( void ) );
-void         recharge_ships         args( ( void ) );
-void         move_ships             args( ( void ) );
-void         update_bus             args( ( void ) );
-void         update_traffic         args( ( void ) );
+void         update_space           args( ( GameContext *game ) );
+void         quest_update           args( ( GameContext *game ) );
+void         recharge_ships         args( ( GameContext *game ) );
+void         move_ships             args( ( GameContext *game ) );
+void         update_bus             args( ( GameContext *game ) );
+void         update_traffic         args( ( GameContext *game ) );
 bool         check_pilot            args( ( CHAR_DATA *ch , SHIP_DATA *ship ) );
 bool         is_rental              args( ( CHAR_DATA *ch , SHIP_DATA *ship ) );
 void         echo_to_ship           args( ( int color , SHIP_DATA *ship , char *argument ) );
@@ -5683,14 +5798,14 @@ void dockship( CHAR_DATA *ch, SHIP_DATA *ship );
 bool is_bus_stop( int vnum );
 bool space_in_range_c( SHIP_DATA *ship, SPACE_DATA *object );
 bool    autofly(SHIP_DATA *ship);
-bool	load_ship_file	args( ( char *shipfile ) );
+bool	load_ship_file	args( ( GameContext *game, char *shipfile ) );
 
 /* space2.c */
 bool check_hostile( SHIP_DATA *ship );
 void update_ship_modules( SHIP_DATA *ship );
 void fread_modules( SHIP_DATA *ship, FILE *fp );
 void shipdelete(SHIP_DATA * ship, bool shiplist);
-void write_ship_list( void );
+void write_ship_list( GameContext *game );
 char *show_mod_type( MODULE_DATA *module );
 char *show_mod_type2( int type );
 int get_intmodule_count( SHIP_DATA *ship );
@@ -5739,7 +5854,7 @@ void	act		args( ( sh_int AType, const char *format, CHAR_DATA *ch, const void *a
 RD  *	make_reset	args( ( char letter, int extra, int arg1, int arg2, int arg3 ) );
 RD  *	add_reset	args( ( AREA_DATA *tarea, char letter, int extra, int arg1, int arg2, int arg3 ) );
 RD  *	place_reset	args( ( AREA_DATA *tarea, char letter, int extra, int arg1, int arg2, int arg3 ) );
-void	reset_area	args( ( AREA_DATA * pArea ) );
+void	reset_area	args( ( GameContext *game, AREA_DATA * pArea ) );
 
 /* db.c */
 int utf8_decode(const unsigned char *p, unsigned int *out_cp);
@@ -5752,10 +5867,10 @@ void log_channelf args ( (int channel, const char *channel_name, int level, cons
 void	show_file	args( ( CHAR_DATA *ch, char *filename ) );
 bool  is_valid_filename args( ( CHAR_DATA *ch, const char *direct, const char *filename ) );
 char *	str_dup		args( ( char const *str ) );
-void	boot_db		args( ( void ) );
-void	area_update	args( ( void ) );
+void	boot_db		args( ( GameContext *game ) );
+void	area_update	args( ( GameContext *game ) );
 void	add_char	args( ( CHAR_DATA *ch ) );
-CD *	create_mobile	args( ( MOB_INDEX_DATA *pMobIndex ) );
+CD *	create_mobile	args( ( GameContext *game, MOB_INDEX_DATA *pMobIndex ) );
 OD *	create_object	args( ( OBJ_INDEX_DATA *pObjIndex, int level ) );
 void	clear_char	args( ( CHAR_DATA *ch ) );
 void	free_char	args( ( CHAR_DATA *ch ) );
@@ -5794,16 +5909,16 @@ void	append_file	args( ( CHAR_DATA *ch, char *file, char *str ) );
 void	append_to_file	args( ( char *file, char *str ) );
 void	bug		args( ( const char *str, ... ) );
 void	log_string_plus	args( ( const char *str, sh_int log_type, sh_int level ) );
-RID *	make_room	args( ( int vnum ) );
-OID *	make_object	args( ( int vnum, int cvnum, char *name ) );
-MID *	make_mobile	args( ( sh_int vnum, sh_int cvnum, char *name ) );
+RID *	make_room	args( ( GameContext *game, int vnum ) );
+OID *	make_object	args( ( GameContext *game, int vnum, int cvnum, char *name ) );
+MID *	make_mobile	args( ( GameContext *game, sh_int vnum, sh_int cvnum, char *name ) );
 ED  *	make_exit	args( ( ROOM_INDEX_DATA *pRoomIndex, ROOM_INDEX_DATA *to_room, sh_int door ) );
 void	add_help	args( ( HELP_DATA *pHelp ) );
 void	fix_area_exits	args( ( AREA_DATA *tarea ) );
-void	load_area_file	args( ( AREA_DATA *tarea, char *filename ) );
+void	load_area_file	args( ( GameContext *game, AREA_DATA *tarea, char *filename ) );
 void	randomize_exits	args( ( ROOM_INDEX_DATA *room, sh_int maxdir ) );
-void	make_wizlist	args( ( void ) );
-void	tail_chain	args( ( void ) );
+void	make_wizlist	args( ( GameContext *game ) );
+void	tail_chain	args( ( GameContext *game ) );
 bool    delete_room     args( ( ROOM_INDEX_DATA *room ) );
 bool    delete_obj      args( ( OBJ_INDEX_DATA *obj ) );
 bool    delete_mob      args( ( MOB_INDEX_DATA *mob ) );
@@ -5845,7 +5960,7 @@ int	get_wflag	args( ( char *flag ) );
 
 /* fight.c */
 int	max_fight	args( ( CHAR_DATA *ch ) );
-void	violence_update	args( ( void ) );
+void	violence_update	args( ( GameContext *game ) );
 ch_ret	multi_hit	args( ( CHAR_DATA *ch, CHAR_DATA *victim, int dt ) );
 sh_int	ris_damage	args( ( CHAR_DATA *ch, sh_int dam, int ris ) );
 ch_ret	damage		args( ( CHAR_DATA *ch, CHAR_DATA *victim, int dam,
@@ -5925,7 +6040,7 @@ void    mprog_time_trigger      args ( ( CHAR_DATA *mob ) );
 void    progbug                 args( ( char *str, CHAR_DATA *mob ) );
 void progbugf                   args( ( CHAR_DATA *mob, const char *fmt, ... ) );
 void	rset_supermob		args( ( ROOM_INDEX_DATA *room) );
-void	release_supermob	args( ( ) );
+void	release_supermob	args( ( GameContext *game ) );
 
 /* player.c */
 void	set_title	args( ( CHAR_DATA *ch, char *title ) );
@@ -6026,11 +6141,11 @@ void	showaffect	args( ( CHAR_DATA *ch, AFFECT_DATA *paf ) );
 void	set_cur_obj	args( ( OBJ_DATA *obj ) );
 bool	obj_extracted	args( ( OBJ_DATA *obj ) );
 void	queue_extracted_obj	args( ( OBJ_DATA *obj ) );
-void	clean_obj_queue	args( ( void ) );
+void	clean_obj_queue	args( ( GameContext *game ) );
 void	set_cur_char	args( ( CHAR_DATA *ch ) );
 bool	char_died	args( ( CHAR_DATA *ch ) );
 void	queue_extracted_char	args( ( CHAR_DATA *ch, bool extract ) );
-void	clean_char_queue	args( ( void ) );
+void	clean_char_queue	args( ( GameContext *game ) );
 void	add_timer	args( ( CHAR_DATA *ch, sh_int type, sh_int count, DO_FUN *fun, int value ) );
 TIMER * get_timerptr	args( ( CHAR_DATA *ch, sh_int type ) );
 sh_int	get_timer	args( ( CHAR_DATA *ch, sh_int type ) );
@@ -6100,8 +6215,8 @@ int	dice_parse	args( (CHAR_DATA *ch, int level, char *exp) );
 SK *	get_skilltype	args( ( int sn ) );
 
 /* request.c */
-void	init_request_pipe	args( ( void ) );
-void	check_requests		args( ( void ) );
+void	init_request_pipe	args( ( GameContext *game ) );
+void	check_requests		args( ( GameContext *game ) );
 
 /* save.c */
 /* object saving defines for fread/write_obj. -- Altrag */
@@ -6124,7 +6239,7 @@ void	de_equip_char	args( ( CHAR_DATA *ch ) );
 void	re_equip_char	args( ( CHAR_DATA *ch ) );
 void	save_home	args( ( CHAR_DATA *ch ) );
 void save_storeroom( ROOM_INDEX_DATA *room );
-void load_storerooms( void );
+void load_storerooms( GameContext *game );
 
 /* shops.c */
 int get_cost_quit( CHAR_DATA *ch );
@@ -6137,17 +6252,17 @@ char *	lookup_spec	args( ( SPEC_FUN *special ) );
 int	get_skill	args( ( char *skilltype ) );
 char *	spell_name	args( ( SPELL_FUN *spell ) );
 char *	skill_name	args( ( DO_FUN *skill ) );
-void	load_skill_table args( ( void ) );
-void	save_skill_table args( ( void ) );
-void	sort_skill_table args( ( void ) );
-void	load_socials	args( ( void ) );
-void	save_socials	args( ( void ) );
-void	load_commands	args( ( void ) );
-void	save_commands	args( ( void ) );
+void	load_skill_table args( ( GameContext *game ) );
+void	save_skill_table args( ( GameContext *game ) );
+void	sort_skill_table args( ( GameContext *game ) );
+void	load_socials	args( ( GameContext *game ) );
+void	save_socials	args( ( GameContext *game ) );
+void	load_commands	args( ( GameContext *game ) );
+void	save_commands	args( ( GameContext *game ) );
 SPELL_FUN *spell_function args( ( char *name ) );
 DO_FUN *skill_function  args( ( char *name ) );
-void	load_herb_table	args( ( void ) );
-void	save_herb_table	args( ( void ) );
+void	load_herb_table	args( ( GameContext *game ) );
+void	save_herb_table	args( ( GameContext *game ) );
 
 /* track.c */
 void	found_prey	args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );
@@ -6157,12 +6272,12 @@ void	hunt_victim	args( ( CHAR_DATA *ch) );
 void	advance_level	args( ( CHAR_DATA *ch , int ability ) );
 void	gain_exp	args( ( CHAR_DATA *ch, int gain , int ability) );
 void	gain_condition	args( ( CHAR_DATA *ch, int iCond, int value ) );
-void	update_handler	args( ( void ) );
-void	reboot_check	args( ( time_t reset ) );
+void	update_handler	args( ( GameContext *game ) );
+void	reboot_check	args( ( GameContext *game, time_t reset ) );
 #if 0
 void    reboot_check    args( ( char *arg ) );
 #endif
-void    auction_update  args( ( void ) );
+void    auction_update  args( ( GameContext *game ) );
 void	remove_portal	args( ( OBJ_DATA *portal ) );
 int max_level( CHAR_DATA *ch, int ability);
 bool    is_droid	args( ( CHAR_DATA *ch ) );
@@ -6172,7 +6287,7 @@ char *	str_alloc	args( ( char *str ) );
 char *	quick_link	args( ( char *str ) );
 int	str_free	args( ( char *str ) );
 void	show_hash	args( ( int count ) );
-char *	hash_stats	args( ( void ) );
+char *	hash_stats	args( ( ) );
 char *	check_hash	args( ( char *str ) );
 void	hash_dump	args( ( int hash ) );
 void	show_high_hash	args( ( int top ) );
@@ -6195,8 +6310,8 @@ int	add_dont_resolve		args( ( char *ipmatch ) );
 
 /* vendor.c*/
 void fwrite_vendor args( ( FILE *fp, CHAR_DATA *mob ) );
-CHAR_DATA *  fread_vendor  args ( ( FILE *fp ) );
-void load_vendors args( ( void ) );
+CHAR_DATA *  fread_vendor  args ( ( GameContext *game, FILE *fp ) );
+void load_vendors args( ( GameContext *game ) );
 void save_vendor args (( CHAR_DATA *ch ));
 
 /* olc.c */

@@ -1050,7 +1050,7 @@ void do_look ( CHAR_DATA *ch, char *argument )
         show_char_to_char( ch->in_room->first_person,  ch );
         
         if ( str_cmp( arg1, "auto" ) )
-            if (   (ship = ship_from_cockpit(ch->in_room->vnum))  != NULL )
+            if (   (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  != NULL )
             {
                 set_char_color(  AT_WHITE, ch );
                                 ch_printf( ch , "\nThrough the transparisteel windows you see:\n" );
@@ -3504,7 +3504,7 @@ void do_password(CHAR_DATA *ch, char *argument)
     STR_DISPOSE(ch->pcdata->pwd);
     ch->pcdata->pwd = str_dup(pwdnewhash);
 
-    if (IS_SET(sysdata.save_flags, SV_PASSCHG))
+    if (BV_IS_SET(sysdata.save_flags, SV_PASSCHG))
         save_char_obj(ch);
 
     send_to_char("Ok.\n", ch);
@@ -3604,7 +3604,7 @@ void do_password(CHAR_DATA *ch, char *argument)
     STR_DISPOSE(ch->pcdata->pwd);
     ch->pcdata->pwd = str_dup(pwdnew);
 
-    if (IS_SET(sysdata.save_flags, SV_PASSCHG))
+    if (BV_IS_SET(sysdata.save_flags, SV_PASSCHG))
         save_char_obj(ch);
 
     send_to_char("Ok.\n", ch);

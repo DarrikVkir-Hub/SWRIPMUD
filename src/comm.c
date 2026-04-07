@@ -133,13 +133,16 @@ int 		    maxdesc;
 pid_t slave_pid;
 static int slave_socket = -1;
 #endif
+static volatile sig_atomic_t g_alarm_fired = 0;
+static volatile sig_atomic_t g_pending_accept_fd = -1;
+
 
 /*
  * OS-dependent local functions.
  */
-void	game_loop		args( ( ) );
+void	game_loop		args( (GameContext *game) );
 int	init_socket		args( ( int port ) );
-void	new_descriptor		args( ( int new_desc ) );
+void	new_descriptor		args( ( GameContext *game, int new_desc ) );
 bool	read_from_descriptor	args( ( DESCRIPTOR_DATA *d ) );
 
 
@@ -194,12 +197,11 @@ int main( int argc, char **argv )
 #if defined(MALLOC_DEBUG)
     malloc_debug( 2 );
 #endif
-
+    // Init the game!
+    GameContext *game = new GameContext();
     num_descriptors		= 0;
     first_descriptor		= NULL;
     last_descriptor		= NULL;
-    sysdata.NO_NAME_RESOLVING	= TRUE;
-    sysdata.WAIT_FOR_AUTH	= TRUE;
 
     /*
      * Init time.
@@ -235,11 +237,11 @@ int main( int argc, char **argv )
     new_boot_time = update_time(new_boot_time);
     new_boot_struct = *new_boot_time;
     new_boot_time = &new_boot_struct;
-    reboot_check(mktime(new_boot_time));
+    reboot_check(game, mktime(new_boot_time));
     new_boot_time_t = mktime(new_boot_time);
 
     /* Set reboot time string for do_time */
-    get_reboot_string();
+    get_reboot_string(game);
 
     /*
      * Reserve two channels for our use.
@@ -279,7 +281,11 @@ int main( int argc, char **argv )
     log_printf("PID: %d",getpid());
     bootup = TRUE;
     log_string("Booting Database");
-    boot_db( );
+
+    game->get_sysdata()->no_name_resolving	= TRUE;
+    game->get_sysdata()->wait_for_auth	= TRUE;
+
+    boot_db( game );
     log_string("Initializing socket");
     control  = init_socket( port   );
     control2 = init_socket( port+1 );
@@ -287,7 +293,7 @@ int main( int argc, char **argv )
     conjava  = init_socket( port+20);
     log_printf( "Rise in Power ready on port %d.", port );
     bootup = FALSE;
-    game_loop( );
+    game_loop(game);
     close( control  );
     close( control2 );
     close( conclient);
@@ -391,23 +397,46 @@ static void SegVio()
 /*
  * LAG alarm!							-Thoric
  */
-static void caught_alarm()
+/*
+ * Real SIGALRM handler.
+ *
+ * IMPORTANT:
+ * This must stay minimal.  It does only two things:
+ *   1) records that the alarm fired
+ *   2) force-closes newdesc immediately if one is in progress
+ *
+ * close() is async-signal-safe.
+ * bug(), echo_to_all(), FD_CLR(), SPRINTF(), and game_loop() are not.
+ */
+static void caught_alarm(int)
+{
+    g_alarm_fired = 1;
+
+    if (g_pending_accept_fd >= 0)
+    {
+        close(g_pending_accept_fd); 
+        g_pending_accept_fd = -1;
+    }
+}
+
+/*
+ * Normal post-alarm recovery logic.
+ *
+ * This runs back in ordinary game context, where it is safe to log,
+ * echo messages, manipulate fd_sets, and reset bookkeeping.
+ */
+static void handle_alarm_recovery(GameContext *game)
 {
     char buf[MAX_STRING_LENGTH];
-    bug( "ALARM CLOCK!" );
-    SPRINTF( buf, "Alas, the hideous mandalorian entity known only as 'Lag' rises once more!\n" );
-    echo_to_all( AT_IMMORT, buf, ECHOTAR_ALL );
-    if ( newdesc )
-    {
-	FD_CLR( newdesc, &in_set );
-	FD_CLR( newdesc, &out_set );
-	log_string( "clearing newdesc" );
-    }
-    game_loop( );
-    close( control );
 
-    log_string( "Normal termination of game." );
-    exit( 0 );
+    (void)game;
+
+    bug("ALARM CLOCK!");
+    SPRINTF(buf, "Alas, the hideous mandalorian entity known only as 'Lag' rises once more!\n");
+    echo_to_all(AT_IMMORT, buf, ECHOTAR_ALL);
+
+    log_string("alarm recovery complete");
+    g_alarm_fired = 0;
 }
 
 bool check_bad_desc( int desc )
@@ -423,68 +452,77 @@ bool check_bad_desc( int desc )
 }
 
 
-void accept_new( int ctrl )
+void accept_new( GameContext *game, int ctrl )
 {
-	static struct timeval null_time;
-	DESCRIPTOR_DATA *d;
-	/* int maxdesc; Moved up for use with id.c as extern */
+    static struct timeval null_time;
+    DESCRIPTOR_DATA *d;
 
 #if defined(MALLOC_DEBUG)
-	if ( malloc_verify( ) != 1 )
-	    abort( );
+    if ( malloc_verify( ) != 1 )
+        abort( );
 #endif
 
-	/*
-	 * Poll all active descriptors.
-	 */
-	FD_ZERO( &in_set  );
-	FD_ZERO( &out_set );
-	FD_ZERO( &exc_set );
-	FD_SET( ctrl, &in_set );
-	maxdesc	= ctrl;
-	newdesc = 0;
-	for ( d = first_descriptor; d; d = d_next )
-	{
+    FD_ZERO( &in_set  );
+    FD_ZERO( &out_set );
+    FD_ZERO( &exc_set );
+    FD_SET( ctrl, &in_set );
+    maxdesc = ctrl;
+    newdesc = 0;
+
+    for ( d = first_descriptor; d; d = d_next )
+    {
         d_next = d->next;
-        if (d->descriptor < 0)
+        if ( d->descriptor < 0 )
             continue;
 
         maxdesc = UMAX( maxdesc, d->descriptor );
-	    FD_SET( d->descriptor, &in_set  );
-	    FD_SET( d->descriptor, &out_set );
-	    FD_SET( d->descriptor, &exc_set );
-	    if (d->auth_fd != -1)
-	    {
-		maxdesc = UMAX( maxdesc, d->auth_fd );
-		FD_SET(d->auth_fd, &in_set);
-		if (IS_SET(d->auth_state, FLAG_WRAUTH))
-		  FD_SET(d->auth_fd, &out_set);
-	    }
-	    if ( d == last_descriptor )
-	      break;
-	}
+        FD_SET( d->descriptor, &in_set  );
+        FD_SET( d->descriptor, &out_set );
+        FD_SET( d->descriptor, &exc_set );
 
-	if ( select( maxdesc+1, &in_set, &out_set, &exc_set, &null_time ) < 0 )
-	{
-	    perror( "accept_new: select: poll" );
-	    exit( 1 );
-	}
+        if ( d->auth_fd != -1 )
+        {
+            maxdesc = UMAX( maxdesc, d->auth_fd );
+            FD_SET( d->auth_fd, &in_set );
+            if ( IS_SET( d->auth_state, FLAG_WRAUTH ) )
+                FD_SET( d->auth_fd, &out_set );
+        }
 
-	if ( FD_ISSET( ctrl, &exc_set ) )
-	{
-	    bug( "Exception raise on controlling descriptor %d", ctrl );
-	    FD_CLR( ctrl, &in_set );
-	    FD_CLR( ctrl, &out_set );
-	}
-	else
-	if ( FD_ISSET( ctrl, &in_set ) )
-	{
-	    newdesc = ctrl;
-	    new_descriptor( newdesc );
-	}
+        if ( d == last_descriptor )
+            break;
+    }
+
+    if ( select( maxdesc+1, &in_set, &out_set, &exc_set, &null_time ) < 0 )
+    {
+        if ( errno == EINTR )
+        {
+            if ( g_alarm_fired )
+            {
+                log_string( "accept_new: select interrupted by alarm" );
+                return;
+            }
+
+            return;
+        }
+
+        perror( "accept_new: select: poll" );
+        exit( 1 );
+    }
+
+    if ( FD_ISSET( ctrl, &exc_set ) )
+    {
+        bug( "Exception raise on controlling descriptor %d", ctrl );
+        FD_CLR( ctrl, &in_set );
+        FD_CLR( ctrl, &out_set );
+    }
+    else if ( FD_ISSET( ctrl, &in_set ) )
+    {
+        newdesc = ctrl;
+        new_descriptor( game, newdesc );
+    }
 }
 
-void game_loop( )
+void game_loop(GameContext *game)
 {
     struct timeval	  last_time;
     char cmdline[MAX_INPUT_LENGTH];
@@ -494,7 +532,17 @@ void game_loop( )
 /*  time_t	last_check = 0;  */
 
     signal( SIGPIPE, SIG_IGN );
-    signal( SIGALRM, (void (*) (int) )caught_alarm );
+    //signal( SIGALRM, (void (*) (int) )caught_alarm );
+    {
+        struct sigaction sa;
+
+        memset(&sa, 0, sizeof(sa));
+        sa.sa_handler = caught_alarm;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = 0; /* do NOT use SA_RESTART; we want SIGALRM to interrupt stalls */
+
+        sigaction(SIGALRM, &sa, NULL);
+    }    
     /* signal( SIGSEGV, SegVio ); */
     gettimeofday( &last_time, NULL );
     current_time = (time_t) last_time.tv_sec;
@@ -503,10 +551,13 @@ void game_loop( )
     /* Main loop */
     while ( !mud_down )
     {
-	accept_new( control  );
-	accept_new( control2 );
-	accept_new( conclient);
-	accept_new( conjava  );
+        if (g_alarm_fired)
+            handle_alarm_recovery(game);
+
+	accept_new( game, control  );
+	accept_new( game, control2 );
+	accept_new( game, conclient);
+	accept_new( game, conjava  );
         cron();
 	/*
 	 * Kick out descriptors with raised exceptions
@@ -514,6 +565,14 @@ void game_loop( )
 	 */
 	for ( d = first_descriptor; d; d = d_next )
 	{
+        // Hack in game into this, just to make sure nothing is missing GameContext - DV 4-7-26
+        {
+            if (d->game == nullptr)
+                d->game = game;
+            if (d->character && d->character->game == nullptr)
+                d->character->game = game;
+        }
+
 	    if ( d == d->next )
 	    {
 	      bug( "descriptor_loop: loop found & fixed" );
@@ -702,12 +761,12 @@ void game_loop( )
 	/*
 	 * Autonomous game motion.
 	 */
-	update_handler( );
+	update_handler( game );
 
 	/*
 	 * Check REQUESTS pipe
 	 */
-        check_requests( );
+        check_requests( game );
 
 	/*
 	 * Output.
@@ -783,11 +842,19 @@ void game_loop( )
 
 		stall_time.tv_usec = usecDelta;
 		stall_time.tv_sec  = secDelta;
-		if ( select( 0, NULL, NULL, NULL, &stall_time ) < 0 )
-		{
-		    perror( "game_loop: select: stall" );
-		    exit( 1 );
-		}
+        if ( select( 0, NULL, NULL, NULL, &stall_time ) < 0 )
+        {
+            if ( errno == EINTR )
+            {
+                if (g_alarm_fired)
+                    handle_alarm_recovery(game);
+            }
+            else
+            {
+                perror( "game_loop: select: stall" );
+                exit( 1 );
+            }
+        }
 	    }
 	}
 
@@ -814,7 +881,7 @@ void game_loop( )
 }
 
 
-void new_descriptor( int new_desc )
+void new_descriptor( GameContext *game, int new_desc )
 {
     char buf[MAX_STRING_LENGTH];
     DESCRIPTOR_DATA *dnew;
@@ -835,16 +902,20 @@ void new_descriptor( int new_desc )
     set_alarm( 20 );
     if ( ( desc = accept( new_desc, (struct sockaddr *) &sock, (socklen_t *)&size) ) < 0 )
     {
-	perror( "New_descriptor: accept");
-/*	log_printf("[*****] BUG: New_descriptor: accept"); */
-	set_alarm( 0 );
-	return;
+        perror( "New_descriptor: accept");
+    /*	log_printf("[*****] BUG: New_descriptor: accept"); */
+        set_alarm( 0 );
+        return;
     }
+    g_pending_accept_fd = desc;
+
     if ( check_bad_desc( new_desc ) )
     {
       set_alarm( 0 );
+      g_pending_accept_fd = -1;
       return;
     }
+
 #if !defined(FNDELAY)
 #define FNDELAY O_NDELAY
 #endif
@@ -852,14 +923,33 @@ void new_descriptor( int new_desc )
     set_alarm( 20 );
     if ( fcntl( desc, F_SETFL, FNDELAY ) == -1 )
     {
-	perror( "New_descriptor: fcntl: FNDELAY" );
-	set_alarm( 0 );
-	return;
+        perror( "New_descriptor: fcntl: FNDELAY" );
+        if ( g_pending_accept_fd >= 0 )
+            close( desc );
+        g_pending_accept_fd = -1;                    
+        set_alarm( 0 );
+        return;
     }
     if ( check_bad_desc( new_desc ) )
-      return;
+    {
+        if ( g_pending_accept_fd >= 0 )
+            close( desc );
+
+        g_pending_accept_fd = -1;
+        set_alarm( 0 );
+        return;
+    }
+
+    if ( g_alarm_fired )
+    {
+        log_string( "new_descriptor: aborted due to alarm (post-accept/post-fcntl)" );
+        g_pending_accept_fd = -1;
+        set_alarm( 0 );
+        return;
+    }
 
     CREATE( dnew, DESCRIPTOR_DATA, 1 );
+    dnew->game = game;
     dnew->next		= NULL;
     dnew->descriptor	= desc;
     dnew->connected	= CON_GET_NAME;
@@ -921,13 +1011,31 @@ void new_descriptor( int new_desc )
     }
     */
 
+    if ( g_alarm_fired )
+    {
+        log_string( "new_descriptor: aborted due to alarm (pre-DNS)" );
+        free_desc( dnew );
+        g_pending_accept_fd = -1;
+        set_alarm( 0 );
+        return;
+    }
+
  /* Noresolve now does something useful - DV - Stuff for dontresolve. - Ulysses */
-     if ( !sysdata.NO_NAME_RESOLVING && !check_dont_resolve(buf) )
+     if ( !sysdata.no_name_resolving && !check_dont_resolve(buf) )
          from = gethostbyaddr( (char *) &sock.sin_addr,
      	  	sizeof(sock.sin_addr), AF_INET );
      else
          from = NULL;
     hostname = STRALLOC( (char *)( from ? from->h_name : "") );
+
+    if ( g_alarm_fired )
+    {
+        log_string( "new_descriptor: aborted due to alarm (post-DNS)" );
+        free_desc( dnew );
+        g_pending_accept_fd = -1;
+        set_alarm( 0 );
+        return;
+    }
 
 /*	
     if ( !str_prefix( dnew->host, "172.1" ) )
@@ -960,7 +1068,9 @@ void new_descriptor( int new_desc )
 		    "Your site has been banned from this Mud.\n" );
         flush_buffer(dnew, FALSE);
 	    free_desc( dnew );
+        g_pending_accept_fd = -1;          
 	    set_alarm( 0 );
+      
 	    return;
 	}
     }
@@ -968,7 +1078,7 @@ void new_descriptor( int new_desc )
     SPRINTF( buf, "%s", inet_ntoa( sock.sin_addr ) );
     log_printf_plus( LOG_COMM, sysdata.log_level, "Sock.sinaddr:  %s, port %d.",	buf, dnew->port );
 
-    if ( !sysdata.NO_NAME_RESOLVING )
+    if ( !sysdata.no_name_resolving )
     {
        STRFREE ( dnew->host);
        dnew->host = STRALLOC( (char *)( from ? from->h_name : buf) );
@@ -987,7 +1097,7 @@ void new_descriptor( int new_desc )
 	    if ( !d->next )
 		    last_descriptor = d;
     }
-
+    g_pending_accept_fd = -1;
     LINK( dnew, first_descriptor, last_descriptor, next, prev );
 
 // Start Telnet Initiation
@@ -1048,17 +1158,16 @@ void new_descriptor( int new_desc )
     	sysdata.maxplayers = num_descriptors;
     if ( sysdata.maxplayers > sysdata.alltimemax )
     {
-      if ( sysdata.time_of_max )
-        STR_DISPOSE(sysdata.time_of_max);
       SPRINTF(buf, "%24.24s", ctime(&current_time));
-      sysdata.time_of_max = str_dup(buf);
+      sysdata.set_time_of_max (buf);
       sysdata.alltimemax = sysdata.maxplayers;
       SPRINTF( buf, "Broke all-time maximum player record: %d", sysdata.alltimemax );
       log_string_plus( buf, LOG_COMM, sysdata.log_level );
       to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
-      save_sysdata( sysdata );
+      save_sysdata( *game->get_sysdata() );
     }
     set_alarm(0);
+
 //    fprintf(stderr, "COLDB: NEW DESC INIT: init=%d color=%02x\n", dnew->color_initialized, dnew->last_sent_color);
 
     return;
@@ -3226,7 +3335,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
             {
                 /* New player */
                 /* Don't allow new players if DENY_NEW_PLAYERS is true */
-                if (sysdata.DENY_NEW_PLAYERS == TRUE)
+                if (sysdata.deny_new_players == TRUE)
                 {
                     SPRINTF( buf, "The mud is currently preparing for a reboot.\n" );
                     output_to_descriptor( d, buf );
@@ -3972,7 +4081,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
                 }
                 }
                 
-            if (!sysdata.WAIT_FOR_AUTH)
+            if (!sysdata.wait_for_auth)
             {
             char_to_room( ch, get_room_index( ROOM_VNUM_SCHOOL ) );
             ch->pcdata->auth_state = 3; 
@@ -4097,7 +4206,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
             obj_to_room( tobj, storeroom );
             }
             
-            release_supermob();
+            release_supermob(d->game);
 
             }
         }

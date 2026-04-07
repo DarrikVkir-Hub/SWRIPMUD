@@ -29,7 +29,7 @@
 
 int REQ;
 
-void init_request_pipe( )
+void init_request_pipe( GameContext *game )
 {
 #ifdef REQUESTS
   if ( (REQ = open( REQUEST_PIPE, O_RDONLY | O_NONBLOCK )) == -1 )
@@ -40,7 +40,7 @@ void init_request_pipe( )
 #endif
 }
 
-void check_requests( )
+void check_requests( GameContext *game )
 {
 #ifdef REQUESTS
   char buf[MAX_STRING_LENGTH];
@@ -52,7 +52,7 @@ void check_requests( )
   if ( read( REQ, buf, sizeof( buf ) ) != 0 )
   {
      close( REQ );
-     init_request_pipe();
+     init_request_pipe( game );
      for ( c = 0; c < MAX_STRING_LENGTH; c++ )
 	if ( buf[c] == '\n' || buf[c] == '\r' )
 	{

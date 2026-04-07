@@ -361,7 +361,7 @@ IS_NPC(victim)))
     end_timer(&time_used);
     update_userec(&time_used, &skill_table[sn]->userec);
 
-    tail_chain( );
+    tail_chain( ch->game);
     return TRUE;
 }
 
@@ -615,13 +615,13 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "skill" ) )
 	{
 	    send_to_char( "Saving skill table...\n", ch );
-	    save_skill_table();
+	    save_skill_table(ch->game);
 	    return;
 	}
 	if ( !str_cmp( arg2, "herb" ) )
 	{
 	    send_to_char( "Saving herb table...\n", ch );
-	    save_herb_table();
+	    save_herb_table(ch->game);
 	    return;
 	}
     }

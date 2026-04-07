@@ -665,8 +665,8 @@ static bool can_receive_channel(
 
     if (info->ship_channel)
     {
-        SHIP_DATA *ship = ship_from_cockpit(ch->in_room->vnum);
-        SHIP_DATA *target = ship_from_cockpit(vch->in_room->vnum);
+        SHIP_DATA *ship = ship_from_cockpit(ch->game,ch->in_room->vnum);
+        SHIP_DATA *target = ship_from_cockpit(ch->game, vch->in_room->vnum);
 
         if (!ship || !target)
             return false;
@@ -900,7 +900,7 @@ void do_shiptalk( CHAR_DATA *ch, char *argument )
 {
      SHIP_DATA *ship;
 
-     if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )  
+     if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )  
      {
     	  send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
     	  return;
@@ -913,7 +913,7 @@ void do_systemtalk( CHAR_DATA *ch, char *argument )
 {
      SHIP_DATA *ship;
      
-     if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )  
+     if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )  
      {
     	  send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
     	  return;
@@ -926,7 +926,7 @@ void do_spacetalk( CHAR_DATA *ch, char *argument )
 {
      SHIP_DATA *ship;
 
-     if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )  
+     if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )  
      {
     	  send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
     	  return;
@@ -2667,7 +2667,7 @@ void talk_auction (char *argument)
  * Replaced for new bitset 3-29-26 DV
  */
 
-void init_language_sn()
+void init_language_sn(GameContext *game)
 {
     for (int i = 0; i < LANG_MAX; ++i)
     {

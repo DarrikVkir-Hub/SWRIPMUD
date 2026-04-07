@@ -61,18 +61,18 @@ struct struct_gladiator
 
 
 /*void sportschan(char *)*/
-void start_arena();
-void show_jack_pot();
-void do_game();
-void find_game_winner();
-void do_end_game();
-void start_game();
-void silent_end();
-void write_fame_list(void);
+void start_arena(GameContext *game);
+void show_jack_pot(GameContext *game);
+void do_game(GameContext *game);
+void find_game_winner(GameContext *game);
+void do_end_game(GameContext *game);
+void start_game(GameContext *game);
+void silent_end(GameContext *game);
+void write_fame_list(GameContext *game);
 void write_one_fame_node(FILE * fp, struct hall_of_fame_element * node);
-void load_hall_of_fame(void);
+void load_hall_of_fame(GameContext *game);
 void find_bet_winners(CHAR_DATA *winner);
-void reset_bets();
+void reset_bets(GameContext *game);
 struct hall_of_fame_element *fame_list = NULL;
 struct struct_gladiator *gladiators  = NULL;
 
@@ -359,11 +359,11 @@ void do_chaos(CHAR_DATA *ch, char *argument)
   time_left_in_game =0;
   bet_pot = 0;
   barena = 1;
-  start_arena();
+  start_arena(ch->game);
                                    
 }
 // Modernized s printf - AI/DV 3-13-26
-void start_arena()
+void start_arena(GameContext *game)
 {
     char buf1[256] = "";
     char buf2[256] = "";
@@ -373,9 +373,9 @@ void start_arena()
         if (time_to_start == 0)
         {
             in_start_arena = 0;
-            show_jack_pot();
+            show_jack_pot(game);
             time_left_in_game = game_length;
-            start_game();
+            start_game(game);
         }
         else
         {
@@ -423,10 +423,10 @@ void start_arena()
         if (time_to_start == 0)
         {
             ppl_challenged = 0;
-            show_jack_pot();
+            show_jack_pot(game);
             num_gladiators = 2;
             time_left_in_game = 5;
-            start_game();
+            start_game(game);
         }
         else
         {
@@ -440,7 +440,7 @@ void start_arena()
     }
 }
 
-void start_game()
+void start_game(GameContext *game)
 {
   struct struct_gladiator *g;    
   for (g = gladiators; g; g=g->next) {
@@ -455,10 +455,10 @@ void start_game()
       }
     }
   }
-  do_game();
+  do_game(game);
 }
 
-void do_game()
+void do_game(GameContext *game)
 {
   struct struct_gladiator *g;
   int count;
@@ -467,18 +467,18 @@ void do_game()
   if(!in_start_arena && num_gladiators == 1)
   {
     ppl_challenged = 0;
-    find_game_winner();
+    find_game_winner(game);
     num_gladiators = 0;
   }
   else if(!in_start_arena && time_left_in_game == 0)
   {
-    do_end_game();
+    do_end_game(game);
   }
   else if(!in_start_arena  && num_gladiators == 0)
   {
     num_gladiators = 0;
     ppl_challenged = 0;
-    silent_end();
+    silent_end(game);
   }
   else if(!in_start_arena && time_left_in_game % 5)
   {
@@ -506,7 +506,7 @@ void do_game()
   num_gladiators = count;
 }
 
-void find_game_winner()
+void find_game_winner(GameContext *game)
 {
   char buf[MAX_INPUT_LENGTH];
 //char buf2[MAX_INPUT_LENGTH];
@@ -543,9 +543,9 @@ void find_game_winner()
       fame_node->award = (arena_pot/2);
       fame_node->next = fame_list;
       fame_list = fame_node;
-      write_fame_list();
+      write_fame_list(game);
       find_bet_winners(i);
-      reset_bets();
+      reset_bets(game);
       ppl_challenged = 0;
 
     } 
@@ -559,7 +559,7 @@ void find_game_winner()
   gladiators = NULL;
 }
 
-void show_jack_pot()
+void show_jack_pot(GameContext *game)
 {
   char buf1[MAX_INPUT_LENGTH];
   char buf2[MAX_INPUT_LENGTH];
@@ -572,7 +572,7 @@ void show_jack_pot()
                     
 }
 
-void silent_end()
+void silent_end(GameContext *game)
 {
   char buf[MAX_INPUT_LENGTH];
   struct struct_gladiator *g;
@@ -586,7 +586,7 @@ void silent_end()
   bet_pot = 0;
   SPRINTF(buf, "It looks like no one was brave enough to enter the Arena.");
   to_channel(buf,CHANNEL_ARENA,"&RArena&W",5);
-  reset_bets();
+  reset_bets(game);
   g = gladiators;
   while(gladiators) {
      g=gladiators;
@@ -596,7 +596,7 @@ void silent_end()
   gladiators = NULL;
 }
        
-void do_end_game()
+void do_end_game(GameContext *game)
 {
   char buf[MAX_INPUT_LENGTH];
   struct struct_gladiator *g;
@@ -617,7 +617,7 @@ void do_end_game()
      to_channel(buf,CHANNEL_ARENA,"&RArena&W",5);
      time_left_in_game = 0;
      ppl_challenged = 0;
-     reset_bets();
+     reset_bets(game);
      g = gladiators;
      while(gladiators) {
        g=gladiators;
@@ -728,7 +728,7 @@ void do_ahall(CHAR_DATA *ch, char *argument)
      return;
  }
 
-void load_hall_of_fame(void)
+void load_hall_of_fame(GameContext *game)
 {
   FILE *fl;
   int date, award;
@@ -756,7 +756,7 @@ void load_hall_of_fame(void)
   return;
 }
                                                         
-void write_fame_list(void)
+void write_fame_list(GameContext *game)
 {
   FILE *fl;
   
@@ -1016,7 +1016,7 @@ void do_accept(CHAR_DATA *ch, char *argument)
     arena_pot =0;
     bet_pot = 0;
     num_gladiators=0;
-    start_arena();
+    start_arena(ch->game);
     return;
    }
 }
@@ -1043,7 +1043,7 @@ void do_decline(CHAR_DATA *ch, char *argument)
  * Reset bets for those that did not win.
  * Added by Ulysses, rewritten by Darrik Vequir.
  */
-void reset_bets()
+void reset_bets(GameContext *game)
 {
   CHAR_DATA *ch;
 

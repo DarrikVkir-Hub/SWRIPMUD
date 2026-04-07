@@ -546,7 +546,13 @@ void do_mpmload( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    victim = create_mobile( pMobIndex );
+    if (!ch->game)
+    {
+        progbug( "Mpmload - no Game set", ch );
+        return;
+    }
+
+    victim = create_mobile( ch->game, pMobIndex );
     char_to_room( victim, ch->in_room );
     return;
 }
@@ -1865,7 +1871,7 @@ ch_ret simple_damage( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
     if ( !npcvict && BV_IS_SET( victim->act, PLR_FLEE ) )
 	do_flee( victim, "" );
 
-    tail_chain( );
+    tail_chain( ch->game );
     return rNONE;
 }
 

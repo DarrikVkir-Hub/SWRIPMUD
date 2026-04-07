@@ -1352,7 +1352,7 @@ void equip_char( CHAR_DATA *ch, OBJ_DATA *obj, int iWear )
 	   obj_from_char( obj );
 	obj_to_room( obj, ch->in_room );
 	oprog_zap_trigger( ch, obj);
-	if ( IS_SET(sysdata.save_flags, SV_ZAPDROP) && !char_died(ch) )
+	if ( BV_IS_SET(sysdata.save_flags, SV_ZAPDROP) && !char_died(ch) )
 	    save_char_obj( ch );
 	return;
     }
@@ -3266,7 +3266,7 @@ void free_obj( OBJ_DATA * obj )
 /*
  * Clean out the extracted object queue
  */
-void clean_obj_queue()
+void clean_obj_queue( GameContext *game)
 {
     OBJ_DATA *obj;
 
@@ -3338,7 +3338,7 @@ void queue_extracted_char( CHAR_DATA *ch, bool extract )
 /*
  * clean out the extracted character queue
  */
-void clean_char_queue()
+void clean_char_queue( GameContext *game)
 {
     EXTRACT_CHAR_DATA *ccd;
 

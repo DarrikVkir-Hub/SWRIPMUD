@@ -93,7 +93,7 @@ bool mprog_keyword_check	args( ( const char *argu, const char *argl ) );
 
 
 void oprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor, OBJ_DATA *obj, void *vo, int type, OBJ_DATA *iobj );
-void set_supermob(OBJ_DATA *obj);
+void set_supermob(GameContext *game, OBJ_DATA *obj);
 bool oprog_percent_check( CHAR_DATA *mob, CHAR_DATA *actor, OBJ_DATA *obj, void *vo, int type);
 void rprog_percent_check( CHAR_DATA *mob, CHAR_DATA *actor, OBJ_DATA *obj, void *vo, int type);
 void rprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
@@ -158,11 +158,11 @@ char * strstr(s1,s2) const char *s1; const char *s2;
 
 #define RID ROOM_INDEX_DATA
 
-void init_supermob()
+void init_supermob(GameContext *game)
 {
    RID *office;
 
-   supermob = create_mobile(get_mob_index( MOB_VNUM_SUPERMOB ));
+   supermob = create_mobile(game, get_mob_index( MOB_VNUM_SUPERMOB ));
    office = get_room_index ( ROOM_VNUM_POLY );
    char_to_room( supermob, office );
 
@@ -2249,10 +2249,10 @@ void oprog_script_trigger( OBJ_DATA *obj )
 	  ||   obj->mpscriptpos != 0
 	  ||   atoi( mprg->arglist ) == time_info.hour )
 	  {
-	     set_supermob( obj );
+	     set_supermob( obj->game, obj );
 	     mprog_driver( mprg->comlist, supermob, NULL, NULL, NULL, TRUE );
 	     obj->mpscriptpos = supermob->mpscriptpos;
-	     release_supermob();
+	     release_supermob( obj->game);
 	  }
 	}
     return;
@@ -2273,7 +2273,7 @@ void rprog_script_trigger( ROOM_INDEX_DATA *room )
 	     rset_supermob( room );
 	     mprog_driver( mprg->comlist, supermob, NULL, NULL, NULL, TRUE );
 	     room->mpscriptpos = supermob->mpscriptpos;
-	     release_supermob();
+	     release_supermob(room->game);
 	  }
 	}
     return;
@@ -2283,7 +2283,7 @@ void rprog_script_trigger( ROOM_INDEX_DATA *room )
 /*
  *  Mudprogram additions begin here
  */
-void set_supermob( OBJ_DATA *obj)
+void set_supermob( GameContext *game, OBJ_DATA *obj)
 {
   ROOM_INDEX_DATA *room;
   OBJ_DATA *in_obj;
@@ -2291,7 +2291,7 @@ void set_supermob( OBJ_DATA *obj)
   char buf[200];
 
   if ( !supermob )
-    supermob = create_mobile(get_mob_index( MOB_VNUM_SUPERMOB ));
+    supermob = create_mobile(game, get_mob_index( MOB_VNUM_SUPERMOB ));
 
 //  mob = supermob;   /* debugging */
 
@@ -2334,7 +2334,7 @@ void set_supermob( OBJ_DATA *obj)
   }
 }
 
-void release_supermob( )
+void release_supermob( GameContext *game )
 {
    supermob_obj = NULL;
    char_from_room( supermob );
@@ -2376,7 +2376,7 @@ void oprog_act_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
    if ( obj->pIndexData->progtypes & ACT_PROG ) 
      oprog_percent_check( supermob, ch, obj, NULL, ACT_PROG );
 
- release_supermob();
+ release_supermob(ch->game);
  return;
 }
  *
@@ -2386,13 +2386,17 @@ void oprog_act_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
 void oprog_greet_trigger( CHAR_DATA *ch )
 {
   OBJ_DATA *vobj;
-
+  if (!ch->game)
+  {
+      bug( "oprog_greet_trigger: ch with no game pointer! vnum %s", ch->name ? ch->name : "unknown" );
+      return;
+  }
   for ( vobj=ch->in_room->first_content; vobj; vobj = vobj->next_content )
     if  ( vobj->pIndexData->progtypes & GREET_PROG ) 
     {
-     set_supermob( vobj );  /* not very efficient to do here */
+     set_supermob( ch->game,vobj );  /* not very efficient to do here */
      oprog_percent_check( supermob, ch, vobj, NULL, GREET_PROG );
-     release_supermob();
+     release_supermob(ch->game);
     }
 
   return;
@@ -2422,11 +2426,17 @@ void oprog_random_trigger( OBJ_DATA *obj )
   if (!obj || !obj->pIndexData)
      return;
 
+  if (!obj->game)
+  {
+      bug( "oprog_random_trigger: obj with no game pointer! vnum %d", obj->pIndexData ? obj->pIndexData->vnum : 0 );
+      return;
+  }
+
   if ( obj->pIndexData->progtypes & RAND_PROG)
   {
-     set_supermob( obj );
+     set_supermob( obj->game, obj );
      oprog_percent_check(supermob,NULL,obj,NULL,RAND_PROG);
-     release_supermob();
+     release_supermob(obj->game);
   }
   return;
 }
@@ -2437,11 +2447,16 @@ void oprog_random_trigger( OBJ_DATA *obj )
  */
 void oprog_wear_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
 {
+  if (!ch->game)
+  {
+      bug( "oprog_wear_trigger: ch with no game pointer! vnum %s", ch->name ? ch->name : "unknown" );
+      return;
+  }
    if ( obj->pIndexData->progtypes & WEAR_PROG ) 
    {
-      set_supermob( obj );
+      set_supermob( ch->game, obj );
       oprog_percent_check( supermob, ch, obj, NULL, WEAR_PROG );
-      release_supermob();
+      release_supermob(ch->game);
    }
    return;
 }
@@ -2450,10 +2465,14 @@ bool oprog_use_trigger( CHAR_DATA *ch, OBJ_DATA *obj, CHAR_DATA *vict,
                         OBJ_DATA *targ, void *vo )
 {
    bool executed = FALSE;
-
+  if (!ch->game)
+  {
+      bug( "oprog_use_trigger: ch with no game pointer! vnum %s", ch->name ? ch->name : "unknown" );
+      return false;
+  }
    if ( obj->pIndexData->progtypes & USE_PROG ) 
    {
-      set_supermob( obj );
+      set_supermob( ch->game, obj );
       if ( obj->item_type == ITEM_STAFF )
       {
         if ( vict )
@@ -2465,7 +2484,7 @@ bool oprog_use_trigger( CHAR_DATA *ch, OBJ_DATA *obj, CHAR_DATA *vict,
       {
         executed = oprog_percent_check( supermob, ch, obj, NULL, USE_PROG );
       }
-      release_supermob();
+      release_supermob(ch->game);
    }
    return executed;
 }
@@ -2477,11 +2496,16 @@ bool oprog_use_trigger( CHAR_DATA *ch, OBJ_DATA *obj, CHAR_DATA *vict,
  */
 void oprog_remove_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
 {
+  if (!ch->game)
+  {
+      bug( "oprog_remove_trigger: ch with no game pointer! vnum %s", ch->name ? ch->name : "unknown" );
+      return;
+  }
    if ( obj->pIndexData->progtypes & REMOVE_PROG ) 
    {
-     set_supermob( obj );
+     set_supermob( ch->game, obj );
      oprog_percent_check( supermob, ch, obj, NULL, REMOVE_PROG );
-     release_supermob();
+     release_supermob(ch->game);
    }
    return;
 }
@@ -2492,11 +2516,16 @@ void oprog_remove_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
  */
 void oprog_sac_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
 {
+  if (!ch->game)
+  {
+      bug( "oprog_sac_trigger: ch with no game pointer! vnum %s", ch->name ? ch->name : "unknown" );
+      return;
+  }  
    if ( obj->pIndexData->progtypes & SAC_PROG ) 
    {
-      set_supermob( obj );
+      set_supermob( ch->game, obj );
       oprog_percent_check( supermob, ch, obj, NULL, SAC_PROG );
-      release_supermob();
+      release_supermob(ch->game);
    }
    return;
 }
@@ -2507,11 +2536,16 @@ void oprog_sac_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
  */
 void oprog_get_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
 {
+  if (!ch->game)
+  {
+      bug( "oprog_get_trigger: ch with no game pointer! vnum %s", ch->name ? ch->name : "unknown" );
+      return;
+  }  
    if ( obj->pIndexData->progtypes & GET_PROG ) 
    {
-      set_supermob( obj );
+      set_supermob( ch->game, obj );
       oprog_percent_check( supermob, ch, obj, NULL, GET_PROG );
-      release_supermob();
+      release_supermob(ch->game);
    }
    return;
 }
@@ -2521,11 +2555,16 @@ void oprog_get_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
  */
 void oprog_damage_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
 {
+  if (!ch->game)
+  {
+      bug( "oprog_damage_trigger: ch with no game pointer! vnum %s", ch->name ? ch->name : "unknown" );
+      return;
+  }  
    if ( obj->pIndexData->progtypes & DAMAGE_PROG ) 
    {
-      set_supermob( obj );
+      set_supermob( ch->game, obj );
       oprog_percent_check( supermob, ch, obj, NULL, DAMAGE_PROG );
-      release_supermob();
+      release_supermob(ch->game);
    }
    return;
 }
@@ -2535,12 +2574,16 @@ void oprog_damage_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
  */
 void oprog_repair_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
 {
-
+  if (!ch->game)
+  {
+      bug( "oprog_repair_trigger: ch with no game pointer! vnum %s", ch->name ? ch->name : "unknown" );
+      return;
+  }
    if ( obj->pIndexData->progtypes & REPAIR_PROG ) 
    {
-      set_supermob( obj );
+      set_supermob( ch->game, obj );
       oprog_percent_check( supermob, ch, obj, NULL, REPAIR_PROG );
-      release_supermob();
+      release_supermob(ch->game);
    }
    return;
 }
@@ -2551,11 +2594,16 @@ void oprog_repair_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
  */
 void oprog_drop_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
 {
+    if (!ch->game)
+  {
+      bug( "oprog_drop_trigger: ch with no game pointer! vnum %s", ch->name ? ch->name : "unknown" );
+      return;
+  }
    if ( obj->pIndexData->progtypes & DROP_PROG ) 
    {
-      set_supermob( obj );
+      set_supermob( ch->game, obj );
       oprog_percent_check( supermob, ch, obj, NULL, DROP_PROG );
-      release_supermob();
+      release_supermob(ch->game);
    }
    return;
 }
@@ -2565,11 +2613,16 @@ void oprog_drop_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
  */
 void oprog_examine_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
 {
+  if (!ch->game)
+  {
+      bug( "oprog_examine_trigger: ch with no game pointer! vnum %s", ch->name ? ch->name : "unknown" );
+      return;
+  }
    if ( obj->pIndexData->progtypes & EXA_PROG ) 
    {
-      set_supermob( obj );
+      set_supermob( ch->game, obj );
       oprog_percent_check( supermob, ch, obj, NULL, EXA_PROG );
-      release_supermob();
+      release_supermob(ch->game);
    }
    return;
 }
@@ -2580,11 +2633,16 @@ void oprog_examine_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
  */
 void oprog_zap_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
 {
+  if (!ch->game)
+  {
+      bug( "oprog_zap_trigger: ch with no game pointer! vnum %s", ch->name ? ch->name : "unknown" );
+      return;
+  }  
    if ( obj->pIndexData->progtypes & ZAP_PROG ) 
    {
-      set_supermob( obj );
+      set_supermob( ch->game, obj );
       oprog_percent_check( supermob, ch, obj, NULL, ZAP_PROG );
-      release_supermob();
+      release_supermob(ch->game);
 
    }
    return;
@@ -2596,11 +2654,16 @@ void oprog_zap_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
  */
 void oprog_pull_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
 {
+  if (!ch->game)
+  {
+      bug( "oprog_pull_trigger: ch with no game pointer! vnum %s", ch->name ? ch->name : "unknown" );
+      return;
+  }  
    if ( obj->pIndexData->progtypes & PULL_PROG ) 
    {
-     set_supermob( obj );
+     set_supermob( ch->game, obj );
      oprog_percent_check( supermob, ch, obj, NULL, PULL_PROG );
-     release_supermob();
+     release_supermob(ch->game);
    }
    return;
 }
@@ -2611,11 +2674,17 @@ void oprog_pull_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
  */
 void oprog_push_trigger( CHAR_DATA *ch, OBJ_DATA *obj )
 {
+  if (!ch->game)
+  {
+      bug( "oprog_push_trigger: ch with no game pointer! vnum %s", ch->name ? ch->name : "unknown" );
+      return;
+  }
+
    if ( obj->pIndexData->progtypes & PUSH_PROG ) 
    {
-      set_supermob( obj );
+      set_supermob( ch->game, obj );
       oprog_percent_check( supermob, ch, obj, NULL, PUSH_PROG );
-      release_supermob();
+      release_supermob(ch->game);
    }
    return;
 }
@@ -2659,6 +2728,12 @@ void oprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
   char       *end;
   int         i;
 
+  if (!mob->game)
+  {
+      bug( "oprog_wordlist_check: mob with no game pointer! vnum %s", mob->name ? mob->name : "unknown" );
+      return;
+  }
+
   for ( mprg = iobj->pIndexData->mudprogs; mprg; mprg = mprg->next )
     if ( mprg->type & type )
       {
@@ -2680,9 +2755,9 @@ void oprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
 		      || *end == '\r'
 		      || *end == '\0' ) )
 		{
-		  set_supermob( iobj );
+		  set_supermob( mob->game,iobj );
 		  mprog_driver( mprg->comlist, mob, actor, obj, vo, FALSE );
-		  release_supermob() ;
+		  release_supermob(mob->game) ;
 		  break;
 		}
 	      else
@@ -2699,9 +2774,9 @@ void oprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
 			|| *end == '\r'
 			|| *end == '\0' ) )
 		  {
-		    set_supermob( iobj );
+		    set_supermob( mob->game, iobj );
 		    mprog_driver( mprg->comlist, mob, actor, obj, vo, FALSE );
-		    release_supermob();
+		    release_supermob(mob->game);
 		    break;
 		  }
 		else
@@ -2810,7 +2885,7 @@ void rprog_leave_trigger( CHAR_DATA *ch )
   {
     rset_supermob( ch->in_room );
     rprog_percent_check( supermob, ch, NULL, NULL, LEAVE_PROG );
-    release_supermob();
+    release_supermob(ch->game);
   }
   return;
 }
@@ -2821,7 +2896,7 @@ void rprog_enter_trigger( CHAR_DATA *ch )
   {
     rset_supermob( ch->in_room );
     rprog_percent_check( supermob, ch, NULL, NULL, ENTER_PROG );
-    release_supermob();
+    release_supermob(ch->game);
   }
   return;
 }
@@ -2832,7 +2907,7 @@ void rprog_sleep_trigger( CHAR_DATA *ch )
   {
     rset_supermob( ch->in_room );
     rprog_percent_check( supermob, ch, NULL, NULL, SLEEP_PROG );
-    release_supermob();
+    release_supermob(ch->game);
   }
   return;
 }
@@ -2843,7 +2918,7 @@ void rprog_rest_trigger( CHAR_DATA *ch )
   {
     rset_supermob( ch->in_room );
     rprog_percent_check( supermob, ch, NULL, NULL, REST_PROG );
-    release_supermob();
+    release_supermob(ch->game);
   }
   return;
 }
@@ -2854,7 +2929,7 @@ void rprog_rfight_trigger( CHAR_DATA *ch )
   {
     rset_supermob( ch->in_room );
     rprog_percent_check( supermob, ch, NULL, NULL, RFIGHT_PROG );
-    release_supermob();
+    release_supermob(ch->game);
   }
   return;
 }
@@ -2865,7 +2940,7 @@ void rprog_death_trigger( CHAR_DATA *killer, CHAR_DATA *ch )
   {
     rset_supermob( ch->in_room );
     rprog_percent_check( supermob, ch, NULL, NULL, RDEATH_PROG );
-    release_supermob();
+    release_supermob(ch->game);
   }
   return;
 }
@@ -2887,7 +2962,7 @@ void rprog_random_trigger( CHAR_DATA *ch )
   {
     rset_supermob( ch->in_room );
     rprog_percent_check(supermob,ch,NULL,NULL,RAND_PROG);
-    release_supermob();
+    release_supermob(ch->game);
   }
   return;
 }
@@ -2932,7 +3007,7 @@ void rprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
 		{
 		  rset_supermob( room );
 		  mprog_driver( mprg->comlist, mob, actor, obj, vo, FALSE );
-		  release_supermob() ;
+		  release_supermob(mob->game) ;
 		  break;
 		}
 	      else
@@ -2951,7 +3026,7 @@ void rprog_wordlist_check( char *arg, CHAR_DATA *mob, CHAR_DATA *actor,
 		  {
 		    rset_supermob( room );
 		    mprog_driver( mprg->comlist, mob, actor, obj, vo, FALSE );
-		    release_supermob();
+		    release_supermob(mob->game);
 		    break;
 		  }
 		else
@@ -2995,7 +3070,7 @@ void rprog_time_trigger( CHAR_DATA *ch )
   {
     rset_supermob( ch->in_room );
     rprog_time_check( supermob, NULL, NULL, ch->in_room, TIME_PROG );
-    release_supermob();
+    release_supermob(ch->game);
   }
   return;
 }
@@ -3006,7 +3081,7 @@ void rprog_hour_trigger( CHAR_DATA *ch )
   {
     rset_supermob( ch->in_room );
     rprog_time_check( supermob, NULL, NULL, ch->in_room, HOUR_PROG );
-    release_supermob();
+    release_supermob(ch->game);
   }
   return;
 }
@@ -3063,7 +3138,7 @@ void room_act_add( ROOM_INDEX_DATA *room )
 }
 
 
-void room_act_update( void )
+void room_act_update( GameContext *game )
 {
   struct act_prog_data *runner;
   MPROG_ACT_LIST *mpact;
@@ -3101,7 +3176,7 @@ void obj_act_add( OBJ_DATA *obj )
   runner->next = obj_act_list;
   obj_act_list = runner;
 }
-void obj_act_update( void )
+void obj_act_update( GameContext *game )
 {
   struct act_prog_data *runner;
   MPROG_ACT_LIST *mpact;

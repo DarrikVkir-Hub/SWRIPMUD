@@ -445,7 +445,14 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	maxgold = 10 * pet->top_level * pet->top_level;
 	ch->gold	-= maxgold;
 	boost_economy( ch->in_room->area, maxgold );
-	pet		= create_mobile( pet->pIndexData );
+
+	if (!ch->game)
+	{
+    	send_to_char( "You must be in a game to buy a pet.\n", ch );
+	    return;
+	}
+	
+	pet		= create_mobile( ch->game, pet->pIndexData );
 //	BV_SET_BIT(ch->act, PLR_BOUGHT_PET);
 	BV_SET_BIT(pet->act, ACT_PET);
 	BV_SET_BIT(pet->affected_by, AFF_CHARM);
@@ -1916,7 +1923,13 @@ if ( (temp = get_mob_index (MOB_VNUM_VENDOR) ) == NULL )
 	return;
 }
 
-char_to_room( create_mobile( temp ), ch->in_room );
+if (!ch->game)
+{
+    send_to_char( "You must be in a game to place a vendor.\n", ch );
+    return;
+}
+
+char_to_room( create_mobile( ch->game, temp ), ch->in_room );
 vendor = get_char_room(ch, temp->player_name);
 
 SPRINTF_RUNTIME (buf, vendor->long_descr, ch->name);
@@ -2118,7 +2131,7 @@ fprintf( fp, "END\n" );
 
 
 /* read vendor from file */
-CHAR_DATA *  fread_vendor( FILE *fp )
+CHAR_DATA *  fread_vendor( GameContext *game, FILE *fp )
 {
   CHAR_DATA *mob = NULL;
 
@@ -2136,7 +2149,7 @@ char vnum1 [MAX_INPUT_LENGTH];
     int vnum;
 
     vnum = fread_number( fp );
-    mob = create_mobile(  get_mob_index(vnum));
+    mob = create_mobile( game, get_mob_index(vnum));
     if ( !mob )
     {
 	for ( ; ; )

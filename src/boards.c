@@ -1332,7 +1332,7 @@ NOTE_DATA *read_note( char *notefile, FILE *fp )
 /*
  * Load boards file.
  */
-void load_boards( void )
+void load_boards( GameContext *game )
 {
     FILE	*board_fp;
     FILE	*note_fp;
@@ -1350,6 +1350,7 @@ void load_boards( void )
 
     while ( (board = read_board( boardfile, board_fp )) != NULL )
     {
+		board->game = game;
 	LINK( board, first_board, last_board, next, prev );
 	log_printf( notefile, "%s%s", BOARD_DIR, board->note_file );
 	if ( ( note_fp = fopen( notefile, "r" ) ) != NULL )

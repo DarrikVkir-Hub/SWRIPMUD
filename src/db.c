@@ -36,7 +36,7 @@
 #undef KEY
 #endif
 
-void init_supermob();
+void init_supermob( GameContext *game );
 
 #define KEY( literal, field, value )					\
 				if ( !str_cmp( word, literal ) )	\
@@ -330,7 +330,7 @@ char			strArea[MAX_INPUT_LENGTH];
 void	init_mm		args( ( void ) );
 
 void	boot_log	args( ( const char *str, ... ) );
-void	load_area	args( ( FILE *fp ) );
+void	load_area	args( ( GameContext *game, FILE *fp ) );
 void    load_author     args( ( AREA_DATA *tarea, FILE *fp ) );
 void    load_economy    args( ( AREA_DATA *tarea, FILE *fp ) );
 void	load_resetmsg	args( ( AREA_DATA *tarea, FILE *fp ) ); /* Rennard */
@@ -347,17 +347,17 @@ void    load_ranges	args( ( AREA_DATA *tarea, FILE *fp ) );
 void    load_production	args( ( AREA_DATA *tarea, FILE *fp ) );
 void    load_depletion	args( ( AREA_DATA *tarea, FILE *fp ) );
 void    load_supply	args( ( AREA_DATA *tarea, FILE *fp ) );
-void	load_buildlist	args( ( void ) );
+void	load_buildlist	args( ( GameContext *game ) );
 bool	load_systemdata	args( ( SYSTEM_DATA *sys ) );
-void    load_banlist    args( ( void ) );
-void	initialize_economy args( ( void ) );
+void    load_banlist    args( ( GameContext *game ) );
+void	initialize_economy args( ( GameContext *game ) );
 
-void	fix_exits	args( ( void ) );
+void	fix_exits	args( ( GameContext *game ) );
 
 /*
  * External booting function
  */
-void	load_corpses	args( ( void ) );
+void	load_corpses	args( ( GameContext *game ) );
 void	renumber_put_resets	args( ( AREA_DATA *pArea ) );
 
 /*
@@ -399,7 +399,7 @@ void shutdown_mud( char *reason )
 /*
  * Big mama top level function.
  */
-void boot_db( void )
+void boot_db( GameContext *game )
 {
     sh_int wear, x;
 
@@ -408,45 +408,53 @@ void boot_db( void )
     boot_log( "---------------------[ Boot Log ]--------------------" );
 
     log_string( "Loading commands" );
-    load_commands();
+    load_commands(game);
 
     log_string( "Loading sysdata configuration..." );
+    system_data *sysdata = game->get_sysdata();
 
     /* default values */
-    sysdata.read_all_mail		= LEVEL_DEMI;
-    sysdata.read_mail_free 		= LEVEL_IMMORTAL;
-    sysdata.write_mail_free 		= LEVEL_IMMORTAL;
-    sysdata.take_others_mail		= LEVEL_DEMI;
-    sysdata.muse_level			= LEVEL_DEMI;
-    sysdata.think_level			= LEVEL_HIGOD;
-    sysdata.build_level			= LEVEL_DEMI;
-    sysdata.log_level			= LEVEL_LOG;
-    sysdata.level_modify_proto		= LEVEL_LESSER;
-    sysdata.level_override_private	= LEVEL_GREATER;
-    sysdata.level_mset_player		= LEVEL_LESSER;
-    sysdata.stun_plr_vs_plr		= 15;
-    sysdata.stun_regular		= 15;
-    sysdata.dam_plr_vs_plr		= 100;
-    sysdata.dam_plr_vs_mob		= 100;
-    sysdata.dam_mob_vs_plr		= 100;
-    sysdata.dam_mob_vs_mob		= 100;
-    sysdata.level_getobjnotake 		= LEVEL_GREATER;
-    sysdata.save_frequency		= 20;	/* minutes */
-    sysdata.save_flags			= SV_DEATH | SV_PASSCHG | SV_AUTO
-    					| SV_PUT | SV_DROP | SV_GIVE
-    					| SV_AUCTION | SV_ZAPDROP | SV_IDLE;
-    if ( !load_systemdata(&sysdata) )
+    sysdata->read_all_mail		= LEVEL_DEMI;
+    sysdata->read_mail_free 		= LEVEL_IMMORTAL;
+    sysdata->write_mail_free 		= LEVEL_IMMORTAL;
+    sysdata->take_others_mail		= LEVEL_DEMI;
+    sysdata->muse_level			= LEVEL_DEMI;
+    sysdata->think_level			= LEVEL_HIGOD;
+    sysdata->build_level			= LEVEL_DEMI;
+    sysdata->log_level			= LEVEL_LOG;
+    sysdata->level_modify_proto		= LEVEL_LESSER;
+    sysdata->level_override_private	= LEVEL_GREATER;
+    sysdata->level_mset_player		= LEVEL_LESSER;
+    sysdata->stun_plr_vs_plr		= 15;
+    sysdata->stun_regular		= 15;
+    sysdata->dam_plr_vs_plr		= 100;
+    sysdata->dam_plr_vs_mob		= 100;
+    sysdata->dam_mob_vs_plr		= 100;
+    sysdata->dam_mob_vs_mob		= 100;
+    sysdata->level_getobjnotake 		= LEVEL_GREATER;
+    sysdata->save_frequency		= 20;	/* minutes */
+    BV_SET_BIT(sysdata->save_flags, SV_DEATH);
+    BV_SET_BIT(sysdata->save_flags, SV_PASSCHG);
+    BV_SET_BIT(sysdata->save_flags, SV_AUTO);
+    BV_SET_BIT(sysdata->save_flags, SV_PUT);
+    BV_SET_BIT(sysdata->save_flags, SV_DROP);
+    BV_SET_BIT(sysdata->save_flags, SV_GIVE);
+    BV_SET_BIT(sysdata->save_flags, SV_AUCTION);
+    BV_SET_BIT(sysdata->save_flags, SV_ZAPDROP);
+    BV_SET_BIT(sysdata->save_flags, SV_IDLE);
+
+    if ( !load_systemdata(sysdata) )
     {
 	log_string( "Not found.  Creating new configuration." );
-	sysdata.alltimemax = 0;
+	sysdata->alltimemax = 0;
     }
 
     log_string("Loading socials");
-    load_socials();
+    load_socials(game);
 
     log_string("Loading skill table");
-    load_skill_table();
-    sort_skill_table();
+    load_skill_table(game);
+    sort_skill_table(game);
 
     gsn_first_spell  = 0;
     gsn_first_skill  = 0;
@@ -467,23 +475,23 @@ void boot_db( void )
 	if ( !gsn_first_tongue && skill_table[x]->type == SKILL_TONGUE )
 	    gsn_first_tongue = x;
 
-    init_language_sn(); // Loading static lang->sn table
+    init_language_sn(game); // Loading static lang->sn table
 
     log_string("Loading herb table");
-    load_herb_table();
+    load_herb_table(game);
 
     log_string("Making wizlist");
-    make_wizlist();
+    make_wizlist(game);
 
     log_string("Initializing request pipe");
-    init_request_pipe();
+    init_request_pipe(game);
 
     fBootDb		= TRUE;
 
     nummobsloaded	= 0;
     numobjsloaded	= 0;
     physicalobjects	= 0;
-    sysdata.maxplayers	= 0;
+    sysdata->maxplayers	= 0;
     first_object	= NULL;
     last_object		= NULL;
     first_char		= NULL;
@@ -746,7 +754,7 @@ ASSIGN_GSN( gsn_yevethan, "yevethan" );
 	    if ( strArea[0] == '$' )
 		break;
 
-	    load_area_file( last_area, strArea );
+	    load_area_file( game, last_area, strArea );
 	    
 	}
 	FCLOSE( fpList );
@@ -757,7 +765,7 @@ ASSIGN_GSN( gsn_yevethan, "yevethan" );
     *    must be done before reset_area!
     *
     */
-    init_supermob();
+    init_supermob(game);
 
 
     /*
@@ -768,37 +776,37 @@ ASSIGN_GSN( gsn_yevethan, "yevethan" );
      */
     {
 	log_string( "Fixing exits" );
-	fix_exits( );
+	fix_exits( game );
 	fBootDb	= FALSE;
 	log_string( "Initializing economy" );
-	initialize_economy( );
+	initialize_economy(game );
 	/*loads vendors on each reboot -Legonas*/
 	log_string( "Loading buildlist" );
-	load_buildlist( );
+	load_buildlist(game );
 	log_string( "Loading boards" );
-	load_boards( );
+	load_boards( game);
 	log_string( "Loading clans" );
-	load_clans( );
+	load_clans( game);
 	log_string( "Loading senate" );
-	load_senate( );
+	load_senate( game);
         log_string( "Loading bans" );
-        load_banlist( );
+        load_banlist( game );
         log_string( "Loading corpses" );
-        load_corpses( );
+        load_corpses( game );
         log_string( "Loading space" );
-        load_space( );
+        load_space( game);
         log_string( "Loading ships" );
-        load_ships( );
+        load_ships( game);
         log_string( "Loading bounties" );
-        load_bounties( );
+        load_bounties( game);
         log_string( "Loading governments" );
-        load_planets( );
+        load_planets( game);
         log_string( "Resetting areas" );
-	area_update( );
+	area_update( game );
 	log_string ( "Reading in Vendors" );
-	load_vendors ( );
+	load_vendors ( game);
 	log_string ( "Reading in Storerooms" );
-	load_storerooms( );
+	load_storerooms( game );
 	                
         MOBtrigger = TRUE;
     }
@@ -893,11 +901,12 @@ bool isspace_utf8(const char *p)
 /*
  * Load an 'area' header line.
  */
-void load_area( FILE *fp )
+void load_area( GameContext *game, FILE *fp )
 {
     AREA_DATA *pArea;
 
     CREATE( pArea, AREA_DATA, 1 );
+    pArea->game        = game;
     pArea->first_reset	= NULL;
     pArea->last_reset	= NULL;
     pArea->next_on_planet       = NULL;
@@ -1065,13 +1074,14 @@ void add_help( HELP_DATA *pHelp )
 /*
  * Load a help section.
  */
-void load_helps( AREA_DATA *tarea, FILE *fp )
+void load_helps( GameContext *game, AREA_DATA *tarea, FILE *fp )
 {
     HELP_DATA *pHelp;
 
     for ( ; ; )
     {
         CREATE( pHelp, HELP_DATA, 1 );
+        pHelp->game = game;
         pHelp->level	= fread_number( fp );
         pHelp->keyword	= fread_string( fp );
         if ( pHelp->keyword[0] == '$' )
@@ -1189,7 +1199,7 @@ void load_mobiles( AREA_DATA *tarea, FILE *fp )
 	  CREATE( pMobIndex, MOB_INDEX_DATA, 1 );
 	}
 	fBootDb = tmpBootDb;
-
+    pMobIndex->game		= tarea->game;
 	pMobIndex->vnum			= vnum;
 	if ( fBootDb )
 	{
@@ -1440,6 +1450,7 @@ void load_objects( AREA_DATA *tarea, FILE *fp )
 	}
 	fBootDb = tmpBootDb;
 
+    pObjIndex->game		= tarea->game;
 	pObjIndex->vnum			= vnum;
 	if ( fBootDb )
 	{
@@ -1846,6 +1857,7 @@ void load_rooms( AREA_DATA *tarea, FILE *fp )
 	{
 	  oldroom = FALSE;
 	  CREATE( pRoomIndex, ROOM_INDEX_DATA, 1 );
+      pRoomIndex->game		= tarea->game;
 	  pRoomIndex->first_person	= NULL;
 	  pRoomIndex->last_person	= NULL;
 	  pRoomIndex->first_content	= NULL;
@@ -1998,6 +2010,7 @@ void load_shops( AREA_DATA *tarea, FILE *fp )
         int iTrade;
 
         CREATE( pShop, SHOP_DATA, 1 );
+        pShop->game			= tarea->game;
         pShop->keeper		= fread_number( fp );
         if ( pShop->keeper == 0 )
         {
@@ -2041,6 +2054,7 @@ void load_repairs( AREA_DATA *tarea, FILE *fp )
 	int iFix;
 
 	CREATE( rShop, REPAIR_DATA, 1 );
+    rShop->game			= tarea->game;
 	rShop->keeper		= fread_number( fp );
 	if ( rShop->keeper == 0 )
     {
@@ -2281,7 +2295,7 @@ void load_supply( AREA_DATA *tarea, FILE *fp )
  * Go through all areas, and set up initial economy based on mob
  * levels and gold
  */
-void initialize_economy( void )
+void initialize_economy( GameContext *game )
 {
     AREA_DATA *tarea;
     MOB_INDEX_DATA *mob;
@@ -2310,7 +2324,7 @@ void initialize_economy( void )
  * Has to be done after all rooms are read in.
  * Check for bad reverse exits.
  */
-void fix_exits( void )
+void fix_exits( GameContext *game )
 {
     ROOM_INDEX_DATA *pRoomIndex;
     EXIT_DATA *pexit, *pexit_next, *rev_exit;
@@ -2478,7 +2492,7 @@ void randomize_exits( ROOM_INDEX_DATA *room, sh_int maxdir )
 /*
  * Repopulate areas periodically.
  */
-void area_update( void )
+void area_update( GameContext *game )
 {
     AREA_DATA *pArea;
     int count;
@@ -2488,6 +2502,9 @@ void area_update( void )
 
     for ( pArea = first_area; pArea; pArea = pArea->next )
     {
+        if (!pArea->game)
+            pArea->game = game;
+
 	CHAR_DATA *pch;
 	int reset_age = pArea->reset_frequency ? pArea->reset_frequency : 15;
 
@@ -2537,7 +2554,7 @@ void area_update( void )
 	    ROOM_INDEX_DATA *pRoomIndex;
 
 	    fprintf( stderr, "Resetting: %s\n", pArea->filename );
-	    reset_area( pArea );
+	    reset_area( game, pArea );
 	    if ( reset_age == -1 )
 		pArea->age = -1;
 	    else
@@ -2555,7 +2572,7 @@ void area_update( void )
 /*
  * Create an instance of a mobile.
  */
-CHAR_DATA *create_mobile( MOB_INDEX_DATA *pMobIndex )
+CHAR_DATA *create_mobile( GameContext *game, MOB_INDEX_DATA *pMobIndex )
 {
     CHAR_DATA *mob;
 
@@ -2566,8 +2583,11 @@ CHAR_DATA *create_mobile( MOB_INDEX_DATA *pMobIndex )
     }
 
     CREATE( mob, CHAR_DATA, 1 );
+    mob->game            = pMobIndex->game;    
     clear_char( mob );
+
     mob->pIndexData		= pMobIndex;
+    mob->game			= game;
 
     mob->editor			= NULL;
     mob->name			= QUICKLINK( pMobIndex->player_name );
@@ -2671,6 +2691,7 @@ OBJ_DATA *create_object( OBJ_INDEX_DATA *pObjIndex, int level )
     CREATE( obj, OBJ_DATA, 1 );
 
     obj->pIndexData	= pObjIndex;
+    obj->game		= pObjIndex->game;
     obj->in_room	= NULL;
     obj->level		= level;
     obj->wear_loc	= -1;
@@ -3813,7 +3834,7 @@ void do_memory( CHAR_DATA *ch, char *argument )
     ch_printf( ch, "CurOq's %5d    CurCq's %5d\n", cur_qobjs,  cur_qchars );
     ch_printf( ch, "Players %5d    Maxplrs %5d\n", num_descriptors, sysdata.maxplayers );
     ch_printf( ch, "MaxEver %5d    Topsn   %5d (%d)\n", sysdata.alltimemax, top_sn, MAX_SKILL );
-    ch_printf( ch, "MaxEver time recorded at:   %s\n", sysdata.time_of_max );
+    ch_printf( ch, "MaxEver time recorded at:   %s\n", sysdata.get_time_of_max() );
     if ( !str_cmp( arg, "check" ) )
     {
 #ifdef HASHSTR
@@ -4887,7 +4908,7 @@ void add_to_wizlist( char *name, int level )
 /*
  * Wizlist builder						-Thoric
  */
-void make_wizlist( )
+void make_wizlist( GameContext *game )
 {
   DIR *dp;
   struct dirent *dentry;
@@ -5009,7 +5030,7 @@ void make_wizlist( )
 
 void do_makewizlist( CHAR_DATA *ch, char *argument )
 {
-  make_wizlist();
+  make_wizlist( ch->game );
 }
 
 
@@ -5748,12 +5769,13 @@ bool delete_mob( MOB_INDEX_DATA *mob )
 /*
  * Creat a new room (for online building)			-Thoric
  */
-ROOM_INDEX_DATA *make_room( int vnum )
+ROOM_INDEX_DATA *make_room( GameContext *game, int vnum )
 {
 	ROOM_INDEX_DATA *pRoomIndex;
 	int	iHash;
 
 	CREATE( pRoomIndex, ROOM_INDEX_DATA, 1 );
+    pRoomIndex->game            = game;
 	pRoomIndex->first_person	= NULL;
 	pRoomIndex->last_person		= NULL;
 	pRoomIndex->first_content	= NULL;
@@ -5784,7 +5806,7 @@ ROOM_INDEX_DATA *make_room( int vnum )
  * Create a new INDEX object (for online building)		-Thoric
  * Option to clone an existing index object.
  */
-OBJ_INDEX_DATA *make_object( int vnum, int cvnum, char *name )
+OBJ_INDEX_DATA *make_object( GameContext *game, int vnum, int cvnum, char *name )
 {
 	OBJ_INDEX_DATA *pObjIndex, *cObjIndex;
 	char buf[MAX_STRING_LENGTH];
@@ -5795,6 +5817,7 @@ OBJ_INDEX_DATA *make_object( int vnum, int cvnum, char *name )
 	else
 	  cObjIndex = NULL;
 	CREATE( pObjIndex, OBJ_INDEX_DATA, 1 );
+    pObjIndex->game            = game;
 	pObjIndex->vnum			= vnum;
 	pObjIndex->name			= STRALLOC( name );
 	pObjIndex->first_affect		= NULL;
@@ -5872,7 +5895,7 @@ OBJ_INDEX_DATA *make_object( int vnum, int cvnum, char *name )
  * Create a new INDEX mobile (for online building)		-Thoric
  * Option to clone an existing index mobile.
  */
-MOB_INDEX_DATA *make_mobile( sh_int vnum, sh_int cvnum, char *name )
+MOB_INDEX_DATA *make_mobile( GameContext *game, sh_int vnum, sh_int cvnum, char *name )
 {
 	MOB_INDEX_DATA *pMobIndex, *cMobIndex;
 	char buf[MAX_STRING_LENGTH];
@@ -5883,6 +5906,7 @@ MOB_INDEX_DATA *make_mobile( sh_int vnum, sh_int cvnum, char *name )
 	else
 	  cMobIndex = NULL;
 	CREATE( pMobIndex, MOB_INDEX_DATA, 1 );
+    pMobIndex->game            = game;
 	pMobIndex->vnum			= vnum;
 	pMobIndex->count		= 0;
 	pMobIndex->killed		= 0;
@@ -6096,7 +6120,7 @@ void fix_area_exits( AREA_DATA *tarea )
     }
 }
 
-void load_area_file( AREA_DATA *tarea, char *filename )
+void load_area_file( GameContext *game, AREA_DATA *tarea, char *filename )
 {
 /*    FILE *fpin;
     what intelligent person stopped using fpArea?????
@@ -6115,71 +6139,71 @@ void load_area_file( AREA_DATA *tarea, char *filename )
 
     if ( ( fpArea = fopen( filename, "r" ) ) == NULL )
     {
-	bug( "load_area: error loading file (can't open)" );
-	bug( filename );
-	return;
+        bug( "load_area: error loading file (can't open)" );
+        bug( filename );
+        return;
     }
 
     for ( ; ; )
     {
-	char *word;
+        char *word;
 
-	if ( fread_letter( fpArea ) != '#' )
-	{
-	    bug( tarea->filename );
-	    bug( "load_area: # not found." );
-	    exit( 1 );
-	}
+        if ( fread_letter( fpArea ) != '#' )
+        {
+            bug( tarea->filename );
+            bug( "load_area: # not found." );
+            exit( 1 );
+        }
 
-	word = fread_word( fpArea );
+        word = fread_word( fpArea );
 
-	     if ( word[0] == '$'               )                 break;
-	else if ( !str_cmp( word, "AREA"     ) )
-	{
-		if ( fBootDb )
-		{
-		  load_area    (fpArea);
-		  tarea = last_area;
-		}
-		else
-		{
-		  STR_DISPOSE( tarea->name );
-		  tarea->name = fread_string_nohash( fpArea );
-		}
-	}
-	else if ( !str_cmp( word, "AUTHOR"   ) ) load_author  (tarea, fpArea);
-	else if ( !str_cmp( word, "FLAGS"    ) ) load_flags   (tarea, fpArea);
-	else if ( !str_cmp( word, "RANGES"   ) ) load_ranges  (tarea, fpArea);
-	else if ( !str_cmp( word, "PRODUCTION"   ) ) load_production  (tarea, fpArea);
-	else if ( !str_cmp( word, "DEPLETION"   ) ) load_depletion  (tarea, fpArea);
-	else if ( !str_cmp( word, "SUPPLY"   ) ) load_supply  (tarea, fpArea);
-	else if ( !str_cmp( word, "RANGES"   ) ) load_ranges  (tarea, fpArea);
-	else if ( !str_cmp( word, "ECONOMY"  ) ) load_economy (tarea, fpArea);
-	else if ( !str_cmp( word, "RESETMSG" ) ) load_resetmsg(tarea, fpArea); 
-	/* Rennard */
-	else if ( !str_cmp( word, "HELPS"    ) ) load_helps   (tarea, fpArea);
-	else if ( !str_cmp( word, "MOBILES"  ) ) load_mobiles (tarea, fpArea);
-	else if ( !str_cmp( word, "MUDPROGS" ) ) load_mudprogs(tarea, fpArea);
-	else if ( !str_cmp( word, "OBJECTS"  ) ) load_objects (tarea, fpArea);
-	else if ( !str_cmp( word, "OBJPROGS" ) ) load_objprogs(tarea, fpArea);
-	else if ( !str_cmp( word, "RESETS"   ) ) load_resets  (tarea, fpArea);
-	else if ( !str_cmp( word, "ROOMS"    ) ) load_rooms   (tarea, fpArea);
-	else if ( !str_cmp( word, "SHOPS"    ) ) load_shops   (tarea, fpArea);
-	else if ( !str_cmp( word, "REPAIRS"  ) ) load_repairs (tarea, fpArea);
-	else if ( !str_cmp( word, "SPECIALS" ) ) load_specials(tarea, fpArea);
-	else
-	{
-	    bug( tarea->filename );
-	    bug( "load_area: bad section name." );
-	    if ( fBootDb )
-	      exit( 1 );
-	    else
-	    {
-	      FCLOSE( fpArea );
-	      fpArea = NULL;
-	      return;
-	    }
-	}
+        if ( word[0] == '$'               )                 break;
+        else if ( !str_cmp( word, "AREA"     ) )
+        {
+            if ( fBootDb )
+            {
+                load_area    (game, fpArea);
+                tarea = last_area;
+            }
+            else
+            {
+                STR_DISPOSE( tarea->name );
+                tarea->name = fread_string_nohash( fpArea );
+            }
+        }
+        else if ( !str_cmp( word, "AUTHOR"   ) ) load_author  (tarea, fpArea);
+        else if ( !str_cmp( word, "FLAGS"    ) ) load_flags   (tarea, fpArea);
+        else if ( !str_cmp( word, "RANGES"   ) ) load_ranges  (tarea, fpArea);
+        else if ( !str_cmp( word, "PRODUCTION"   ) ) load_production  (tarea, fpArea);
+        else if ( !str_cmp( word, "DEPLETION"   ) ) load_depletion  (tarea, fpArea);
+        else if ( !str_cmp( word, "SUPPLY"   ) ) load_supply  (tarea, fpArea);
+        else if ( !str_cmp( word, "RANGES"   ) ) load_ranges  (tarea, fpArea);
+        else if ( !str_cmp( word, "ECONOMY"  ) ) load_economy (tarea, fpArea);
+        else if ( !str_cmp( word, "RESETMSG" ) ) load_resetmsg(tarea, fpArea); 
+        /* Rennard */
+        else if ( !str_cmp( word, "HELPS"    ) ) load_helps   (game, tarea, fpArea);
+        else if ( !str_cmp( word, "MOBILES"  ) ) load_mobiles (tarea, fpArea);
+        else if ( !str_cmp( word, "MUDPROGS" ) ) load_mudprogs(tarea, fpArea);
+        else if ( !str_cmp( word, "OBJECTS"  ) ) load_objects (tarea, fpArea);
+        else if ( !str_cmp( word, "OBJPROGS" ) ) load_objprogs(tarea, fpArea);
+        else if ( !str_cmp( word, "RESETS"   ) ) load_resets  (tarea, fpArea);
+        else if ( !str_cmp( word, "ROOMS"    ) ) load_rooms   (tarea, fpArea);
+        else if ( !str_cmp( word, "SHOPS"    ) ) load_shops   (tarea, fpArea);
+        else if ( !str_cmp( word, "REPAIRS"  ) ) load_repairs (tarea, fpArea);
+        else if ( !str_cmp( word, "SPECIALS" ) ) load_specials(tarea, fpArea);
+        else
+        {
+            bug( tarea->filename );
+            bug( "load_area: bad section name." );
+            if ( fBootDb )
+            exit( 1 );
+            else
+            {
+            FCLOSE( fpArea );
+            fpArea = NULL;
+            return;
+            }
+        }
     }
     FCLOSE( fpArea );
     fpArea = NULL;
@@ -6206,7 +6230,7 @@ void load_area_file( AREA_DATA *tarea, char *filename )
 /* Build list of in_progress areas.  Do not load areas.
  * define AREA_READ if you want it to build area names rather than reading
  * them out of the area files. -- Altrag */
-void load_buildlist( void )
+void load_buildlist( GameContext *game )
 {
 	DIR *dp;
 	struct dirent *dentry;
@@ -6284,6 +6308,7 @@ void load_buildlist( void )
 				}
 #endif
 				CREATE( pArea, AREA_DATA, 1 );
+                pArea->game = game;
 				SPRINTF( buf, "%s.are", dentry->d_name );
 				pArea->author = STRALLOC( dentry->d_name );
 				pArea->filename = str_dup( buf );
@@ -6520,9 +6545,9 @@ void save_sysdata( SYSTEM_DATA sys )
     {
 	fprintf( fp, "#SYSTEM\n" );
 	fprintf( fp, "Highplayers    %d\n", sys.alltimemax		);
-	fprintf( fp, "Highplayertime %s~\n", sys.time_of_max		);
-	fprintf( fp, "Nameresolving  %d\n", sys.NO_NAME_RESOLVING	);
-	fprintf( fp, "Waitforauth    %d\n", sys.WAIT_FOR_AUTH		);
+	fprintf( fp, "Highplayertime %s~\n", sys.get_time_of_max()		);
+	fprintf( fp, "Nameresolving  %d\n", sys.no_name_resolving	);
+	fprintf( fp, "Waitforauth    %d\n", sys.wait_for_auth		);
 	fprintf( fp, "Readallmail    %d\n", sys.read_all_mail		);
 	fprintf( fp, "Readmailfree   %d\n", sys.read_mail_free		);
 	fprintf( fp, "Writemailfree  %d\n", sys.write_mail_free		);
@@ -6541,11 +6566,12 @@ void save_sysdata( SYSTEM_DATA sys )
 	fprintf( fp, "Dammobvsplr    %d\n", sys.dam_mob_vs_plr		);
 	fprintf( fp, "Dammobvsmob    %d\n", sys.dam_mob_vs_mob		);
 	fprintf( fp, "Forcepc        %d\n", sys.level_forcepc		);
-	fprintf( fp, "Guildoverseer  %s~\n", sys.guild_overseer		);
-	fprintf( fp, "Guildadvisor   %s~\n", sys.guild_advisor		);
-	fprintf( fp, "Saveflags      %d\n", sys.save_flags		);
+	fprintf( fp, "Guildoverseer  %s~\n", sys.get_guild_overseer()		);
+	fprintf( fp, "Guildadvisor   %s~\n", sys.get_guild_advisor()		);
+    fwrite_bitset( fp, "SaveflagsEx", sys.save_flags);
+//	fprintf( fp, "Saveflags      %d\n", sys.save_flags		);
 	fprintf( fp, "Savefreq       %d\n", sys.save_frequency		);
-	fprintf( fp, "ShipIDCurrent  %ld\n", sys.currentshipID		);
+	fprintf( fp, "ShipIDCurrent  %ld\n", sys.get_current_shipID()		);
 	fprintf( fp, "End\n\n"						);
 	fprintf( fp, "#END\n"						);
     }
@@ -6560,7 +6586,6 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
     const char *word;
     bool fMatch;
 
-    sys->time_of_max = NULL;
     for ( ; ; )
     {
 	word   = feof( fp ) ? "End" : fread_word( fp );
@@ -6586,11 +6611,11 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 	case 'E':
 	    if ( !str_cmp( word, "End" ) )
 	    {
-		if ( !sys->time_of_max )
-		    sys->time_of_max = str_dup("(not recorded)");
-		if ( !sys->currentshipID )
-		  sys->currentshipID = 4000;
-		return;
+            if ( sys->empty_time_of_max() )
+                sys->set_time_of_max("(not recorded)");
+            if ( !sys->get_current_shipID() )
+            sys->set_current_shipID(4000);
+            return;
 	    }
 	    break;
 
@@ -6599,13 +6624,31 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 	    break;
 	    
 	case 'G':
-        KEY( "Guildoverseer", sys->guild_overseer, fread_string_nohash( fp ) );
-        KEY( "Guildadvisor", sys->guild_advisor, fread_string_nohash( fp ) );
+	    if ( !str_cmp( word, "Guildoverseer" ) )
+	    {
+            sys->set_guild_overseer(fread_string_nohash( fp ));
+            fMatch = TRUE;
+            break;
+	    }    
+	    if ( !str_cmp( word, "Guildadvisor" ) )
+	    {
+            sys->set_guild_advisor(fread_string_nohash( fp ));
+            fMatch = TRUE;
+            break;
+	    }    
+        //KEY( "Guildoverseer", sys->guild_overseer, fread_string_nohash( fp ) );
+        //KEY( "Guildadvisor", sys->guild_advisor, fread_string_nohash( fp ) );
 	    break;
 
 	case 'H':
 	    KEY( "Highplayers",	   sys->alltimemax,	  fread_number( fp ) );
-	    KEY( "Highplayertime", sys->time_of_max,      fread_string_nohash( fp ) );
+	    if ( !str_cmp( word, "Highplayertime" ) )
+	    {
+            sys->set_time_of_max(fread_string_nohash( fp ));
+            fMatch = TRUE;
+            break;
+	    }            
+//	    KEY( "Highplayertime", sys->time_of_max,      fread_string_nohash( fp ) );
 	    break;
 
 	case 'L':
@@ -6618,7 +6661,7 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 	    break;
 
 	case 'N':
-            KEY( "Nameresolving",  sys->NO_NAME_RESOLVING, fread_number( fp ) );
+            KEY( "Nameresolving",  sys->no_name_resolving, fread_number( fp ) );
 	    break;
 
 	case 'O':
@@ -6637,9 +6680,32 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 	case 'S':
 	    KEY( "Stunplrvsplr",   sys->stun_plr_vs_plr, fread_number( fp ) );
 	    KEY( "Stunregular",    sys->stun_regular,	fread_number( fp ) );
-	    KEY( "Saveflags",	   sys->save_flags,	fread_number( fp ) );
+		if ( !str_cmp( word, "Saveflags"  ) )
+		{
+            int bitmask = fread_number( fp );
+            if (bitmask == 0)
+                sys->save_flags.reset();
+            else
+    			sys->save_flags = int_to_bitset(bitmask );
+		   fMatch = TRUE;
+			break;
+		}
+		if ( !str_cmp( word, "SaveflagsEx"  ) )
+		{
+            sys->save_flags.reset();
+			fread_bitset(fp, sys->save_flags);
+			fMatch = TRUE;
+			break;
+		}
+        //KEY( "Saveflags",	   sys->save_flags,	fread_number( fp ) );
 	    KEY( "Savefreq",	   sys->save_frequency,	fread_number( fp ) );
-	    KEY( "ShipIDCurrent",  sys->currentshipID, fread_number( fp ) );
+		if ( !str_cmp( word, "ShipIDCurrent"  ) )
+		{
+			sys->set_current_shipID(fread_number( fp ));
+			fMatch = TRUE;
+			break;
+		}        
+//	    KEY( "ShipIDCurrent",  sys->currentshipID, fread_number( fp ) );
 	    break;
 
 	case 'T':
@@ -6649,7 +6715,7 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 
 
 	case 'W':
-	    KEY( "Waitforauth",	   sys->WAIT_FOR_AUTH,	  fread_number( fp ) );
+	    KEY( "Waitforauth",	   sys->wait_for_auth,	  fread_number( fp ) );
 	    KEY( "Writemailfree",  sys->write_mail_free,  fread_number( fp ) );
 	    break;
 	}
@@ -6716,13 +6782,13 @@ bool load_systemdata( SYSTEM_DATA *sys )
 	FCLOSE( fp );
     }
 
-    if ( !sysdata.guild_overseer ) sysdata.guild_overseer = str_dup( "" );
-    if ( !sysdata.guild_advisor  ) sysdata.guild_advisor  = str_dup( "" );
+    if ( sysdata.empty_guild_overseer() ) sysdata.set_guild_overseer ( "" );
+    if ( sysdata.empty_guild_advisor() ) sysdata.set_guild_advisor ( "" );
     return found;
 }
 
 
-void load_banlist( void )
+void load_banlist( GameContext *game )
 {
   BAN_DATA *pban;
   FILE *fp;
@@ -6747,6 +6813,7 @@ void load_banlist( void )
       return;
     }
     CREATE( pban, BAN_DATA, 1 );
+    pban->game = game;
     pban->level = number;
     pban->name = fread_string_nohash( fp );
     if ( (letter = fread_letter(fp)) == '~' )
@@ -7075,7 +7142,7 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
  *
  * -- Furey
  */
-void tail_chain( void )
+void tail_chain( GameContext *game )
 {
     return;
 }

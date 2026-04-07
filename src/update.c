@@ -39,15 +39,15 @@ int	hit_gain	args( ( CHAR_DATA *ch ) );
 int	mana_gain	args( ( CHAR_DATA *ch ) );
 int	move_gain	args( ( CHAR_DATA *ch ) );
 void    gain_addiction  args( ( CHAR_DATA *ch ) );
-void	mobile_update	args( ( void ) );
-void	weather_update	args( ( void ) );
-void	update_taxes	args( ( void ) );
-void	char_update	args( ( void ) );
-void	obj_update	args( ( void ) );
-void	aggr_update	args( ( void ) );
-void	room_act_update	args( ( void ) );
-void	obj_act_update	args( ( void ) );
-void	char_check	args( ( void ) );
+void	mobile_update	args( ( GameContext *game ) );
+void	weather_update	args( ( GameContext *game ) );
+void	update_taxes	args( ( GameContext *game ) );
+void	char_update	args( ( GameContext *game ) );
+void	obj_update	args( ( GameContext *game ) );
+void	aggr_update	args( ( GameContext *game ) );
+void	room_act_update	args( ( GameContext *game ) );
+void	obj_act_update	args( ( GameContext *game ) );
+void	char_check	args( ( GameContext *game ) );
 void    drunk_randoms	args( ( CHAR_DATA *ch ) );
 void    halucinations	args( ( CHAR_DATA *ch ) );
 void	subtract_times	args( ( struct timeval *etime,
@@ -85,8 +85,8 @@ extern int      top_exit;
 /*
  * Arena stuff.
  */
-extern void start_arena();
-extern void do_game();
+extern void start_arena(GameContext *game);
+extern void do_game(GameContext *game);
 extern int in_start_arena;
 extern int num_gladiators;
 extern int ppl_challenged;
@@ -763,7 +763,7 @@ void gain_condition( CHAR_DATA *ch, int iCond, int value )
  * Mob autonomous action.
  * This function takes 25% to 35% of ALL Mud cpu time.
  */
-void mobile_update( void )
+void mobile_update( GameContext *game )
 {
     char buf[MAX_STRING_LENGTH];
     CHAR_DATA *ch;
@@ -776,6 +776,8 @@ void mobile_update( void )
     /* Examine all mobs. */
     for ( ch = last_char; ch; ch = gch_prev )
     {
+		if (!ch->game)
+			ch->game = game;
 	set_cur_char( ch );
 	if ( ch == first_char && ch->prev )
 	{
@@ -1027,7 +1029,7 @@ void mobile_update( void )
     return;
 }
 
-void update_taxes( void )
+void update_taxes( GameContext *game )
 {
      PLANET_DATA *planet;
      CLAN_DATA *clan;
@@ -1035,6 +1037,8 @@ void update_taxes( void )
      
     for ( planet = first_planet; planet; planet = planet->next )
     {
+		if (!planet->game)
+			planet->game = game;
         clan = planet->governed_by;
         if ( clan )
         {
@@ -1044,7 +1048,7 @@ void update_taxes( void )
             if ( clan->first_subclan )
             {
                for ( subclan = clan->first_subclan ; subclan ; subclan = subclan->next_subclan )
-   		  sCount++;
+   		  			sCount++;
    	       
    	       for ( subclan = clan->first_subclan ; subclan ; subclan = subclan->next_subclan )
    	       {
@@ -1084,7 +1088,7 @@ void update_taxes( void )
 /*
  * Update the weather.
  */
-void weather_update( void )
+void weather_update( GameContext *game )
 {
     char buf[MAX_STRING_LENGTH];
     DESCRIPTOR_DATA *d;
@@ -1258,7 +1262,7 @@ void weather_update( void )
  * Update all chars, including mobs.
  * This function is performance sensitive.
  */
-void char_update( void )
+void char_update( GameContext *game )
 {   
     CHAR_DATA *ch;
     CHAR_DATA *ch_save;
@@ -1267,6 +1271,9 @@ void char_update( void )
     ch_save	= NULL;
     for ( ch = last_char; ch; ch = gch_prev )
     {
+		if (!ch->game)
+			ch->game = game;
+
 	if ( ch == first_char && ch->prev )
 	{
 	    bug( "char_update: first_char->prev != NULL... fixed", 0 );
@@ -1573,7 +1580,7 @@ void char_update( void )
         		do_quit( ch, "" );
              }
 	     else
-	     if ( ch == ch_save && IS_SET( sysdata.save_flags, SV_AUTO )
+	     if ( ch == ch_save && BV_IS_SET( sysdata.save_flags, SV_AUTO )
 	     &&   ++save_count < 10 )	/* save max of 10 per tick */
 		save_char_obj( ch );
 	    }
@@ -1590,13 +1597,16 @@ void char_update( void )
  * Update all objs.
  * This function is performance sensitive.
  */
-void obj_update( void )
+void obj_update( GameContext *game )
 {   
     OBJ_DATA *obj, *wield;
     sh_int AT_TEMP;
     	        
     for ( obj = last_object; obj; obj = gobj_prev )
     {
+		if (!obj->game)
+			obj->game = game;
+
 	CHAR_DATA *rch;
 	char *message;
 
@@ -1842,7 +1852,7 @@ void obj_update( void )
  * Function to check important stuff happening to a player
  * This function should take about 5% of mud cpu time
  */
-void char_check( void )
+void char_check( GameContext *game )
 {
     CHAR_DATA *ch, *ch_next;
     EXIT_DATA *pexit;
@@ -1853,6 +1863,8 @@ void char_check( void )
 
     for ( ch = first_char; ch; ch = ch_next )
     {
+		if (!ch->game)
+			ch->game = game;
 	set_cur_char(ch);
 	ch_next = ch->next;
 	will_fall(ch, 0);
@@ -1996,7 +2008,7 @@ void char_check( void )
  *   who leads the party into the room.
  *
  */
-void aggr_update( void )
+void aggr_update( GameContext *game )
 {
 /*    DESCRIPTOR_DATA *d, *dnext; */
     CHAR_DATA *wch;
@@ -2072,6 +2084,9 @@ void aggr_update( void )
 */
    for( ch = first_char; ch; ch = wch_next )
    {
+		if (!ch->game)
+			ch->game = game;
+
    	wch_next = ch->next;
 
 	    if ( !IS_NPC(ch)
@@ -2235,7 +2250,7 @@ void halucinations( CHAR_DATA *ch )
     return;
 }
 
-void tele_update( void )
+void tele_update( GameContext *game )
 {
     TELEPORT_DATA *tele, *tele_next;
 
@@ -2244,6 +2259,8 @@ void tele_update( void )
     
     for ( tele = first_teleport; tele; tele = tele_next )
     {
+		if (!tele->game)
+			tele->game = game;
 	tele_next = tele->next;
 	if ( --tele->timer <= 0 )
 	{
@@ -2263,7 +2280,7 @@ void tele_update( void )
  * Called once per pulse from game loop.
  * Random times to defeat tick-timing clients and players.
  */
-void update_handler( void )
+void update_handler( GameContext *game )
 {
     static  int     pulse_taxes;
     static  int     pulse_area;
@@ -2289,46 +2306,46 @@ void update_handler( void )
     if ( --pulse_area     <= 0 )
     {
 	pulse_area	= number_range( PULSE_AREA / 2, 3 * PULSE_AREA / 2 );
-	area_update	( );
-	quest_update();
+	area_update	( game );
+	quest_update(game);
     }
     
     if ( --pulse_taxes     <= 0 )
     {
 	pulse_taxes	= PULSE_TAXES ;
-	update_taxes	( );
+	update_taxes	( game );
     }
 
     if ( --pulse_mobile   <= 0 )
     {
 	pulse_mobile	= PULSE_MOBILE;
-	mobile_update  ( );
+	mobile_update  ( game);
     }
     
     if ( --pulse_space   <= 0 )
     {
        pulse_space    = PULSE_SPACE;
-       update_space  ( );
-       update_bus ( );
-       update_traffic ( );
+       update_space  ( game);
+       update_bus ( game);
+       update_traffic ( game);
     }
 
     if ( --pulse_recharge <= 0 )
     {
          pulse_recharge = PULSE_SPACE/3;
-         recharge_ships ( );
+         recharge_ships ( game);
     }
     
     if ( --pulse_ship   <= 0 )
     {
        pulse_ship  = PULSE_SPACE/10;
-       move_ships  ( );
+       move_ships  ( game);
     }                        
     
     if ( --pulse_violence <= 0 )
     {
 	pulse_violence	= PULSE_VIOLENCE;
-	violence_update	( );
+	violence_update	( game);
     }
 
     if ( --pulse_point    <= 0 )
@@ -2336,49 +2353,49 @@ void update_handler( void )
 	pulse_point     = number_range( (int) ( PULSE_TICK * 0.75 ), (int) (PULSE_TICK * 1.25) );
 
         /*auth_update     ( );*/			/* Gorog */
-	weather_update	( );
-	char_update	( );
-	obj_update	( );
-	clear_vrooms	( );			/* remove virtual rooms */
+	weather_update	(game );
+	char_update	( game);
+	obj_update	( game);
+	clear_vrooms	( game);			/* remove virtual rooms */
     }
 
     if ( --pulse_second   <= 0 )
     {
 	pulse_second	= PULSE_PER_SECOND;
-	char_check( );
+	char_check( game);
  	/*reboot_check( "" ); Disabled to check if its lagging a lot - Scryn*/
  	/* Much faster version enabled by Altrag..
  	   although I dunno how it could lag too much, it was just a bunch
  	   of comparisons.. */
- 	reboot_check(0);
+ 	reboot_check(game, 0);
     }
 
     if ( auction->item && --auction->pulse <= 0 )
     {                                                  
 	auction->pulse = PULSE_AUCTION;                     
-	auction_update( );
+	auction_update( game );
     }
 
     if(in_start_arena || ppl_challenged)
     if( --pulse_start_arena <= 0)
     {
       pulse_start_arena = PULSE_ARENA;
-      start_arena();
+      start_arena(game);
     }
 
     if(num_gladiators)
     if(( --pulse_arena <= 0))
     {
       pulse_arena = PULSE_ARENA;
-      do_game();
+      do_game(game);
     }
 
-    tele_update( );
-    aggr_update( );
-    obj_act_update ( );
-    room_act_update( );
-    clean_obj_queue();		/* dispose of extracted objects */
-    clean_char_queue();		/* dispose of dead mobs/quitting chars */
+    tele_update( game);
+    aggr_update( game);
+    obj_act_update ( game);
+    room_act_update( game);
+    clean_obj_queue(game);		/* dispose of extracted objects */
+    clean_char_queue(game);		/* dispose of dead mobs/quitting chars */
     if ( timechar )
     {
       gettimeofday(&etime, NULL);
@@ -2389,7 +2406,7 @@ void update_handler( void )
           etime.tv_sec, etime.tv_usec );
       timechar = NULL;
     }
-    tail_chain( );
+    tail_chain(game );
     return;
 }
 
@@ -2451,7 +2468,7 @@ void remove_portal( OBJ_DATA *portal )
     return;
 }
 
-void reboot_check( time_t reset )
+void reboot_check( GameContext *game, time_t reset )
 {
   static char *tmsg[] =
   { "SYSTEM: Reboot in 10 seconds.",
@@ -2525,7 +2542,7 @@ void reboot_check( time_t reset )
   {
     echo_to_all(AT_YELLOW, tmsg[trun], ECHOTAR_ALL);
     if ( trun <= 5 )
-      sysdata.DENY_NEW_PLAYERS = TRUE;
+      sysdata.deny_new_players = TRUE;
     --trun;
     return;
   }
@@ -2733,10 +2750,13 @@ if ((current_time % 1800) == 0)
 
 /* the auction update*/
 
-void auction_update (void)
+void auction_update (GameContext *game)
 {
     int tax, pay;
     char buf[MAX_STRING_LENGTH];
+
+	if (!auction->game)
+	    auction->game = game;
 
     switch (++auction->going) /* increase the going state */
     {
@@ -2788,7 +2808,7 @@ void auction_update (void)
 		SPRINTF(buf, "The auctioneer pays you %d gold, charging an auction fee of %d.\n", pay, tax);
 		send_to_char(buf, auction->seller);
                 auction->item = NULL; /* reset item */
-		if ( IS_SET( sysdata.save_flags, SV_AUCTION ) )
+		if ( BV_IS_SET( sysdata.save_flags, SV_AUCTION ) )
 		{
 		    save_char_obj( auction->buyer );
 		    save_char_obj( auction->seller );
@@ -2824,7 +2844,7 @@ void auction_update (void)
 		  auction->seller->gold = 0;
 		else
 		  auction->seller->gold -= tax;
-		if ( IS_SET( sysdata.save_flags, SV_AUCTION ) )
+		if ( BV_IS_SET( sysdata.save_flags, SV_AUCTION ) )
 		    save_char_obj( auction->seller );
 	    } /* else */
 	    auction->item = NULL; /* clear auction */

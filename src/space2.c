@@ -58,7 +58,7 @@ void do_jumpvector( CHAR_DATA *ch, char *argument )
    
     num = number_range( 1, 16 );
     randnum = 1.0/(float) num;
-    if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+    if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
     {
          send_to_char("&RYou must be in the cockpit, turret or engineroom of a ship to do that!\n",ch);
          return;
@@ -70,7 +70,7 @@ void do_jumpvector( CHAR_DATA *ch, char *argument )
     	return;
     }
     
-    target = get_ship( argument );
+    target = get_ship( ch->game, argument );
     if ( !target )
     {
 	send_to_char( "No such ship.\n", ch );
@@ -204,17 +204,17 @@ void do_openbay( CHAR_DATA *ch, char *argument )
   SHIP_DATA *ship;
   char buf[MAX_STRING_LENGTH];
 
-   if ( ship_from_pilotseat(ch->in_room->vnum) == NULL
-   && ship_from_hanger(ch->in_room->vnum) == NULL )
+   if ( ship_from_pilotseat(ch->game, ch->in_room->vnum) == NULL
+   && ship_from_hanger(ch->game, ch->in_room->vnum) == NULL )
    {
         send_to_char("&RYou aren't in the pilots chair or hanger of a ship!\n",ch);
         return;
    }
 
-   if ( ship_from_pilotseat(ch->in_room->vnum) )
-      ship = ship_from_pilotseat(ch->in_room->vnum);
+   if ( ship_from_pilotseat(ch->game, ch->in_room->vnum) )
+      ship = ship_from_pilotseat(ch->game, ch->in_room->vnum);
    else
-      ship = ship_from_hanger(ch->in_room->vnum);
+      ship = ship_from_hanger(ch->game, ch->in_room->vnum);
 
    if ( ship->hanger == 0 )
    {
@@ -243,17 +243,17 @@ void do_closebay( CHAR_DATA *ch, char *argument )
 {
   SHIP_DATA *ship;
   char buf[MAX_STRING_LENGTH];
-      if ( ship_from_pilotseat(ch->in_room->vnum) == NULL
-   && ship_from_hanger(ch->in_room->vnum) == NULL )
+      if ( ship_from_pilotseat(ch->game, ch->in_room->vnum) == NULL
+   && ship_from_hanger(ch->game, ch->in_room->vnum) == NULL )
    {
         send_to_char("&RYou aren't in the pilots chair or hanger of a ship!\n",ch);
         return;
    }
 
-   if ( ship_from_pilotseat(ch->in_room->vnum) )
-      ship = ship_from_pilotseat(ch->in_room->vnum);
+   if ( ship_from_pilotseat(ch->game, ch->in_room->vnum) )
+      ship = ship_from_pilotseat(ch->game, ch->in_room->vnum);
    else
-      ship = ship_from_hanger(ch->in_room->vnum);
+      ship = ship_from_hanger(ch->game, ch->in_room->vnum);
 
    if ( ship->hanger == 0 )
    {
@@ -328,7 +328,7 @@ void do_tractorbeam( CHAR_DATA *ch, char *argument )
 	}
 
 
-	if ( (ship = ship_from_pilotseat(ch->in_room->vnum)) == NULL )
+	if ( (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum)) == NULL )
 	{
 		send_to_char("&RYou need to be in the pilot seat!\n",ch);
 		return;
@@ -476,7 +476,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
     switch( ch->substate )
     {
     	default:
-    	        if (  (ship = ship_from_coseat(ch->in_room->vnum))  == NULL )
+    	        if (  (ship = ship_from_coseat(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RYou must be in the copilot's seat of a ship to do that!\n",ch);
     	            return;
@@ -551,7 +551,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
     	        }
 		  
 
-                target = get_ship_here( arg, ship );
+                target = get_ship_here( ship->game, arg, ship );
 
 
                 if (  target == NULL )
@@ -619,7 +619,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
     	case SUB_TIMER_DO_ABORT:
     		STR_DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
-    		if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
+    		if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
     		      return;
     	        send_to_char("&RYour concentration is broken. You fail to lock onto your target.\n", ch);
     		return;
@@ -627,11 +627,11 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
 
     ch->substate = SUB_NONE;
 
-    if ( (ship = ship_from_coseat(ch->in_room->vnum)) == NULL )
+    if ( (ship = ship_from_coseat(ch->game, ch->in_room->vnum)) == NULL )
     {
        return;
     }
-    target = get_ship_here( arg, ship );
+    target = get_ship_here( ship->game, arg, ship );
 
     if (  target == NULL || target == ship)
     {
@@ -707,7 +707,7 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
   SPRINTF( arg, "%s", argument );
   
     
-  if (  (ship = ship_from_coseat(ch->in_room->vnum))  == NULL )
+  if (  (ship = ship_from_coseat(ch->game, ch->in_room->vnum))  == NULL )
   {
     send_to_char("&RYou must be in the copilot's seat of a ship to do that!\n",ch);
     return;
@@ -870,7 +870,7 @@ void do_undock(CHAR_DATA *ch, char *argument)
     
     SPRINTF( arg, "%s", argument );
         
-        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
             return;
@@ -882,7 +882,7 @@ void do_undock(CHAR_DATA *ch, char *argument)
                     return;
                 }
     
-        if (  (ship = ship_from_pilotseat(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou aren't in the pilots seat.\n",ch);
             return;
@@ -1028,7 +1028,7 @@ void do_dock(CHAR_DATA *ch, char *argument)
 
     SPRINTF( arg, "%s", argument );
 
-        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
             return;
@@ -1047,7 +1047,7 @@ void do_dock(CHAR_DATA *ch, char *argument)
     	            return;
     	        }
 
-        if (  (ship = ship_from_pilotseat(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou aren't in the pilots seat.\n",ch);
             return;
@@ -1129,7 +1129,7 @@ void do_dock(CHAR_DATA *ch, char *argument)
     	            return;
     	        }
 
-      eShip = get_ship_here( arg, ship );
+      eShip = get_ship_here( ship->game, arg, ship );
 
                 if (  eShip == NULL )
                 {
@@ -1290,7 +1290,7 @@ void do_request(CHAR_DATA *ch, char *argument)
 
     SPRINTF( arg, "%s", argument );
 
-    if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
+    if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
     {
         send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
         return;
@@ -1320,7 +1320,7 @@ void do_request(CHAR_DATA *ch, char *argument)
         return;
     }
 
-    eShip = get_ship_here(arg,ship);
+    eShip = get_ship_here(ship->game, arg,ship);
 
     if ( eShip == NULL )
     {
@@ -1402,7 +1402,7 @@ void do_shiptrack( CHAR_DATA *ch, char *argument)
   argument = one_argument( argument , arg2);
   argument = one_argument( argument , arg3);
   
-    if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
+    if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
     {
         send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
         return;
@@ -1530,7 +1530,7 @@ void do_transship(CHAR_DATA *ch, char *argument)
     argument = one_argument( argument, arg1 );
     argument = one_argument( argument, arg2 );
 
-    ship = get_ship( arg1 );
+    ship = get_ship( ch->game, arg1 );
 	if ( !ship )
     {
 	send_to_char( "No such ship.\n", ch );
@@ -1613,7 +1613,7 @@ void do_override(CHAR_DATA *ch, char *argument)
     argument = one_argument( argument, arg );
     SPRINTF ( arg2, "%s", argument);
 
-    if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
+    if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
     {
         send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
         return;
@@ -1643,7 +1643,7 @@ void do_override(CHAR_DATA *ch, char *argument)
         return;
     }
 
-    eShip = get_ship_here(arg,ship);
+    eShip = get_ship_here(ship->game, arg,ship);
 
     if ( eShip == NULL )
     {
@@ -1750,13 +1750,13 @@ void do_guard( CHAR_DATA *ch, char *argument )
     SHIP_DATA *ship;
 
 
-        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
             return;
         }
         
-        if (  (ship = ship_from_pilotseat(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the pilots seat!\n",ch);
             return;
@@ -1828,7 +1828,7 @@ void do_sabotage(CHAR_DATA *ch, char *argument )
     switch( ch->substate )
     {
     	default:
-    	        if (  (ship = ship_from_engine(ch->in_room->vnum))  == NULL )
+    	        if (  (ship = ship_from_engine(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RYou must be in the engine room of a ship to do that!\n",ch);
     	            return;
@@ -1871,7 +1871,7 @@ void do_sabotage(CHAR_DATA *ch, char *argument )
     	case SUB_TIMER_DO_ABORT:
     		STR_DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
-    		if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
+    		if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
     		      return;
     	        send_to_char("&RYou are distracted and fail to finish your work.\n", ch);
     		return;
@@ -1879,7 +1879,7 @@ void do_sabotage(CHAR_DATA *ch, char *argument )
 
     ch->substate = SUB_NONE;
     
-    if ( (ship = ship_from_engine(ch->in_room->vnum)) == NULL )
+    if ( (ship = ship_from_engine(ch->game, ch->in_room->vnum)) == NULL )
     {  
        return;
     }
@@ -1949,9 +1949,9 @@ void do_fuel(CHAR_DATA *ch, char *argument )
   
   argument = one_argument( argument, arg1 );
   
-  if (  (ship = ship_from_hanger(ch->in_room->vnum))  == NULL )
+  if (  (ship = ship_from_hanger(ch->game, ch->in_room->vnum))  == NULL )
   {
-    if ( (ship = ship_from_entrance(ch->in_room->vnum)) == NULL )
+    if ( (ship = ship_from_entrance(ch->game, ch->in_room->vnum)) == NULL )
     {
       send_to_char("&RYou must be in the hanger or the entrance of a ship to do that!\n",ch);
       return;
@@ -2027,7 +2027,7 @@ void do_renameship( CHAR_DATA *ch, char *argument )
 {
    SHIP_DATA *ship;
    CLAN_DATA *clan;
-      if ( (ship = ship_from_cockpit( ch->in_room->vnum ) ) == NULL)
+      if ( (ship = ship_from_cockpit( ch->game, ch->in_room->vnum ) ) == NULL)
       {            
            send_to_char( "You must be in the cockpit of a ship to do that!\n", ch);
            return;
@@ -2040,7 +2040,7 @@ void do_renameship( CHAR_DATA *ch, char *argument )
            return;
         }
 
-      if( get_ship( argument ) != NULL )
+      if( get_ship( ch->game, argument ) != NULL )
         {            
            send_to_char( "&RImperial Database: &WA ship already exists of that name.\n", ch);
            return;
@@ -2451,7 +2451,7 @@ void do_install_module( CHAR_DATA *ch, char *argument )
 
     if ( obj->value[1] == MOD_FLAG )
     {
-      if ( (ship = ship_from_room( ch->in_room->vnum )) == NULL )
+      if ( (ship = ship_from_room( ch->game, ch->in_room->vnum )) == NULL )
       {
 	send_to_char( "You need to be in the room you want to install this item!\n", ch );
 	return;
@@ -2472,7 +2472,7 @@ void do_install_module( CHAR_DATA *ch, char *argument )
 
     if ( arg2[0] == '\0' && !ship )
     {
-      if( ( ship = ship_from_engine( ch->in_room->vnum ) ) == NULL )
+      if( ( ship = ship_from_engine( ch->game, ch->in_room->vnum ) ) == NULL )
       {
 	send_to_char( "Install what in what?\n", ch );
 	return;
@@ -2512,7 +2512,7 @@ void do_install_module( CHAR_DATA *ch, char *argument )
           }
       }
   if ( obj->value[1] == MOD_FLAG )
-    if ( ship == ship_from_cockpit( ch->in_room->vnum ) )
+    if ( ship == ship_from_cockpit( ch->game, ch->in_room->vnum ) )
     {
       send_to_char( "You can not place this in a control room of a ship.\n",ch);
       return;
@@ -2849,7 +2849,7 @@ void do_remove_module( CHAR_DATA *ch, char *argument )
 
     if ( arg2[0] == '\0' || !strcmp( arg2, "here" ) )
     {
-      if( ( ship = ship_from_engine( ch->in_room->vnum ) ) == NULL )
+      if( ( ship = ship_from_engine( ch->game, ch->in_room->vnum ) ) == NULL )
       {
 	send_to_char( "Remove what from what ship?\n", ch );
 	return;
@@ -2966,7 +2966,7 @@ void do_show_modules( CHAR_DATA *ch, char *argument )
     if ( ship )
       shipsearch = TRUE;
     if ( !ship )
-        ship = ship_from_cockpit( ch->in_room->vnum );
+        ship = ship_from_cockpit( ch->game, ch->in_room->vnum );
         
     if( !ship )
     {
@@ -3025,7 +3025,7 @@ void do_load( CHAR_DATA *ch, char *argument )
   amountCargo = atoi(arg2);
   typeCargo = atoi(arg1);
   
-  if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+  if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
   {
             if ( arg3[0] == '\0' )
             {
@@ -3185,7 +3185,7 @@ void do_gravityprojector(CHAR_DATA * ch, char *argument)
 
     SPRINTF( arg, "%s", argument );
 
-  if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
+  if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
   {
     send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
     return;
@@ -3210,7 +3210,7 @@ void do_gravityprojector(CHAR_DATA * ch, char *argument)
     return;
   }
 
-  if ( (ship = ship_from_coseat(ch->in_room->vnum)) == NULL )
+  if ( (ship = ship_from_coseat(ch->game, ch->in_room->vnum)) == NULL )
   {
     send_to_char("&RYou need to be in the pilot seat!\n",ch);
     return;
@@ -3366,6 +3366,12 @@ void do_maketemplateship(CHAR_DATA * ch, char *argument)
     return;
   }
 
+  if ( !ch || !ch->game )
+  {
+    send_to_char( "You need to be a game to make a ship template.\n", ch );
+    return;
+  }
+
   templatetype = atoi(arg);
   
   templatestring = get_template_string( templatetype );
@@ -3387,6 +3393,7 @@ void do_maketemplateship(CHAR_DATA * ch, char *argument)
 #endif  
 
   CREATE( ship, SHIP_DATA, 1 );
+  ship->game = ch->game;
 
   LINK( ship, first_ship, last_ship, next, prev );
 
@@ -3439,8 +3446,8 @@ void do_maketemplateship(CHAR_DATA * ch, char *argument)
   ship->mod = ship_mod;
   update_ship_modules(ship);
   
-  ship->shipID = sysdata.currentshipID++;
-  save_sysdata(sysdata);
+  ship->shipID = ch->game->get_sysdata()->get_and_increment_shipID();
+  save_sysdata(*ch->game->get_sysdata());
 
   ship->name          = STRALLOC (templatetypes[templatetype].name);
   ship->owner         = STRALLOC ("");
@@ -3461,7 +3468,7 @@ void do_maketemplateship(CHAR_DATA * ch, char *argument)
     }
   
   save_ship( ship );
-  write_ship_list( );
+  write_ship_list( ch->game );
 
 #if 0
   bug( ship->templatestring, 0 );
@@ -3562,7 +3569,7 @@ void do_ordership( CHAR_DATA *ch, char *argument )
     return;
   }
 
-  if ( get_ship( argument ) )
+  if ( get_ship( ch->game, argument ) )
   {
     ch_printf(ch, "&RA ship already exists by that name.\n");
     return;
@@ -3574,9 +3581,16 @@ void do_ordership( CHAR_DATA *ch, char *argument )
     return;
   }
 
+  if ( !ch || !ch->game )
+  {
+    send_to_char( "You need to be a game to order a ship.\n", ch );
+    return;
+  }
+
   ch->gold -= shipprice;
   
   CREATE( ship, SHIP_DATA, 1 );
+  ship->game = ch->game;
 
   LINK( ship, first_ship, last_ship, next, prev );
 
@@ -3638,8 +3652,8 @@ void do_ordership( CHAR_DATA *ch, char *argument )
   ship->mod = ship_mod;
   update_ship_modules(ship);
   
-  ship->shipID = sysdata.currentshipID++;
-  save_sysdata(sysdata);
+  ship->shipID = ch->game->get_sysdata()->get_and_increment_shipID();
+  save_sysdata(*ch->game->get_sysdata());
 
   ship->name          = STRALLOC (templatetypes[templatetype].name);
   SPRINTF( buf, "template%ld.ship", ship->shipID );
@@ -3664,7 +3678,7 @@ void do_ordership( CHAR_DATA *ch, char *argument )
     }
   
   save_ship( ship );
-  write_ship_list( );
+  write_ship_list( ch->game);
 
 #if 0
   bug( ship->templatestring, 0 );
@@ -3677,7 +3691,7 @@ void do_shipdelete( CHAR_DATA *ch, char *argument )
 {
   SHIP_DATA *ship;
   
-  if ( ( ship = get_ship( argument ) ) == NULL )
+  if ( ( ship = get_ship( ch->game, argument ) ) == NULL )
   {
     ch_printf(ch, "&RNo ship exists with that name.\n");
     return;
@@ -3709,7 +3723,7 @@ void do_transferownership( CHAR_DATA *ch, char *argument )
     return;
   }
   
-  if ( ( ship = get_ship( argument ) ) == NULL )
+  if ( ( ship = get_ship( ch->game, argument ) ) == NULL )
   {
     ch_printf(ch, "&RNo ship exists with that name.\n");
     return;
@@ -3897,7 +3911,7 @@ void do_loadcargo( CHAR_DATA *ch, char *argument )
   cargotype = atoi(arg1);
   nummod = atoi(argument);
   
-  if ( ( ship = ship_from_cockpit( ch->in_room->vnum ) ) == NULL )
+  if ( ( ship = ship_from_cockpit( ch->game, ch->in_room->vnum ) ) == NULL )
   {
     send_to_char( "You must be in a ship's cockpit for that!\n", ch );
     return;
@@ -3915,7 +3929,7 @@ void do_loadcargo( CHAR_DATA *ch, char *argument )
     return;
   }
   
-  spaceobject = spaceobject_from_vnum( ship->location );
+  spaceobject = spaceobject_from_vnum( ship->game, ship->location );
   
   if( !spaceobject )
   {
@@ -3992,13 +4006,13 @@ void do_checkcargo( CHAR_DATA *ch, char *argument )
   SPACE_DATA *spaceobject = NULL;
   CARGO_DATA_LIST *cargolist;
   int defprice;
-  if ( ( ship = ship_from_cockpit( ch->in_room->vnum ) ) == NULL )
+  if ( ( ship = ship_from_cockpit( ch->game, ch->in_room->vnum ) ) == NULL )
   {
     send_to_char( "You must be in a ship's cockpit to access that information.\n", ch );
     return;
   }
 
-  spaceobject = spaceobject_from_vnum( ship->location );
+  spaceobject = spaceobject_from_vnum( ship->game, ship->location );
   
   if( !spaceobject )
   {
@@ -4054,7 +4068,7 @@ void do_transfercargo( CHAR_DATA *ch, char *argument )
   cargotype = atoi(arg1);
   nummod = atoi(arg2);
   
-  if ( ( ship = ship_from_cockpit( ch->in_room->vnum ) ) == NULL )
+  if ( ( ship = ship_from_cockpit( ch->game, ch->in_room->vnum ) ) == NULL )
   {
     send_to_char( "You must be in your ship's cockpit for that!\n", ch );
     return;
@@ -4085,11 +4099,11 @@ void do_transfercargo( CHAR_DATA *ch, char *argument )
     return;
   }
   
-  eShip = ship_from_hanger( ship->location );
+  eShip = ship_from_hanger( ship->game, ship->location );
 
   if ( !eShip )
   {
-    eShip = get_ship( argument );
+    eShip = get_ship( ship->game, argument );
 
     if( eShip && eShip->docked != ship )
       eShip = NULL;
@@ -4146,7 +4160,7 @@ void do_unloadcargo( CHAR_DATA *ch, char *argument )
   cargotype = atoi(arg1);
   nummod = atoi(argument);
   
-  if ( ( ship = ship_from_cockpit( ch->in_room->vnum ) ) == NULL )
+  if ( ( ship = ship_from_cockpit( ch->game, ch->in_room->vnum ) ) == NULL )
   {
     send_to_char( "You must be in a ship's cockpit for that!\n", ch );
     return;
@@ -4164,7 +4178,7 @@ void do_unloadcargo( CHAR_DATA *ch, char *argument )
     return;
   }
   
-  spaceobject = spaceobject_from_vnum( ship->location );
+  spaceobject = spaceobject_from_vnum( ship->game, ship->location );
   
   if( !spaceobject )
   {
@@ -4232,13 +4246,13 @@ void do_restoreship( CHAR_DATA *ch, char *argument )
 */  
   rename( buf, buf2 );
 
-  if (!load_ship_file( argument ) )
+  if (!load_ship_file( ch->game,argument ) )
   {
     send_to_char( "Error loading file.\n", ch );
     return;
   }
 
-  write_ship_list( );
+  write_ship_list( ch->game );
 	
   return;
 }
@@ -4415,7 +4429,7 @@ void do_cargo( CHAR_DATA *ch, char *argument )
     }
       
     argument = one_argument( argument, arg3 );
-    spaceobject = spaceobject_from_name( arg2 );
+    spaceobject = spaceobject_from_name( ch->game, arg2 );
     if ( !spaceobject )
     {
       ch_printf( ch, "Starsystem %s not found.\n", arg2 );
@@ -4714,7 +4728,7 @@ void do_checkareaships ( CHAR_DATA *ch, char *argument )
   }
   
   for ( roomvnum = tarea->low_r_vnum; roomvnum < tarea->hi_r_vnum; roomvnum++ )
-  {    if( ( ship = ship_from_cockpit( roomvnum ) ) != NULL )
+  {    if( ( ship = ship_from_cockpit( ch->game, roomvnum ) ) != NULL )
     {
       ch_printf( ch, "Ship: %s %s, Room: %d\n", ship->name, ship->personalname, roomvnum );
       shipsfound++;

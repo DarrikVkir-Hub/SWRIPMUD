@@ -387,7 +387,7 @@ void decorate_room( ROOM_INDEX_DATA *room )
 /*
  * Remove any unused virtual rooms				-Thoric
  */
-void clear_vrooms( )
+void clear_vrooms( GameContext *game )
 {
     int hash;
     ROOM_INDEX_DATA *room, *room_next, *prev;

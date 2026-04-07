@@ -183,7 +183,7 @@ int max_fight( CHAR_DATA *ch )
  * in your logs... then you can comment out some of the checks without
  * worry.
  */
-void violence_update( void )
+void violence_update( GameContext *game )
 {
     char buf[MAX_STRING_LENGTH];
     CHAR_DATA *ch;
@@ -198,6 +198,8 @@ void violence_update( void )
     lst_ch = NULL;
     for ( ch = last_char; ch; lst_ch = ch, ch = gch_prev )
     {
+        if (!ch->game)
+            ch->game = game;
 	set_cur_char( ch );
 
 	if ( ch == first_char && ch->prev )
@@ -783,7 +785,7 @@ ch_ret one_hit( CHAR_DATA *ch, CHAR_DATA *victim, int dt )
 	if ( prof_gsn != -1 )
 	  learn_from_failure( ch, prof_gsn );
 	damage( ch, victim, 0, dt );
-	tail_chain( );
+	tail_chain( ch->game );
 	return rNONE;
     }
 
@@ -1139,7 +1141,7 @@ ch_ret one_hit( CHAR_DATA *ch, CHAR_DATA *victim, int dt )
          }
      }
      
-    tail_chain( );
+    tail_chain( ch->game);
     return retcode;
 }
 
@@ -1743,7 +1745,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
 	  if( victim->in_room && victim->in_room->area )
 	    boost_economy( victim->in_room->area, victim->gold );
 
-	if ( IS_SET( sysdata.save_flags, SV_KILL ) )
+	if ( BV_IS_SET( sysdata.save_flags, SV_KILL ) )
 	   save_char_obj( ch );
 	return rVICT_DIED;
     }
@@ -1794,7 +1796,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
     if ( !npcvict && BV_IS_SET( victim->act, PLR_FLEE ) )
 	do_flee( victim, "" );
 
-    tail_chain( );
+    tail_chain( ch->game );
     return rNONE;
 }
 
@@ -2369,7 +2371,7 @@ else
     victim->pcdata->condition[COND_FULL]   = 12;
     victim->pcdata->condition[COND_THIRST] = 12;
     
-    if ( IS_SET( sysdata.save_flags, SV_DEATH ) )
+    if ( BV_IS_SET( sysdata.save_flags, SV_DEATH ) )
 	save_char_obj( victim );
     return;
 

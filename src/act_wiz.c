@@ -29,14 +29,31 @@
 #include "mud.h"
 
 #define RESTORE_INTERVAL 21600
-
+/*
 char * const save_flag[] =
 { "death", "kill", "passwd", "drop", "put", "give", "auto", "zap",
 "auction", "get", "receive", "idle", "backup", "r13", "r14", "r15", "r16",
 "r17", "r18", "r19", "r20", "r21", "r22", "r23", "r24", "r25", "r26", "r27",
 "r28", "r29", "r30", "r31" };
+*/
+const flag_name save_flag[] =
+{
+    { SV_DEATH,    "death"   },
+    { SV_KILL,     "kill"    },
+    { SV_PASSCHG,  "passwd"  },
+    { SV_DROP,     "drop"    },
+    { SV_PUT,      "put"     },
+    { SV_GIVE,     "give"    },
+    { SV_AUTO,     "auto"    },
+    { SV_ZAPDROP,  "zap"     },
+    { SV_AUCTION,  "auction" },
+    { SV_GET,      "get"     },
+    { SV_RECEIVE,  "receive" },
+    { SV_IDLE,     "idle"    },
+    { SV_BACKUP,   "backup"  },
 
-
+    { (size_t)-1, nullptr } // terminator
+};
 
 /*
  * Local functions.
@@ -67,10 +84,10 @@ bool check_for_immroom( CHAR_DATA *ch, ROOM_INDEX_DATA *location)
 
 int get_saveflag( char *name )
 {
-    unsigned int x;
+    size_t x;
 
-    for ( x = 0; x < sizeof(save_flag) / sizeof(save_flag[0]); x++ )
-      if ( !str_cmp( name, save_flag[x] ) )
+    for ( x = 0; x < SV_MAX; x++ )
+      if ( !str_cmp( name, save_flag[x].name ) )
         return x;
     return -1;
 }
@@ -2310,6 +2327,12 @@ void do_reboot( CHAR_DATA *ch, char *argument )
 	return;
     }
 
+    if (!ch->game)
+    {
+        send_to_char( "You don't have a game set.\n", ch );
+        return;
+    }
+
     if ( auction->item )
 	do_auction( ch, "stop");
 
@@ -2318,8 +2341,8 @@ void do_reboot( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp(argument, "and sort skill table") )
     {
-	sort_skill_table();
-	save_skill_table();
+        sort_skill_table(ch->game);
+        save_skill_table(ch->game);
     }
 
     /* Save all characters before booting. */
@@ -2615,8 +2638,12 @@ void do_minvoke( CHAR_DATA *ch, char *argument )
 	send_to_char( "No mobile has that vnum.\n", ch );
 	return;
     }
-
-    victim = create_mobile( pMobIndex );
+    if (!ch->game)
+    {
+      send_to_char( "You must be in a game to invoke a mobile.\n", ch );
+      return;
+    }
+    victim = create_mobile( ch->game, pMobIndex );
     char_to_room( victim, ch->in_room );
     act( AT_IMMORT, "$n has created $N!", ch, NULL, victim, TO_ROOM );
     send_to_char( "Ok.\n", ch );
@@ -2908,6 +2935,11 @@ void do_balzhur( CHAR_DATA *ch, char *argument )
 	send_to_char( "I wouldn't even think of that if I were you...\n", ch );
 	return;
     }
+    if (!ch->game)
+    {
+      send_to_char( "You must be in a game to balzhur someone.\n", ch );
+      return;
+    }
 
     victim->top_level = 1;
     victim->trust = 0;
@@ -2972,7 +3004,7 @@ Thoric.\n",
  */
 
  
-        make_wizlist();
+        make_wizlist(ch->game);
 	do_help(victim, "M_BALZHUR_" );
 	set_char_color( AT_WHITE, victim );
 	send_to_char( "You awake after a long period of time...\n", victim );
@@ -3966,9 +3998,14 @@ void do_wizlock( CHAR_DATA *ch, char *argument )
 
 void do_noresolve( CHAR_DATA *ch, char *argument )
 {
-    sysdata.NO_NAME_RESOLVING = !sysdata.NO_NAME_RESOLVING;
+    if ( !ch->game || !ch->game->get_sysdata() )
+    {
+        send_to_char( "No game data set to you.\n", ch );
+        return;
+    }
+    ch->game->get_sysdata()->no_name_resolving = !ch->game->get_sysdata()->no_name_resolving;
 
-    if ( sysdata.NO_NAME_RESOLVING )
+    if ( ch->game->get_sysdata()->no_name_resolving )
 	send_to_char( "Name resolving disabled.\n", ch );
     else
 	send_to_char( "Name resolving enabled.\n", ch );
@@ -4066,7 +4103,12 @@ void do_force( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    mobsonly = get_trust( ch ) < sysdata.level_forcepc; 
+    if ( !ch->game || !ch->game->get_sysdata() )
+    {
+        send_to_char( "No game data set to you.\n", ch );
+        return;
+    }
+    mobsonly = get_trust( ch ) < ch->game->get_sysdata()->level_forcepc; 
 
     if ( !str_cmp( arg, "all" ) )
     {
@@ -4596,7 +4638,7 @@ void do_loadup( CHAR_DATA *ch, char *argument )
 		  obj_to_room( tobj, storeroom );
 	    }
 	    
-	    release_supermob();
+	    release_supermob(ch->game);
 
          }
     }
@@ -4942,6 +4984,12 @@ void do_set_boot_time( CHAR_DATA *ch, char *argument)
 	return;
     }
 
+    if ( !ch->game || !ch->game->get_sysdata() )
+    {
+        send_to_char( "You have to have a game to set the boot time.\n", ch );
+        return;
+    }      
+
     if ( !str_cmp(arg, "time") )
     {
       struct tm *now_time;
@@ -5004,8 +5052,8 @@ void do_set_boot_time( CHAR_DATA *ch, char *argument)
       new_boot_time = update_time(now_time);
       new_boot_struct = *new_boot_time;
       new_boot_time = &new_boot_struct;
-      reboot_check(mktime(new_boot_time));
-      get_reboot_string();
+      reboot_check(ch->game, mktime(new_boot_time));
+      get_reboot_string(ch->game);
 
       ch_printf(ch, "Boot time set to %s\n", reboot_time);
       check = TRUE;
@@ -5034,7 +5082,7 @@ void do_set_boot_time( CHAR_DATA *ch, char *argument)
       set_boot_time->manual = atoi(arg1);
       ch_printf(ch, "Manual bit set to %s\n", arg1);
       check = TRUE;
-      get_reboot_string();
+      get_reboot_string(ch->game);
       return;
     }
 
@@ -5051,7 +5099,8 @@ void do_set_boot_time( CHAR_DATA *ch, char *argument)
       new_boot_time->tm_sec = 0;
       new_boot_time = update_time(new_boot_time);
 
-      sysdata.DENY_NEW_PLAYERS = FALSE;
+
+      ch->game->get_sysdata()->deny_new_players = FALSE;
 
       send_to_char("Reboot time set back to normal.\n", ch);
       check = TRUE;
@@ -5065,7 +5114,7 @@ void do_set_boot_time( CHAR_DATA *ch, char *argument)
 
     else
     {
-      get_reboot_string();
+      get_reboot_string(ch->game);
       new_boot_time_t = mktime(new_boot_time);
     }
 }
@@ -5683,6 +5732,14 @@ void do_cset( CHAR_DATA *ch, char *argument )
 
   set_char_color( AT_IMMORT, ch );
 
+  if (ch->game == NULL || ch->game->get_sysdata() == NULL)
+  {
+    send_to_char( "No game data set to you, so system settings cannot be displayed or set.\n", ch );
+    return;
+  }
+
+  SYSTEM_DATA &sysdata = *ch->game->get_sysdata();
+
   if (argument[0] == '\0')
   {
     ch_printf(ch, "Mail:\n  Read all mail: %d. Read mail for free: %d. Write mail for free: %d.\n",
@@ -5695,7 +5752,7 @@ void do_cset( CHAR_DATA *ch, char *argument )
     ch_printf(ch, "Building:\n  Prototype modification: %d.  Player msetting: %d.\n",
 	    sysdata.level_modify_proto, sysdata.level_mset_player );
     ch_printf(ch, "Guilds:\n  Overseer: %s.  Advisor: %s.\n", 
-            sysdata.guild_overseer, sysdata.guild_advisor );
+            sysdata.get_guild_overseer(), sysdata.get_guild_advisor() );
     ch_printf(ch, "Other:\n  Force on players: %d.  ", sysdata.level_forcepc);
     ch_printf(ch, "Private room override: %d.\n", sysdata.level_override_private);
     ch_printf(ch, "  Penalty to regular stun chance: %d.  ", sysdata.stun_regular );
@@ -5706,7 +5763,7 @@ void do_cset( CHAR_DATA *ch, char *argument )
     ch_printf(ch, "Percent damage mob vs. mob: %d.\n", sysdata.dam_mob_vs_mob );
     ch_printf(ch, "  Get object without take flag: %d.  ", sysdata.level_getobjnotake);
     ch_printf(ch, "Autosave frequency (minutes): %d.\n", sysdata.save_frequency );
-    ch_printf(ch, "  Save flags: %s\n", flag_string( sysdata.save_flags, save_flag ) );
+    ch_printf(ch, "  Save flags: %s\n", bitset_to_string( sysdata.save_flags, save_flag ).c_str() );
     return;
   }
 
@@ -5732,7 +5789,7 @@ void do_cset( CHAR_DATA *ch, char *argument )
 	    send_to_char( "Not a save flag.\n", ch );
 	else
 	{
-	    TOGGLE_BIT( sysdata.save_flags, 1 << x );
+	    BV_TOGGLE_BIT( sysdata.save_flags, x );
 	    send_to_char( "Ok.\n", ch );
 	}
 	return;
@@ -5740,15 +5797,13 @@ void do_cset( CHAR_DATA *ch, char *argument )
 
   if (!str_prefix( arg, "guild_overseer" ) )
   {
-    STRFREE( sysdata.guild_overseer );
-    sysdata.guild_overseer = str_dup( argument );
+    sysdata.set_guild_overseer(argument);
     send_to_char("Ok.\n", ch);      
     return;
   }
   if (!str_prefix( arg, "guild_advisor" ) )
   {
-    STRFREE( sysdata.guild_advisor );
-    sysdata.guild_advisor = str_dup( argument );
+    sysdata.set_guild_advisor(argument);
     send_to_char("Ok.\n", ch);      
     return;
   }
@@ -5897,7 +5952,7 @@ void do_cset( CHAR_DATA *ch, char *argument )
   }
 }
 
-void get_reboot_string(void)
+void get_reboot_string(GameContext *game)
 {
   SPRINTF(reboot_time, "%s", asctime(new_boot_time));
 }
@@ -6059,7 +6114,7 @@ void do_vsearch( CHAR_DATA *ch, char *argument )
  
     set_pager_color( AT_PLAIN, ch );
     argi=atoi(arg);
-    if (argi<0 || argi>20000)
+    if (argi<0 || argi>32600)
     {
 	send_to_char( "Vnum out of range.\n", ch);
 	return;
@@ -6287,7 +6342,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
 
     if ( get_trust(ch) > LEVEL_LESSER && !str_cmp( arg1, "save" ) )
     {
-	save_socials();
+	save_socials(ch->game);
 	send_to_char( "Saved.\n", ch );
 	return;
     }
@@ -6574,7 +6629,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
 
     if ( get_trust(ch) > LEVEL_GREATER && !str_cmp( arg1, "save" ) )
     {
-	save_commands();
+	save_commands(ch->game);
 	send_to_char( "Saved.\n", ch );
 	return;
     }

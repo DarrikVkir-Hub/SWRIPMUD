@@ -84,7 +84,7 @@ BOUNTY_DATA *get_disintigration( char *target )
     return NULL;
 }
 
-void load_bounties( )
+void load_bounties( GameContext *game )
 {
     FILE *fpList;
     char *target, *poster;
@@ -110,12 +110,13 @@ void load_bounties( )
         target =  feof( fpList ) ? (char*) "$" : fread_word( fpList );
         if ( target[0] == '$' )
         break;
-	CREATE( bounty, BOUNTY_DATA, 1 );
+	    CREATE( bounty, BOUNTY_DATA, 1 );
+        bounty->game = game;
         LINK( bounty, first_disintigration, last_disintigration, next, prev );
-	bounty->target = STRALLOC(target);
+	    bounty->target = STRALLOC(target);
 
-	amount = fread_number( fpList );
-	bounty->amount = amount;
+	    amount = fread_number( fpList );
+	    bounty->amount = amount;
         poster = feof( fpList ) ? (char*)"$" : fread_word( fpList );
 
    	if ( poster[0] == '$' )

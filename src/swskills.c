@@ -2963,12 +2963,17 @@ void add_reinforcements( CHAR_DATA *ch )
            ch->backup_mob == MOB_VNUM_MERC_FORCES )
          { multiplier = 2; }
 
-
+        if (!ch->game)
+        {
+           send_to_char( "You must be in a game to call for reinforcements.\n", ch );            
+           return;
+        }
+         
         send_to_char( "Your reinforcements have arrived.\n", ch );
         for ( mob_cnt = 0 ; mob_cnt < 3 ; mob_cnt++ )
         {
             int ability;
-            mob[mob_cnt] = create_mobile( pMobIndex );
+            mob[mob_cnt] = create_mobile( ch->game, pMobIndex );
             char_to_room( mob[mob_cnt], ch->in_room );
             act( AT_IMMORT, "$N has arrived.", ch, NULL, mob[mob_cnt], TO_ROOM );
             mob[mob_cnt]->top_level = (int) ( multiplier / 1.4 * ch->skill_level[LEADERSHIP_ABILITY]/3 );
@@ -3002,7 +3007,13 @@ void add_reinforcements( CHAR_DATA *ch )
           ch->backup_mob == MOB_VNUM_MERC_ELITE )
        { multiplier = 2; }
 
-        mob = create_mobile( pMobIndex );
+         if (!ch->game)
+         {
+            send_to_char( "You must be in a game to call for reinforcements.\n", ch );            
+            return;
+         }
+
+        mob = create_mobile( ch->game, pMobIndex );
         char_to_room( mob, ch->in_room );
         if ( ch->pcdata && ch->pcdata->clan )
         {
@@ -4027,7 +4038,7 @@ void do_hijack( CHAR_DATA *ch, char *argument )
     CHAR_DATA *p, *p_prev, *victim;
 
 
-             if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
+             if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
              {
                  send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
                  return;
@@ -4039,7 +4050,7 @@ void do_hijack( CHAR_DATA *ch, char *argument )
                  return;
              }
              
-             if ( (ship = ship_from_pilotseat(ch->in_room->vnum)) == NULL )  
+             if ( (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum)) == NULL )  
              {
                  send_to_char("&RYou don't seem to be in the pilot seat!\n",ch);
                  return;

@@ -266,7 +266,7 @@ void do_get( CHAR_DATA *ch, char *argument )
 	    get_obj( ch, obj, NULL );
 	    if ( char_died(ch) )
 		return;
-	    if ( IS_SET( sysdata.save_flags, SV_GET ) )
+	    if ( BV_IS_SET( sysdata.save_flags, SV_GET ) )
 	    {
 		save_char_obj( ch );
 	    	if( BV_IS_SET( ch->in_room->room_flags, ROOM_PLR_HOME ) ) 
@@ -312,7 +312,7 @@ void do_get( CHAR_DATA *ch, char *argument )
 		    ||   ch->carry_weight >= can_carry_w( ch )
 		    ||   (number && cnt >= number) )
 		    {
-			if ( IS_SET(sysdata.save_flags, SV_GET)
+			if ( BV_IS_SET(sysdata.save_flags, SV_GET)
 			&&  !char_died(ch) )
 			    {
 				save_char_obj( ch );
@@ -334,7 +334,7 @@ void do_get( CHAR_DATA *ch, char *argument )
 		  act( AT_PLAIN, "I see no $T here.", ch, NULL, chk, TO_CHAR );
 	    }
 	    else
-	    if ( IS_SET( sysdata.save_flags, SV_GET ) )
+	    if ( BV_IS_SET( sysdata.save_flags, SV_GET ) )
 	    {
 		save_char_obj( ch );
 	    	if( BV_IS_SET( ch->in_room->room_flags, ROOM_PLR_HOME ) ) 
@@ -404,7 +404,7 @@ void do_get( CHAR_DATA *ch, char *argument )
 	    check_for_trap( ch, container, TRAP_GET );
 	    if ( char_died(ch) )
 	      return;
-	    if ( IS_SET( sysdata.save_flags, SV_GET ) )
+	    if ( BV_IS_SET( sysdata.save_flags, SV_GET ) )
 	    {
 		save_char_obj( ch );
 	    	if( BV_IS_SET( ch->in_room->room_flags, ROOM_PLR_HOME ) ) 
@@ -452,7 +452,7 @@ void do_get( CHAR_DATA *ch, char *argument )
 				{
 					if( container->item_type == ITEM_CORPSE_PC )
 						write_corpses( NULL, container->short_descr + 14 );
-					if( found && IS_SET( sysdata.save_flags, SV_GET ) )
+					if( found && BV_IS_SET( sysdata.save_flags, SV_GET ) )
 						save_char_obj( ch );
 					return;
 				}
@@ -473,7 +473,7 @@ void do_get( CHAR_DATA *ch, char *argument )
 	      check_for_trap( ch, container, TRAP_GET );
 	    if ( char_died(ch) )
 		return;
-	    if ( found && IS_SET( sysdata.save_flags, SV_GET ) )
+	    if ( found && BV_IS_SET( sysdata.save_flags, SV_GET ) )
 	    {
 		save_char_obj( ch );
 	    	if( BV_IS_SET( ch->in_room->room_flags, ROOM_PLR_HOME ) ) 
@@ -540,7 +540,7 @@ void do_put( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( !container->carried_by && IS_SET( sysdata.save_flags, SV_PUT ) )
+    if ( !container->carried_by && BV_IS_SET( sysdata.save_flags, SV_PUT ) )
 	save_char = TRUE;
 
     if ( IS_OBJ_STAT(container, ITEM_COVERING) )
@@ -794,7 +794,7 @@ void do_drop( CHAR_DATA *ch, char *argument )
 	    act( AT_ACTION, "$n drops some credits.", ch, NULL, NULL, TO_ROOM );
 	    obj_to_room( create_money( number ), ch->in_room );
 	    send_to_char( "OK.\n", ch );
-	    if ( IS_SET( sysdata.save_flags, SV_DROP ) )
+	    if ( BV_IS_SET( sysdata.save_flags, SV_DROP ) )
 	    {
 		save_char_obj( ch );
 	    	if( BV_IS_SET( ch->in_room->room_flags, ROOM_PLR_HOME ) ) 
@@ -910,7 +910,7 @@ void do_drop( CHAR_DATA *ch, char *argument )
 		    ch, NULL, chk, TO_CHAR );
 	}
     }
-    if ( IS_SET( sysdata.save_flags, SV_DROP ) )
+    if ( BV_IS_SET( sysdata.save_flags, SV_DROP ) )
 	    {
 		save_char_obj( ch );
 	    	if( BV_IS_SET( ch->in_room->room_flags, ROOM_PLR_HOME ) ) 
@@ -990,9 +990,9 @@ void do_give( CHAR_DATA *ch, char *argument )
 	act( AT_ACTION, "You give $N some credits.",  ch, NULL, victim, TO_CHAR    );
 	send_to_char( "OK.\n", ch );
 	mprog_bribe_trigger( victim, ch, amount );
-	if ( IS_SET( sysdata.save_flags, SV_GIVE ) && !char_died(ch) )
+	if ( BV_IS_SET( sysdata.save_flags, SV_GIVE ) && !char_died(ch) )
 	  save_char_obj(ch);
-	if ( IS_SET( sysdata.save_flags, SV_RECEIVE ) && !char_died(victim) )
+	if ( BV_IS_SET( sysdata.save_flags, SV_RECEIVE ) && !char_died(victim) )
 	  save_char_obj(victim);
 	return;
     }
@@ -1063,9 +1063,9 @@ void do_give( CHAR_DATA *ch, char *argument )
     obj = obj_to_char( obj, victim );
                               
     mprog_give_trigger( victim, ch, obj );
-    if ( IS_SET( sysdata.save_flags, SV_GIVE ) && !char_died(ch) )
+    if ( BV_IS_SET( sysdata.save_flags, SV_GIVE ) && !char_died(ch) )
 	save_char_obj(ch);
-    if ( IS_SET( sysdata.save_flags, SV_RECEIVE ) && !char_died(victim) )
+    if ( BV_IS_SET( sysdata.save_flags, SV_RECEIVE ) && !char_died(victim) )
 	save_char_obj(victim);
     return;
 }
@@ -2514,7 +2514,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
                         auction->item->short_descr);
         talk_auction (buf);
         obj_to_char (auction->item, auction->seller);
-	if ( IS_SET( sysdata.save_flags, SV_AUCTION ) )
+	if ( BV_IS_SET( sysdata.save_flags, SV_AUCTION ) )
 	    save_char_obj(auction->seller);
         auction->item = NULL;
         if (auction->buyer != NULL && auction->buyer != auction->seller) /* return money to the buyer */
@@ -2583,7 +2583,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
                 auction->buyer->gold += auction->bet;
 
             ch->gold -= newbet; /* substract the gold - important :) */
-	    if ( IS_SET( sysdata.save_flags, SV_AUCTION ) )
+	    if ( BV_IS_SET( sysdata.save_flags, SV_AUCTION ) )
 		save_char_obj(ch);
             auction->buyer = ch;
             auction->bet   = newbet;
@@ -2662,7 +2662,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
     case ITEM_CONTAINER:
 	separate_obj(obj);
 	obj_from_char (obj);
-	if ( IS_SET( sysdata.save_flags, SV_AUCTION ) )
+	if ( BV_IS_SET( sysdata.save_flags, SV_AUCTION ) )
 	    save_char_obj(ch);
 	auction->item = obj;
 	auction->bet = 0;

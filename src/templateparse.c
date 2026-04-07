@@ -109,7 +109,7 @@ ROOM_INDEX_DATA *make_template_room(int rtype, SHIP_DATA *ship, int roomnum)
     // Alright, so that formula didn't work... so I'm going for a straight sequencial system.
     roomvnum    = (ship->shipID*100) + roomnum;
     
-    room = make_room( roomvnum );
+    room = make_room( ship->game, roomvnum );
     
     templateroom = get_room_index( strvnum );
     

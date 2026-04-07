@@ -529,7 +529,7 @@ void interpret( CHAR_DATA *ch, char *argument )
 		(int) (time_used.tv_sec),(int) (time_used.tv_usec) );
     }
 
-    tail_chain( );
+    tail_chain( ch->game );
 }
 
 CMDTYPE *find_command( char *command )

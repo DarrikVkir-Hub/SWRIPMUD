@@ -1518,7 +1518,7 @@ int skill_comp( SKILLTYPE **sk1, SKILLTYPE **sk2 )
 /*
  * Sort the skill table with qsort
  */
-void sort_skill_table()
+void sort_skill_table( GameContext *game )
 {
     log_string( "Sorting skill table..." );
     qsort( &skill_table[1], top_sn-1, sizeof( SKILLTYPE * ),
@@ -1615,7 +1615,7 @@ void fwrite_skill( FILE *fpout, SKILLTYPE *skill )
 /*
  * Save the skill table to disk
  */
-void save_skill_table()
+void save_skill_table(GameContext *game)
 {
     int x;
     FILE *fpout;
@@ -1641,7 +1641,7 @@ void save_skill_table()
 /*
  * Save the herb table to disk
  */
-void save_herb_table()
+void save_herb_table(GameContext *game)
 {
     int x;
     FILE *fpout;
@@ -1667,7 +1667,7 @@ void save_herb_table()
 /*
  * Save the socials to disk
  */
-void save_socials()
+void save_socials(GameContext *game)
 {
     FILE *fpout;
     SOCIALTYPE *social;
@@ -1722,7 +1722,7 @@ int get_skill( char *skilltype )
 /*
  * Save the commands to disk
  */
-void save_commands()
+void save_commands(GameContext *game)
 {
     FILE *fpout;
     CMDTYPE *command;
@@ -1920,7 +1920,7 @@ SKILLTYPE *fread_skill( FILE *fp )
     }
 }
 
-void load_skill_table()
+void load_skill_table( GameContext *game )
 {
     FILE *fp;
 
@@ -1975,7 +1975,7 @@ void load_skill_table()
     }
 }
 
-void load_herb_table()
+void load_herb_table( GameContext *game)
 {
     FILE *fp;
 
@@ -2101,7 +2101,7 @@ void fread_social( FILE *fp )
     }
 }
 
-void load_socials()
+void load_socials( GameContext *game)
 {
     FILE *fp;
 
@@ -2231,7 +2231,7 @@ void fread_command( FILE *fp )
     }
 }
 
-void load_commands()
+void load_commands( GameContext *game )
 {
     FILE *fp;
 

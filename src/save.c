@@ -64,9 +64,9 @@ static	OBJ_DATA *	rgObjNest	[MAX_NEST];
 void	fwrite_char	args( ( CHAR_DATA *ch, FILE *fp ) );
 void	fread_char	args( ( CHAR_DATA *ch, FILE *fp, bool preload) );
 void	write_corpses	args( ( CHAR_DATA *ch, char *name ) );
-CHAR_DATA *  fread_mobile( FILE *fp );
+CHAR_DATA *  fread_mobile( GameContext *game, FILE *fp );
 void write_char_mobile( CHAR_DATA *ch , char *argument );
-void read_char_mobile( char *argument );
+void read_char_mobile( GameContext *game, char *argument );
 void fwrite_mobile( FILE *fp, CHAR_DATA *mob );
 
 
@@ -190,7 +190,7 @@ void save_char_obj( CHAR_DATA *ch )
     /*
      * Auto-backup pfile (can cause lag with high disk access situtations
      */
-    if ( IS_SET( sysdata.save_flags, SV_BACKUP ) )
+    if ( BV_IS_SET( sysdata.save_flags, SV_BACKUP ) )
     {
 		SPRINTF( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
 					capitalize( ch->name ) );
@@ -291,7 +291,7 @@ void save_clone( CHAR_DATA *ch )
     /*
      * Auto-backup pfile (can cause lag with high disk access situtations
      */
-    if ( IS_SET( sysdata.save_flags, SV_BACKUP ) )
+    if ( BV_IS_SET( sysdata.save_flags, SV_BACKUP ) )
     {
 	SPRINTF( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
 				 capitalize( ch->name ) );
@@ -915,12 +915,14 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
 //  char buf[MAX_INPUT_LENGTH];
     
     CREATE( ch, CHAR_DATA, 1 );
+	ch->game = d->game;
     for ( x = 0; x < MAX_WEAR; x++ )
 	for ( i = 0; i < MAX_LAYERS; i++ )
 	    save_equipment[x][i] = NULL;
     clear_char( ch );
     loading_char = ch;
 
+	ch->game = d->game;
 	ch->pcdata = new PC_DATA();
     d->character			= ch;
     ch->on				= NULL;
@@ -1030,7 +1032,13 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
 	    if ( !strcmp( word, "MOBILE") )
 	    {
 		CHAR_DATA *mob;
-		mob = fread_mobile( fp );
+		if (!d->game)
+		{
+		  bug( "Load_char_obj: Mobile not loaded as no game was found on the char.", 0 );
+		  bug( name, 0 );
+		  break;
+		}
+		mob = fread_mobile( d->game, fp );
 		ch->pcdata->pet = mob;
 		mob->master = ch;
 		BV_SET_BIT(mob->affected_by, AFF_CHARM);
@@ -2029,6 +2037,7 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
     ROOM_INDEX_DATA *room;
 
     CREATE( obj, OBJ_DATA, 1 );
+	obj->game = ch->game;
     obj->count		= 1;
     obj->wear_loc	= -1;
     obj->weight		= 1;
@@ -2495,7 +2504,7 @@ void write_corpses( CHAR_DATA *ch, char *name )
   return;
 }
 
-void load_corpses( void )
+void load_corpses( GameContext *game )
 {
   DIR *dp;
   struct dirent *de;
@@ -2561,7 +2570,7 @@ void load_corpses( void )
   return;
 }
 
-void load_storerooms( void )
+void load_storerooms( GameContext *game )
 {
   DIR *dp;
   struct dirent *de;
@@ -2654,7 +2663,7 @@ if ( !(dp = opendir(STOREROOM_DIR)) )
 		  obj_to_room( tobj, storeroom );
 	    }
 	    
-	    release_supermob();
+	    release_supermob(game);
 
          }
     }
@@ -2703,7 +2712,7 @@ void save_storeroom( ROOM_INDEX_DATA *room )
 }
 
 
-void load_vendors( void )
+void load_vendors( GameContext *game )
 {
   DIR *dp;
   CHAR_DATA *mob;
@@ -2749,7 +2758,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
         }
         word = fread_word( fpArea );
 		  if ( !strcmp(word, "VENDOR" ) )
-          mob = fread_vendor( fpArea );
+          mob = fread_vendor( game, fpArea );
         else if ( !strcmp(word, "OBJECT" ) )
           fread_obj( mob, fpArea, OS_CARRY );
         else if ( !strcmp( word, "END" ) )
@@ -2803,7 +2812,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
  /*
   * This will read one mobile structure pointer to by fp --Shaddai
   */
- CHAR_DATA *  fread_mobile( FILE *fp )
+ CHAR_DATA *  fread_mobile( GameContext *game, FILE *fp )
  {
    CHAR_DATA *mob = NULL;
    const char *word;
@@ -2817,7 +2826,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
      int vnum;
      
      vnum = fread_number( fp );
-     mob = create_mobile( get_mob_index(vnum) );
+     mob = create_mobile( game, get_mob_index(vnum) );
      if ( !mob )
      {
  	for ( ; ; ) {
@@ -2943,7 +2952,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
  /*
   * This will read in the saved mobile for a char --Shaddai
   */
- void read_char_mobile( char *argument )
+ void read_char_mobile( GameContext *game, char *argument )
  {
    FILE *fp;
 //   CHAR_DATA *mob;
@@ -2957,7 +2966,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
  	fpReserve = fopen( NULL_FILE, "r" );
  	return;
    }
-   /*mob = */fread_mobile( fp );
+   /*mob = */fread_mobile( game, fp );
   FCLOSE( fp );
   fpReserve = fopen( NULL_FILE, "r" );
 

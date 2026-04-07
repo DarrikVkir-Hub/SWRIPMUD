@@ -26,8 +26,14 @@
 * Not counting the do_declarations, obviously                              *
 ****************************************************************************/
 
-    // In olc.c
     // --------------INDEX----------------
+    // In olc.h
+    // GENERIC template functions for field handling
+    // GENERIC Template Session Control OLC_START OLC_STOP OLC_SET
+    // OLC_SHOW templates - handlers for specific field types
+    // OLC_SHOW main templates
+
+    // In olc.c
     // OLC defines, enums, and structs - moved to olc.h
     // GENERIC - generic format, string, flag handling that is not OLC specific
     // GENERICOLCSTRING generic format functions but dealing with OLC variables
@@ -90,21 +96,22 @@ bool olc_object_parse_affect_value(CHAR_DATA* ch, int loc, const std::string& va
 
 void olc_mobile_reset_pending_proto(OlcSession* sess);
 void olc_mobile_init_pending_proto_from_live(OlcSession* sess, CHAR_DATA* mob);
-bool olc_mobile_set_race(void* obj, const std::string& value);
-bool olc_mobile_set_level(void* obj, const std::string& value);
-bool olc_mobile_set_speaking(void* obj, const std::string& value);
-bool olc_mobile_set_ris_field(void* obj, int CHAR_DATA::*member, const std::string& value);
-std::string olc_mobile_get_ris_field(void* obj, int CHAR_DATA::*member);
-bool olc_mobile_set_legacy_bits_field(void* obj, int CHAR_DATA::*member, const std::string& value, const char* const* table);
-std::string olc_mobile_get_legacy_bits_field(void* obj, int CHAR_DATA::*member, char* const* table);
-bool olc_mobile_set_spec(void* obj, const std::string& value);
-bool olc_mobile_set_spec2(void* obj, const std::string& value);
+bool olc_mobile_set_race(CHAR_DATA* mob, const std::string& value);
+bool olc_mobile_set_level(CHAR_DATA* mob, const std::string& value);
+bool olc_mobile_set_speaking(CHAR_DATA* mob, const std::string& value);
+bool olc_mobile_set_ris_field(CHAR_DATA* mob, int CHAR_DATA::*member, const std::string& value);
+std::string olc_mobile_get_ris_field(CHAR_DATA* mob, int CHAR_DATA::*member);
+bool olc_mobile_set_legacy_bits_field(CHAR_DATA* mob, int CHAR_DATA::*member, const std::string& value, const char* const* table);
+std::string olc_mobile_get_legacy_bits_field(CHAR_DATA* mob, int CHAR_DATA::*member, const char* const* table);
+bool olc_mobile_set_spec(CHAR_DATA* mob, const std::string& value);
+bool olc_mobile_set_spec2(CHAR_DATA* mob, const std::string& value);
+bool olc_mobile_set_long_field(CHAR_DATA* mob, const std::string& value);
 std::string olc_mobile_get_pending_proto_die_field(CHAR_DATA* ch, CHAR_DATA* mob, const std::string& field);
 bool olc_mobile_set_pending_proto_die_field(CHAR_DATA* ch, const std::string& field, const std::string& value);
 bool olc_mobile_in_edit_mode(CHAR_DATA* ch);
 AFFECT_DATA* olc_mobile_find_affect_by_number(CHAR_DATA* mob, int index);
 bool olc_mobile_parse_affect_value( CHAR_DATA* ch, int loc, const std::string& value_text, int& out_value);
-bool olc_mobile_set_long_field(void* obj, const std::string& value);
+
 
 void olc_room_edit_help(CHAR_DATA* ch);
 void olc_room_relink_exits(ROOM_INDEX_DATA* room);
@@ -116,26 +123,24 @@ void olc_show_room_exit_help(CHAR_DATA* ch);
 // OLCSCHEMA Olc Schema declarations
 // --------------------------------------------
 
-OlcField make_olc_object_value_field(
+OlcField<OBJ_DATA> make_olc_object_value_field(
     const char* name,
     int index,
     const char* help)
 {
-    return OlcField{
+    return OlcField<OBJ_DATA>{
         name,
         OlcValueType::INT,
         nullptr,
         OlcMetaType::NONE,
         nullptr,
-        [index](void* obj, const std::string& value) -> bool
+        [index](OBJ_DATA* obj, const std::string& value) -> bool
         {
-            auto o = static_cast<OBJ_DATA*>(obj);
-            return set_int_field(o->value[index], value, INT_MIN, INT_MAX);
+            return set_int_field(obj->value[index], value, INT_MIN, INT_MAX);
         },
-        [index](void* obj) -> std::string
+        [index](OBJ_DATA* obj) -> std::string
         {
-            auto o = static_cast<OBJ_DATA*>(obj);
-            return get_int_field(o->value[index]);
+            return get_int_field(obj->value[index]);
         },
         nullptr,
         nullptr,
@@ -147,217 +152,228 @@ OlcField make_olc_object_value_field(
     };
 }
 
-const OlcSchema* get_room_schema()
+const OlcSchema<ROOM_INDEX_DATA>* get_room_schema()
 {
-    std::vector<OlcField> room_fields =
+    static std::vector<OlcField<ROOM_INDEX_DATA>> room_fields =
     {
-        make_olc_string_field<ROOM_INDEX_DATA>("name", &ROOM_INDEX_DATA::name, "Room Name - Seen at the top when looking at a room" ),
-        make_olc_editor_field<ROOM_INDEX_DATA>("description", &ROOM_INDEX_DATA::description, SUB_ROOM_DESC, 
-            "Room's long description which shows when looking/moving and not +BRIEF" ),
-        make_olc_custom_editor_field<ROOM_INDEX_DATA>("extradesc", OlcMetaType::EXTRA_DESC_LIST, 
+        make_olc_string_field<ROOM_INDEX_DATA>("name", &ROOM_INDEX_DATA::name,
+            "Room Name - Seen at the top when looking at a room"),
+        make_olc_editor_field<ROOM_INDEX_DATA>("description", &ROOM_INDEX_DATA::description,
+            SUB_ROOM_DESC, "Room's long description which shows when looking/moving and not +BRIEF"),
+        make_olc_custom_editor_field<ROOM_INDEX_DATA>("extradesc", OlcMetaType::EXTRA_DESC_LIST,
             [](CHAR_DATA* ch, ROOM_INDEX_DATA* room) -> bool { return olc_room_edit_extradesc_field(ch, room); },
-            [](ROOM_INDEX_DATA* room) -> std::string { return olc_room_extradesc_list_summary(room); }, SUB_ROOM_EXTRA,
+            [](ROOM_INDEX_DATA* room) -> std::string { return olc_room_extradesc_list_summary(room); },
+            SUB_ROOM_EXTRA,
             "These provide extra 'look (keyword)' that can provide more room depth.\nExample: If you describe a painting in the long description, an extra description can describe what the painting looks like when 'look painting'",
-            true ),
-        make_olc_enum_flag_field<ROOM_INDEX_DATA>( "sector_type", &ROOM_INDEX_DATA::sector_type, sect_types, 
-            "Room Terrain - Determines ambiance messages that get sent regularly" ),
-        make_olc_flag_field<ROOM_INDEX_DATA>( "flags", &ROOM_INDEX_DATA::room_flags, r_flags, 
-            "Room flags: type help flags for flag meaning" ),
-        make_olc_int_field<ROOM_INDEX_DATA>( "tunnel", &ROOM_INDEX_DATA::tunnel, "Max occupants that can be in the room", 0, 200 ),
-        make_olc_int_field<ROOM_INDEX_DATA>( "televnum", &ROOM_INDEX_DATA::tele_vnum, "Teleportation Destination", INT_MIN, INT_MAX ),
-        make_olc_int_field<ROOM_INDEX_DATA>( "teledelay", &ROOM_INDEX_DATA::tele_delay, "Delay before teleportation", INT_MIN, INT_MAX ),
-        make_olc_custom_editor_field<ROOM_INDEX_DATA>( "exit", OlcMetaType::EXIT_LIST, 
+            true),
+        make_olc_enum_flag_field<ROOM_INDEX_DATA>("sector_type", &ROOM_INDEX_DATA::sector_type,
+            sect_types, "Room Terrain - Determines ambiance messages that get sent regularly"),
+        make_olc_flag_field<ROOM_INDEX_DATA>("flags", &ROOM_INDEX_DATA::room_flags,
+            r_flags, "Room flags: type help flags for flag meaning"),
+        make_olc_int_field<ROOM_INDEX_DATA>("tunnel", &ROOM_INDEX_DATA::tunnel,
+            "Max occupants that can be in the room", 0, 200),
+        make_olc_int_field<ROOM_INDEX_DATA>("televnum", &ROOM_INDEX_DATA::tele_vnum,
+            "Teleportation Destination", INT_MIN, INT_MAX),
+        make_olc_int_field<ROOM_INDEX_DATA>("teledelay", &ROOM_INDEX_DATA::tele_delay,
+            "Delay before teleportation", INT_MIN, INT_MAX),
+        make_olc_custom_editor_field<ROOM_INDEX_DATA>("exit", OlcMetaType::EXIT_LIST,
             [](CHAR_DATA* ch, ROOM_INDEX_DATA* room) -> bool { return olc_room_edit_exit_field(ch, room); },
             [](ROOM_INDEX_DATA* room) -> std::string { return olc_room_exit_list_summary(room); },
-            0, "Manage room exits - type exit ? for more info", true ),
-        make_olc_custom_editor_field<ROOM_INDEX_DATA>( "bexit", OlcMetaType::EXIT_LIST,
+            0, "Manage room exits - type exit ? for more info", true),
+        make_olc_custom_editor_field<ROOM_INDEX_DATA>("bexit", OlcMetaType::EXIT_LIST,
             [](CHAR_DATA* ch, ROOM_INDEX_DATA* room) -> bool { return olc_room_edit_bexit_field(ch, room); },
             [](ROOM_INDEX_DATA* room) -> std::string { return olc_room_exit_list_summary(room); },
-            0, "Manage bidirectional exit changes - type bexit ? for more info", true ),
+            0, "Manage bidirectional exit changes - type bexit ? for more info", true),
     };
 
-    static OlcSchema room_schema =
-    {
-        "room",
-        &room_fields
-    };
-
+    static OlcSchema<ROOM_INDEX_DATA> room_schema;
+    room_schema.name = "room";
+    room_schema.fields = &room_fields;
     return &room_schema;
 }
 
-const OlcSchema* get_object_schema()
+const OlcSchema<OBJ_DATA>* get_object_schema()
 {
-    std::vector<OlcField> object_fields =
+    static std::vector<OlcField<OBJ_DATA>> object_fields =
     {
-        make_olc_string_field<OBJ_DATA>( "name", &OBJ_DATA::name, "Object keywords - this is what is checked with commands like get, wear, etc" ),
-        make_olc_string_field<OBJ_DATA>( "short", &OBJ_DATA::short_descr, "Short description - often used within a string, like 'You get (short)' so you should not use capitals or punctuation here" ),
-        make_olc_editor_field<OBJ_DATA>( "description", &OBJ_DATA::description, SUB_OBJ_LONG, "What you will see when the object is on the ground" ),
-        make_olc_string_field<OBJ_DATA>( "action", &OBJ_DATA::action_desc, "string used when object is used - $n/$N name (person/target) $m/$M him/her/it (person/target) $p short desc.  Won't be used for most objects" ),
-        make_olc_enum_flag_field<OBJ_DATA>( "type", &OBJ_DATA::item_type, o_types, "Type of the object" ),
-        make_olc_flag_field<OBJ_DATA>( "wearflags", &OBJ_DATA::wear_flags, w_flags, "Locations where this object can be worn.  If you don't have take, it can't be picked up" ),
-        make_olc_flag_field<OBJ_DATA>( "flags", &OBJ_DATA::objflags, obj_flag_table, "This includes pipe flags, weapon type, and normal object flags.  Only the first (in flag order) of the weapon types will be considered" ),
-        make_olc_int_field<OBJ_DATA>( "wearloc", &OBJ_DATA::wear_loc, "Current wear location - for fixing bugs, but shouldn't be manually set normally" ),
-        make_olc_int_field<OBJ_DATA>( "weight", &OBJ_DATA::weight, "The weight of the object - the higher the weight, the more weight this will take up in a char's inventory" ),
-        make_olc_int_field<OBJ_DATA>( "cost", &OBJ_DATA::cost, "The base cost of an object" ),
-        make_olc_int_field<OBJ_DATA>( "level", &OBJ_DATA::level, "Level really only determines it's resistance to magic and how much damage an embedded spell does" ),
-        make_olc_int_field<OBJ_DATA>( "timer", &OBJ_DATA::timer, "How long an object will last before decaying" ),
-        make_olc_int_field<OBJ_DATA>( "count", &OBJ_DATA::count, "This field sets how many of these objects are stacked in this.  It's a real count, so only used when you want more than one of these objects to be available by default." ),
+        make_olc_string_field<OBJ_DATA>("name", &OBJ_DATA::name,
+            "Object keywords - this is what is checked with commands like get, wear, etc"),
+        make_olc_string_field<OBJ_DATA>("short", &OBJ_DATA::short_descr,
+            "Short description - often used within a string, like 'You get (short)' so you should not use capitals or punctuation here"),
+        make_olc_editor_field<OBJ_DATA>("description", &OBJ_DATA::description,
+            SUB_OBJ_LONG, "What you will see when the object is on the ground"),
+        make_olc_string_field<OBJ_DATA>("action", &OBJ_DATA::action_desc,
+            "string used when object is used - $n/$N name (person/target) $m/$M him/her/it (person/target) $p short desc.  Won't be used for most objects"),
+        make_olc_enum_flag_field<OBJ_DATA>("type", &OBJ_DATA::item_type,
+            o_types, "Type of the object"),
+        make_olc_flag_field<OBJ_DATA>("wearflags", &OBJ_DATA::wear_flags,
+            w_flags, "Locations where this object can be worn.  If you don't have take, it can't be picked up"),
+        make_olc_flag_field<OBJ_DATA>("flags", &OBJ_DATA::objflags,
+            obj_flag_table, "This includes pipe flags, weapon type, and normal object flags.  Only the first (in flag order) of the weapon types will be considered"),
+        make_olc_int_field<OBJ_DATA>("wearloc", &OBJ_DATA::wear_loc,
+            "Current wear location - for fixing bugs, but shouldn't be manually set normally"),
+        make_olc_int_field<OBJ_DATA>("weight", &OBJ_DATA::weight,
+            "The weight of the object - the higher the weight, the more weight this will take up in a char's inventory"),
+        make_olc_int_field<OBJ_DATA>("cost", &OBJ_DATA::cost,
+            "The base cost of an object"),
+        make_olc_int_field<OBJ_DATA>("level", &OBJ_DATA::level,
+            "Level really only determines it's resistance to magic and how much damage an embedded spell does"),
+        make_olc_int_field<OBJ_DATA>("timer", &OBJ_DATA::timer,
+            "How long an object will last before decaying"),
+        make_olc_int_field<OBJ_DATA>("count", &OBJ_DATA::count,
+            "This field sets how many of these objects are stacked in this.  It's a real count, so only used when you want more than one of these objects to be available by default."),
         make_olc_object_value_field("value0", 0, "These values has variable meanings - 'show' will display what they are used for according to the object type you set"),
         make_olc_object_value_field("value1", 1, "These values has variable meanings - 'show' will display what they are used for according to the object type you set"),
         make_olc_object_value_field("value2", 2, "These values has variable meanings - 'show' will display what they are used for according to the object type you set"),
         make_olc_object_value_field("value3", 3, "These values has variable meanings - 'show' will display what they are used for according to the object type you set"),
         make_olc_object_value_field("value4", 4, "These values has variable meanings - 'show' will display what they are used for according to the object type you set"),
         make_olc_object_value_field("value5", 5, "These values has variable meanings - 'show' will display what they are used for according to the object type you set"),
-        make_olc_custom_editor_field<OBJ_DATA>( "extradesc", OlcMetaType::EXTRA_DESC_LIST,
+        make_olc_custom_editor_field<OBJ_DATA>("extradesc", OlcMetaType::EXTRA_DESC_LIST,
             [](CHAR_DATA* ch, OBJ_DATA* obj) -> bool { return olc_object_edit_extradesc_field(ch, obj); },
             [](OBJ_DATA* obj) -> std::string { return olc_object_extradesc_list_summary(obj); },
-            SUB_OBJ_EXTRA, "These provide extra 'look (keyword)' that can provide more object depth.", true ),
-        make_olc_custom_editor_field<OBJ_DATA>( "affect", OlcMetaType::OBJ_AFFECT_LIST,
+            SUB_OBJ_EXTRA, "These provide extra 'look (keyword)' that can provide more object depth.", true),
+        make_olc_custom_editor_field<OBJ_DATA>("affect", OlcMetaType::OBJ_AFFECT_LIST,
             [](CHAR_DATA* ch, OBJ_DATA* obj) -> bool { return olc_edit_object_affect_field(ch, obj); },
-            [](OBJ_DATA* obj) -> std::string {
-                return olc_object_affect_list_summary(obj); },
-            0, "Object affects", true )        
+            [](OBJ_DATA* obj) -> std::string { return olc_object_affect_list_summary(obj); },
+            0, "Object affects", true)
     };
 
-    static OlcSchema object_schema =
-    {
-        "object",
-        &object_fields
-    };
-
+    static OlcSchema<OBJ_DATA> object_schema;
+    object_schema.name = "object";
+    object_schema.fields = &object_fields;
     return &object_schema;
 }
 
 
-const OlcSchema* get_mobile_schema()
+const OlcSchema<CHAR_DATA>* get_mobile_schema()
 {
-    std::vector<OlcField> mob_fields =
-    {
-        make_olc_string_field<CHAR_DATA>( "name", &CHAR_DATA::name, "Mob keywords - used for get, wear, etc" ),
-        make_olc_string_field<CHAR_DATA>( "short", &CHAR_DATA::short_descr, "Short description used when the mob is described in an action - Should only be capitalized if it's a name - '(short) moves south', 'You attack (short)" ),
-        OlcField{ "long", OlcValueType::STRING, nullptr, OlcMetaType::NONE, nullptr,
-            [](void* obj, const std::string& value) -> bool { return olc_mobile_set_long_field(obj, value); },
-            [](void* obj) -> std::string { auto mob = static_cast<CHAR_DATA*>(obj); return mob->long_descr ? mob->long_descr : ""; },
-            nullptr, nullptr, 0, "Long is used when seeing the mob in a room", INT_MIN, INT_MAX, false },
-        make_olc_editor_field<CHAR_DATA>( "description", &CHAR_DATA::description, SUB_MOB_DESC, "What shows when you look/examine a char.  When not set, you see 'nothing special', so not required" ),
-        make_olc_int_field<CHAR_DATA>( "sex", &CHAR_DATA::sex, "0 for neutral, 1 for male, 2 for female", 0, 2 ),
-        OlcField{ "race", OlcValueType::ENUM, nullptr, OlcMetaType::NONE, nullptr,
-            [](void* obj, const std::string& value) -> bool { return olc_mobile_set_race(obj, value); },
-            [](void* obj) -> std::string {
-                auto mob = static_cast<CHAR_DATA*>(obj);
-                int r = mob->race;
-                if (r >= 0 && r < MAX_NPC_RACE)
-                    return get_flag_name(npc_race, r, MAX_NPC_RACE);
-                return std::to_string(r);
-            },
-            nullptr, nullptr, 0, "NPC race - more selections than player races", INT_MIN, INT_MAX, false },
-        OlcField{ "level", OlcValueType::INT, nullptr, OlcMetaType::NONE, nullptr,
-            [](void* obj, const std::string& value) -> bool { return olc_mobile_set_level(obj, value); },
-            [](void* obj) -> std::string { auto mob = static_cast<CHAR_DATA*>(obj); return get_int_field(mob->top_level); },
-            nullptr, nullptr, 0, 
-            "How powerful the mob is - if you sit this, it will override armor/hitroll/damroll to what is appropriate for that mob level.  Also used in 'consider' so be careful not to trick a player by setting the level low and their rolls high.  This also affects how much xp a char gets for killing it", 
-            0, LEVEL_AVATAR + 5, false },
-        make_olc_int_field<CHAR_DATA>( "alignment", &CHAR_DATA::alignment, "How good or evil is the mob?  Between -1000 and 1000", -1000, 1000 ),
-        make_olc_int_field<CHAR_DATA>( "armor", &CHAR_DATA::armor, "Bare skin armor value", -300, 300 ),
-        make_olc_int_field<CHAR_DATA>( "hitroll", &CHAR_DATA::hitroll, "Hitroll - defaults to level / 5.  Tweak it, don't play with it", 0, 85 ),
-        make_olc_int_field<CHAR_DATA>( "damroll", &CHAR_DATA::damroll, "Damroll - defaults to level / 5.  Tweak it, don't play with it", 0, 65 ),
-        make_olc_int_field<CHAR_DATA>( "hitplus", &CHAR_DATA::hitplus, "A flat bonus to hitpoints" ),
-        make_olc_int_field<CHAR_DATA>( "damplus", &CHAR_DATA::damplus, "A flat bonus to damage" ),
-        make_olc_int_field<CHAR_DATA>( "numattacks", &CHAR_DATA::numattacks, "Whether the mob hits once, or more than once, at a time", 0, 20 ),
-        make_olc_int_field<CHAR_DATA>( "position", &CHAR_DATA::position, 
-            "Current position - 0 through 11, in this order - dead, mortal, incapacitated, stunned, sleeping, resting, sitting, fighting, standing, mounted, shove, drag",
-             0, POS_STANDING ),
-        make_olc_int_field<CHAR_DATA>( "defposition", &CHAR_DATA::defposition, 
-            "Default position - 0 through 11, in this order - dead, mortal, incapacitated, stunned, sleeping, resting, sitting, fighting, standing, mounted, shove, drag", 
-            0, POS_STANDING ),
-        make_olc_int_field<CHAR_DATA>( "height", &CHAR_DATA::height, "Height of the mob" ),
-        make_olc_int_field<CHAR_DATA>( "weight", &CHAR_DATA::weight, "Weight of the mob" ),
-        make_olc_int_field<CHAR_DATA>( "credits", &CHAR_DATA::gold, "Credits/Money the mob starts with" ),
-        make_olc_int_field<CHAR_DATA>( "str", &CHAR_DATA::perm_str, "Generally, strength determines how much weight can be carried and how strong with physical skills", 1, 25 ),
-        make_olc_int_field<CHAR_DATA>( "int", &CHAR_DATA::perm_int, "Generally, intelligence determines how quickly you can learn, how fast you recover force, and shares with wis success chances for force", 1, 25 ),
-        make_olc_int_field<CHAR_DATA>( "wis", &CHAR_DATA::perm_wis, "Generally, wisdom determines success chance of force and learning abilities", 1, 25 ),
-        make_olc_int_field<CHAR_DATA>( "dex", &CHAR_DATA::perm_dex, "Generally, dexterity determines how many items can be carried and how successful with physical skills", 1, 25 ),
-        make_olc_int_field<CHAR_DATA>( "con", &CHAR_DATA::perm_con, "Generally, constitution determines recovery time for mental state and hit points", 1, 25 ),
-        make_olc_int_field<CHAR_DATA>( "cha", &CHAR_DATA::perm_cha, "Generally, charisma determines success rates with skills like propeganda and seduce, as well as shop prices", 1, 25 ),
-        make_olc_int_field<CHAR_DATA>( "lck", &CHAR_DATA::perm_lck, "Generally, luck modifies your success chances in a lot of various things", 1, 25 ),
-        make_olc_int_field<CHAR_DATA>( "frc", &CHAR_DATA::perm_frc, "Force affinity determines how strong your connection to the force is", 0, 20 ),
-        make_olc_int_field<CHAR_DATA>( "sav1", &CHAR_DATA::saving_poison_death, "+/-perc Save vs poison - used in poisoned weapon checks and poison spells", -30, 30 ),
-        make_olc_int_field<CHAR_DATA>( "sav2", &CHAR_DATA::saving_wand, "+/-perc Save vs wand - Very rarely used", -30, 30 ),
-        make_olc_int_field<CHAR_DATA>( "sav3", &CHAR_DATA::saving_para_petri, "+/-perc Save vs paralysis/petrification - used to check for stun and paralysis in fights and spells", -30, 30 ),
-        make_olc_int_field<CHAR_DATA>( "sav4", &CHAR_DATA::saving_breath, "+/-perc Save vs breath - only used on breath attacks, so not used in SWRIP", -30, 30 ),
-        make_olc_int_field<CHAR_DATA>( "sav5", &CHAR_DATA::saving_spell_staff, "+/-perc Save vs spell/staff - generic save against most spells, so I'd call it general force resistance", -30, 30 ),
-        make_olc_flag_field<CHAR_DATA>( "flags", &CHAR_DATA::act, act_flags, "NPC specific flags" ),
-        make_olc_flag_field<CHAR_DATA>( "affected", &CHAR_DATA::affected_by, aff_flags, "What the mob is affected by by default." ),
-        make_olc_flag_field<CHAR_DATA>( "vip", &CHAR_DATA::vip_flags, planet_flags, "What planet the mob is a citizen of - determines if there's a wanted flag applied on being killed" ),
-        make_olc_int_field<CHAR_DATA>( "force", &CHAR_DATA::max_mana, "Force points - overall mana (yes, I said it) pool" ),
-        make_olc_int_field<CHAR_DATA>( "move", &CHAR_DATA::max_move, "Movement points - basically?  Stamina - you need it to move and do some other physical skills" ),
-        make_olc_int_field<CHAR_DATA>( "hp", &CHAR_DATA::max_hit, "Max hit points" ),
-        make_olc_int_field<CHAR_DATA>( "carry_weight", &CHAR_DATA::carry_weight, "How much they are carrying - you shouldn't need to set this unless something is broken, as this does not determine their maximum carry, that's strength" ),
-        make_olc_flag_field<CHAR_DATA>( "speaks", &CHAR_DATA::speaks, lang_names, "What languages the mob can understand" ),
-        OlcField{ "resistant", OlcValueType::FLAG, (const void*)ris_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
-            [](void* obj) -> std::string { return olc_mobile_get_ris_field(obj, &CHAR_DATA::resistant); },
-            [](CHAR_DATA* /*ch*/, void* obj, const std::string& value) -> bool { return olc_mobile_set_ris_field(obj, &CHAR_DATA::resistant, value); },
-            nullptr, 0, "Resistances (RIS flags) - Reduces the damage taken corresponding to the damage type", INT_MIN, INT_MAX, false },
-        OlcField{ "immune", OlcValueType::FLAG, (const void*)ris_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
-            [](void* obj) -> std::string { return olc_mobile_get_ris_field(obj, &CHAR_DATA::immune); },
-            [](CHAR_DATA* /*ch*/, void* obj, const std::string& value) -> bool { return olc_mobile_set_ris_field(obj, &CHAR_DATA::immune, value); },
-            nullptr, 0, "Immunities (RIS flags) - Makes the mob immune to damage taken corresponding to the damage type", INT_MIN, INT_MAX, false },
-        OlcField{ "susceptible", OlcValueType::FLAG, (const void*)ris_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
-            [](void* obj) -> std::string { return olc_mobile_get_ris_field(obj, &CHAR_DATA::susceptible); },
-            [](CHAR_DATA* /*ch*/, void* obj, const std::string& value) -> bool { return olc_mobile_set_ris_field(obj, &CHAR_DATA::susceptible, value); },
-            nullptr, 0, "Susceptibilities (RIS flags) - Increases the damage taken corresponding to the damage type", INT_MIN, INT_MAX, false },
-        OlcField{ "speaking", OlcValueType::ENUM, (const void*)lang_names, OlcMetaType::FLAG_TABLE, nullptr,
-            [](void* obj, const std::string& value) -> bool { return olc_mobile_set_speaking(obj, value); },
-            [](void* obj) -> std::string { auto mob = static_cast<CHAR_DATA*>(obj); return lang_names[mob->speaking].name; },
-            nullptr, nullptr, 0, "Current spoken language, help speaks to see the list", INT_MIN, INT_MAX, false },
-        OlcField{ "part", OlcValueType::FLAG, (const void*)part_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
-            [](void* obj) -> std::string { return olc_mobile_get_legacy_bits_field(obj, &CHAR_DATA::xflags, part_flags); },
-            [](CHAR_DATA* /*ch*/, void* obj, const std::string& value) -> bool { return olc_mobile_set_legacy_bits_field(obj, &CHAR_DATA::xflags, value, part_flags); },
-            nullptr, 0, "Body parts the mob has", INT_MIN, INT_MAX, false },
-        OlcField{ "attack", OlcValueType::FLAG, (const void*)attack_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
-            [](void* obj) -> std::string { return olc_mobile_get_legacy_bits_field(obj, &CHAR_DATA::attacks, attack_flags); },
-            [](CHAR_DATA* /*ch*/, void* obj, const std::string& value) -> bool { return olc_mobile_set_legacy_bits_field(obj, &CHAR_DATA::attacks, value, attack_flags); },
-            nullptr, 0, "What types of attacks the mob will try to use beyond the default", INT_MIN, INT_MAX, false },
-        OlcField{ "defense", OlcValueType::FLAG, (const void*)defense_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
-            [](void* obj) -> std::string { return olc_mobile_get_legacy_bits_field(obj, &CHAR_DATA::defenses, defense_flags); },
-            [](CHAR_DATA* /*ch*/, void* obj, const std::string& value) -> bool { return olc_mobile_set_legacy_bits_field(obj, &CHAR_DATA::defenses, value, defense_flags); },
-            nullptr, 0, "Gives immunity to the type of attacks these defend against", INT_MIN, INT_MAX, false },      
-        OlcField{ "spec", OlcValueType::STRING, nullptr, OlcMetaType::NONE, nullptr, nullptr,
-            [](void* obj) -> std::string { auto mob = static_cast<CHAR_DATA*>(obj); return mob->spec_fun ? lookup_spec( mob->spec_fun ) : "none"; },
-            [](CHAR_DATA* /*ch*/, void* obj, const std::string& value) -> bool { return olc_mobile_set_spec(obj, value); },
-            nullptr, 0, "Primary special function name, or 'none' - these are special functions like police, thief, janitor, etc.  SEE HELP SPEC for list", INT_MIN, INT_MAX, false },
-        OlcField{ "spec2", OlcValueType::STRING, nullptr, OlcMetaType::NONE, nullptr, nullptr,
-            [](void* obj) -> std::string { auto mob = static_cast<CHAR_DATA*>(obj); return mob->spec_2 ? lookup_spec( mob->spec_2 ) : "none"; },
-            [](CHAR_DATA* /*ch*/, void* obj, const std::string& value) -> bool { return olc_mobile_set_spec2(obj, value); },
-            nullptr, 0, "Secondary special function name, or 'none' - these are special functions like police, thief, janitor, etc.  SEE HELP SPEC for list", INT_MIN, INT_MAX, false },            
-        OlcField{ "hitnodice", OlcValueType::INT, nullptr, OlcMetaType::NONE, nullptr, nullptr, nullptr,
-            [](CHAR_DATA* ch, void* /*obj*/, const std::string& value) -> bool { return olc_mobile_set_pending_proto_die_field(ch, "hitnodice", value); },
-            [](CHAR_DATA* ch, void* obj) -> std::string { return olc_mobile_get_pending_proto_die_field( ch, static_cast<CHAR_DATA*>(obj), "hitnodice"); },
-            0, "Prototype hit dice count - Used to calculate the mob's hitpoints along with hitsizedice and hitplus", 0, 32767, false },
-        OlcField{ "hitsizedice", OlcValueType::INT, nullptr, OlcMetaType::NONE, nullptr, nullptr, nullptr,
-            [](CHAR_DATA* ch, void* /*obj*/, const std::string& value) -> bool { return olc_mobile_set_pending_proto_die_field(ch, "hitsizedice", value); },
-            [](CHAR_DATA* ch, void* obj) -> std::string { return olc_mobile_get_pending_proto_die_field( ch, static_cast<CHAR_DATA*>(obj), "hitsizedice"); },
-            0, "Prototype hit dice size - Used to calculate the mob's hitpoints along with hitnodice and hitplus", 0, 32767, false },
-        OlcField{ "damnodice", OlcValueType::INT, nullptr, OlcMetaType::NONE, nullptr, nullptr, nullptr,
-            [](CHAR_DATA* ch, void* /*obj*/, const std::string& value) -> bool { return olc_mobile_set_pending_proto_die_field(ch, "damnodice", value); },
-            [](CHAR_DATA* ch, void* obj) -> std::string { return olc_mobile_get_pending_proto_die_field( ch, static_cast<CHAR_DATA*>(obj), "damnodice"); },
-            0, "Prototype damage dice count - Used to calculate the mob's damage along with damsizedice and damplus", 0, 32767, false  },
-        OlcField{ "damsizedice", OlcValueType::INT, nullptr, OlcMetaType::NONE, nullptr, nullptr, nullptr,
-            [](CHAR_DATA* ch, void* /*obj*/, const std::string& value) -> bool { return olc_mobile_set_pending_proto_die_field(ch, "damsizedice", value); },
-            [](CHAR_DATA* ch, void* obj) -> std::string { return olc_mobile_get_pending_proto_die_field( ch, static_cast<CHAR_DATA*>(obj), "damsizedice"); },
-            0, "Prototype damage dice size - Used to calculate the mob's damage along with damnodice and damplus", 0, 32767, false },   
-        make_olc_custom_editor_field<CHAR_DATA>( "affect", OlcMetaType::MOB_AFFECT_LIST,
-            [](CHAR_DATA* ch, CHAR_DATA* mob) -> bool { return olc_mobile_edit_affect_field(ch, mob); },
-            [](CHAR_DATA* mob) -> std::string { return olc_mobile_affect_list_summary(mob); },
-            0, "Mobile affects", true ),            
-    };
+static std::vector<OlcField<CHAR_DATA>> mob_fields =
+{
+    make_olc_string_field<CHAR_DATA>( "name", &CHAR_DATA::name, "Mob keywords - used for get, wear, etc" ),
+    make_olc_string_field<CHAR_DATA>( "short", &CHAR_DATA::short_descr, "Short description used when the mob is described in an action - Should only be capitalized if it's a name - '(short) moves south', 'You attack (short)" ),
+    OlcField<CHAR_DATA>{ "long", OlcValueType::STRING, nullptr, OlcMetaType::NONE, nullptr,
+        [](CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_long_field(mob, value); },
+        [](CHAR_DATA* mob) -> std::string { return mob->long_descr ? mob->long_descr : ""; },
+        nullptr, nullptr, 0, "Long is used when seeing the mob in a room", INT_MIN, INT_MAX, false },
+    make_olc_editor_field<CHAR_DATA>( "description", &CHAR_DATA::description, SUB_MOB_DESC, "What shows when you look/examine a char.  When not set, you see 'nothing special', so not required" ),
+    make_olc_int_field<CHAR_DATA>( "sex", &CHAR_DATA::sex, "0 for neutral, 1 for male, 2 for female", 0, 2 ),
+    OlcField<CHAR_DATA>{ "race", OlcValueType::ENUM, nullptr, OlcMetaType::NONE, nullptr,
+        [](CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_race(mob, value); },
+        [](CHAR_DATA* mob) -> std::string {
+            int r = mob->race;
+            if (r >= 0 && r < MAX_NPC_RACE)
+                return get_flag_name(npc_race, r, MAX_NPC_RACE);
+            return std::to_string(r);
+        },
+        nullptr, nullptr, 0, "NPC race - more selections than player races", INT_MIN, INT_MAX, false },
+    OlcField<CHAR_DATA>{ "level", OlcValueType::INT, nullptr, OlcMetaType::NONE, nullptr,
+        [](CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_level(mob, value); },
+        [](CHAR_DATA* mob) -> std::string { return get_int_field(mob->top_level); },
+        nullptr, nullptr, 0,
+        "How powerful the mob is - if you sit this, it will override armor/hitroll/damroll to what is appropriate for that mob level.  Also used in 'consider' so be careful not to trick a player by setting the level low and their rolls high.  This also affects how much xp a char gets for killing it",
+        0, LEVEL_AVATAR + 5, false },
+    make_olc_int_field<CHAR_DATA>( "alignment", &CHAR_DATA::alignment, "How good or evil is the mob?  Between -1000 and 1000", -1000, 1000 ),
+    make_olc_int_field<CHAR_DATA>( "armor", &CHAR_DATA::armor, "Bare skin armor value", -300, 300 ),
+    make_olc_int_field<CHAR_DATA>( "hitroll", &CHAR_DATA::hitroll, "Hitroll - defaults to level / 5.  Tweak it, don't play with it", 0, 85 ),
+    make_olc_int_field<CHAR_DATA>( "damroll", &CHAR_DATA::damroll, "Damroll - defaults to level / 5.  Tweak it, don't play with it", 0, 65 ),
+    make_olc_int_field<CHAR_DATA>( "hitplus", &CHAR_DATA::hitplus, "A flat bonus to hitpoints" ),
+    make_olc_int_field<CHAR_DATA>( "damplus", &CHAR_DATA::damplus, "A flat bonus to damage" ),
+    make_olc_int_field<CHAR_DATA>( "numattacks", &CHAR_DATA::numattacks, "Whether the mob hits once, or more than once, at a time", 0, 20 ),
+    make_olc_int_field<CHAR_DATA>( "position", &CHAR_DATA::position,
+        "Current position - 0 through 11, in this order - dead, mortal, incapacitated, stunned, sleeping, resting, sitting, fighting, standing, mounted, shove, drag",
+         0, POS_STANDING ),
+    make_olc_int_field<CHAR_DATA>( "defposition", &CHAR_DATA::defposition,
+        "Default position - 0 through 11, in this order - dead, mortal, incapacitated, stunned, sleeping, resting, sitting, fighting, standing, mounted, shove, drag",
+        0, POS_STANDING ),
+    make_olc_int_field<CHAR_DATA>( "height", &CHAR_DATA::height, "Height of the mob" ),
+    make_olc_int_field<CHAR_DATA>( "weight", &CHAR_DATA::weight, "Weight of the mob" ),
+    make_olc_int_field<CHAR_DATA>( "credits", &CHAR_DATA::gold, "Credits/Money the mob starts with" ),
+    make_olc_int_field<CHAR_DATA>( "str", &CHAR_DATA::perm_str, "Generally, strength determines how much weight can be carried and how strong with physical skills", 1, 25 ),
+    make_olc_int_field<CHAR_DATA>( "int", &CHAR_DATA::perm_int, "Generally, intelligence determines how quickly you can learn, how fast you recover force, and shares with wis success chances for force", 1, 25 ),
+    make_olc_int_field<CHAR_DATA>( "wis", &CHAR_DATA::perm_wis, "Generally, wisdom determines success chance of force and learning abilities", 1, 25 ),
+    make_olc_int_field<CHAR_DATA>( "dex", &CHAR_DATA::perm_dex, "Generally, dexterity determines how many items can be carried and how successful with physical skills", 1, 25 ),
+    make_olc_int_field<CHAR_DATA>( "con", &CHAR_DATA::perm_con, "Generally, constitution determines recovery time for mental state and hit points", 1, 25 ),
+    make_olc_int_field<CHAR_DATA>( "cha", &CHAR_DATA::perm_cha, "Generally, charisma determines success rates with skills like propeganda and seduce, as well as shop prices", 1, 25 ),
+    make_olc_int_field<CHAR_DATA>( "lck", &CHAR_DATA::perm_lck, "Generally, luck modifies your success chances in a lot of various things", 1, 25 ),
+    make_olc_int_field<CHAR_DATA>( "frc", &CHAR_DATA::perm_frc, "Force affinity determines how strong your connection to the force is", 0, 20 ),
+    make_olc_int_field<CHAR_DATA>( "sav1", &CHAR_DATA::saving_poison_death, "+/-perc Save vs poison - used in poisoned weapon checks and poison spells", -30, 30 ),
+    make_olc_int_field<CHAR_DATA>( "sav2", &CHAR_DATA::saving_wand, "+/-perc Save vs wand - Very rarely used", -30, 30 ),
+    make_olc_int_field<CHAR_DATA>( "sav3", &CHAR_DATA::saving_para_petri, "+/-perc Save vs paralysis/petrification - used to check for stun and paralysis in fights and spells", -30, 30 ),
+    make_olc_int_field<CHAR_DATA>( "sav4", &CHAR_DATA::saving_breath, "+/-perc Save vs breath - only used on breath attacks, so not used in SWRIP", -30, 30 ),
+    make_olc_int_field<CHAR_DATA>( "sav5", &CHAR_DATA::saving_spell_staff, "+/-perc Save vs spell/staff - generic save against most spells, so I'd call it general force resistance", -30, 30 ),
+    make_olc_flag_field<CHAR_DATA>( "flags", &CHAR_DATA::act, act_flags, "NPC specific flags" ),
+    make_olc_flag_field<CHAR_DATA>( "affected", &CHAR_DATA::affected_by, aff_flags, "What the mob is affected by by default." ),
+    make_olc_flag_field<CHAR_DATA>( "vip", &CHAR_DATA::vip_flags, planet_flags, "What planet the mob is a citizen of - determines if there's a wanted flag applied on being killed" ),
+    make_olc_int_field<CHAR_DATA>( "force", &CHAR_DATA::max_mana, "Force points - overall mana (yes, I said it) pool" ),
+    make_olc_int_field<CHAR_DATA>( "move", &CHAR_DATA::max_move, "Movement points - basically?  Stamina - you need it to move and do some other physical skills" ),
+    make_olc_int_field<CHAR_DATA>( "hp", &CHAR_DATA::max_hit, "Max hit points" ),
+    make_olc_int_field<CHAR_DATA>( "carry_weight", &CHAR_DATA::carry_weight, "How much they are carrying - you shouldn't need to set this unless something is broken, as this does not determine their maximum carry, that's strength" ),
+    make_olc_flag_field<CHAR_DATA>( "speaks", &CHAR_DATA::speaks, lang_names, "What languages the mob can understand" ),
+    OlcField<CHAR_DATA>{ "resistant", OlcValueType::FLAG, (const void*)ris_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
+        [](CHAR_DATA* mob) -> std::string { return olc_mobile_get_ris_field(mob, &CHAR_DATA::resistant); },
+        [](CHAR_DATA* /*ch*/, CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_ris_field(mob, &CHAR_DATA::resistant, value); },
+        nullptr, 0, "Resistances (RIS flags) - Reduces the damage taken corresponding to the damage type", INT_MIN, INT_MAX, false },
+    OlcField<CHAR_DATA>{ "immune", OlcValueType::FLAG, (const void*)ris_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
+        [](CHAR_DATA* mob) -> std::string { return olc_mobile_get_ris_field(mob, &CHAR_DATA::immune); },
+        [](CHAR_DATA* /*ch*/, CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_ris_field(mob, &CHAR_DATA::immune, value); },
+        nullptr, 0, "Immunities (RIS flags) - Makes the mob immune to damage taken corresponding to the damage type", INT_MIN, INT_MAX, false },
+    OlcField<CHAR_DATA>{ "susceptible", OlcValueType::FLAG, (const void*)ris_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
+        [](CHAR_DATA* mob) -> std::string { return olc_mobile_get_ris_field(mob, &CHAR_DATA::susceptible); },
+        [](CHAR_DATA* /*ch*/, CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_ris_field(mob, &CHAR_DATA::susceptible, value); },
+        nullptr, 0, "Susceptibilities (RIS flags) - Increases the damage taken corresponding to the damage type", INT_MIN, INT_MAX, false },
+    OlcField<CHAR_DATA>{ "speaking", OlcValueType::ENUM, (const void*)lang_names, OlcMetaType::FLAG_TABLE, nullptr,
+        [](CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_speaking(mob, value); },
+        [](CHAR_DATA* mob) -> std::string {
+            if (mob->speaking >= 0 && mob->speaking < LANG_MAX)
+                return lang_names[mob->speaking].name;
+            return "unknown";
+        },
+        nullptr, nullptr, 0, "Current spoken language, help speaks to see the list", INT_MIN, INT_MAX, false },
+    OlcField<CHAR_DATA>{ "part", OlcValueType::FLAG, (const void*)part_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
+        [](CHAR_DATA* mob) -> std::string { return olc_mobile_get_legacy_bits_field(mob, &CHAR_DATA::xflags, part_flags); },
+        [](CHAR_DATA* /*ch*/, CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_legacy_bits_field(mob, &CHAR_DATA::xflags, value, part_flags); },
+        nullptr, 0, "Body parts the mob has", INT_MIN, INT_MAX, false },
+    OlcField<CHAR_DATA>{ "attack", OlcValueType::FLAG, (const void*)attack_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
+        [](CHAR_DATA* mob) -> std::string { return olc_mobile_get_legacy_bits_field(mob, &CHAR_DATA::attacks, attack_flags); },
+        [](CHAR_DATA* /*ch*/, CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_legacy_bits_field(mob, &CHAR_DATA::attacks, value, attack_flags); },
+        nullptr, 0, "What types of attacks the mob will try to use beyond the default", INT_MIN, INT_MAX, false },
+    OlcField<CHAR_DATA>{ "defense", OlcValueType::FLAG, (const void*)defense_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
+        [](CHAR_DATA* mob) -> std::string { return olc_mobile_get_legacy_bits_field(mob, &CHAR_DATA::defenses, defense_flags); },
+        [](CHAR_DATA* /*ch*/, CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_legacy_bits_field(mob, &CHAR_DATA::defenses, value, defense_flags); },
+        nullptr, 0, "Gives immunity to the type of attacks these defend against", INT_MIN, INT_MAX, false },
+    OlcField<CHAR_DATA>{ "spec", OlcValueType::STRING, nullptr, OlcMetaType::NONE, nullptr, nullptr,
+        [](CHAR_DATA* mob) -> std::string { return mob->spec_fun ? lookup_spec( mob->spec_fun ) : "none"; },
+        [](CHAR_DATA* /*ch*/, CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_spec(mob, value); },
+        nullptr, 0, "Primary special function name, or 'none' - these are special functions like police, thief, janitor, etc.  SEE HELP SPEC for list", INT_MIN, INT_MAX, false },
+    OlcField<CHAR_DATA>{ "spec2", OlcValueType::STRING, nullptr, OlcMetaType::NONE, nullptr, nullptr,
+        [](CHAR_DATA* mob) -> std::string { return mob->spec_2 ? lookup_spec( mob->spec_2 ) : "none"; },
+        [](CHAR_DATA* /*ch*/, CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_spec2(mob, value); },
+        nullptr, 0, "Secondary special function name, or 'none' - these are special functions like police, thief, janitor, etc.  SEE HELP SPEC for list", INT_MIN, INT_MAX, false },
+    OlcField<CHAR_DATA>{ "hitnodice", OlcValueType::INT, nullptr, OlcMetaType::NONE, nullptr, nullptr, nullptr,
+        [](CHAR_DATA* ch, void* /*obj*/, const std::string& value) -> bool { return olc_mobile_set_pending_proto_die_field(ch, "hitnodice", value); },
+        [](CHAR_DATA* ch, void* obj) -> std::string { return olc_mobile_get_pending_proto_die_field( ch, static_cast<CHAR_DATA*>(obj), "hitnodice"); },
+        0, "Prototype hit dice count - Used to calculate the mob's hitpoints along with hitsizedice and hitplus", 0, 32767, false },
+    OlcField<CHAR_DATA>{ "hitsizedice", OlcValueType::INT, nullptr, OlcMetaType::NONE, nullptr, nullptr, nullptr,
+        [](CHAR_DATA* ch, void* /*obj*/, const std::string& value) -> bool { return olc_mobile_set_pending_proto_die_field(ch, "hitsizedice", value); },
+        [](CHAR_DATA* ch, void* obj) -> std::string { return olc_mobile_get_pending_proto_die_field( ch, static_cast<CHAR_DATA*>(obj), "hitsizedice"); },
+        0, "Prototype hit dice size - Used to calculate the mob's hitpoints along with hitnodice and hitplus", 0, 32767, false },
+    OlcField<CHAR_DATA>{ "damnodice", OlcValueType::INT, nullptr, OlcMetaType::NONE, nullptr, nullptr, nullptr,
+        [](CHAR_DATA* ch, void* /*obj*/, const std::string& value) -> bool { return olc_mobile_set_pending_proto_die_field(ch, "damnodice", value); },
+        [](CHAR_DATA* ch, void* obj) -> std::string { return olc_mobile_get_pending_proto_die_field( ch, static_cast<CHAR_DATA*>(obj), "damnodice"); },
+        0, "Prototype damage dice count - Used to calculate the mob's damage along with damsizedice and damplus", 0, 32767, false  },
+    OlcField<CHAR_DATA>{ "damsizedice", OlcValueType::INT, nullptr, OlcMetaType::NONE, nullptr, nullptr, nullptr,
+        [](CHAR_DATA* ch, void* /*obj*/, const std::string& value) -> bool { return olc_mobile_set_pending_proto_die_field(ch, "damsizedice", value); },
+        [](CHAR_DATA* ch, void* obj) -> std::string { return olc_mobile_get_pending_proto_die_field( ch, static_cast<CHAR_DATA*>(obj), "damsizedice"); },
+        0, "Prototype damage dice size - Used to calculate the mob's damage along with damnodice and damplus", 0, 32767, false },
+    make_olc_custom_editor_field<CHAR_DATA>( "affect", OlcMetaType::MOB_AFFECT_LIST,
+        [](CHAR_DATA* ch, CHAR_DATA* mob) -> bool { return olc_mobile_edit_affect_field(ch, mob); },
+        [](CHAR_DATA* mob) -> std::string { return olc_mobile_affect_list_summary(mob); },
+        0, "Mobile affects", true ),
+};
 
-    static OlcSchema mob_schema =
-    {
-        "mobile",
-        &mob_fields
-    };
-
+    static OlcSchema<CHAR_DATA> mob_schema;
+    mob_schema.name = "mobile";
+    mob_schema.fields = &mob_fields;
     return &mob_schema;
 }
 // Value0 through 5 use description mapping, used for help files..
@@ -2161,7 +2177,7 @@ bool olc_room_is_field_name(const char* input)
     if (!input || input[0] == '\0')
         return false;
 
-    const OlcSchema* schema = get_room_schema();
+    const auto* schema = get_room_schema();
 
     if (olc_find_field_fuzzy(schema, input))
         return true;
@@ -2744,6 +2760,28 @@ AFFECT_DATA* olc_object_find_affect_by_number_wrap(void* obj, int index)
 bool olc_object_parse_affect_value_wrap(CHAR_DATA* ch, int loc, const std::string& value_text, int& out_value)
 {
     return olc_object_parse_affect_value(ch, loc, value_text, out_value);
+}
+
+std::vector<std::string> olc_object_format_single_affect_lines(
+    AFFECT_DATA* paf,
+    size_t max_name_len,
+    int term_width)
+{
+    std::vector<std::string> out;
+
+    if (!paf)
+        return out;
+
+    char locbuf[MSL];
+    char modbuf[MSL];
+
+    snprintf(locbuf, sizeof(locbuf), "%d", paf->location);
+    snprintf(modbuf, sizeof(modbuf), "%d", paf->modifier);
+
+    olc_append_lines(out, olc_format_line("location", locbuf, OLC_COL_ENUM, (int)max_name_len, term_width));
+    olc_append_lines(out, olc_format_line("modifier", modbuf, OLC_COL_INT, (int)max_name_len, term_width));
+
+    return out;
 }
 
 bool olc_object_edit_revert(CHAR_DATA* ch)
@@ -4297,9 +4335,30 @@ bool olc_mobile_parse_affect_value_wrap(CHAR_DATA* ch, int loc, const std::strin
     return olc_mobile_parse_affect_value(ch, loc, value_text, out_value);
 }
 
-bool olc_mobile_set_spec(void* obj, const std::string& value)
+std::vector<std::string> olc_mobile_format_single_affect_lines(
+    AFFECT_DATA* paf,
+    size_t max_name_len,
+    int term_width)
 {
-    auto mob = static_cast<CHAR_DATA*>(obj);
+    std::vector<std::string> out;
+
+    if (!paf)
+        return out;
+
+    char locbuf[MSL];
+    char modbuf[MSL];
+
+    snprintf(locbuf, sizeof(locbuf), "%d", paf->location);
+    snprintf(modbuf, sizeof(modbuf), "%d", paf->modifier);
+
+    olc_append_lines(out, olc_format_line("location", locbuf, OLC_COL_ENUM, (int)max_name_len, term_width));
+    olc_append_lines(out, olc_format_line("modifier", modbuf, OLC_COL_INT, (int)max_name_len, term_width));
+
+    return out;
+}
+
+bool olc_mobile_set_spec(CHAR_DATA* mob, const std::string& value)
+{
     if (!mob)
         return false;
 
@@ -4317,9 +4376,8 @@ bool olc_mobile_set_spec(void* obj, const std::string& value)
     return true;
 }
 
-bool olc_mobile_set_spec2(void* obj, const std::string& value)
+bool olc_mobile_set_spec2(CHAR_DATA* mob, const std::string& value)
 {
-    auto mob = static_cast<CHAR_DATA*>(obj);
     if (!mob)
         return false;
 
@@ -4337,9 +4395,8 @@ bool olc_mobile_set_spec2(void* obj, const std::string& value)
     return true;
 }
 
-bool olc_mobile_set_ris_field(void* obj, int CHAR_DATA::*member, const std::string& value)
+bool olc_mobile_set_ris_field(CHAR_DATA* mob, int CHAR_DATA::*member, const std::string& value)
 {
-    auto mob = static_cast<CHAR_DATA*>(obj);
     if (!mob)
         return false;
 
@@ -4391,20 +4448,18 @@ bool olc_mobile_set_ris_field(void* obj, int CHAR_DATA::*member, const std::stri
     return true;
 }
 
-std::string olc_mobile_get_ris_field(void* obj, int CHAR_DATA::*member)
+std::string olc_mobile_get_ris_field(CHAR_DATA* mob, int CHAR_DATA::*member)
 {
-    auto mob = static_cast<CHAR_DATA*>(obj);
     if (!mob)
         return "";
 
     return flag_string(mob->*member, ris_flags);
 }
 
-bool olc_mobile_set_legacy_bits_field(void* obj, int CHAR_DATA::*member,
+bool olc_mobile_set_legacy_bits_field(CHAR_DATA* mob, int CHAR_DATA::*member,
                                           const std::string& value,
                                           const char* const* table)
 {
-    auto mob = static_cast<CHAR_DATA*>(obj);
     if (!mob)
         return false;
 
@@ -4465,15 +4520,15 @@ bool olc_mobile_set_legacy_bits_field(void* obj, int CHAR_DATA::*member,
     return true;
 }
 
-std::string olc_mobile_get_legacy_bits_field(void* obj,
-                                                 int CHAR_DATA::*member,
-                                                 char* const* table)
+std::string olc_mobile_get_legacy_bits_field(
+    CHAR_DATA* mob,
+    int CHAR_DATA::*member,
+    const char* const* table)
 {
-    auto mob = static_cast<CHAR_DATA*>(obj);
     if (!mob)
         return "";
 
-    return flag_string(mob->*member, table);
+    return flag_string(mob->*member, (char* const*)table);
 }
 
 bool olc_mobile_set_pending_proto_die_field(CHAR_DATA* ch,
@@ -4673,9 +4728,8 @@ bool olc_mobile_set_long_desc(char*& field, const std::string& value)
     return set_str_field(field, out);
 }
 
-bool olc_mobile_set_level(void* obj, const std::string& value)
+bool olc_mobile_set_level(CHAR_DATA* mob, const std::string& value)
 {
-    auto mob = static_cast<CHAR_DATA*>(obj);
     int level = 0;
 
     if (!mob)
@@ -4698,9 +4752,8 @@ bool olc_mobile_set_level(void* obj, const std::string& value)
     return true;
 }
 
-bool olc_mobile_set_race(void* obj, const std::string& value)
+bool olc_mobile_set_race(CHAR_DATA* mob, const std::string& value)
 {
-    auto mob = static_cast<CHAR_DATA*>(obj);
     int race = get_npc_race((char*)value.c_str());
 
     if (!mob)
@@ -4719,9 +4772,8 @@ bool olc_mobile_set_race(void* obj, const std::string& value)
     return true;
 }
 
-bool olc_mobile_set_speaking(void* obj, const std::string& value)
+bool olc_mobile_set_speaking(CHAR_DATA* mob, const std::string& value)
 {
-    auto mob = static_cast<CHAR_DATA*>(obj);
     int lang = get_langflag(const_cast<char*>(value.c_str()));
 
     if (!mob)
@@ -4734,9 +4786,8 @@ bool olc_mobile_set_speaking(void* obj, const std::string& value)
     return true;
 }
 
-bool olc_mobile_set_long_field(void* obj, const std::string& value)
+bool olc_mobile_set_long_field(CHAR_DATA* mob, const std::string& value)
 {
-    auto mob = static_cast<CHAR_DATA*>(obj);
     if (!mob)
         return false;
     return olc_mobile_set_long_desc(mob->long_descr, value);
@@ -4755,6 +4806,7 @@ CHAR_DATA* olc_mobile_clone(const CHAR_DATA* src)
      * Editable / meaningful data
      * -------------------------
      */
+    dst->game       = src->game;
     dst->pIndexData = src->pIndexData;
 
     dst->name        = src->name        ? STRALLOC(src->name)        : nullptr;
@@ -5482,7 +5534,7 @@ bool olc_mobile_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
         return true;
     }
 
-    if (olc_find_field_fuzzy(ch->desc->olc->schema, command))
+    if (olc_session_command_is_field_name(ch->desc->olc, command))
     {
         char buf[MSL];
         snprintf(buf, sizeof(buf), "%s %s", command, argument ? argument : "");

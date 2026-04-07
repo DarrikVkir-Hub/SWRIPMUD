@@ -2381,7 +2381,7 @@ void do_empty( CHAR_DATA *ch, char *argument )
 		{
 		    act( AT_ACTION, "You empty $p.", ch, obj, NULL, TO_CHAR );
 		    act( AT_ACTION, "$n empties $p.", ch, obj, NULL, TO_ROOM );
-		    if ( IS_SET( sysdata.save_flags, SV_DROP ) )
+		    if ( BV_IS_SET( sysdata.save_flags, SV_DROP ) )
 			save_char_obj( ch );
 		}
 		else
@@ -2417,7 +2417,7 @@ void do_empty( CHAR_DATA *ch, char *argument )
 		    act( AT_ACTION, "You empty $p into $P.", ch, obj, dest, TO_CHAR );
 		    act( AT_ACTION, "$n empties $p into $P.", ch, obj, dest, TO_ROOM );
 		    if ( !dest->carried_by
-		    &&    IS_SET( sysdata.save_flags, SV_PUT ) )
+		    &&    BV_IS_SET( sysdata.save_flags, SV_PUT ) )
 			save_char_obj( ch );
 		}
 		else
@@ -2622,7 +2622,7 @@ void do_hail( CHAR_DATA *ch , char *argument )
 
   if ( arg[0] != '\0' )
 {
-  if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
+  if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
 
   {
     send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
@@ -2641,7 +2641,7 @@ void do_hail( CHAR_DATA *ch , char *argument )
     return;
   }
 
-    target = get_ship_here( arg,ship );
+    target = get_ship_here( ch->game, arg,ship );
 
 
     if (  target == NULL )
@@ -4073,12 +4073,15 @@ void generate_quest(CHAR_DATA *ch, CHAR_DATA *questman)
 
 /* Called from update_handler() by pulse_area */
 
-void quest_update(void)
+void quest_update(GameContext *game)
 {
     CHAR_DATA *ch, *ch_next;
 
     for ( ch = first_char; ch != NULL; ch = ch_next )
     {
+        if (!ch->game)
+          ch->game = game;
+        
         ch_next = ch->next;
 
 	if (IS_NPC(ch)) continue;

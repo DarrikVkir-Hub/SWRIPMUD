@@ -3904,62 +3904,67 @@ ch_ret spell_animate_dead( int sn, int level, CHAR_DATA *ch, void *vo )
 
     if ( IS_IMMORTAL(ch) || ( chance(ch, 75) && pMobIndex->level - ch->top_level < 10 ) )
     { 
-	mob = create_mobile( get_mob_index(MOB_VNUM_ANIMATED_CORPSE) );
-	char_to_room( mob, ch->in_room );
-	mob->top_level 	 = UMIN(ch->top_level / 2, pMobIndex->level);
-	mob->race  	 = pMobIndex->race;	/* should be undead */
+        if (!ch->game)
+        {
+            send_to_char("You must be in a game to create an animated corpse.\n", ch);
+            return rSPELL_FAILED;
+        }
+        mob = create_mobile( ch->game, get_mob_index(MOB_VNUM_ANIMATED_CORPSE) );
+        char_to_room( mob, ch->in_room );
+        mob->top_level 	 = UMIN(ch->top_level / 2, pMobIndex->level);
+        mob->race  	 = pMobIndex->race;	/* should be undead */
 
-        /* Fix so mobs wont have 0 hps and crash mud - Scryn 2/20/96 */
-  	if (!pMobIndex->hitnodice)
-	  mob->max_hit      = pMobIndex->level * 8 + number_range(
-                              pMobIndex->level * pMobIndex->level / 4,
-                              pMobIndex->level * pMobIndex->level );        
-	else
-	mob->max_hit     = dice(pMobIndex->hitnodice, pMobIndex->hitsizedice)
-	                 + pMobIndex->hitplus;
-	mob->max_hit	 = UMAX( URANGE( mob->max_hit / 4,
-	                          (mob->max_hit * corpse->value[3]) / 100,
-				   ch->top_level * dice(20,10)), 1 );
+            /* Fix so mobs wont have 0 hps and crash mud - Scryn 2/20/96 */
+        if (!pMobIndex->hitnodice)
+        mob->max_hit      = pMobIndex->level * 8 + number_range(
+                                pMobIndex->level * pMobIndex->level / 4,
+                                pMobIndex->level * pMobIndex->level );        
+        else
+        mob->max_hit     = dice(pMobIndex->hitnodice, pMobIndex->hitsizedice)
+                        + pMobIndex->hitplus;
+        mob->max_hit	 = UMAX( URANGE( mob->max_hit / 4,
+                                (mob->max_hit * corpse->value[3]) / 100,
+                    ch->top_level * dice(20,10)), 1 );
 
-       
-	mob->hit       = mob->max_hit;
-	mob->damroll   = ch->top_level / 8;
-	mob->hitroll   = ch->top_level / 6;
-	mob->alignment = ch->alignment;
+        
+        mob->hit       = mob->max_hit;
+        mob->damroll   = ch->top_level / 8;
+        mob->hitroll   = ch->top_level / 6;
+        mob->alignment = ch->alignment;
 
-	act(AT_MAGIC, "$n makes $T rise from the grave!", ch, NULL, pMobIndex->short_descr, TO_ROOM);
-	act(AT_MAGIC, "You make $T rise from the grave!", ch, NULL, pMobIndex->short_descr, TO_CHAR);
+        act(AT_MAGIC, "$n makes $T rise from the grave!", ch, NULL, pMobIndex->short_descr, TO_ROOM);
+        act(AT_MAGIC, "You make $T rise from the grave!", ch, NULL, pMobIndex->short_descr, TO_CHAR);
 
-	SPRINTF(buf, "animated corpse %s", pMobIndex->player_name);
-	STRFREE(mob->name);
-	mob->name = STRALLOC(buf);
+        SPRINTF(buf, "animated corpse %s", pMobIndex->player_name);
+        STRFREE(mob->name);
+        mob->name = STRALLOC(buf);
 
-	SPRINTF(buf, "The animated corpse of %s", pMobIndex->short_descr);
-	STRFREE(mob->short_descr);
-	mob->short_descr = STRALLOC(buf);
+        SPRINTF(buf, "The animated corpse of %s", pMobIndex->short_descr);
+        STRFREE(mob->short_descr);
+        mob->short_descr = STRALLOC(buf);
 
-	SPRINTF(buf, "An animated corpse of %s struggles with the horror of its undeath.\n", pMobIndex->short_descr);
-	STRFREE(mob->long_descr);
-	mob->long_descr = STRALLOC(buf);
-	add_follower( mob, ch );
-	af.type      = sn;
-	af.duration  = (sh_int) ( (number_fuzzy( (level + 1) / 4 ) + 1) * DUR_CONV );
-	af.location  = 0;
-	af.modifier  = 0;
-	af.bitvector = AFF_CHARM;
-	affect_to_char( mob, &af );
+        SPRINTF(buf, "An animated corpse of %s struggles with the horror of its undeath.\n", pMobIndex->short_descr);
+        STRFREE(mob->long_descr);
+        mob->long_descr = STRALLOC(buf);
+        add_follower( mob, ch );
+        af.type      = sn;
+        af.duration  = (sh_int) ( (number_fuzzy( (level + 1) / 4 ) + 1) * DUR_CONV );
+        af.location  = 0;
+        af.modifier  = 0;
+        af.bitvector = AFF_CHARM;
+        affect_to_char( mob, &af );
 
-	if (corpse->first_content)
-	    for( obj = corpse->first_content; obj; obj = obj_next)
-	    {
-		obj_next = obj->next_content;
-		obj_from_obj(obj);
-		obj_to_room(obj, corpse->in_room);
-	    }
+        if (corpse->first_content)
+            for( obj = corpse->first_content; obj; obj = obj_next)
+            {
+            obj_next = obj->next_content;
+            obj_from_obj(obj);
+            obj_to_room(obj, corpse->in_room);
+            }
 
-	separate_obj(corpse);
-	extract_obj(corpse);
-	return rNONE;
+        separate_obj(corpse);
+        extract_obj(corpse);
+        return rNONE;
     }
     else
     {
@@ -4186,7 +4191,12 @@ CHAR_DATA *make_poly_mob(CHAR_DATA *ch, int vnum)
     bug("Make_poly_mob: Can't find mob %d", vnum);
     return NULL;
   }
-  mob = create_mobile(pMobIndex);
+          if (!ch->game)
+        {
+            send_to_char("You must be in a game to polymorph someone.\n", ch);
+            return NULL;
+        }
+  mob = create_mobile(ch->game, pMobIndex);
   BV_SET_BIT(mob->act, ACT_POLYMORPHED);
   return mob;  
 }
@@ -5033,8 +5043,14 @@ ch_ret spell_create_mob( int sn, int level, CHAR_DATA *ch, void *vo )
 	return rNONE;
     }
 
+    if (!ch->game)
+    {
+        send_to_char("You must be in a game to create something like that.\n", ch);
+        return rSPELL_FAILED;
+    }
+
     if ( (mi=get_mob_index(vnum)) == NULL
-    ||   (mob=create_mobile(mi)) == NULL )
+    ||   (mob=create_mobile(ch->game, mi)) == NULL )
     {
 	failed_casting( skill, ch, NULL, NULL );
 	return rNONE;

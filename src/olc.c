@@ -26,8 +26,14 @@
 * Not counting the do_declarations, obviously                              *
 ****************************************************************************/
 
-    // In olc.c
     // --------------INDEX----------------
+    // In olc.h
+    // GENERIC template functions for field handling
+    // GENERIC Template Session Control OLC_START OLC_STOP OLC_SET
+    // OLC_SHOW templates - handlers for specific field types
+    // OLC_SHOW main templates
+
+    // In olc.c
     // OLC defines, enums, and structs - moved to olc.h
     // GENERIC - generic format, string, flag handling that is not OLC specific
     // GENERICOLCSTRING generic format functions but dealing with OLC variables
@@ -76,12 +82,10 @@ void olc_mobile_reset_pending_proto(OlcSession* sess);;
 void olc_mobile_init_pending_proto_from_live(OlcSession* sess, CHAR_DATA* mob);
 bool olc_mobile_maybe_sync_prototype(CHAR_DATA* live, const CHAR_DATA* baseline, const CHAR_DATA* edited);
 bool olc_mobile_apply_pending_prototype_changes(CHAR_DATA* ch, CHAR_DATA* live);
-std::vector<std::string> olc_mobile_format_affect_lines( CHAR_DATA* mob, size_t label_width, int term_width);
 
 void olc_show_object(CHAR_DATA* ch, OBJ_DATA* obj, bool help_only_mode, int term_width);
 void olc_object_show_header(CHAR_DATA* ch, OBJ_DATA* obj);
 bool olc_object_edit_revert(CHAR_DATA* ch);
-std::vector<std::string> olc_object_format_affect_lines( OBJ_DATA* obj, size_t label_width, int term_width);
 
 void olc_show_room(CHAR_DATA* ch, ROOM_INDEX_DATA* room, bool show_help, int term_width);
 void olc_show_extradesc_help(CHAR_DATA* ch);
@@ -505,148 +509,6 @@ std::vector<std::string> olc_wrap_value_pairs(
     return lines;
 }
 
-
-
-// --------------------------------------------
-// GENERICOLCSTRING generic string functions - generic functions but dealing with OLC variables
-// --------------------------------------------
-
-std::vector<std::string> olc_enum_values_vec(const OlcField& f)
-{
-    std::vector<std::string> out;
-
-    switch (f.meta_type)
-    {
-        case OlcMetaType::ENUM_FLAG:
-        {
-            auto table = static_cast<const flag_name*>(f.meta);
-            for (size_t i = 0; table[i].name; ++i)
-                out.push_back(table[i].name);
-            break;
-        }
-        case OlcMetaType::FLAG_TABLE:
-        {
-            auto table = static_cast<const flag_name*>(f.meta);
-            for (size_t i = 0; table[i].name; ++i)
-                out.push_back(table[i].name);
-            break;
-        }
-        case OlcMetaType::ENUM_LEGACY:
-        {
-            auto table = static_cast<const char* const*>(f.meta);
-            for (int i = 0; table[i]; ++i)
-                out.push_back(table[i]);
-            break;
-        }
-
-        default:
-            break;
-    }
-
-    return out;
-}
-
-std::vector<std::string> olc_enum_suggestions(const std::string& input, const OlcField& f)
-{
-    std::vector<std::string> matches;
-    auto values = olc_enum_values_vec(f);
-
-    for (const auto& v : values)
-    {
-        if (str_prefix_utf8(input.c_str(), v.c_str()) == false) // starts with
-            matches.push_back(v);
-    }
-
-    return matches;
-}
-
-std::vector<std::string> olc_all_field_names(const OlcSchema* schema)
-{
-    std::vector<std::string> out;
-
-    for (const auto& f : *schema->fields)
-        out.push_back(f.name);
-
-    return out;
-}
-
-std::vector<std::string> olc_field_suggestions(const OlcSchema* schema, const std::string& input)
-{
-    std::vector<std::string> matches;
-
-    for (const auto& f : *schema->fields)
-    {
-        // prefix match
-        if (str_prefix(input.c_str(), f.name) == false)
-        {
-            matches.push_back(f.name);
-            continue;
-        }
-
-        // substring fallback
-        if (strcasestr(f.name, input.c_str()))
-            matches.push_back(f.name);
-    }
-    std::sort(matches.begin(), matches.end());
-
-    return matches;
-}
-
-const OlcField* olc_find_field_fuzzy(const OlcSchema* schema, const std::string& input)
-{
-    const OlcField* prefix_match = nullptr;
-
-    for (const auto& f : *schema->fields)
-    {
-        // Exact match (fast path)
-        if (!str_cmp(input.c_str(), f.name))
-            return &f;
-
-        // Prefix match
-        if (str_prefix(input.c_str(), f.name) == false)
-        {
-            if (prefix_match) // ambiguous
-                return nullptr;
-
-            prefix_match = &f;
-        }
-    }
-
-    return prefix_match; // may be nullptr
-}
-
-std::vector<std::string> olc_ambiguous_field_matches(const OlcSchema* schema, const std::string& input)
-{
-    std::vector<std::string> matches;
-
-    if (!schema || input.empty())
-        return matches;
-
-    for (const auto& f : *schema->fields)
-    {
-        if (!str_prefix(input.c_str(), f.name))
-            matches.push_back(f.name);
-    }
-
-    std::sort(matches.begin(), matches.end());
-    return matches;
-}
-
-bool olc_field_name_is_ambiguous(const OlcSchema* schema, const std::string& input)
-{
-    if (!schema || input.empty())
-        return false;
-
-    int matches = 0;
-
-    for (const auto& f : *schema->fields)
-    {
-        if (!str_prefix(input.c_str(), f.name))
-            ++matches;
-    }
-
-    return matches > 1;
-}
 
 
 // --------------------------------------------
@@ -1111,18 +973,6 @@ std::vector<std::string> format_multiline_block(
     }
 
     return out;
-}
-
-std::string olc_get_field_display_value(
-    CHAR_DATA* ch,
-    void* obj,
-    const OlcField& f)
-{
-    if (f.contextual_getter)
-        return f.contextual_getter(ch, obj);
-    if (f.getter)
-        return f.getter(obj);
-    return "";
 }
 
 void olc_append_lines(
@@ -1768,139 +1618,35 @@ void olc_discard_current_working_copy(CHAR_DATA* ch)
     olc_mobile_reset_pending_proto(sess);
 }
 
-void olc_send_value_error(CHAR_DATA* ch, const OlcField& f,
-                         const std::string& value,
-                         int term_width, int indent)
-{
-    switch (f.value_type)
-    {
-        case OlcValueType::INT:
-        {
-            int dummy = 0;
-
-            if (!olc_format_parse_strict_int(value, dummy))
-            {
-                send_to_char("Value must be a number.\n", ch);
-            }
-            else
-            {
-                char buf[MSL];
-
-                if (f.min_int != INT_MIN || f.max_int != INT_MAX)
-                {
-                    snprintf(buf, sizeof(buf),
-                        "Value out of range. Acceptable range is %d to %d.\n",
-                        f.min_int, f.max_int);
-                    send_to_char(buf, ch);
-                }
-                else
-                {
-                    send_to_char("Invalid numeric value.\n", ch);
-                }
-            }
-            break;
-        }
-
-        case OlcValueType::BOOL:
-            send_to_char("Value must be true/false (yes/no, 1/0).\n", ch);
-            break;
-
-        case OlcValueType::ENUM:
-        {
-            send_to_char("Invalid value.\n", ch);
-
-            auto suggestions = olc_enum_suggestions(value, f);
-
-            if (!suggestions.empty())
-            {
-                send_to_char("Did you mean:\n", ch);
-                std::string col = olc_format_columns(suggestions, term_width, indent);
-                send_to_char(col.c_str(), ch);
-            }
-            else
-            {
-                auto values = olc_enum_values_vec(f);
-                if (!values.empty())
-                {
-                    send_to_char("Valid values:\n", ch);
-                    std::string col = olc_format_columns(values, term_width, indent);
-                    send_to_char(col.c_str(), ch);
-                }
-            }
-            break;
-        }
-
-        case OlcValueType::FLAG:
-        {
-            send_to_char("Invalid flag value.\n", ch);
-
-            auto values = olc_enum_values_vec(f);
-            if (!values.empty())
-            {
-                send_to_char("Valid flags:\n", ch);
-                std::string col = olc_format_columns(values, term_width, indent);
-                send_to_char(col.c_str(), ch);
-            }
-            break;
-        }
-
-        case OlcValueType::STRING:
-            send_to_char("Invalid text value.\n", ch);
-            break;
-
-        case OlcValueType::EDITOR:
-            send_to_char("This field must be edited, not set directly.\n", ch);
-            break;
-
-        default:
-            send_to_char("Invalid value.\n", ch);
-            break;
-    }
-}
-
-bool olc_finish_editor_substate(CHAR_DATA* ch)
+static bool olc_finish_editor_substate(CHAR_DATA* ch)
 {
     if (!ch || !ch->desc || !ch->desc->olc)
         return false;
 
     auto sess = ch->desc->olc;
-    if (!sess->schema || !sess->working_copy)
+    if (!sess || !sess->working_copy)
         return false;
 
-    if (ch->substate <= SUB_NONE)
-        return false;
-
-    for (const auto& f : *sess->schema->fields)
+    switch (sess->mode)
     {
-        if (f.value_type != OlcValueType::EDITOR)
-            continue;
+        case OlcEditMode::ROOM_INLINE:
+            return olc_finish_editor_substate_typed(
+                ch, sess, get_room_schema(),
+                olc_session_working_as<ROOM_INDEX_DATA>(sess));
 
-        if (f.editor_substate != ch->substate)
-            continue;
+        case OlcEditMode::OBJECT_INLINE:
+            return olc_finish_editor_substate_typed(
+                ch, sess, get_object_schema(),
+                olc_session_working_as<OBJ_DATA>(sess));
 
-        if (!f.editor_setter)
-            continue;
+        case OlcEditMode::MOBILE_INLINE:
+            return olc_finish_editor_substate_typed(
+                ch, sess, get_mobile_schema(),
+                olc_session_working_as<CHAR_DATA>(sess));
 
-        std::string text = copy_buffer(ch);
-        stop_editing(ch);
-
-        ch->substate = SUB_NONE;
-        ch->dest_buf = nullptr;
-
-        bool ok = f.editor_setter(ch, sess->working_copy, text);
-        if (ok)
-        {
-            sess->dirty = true;
-            ch_printf(ch, "%s updated.\n\r", f.name);
-        }
-        else
-        {
-            ch_printf(ch, "%s failed to update.\n\r", f.name);
-        }
-        return true;
+        default:
+            return false;
     }
-
-    return false;
 }
 
 bool olc_has_active_session(CHAR_DATA* ch)
@@ -1968,6 +1714,27 @@ bool olc_dispatch_entry_command(CHAR_DATA* ch, const std::string& type, const st
     }
 
     return false;
+}
+
+bool olc_session_command_is_field_name(OlcSession* sess, const std::string& cmd)
+{
+    if (!sess || cmd.empty())
+        return false;
+
+    switch (sess->mode)
+    {
+        case OlcEditMode::ROOM_INLINE:
+            return olc_schema_has_field_name(get_room_schema(), cmd);
+
+        case OlcEditMode::OBJECT_INLINE:
+            return olc_schema_has_field_name(get_object_schema(), cmd);
+
+        case OlcEditMode::MOBILE_INLINE:
+            return olc_schema_has_field_name(get_mobile_schema(), cmd);
+
+        default:
+            return false;
+    }
 }
 
 bool olc_dispatch_session_command(CHAR_DATA* ch, const std::string& cmd, const std::string& rest)
@@ -2087,7 +1854,7 @@ bool olc_dispatch_session_command(CHAR_DATA* ch, const std::string& cmd, const s
      * Builder-friendly shortcut:
      * While editing, allow "olc <field> <value>" to behave like olcset.
      */
-    if (olc_find_field_fuzzy(sess->schema, cmd))
+    if (olc_session_command_is_field_name(sess, cmd))
     {
         char buf[MSL];
         if (!rest.empty())
@@ -2113,160 +1880,6 @@ void olc_show_extradesc_help(CHAR_DATA* ch)
     send_to_char("  extradesc -<keyword>    (delete)\n", ch);
 }
 
-bool olc_show_handle_extradesc_list(
-    CHAR_DATA* ch,
-    void* working_copy,
-    const OlcField& f,
-    ROOM_INDEX_DATA* room,
-    OBJ_DATA* obj,
-    const std::string& value,
-    size_t max_name_len,
-    int term_width,
-    std::vector<std::string>& other_lines)
-{
-    if (f.meta_type != OlcMetaType::EXTRA_DESC_LIST)
-        return false;
-
-    if (!room && !obj)
-        return false;
-
-    EXTRA_DESCR_DATA* first_extradesc = room ? room->first_extradesc : obj->first_extradesc;
-
-    if (!value.empty())
-    {
-        EXTRA_DESCR_DATA* ed = nullptr;
-
-        for (ed = first_extradesc; ed; ed = ed->next)
-        {
-            if (nifty_is_name_prefix((char*)value.c_str(), ed->keyword))
-                break;
-        }
-
-        if (!ed)
-        {
-            send_to_char("No such extra description.\n", ch);
-            return true;
-        }
-
-        send_to_char(ed->description ? ed->description : "(no description)\n", ch);
-        return true;
-    }
-
-    std::string summary = olc_get_field_display_value(ch, working_copy, f);
-
-    if (summary.empty() && room)
-        summary = "none";
-
-    olc_append_lines(
-        other_lines,
-        olc_format_line(
-            f.name,
-            summary,
-            OLC_COL_LIST,
-            (int)max_name_len,
-            term_width));
-
-    return true;
-}
-
-bool olc_show_handle_exit_list(
-    CHAR_DATA* ch,
-    const OlcField& f,
-    ROOM_INDEX_DATA* room,
-    size_t max_name_len,
-    int term_width,
-    std::vector<std::string>& other_lines)
-{
-    if (f.meta_type != OlcMetaType::EXIT_LIST)
-        return false;
-
-    if (!room)
-        return false;
-
-    olc_append_lines(
-        other_lines,
-        olc_format_exit_list_lines(
-            room,
-            max_name_len,
-            term_width,
-            false));
-
-    olc_append_lines(
-        other_lines,
-        olc_format_pending_exit_side_effects(
-            ch,
-            max_name_len,
-            term_width));
-
-    return true;
-}
-
-bool olc_show_handle_meta_list(
-    const OlcField& f,
-    OBJ_DATA* obj,
-    CHAR_DATA* mob,
-    size_t max_name_len,
-    int term_width,
-    std::vector<std::string>& other_lines)
-{
-    if (f.meta_type == OlcMetaType::OBJ_AFFECT_LIST)
-    {
-        if (!obj)
-            return false;
-
-        olc_append_lines(
-            other_lines,
-            olc_object_format_affect_lines(
-                obj,
-                max_name_len,
-                term_width));
-        return true;
-    }
-
-    if (f.meta_type == OlcMetaType::MOB_AFFECT_LIST)
-    {
-        if (!mob)
-            return false;
-
-        olc_append_lines(
-            other_lines,
-            olc_mobile_format_affect_lines(
-                mob,
-                max_name_len,
-                term_width));
-        return true;
-    }
-
-    return false;
-}
-
-bool olc_show_handle_special_list_field(
-    CHAR_DATA* ch,
-    void* working_copy,
-    const OlcField& f,
-    ROOM_INDEX_DATA* room,
-    OBJ_DATA* obj,
-    CHAR_DATA* mob,
-    const std::string& value,
-    size_t max_name_len,
-    int term_width,
-    std::vector<std::string>& other_lines)
-{
-    if (olc_show_handle_extradesc_list(
-            ch, working_copy, f, room, obj, value, max_name_len, term_width, other_lines))
-        return true;
-
-    if (olc_show_handle_exit_list(
-            ch, f, room, max_name_len, term_width, other_lines))
-        return true;
-
-    if (olc_show_handle_meta_list(
-            f, obj, mob, max_name_len, term_width, other_lines))
-        return true;
-
-    return false;
-}
-
 void olc_show_main_help(CHAR_DATA* ch)
 {
     send_to_char("OLC commands:\n", ch);
@@ -2287,300 +1900,84 @@ void olc_show_main_help(CHAR_DATA* ch)
 
 void olc_show_help(CHAR_DATA* ch, const std::string& field)
 {
-    auto d = ch->desc;
-    if (!d || !d->olc)
+    if (!ch || !ch->desc || !ch->desc->olc)
     {
-        send_to_char("You have not chosen anything to edit.\n", ch);
+        send_to_char("You are not editing anything.\n", ch);
         return;
     }
 
-    int term_width = 75;
-    if (d->naws_enabled && d->term_width > 20)
-        term_width = d->term_width;
+    OlcSession* sess = ch->desc->olc;
 
-    auto sess = d->olc;
-    bool found = false;
-
-    ROOM_INDEX_DATA* room = nullptr;
-    OBJ_DATA* obj = nullptr;
-    CHAR_DATA* mob = nullptr;
-
-    if (!str_cmp(sess->schema->name, "room"))
-        room = static_cast<ROOM_INDEX_DATA*>(sess->working_copy);
-    else if (!str_cmp(sess->schema->name, "object"))
-        obj = static_cast<OBJ_DATA*>(sess->working_copy);
-    else if (!str_cmp(sess->schema->name, "mobile"))
-        mob = static_cast<CHAR_DATA*>(sess->working_copy);
-    if (!room && !obj && !mob)
-        log_printf("Unknown olc session in olc_show_help");
-    /*
-     * Help header
-     */
-    if (field.empty() || !str_cmp(field.c_str(), "help"))
+    switch (sess->mode)
     {
-        char buf[MSL];
+        case OlcEditMode::ROOM_INLINE:
+            olc_show_help_typed(ch, get_room_schema(), field);
+            return;
 
-        if (obj)
-        {
-            olc_object_show_header(ch, obj);
-        }
-        else if (mob)
-        {
-            snprintf(buf, sizeof(buf),
-                "%s[Mobile Editor Help]%s\n",
-                OLC_COL_HEADER,
-                OLC_COL_RESET
-            );
-            send_to_char(buf, ch);
-        }
-        else
-        {
-            snprintf(buf, sizeof(buf),
-                "%s[Room Editor Help]%s\n",
-                OLC_COL_HEADER,
-                OLC_COL_RESET
-            );
-            send_to_char(buf, ch);
-        }
+        case OlcEditMode::OBJECT_INLINE:
+            olc_show_help_typed(ch, get_object_schema(), field);
+            return;
+
+        case OlcEditMode::MOBILE_INLINE:
+            olc_show_help_typed(ch, get_mobile_schema(), field);
+            return;
+
+        default:
+            send_to_char("You are not editing anything.\n", ch);
+            return;
     }
-
-    std::vector<std::string> lines;
-    size_t max_name_len = 0;
-
-    for (const auto& f : *sess->schema->fields)
-    {
-        if (!field.empty() && str_cmp(field.c_str(), "help") &&
-            str_prefix_utf8(field.c_str(), f.name))
-            continue;
-
-        size_t len = strlen(f.name);
-        if (len > max_name_len)
-            max_name_len = len;
-    }
-
-    for (const auto& f : *sess->schema->fields)
-    {
-        if (!field.empty() && str_cmp(field.c_str(), "help") &&
-            str_prefix_utf8(field.c_str(), f.name))
-            continue;
-
-        found = true;
-
-        std::string help_text = f.help ? f.help : "";
-
-        auto help_lines = olc_format_line(
-            f.name,
-            help_text,
-            OLC_COL_HELP,
-            (int)max_name_len,
-            term_width
-        );
-
-        for (const auto& l : help_lines)
-            lines.push_back(l);
-
-        if (f.value_type == OlcValueType::ENUM || f.value_type == OlcValueType::FLAG)
-        {
-            auto vals = olc_enum_values_vec(f);
-            if (!vals.empty())
-            {
-                std::string cols = format_columns_for_field( vals, term_width, (int)max_name_len );
-                auto value_lines = format_multiline_block( "", cols, OLC_COL_HELP, (int)max_name_len );
-                for (const auto& l : value_lines)
-                    lines.push_back(l);
-            }
-        }
-    }
-
-    for (const auto& l : lines)
-        send_to_char((l + "\n").c_str(), ch);
-
-    if (!found)
-        send_to_char("Unknown field.\n", ch);
 }
 
 void olc_show(CHAR_DATA* ch, const std::string& field, const std::string& value)
 {
-    auto d = ch->desc;
-    if (!d || !d->olc)
+    if (!ch || !ch->desc || !ch->desc->olc)
     {
-        send_to_char("You have not chosen anything to edit.", ch);
+        send_to_char("You are not editing anything.\n", ch);
         return;
     }
 
-    bool show_help = (value == "help") || (field == "help");
-    int term_width = 75;
+    OlcSession* sess = ch->desc->olc;
+    int term_width = (ch->desc->term_width > 0) ? ch->desc->term_width : 80;
 
-    if (d->naws_enabled && d->term_width > 20)
-        term_width = d->term_width;
-
-    auto sess = d->olc;
-    bool found = false;
-
-    ROOM_INDEX_DATA* room = nullptr;
-    OBJ_DATA* obj = nullptr;
-    CHAR_DATA* mob = nullptr;
-
-    if (!str_cmp(sess->schema->name, "room"))
-        room = static_cast<ROOM_INDEX_DATA*>(sess->working_copy);
-    else if (!str_cmp(sess->schema->name, "object"))
-        obj = static_cast<OBJ_DATA*>(sess->working_copy);
-    else if (!str_cmp(sess->schema->name, "mobile"))
-        mob = static_cast<CHAR_DATA*>(sess->working_copy);
-
-    /*
-     * Type-specific full display
-     */
-    if (field.empty() && !show_help)
+    switch (sess->mode)
     {
-        if (room)
-        {
-            olc_show_room(ch, room, false, term_width);
-            send_to_char("\n(Type 'olcshow help' to see field help and valid values)\n", ch);
-            return;
-        }
-
-        if (obj)
-        {
-            olc_show_object(ch, obj, false, term_width);
-            send_to_char("\n(Type 'olcshow help' to see field help and valid values)\n", ch);
-            return;
-        }
-
-        if (mob)
-        {
-            olc_show_mob(ch, mob, false, term_width);
-            send_to_char("\n(Type 'olcshow help' to see field help and valid values)\n", ch);
-            return;
-        }
-    }
-
-    /*
-     * Help mode is now fully separate
-     */
-    if (show_help)
-    {
-        olc_show_help(ch, field);
-        return;
-    }
-    // The rest of this function is purely generic catch all field handling
-    std::vector<std::string> int_fields;
-    std::vector<std::string> other_lines;
-
-    size_t max_name_len = 0;
-
-    for (const auto& f : *sess->schema->fields)
-    {
-        if (!field.empty() && str_prefix_utf8(field.c_str(), f.name))
-            continue;
-
-        size_t len = strlen(f.name);
-        if (len > max_name_len)
-            max_name_len = len;
-    }
-
-    for (const auto& f : *sess->schema->fields)
-    {
-        if (!field.empty() && str_prefix_utf8(field.c_str(), f.name))
-            continue;
-
-        found = true;
-
-        if (olc_show_handle_special_list_field(
+        case OlcEditMode::ROOM_INLINE:
+            olc_show_typed(
                 ch,
-                sess->working_copy,
-                f,
-                room,
-                obj,
-                mob,
+                sess,
+                olc_session_working_as<ROOM_INDEX_DATA>(sess),
+                get_room_schema(),
+                field,
                 value,
-                max_name_len,
-                term_width,
-                other_lines))
-        {
-            continue;
-        }
+                term_width);
+            return;
 
-        std::string display_value = olc_get_field_display_value(
-            ch,
-            sess->working_copy,
-            f);
+        case OlcEditMode::OBJECT_INLINE:
+            olc_show_typed(
+                ch,
+                sess,
+                olc_session_working_as<OBJ_DATA>(sess),
+                get_object_schema(),
+                field,
+                value,
+                term_width);
+            return;
 
-        if (f.value_type == OlcValueType::INT)
-        {
-            std::string entry = std::string(f.name) + "=" + display_value;
-            int_fields.push_back(entry);
-            continue;
-        }
+        case OlcEditMode::MOBILE_INLINE:
+            olc_show_typed(
+                ch,
+                sess,
+                olc_session_working_as<CHAR_DATA>(sess),
+                get_mobile_schema(),
+                field,
+                value,
+                term_width);
+            return;
 
-        const char* color = OLC_COL_STRING;
-        switch (f.value_type)
-        {
-            case OlcValueType::INT:    color = OLC_COL_INT; break;
-            case OlcValueType::ENUM:   color = OLC_COL_ENUM; break;
-            case OlcValueType::FLAG:   color = OLC_COL_LIST; break;
-            case OlcValueType::EDITOR: color = OLC_COL_STRING; break;
-            case OlcValueType::STRING: color = OLC_COL_STRING; break;
-            case OlcValueType::BOOL:   color = OLC_COL_ENUM; break;
-            default:                   color = OLC_COL_STRING; break;
-        }
-
-        auto lines = olc_format_line(
-            f.name,
-            display_value,
-            color,
-            (int)max_name_len,
-            term_width
-        );
-
-        for (const auto& l : lines)
-            other_lines.push_back(l);
+        default:
+            send_to_char("You are not editing anything.\n", ch);
+            return;
     }
-
-    if (!int_fields.empty())
-    {
-        std::string prefix = std::string(OLC_COL_LABEL) + "Values" + OLC_COL_RESET + "      : ";
-        int prefix_length = visible_length(prefix.c_str());
-        int current_len = prefix_length;
-
-        std::string line = prefix;
-
-        for (size_t i = 0; i < int_fields.size(); ++i)
-        {
-            std::string part = std::string(OLC_COL_INT) + int_fields[i] + OLC_COL_RESET;
-
-            if (i > 0)
-                part = " &w| " + part;
-
-            int part_length = visible_length(part.c_str());
-
-            if ((int)(current_len + part_length) > term_width)
-            {
-                line += "\n";
-                send_to_char(line.c_str(), ch);
-
-                line = std::string(prefix_length, ' ') + part;
-                current_len = prefix_length + part_length;
-            }
-            else
-            {
-                line += part;
-                current_len += part_length;
-            }
-        }
-
-        line += "\n";
-        send_to_char(line.c_str(), ch);
-    }
-
-    for (const auto& l : other_lines)
-        send_to_char((l + "\n").c_str(), ch);
-
-    if (field.empty())
-        send_to_char("\n(Type 'olcshow help' to see field help and valid values)\n", ch);
-
-    if (!found)
-        send_to_char("Unknown field.\n", ch);
 }
 
 
@@ -2588,56 +1985,6 @@ void olc_show(CHAR_DATA* ch, const std::string& field, const std::string& value)
 // --------------------------------------------
 // Session Control OLC_START OLC_STOP OLC_SET
 // --------------------------------------------
-void olc_start(CHAR_DATA* ch, void* target, const OlcSchema* schema, const OlcOps* ops)
-{
-    auto d = ch ? ch->desc : nullptr;
-    if (!d)
-        return;
-
-    if (d->olc)
-    {
-        send_to_char("You are already in a session.\n", ch);
-        return;
-    }
-
-    if (!target || !schema || !ops || !ops->clone || !ops->free_clone || !ops->apply_changes)
-    {
-        send_to_char("OLC is not configured for this target.\n", ch);
-        return;
-    }
-
-    d->olc = new OlcSession();
-    d->olc->original = target;
-    d->olc->working_copy = ops->clone(target);
-    d->olc->original_clone = ops->clone(target);
-    d->olc->schema = schema;
-    d->olc->ops = ops;
-    d->olc->last_cmd_arg.clear();
-    d->olc->dirty = false;
-    d->olc->pending_exit_side_effects.clear();
-    d->olc->mode = OlcEditMode::NONE;
-    d->olc->anchor_room = nullptr;
-
-    olc_mobile_reset_pending_proto(d->olc);
-    if (schema && schema->name && !str_cmp(schema->name, "mobile"))
-        olc_mobile_init_pending_proto_from_live(
-            d->olc,
-            static_cast<CHAR_DATA*>(target));    
-
-    if (!d->olc->working_copy || !d->olc->original_clone)
-    {
-        if (d->olc->working_copy)
-            ops->free_clone(d->olc->working_copy);
-        if (d->olc->original_clone)
-            ops->free_clone(d->olc->original_clone);
-
-        delete d->olc;
-        d->olc = nullptr;
-        send_to_char("Failed to start OLC session.\n", ch);
-        return;
-    }
-}
-
 void olc_stop(CHAR_DATA* ch, bool save)
 {
     auto d = ch ? ch->desc : nullptr;
@@ -2668,107 +2015,43 @@ void olc_stop(CHAR_DATA* ch, bool save)
 
 void olc_set(CHAR_DATA* ch, const std::string& field, const std::string& value)
 {
-    auto d = ch->desc;
+    auto d = ch ? ch->desc : nullptr;
     if (!d || !d->olc)
         return;
 
     auto sess = d->olc;
 
-    int term_width = 80;
-
-    if (d->naws_enabled && d->term_width > 20)
-        term_width = d->term_width;
-    int indent = 2;
-
-    const OlcField* f = olc_find_field_fuzzy(sess->schema, field);
-
-    if (!f)
+    switch (sess->mode)
     {
-        if (olc_field_name_is_ambiguous(sess->schema, field))
-        {
-            send_to_char("Ambiguous field.\n", ch);
-
-            auto matches = olc_ambiguous_field_matches(sess->schema, field);
-            if (!matches.empty())
-            {
-                send_to_char("Matches:\n", ch);
-                std::string col = olc_format_columns(matches, term_width, indent);
-                send_to_char(col.c_str(), ch);
-            }
-        }
-        else
-        {
-            send_to_char("Unknown field.\n", ch);
-
-            auto suggestions = olc_field_suggestions(sess->schema, field);
-
-            if (!suggestions.empty())
-            {
-                send_to_char("Did you mean:\n", ch);
-                std::string col = olc_format_columns(suggestions, term_width, indent);
-                send_to_char(col.c_str(), ch);
-            }
-            else
-            {
-                auto all = olc_all_field_names(sess->schema);
-
-                send_to_char("Valid fields:\n", ch);
-                std::string col = olc_format_columns(all, term_width, indent);
-                send_to_char(col.c_str(), ch);
-            }
-        }
-
-        return;
-    }
-
-    if (f->value_type == OlcValueType::EDITOR)
-    {
-//      bool iscommand = false;
-        if (!f->editor_takes_argument && !value.empty())
-        {
-            send_to_char("Use without value to enter editor.\n", ch);
+        case OlcEditMode::ROOM_INLINE:
+            olc_set_typed(
+                ch, sess,
+                olc_session_working_as<ROOM_INDEX_DATA>(sess),
+                get_room_schema(),
+                field, value);
             return;
-        }
 
-        if (f->editor_takes_argument && value.empty())
-        {
-//            iscommand = true;
-//            send_to_char("This field requires an argument.\n", ch);
-//            return;
-        }
-        sess->last_cmd_arg = value;
-        f->editor(ch, sess->working_copy);
-        return;
+        case OlcEditMode::OBJECT_INLINE:
+            olc_set_typed(
+                ch, sess,
+                olc_session_working_as<OBJ_DATA>(sess),
+                get_object_schema(),
+                field, value);
+            return;
+
+        case OlcEditMode::MOBILE_INLINE:
+            olc_set_typed(
+                ch, sess,
+                olc_session_working_as<CHAR_DATA>(sess),
+                get_mobile_schema(),
+                field, value);
+            return;
+
+        default:
+            send_to_char("You are not editing anything.\n", ch);
+            return;
     }
-
-    if (value.empty())
-    {
-        send_to_char("No value provided.\n", ch);
-        return;
-    }
-
-    bool ok = false;
-
-    if (f->setter)
-        ok = f->setter(sess->working_copy, value);
-    else if (f->editor_setter)
-        ok = f->editor_setter(ch, sess->working_copy, value);
-    else
-    {
-        send_to_char("Field is not writable.\n", ch);
-        return;
-    }
-
-    if (!ok)
-    {
-        olc_send_value_error(ch, *f, value, term_width, indent);
-        return;
-    }
-
-    sess->dirty = true;
-    send_to_char("Field updated.\n", ch);
 }
-
 // --------------------------------------------
 // DO_COMMANDS DO_OLCSET DO_?EDIT DO_OLC
 // --------------------------------------------

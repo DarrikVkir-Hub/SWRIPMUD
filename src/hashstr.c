@@ -68,7 +68,7 @@ char *		str_alloc( char *str );
 char *		quick_link( char *str );
 int		str_free( char *str );
 void		show_hash( int count );
-char *		hash_stats( void );
+char *		hash_stats( );
 
 struct hashstr_data *string_hash[STR_HASH_SIZE];
 
@@ -246,7 +246,7 @@ char *check_hash( char *str )
    return buf;
 }
 
-char *hash_stats( void )
+char *hash_stats( )
 {
     static char buf[1024];
     struct hashstr_data *ptr;

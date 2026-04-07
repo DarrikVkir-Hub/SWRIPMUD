@@ -428,7 +428,12 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
     }
     num = pArea->nplayer;
     pArea->nplayer = 0;
-    reset_area(pArea);
+    if ( !ch->game )
+    {
+      send_to_char( "Reset_area not called because you don't have a game context.\n", ch );
+      return;
+    }
+    reset_area(ch->game, pArea);
     pArea->nplayer = num;
     send_to_char( "Done.\n", ch );
     return;
@@ -1283,7 +1288,7 @@ OBJ_DATA *get_obj_room( OBJ_INDEX_DATA * pObjIndex, ROOM_INDEX_DATA * pRoomIndex
 /*
  * Reset one area.
  */
-void reset_area( AREA_DATA *pArea )
+void reset_area( GameContext *game, AREA_DATA *pArea )
 {
   RESET_DATA *pReset;
   RESET_DATA *next_reset;
@@ -1350,7 +1355,7 @@ void reset_area( AREA_DATA *pArea )
                   mob = NULL;
                   break;
               }
-              mob = create_mobile(pMobIndex);
+              mob = create_mobile(game, pMobIndex);
               {
                   ROOM_INDEX_DATA *pRoomPrev = get_room_index(pReset->arg3 - 1);
                   

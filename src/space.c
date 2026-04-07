@@ -231,10 +231,10 @@ struct turret_type turretstats[MAX_TURRET_TYPE] =
 
 /* local routines */
 void	fread_ship	args( ( SHIP_DATA *ship, FILE *fp ) );
-void	write_ship_list	args( ( void ) );
+void	write_ship_list	args( ( GameContext *game ) );
 void    fread_spaceobject      args( ( SPACE_DATA *spaceobject, FILE *fp ) );
 bool    load_spaceobject  args( ( char *spaceobjectfile ) );
-void    write_spaceobject_list args( ( void ) );
+void    write_spaceobject_list args( ( GameContext *game ) );
 void    resetship args( ( SHIP_DATA *ship ) );
 void    approachland args( ( SHIP_DATA *ship, char *arg ) );
 void    landship args( ( SHIP_DATA *ship, char *arg ) );
@@ -325,14 +325,18 @@ bool is_bus_stop( int vnum )
 }
 
 
-void update_traffic( )
+void update_traffic( GameContext *game )
 {
     SHIP_DATA *shuttle, *senate;
     SHIP_DATA *turbocar;
     char       buf[MAX_STRING_LENGTH];
 
-    shuttle = ship_from_cockpit( ROOM_CORUSCANT_SHUTTLE );
-    senate = ship_from_cockpit( ROOM_SENATE_SHUTTLE );
+    shuttle = ship_from_cockpit( game, ROOM_CORUSCANT_SHUTTLE );
+    senate = ship_from_cockpit( game, ROOM_SENATE_SHUTTLE );
+
+    if (!shuttle->game)       shuttle->game = game;
+    if (!senate->game)        senate->game = game;
+
     if ( senate != NULL && shuttle != NULL )
     {
         switch (corus_shuttle)
@@ -375,9 +379,11 @@ void update_traffic( )
               corus_shuttle = 0;
     }
     
-    turbocar = ship_from_cockpit( ROOM_CORUSCANT_TURBOCAR );
+    turbocar = ship_from_cockpit( game, ROOM_CORUSCANT_TURBOCAR );
     if ( turbocar != NULL )
     {
+        if (!turbocar->game)
+          turbocar->game = game;
       	SPRINTF( buf , "The turbocar doors close and it speeds out of the station.");  
       	echo_to_room( AT_YELLOW , get_room_index(turbocar->location) , buf );
       	extract_ship( turbocar );
@@ -402,7 +408,7 @@ void update_traffic( )
        
 }
 
-void update_bus( )
+void update_bus( GameContext *game )
 {
     SHIP_DATA * ship[MAX_BUS];
 /*    SHIP_DATA *ship2;
@@ -414,7 +420,11 @@ void update_bus( )
     char       buf[MAX_STRING_LENGTH];
 
    for( bus = 0; bus < MAX_BUS; bus++ )
-     ship[bus] = ship_from_cockpit( serin[bus].cockpitvnum );
+   {
+     ship[bus] = ship_from_cockpit( game, serin[bus].cockpitvnum );
+     if (ship[bus] && !ship[bus]->game)
+       ship[bus]->game = game;
+   }
 
     switch (bus_pos)
     {
@@ -422,9 +432,9 @@ void update_bus( )
        case 0:
             for( bus = 0; bus < MAX_BUS; bus++ )
             {
-              if( ship_from_cockpit( serin[bus].cockpitvnum ) == NULL )
+              if( ship_from_cockpit( game, serin[bus].cockpitvnum ) == NULL )
                 continue;
-              target = ship_from_hanger( serin[bus].bus_vnum[serin[bus].planetloc] );
+              target = ship_from_hanger( game, serin[bus].bus_vnum[serin[bus].planetloc] );
               if ( target != NULL && !target->spaceobject )
               {
                 SPRINTF( buf,  "An electronic voice says, 'Cannot land at %s ... it seems to have dissapeared.'", serin[bus].bus_stop[serin[bus].planetloc] );
@@ -476,7 +486,7 @@ void update_bus( )
 */  
 	    for( bus = 0; bus < MAX_BUS; bus++ )
 	    {
-        if( ship_from_cockpit( serin[bus].cockpitvnum ) == NULL )
+        if( ship_from_cockpit( game, serin[bus].cockpitvnum ) == NULL )
           continue;
 	      launch_bus( ship[bus] );
 	    }
@@ -491,7 +501,7 @@ void update_bus( )
 */
 	    for( bus = 0; bus < MAX_BUS; bus++ )
 	    {
-         if( ship_from_cockpit( serin[bus].cockpitvnum ) == NULL )
+         if( ship_from_cockpit( game, serin[bus].cockpitvnum ) == NULL )
               continue;
     	
          echo_to_ship( AT_YELLOW , ship[bus] , "The ship lurches slightly as it makes the jump to lightspeed.");
@@ -508,7 +518,7 @@ void update_bus( )
 */
 	    for( bus = 0; bus < MAX_BUS; bus++ )
 	    {
-        if( ship_from_cockpit( serin[bus].cockpitvnum ) == NULL )
+        if( ship_from_cockpit( game, serin[bus].cockpitvnum ) == NULL )
               continue;
         echo_to_ship( AT_YELLOW , ship[bus] , "The ship lurches slightly as it comes out of hyperspace.");
 	    }
@@ -520,7 +530,7 @@ void update_bus( )
 
 	    for( bus = 0; bus < MAX_BUS; bus++ )
           {
-            if( ship_from_cockpit( serin[bus].cockpitvnum ) == NULL )
+            if( ship_from_cockpit( game, serin[bus].cockpitvnum ) == NULL )
               continue;
             destination = serin[bus].bus_vnum[serin[bus].planetloc];
             if ( !land_bus( ship[bus], destination ) )
@@ -582,7 +592,7 @@ void update_bus( )
        case 5:
          for( bus = 0; bus < MAX_BUS; bus++)
          {
-            if( ship_from_cockpit( serin[bus].cockpitvnum ) == NULL )
+            if( ship_from_cockpit( game, serin[bus].cockpitvnum ) == NULL )
               continue;
 
             SPRINTF( buf, "It continues, 'Next stop, %s'" , serin[bus].bus_stop[serin[bus].planetloc+1] );
@@ -633,7 +643,7 @@ void update_bus( )
 */
 }
 
-void move_ships( )
+void move_ships( GameContext *game )
 {
    SHIP_DATA *ship;
    MISSILE_DATA *missile;
@@ -649,6 +659,11 @@ void move_ships( )
   
    for( spaceobj = first_spaceobject; spaceobj; spaceobj = spaceobj->next )
    {
+      if ( !spaceobj->game )
+         spaceobj->game = game;
+
+      if ( !spaceobj->game)
+        spaceobj->game = game;
      if ( spaceobj->speed > 0 )
         {
           
@@ -684,6 +699,11 @@ void move_ships( )
 
    for ( missile = first_missile; missile; missile = m_next )
    {
+      if (!missile->game)
+         missile->game = game;
+
+      if ( !missile->game )
+          missile->game = game;
            m_next = missile->next;
            
               ship = missile->fired_from;
@@ -756,6 +776,8 @@ void move_ships( )
    
    for ( ship = first_ship; ship; ship = ship->next )
    {
+    if ( !ship->game )
+        ship->game = game;
      
     if ( ship->shipstate != SHIP_HYPERSPACE && ship->accel && ship->currspeed != ship->goalspeed )
     {
@@ -1214,7 +1236,7 @@ void move_ships( )
 */
 }   
 
-void recharge_ships( )
+void recharge_ships( GameContext *game )
 {
    SHIP_DATA *ship;
    char buf[MAX_STRING_LENGTH];
@@ -1233,7 +1255,8 @@ void recharge_ships( )
 
    for ( ship = first_ship; ship; ship = ship->next )
    {                
-
+        if (!ship->game)
+          ship->game = game;
         if ( ship->shipclass == 3 )
           if ( closeem && ship->guard )
             ship->bayopen = FALSE;
@@ -1673,7 +1696,7 @@ void recharge_ships( )
    }
 }
 
-void update_space( )
+void update_space( GameContext *game )
 {
    SHIP_DATA *ship;
    SHIP_DATA *target;
@@ -1685,6 +1708,9 @@ void update_space( )
 
    for ( ship = first_ship; ship; ship = ship->next )
    {
+          if (!ship->game)
+            ship->game = game;
+
           if ( ship->spaceobject && ship->energy > 0 && ship->shipstate == SHIP_DISABLED && ship->shipclass != SHIP_PLATFORM )
              ship->energy -= 100;
           else if (ship->energy > 0 && ( !ship->mod || !ship->mod->gravproj ) ) // Energy does not recharge when gravity wells are activated  - DV 8/7/02
@@ -2062,7 +2088,7 @@ void update_space( )
           {
                if ( number_range(1, 25) == 25 )
                {
-          	  ship_to_spaceobject(ship, spaceobject_from_name(ship->home) );
+          	  ship_to_spaceobject(ship, spaceobject_from_name(ship->game, ship->home) );
 		  if( ship->spaceobject )
 		  {
           	    ship->vx = ship->spaceobject->xpos + number_range( -5000 , 5000 );
@@ -2098,7 +2124,7 @@ void update_space( )
 
 
 
-void write_spaceobject_list( )
+void write_spaceobject_list( GameContext *game )
 {
     SPACE_DATA *tspaceobject;
     FILE *fpout;
@@ -2121,7 +2147,7 @@ void write_spaceobject_list( )
 /*
  * Get pointer to space structure from spaceobject name.
  */
-SPACE_DATA *spaceobject_from_name( char *name )
+SPACE_DATA *spaceobject_from_name( GameContext *game, char *name )
 {
     SPACE_DATA *spaceobject;
     
@@ -2139,7 +2165,7 @@ SPACE_DATA *spaceobject_from_name( char *name )
 /*
  * Get pointer to space structure from the dock vnun.
  */
-SPACE_DATA *spaceobject_from_vnum( int vnum )
+SPACE_DATA *spaceobject_from_vnum( GameContext *game, int vnum )
 {
     SPACE_DATA *spaceobject;
     SHIP_DATA *ship;
@@ -2385,7 +2411,7 @@ void fread_spaceobject( SPACE_DATA *spaceobject, FILE *fp )
  * Load a spaceobject file
  */
 
-bool load_spaceobject( char *spaceobjectfile )
+bool load_spaceobject( GameContext *game, char *spaceobjectfile )
 {
     char filename[256];
     SPACE_DATA *spaceobject;
@@ -2393,6 +2419,7 @@ bool load_spaceobject( char *spaceobjectfile )
     bool found;
 
     CREATE( spaceobject, SPACE_DATA, 1 );
+    spaceobject->game = game;
 
     found = FALSE;
     SPRINTF( filename, "%s%s", SPACE_DIR, spaceobjectfile );
@@ -2450,7 +2477,7 @@ bool load_spaceobject( char *spaceobjectfile )
 /*
  * Load in all the spaceobject files.
  */
-void load_space( )
+void load_space( GameContext *game )
 {
     FILE *fpList;
     const char *filename;
@@ -2478,7 +2505,7 @@ void load_space( )
 	  break;
 	  
        
-	if ( !load_spaceobject( (char*) filename ) )
+	if ( !load_spaceobject( game, (char*) filename ) )
 	{
 	  SPRINTF( buf, "Cannot load spaceobject file: %s", filename );
 	  bug( buf, 0 );
@@ -2516,7 +2543,7 @@ void do_setspaceobject( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    spaceobject = spaceobject_from_name( arg1 );
+    spaceobject = spaceobject_from_name( ch->game, arg1 );
     if ( !spaceobject )
     {
 	send_to_char( "No such spaceobject.\n", ch );
@@ -2730,7 +2757,7 @@ void do_showspaceobject( CHAR_DATA *ch, char *argument )
 {
    SPACE_DATA *spaceobject;
 
-   spaceobject = spaceobject_from_name( argument );
+   spaceobject = spaceobject_from_name( ch->game, argument );
    
    if ( spaceobject == NULL )
       send_to_char("&RNo such spaceobject.\n",ch);
@@ -2753,6 +2780,7 @@ void do_makespaceobject( CHAR_DATA *ch, char *argument )
 
 
     CREATE( spaceobject, SPACE_DATA, 1 );
+    spaceobject->game = ch->game;
     LINK( spaceobject, first_spaceobject, last_spaceobject, next, prev );
 
     spaceobject->name		= STRALLOC( argument );
@@ -2765,7 +2793,9 @@ void do_makespaceobject( CHAR_DATA *ch, char *argument )
     SPRINTF( filename, "%s.system" , strlower(arg) );
     spaceobject->filename = str_dup( filename );
     save_spaceobject( spaceobject );
-    write_spaceobject_list();
+    if ( !ch->game )
+      log_printf( "do_makespaceobject: %s - No game set", ch->name );
+    write_spaceobject_list(ch->game);
 }
 
 void do_spaceobjects( CHAR_DATA *ch, char *argument )
@@ -3053,7 +3083,7 @@ long int get_ship_value( SHIP_DATA *ship )
      
 }
 
-void write_ship_list( )
+void write_ship_list( GameContext *game )
 {
     SHIP_DATA *tship;
     FILE *fpout;
@@ -3110,7 +3140,7 @@ SHIP_DATA * ship_in_room( ROOM_INDEX_DATA *room, char *name )
 /*
  * Get pointer to ship structure from ship name.
  */
-SHIP_DATA *get_ship( char *name )
+SHIP_DATA *get_ship( GameContext *game, char *name )
 {
     SHIP_DATA *ship;
     
@@ -3138,7 +3168,7 @@ SHIP_DATA *get_ship( char *name )
 /*
  * Checks if ships in a spaceobject and returns poiner if it is.
  */
-SHIP_DATA *get_ship_here( char *name , SHIP_DATA *eShip)
+SHIP_DATA *get_ship_here( GameContext *game, char *name , SHIP_DATA *eShip)
 {
     SHIP_DATA *ship;
     int number, count = 0;
@@ -3194,7 +3224,7 @@ SHIP_DATA *get_ship_here( char *name , SHIP_DATA *eShip)
 /*
  * Get pointer to ship structure from ship filename.
  */
-SHIP_DATA *get_ship_from_filename( char *name )
+SHIP_DATA *get_ship_from_filename( GameContext *game, char *name )
 {
     SHIP_DATA *ship;
     
@@ -3216,7 +3246,7 @@ SHIP_DATA *get_ship_from_filename( char *name )
 /*
  * Get pointer to ship structure from pilot name.
  */
-SHIP_DATA *ship_from_pilot( char *name )
+SHIP_DATA *ship_from_pilot( GameContext *game, char *name )
 {
     SHIP_DATA *ship;
     
@@ -3233,7 +3263,7 @@ SHIP_DATA *ship_from_pilot( char *name )
 /*
  * Get pointer to # ship structure from pilot name.
  */
-SHIP_DATA *ship_from_pilot_num( char *name, int num )
+SHIP_DATA *ship_from_pilot_num( GameContext *game, char *name, int num )
 {
     SHIP_DATA *ship;
     int count = 1;
@@ -3257,7 +3287,7 @@ SHIP_DATA *ship_from_pilot_num( char *name, int num )
  * Get pointer to ship structure from cockpit, turret, or entrance ramp vnum.
  */
  
-SHIP_DATA *ship_from_cockpit( int vnum )
+SHIP_DATA *ship_from_cockpit( GameContext *game, int vnum )
 {
     SHIP_DATA *ship;
     TURRET_DATA *turret;
@@ -3278,7 +3308,7 @@ SHIP_DATA *ship_from_cockpit( int vnum )
     return NULL;
 }
 
-SHIP_DATA *ship_from_pilotseat( int vnum )
+SHIP_DATA *ship_from_pilotseat( GameContext *game, int vnum )
 {
     SHIP_DATA *ship;
 
@@ -3293,7 +3323,7 @@ SHIP_DATA *ship_from_pilotseat( int vnum )
     return NULL;
 }
 
-SHIP_DATA *ship_from_coseat( int vnum )
+SHIP_DATA *ship_from_coseat( GameContext *game, int vnum )
 {
     SHIP_DATA *ship;
     
@@ -3308,7 +3338,7 @@ SHIP_DATA *ship_from_coseat( int vnum )
     return NULL;
 }
 
-SHIP_DATA *ship_from_navseat( int vnum )
+SHIP_DATA *ship_from_navseat( GameContext *game, int vnum )
 {
     SHIP_DATA *ship;
     
@@ -3323,7 +3353,7 @@ SHIP_DATA *ship_from_navseat( int vnum )
     return NULL;
 }
 
-SHIP_DATA *ship_from_gunseat( int vnum )
+SHIP_DATA *ship_from_gunseat( GameContext *game, int vnum )
 {
     SHIP_DATA *ship;
     
@@ -3337,7 +3367,7 @@ SHIP_DATA *ship_from_gunseat( int vnum )
     return NULL;
 }
 
-SHIP_DATA *ship_from_engine( int vnum )
+SHIP_DATA *ship_from_engine( GameContext *game, int vnum )
 {
     SHIP_DATA *ship;
     TURRET_DATA *turret;
@@ -3367,7 +3397,7 @@ SHIP_DATA *ship_from_engine( int vnum )
 
 
 
-SHIP_DATA *ship_from_turret( int vnum )
+SHIP_DATA *ship_from_turret( GameContext *game, int vnum )
 {
     SHIP_DATA *ship;
     TURRET_DATA *turret;
@@ -3387,7 +3417,7 @@ SHIP_DATA *ship_from_turret( int vnum )
     return NULL;
 }
 
-SHIP_DATA *ship_from_entrance( int vnum )
+SHIP_DATA *ship_from_entrance( GameContext *game, int vnum )
 {
     SHIP_DATA *ship;
     
@@ -3401,7 +3431,7 @@ SHIP_DATA *ship_from_entrance( int vnum )
     return NULL;
 }
 
-SHIP_DATA *ship_from_hanger( int vnum )
+SHIP_DATA *ship_from_hanger( GameContext *game, int vnum )
 {
     SHIP_DATA *ship;
     
@@ -3412,7 +3442,7 @@ SHIP_DATA *ship_from_hanger( int vnum )
     return NULL;
 }
 
-SHIP_DATA *ship_from_room( int vnum )
+SHIP_DATA *ship_from_room( GameContext *game, int vnum )
 {
     SHIP_DATA *ship;
     
@@ -3688,7 +3718,7 @@ void fread_cargohold( SHIP_DATA *ship, FILE *fp )
 		  obj_to_room( tobj, storeroom );
 	    }
 	    
-	    release_supermob();
+	    release_supermob(ship->game);
 
          }
 }
@@ -4060,7 +4090,7 @@ void fread_ship( SHIP_DATA *ship, FILE *fp )
  * Load a ship file
  */
 
-bool load_ship_file( char *shipfile )
+bool load_ship_file( GameContext *game, char *shipfile )
 {
     char filename[256];
     SHIP_DATA *ship;
@@ -4071,7 +4101,7 @@ bool load_ship_file( char *shipfile )
     CLAN_DATA *clan;
 
     CREATE( ship, SHIP_DATA, 1 );
-
+    ship->game = game;
     found = FALSE;
     SPRINTF( filename, "%s%s", SHIP_DIR, shipfile );
 
@@ -4197,7 +4227,7 @@ bool load_ship_file( char *shipfile )
        if ( ship->shipclass == SHIP_PLATFORM || ship->type == MOB_SHIP || ship->shipclass == CAPITAL_SHIP )
        {
  
-          ship_to_spaceobject(ship, spaceobject_from_name(ship->home) );
+          ship_to_spaceobject(ship, spaceobject_from_name(ship->game, ship->home) );
 /*  Do not need now that coordinates are saved in ship files.
           ship->vx = number_range( -5000 , 5000 );
           ship->vy = number_range( -5000 , 5000 );
@@ -4211,7 +4241,7 @@ bool load_ship_file( char *shipfile )
      if ( ( ship->shipclass == SHIP_PLATFORM || ship->type == MOB_SHIP || ship->shipclass == CAPITAL_SHIP )
           && ship->home )
      {
-          ship_to_spaceobject(ship, spaceobject_from_name(ship->home) );
+          ship_to_spaceobject(ship, spaceobject_from_name(ship->game, ship->home) );
           ship->vx = number_range( -5000 , 5000 );
           ship->vy = number_range( -5000 , 5000 );
           ship->vz = number_range( -5000 , 5000 );
@@ -4258,7 +4288,7 @@ bool load_ship_file( char *shipfile )
 /*
  * Load in all the ship files.
  */
-void load_ships( )
+void load_ships( GameContext *game )
 {
     FILE *fpList;
     const char *filename;
@@ -4291,7 +4321,7 @@ void load_ships( )
 	if ( filename[0] == '$' )
 	  break;
 
-	if ( !load_ship_file( (char*) filename ) )
+	if ( !load_ship_file( game, (char*) filename ) )
 	{
 	  SPRINTF( buf, "Cannot load ship file: %s", filename );
 	  bug( buf, 0 );
@@ -4402,7 +4432,7 @@ void do_resetship( CHAR_DATA *ch, char *argument )
 {    
      SHIP_DATA *ship;
      
-     ship = get_ship( argument );
+     ship = get_ship( ch->game, argument );
      if (ship == NULL)
      {
         send_to_char("&RNo such ship!",ch);
@@ -4414,7 +4444,7 @@ void do_resetship( CHAR_DATA *ch, char *argument )
      if ( ( ship->shipclass == SHIP_PLATFORM || ship->type == MOB_SHIP || ship->shipclass == CAPITAL_SHIP )
           && ship->home )
      {
-          ship_to_spaceobject(ship, spaceobject_from_name(ship->home) );
+          ship_to_spaceobject(ship, spaceobject_from_name(ship->game, ship->home) );
           ship->vx = number_range( -5000 , 5000 );
           ship->vy = number_range( -5000 , 5000 );
           ship->vz = number_range( -5000 , 5000 );
@@ -4472,7 +4502,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    ship = get_ship( arg1 );
+    ship = get_ship( ch->game, arg1 );
     if ( !ship )
     {
 	send_to_char( "No such ship.\n", ch );
@@ -5053,7 +5083,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
 	ship->filename = str_dup( argument );
 	send_to_char( "Done.\n", ch );
 	save_ship( ship );
-	write_ship_list( );
+	write_ship_list( ship->game );
 	return;
     }
 
@@ -5331,7 +5361,7 @@ void do_showship( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    ship = get_ship( argument );
+    ship = get_ship( ch->game, argument );
     if ( !ship )
     {
 	send_to_char( "No such ship.\n", ch );
@@ -5463,8 +5493,9 @@ void do_makeship( CHAR_DATA *ch, char *argument )
     }
 
     CREATE( ship, SHIP_DATA, 1 );
+    ship->game = ch->game;
     LINK( ship, first_ship, last_ship, next, prev );
-
+    ship->game = ch->game;
     ship->name		= STRALLOC( argument );
     ship->personalname		= STRALLOC( argument );
     ship->description	= STRALLOC( "" );
@@ -5487,7 +5518,7 @@ void do_makeship( CHAR_DATA *ch, char *argument )
 
     ship->filename = str_dup( arg );
     save_ship( ship );
-    write_ship_list( );
+    write_ship_list( ship->game );
 	
 }
 
@@ -5507,7 +5538,7 @@ void do_copyship( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    old = get_ship ( arg );
+    old = get_ship ( ch->game, arg );
     
     if (!old)
     {
@@ -5516,6 +5547,7 @@ void do_copyship( CHAR_DATA *ch, char *argument )
     }
 
     CREATE( ship, SHIP_DATA, 1 );
+    ship->game = ch->game;
     LINK( ship, first_ship, last_ship, next, prev );
 
     ship->name		= STRALLOC( argument );
@@ -5541,7 +5573,7 @@ void do_copyship( CHAR_DATA *ch, char *argument )
 
     ship->filename         = str_dup(arg2);
     save_ship( ship );
-    write_ship_list();
+    write_ship_list( ship->game );
 }
 
 void do_ships( CHAR_DATA *ch, char *argument )
@@ -5958,6 +5990,7 @@ void new_missile( SHIP_DATA *ship , SHIP_DATA *target , CHAR_DATA *ch , int miss
         return;
           
      CREATE( missile, MISSILE_DATA, 1 );
+     missile->game = ship->game;
      LINK( missile, first_missile, last_missile, next, prev );
 
      missile->target = target; 
@@ -6432,9 +6465,9 @@ void do_board( CHAR_DATA *ch, char *argument )
    SHIP_DATA *ship;
    SHIP_DATA *eShip = NULL;
 
-   if ( ( ship = ship_from_entrance( ch->in_room->vnum ) ) != NULL )
+   if ( ( ship = ship_from_entrance( ch->game, ch->in_room->vnum ) ) != NULL )
    {
-     eShip = get_ship( argument );
+     eShip = get_ship( ch->game, argument );
      if( !eShip || !eShip->docked || eShip->docked != ship )
        eShip = NULL;
        
@@ -6579,7 +6612,7 @@ void do_leaveship( CHAR_DATA *ch, char *argument )
     
     fromroom = ch->in_room;
     
-    if  ( (ship = ship_from_entrance(fromroom->vnum)) == NULL )
+    if  ( (ship = ship_from_entrance(ch->game,fromroom->vnum)) == NULL )
     {
         send_to_char( "I see no exit here.\n" , ch );
         return;
@@ -6651,12 +6684,12 @@ void do_launch( CHAR_DATA *ch, char *argument )
 
   if( arg1[0] != '\0' )
   {
-    //destin = spaceobject_from_name( arg1 );
+    //destin = spaceobject_from_name(ch->game, arg1 );
     shipclass = atoi(arg2);
   }
 
             
-    	        if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )  
+    	        if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )  
     	        {
     	            send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
     	            return;
@@ -6668,7 +6701,7 @@ void do_launch( CHAR_DATA *ch, char *argument )
     	            return;
     	        }
 
-    	        if ( (ship = ship_from_pilotseat(ch->in_room->vnum)) == NULL )
+    	        if ( (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum)) == NULL )
     	        {
     	            send_to_char("&RYou don't seem to be in the pilot seat!\n",ch);
     	            return;
@@ -6815,7 +6848,7 @@ void do_launch( CHAR_DATA *ch, char *argument )
 
 		 if( !BV_IS_SET( ch->act, PLR_DONTAUTOFUEL ) )
 		 {
-		  if(  ship_from_hanger(ship->in_room->vnum) == NULL || ship->shipclass == SHIP_PLATFORM )
+		  if(  ship_from_hanger(ship->game, ship->in_room->vnum) == NULL || ship->shipclass == SHIP_PLATFORM )
                     ship->energy = ship->mod->maxenergy;
        		  ship->shield = 0;
        		  ship->autorecharge = FALSE;
@@ -6875,7 +6908,7 @@ void launchship( SHIP_DATA *ship )
     SHIP_DATA *target;
     int plusminus;
     
-    ship_to_spaceobject( ship, spaceobject_from_vnum( ship->location ) );
+    ship_to_spaceobject( ship, spaceobject_from_vnum( ship->game, ship->location ) );
     
     
     if ( ship->spaceobject == NULL )
@@ -6962,7 +6995,7 @@ void launchship( SHIP_DATA *ship )
 	// 2/18/04 - Johnson - Modified call to reflect origin of object entering the system
 	// 2/19/04 - Johnson - TODO: Add code to reflect where in the system the ship launched from, e.g., a planet or hangar
     //SPRINTF( buf ,"%s enters the starsystem at %.0f %.0f %.0f" , ship->name, ship->vx, ship->vy, ship->vz );
-	SHIP_DATA* fromLocation = ship_from_hanger( ship->lastdoc );	// Get their last doc location (where they just launched from)
+	SHIP_DATA* fromLocation = ship_from_hanger( ship->game, ship->lastdoc );	// Get their last doc location (where they just launched from)
 	if ( fromLocation != 0 )	// Make sure we dont use it if it's null for some reason
 	{
 		SPRINTF( buf ,"%s launches into the starsystem from %s at %.0f %.0f %.0f" , ship->name, fromLocation->name, ship->vx, ship->vy, ship->vz );
@@ -6991,7 +7024,7 @@ void do_land( CHAR_DATA *ch, char *argument )
     
     SPRINTF( arg, "%s", argument );
 
-    	        if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
+    	        if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
     	        {
     	            send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
     	            return;
@@ -7003,7 +7036,7 @@ void do_land( CHAR_DATA *ch, char *argument )
     	            return;
     	        }
 
-    	        if ( (ship = ship_from_pilotseat(ch->in_room->vnum)) == NULL )
+    	        if ( (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum)) == NULL )
     	        {
     	            send_to_char("&RYou need to be in the pilot seat!\n",ch);
     	            return;
@@ -7121,7 +7154,7 @@ void do_land( CHAR_DATA *ch, char *argument )
 
         if( !found )
         {
-    	            target = get_ship_here( argument , ship );
+    	            target = get_ship_here( ch->game, argument , ship );
     	            if ( target == NULL )
     	            {
     	                send_to_char("&RI don't see that here. Type land by itself for a list\n",ch);
@@ -7198,7 +7231,7 @@ void do_land( CHAR_DATA *ch, char *argument )
                       learn_from_success( ch, gsn_starfighters );
                    if ( ship->shipclass == MIDSIZE_SHIP )
                       learn_from_success( ch, gsn_midships );
-                   if ( spaceobject_from_vnum(ship->lastdoc) != ship->spaceobject )
+                   if ( spaceobject_from_vnum(ship->game, ship->lastdoc) != ship->spaceobject )
                    {   
 /*                      int xp =  (exp_level( ch->skill_level[PILOTING_ABILITY]+1) - exp_level( ch->skill_level[PILOTING_ABILITY])) ;
                       xp = UMIN( get_ship_value( ship ) , xp );
@@ -7245,7 +7278,7 @@ void approachland( SHIP_DATA *ship, char *arg)
        SPRINTF( buf2, "%s", spaceobj->locationc);
    }
     
-    target = get_ship_here( arg , ship );
+    target = get_ship_here( ship->game, arg , ship );
     if ( target != ship && target != NULL && target->bayopen 
             && ( ship->shipclass != MIDSIZE_SHIP || target->shipclass != MIDSIZE_SHIP ) )
        SPRINTF( buf2, "%s", target->name);
@@ -7278,7 +7311,7 @@ void landship( SHIP_DATA *ship, char *arg )
     if ( !str_prefix(arg,ship->spaceobject->locationc) )
        destination = ship->spaceobject->docc;
     
-    target = get_ship_here( arg , ship );
+    target = get_ship_here( ship->game, arg , ship );
     if ( target != ship && target != NULL && target->bayopen 
             && ( ship->shipclass != MIDSIZE_SHIP || target->shipclass != MIDSIZE_SHIP ) )
     destination = target->hanger;
@@ -7355,7 +7388,7 @@ void do_accelerate( CHAR_DATA *ch, char *argument )
     char arg1[MAX_STRING_LENGTH];
     int accel;
     
-    	        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+    	        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
     	            return;
@@ -7367,7 +7400,7 @@ void do_accelerate( CHAR_DATA *ch, char *argument )
     	            return;
     	        }
     	        
-                if (  (ship = ship_from_pilotseat(ch->in_room->vnum))  == NULL )
+                if (  (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RThe controls must be at the pilots chair...\n",ch);
     	            return;
@@ -7507,7 +7540,7 @@ void do_trajectory_actual( CHAR_DATA *ch, char *argument )
     SHIP_DATA *ship;
     
   
-    	        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+    	        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
     	            return;
@@ -7519,7 +7552,7 @@ void do_trajectory_actual( CHAR_DATA *ch, char *argument )
     	            return;
     	        }
     	        
-                if (  (ship = ship_from_pilotseat(ch->in_room->vnum))  == NULL )
+                if (  (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RYour not in the pilots seat.\n",ch);
     	            return;
@@ -7641,7 +7674,7 @@ void do_trajectory( CHAR_DATA *ch, char *argument )
     SHIP_DATA *ship;
     
   
-    	        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+    	        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
     	            return;
@@ -7653,7 +7686,7 @@ void do_trajectory( CHAR_DATA *ch, char *argument )
     	            return;
     	        }
     	        
-                if (  (ship = ship_from_pilotseat(ch->in_room->vnum))  == NULL )
+                if (  (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RYour not in the pilots seat.\n",ch);
     	            return;
@@ -7789,7 +7822,7 @@ void do_buyship(CHAR_DATA *ch, char *argument )
    ship = ship_in_room( ch->in_room , argument );
    if ( !ship )
    {
-      ship = ship_from_cockpit( ch->in_room->vnum );
+      ship = ship_from_cockpit( ch->game, ch->in_room->vnum );
       
       if ( !ship )
       {            
@@ -7882,7 +7915,7 @@ void do_clanbuyship(CHAR_DATA *ch, char *argument )
    ship = ship_in_room( ch->in_room , argument );
    if ( !ship )
    {
-      ship = ship_from_cockpit( ch->in_room->vnum );
+      ship = ship_from_cockpit( ch->game, ch->in_room->vnum );
       
       if ( !ship )
       {            
@@ -7973,7 +8006,7 @@ void do_clansellship(CHAR_DATA *ch, char *argument )
    ship = ship_in_room( ch->in_room , argument );
    if ( !ship )
    {
-      ship = ship_from_cockpit( ch->in_room->vnum );
+      ship = ship_from_cockpit( ch->game, ch->in_room->vnum );
       
       if ( !ship )
       {            
@@ -8051,7 +8084,7 @@ void do_info(CHAR_DATA *ch, char *argument )
     SHIP_DATA *target;
     bool fromafar = TRUE;
     
-    if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+    if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
     {
             if ( argument[0] == '\0' )
             {
@@ -8091,7 +8124,7 @@ void do_info(CHAR_DATA *ch, char *argument )
        fromafar = FALSE;
     }
     else
-       target = get_ship_here( argument , ship );
+       target = get_ship_here( ship->game, argument , ship );
 
     if ( target == NULL )
     {
@@ -8158,13 +8191,13 @@ void do_autorecharge(CHAR_DATA *ch, char *argument )
     int recharge;
 
 
-        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
             return;
         }
         
-        if (  (ship = ship_from_coseat(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_coseat(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the co-pilots seat!\n",ch);
             return;
@@ -8238,13 +8271,13 @@ void do_autopilot(CHAR_DATA *ch, char *argument )
 {
     SHIP_DATA *ship;
         
-        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
             return;
         }
         
-        if (  (ship = ship_from_pilotseat(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the pilots seat!\n",ch);
             return;
@@ -8305,7 +8338,7 @@ void do_openhatch(CHAR_DATA *ch, char *argument )
 
    if ( !argument || argument[0] == '\0' || !str_cmp(argument,"hatch") )
    {
-       ship = ship_from_entrance( ch->in_room->vnum );
+       ship = ship_from_entrance( ch->game, ch->in_room->vnum );
        if( ship == NULL)
        {
           send_to_char( "&ROpen what?\n", ch );
@@ -8386,7 +8419,7 @@ void do_closehatch(CHAR_DATA *ch, char *argument )
    
    if ( !argument || argument[0] == '\0' || !str_cmp(argument,"hatch") )
    {
-       ship = ship_from_entrance( ch->in_room->vnum );
+       ship = ship_from_entrance( ch->game, ch->in_room->vnum );
        if( ship == NULL)
        {
           send_to_char( "&RClose what?\n", ch );
@@ -8462,7 +8495,7 @@ void do_status(CHAR_DATA *ch, char *argument )
     TURRET_DATA *turret;
     
    
-    if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+    if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
     {
          send_to_char("&RYou must be in the cockpit, turret or engineroom of a ship to do that!\n",ch);
          return;
@@ -8471,8 +8504,8 @@ void do_status(CHAR_DATA *ch, char *argument )
     if (argument[0] == '\0')
        target = ship;
     else
-       target = get_ship_here( argument , ship );
-    	
+       target = get_ship_here( ship->game, argument , ship );
+    
     if ( target == NULL )
     {
          send_to_char("&RI don't see that here.\nTry the radar, or type status by itself for your ships status.\n",ch);
@@ -8550,7 +8583,7 @@ void do_hyperspace(CHAR_DATA *ch, char *argument )
     SPACE_DATA *spaceobject;
     char buf[MAX_STRING_LENGTH];
    
-        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
             return;
@@ -8563,7 +8596,7 @@ void do_hyperspace(CHAR_DATA *ch, char *argument )
     	        }
 
 
-        if (  (ship = ship_from_pilotseat(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou aren't in the pilots seat.\n",ch);
             return;
@@ -8849,7 +8882,7 @@ void do_target(CHAR_DATA *ch, char *argument )
     switch( ch->substate )
     {
     	default:
-    	        if (  (ship = ship_from_turret(ch->in_room->vnum))  == NULL )
+    	        if (  (ship = ship_from_turret(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RYou must be in the gunners seat or turret of a ship to do that!\n",ch);
     	            return;
@@ -8900,7 +8933,7 @@ void do_target(CHAR_DATA *ch, char *argument )
                 if (ship->shipclass > SHIP_PLATFORM)
                   target = ship_in_room( ship->in_room , arg );
                 else
-                  target = get_ship_here( arg, ship );
+                  target = get_ship_here( ship->game, arg, ship );
 
 
                 if (  target == NULL )
@@ -8961,7 +8994,7 @@ void do_target(CHAR_DATA *ch, char *argument )
     	case SUB_TIMER_DO_ABORT:
     		STR_DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
-    		if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
+    		if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
     		      return;
     	        send_to_char("&RYour concentration is broken. You fail to lock onto your target.\n", ch);
     		return;
@@ -8969,14 +9002,14 @@ void do_target(CHAR_DATA *ch, char *argument )
 
     ch->substate = SUB_NONE;
 
-    if ( (ship = ship_from_turret(ch->in_room->vnum)) == NULL )
+    if ( (ship = ship_from_turret(ch->game, ch->in_room->vnum)) == NULL )
     {
        return;
     }
     if (ship->shipclass > SHIP_PLATFORM)
       target = ship_in_room( ship->in_room , arg );
     else
-      target = get_ship_here( arg, ship );
+      target = get_ship_here( ship->game, arg, ship );
 
     if (  target == NULL || target == ship)
     {
@@ -9103,7 +9136,7 @@ void do_fire(CHAR_DATA *ch, char *argument )
     TURRET_DATA *turret;
     bool destroyed = FALSE;
     
-        if (  (ship = ship_from_turret(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_turret(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the gunners chair or turret of a ship to do that!\n",ch);
             return;
@@ -9859,7 +9892,7 @@ void do_calculate(CHAR_DATA *ch, char *argument )
     argument = one_argument( argument , arg3);
     
 
-    	        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+    	        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
     	            return;
@@ -9871,7 +9904,7 @@ void do_calculate(CHAR_DATA *ch, char *argument )
     	            return;
     	        }
     	        
-                if (  (ship = ship_from_navseat(ch->in_room->vnum))  == NULL )
+                if (  (ship = ship_from_navseat(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RYou must be at a nav computer to calculate jumps.\n",ch);
     	            return;
@@ -9931,7 +9964,7 @@ void do_calculate(CHAR_DATA *ch, char *argument )
 
     if( !is_number(arg1) && arg1[0] != '-')
     {
-      ship->currjump = spaceobject_from_name( arg1 );
+      ship->currjump = spaceobject_from_name( ch->game, arg1 );
       if ( arg2[0] != '\0' )
         distance = atoi(arg2);
       if( ship->currjump )
@@ -10052,7 +10085,7 @@ void do_calculate_diff(CHAR_DATA *ch, char *argument )
     argument = one_argument( argument , arg3);
     
 
-    	        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+    	        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
     	            return;
@@ -10064,7 +10097,7 @@ void do_calculate_diff(CHAR_DATA *ch, char *argument )
     	            return;
     	        }
     	        
-                if (  (ship = ship_from_navseat(ch->in_room->vnum))  == NULL )
+                if (  (ship = ship_from_navseat(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RYou must be at a nav computer to calculate jumps.\n",ch);
     	            return;
@@ -10215,12 +10248,12 @@ void do_recharge(CHAR_DATA *ch, char *argument )
     SHIP_DATA *ship;
     
    
-        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
             return;
         }
-        if (  (ship = ship_from_coseat(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_coseat(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RThe controls must be at the co-pilot station.\n",ch);
             return;
@@ -10271,7 +10304,7 @@ void do_repairship(CHAR_DATA *ch, char *argument )
     switch( ch->substate )
     {
     	default:
-    	        if (  (ship = ship_from_engine(ch->in_room->vnum))  == NULL )
+    	        if (  (ship = ship_from_engine(ch->game, ch->in_room->vnum))  == NULL )
     	        {
     	            send_to_char("&RYou must be in the engine room of a ship to do that!\n",ch);
     	            return;
@@ -10315,7 +10348,7 @@ void do_repairship(CHAR_DATA *ch, char *argument )
     	case SUB_TIMER_DO_ABORT:
     		STR_DISPOSE( ch->dest_buf );
     		ch->substate = SUB_NONE;
-    		if ( (ship = ship_from_cockpit(ch->in_room->vnum)) == NULL )
+    		if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
     		      return;
     	        send_to_char("&RYou are distracted and fail to finish your repairs.\n", ch);
     		return;
@@ -10323,7 +10356,7 @@ void do_repairship(CHAR_DATA *ch, char *argument )
 
     ch->substate = SUB_NONE;
     
-    if ( (ship = ship_from_engine(ch->in_room->vnum)) == NULL )
+    if ( (ship = ship_from_engine(ch->game, ch->in_room->vnum)) == NULL )
     {  
        return;
     }
@@ -10395,7 +10428,7 @@ void do_addpilot(CHAR_DATA *ch, char *argument )
     SHIP_DATA *ship;
     int chance;
      
-   if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+   if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
    {
            send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
            return;
@@ -10451,7 +10484,7 @@ void do_rempilot(CHAR_DATA *ch, char *argument )
     int chance;
     SHIP_DATA *ship;
     
-   if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+   if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
    {
            send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
            return;
@@ -10510,7 +10543,7 @@ void do_radar( CHAR_DATA *ch, char *argument )
     SHIP_DATA *ship;
     MISSILE_DATA *missile;    
     SPACE_DATA *spaceobj;
-        if (   (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+        if (   (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the cockpit or turret of a ship to do that!\n",ch);
             return;
@@ -10672,7 +10705,7 @@ void do_autotrack( CHAR_DATA *ch, char *argument )
    SHIP_DATA *ship;
    int chance;
  
-   if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+   if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
    {
         send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
         return;
@@ -10701,7 +10734,7 @@ void do_autotrack( CHAR_DATA *ch, char *argument )
                   return;
               }
 
-   if (  (ship = ship_from_pilotseat(ch->in_room->vnum))  == NULL )
+   if (  (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum))  == NULL )
    {
         send_to_char("&RYou aren't in the pilots chair!\n",ch);
         return;
@@ -10950,7 +10983,7 @@ void do_drive( CHAR_DATA *ch, char *argument )
     SPRINTF ( arg2, "%s", argument);
 
 
-        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the drivers seat of a land vehicle to do that!\n",ch);
             return;
@@ -11017,7 +11050,7 @@ void do_drive( CHAR_DATA *ch, char *argument )
            
         if ( !strcmp( arg, "out" ))
         {
-          target = ship_from_hanger(ship->in_room->vnum);
+          target = ship_from_hanger(ship->game, ship->in_room->vnum);
           if (!target)
           {
             send_to_char("You have to be in a ship's hanger to drive out of one.\n", ch);
@@ -11399,7 +11432,7 @@ void do_chaff( CHAR_DATA *ch, char *argument )
     SHIP_DATA *ship;
     
    
-        if (  (ship = ship_from_cockpit(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
             return;
@@ -11412,7 +11445,7 @@ void do_chaff( CHAR_DATA *ch, char *argument )
     	        }
     	        
         
-        if (  (ship = ship_from_coseat(ch->in_room->vnum))  == NULL )
+        if (  (ship = ship_from_coseat(ch->game, ch->in_room->vnum))  == NULL )
         {
             send_to_char("&RThe controls are at the copilots seat!\n",ch);
             return;
@@ -11555,6 +11588,7 @@ void makedebris( SHIP_DATA *ship )
     return;
  
   CREATE( debris, SHIP_DATA, 1 );
+  debris->game = ship->game;
 
   LINK( debris, first_ship, last_ship, next, prev );
 
@@ -11615,6 +11649,7 @@ void shipdelete(SHIP_DATA * ship, bool shiplist) {
 
   char buf[MAX_STRING_LENGTH];
   char buf2[MAX_STRING_LENGTH];
+  GameContext *game = ship->game;
   
   SPRINTF( buf, "%s%s", SHIP_DIR, ship->filename );
   SPRINTF( buf2, "%s%s", BACKUPSHIP_DIR, ship->filename );
@@ -11642,7 +11677,7 @@ void shipdelete(SHIP_DATA * ship, bool shiplist) {
   DISPOSE( ship );
  
   if( shiplist )
-    write_ship_list( );
+    write_ship_list( game );
  
   return; 
 }
@@ -11686,7 +11721,7 @@ void dumpship( SHIP_DATA *ship, int destination )
   return; 
 }
 
-SHIP_DATA *create_virtual_ship( SHIP_DATA *shiptemplate )
+SHIP_DATA *create_virtual_ship( GameContext *game, SHIP_DATA *shiptemplate )
 {
   SHIP_DATA *ship;
   SHIP_MOD_DATA *ship_mod;
@@ -11699,7 +11734,7 @@ SHIP_DATA *create_virtual_ship( SHIP_DATA *shiptemplate )
     return NULL;
 
   CREATE (ship, SHIP_DATA, 1);
-  
+  ship->game = game;
   roomvnum    = 100000 + (currrentalvnum ^ 65535);
   currrentalvnum++;
   templateroom = get_room_index(shiptemplate->cockpit);
@@ -11767,7 +11802,7 @@ SHIP_DATA *create_virtual_ship( SHIP_DATA *shiptemplate )
   ship->personalname  = STRALLOC (buf);
   ship->description   = STRALLOC (shiptemplate->description);
 
-  cockpitroom = make_room( roomvnum );
+  cockpitroom = make_room( game, roomvnum );
 
   cockpitroom->area    = templateroom->area;
   cockpitroom->sector_type = templateroom->sector_type;
@@ -11807,7 +11842,7 @@ void create_rental( CHAR_DATA *ch, SHIP_DATA *shiptemplate )
     return;
   }
 
-  if ( !ship && !(ship = create_virtual_ship( shiptemplate )) )
+  if ( !ship && !(ship = create_virtual_ship( ch->game, shiptemplate )) )
     send_to_char( "ERROR! Please contact your administrator.\n", ch );
 
   transship( ship, ch->in_room->vnum );
@@ -11829,7 +11864,7 @@ void do_rent( CHAR_DATA *ch, char *argument )
   {
     for( rentnum = 0; rentnum < MAX_RENTALS; rentnum++ )
     {
-      ship = ship_from_cockpit( rentals[rentnum].templatevnum );
+      ship = ship_from_cockpit( ch->game, rentals[rentnum].templatevnum );
       if ( !ship ) 
         ch_printf( ch, "[%d] ERROR-Non-existent ship\n", rentnum );
       else
@@ -11847,7 +11882,7 @@ void do_rent( CHAR_DATA *ch, char *argument )
 
   for ( rentnum = 0; rentnum < MAX_RENTALS; rentnum++ )
   {
-    ship = ship_from_cockpit( rentals[rentnum]. templatevnum );
+    ship = ship_from_cockpit( ch->game, rentals[rentnum]. templatevnum );
     if ( ship && !str_cmp( argument, ship->name ) )
     {
       create_rental(ch, ship);
@@ -11856,7 +11891,7 @@ void do_rent( CHAR_DATA *ch, char *argument )
   }
   for ( rentnum = 0; rentnum < MAX_RENTALS; rentnum++ )
   {
-    ship = ship_from_cockpit( rentals[rentnum]. templatevnum );
+    ship = ship_from_cockpit( ch->game, rentals[rentnum]. templatevnum );
     if ( ship && ship->name && (ship->name[0] != '\0') && nifty_is_name_prefix( argument, ship->name ) )
     {
       create_rental(ch, ship);

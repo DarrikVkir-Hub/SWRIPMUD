@@ -45,10 +45,10 @@ GUARD_DATA * last_guard;
 
 /* local routines */
 void	fread_clan	args( ( CLAN_DATA *clan, FILE *fp ) );
-bool	load_clan_file	args( ( char *clanfile ) );
+bool	load_clan_file	args( ( GameContext *game, char *clanfile ) );
 void	write_clan_list	args( ( void ) );
 void	fread_planet	args( ( PLANET_DATA *planet, FILE *fp ) );
-bool	load_planet_file	args( ( char *planetfile ) );
+bool	load_planet_file	args( ( GameContext *game, char *planetfile ) );
 void	write_planet_list	args( ( void ) );
 void	save_member_list	args( ( MEMBER_LIST *members_list ) );
 void	show_members		args( ( CHAR_DATA *ch, char *argument, char *format ) );
@@ -430,7 +430,7 @@ void fread_planet( PLANET_DATA *planet, FILE *fp )
 	case 'S':
 	    if ( !str_cmp( word, "spaceobject" ) )
 	    {
-	     	planet->spaceobject = spaceobject_from_name ( fread_string(fp) );
+	     	planet->spaceobject = spaceobject_from_name ( planet->game,fread_string(fp) );
             if (planet->spaceobject)
             {
                     SPACE_DATA *spaceobject = planet->spaceobject;
@@ -461,7 +461,7 @@ void fread_planet( PLANET_DATA *planet, FILE *fp )
  * Load a clan file
  */
 
-bool load_clan_file( char *clanfile )
+bool load_clan_file( GameContext *game, char *clanfile )
 {
     char filename[256];
     CLAN_DATA *clan;
@@ -594,7 +594,7 @@ bool load_clan_file( char *clanfile )
 		obj_from_char( tobj );
 		obj_to_room( tobj, storeroom );
 	    }
-	    release_supermob();
+	    release_supermob(game);
 	}
 	else
 	    log_string( "Cannot open clan vault" );
@@ -605,7 +605,7 @@ bool load_clan_file( char *clanfile )
     return found;
 }
 
-bool load_planet_file( char *planetfile )
+bool load_planet_file( GameContext *game, char *planetfile )
 {
     char filename[256];
     PLANET_DATA *planet;
@@ -681,7 +681,7 @@ bool load_planet_file( char *planetfile )
 /*
  * Load in all the clan files.
  */
-void load_clans( )
+void load_clans( GameContext *game )
 {
     FILE *fpList;
     const char *filename;
@@ -710,7 +710,7 @@ void load_clans( )
 	if ( filename[0] == '$' )
 	  break;
 
-	if ( !load_clan_file( (char* ) filename ) )
+	if ( !load_clan_file( game, (char* ) filename ) )
 	{
 	  SPRINTF( buf, "Cannot load clan file: %s", filename );
 	  bug( buf, 0 );
@@ -737,7 +737,7 @@ void load_clans( )
     return;
 }
 
-void load_planets( )
+void load_planets( GameContext *game )
 {
     FILE *fpList;
     const char *filename;
@@ -764,7 +764,7 @@ void load_planets( )
 	if ( filename[0] == '$' )
 	  break;
 
-	if ( !load_planet_file( (char * ) filename ) )
+	if ( !load_planet_file( game, (char * ) filename ) )
 	{
 	  SPRINTF( buf, "Cannot load planet file: %s", filename );
 	  bug( buf, 0 );
@@ -1330,7 +1330,7 @@ void do_setplanet( CHAR_DATA *ch, char *argument )
     {
         SPACE_DATA *spaceobject;
         
-	if ( (planet->spaceobject = spaceobject_from_name(argument)) )
+	if ( (planet->spaceobject = spaceobject_from_name(planet->game, argument)) )
 	{
          if ((spaceobject=planet->spaceobject) != NULL)
          {
@@ -1825,7 +1825,7 @@ void do_shove( CHAR_DATA *ch, char *argument )
       {
     	fromroom = ch->in_room;
     
-	    if  ( (ship = ship_from_entrance(fromroom->vnum)) == NULL )
+	    if  ( (ship = ship_from_entrance(ch->game, fromroom->vnum)) == NULL )
 	    {
 	        send_to_char( "I see no exit here.\n" , ch );
 	        return;
@@ -2109,7 +2109,7 @@ void do_drag( CHAR_DATA *ch, char *argument )
       {
     	fromroom = ch->in_room;
     
-	    if  ( (ship = ship_from_entrance(fromroom->vnum)) == NULL )
+	    if  ( (ship = ship_from_entrance(ch->game, fromroom->vnum)) == NULL )
 	    {
 	        send_to_char( "I see no exit here.\n" , ch );
 	        return;
@@ -2909,7 +2909,7 @@ void save_senate( )
 */
 }
 
-void load_senate( )
+void load_senate( GameContext *game )
 {
     first_senator = NULL;
     last_senator = NULL;
@@ -2942,6 +2942,7 @@ void load_senate( )
         if ( target[0] == '$' )
         break;                                  
 	CREATE( bounty, BOUNTY_DATA, 1 );
+    bounty->game = game;
         LINK( bounty, first_disintigration, last_disintigration, next, prev );
 	bounty->target = STRALLOC(target);
 	amount = fread_number( fpList );
