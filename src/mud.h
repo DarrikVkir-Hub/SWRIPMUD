@@ -259,21 +259,20 @@ inline const char* get_flag_name(const flag_name* table, int index, int count)
     Player Act flags
     Mobile Act flags
     Affect flags
+    System/Autosave flags
+    Resistance flags    
 
     { Flags to continue to convert: }
-    *There's likely some bugs I introduced by trying to split affect into bitset and keep ris at bitmask.
-    Resistance flags
     *The remaining important flags
     Attack Flags
     Defense flags
-
     
     [ Someday ]
     Part Flags
 
     [Likely never]
     *Very simple, therefore little demand
-    System/Autosave flags
+
     Area loaded flags
     Area flags
     Wrap flags
@@ -1407,7 +1406,15 @@ struct	help_data
 /*
  * Shop types.
  */
-#define MAX_TRADE	 5
+#define MAX_TRADE	 5 // No longer used, but kept for compatibility with old saves - buy_type is now a BitSet to allow unlimited types - DV 4-7-26
+
+enum ShopTypeFlags
+{
+    SHOP_BUY = 0,
+    SHOP_FIX = 1,
+    SHOP_RECHARGE = 2,
+    SHOP_MAX = 3,
+};
 
 struct	shop_data
 {
@@ -1415,9 +1422,12 @@ struct	shop_data
     SHOP_DATA *	next;			/* Next shop in list		*/
     SHOP_DATA * prev;			/* Previous shop in list	*/
     int		keeper;			/* Vnum of shop keeper mob	*/
-    sh_int	buy_type [MAX_TRADE];	/* Item types shop will buy	*/
+    FLAG_SET    buy_type;	    /* Item types shop will buy - now in BitSet form to allow unlimited types */
+//  sh_int	buy_type [MAX_TRADE];	/* Item types shop will buy	*/
     sh_int	profit_buy;		/* Cost multiplier for buying	*/
     sh_int	profit_sell;		/* Cost multiplier for selling	*/
+    FLAG_SET  shop_type;		/* Repair shop type		*/    
+    sh_int	  profit_fix;		/* Cost multiplier for fixing	*/
     sh_int	open_hour;		/* First opening hour		*/
     sh_int	close_hour;		/* First closing hour		*/
 };
@@ -1432,7 +1442,8 @@ struct	repairshop_data
     REPAIR_DATA * next;			/* Next shop in list		*/
     REPAIR_DATA * prev;			/* Previous shop in list	*/
     int		  keeper;		/* Vnum of shop keeper mob	*/
-    sh_int	  fix_type [MAX_FIX];	/* Item types shop will fix	*/
+    FLAG_SET   fix_type;	    /* Item types shop will fix - now in BitSet form to allow unlimited types */
+    //sh_int	  fix_type [MAX_FIX];	/* Item types shop will fix	*/
     sh_int	  profit_fix;		/* Cost multiplier for fixing	*/
     sh_int	  shop_type;		/* Repair shop type		*/
     sh_int	  open_hour;		/* First opening hour		*/
@@ -1483,9 +1494,9 @@ struct	race_type
     sh_int	frc_plus;		/* Frc 	    "			*/
     sh_int      hit;
     sh_int      mana;
-    int         resist;
-    int         suscept;
-    int		class_restriction;	/* Flags for illegal classes	*/
+    FLAG_SET    resist;
+    FLAG_SET    suscept;
+    int		    class_restriction;	/* Flags for illegal classes	*/
     int         language;               /* Default racial language      */
 };
 
@@ -2171,30 +2182,34 @@ typedef enum
 /*
  * Resistant Immune Susceptible flags
  */
-#define RIS_FIRE		  BV00
-#define RIS_COLD		  BV01
-#define RIS_ELECTRICITY		  BV02
-#define RIS_ENERGY		  BV03
-#define RIS_BLUNT		  BV04
-#define RIS_PIERCE		  BV05
-#define RIS_SLASH		  BV06
-#define RIS_ACID		  BV07
-#define RIS_POISON		  BV08
-#define RIS_DRAIN		  BV09
-#define RIS_SLEEP		  BV10
-#define RIS_CHARM		  BV11
-#define RIS_HOLD		  BV12
-#define RIS_NONMAGIC		  BV13
-#define RIS_PLUS1		  BV14
-#define RIS_PLUS2		  BV15
-#define RIS_PLUS3		  BV16
-#define RIS_PLUS4		  BV17
-#define RIS_PLUS5		  BV18
-#define RIS_PLUS6		  BV19
-#define RIS_MAGIC		  BV20
-#define RIS_PARALYSIS		  BV21
-#define RIS_STEAL		  BV22
-/* 21 RIS's*/
+enum ris_types
+{
+    RIS_FIRE         = 0,
+    RIS_COLD         = 1,
+    RIS_ELECTRICITY  = 2,
+    RIS_ENERGY       = 3,
+    RIS_BLUNT        = 4,
+    RIS_PIERCE       = 5,
+    RIS_SLASH        = 6,
+    RIS_ACID         = 7,
+    RIS_POISON       = 8,
+    RIS_DRAIN        = 9,
+    RIS_SLEEP        = 10,
+    RIS_CHARM        = 11,
+    RIS_HOLD         = 12,
+    RIS_NONMAGIC     = 13,
+    RIS_PLUS1        = 14,
+    RIS_PLUS2        = 15,
+    RIS_PLUS3        = 16,
+    RIS_PLUS4        = 17,
+    RIS_PLUS5        = 18,
+    RIS_PLUS6        = 19,
+    RIS_MAGIC        = 20,
+    RIS_PARALYSIS    = 21,
+    RIS_STEAL        = 22,
+
+    RIS_MAX          = 23
+};
 
 /*
  * Attack types
@@ -2544,7 +2559,7 @@ typedef enum {
 
 #define OBJ_VNUM_BLASTECH_E11     50
 
-#define MAX_ITEM_TYPE		     ITEM_CARGO
+#define MAX_ITEM_TYPE		     ITEMTYPE_MAX
 
 /*
  * Item types.
@@ -3091,9 +3106,9 @@ struct	mob_index_data
     int			gold;
     int			exp;
     int			xflags;
-    int			resistant;
-    int			immune;
-    int			susceptible;
+    FLAG_SET	resistant;
+    FLAG_SET	immune;
+    FLAG_SET	susceptible;
     int			attacks;
     int			defenses;
     FLAG_SET	speaks;
@@ -3228,9 +3243,9 @@ struct	char_data
     int			carry_weight;
     int			carry_number;
     int			xflags;
-    int			resistant;
-    int			immune;
-    int			susceptible;
+    FLAG_SET	resistant;
+    FLAG_SET	immune;
+    FLAG_SET	susceptible;
     int			attacks;
     int			defenses;
     FLAG_SET	speaks;
@@ -4627,13 +4642,14 @@ extern	const flag_name	w_flags		[];
 //extern	const flag_name	a_flags		[];
 extern	const flag_name	o_types		[];
 extern	const flag_name	a_types		[];
+extern  const flag_name shop_types  [];
 extern	const flag_name	act_flags	[];
 extern  const flag_name planet_flags[];
 extern  const flag_name spice_table [];
 extern	const flag_name	plr_flags	[];
 extern	const flag_name	pc_flags	[];
 extern	char *	const	trap_flags	[];
-extern	char *	const	ris_flags	[];
+extern	const flag_name	ris_flags	[];
 extern	char *	const	trig_flags	[];
 extern	char *	const	part_flags	[];
 extern	const flag_name	npc_race	[];

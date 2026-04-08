@@ -68,6 +68,23 @@ int	get_cost	args( ( CHAR_DATA *ch, CHAR_DATA *keeper,
 int 	get_repaircost  args( ( CHAR_DATA *keeper, OBJ_DATA *obj ) );
 #undef CD
 
+const flag_name shop_types[] = {
+    { SHOP_BUY, "buy" },
+    { SHOP_FIX, "fix" },
+    { SHOP_RECHARGE, "recharge" },
+    { SHOP_MAX, "" },
+    { (size_t)-1, nullptr } // terminator
+};
+
+int get_shoptype( char *type )
+{
+	const flag_name* x;
+	x = find_flag(shop_types, type);
+	if (!x)
+		return -1;
+	return x->bit;
+}
+
 /*
  * Shopping commands.
  */
@@ -137,14 +154,12 @@ CHAR_DATA *find_keeper_q( CHAR_DATA *ch, bool message )
 CHAR_DATA *find_fixer( CHAR_DATA *ch )
 {
     CHAR_DATA *keeper;
-    REPAIR_DATA *rShop;
+    SHOP_DATA *rShop;
 
     rShop = NULL;
-    for ( keeper = ch->in_room->first_person;
-	  keeper;
-	  keeper = keeper->next_in_room )
-	if ( IS_NPC(keeper) && (rShop = keeper->pIndexData->rShop) != NULL )
-	    break;
+    for ( keeper = ch->in_room->first_person; keeper; keeper = keeper->next_in_room )
+		if ( IS_NPC(keeper) && (rShop = keeper->pIndexData->pShop) != NULL && BV_IS_SET(rShop->shop_type, SHOP_FIX) )
+		    break;
 
     if ( !rShop )
     {
@@ -273,20 +288,15 @@ int get_cost( CHAR_DATA *ch, CHAR_DATA *keeper, OBJ_DATA *obj, bool fBuy )
 	            / 100;
     } else {
 	    OBJ_DATA *obj2;
-	    int itype;
 
 	    profitmod = get_curr_cha(ch) - 13 - (richcustomer ? 15 : 0);
 	    cost = 0;
-	    for ( itype = 0; itype < MAX_TRADE; itype++ )
-	    {
-	        if ( obj->item_type == pShop->buy_type[itype] )
+			if ( BV_IS_SET(pShop->buy_type, obj->item_type) )
 	        {
 		            cost = (int) (obj->cost
 		            * UMIN( (pShop->profit_buy-1),
 			        pShop->profit_sell+profitmod) ) / 100;
-		            break;
 	        }
-	    }
 
             for ( obj2 = keeper->first_carrying; obj2; obj2 = obj2->next_content )
     	    {
@@ -329,7 +339,6 @@ int get_repaircost( CHAR_DATA *keeper, OBJ_DATA *obj )
 {
     REPAIR_DATA *rShop;
     int cost;
-    int itype;
     bool found;
 
     if ( !obj || ( rShop = keeper->pIndexData->rShop ) == NULL )
@@ -337,15 +346,11 @@ int get_repaircost( CHAR_DATA *keeper, OBJ_DATA *obj )
 
     cost = 0;
     found = FALSE;
-    for ( itype = 0; itype < MAX_FIX; itype++ )
-    {
-	if ( obj->item_type == rShop->fix_type[itype] )
+	if ( BV_IS_SET(rShop->fix_type, obj->item_type) )
 	{
 	    cost = (int) (obj->cost * rShop->profit_fix / 100);
 	    found = TRUE;
-	    break;
 	}
-    }
 
     if ( !found )
       cost = -1;
@@ -999,78 +1004,76 @@ void do_value( CHAR_DATA *ch, char *argument )
  * Repair a single object. Used when handling "repair all" - Gorog
  */
 void repair_one_obj( CHAR_DATA *ch, CHAR_DATA *keeper, OBJ_DATA *obj,
-                 char *arg, int maxgold, char *fixstr, char*fixstr2 )
+                 char *arg, int maxgold )
 {
    char buf[MAX_STRING_LENGTH];
    int cost;
 
-   if ( !can_drop_obj( ch, obj ) )
-       ch_printf( ch, "You can't let go of %s.\n", obj->name );
-   else if ( ( cost = get_repaircost( keeper, obj ) ) < 0 )
-   {
-       if (cost != -2)
-       act( AT_TELL, "$n tells you, 'Sorry, I can't do anything with $p.'", 
-            keeper, obj, ch, TO_VICT );
-       else
-	  act( AT_TELL, "$n tells you, '$p looks fine to me!'", keeper, obj, ch, TO_VICT );
-   }
+   	if ( !can_drop_obj( ch, obj ) )
+       	ch_printf( ch, "You can't let go of %s.\n", obj->name );
+   	else if ( ( cost = get_repaircost( keeper, obj ) ) < 0 )
+   	{
+       	if (cost != -2)
+       		act( AT_TELL, "$n tells you, 'Sorry, I can't do anything with $p.'", 
+            	keeper, obj, ch, TO_VICT );
+       	else
+	  		act( AT_TELL, "$n tells you, '$p looks fine to me!'", keeper, obj, ch, TO_VICT );
+   	}
                /* "repair all" gets a 10% surcharge - Gorog */
 
-   else if ( (cost = strcmp("all",arg) ? cost : 11*cost/10) > ch->gold )
-   {
-      SPRINTF( buf,
-       "$N tells you, 'It will cost %d credit%s to %s %s...'", cost,
-        cost == 1 ? "" : "s", fixstr, obj->name );
-      act( AT_TELL, buf, ch, NULL, keeper, TO_CHAR );
-      act( AT_TELL, "$N tells you, 'Which I see you can't afford.'", ch,
-              NULL, keeper, TO_CHAR );
-   }
-   else
-   {
-      SPRINTF( buf, "$n gives $p to $N, who quickly %s it.", fixstr2 );
-      act( AT_ACTION, buf, ch, obj, keeper, TO_ROOM );
-      SPRINTF( buf, "$N charges you %d credit%s to %s $p.",
-          cost, cost == 1 ? "" : "s", fixstr );
-      act( AT_ACTION, buf, ch, obj, keeper, TO_CHAR );
-      ch->gold     -= cost;
-      keeper->gold += cost;
-      if ( keeper->gold < 0 )
-          keeper->gold = 0;
-      else
-      if ( keeper->gold > maxgold )
-      {
-          boost_economy( keeper->in_room->area, keeper->gold - maxgold/2 );
-          keeper->gold = maxgold/2;
-          act( AT_ACTION, "$n puts some credits into a large safe.", keeper, 
+	else if ( (cost = strcmp("all",arg) ? cost : 11*cost/10) > ch->gold )
+	{
+		SPRINTF( buf,
+		"$N tells you, 'It will cost %d credit%s to maintain %s...'", cost,
+		cost == 1 ? "" : "s", obj->name );
+		act( AT_TELL, buf, ch, NULL, keeper, TO_CHAR );
+		act( AT_TELL, "$N tells you, 'Which I see you can't afford.'", ch,
+				NULL, keeper, TO_CHAR );
+	}
+	else
+	{
+		SPRINTF( buf, "$n gives $p to $N, who quickly maintains it." );
+		act( AT_ACTION, buf, ch, obj, keeper, TO_ROOM );
+		SPRINTF( buf, "$N charges you %d credit%s to maintain $p.",
+			cost, cost == 1 ? "" : "s" );
+		act( AT_ACTION, buf, ch, obj, keeper, TO_CHAR );
+		ch->gold     -= cost;
+		keeper->gold += cost;
+		if ( keeper->gold < 0 )
+			keeper->gold = 0;
+		else
+		if ( keeper->gold > maxgold )
+		{
+			boost_economy( keeper->in_room->area, keeper->gold - maxgold/2 );
+			keeper->gold = maxgold/2;
+			act( AT_ACTION, "$n puts some credits into a large safe.", keeper, 
 		NULL, NULL, TO_ROOM );
-      }
+		}
 
-      switch ( obj->item_type )
-      {
-          default:
-            send_to_char( "For some reason, you think you got ripped off...\n", ch);
-            break;
-          case ITEM_ARMOR:
-            obj->value[0] = obj->value[1];
-            break;
-          case ITEM_WEAPON:
-            obj->value[0] = INIT_WEAPON_CONDITION;
-            break;
-          case ITEM_DEVICE:
-            obj->value[2] = obj->value[1];
-            break;
-      }
+		switch ( obj->item_type )
+		{
+			default:
+			send_to_char( "For some reason, you think you got ripped off...\n", ch);
+			break;
+			case ITEM_ARMOR:
+			obj->value[0] = obj->value[1];
+			break;
+			case ITEM_WEAPON:
+			obj->value[0] = INIT_WEAPON_CONDITION;
+			break;
+			case ITEM_DEVICE:
+			obj->value[2] = obj->value[1];
+			break;
+		}
 
-      oprog_repair_trigger( ch, obj );
-   }
+		oprog_repair_trigger( ch, obj );
+	}
 }
 
 void do_repair( CHAR_DATA *ch, char *argument )
 {
     CHAR_DATA *keeper;
     OBJ_DATA *obj;
-    char *fixstr;
-    char *fixstr2;
     int maxgold;
 
     if ( argument[0] == '\0' )
@@ -1083,7 +1086,9 @@ void do_repair( CHAR_DATA *ch, char *argument )
 	return;
 
     maxgold = keeper->top_level * 10;
-    switch( keeper->pIndexData->rShop->shop_type )
+
+/*
+	switch( keeper->pIndexData->pShop->shop_type )
     {
 	default:
 	case SHOP_FIX:
@@ -1095,7 +1100,7 @@ void do_repair( CHAR_DATA *ch, char *argument )
 	  fixstr2 = "recharges";
 	  break;
     }
-
+*/
     if ( !strcmp( argument, "all" ) )
     {
 	for ( obj = ch->first_carrying; obj ; obj = obj->next_content )
@@ -1105,8 +1110,7 @@ void do_repair( CHAR_DATA *ch, char *argument )
 	   && ( obj->item_type == ITEM_ARMOR
 	   ||   obj->item_type == ITEM_WEAPON
 	   ||   obj->item_type == ITEM_DEVICE ) )
-                repair_one_obj( ch, keeper, obj, argument, maxgold,
-                                fixstr, fixstr2);
+                repair_one_obj( ch, keeper, obj, argument, maxgold);
 	}
     return;
     }
@@ -1119,7 +1123,7 @@ void do_repair( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    repair_one_obj( ch, keeper, obj, argument, maxgold, fixstr, fixstr2); }
+    repair_one_obj( ch, keeper, obj, argument, maxgold); }
 
 void appraise_all( CHAR_DATA *ch, CHAR_DATA *keeper, char *fixstr )
 {
@@ -1289,8 +1293,7 @@ void do_makeshop( CHAR_DATA *ch, char *argument )
     return;
 }
 
-
-void do_shopset( CHAR_DATA *ch, char *argument )
+void do_shopset_old( CHAR_DATA *ch, char *argument )
 {
     SHOP_DATA *shop;
     MOB_INDEX_DATA *mob, *mob2;
@@ -1306,7 +1309,7 @@ void do_shopset( CHAR_DATA *ch, char *argument )
     {
 	send_to_char( "Usage: shopset <mob vnum> <field> value\n", ch );
 	send_to_char( "\nField being one of:\n", ch );
-	send_to_char( "  buy0 buy1 buy2 buy3 buy4 buy sell open close keeper\n", ch );
+	send_to_char( "  shoptype itemtype buy sell open close keeper\n", ch );
 	return;
     }
 
@@ -1329,86 +1332,44 @@ void do_shopset( CHAR_DATA *ch, char *argument )
     shop = mob->pShop;
     value = atoi( argument );
 
-    if ( !str_cmp( arg2, "buy0" ) )
-    {
-	if ( !is_number(argument) )
-	    value = get_otype(argument);
-	if ( value < 0 || value > MAX_ITEM_TYPE )
+	if ( !str_cmp( arg2, "itemtype" ))
 	{
-	    send_to_char( "Invalid item type!\n", ch );
-	    return;
+		int value = -1;
+		value = get_otype( argument );
+		if ( value < 0 || value > ITEMTYPE_MAX )
+		{
+			send_to_char( "Invalid item type!\n", ch );
+			return;
+		}
+		BV_TOGGLE_BIT(shop->buy_type, value);
+		send_to_char( "Done.\n", ch );
+		return;
 	}
-	shop->buy_type[0] = value;
-	send_to_char( "Done.\n", ch );
-	return;
-    }
 
-    if ( !str_cmp( arg2, "buy1" ) )
-    {
-	if ( !is_number(argument) )
-	    value = get_otype(argument);
-	if ( value < 0 || value > MAX_ITEM_TYPE )
+	if ( !str_cmp( arg2, "shoptype" ))
 	{
-	    send_to_char( "Invalid item type!\n", ch );
-	    return;
+		int value = -1;
+		value = get_shoptype( argument );
+		if ( value < 0 || value > SHOP_MAX )
+		{
+			send_to_char( "Invalid shop type!\n", ch );
+			return;
+		}
+		BV_TOGGLE_BIT(shop->shop_type, value);
+		send_to_char( "Done.\n", ch );
+		return;		
 	}
-	shop->buy_type[1] = value;
-	send_to_char( "Done.\n", ch );
-	return;
-    }
 
-    if ( !str_cmp( arg2, "buy2" ) )
+     if ( !str_cmp( arg2, "buy" ) )
     {
-	if ( !is_number(argument) )
-	  value = get_otype(argument);
-	if ( value < 0 || value > MAX_ITEM_TYPE )
-	{
-	    send_to_char( "Invalid item type!\n", ch );
-	    return;
-	}
-	shop->buy_type[2] = value;
-	send_to_char( "Done.\n", ch );
-	return;
-    }
-
-    if ( !str_cmp( arg2, "buy3" ) )
-    {
-	if ( !is_number(argument) )
-	  value = get_otype(argument);
-	if ( value < 0 || value > MAX_ITEM_TYPE )
-	{
-	    send_to_char( "Invalid item type!\n", ch );
-	    return;
-	}
-	shop->buy_type[3] = value;
-	send_to_char( "Done.\n", ch );
-	return;
-    }
-
-    if ( !str_cmp( arg2, "buy4" ) )
-    {
-	if ( !is_number(argument) )
-	  value = get_otype(argument);
-	if ( value < 0 || value > MAX_ITEM_TYPE )
-	{
-	    send_to_char( "Invalid item type!\n", ch );
-	    return;
-	}
-	shop->buy_type[4] = value;
-	send_to_char( "Done.\n", ch );
-	return;
-    }
-
-    if ( !str_cmp( arg2, "buy" ) )
-    {
-	if ( value <= (shop->profit_sell) || value > 1000 )
-	{
-	    send_to_char( "Out of range.\n", ch );
-	    return;
-	}
-	shop->profit_buy = value;
-	send_to_char( "Done.\n", ch );
-	return;
+		if ( value <= (shop->profit_sell) || value > 1000 )
+		{
+			send_to_char( "Out of range.\n", ch );
+			return;
+		}
+		shop->profit_buy = value;
+		send_to_char( "Done.\n", ch );
+		return;
     }
 
     if ( !str_cmp( arg2, "sell" ) )
@@ -1501,19 +1462,29 @@ void do_shopstat( CHAR_DATA *ch, char *argument )
     shop = mob->pShop;
 
     ch_printf( ch, "Keeper: %d  %s\n", shop->keeper, mob->short_descr );
-    ch_printf( ch, "buy0 [%s]  buy1 [%s]  buy2 [%s]  buy3 [%s]  buy4 [%s]\n",
-		get_flag_name(o_types, shop->buy_type[0], ITEMTYPE_MAX),
-		get_flag_name(o_types, shop->buy_type[1], ITEMTYPE_MAX),
-		get_flag_name(o_types, shop->buy_type[2], ITEMTYPE_MAX),
-		get_flag_name(o_types, shop->buy_type[3], ITEMTYPE_MAX),
-		get_flag_name(o_types, shop->buy_type[4], ITEMTYPE_MAX) );
-    ch_printf( ch, "Profit:  buy %3d%%  sell %3d%%\n",
+    ch_printf( ch, "Shops: %s\n", bitset_to_string(shop->shop_type, shop_types).c_str() );
+    ch_printf( ch, "buytype: %s\n", bitset_to_string(shop->buy_type, o_types).c_str() );
+    ch_printf( ch, "Profit:  buy %3d%%  sell %3d%%  fix %3d%%\n",
 			shop->profit_buy,
-			shop->profit_sell );
+			shop->profit_sell,
+			shop->profit_fix );
     ch_printf( ch, "Hours:   open %2d  close %2d\n",
 			shop->open_hour,
 			shop->close_hour );
     return;
+}
+
+std::string shop_type_to_string( SHOP_DATA *shop )
+{
+	std::string result;
+	if ( BV_IS_SET(shop->shop_type, SHOP_BUY) )
+		result += "B";	
+	if ( BV_IS_SET(shop->shop_type, SHOP_FIX) )
+		result += "F";
+	if ( BV_IS_SET(shop->shop_type, SHOP_RECHARGE) )
+		result += "R";
+
+	return result.empty() ? "Non" : result;
 }
 
 
@@ -1529,11 +1500,11 @@ void do_shops( CHAR_DATA *ch, char *argument )
 
     set_char_color( AT_NOTE, ch );
     for ( shop = first_shop; shop; shop = shop->next )
-	ch_printf( ch, "Keeper: %5d Buy: %3d Sell: %3d Open: %2d Close: %2d Buy: %2d %2d %2d %2d %2d\n",
-		shop->keeper,	   shop->profit_buy, shop->profit_sell,
+	ch_printf( ch, "Keeper: %5d Buy: %3d Sell: %3d Fix: %3d Open: %2d Close: %2d Shops: %3s Buy: %s\n",
+		shop->keeper,	   shop->profit_buy, shop->profit_sell, shop->profit_fix,
 		shop->open_hour,   shop->close_hour,
-		shop->buy_type[0], shop->buy_type[1],
-		shop->buy_type[2], shop->buy_type[3], shop->buy_type[4] );
+		shop_type_to_string( shop ).c_str(),
+		bitset_to_string(shop->buy_type, o_types).c_str() );
     return;
 }
 
@@ -1546,6 +1517,9 @@ void do_makerepair( CHAR_DATA *ch, char *argument )
     REPAIR_DATA *repair;
     int vnum;
     MOB_INDEX_DATA *mob;
+
+	send_to_char( "Repair shops have been combined with shops. Use makeshop to make a repair shops.\n", ch );
+	return;
 
     if ( !argument || argument[0] == '\0' )
     {
@@ -1593,6 +1567,9 @@ void do_repairset( CHAR_DATA *ch, char *argument )
     int vnum;
     int value;
     
+	send_to_char( "Repair shops have been combined with shops. Use shopset to edit repair shops.\n", ch );
+	return;
+
     argument = one_argument( argument, arg1 );
     argument = one_argument( argument, arg2 );
 
@@ -1600,7 +1577,7 @@ void do_repairset( CHAR_DATA *ch, char *argument )
     {
 	send_to_char( "Usage: repairset <mob vnum> <field> value\n", ch );
 	send_to_char( "\nField being one of:\n", ch );
-	send_to_char( "  fix0 fix1 fix2 profit type open close keeper\n", ch );
+	send_to_char( "  fixtype profit type open close keeper\n", ch );
 	return;
     }
 
@@ -1623,44 +1600,16 @@ void do_repairset( CHAR_DATA *ch, char *argument )
     repair = mob->rShop;
     value = atoi( argument );
 
-    if ( !str_cmp( arg2, "fix0" ) )
+    if ( !str_cmp( arg2, "fixtype" ) )
     {
 	if ( !is_number(argument) )
 	  value = get_otype(argument);
-	if ( value < 0 || value > MAX_ITEM_TYPE )
+	if ( value < 0 || value > ITEMTYPE_MAX )
 	{
 	    send_to_char( "Invalid item type!\n", ch );
 	    return;
 	}
-	repair->fix_type[0] = value;
-	send_to_char( "Done.\n", ch );
-	return;
-    }
-
-    if ( !str_cmp( arg2, "fix1" ) )
-    {
-	if ( !is_number(argument) )
-	  value = get_otype(argument);
-	if ( value < 0 || value > MAX_ITEM_TYPE )
-	{
-	    send_to_char( "Invalid item type!\n", ch );
-	    return;
-	}
-	repair->fix_type[1] = value;
-	send_to_char( "Done.\n", ch );
-	return;
-    }
-
-    if ( !str_cmp( arg2, "fix2" ) )
-    {
-	if ( !is_number(argument) )
-	  value = get_otype(argument);
-	if ( value < 0 || value > MAX_ITEM_TYPE )
-	{
-	    send_to_char( "Invalid item type!\n", ch );
-	    return;
-	}
-	repair->fix_type[2] = value;
+	BV_TOGGLE_BIT(repair->fix_type, value);
 	send_to_char( "Done.\n", ch );
 	return;
     }
@@ -1745,6 +1694,9 @@ void do_repairstat( CHAR_DATA *ch, char *argument )
     MOB_INDEX_DATA *mob;
     int vnum;
     
+	send_to_char( "Repair shops have been combined with shops. Use shopstat to show a repair shop.\n", ch );
+	return;
+
     if ( argument[0] == '\0' )
     {
 	send_to_char( "Usage: repairstat <keeper vnum>\n", ch );
@@ -1767,10 +1719,8 @@ void do_repairstat( CHAR_DATA *ch, char *argument )
     repair = mob->rShop;
 
     ch_printf( ch, "Keeper: %d  %s\n", repair->keeper, mob->short_descr );
-    ch_printf( ch, "fix0 [%s]  fix1 [%s]  fix2 [%s]\n",
-			get_flag_name(o_types, repair->fix_type[0], ITEMTYPE_MAX),
-			get_flag_name(o_types, repair->fix_type[1], ITEMTYPE_MAX),
-			get_flag_name(o_types, repair->fix_type[2], ITEMTYPE_MAX) );
+    ch_printf( ch, "fixtype: %s\n",
+			bitset_to_string(repair->fix_type, o_types).c_str() );
     ch_printf( ch, "Profit: %3d%%  Type: %d\n",
 			repair->profit_fix,
 			repair->shop_type );
@@ -1785,6 +1735,9 @@ void do_repairshops( CHAR_DATA *ch, char *argument )
 {
     REPAIR_DATA *repair;
 
+	send_to_char( "Repair shops have been combined with shops. Use shops to show repair shops.\n", ch );
+	return;
+
     if ( !first_repair )
     {
 	send_to_char( "There are no repair shops.\n", ch );
@@ -1793,10 +1746,10 @@ void do_repairshops( CHAR_DATA *ch, char *argument )
 
     set_char_color( AT_NOTE, ch );
     for ( repair = first_repair; repair; repair = repair->next )
-	ch_printf( ch, "Keeper: %5d Profit: %3d Type: %d Open: %2d Close: %2d Fix: %2d %2d %2d\n",
+	ch_printf( ch, "Keeper: %5d Profit: %3d Type: %d Open: %2d Close: %2d Fix: %s\n",
 		repair->keeper,	     repair->profit_fix, repair->shop_type,
 		repair->open_hour,   repair->close_hour,
-		repair->fix_type[0], repair->fix_type[1], repair->fix_type[2] );
+		bitset_to_string(repair->fix_type, o_types).c_str() );
     return;
 }
 

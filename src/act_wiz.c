@@ -1429,15 +1429,7 @@ ch_printf( ch,
 	victim->top_level,  victim->race,   victim->alignment,
 	GET_AC(victim),      victim->gold,
 	victim->pcdata ? victim->pcdata->bank : -1 );
-    ch_printf(ch,"Command Groups: ");
-    {
-      int i;
-      for(i = 0; i < MAX_COMMAND_GROUP; i++) {
-        if (!IS_NPC(victim) && BV_IS_SET(victim->pcdata->commandgroup,(1<<i)))
-          ch_printf(ch,"%s ",get_flag_name(command_groups, i, MAX_COMMAND_GROUP));
-      }
-    }
-    ch_printf(ch,"\n");
+    ch_printf(ch,"Command Groups: %s\n", !IS_NPC(victim) ? bitset_to_string(victim->pcdata->commandgroup, command_groups).c_str() : "(NPC - NA)");
     if (  victim->race  < MAX_NPC_RACE  && victim->race  >= 0 )
 	ch_printf( ch, "Race: %s\n",
 	  get_flag_name(npc_race, victim->race, MAX_NPC_RACE) );
@@ -1536,11 +1528,11 @@ ch_printf( ch,
     ch_printf( ch, "Body Parts : %s\n",
 	flag_string(victim->xflags, part_flags) );
     ch_printf( ch, "Resistant  : %s\n",
-	flag_string(victim->resistant, ris_flags) );
+	bitset_to_string(victim->resistant, ris_flags).c_str() );
     ch_printf( ch, "Immune     : %s\n",
-	flag_string(victim->immune, ris_flags) );
+	bitset_to_string(victim->immune, ris_flags).c_str() );
     ch_printf( ch, "Susceptible: %s\n",
-	flag_string(victim->susceptible, ris_flags) );
+	bitset_to_string(victim->susceptible, ris_flags).c_str() );
     ch_printf( ch, "Attacks    : %s\n",
 	flag_string(victim->attacks, attack_flags) );
     ch_printf( ch, "Defenses   : %s\n",

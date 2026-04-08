@@ -321,7 +321,7 @@ void save_clone( CHAR_DATA *ch )
     return;
 }
 
-void fwrite_bitset(FILE *fp, const char *name, const FLAG_SET &bv)
+void fwrite_bitset_noCR(FILE *fp, const char *name, const FLAG_SET &bv)
 {
 	if (name != NULL)
     	fprintf(fp, "%s ", name);
@@ -337,8 +337,13 @@ void fwrite_bitset(FILE *fp, const char *name, const FLAG_SET &bv)
             val &= val - 1;
         }
     }
+    fprintf(fp, "-1");	
+}
 
-    fprintf(fp, "-1\n");
+void fwrite_bitset(FILE *fp, const char *name, const FLAG_SET &bv)
+{
+	fwrite_bitset_noCR(fp, name, bv);
+    fprintf(fp, "\n");
 }
 
 void fread_bitset(FILE *fp, FLAG_SET &bv)
@@ -517,12 +522,12 @@ void fwrite_char( CHAR_DATA *ch, FILE *fp )
     if ( ch->wimpy )
       fprintf( fp, "Wimpy        %d\n",	ch->wimpy		);
     fwrite_bitset( fp, "Channels", ch->channels );
-    if ( ch->resistant )
-      fprintf( fp, "Resistant    %d\n",	ch->resistant		);
-    if ( ch->immune )
-      fprintf( fp, "Immune       %d\n",	ch->immune		);
-    if ( ch->susceptible )
-      fprintf( fp, "Susceptible  %d\n",	ch->susceptible		);
+    if ( ch->resistant.any() )
+	  fwrite_bitset(fp, "ResistantEx", ch->resistant);
+    if ( ch->immune.any() )
+	  fwrite_bitset(fp, "ImmuneEx", ch->immune);
+    if ( ch->susceptible.any() )
+	  fwrite_bitset(fp, "SusceptibleEx", ch->susceptible);
     if ( ch->pcdata && ch->pcdata->outcast_time )
       fprintf( fp, "Outcast_time %ld\n",ch->pcdata->outcast_time );
     if ( ch->pcdata && ch->pcdata->restore_time )
@@ -1602,8 +1607,23 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 
 	case 'I':
 	    KEY( "IllegalPK",	ch->pcdata->illegal_pk,	fread_number( fp ) );
-	    KEY( "Immune",	ch->immune,		fread_number( fp ) );
-	    break;
+//	    KEY( "Immune",	ch->immune,		fread_number( fp ) );
+		if ( !str_cmp( word, "Immune" ) )
+		{
+			int legacy = fread_number(fp);
+			fprintf(stderr,"DEBUG: flags read = %d\r\n", legacy);
+			ch->immune.reset();  // ensure clean state
+			ch->immune = int_to_bitset(legacy);
+			fMatch = TRUE;
+			break;
+		}
+		if ( !str_cmp(word, "ImmuneEx") )
+		{
+			fread_bitset(fp, ch->immune);
+			fMatch = TRUE;
+			break;
+		}
+		break;
         case 'J':
             KEY( "Jailvnum",    ch->pcdata->jail_vnum,          fread_number( fp ) );
             break;
@@ -1709,9 +1729,23 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	case 'R':
 	    KEY( "Race",        ch->race,		fread_number( fp ) );
 	    KEY( "Rank",        ch->pcdata->rank,	fread_string_nohash( fp ) );
-	    KEY( "Resistant",	ch->resistant,		fread_number( fp ) );
+//	    KEY( "Resistant",	ch->resistant,		fread_number( fp ) );
 	    KEY( "Restore_time",ch->pcdata->restore_time, fread_number( fp ) );
-
+		if ( !str_cmp( word, "Resistant" ) )
+		{
+			int legacy = fread_number(fp);
+			fprintf(stderr,"DEBUG: flags read = %d\r\n", legacy);
+			ch->resistant.reset();  // ensure clean state
+			ch->resistant = int_to_bitset(legacy);
+			fMatch = TRUE;
+			break;
+		}
+		if ( !str_cmp(word, "ResistantEx") )
+		{
+			fread_bitset(fp, ch->resistant);
+			fMatch = TRUE;
+			break;
+		}
 	    if ( !str_cmp( word, "Room" ) )
 	    {
 		ch->in_room = get_room_index( fread_number( fp ) );
@@ -1733,7 +1767,22 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	    KEY( "Salary_time",ch->pcdata->salary_date, fread_number( fp ) );
 	    KEY( "Sex",		ch->sex,		fread_number( fp ) );
 	    KEY( "ShortDescr",	ch->short_descr,	fread_string( fp ) );
-	    KEY( "Susceptible",	ch->susceptible,	fread_number( fp ) );
+	    //KEY( "Susceptible",	ch->susceptible,	fread_number( fp ) );
+		if ( !str_cmp( word, "Susceptible" ) )
+		{
+			int legacy = fread_number(fp);
+			fprintf(stderr,"DEBUG: flags read = %d\r\n", legacy);
+			ch->susceptible.reset();  // ensure clean state
+			ch->susceptible = int_to_bitset(legacy);
+			fMatch = TRUE;
+			break;
+		}
+		if ( !str_cmp(word, "SusceptibleEx") )
+		{
+			fread_bitset(fp, ch->susceptible);
+			fMatch = TRUE;
+			break;
+		}		
         KEY( "Speaking",      ch->speaking,		fread_number( fp ) );
 	    if ( !str_cmp( word, "Speaks" ) )
 	    {

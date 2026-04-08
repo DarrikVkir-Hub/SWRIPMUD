@@ -40,13 +40,13 @@ bool is_immune( CHAR_DATA *ch, sh_int damtype )
 {
     switch( damtype )
     {
-      case SD_FIRE:           return( IS_SET( ch->immune, RIS_FIRE ) );
-      case SD_COLD:           return( IS_SET( ch->immune, RIS_COLD ) );
-      case SD_ELECTRICITY:    return( IS_SET( ch->immune, RIS_ELECTRICITY ) );
-      case SD_ENERGY:         return( IS_SET( ch->immune, RIS_ENERGY ) );
-      case SD_ACID:           return( IS_SET( ch->immune, RIS_ACID ) );
-      case SD_POISON:	      return( IS_SET(ch->immune, RIS_POISON) || ch->race == RACE_DROID );
-	  case SD_DRAIN:	      return( IS_SET(ch->immune, RIS_DRAIN) || ch->race == RACE_DROID );
+      case SD_FIRE:           return( BV_IS_SET( ch->immune, RIS_FIRE ) );
+      case SD_COLD:           return( BV_IS_SET( ch->immune, RIS_COLD ) );
+      case SD_ELECTRICITY:    return( BV_IS_SET( ch->immune, RIS_ELECTRICITY ) );
+      case SD_ENERGY:         return( BV_IS_SET( ch->immune, RIS_ENERGY ) );
+      case SD_ACID:           return( BV_IS_SET( ch->immune, RIS_ACID ) );
+      case SD_POISON:	      return( BV_IS_SET(ch->immune, RIS_POISON) || ch->race == RACE_DROID );
+	  case SD_DRAIN:	      return( BV_IS_SET(ch->immune, RIS_DRAIN) || ch->race == RACE_DROID );
     }
     return FALSE;
 }
@@ -452,15 +452,15 @@ int ris_save( CHAR_DATA *ch, int chance, int ris )
    sh_int modifier;
 
    modifier = 10;
-   if ( IS_SET(ch->immune, ris ) )
+   if ( BV_IS_SET(ch->immune, ris ) )
      modifier -= 10;
    if ( ch->race == RACE_DROID && ( ris == SD_POISON || ris == SD_DRAIN ) )
      modifier -= 10;
    if ( ch->race == RACE_DROID && ris == RIS_MAGIC )
      modifier -= 5;
-   if ( IS_SET(ch->resistant, ris ) )
+   if ( BV_IS_SET(ch->resistant, ris ) )
      modifier -= 2;
-   if ( IS_SET(ch->susceptible, ris ) )
+   if ( BV_IS_SET(ch->susceptible, ris ) )
      modifier += 2;
    if ( modifier <= 0 )
      return 1000;
@@ -602,7 +602,7 @@ bool saves_wands( int level, CHAR_DATA *victim )
 {
     int save;
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
       return TRUE;
 
 //  save = 50 + ( victim->top_level - level - victim->saving_wand ) * 2;  // Replaced - DV 3-19-03
@@ -634,7 +634,7 @@ bool saves_spell_staff( int level, CHAR_DATA *victim )
 {
     int save;
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
       return TRUE;
 
     if ( IS_NPC( victim ) && level > 10 )
@@ -1318,7 +1318,7 @@ void do_cast( CHAR_DATA *ch, char *argument )
 	 */
 	if ( (skill->target == TAR_CHAR_DEFENSIVE
 	||    skill->target == TAR_CHAR_SELF)
-	&&    victim && IS_SET(victim->immune, RIS_MAGIC) )
+	&&    victim && BV_IS_SET(victim->immune, RIS_MAGIC) )
 	{
 	   immune_casting( skill, ch, victim, NULL );
 	   retcode = rSPELL_FAILED;
@@ -1471,7 +1471,7 @@ ch_ret obj_cast_spell( int sn, int level, CHAR_DATA *ch, CHAR_DATA *victim, OBJ_
 	    victim = ch;
 	vo = (void *) victim;
 	if ( skill->type != SKILL_HERB
-	&&   IS_SET(victim->immune, RIS_MAGIC ) )
+	&&   BV_IS_SET(victim->immune, RIS_MAGIC ) )
 	{
 	    immune_casting( skill, ch, victim, NULL );
 	    return rNONE;
@@ -1481,7 +1481,7 @@ ch_ret obj_cast_spell( int sn, int level, CHAR_DATA *ch, CHAR_DATA *victim, OBJ_
     case TAR_CHAR_SELF:
 	vo = (void *) ch;
 	if ( skill->type != SKILL_HERB
-	&&   IS_SET(ch->immune, RIS_MAGIC ) )
+	&&   BV_IS_SET(ch->immune, RIS_MAGIC ) )
 	{
 	    immune_casting( skill, ch, victim, NULL );
 	    return rNONE;
@@ -1578,7 +1578,7 @@ ch_ret spell_blindness( int sn, int level, CHAR_DATA *ch, void *vo )
     else
 	tmp = level;
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -1760,7 +1760,7 @@ ch_ret spell_change_sex( int sn, int level, CHAR_DATA *ch, void *vo )
     AFFECT_DATA af;
     SKILLTYPE *skill = get_skilltype(sn);
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -1799,8 +1799,8 @@ ch_ret spell_charm_person( int sn, int level, CHAR_DATA *ch, void *vo )
 	return rSPELL_FAILED;
     }
 
-    if ( IS_SET( victim->immune, RIS_MAGIC )
-    ||   IS_SET( victim->immune, RIS_CHARM ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC )
+    ||   BV_IS_SET( victim->immune, RIS_CHARM ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -2009,7 +2009,7 @@ ch_ret spell_cure_blindness( int sn, int level, CHAR_DATA *ch, void *vo )
     CHAR_DATA *victim = (CHAR_DATA *) vo;
     SKILLTYPE *skill = get_skilltype(sn);
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -2040,7 +2040,7 @@ ch_ret spell_cure_poison( int sn, int level, CHAR_DATA *ch, void *vo )
     CHAR_DATA *victim = (CHAR_DATA *) vo;
     SKILLTYPE *skill = get_skilltype(sn);
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -2075,7 +2075,7 @@ ch_ret spell_curse( int sn, int level, CHAR_DATA *ch, void *vo )
     AFFECT_DATA af;
     SKILLTYPE *skill = get_skilltype(sn);
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -2153,7 +2153,7 @@ ch_ret spell_dispel_evil( int sn, int level, CHAR_DATA *ch, void *vo )
 	return rSPELL_FAILED;
     }
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -2172,7 +2172,7 @@ ch_ret spell_dispel_magic( int sn, int level, CHAR_DATA *ch, void *vo )
     int affected_by;
     SKILLTYPE *skill = get_skilltype(sn);
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -2348,7 +2348,7 @@ ch_ret spell_energy_drain( int sn, int level, CHAR_DATA *ch, void *vo )
     int chance;
     SKILLTYPE *skill = get_skilltype(sn);
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -2448,7 +2448,7 @@ ch_ret spell_faerie_fire( int sn, int level, CHAR_DATA *ch, void *vo )
     AFFECT_DATA af;
     SKILLTYPE *skill = get_skilltype(sn);
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -2514,7 +2514,7 @@ ch_ret spell_harm( int sn, int level, CHAR_DATA *ch, void *vo )
     int dam;
     SKILLTYPE *skill = get_skilltype(sn);
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -2678,7 +2678,7 @@ ch_ret spell_identify( int sn, int level, CHAR_DATA *ch, void *vo )
     else if ( ( victim = get_char_room( ch, target_name ) ) != NULL )
     {
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -2761,7 +2761,7 @@ ch_ret spell_invis( int sn, int level, CHAR_DATA *ch, void *vo )
     {
 	AFFECT_DATA af;
 
-	if ( IS_SET( victim->immune, RIS_MAGIC ) )
+	if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
 	{
 	    immune_casting( skill, ch, victim, NULL );
 	    return rSPELL_FAILED;
@@ -2822,7 +2822,7 @@ ch_ret spell_know_alignment( int sn, int level, CHAR_DATA *ch, void *vo )
 	return rSPELL_FAILED;
     }
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -2980,7 +2980,7 @@ ch_ret spell_pass_door( int sn, int level, CHAR_DATA *ch, void *vo )
     AFFECT_DATA af;
     SKILLTYPE *skill = get_skilltype(sn);
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -3165,7 +3165,7 @@ ch_ret spell_sleep( int sn, int level, CHAR_DATA *ch, void *vo )
     if ( is_safe(ch, victim) )
         return rSPELL_FAILED;
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -3274,7 +3274,7 @@ ch_ret spell_weaken( int sn, int level, CHAR_DATA *ch, void *vo )
     AFFECT_DATA af;
     SKILLTYPE *skill = get_skilltype(sn);
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -3788,7 +3788,7 @@ ch_ret spell_remove_invis( int sn, int level, CHAR_DATA *ch, void *vo )
 	  return rSPELL_FAILED;
 	}
 
-	if ( IS_SET( victim->immune, RIS_MAGIC ) )
+	if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
 	{
 	    immune_casting( skill, ch, victim, NULL );
 	    return rSPELL_FAILED;
@@ -4018,7 +4018,7 @@ ch_ret spell_possess( int sn, int level, CHAR_DATA *ch, void *vo )
 	return rSPELL_FAILED;
     }
 
-    if ( IS_SET( victim->immune, RIS_MAGIC ) )
+    if ( BV_IS_SET( victim->immune, RIS_MAGIC ) )
     {
 	immune_casting( skill, ch, victim, NULL );
 	return rSPELL_FAILED;
@@ -4673,7 +4673,7 @@ ch_ret spell_affect( int sn, int level, CHAR_DATA *ch, void *vo )
 	}
 
 	if ( (skill->type != SKILL_HERB
-	&&    IS_SET( victim->immune, RIS_MAGIC ))
+	&&    BV_IS_SET( victim->immune, RIS_MAGIC ))
 	||    is_immune( victim, SPELL_DAMAGE(skill) ) )
 	{
 	    immune_casting( skill, ch, victim, NULL );
@@ -4738,7 +4738,7 @@ ch_ret spell_affect( int sn, int level, CHAR_DATA *ch, void *vo )
 	if ( groupsp || areasp )
 	{
 	    if ((groupsp && !is_same_group( victim, ch ))
-	    ||	 IS_SET( victim->immune, RIS_MAGIC )
+	    ||	 BV_IS_SET( victim->immune, RIS_MAGIC )
 	    ||   is_immune( victim, SPELL_DAMAGE(skill) )
 	    ||   check_save(sn, level, ch, victim)
 	    || (!SPELL_FLAG(skill, SF_RECASTABLE) && is_affected(victim, sn)))

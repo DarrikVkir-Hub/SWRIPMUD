@@ -4139,11 +4139,13 @@ void quest_update(GameContext *game)
         ln = fread_string_nohash(fp);
         if (!str_prefix(ln,ip))
         {
+          STR_DISPOSE(ln);
           FCLOSE(fp);
           return TRUE;
         }
         if (is_name("$",ln))
         {
+          STR_DISPOSE(ln);
         FCLOSE(fp);
           return FALSE;
         }

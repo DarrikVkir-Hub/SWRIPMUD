@@ -2054,11 +2054,8 @@ void do_save( CHAR_DATA *ch, char *argument )
     ch->affected_by != race_table[ch->race].affected;
 //    if ( !BV_IS_SET( ch->affected_by, race_table[ch->race].affected ) )
 	    //BV_SET_BIT( ch->affected_by, race_table[ch->race].affected );
-
-    if ( !IS_SET( ch->resistant, race_table[ch->race].resist ) )
-	SET_BIT( ch->resistant, race_table[ch->race].resist );
-    if ( !IS_SET( ch->susceptible, race_table[ch->race].suscept ) )
-	SET_BIT( ch->susceptible, race_table[ch->race].suscept );	   
+    ch->resistant != race_table[ch->race].resist;
+    ch->susceptible != race_table[ch->race].suscept;
 
     if ( NOT_AUTHED(ch) )
     { 

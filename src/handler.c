@@ -670,9 +670,9 @@ void affect_modify( CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd )
         switch( paf->location % REVERSE_APPLY )
         {
         case APPLY_AFFECT:        BV_REMOVE_BIT( ch->affected_by, mod );	return;
-        case APPLY_RESISTANT:     REMOVE_BIT( ch->resistant, mod );	return;
-        case APPLY_IMMUNE:        REMOVE_BIT( ch->immune, mod );	return;
-        case APPLY_SUSCEPTIBLE:   REMOVE_BIT( ch->susceptible, mod );	return;
+        case APPLY_RESISTANT:     BV_REMOVE_BIT( ch->resistant, mod );	return;
+        case APPLY_IMMUNE:        BV_REMOVE_BIT( ch->immune, mod );	return;
+        case APPLY_SUSCEPTIBLE:   BV_REMOVE_BIT( ch->susceptible, mod );	return;
         case APPLY_WEARSPELL:	    /* affect only on wear */		return;
         case APPLY_REMOVE:	    BV_SET_BIT( ch->affected_by, mod );	return;
         }
@@ -717,9 +717,9 @@ void affect_modify( CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd )
     case APPLY_SAVING_BREATH: ch->saving_breath		+= mod;	break;
     case APPLY_SAVING_SPELL:  ch->saving_spell_staff	+= mod;	break;
     case APPLY_AFFECT:        BV_SET_BIT( ch->affected_by, mod );	break;
-    case APPLY_RESISTANT:     SET_BIT( ch->resistant, mod );	break;
-    case APPLY_IMMUNE:        SET_BIT( ch->immune, mod );	break;
-    case APPLY_SUSCEPTIBLE:   SET_BIT( ch->susceptible, mod );	break;
+    case APPLY_RESISTANT:     BV_SET_BIT( ch->resistant, mod );	break;
+    case APPLY_IMMUNE:        BV_SET_BIT( ch->immune, mod );	break;
+    case APPLY_SUSCEPTIBLE:   BV_SET_BIT( ch->susceptible, mod );	break;
     case APPLY_WEAPONSPELL:	/* see fight.c */		break;
     case APPLY_REMOVE:	      BV_REMOVE_BIT(ch->affected_by, mod);	break;
 
@@ -759,7 +759,7 @@ void affect_modify( CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd )
     case APPLY_WEARSPELL:
     case APPLY_REMOVESPELL:
 	if ( BV_IS_SET(ch->in_room->room_flags, ROOM_NO_MAGIC)
-	||   IS_SET(ch->immune, RIS_MAGIC)
+	||   BV_IS_SET(ch->immune, RIS_MAGIC)
 	||   saving_char == ch		/* so save/quit doesn't trigger */
 	||   loading_char == ch )	/* so loading doesn't trigger */
 	   return;
@@ -1580,7 +1580,6 @@ void obj_from_obj( OBJ_DATA *obj )
  */
 void extract_obj( OBJ_DATA *obj )
 {
-    call_to_stop();
     OBJ_DATA *obj_content;
 
     if ( !obj )
@@ -3151,12 +3150,8 @@ void showaffect( CHAR_DATA *ch, AFFECT_DATA *paf )
 	      case APPLY_SUSCEPTIBLE:
 		SPRINTF( buf, "Affects %s by",
 		  affect_loc_name( paf->location ) );
-		for ( x = 0; x < 32 ; x++ )
-		if ( IS_SET( paf->modifier, 1 << x ) )
-		{
 		  STRAPP( buf, " " );
-		  STRAPP( buf, "%s", ris_flags[x] );
-		}
+		  STRAPP( buf, "%s", get_flag_name(ris_flags,paf->modifier, RIS_MAX) );
 		STRAPP( buf, "\n" );
 		break;
 	    }

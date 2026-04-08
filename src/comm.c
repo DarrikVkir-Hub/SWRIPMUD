@@ -4015,8 +4015,8 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
                 }
             }
 
-            ch->resistant           += race_table[ch->race].resist;
-            ch->susceptible     += race_table[ch->race].suscept;
+            ch->resistant           = race_table[ch->race].resist;
+            ch->susceptible     = race_table[ch->race].suscept;
 
             name_stamp_stats( ch );
                 

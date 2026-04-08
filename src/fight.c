@@ -636,6 +636,32 @@ sh_int off_shld_lvl( CHAR_DATA *ch, CHAR_DATA *victim )
     }
 }
 
+static int highest_ris_plus_level(const FLAG_SET &flags)
+{
+    if (BV_IS_SET(flags, RIS_PLUS6)) return 6;
+    if (BV_IS_SET(flags, RIS_PLUS5)) return 5;
+    if (BV_IS_SET(flags, RIS_PLUS4)) return 4;
+    if (BV_IS_SET(flags, RIS_PLUS3)) return 3;
+    if (BV_IS_SET(flags, RIS_PLUS2)) return 2;
+    if (BV_IS_SET(flags, RIS_PLUS1)) return 1;
+    return 0;
+}
+
+/*
+ * Convert weapon hitroll into a PLUS level. DV 4-7-26
+ *
+ * Old SMAUG code effectively treated hitroll as a rough PLUS value.
+ * Clamp to 0..6 for RIS_PLUS1..RIS_PLUS6 handling.
+ */
+static int weapon_plus_level(const OBJ_DATA *wield)
+{
+    if (!wield)
+        return 0;
+
+    int plus = obj_hitroll(const_cast<OBJ_DATA*>(wield));
+    return URANGE(0, plus, 6);
+}
+
 /*
  * Hit one guy once.
  */
@@ -646,7 +672,6 @@ ch_ret one_hit( CHAR_DATA *ch, CHAR_DATA *victim, int dt )
     int thac0;
     int thac0_00;
     int thac0_32;
-    int plusris;
     int dam, x;
     int diceroll;
     int attacktype, cnt;
@@ -822,59 +847,53 @@ ch_ret one_hit( CHAR_DATA *ch, CHAR_DATA *victim, int dt )
 	dam *= (2 + URANGE( 2, ch->skill_level[HUNTING_ABILITY] - (victim->skill_level[COMBAT_ABILITY]/4), 30 ) / 8);
  
     if ( dt == gsn_circle )
- 	dam *= (2 + URANGE( 2, ch->skill_level[HUNTING_ABILITY] - (victim->skill_level[COMBAT_ABILITY]/2), 30 ) / 40); 
+ 	dam *= (2 + URANGE( 2, ch->skill_level[HUNTING_ABILITY] - (victim->skill_level[COMBAT_ABILITY]/2), 30 ) / 16); 
     
-    plusris = 0;
+    int weapon_plus = 0; // Replaced the RIS_PLUS logic with a weapon plus level based on hitroll, as BitSet's would break the old version DV 4-7-26
 
-    if ( wield )
+    if (wield)
     {
-      if ( BV_IS_SET( wield->objflags, ITEM_MAGIC ) )
-        dam = ris_damage( victim, dam, RIS_MAGIC );
-      else
-        dam = ris_damage( victim, dam, RIS_NONMAGIC );
-    
-      /*
-       * Handle PLUS1 - PLUS6 ris bits vs. weapon hitroll	-Thoric
-       */
-      plusris = obj_hitroll( wield );
+        if (BV_IS_SET(wield->objflags, ITEM_MAGIC))
+            dam = ris_damage(victim, dam, RIS_MAGIC);
+        else
+            dam = ris_damage(victim, dam, RIS_NONMAGIC);
+
+        weapon_plus = weapon_plus_level(wield);
     }
     else
-      dam = ris_damage( victim, dam, RIS_NONMAGIC );
-
-    /* check for RIS_PLUSx 					-Thoric */
-    if ( dam )
     {
-	int res, imm, sus, mod;
+        dam = ris_damage(victim, dam, RIS_NONMAGIC);
+    }
 
-	if ( plusris )
-	   plusris = RIS_PLUS1 << UMIN(plusris, 7);
+    /* Check RIS_PLUSx against weapon plus level */
+    if (dam > 0)
+    {
+        const int imm_plus = highest_ris_plus_level(victim->immune);
+        const int res_plus = highest_ris_plus_level(victim->resistant);
+        const int sus_plus = highest_ris_plus_level(victim->susceptible);
 
-	/* initialize values to handle a zero plusris */
-	imm = res = -1;  sus = 1;
+        int mod = 10; /* 10 = normal damage */
 
-	/* find high ris */
-	for ( x = RIS_PLUS1; x <= RIS_PLUS6; x <<= 1 )
-	{
-	   if ( IS_SET( victim->immune, x ) )
-		imm = x;
-	   if ( IS_SET( victim->resistant, x ) )
-		res = x;
-	   if ( IS_SET( victim->susceptible, x ) )
-		sus = x;
-	}
-	mod = 10;
-	if ( imm >= plusris )
-	  mod -= 10;
-	if ( res >= plusris )
-	  mod -= 2;
-	if ( sus <= plusris )
-	  mod += 2;
+        /*
+        * Immunity/resistance to PLUSN means weapons of PLUSN or less are affected.
+        * Susceptibility to PLUSN means weapons of PLUSN or greater do extra damage.
+        */
+        if (weapon_plus > 0)
+        {
+            if (imm_plus >= weapon_plus)
+                mod -= 10;   /* immune */
 
-	/* check if immune */
-	if ( mod <= 0 )
-	  dam = -1;
-	if ( mod != 10 )
-	  dam = (dam * mod) / 10;
+            if (res_plus >= weapon_plus)
+                mod -= 2;    /* resist = 80% */
+
+            if (sus_plus > 0 && sus_plus <= weapon_plus)
+                mod += 2;    /* susceptible = 120% */
+        }
+
+        if (mod <= 0)
+            dam = -1;
+        else if (mod != 10)
+            dam = (dam * mod) / 10;
     }
     
     /* race modifier */
@@ -1086,7 +1105,7 @@ ch_ret one_hit( CHAR_DATA *ch, CHAR_DATA *victim, int dt )
         * Each successful hit casts a spell
         * Adjusted for FUSS - DV 3-14-26
         */
-   if( wield && !IS_SET( victim->immune, RIS_MAGIC ) && !BV_IS_SET( victim->in_room->room_flags, ROOM_NO_MAGIC ) )
+   if( wield && !BV_IS_SET( victim->immune, RIS_MAGIC ) && !BV_IS_SET( victim->in_room->room_flags, ROOM_NO_MAGIC ) )
    {
       AFFECT_DATA *aff;
 
@@ -1154,11 +1173,11 @@ sh_int ris_damage( CHAR_DATA *ch, sh_int dam, int ris )
    sh_int modifier;
 
    modifier = 10;
-   if ( IS_SET(ch->immune, ris ) )
+   if ( BV_IS_SET(ch->immune, ris ) )
      modifier -= 10;
-   if ( IS_SET(ch->resistant, ris ) )
+   if ( BV_IS_SET(ch->resistant, ris ) )
      modifier -= 2;
-   if ( IS_SET(ch->susceptible, ris ) )
+   if ( BV_IS_SET(ch->susceptible, ris ) )
      modifier += 2;
    if ( modifier <= 0 )
      return -1;
@@ -1503,7 +1522,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
     if ( dam > 0 && dt > TYPE_HIT
     && !IS_AFFECTED( victim, AFF_POISON )
     &&  is_wielding_poisoned( ch )
-    && !IS_SET( victim->immune, RIS_POISON )
+    && !BV_IS_SET( victim->immune, RIS_POISON )
     && !saves_poison_death( ch->skill_level[COMBAT_ABILITY], victim ) )
     {
 	AFFECT_DATA af;

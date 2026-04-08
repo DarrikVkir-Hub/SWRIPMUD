@@ -1118,8 +1118,8 @@ void olc_show_affect_modifier_choices(CHAR_DATA* ch, int loc)
         case OlcAffectModifierKind::RIS_FLAG:
         {
             std::vector<std::string> values;
-            for (size_t i = 0; ris_flags[i] != nullptr; ++i)
-                values.push_back(ris_flags[i]);
+            for (size_t i = 0; ris_flags[i].name != nullptr; ++i)
+                values.push_back(ris_flags[i].name);
 
             send_to_char("Valid affect modifiers:\n", ch);
 
@@ -1644,6 +1644,11 @@ static bool olc_finish_editor_substate(CHAR_DATA* ch)
                 ch, sess, get_mobile_schema(),
                 olc_session_working_as<CHAR_DATA>(sess));
 
+        case OlcEditMode::SHOP_INLINE:
+            return olc_finish_editor_substate_typed(
+                ch, sess, get_shop_schema(),
+                olc_session_working_as<SHOP_DATA>(sess));
+
         default:
             return false;
     }
@@ -1713,6 +1718,25 @@ bool olc_dispatch_entry_command(CHAR_DATA* ch, const std::string& type, const st
         return true;
     }
 
+        if (olc_matches_word(type, "shop") || olc_matches_word(type, "sho") || olc_matches_word(type, "s"))
+    {
+        if (!olc_can_use_command(ch, "shopset"))
+        {
+            send_to_char("You do not have permission to edit shops (shopset)\n", ch);
+            return true;
+        }
+
+        if (rest.empty())
+        {
+            send_to_char("Usage: olc shop <shop>\n", ch);
+            return true;
+        }
+
+        snprintf(buf, sizeof(buf), "%s", rest.c_str());
+        do_shopset(ch, buf);
+        return true;
+    }
+
     return false;
 }
 
@@ -1731,6 +1755,9 @@ bool olc_session_command_is_field_name(OlcSession* sess, const std::string& cmd)
 
         case OlcEditMode::MOBILE_INLINE:
             return olc_schema_has_field_name(get_mobile_schema(), cmd);
+
+        case OlcEditMode::SHOP_INLINE:
+            return olc_schema_has_field_name(get_shop_schema(), cmd);
 
         default:
             return false;
@@ -1834,6 +1861,12 @@ bool olc_dispatch_session_command(CHAR_DATA* ch, const std::string& cmd, const s
             return true;
         }
 
+        if (!str_cmp(sess->schema->name, "shop"))
+        {
+            olc_shop_edit_revert(ch);
+            return true;
+        }
+
         send_to_char("Revert is not supported for this editor.\n", ch);
         return true;
     }
@@ -1886,6 +1919,7 @@ void olc_show_main_help(CHAR_DATA* ch)
     send_to_char("  olc room              - edit current room\n", ch);
     send_to_char("  olc object <target>   - edit object by keyword/vnum\n", ch);
     send_to_char("  olc mobile <target>   - edit mobile by keyword/vnum\n", ch);
+    send_to_char("  olc shop <target>   - edit mobile's shop by vnum\n", ch);
     send_to_char("\n", ch);
     send_to_char("While editing:\n", ch);
     send_to_char("  olc show [field] [value]\n", ch);
@@ -1973,6 +2007,16 @@ void olc_show(CHAR_DATA* ch, const std::string& field, const std::string& value)
                 value,
                 term_width);
             return;
+        case OlcEditMode::SHOP_INLINE:
+            olc_show_typed(
+                ch,
+                sess,
+                olc_session_working_as<SHOP_DATA>(sess),
+                get_shop_schema(),
+                field,
+                value,
+                term_width);
+            return;
 
         default:
             send_to_char("You are not editing anything.\n", ch);
@@ -2046,6 +2090,15 @@ void olc_set(CHAR_DATA* ch, const std::string& field, const std::string& value)
                 get_mobile_schema(),
                 field, value);
             return;
+
+        case OlcEditMode::SHOP_INLINE:
+            olc_set_typed(
+                ch, sess,
+                olc_session_working_as<SHOP_DATA>(sess),
+                get_shop_schema(),
+                field, value);
+            return;
+
 
         default:
             send_to_char("You are not editing anything.\n", ch);

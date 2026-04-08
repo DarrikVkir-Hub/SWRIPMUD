@@ -1321,9 +1321,9 @@ void load_mobiles( AREA_DATA *tarea, FILE *fp )
 	    pMobIndex->hitroll		= x1;
 	    pMobIndex->damroll		= x2;
 	    pMobIndex->xflags		= x3;
-	    pMobIndex->resistant	= x4;
-	    pMobIndex->immune		= x5;
-	    pMobIndex->susceptible	= x6;
+//	    pMobIndex->resistant	= x4;
+//	    pMobIndex->immune		= x5;
+//	    pMobIndex->susceptible	= x6;
 	    pMobIndex->attacks		= x7;
 	    pMobIndex->defenses		= x8;
 	}
@@ -1338,9 +1338,9 @@ void load_mobiles( AREA_DATA *tarea, FILE *fp )
 	    pMobIndex->perm_lck		= 10;
 	    pMobIndex->race		= 0;
 	    pMobIndex->xflags		= 0;
-	    pMobIndex->resistant	= 0;
-	    pMobIndex->immune		= 0;
-	    pMobIndex->susceptible	= 0;
+//	    pMobIndex->resistant	= 0;
+//	    pMobIndex->immune		= 0;
+//	    pMobIndex->susceptible	= 0;
 	    pMobIndex->numattacks	= 0;
 	    pMobIndex->attacks		= 0;
 	    pMobIndex->defenses		= 0;
@@ -1354,6 +1354,28 @@ void load_mobiles( AREA_DATA *tarea, FILE *fp )
         &x1, &x2, &x3, &x4, &x5,  &x6,  &x7,  &x8);
         pMobIndex->vip_flags		= x1;
         */
+        if (x4 != -9999) // Pre BitSet file format
+        {
+            if ( x4 != 0 )
+                pMobIndex->resistant = int_to_bitset(x4);
+            else
+                pMobIndex->resistant.reset();
+            if ( x5 != 0 )
+                pMobIndex->immune = int_to_bitset(x5);
+            else
+                pMobIndex->immune.reset();
+            if ( x6 != 0 )
+                pMobIndex->susceptible = int_to_bitset(x6);
+            else
+                pMobIndex->susceptible.reset();
+        }
+        else
+        {   // Now a BitSet
+            fread_bitset(fp, pMobIndex->resistant); 
+            fread_bitset(fp, pMobIndex->immune); 
+            fread_bitset(fp, pMobIndex->susceptible);
+
+        }       
     }
 
 	letter = fread_letter( fp );
@@ -2011,23 +2033,51 @@ void load_shops( AREA_DATA *tarea, FILE *fp )
 
         CREATE( pShop, SHOP_DATA, 1 );
         pShop->game			= tarea->game;
-        pShop->keeper		= fread_number( fp );
-        if ( pShop->keeper == 0 )
+        pShop->keeper = fread_number(fp);
+        if (pShop->keeper == 0)
         {
             DISPOSE(pShop);
             break;
         }
-        for ( iTrade = 0; iTrade < MAX_TRADE; iTrade++ )
-            pShop->buy_type[iTrade]	= fread_number( fp );
+        pShop->buy_type.reset();
+        char letter = fread_letter(fp);
+        if (letter == 'S')
+        {
+            fread_bitset(fp, pShop->buy_type);
+            BV_SET_BIT(pShop->shop_type, SHOP_BUY);
+        }
+        else if (letter == 'R')
+        {
+            fread_bitset(fp, pShop->shop_type);
+            fread_bitset(fp, pShop->buy_type);
+        }
+        else
+        {
+            /* Legacy format: put first non-space character back */
+            ungetc(letter, fp);
+            BV_SET_BIT(pShop->shop_type, SHOP_BUY);
+            for (iTrade = 0; iTrade < MAX_TRADE; iTrade++)
+            {
+                int buytype = fread_number(fp);
+                if (buytype >= 0)
+                    pShop->buy_type.set((size_t)buytype);
+            }
+        }
+        BV_REMOVE_BIT(pShop->buy_type, ITEM_NONE);
         pShop->profit_buy	= fread_number( fp );
         pShop->profit_sell	= fread_number( fp );
         pShop->profit_buy	= URANGE( pShop->profit_sell+5, pShop->profit_buy, 1000 );
         pShop->profit_sell	= URANGE( 0, pShop->profit_sell, pShop->profit_buy-5 );
+        if (letter == 'R')
+            pShop->profit_fix = fread_number(fp);
+        else
+            pShop->profit_fix = 100;
         pShop->open_hour	= fread_number( fp );
         pShop->close_hour	= fread_number( fp );
         fread_to_eol( fp );
         pMobIndex		= get_mob_index( pShop->keeper );
         pMobIndex->pShop	= pShop;
+
 
         if ( !first_shop )
             first_shop		= pShop;
@@ -2046,39 +2096,59 @@ void load_shops( AREA_DATA *tarea, FILE *fp )
  */
 void load_repairs( AREA_DATA *tarea, FILE *fp )
 {
-    REPAIR_DATA *rShop;
+//  REPAIR_DATA *rShop;
+    SHOP_DATA *rShop;
 
     for ( ; ; )
     {
-	MOB_INDEX_DATA *pMobIndex;
-	int iFix;
+        MOB_INDEX_DATA *pMobIndex;
+        int iFix;
 
-	CREATE( rShop, REPAIR_DATA, 1 );
-    rShop->game			= tarea->game;
-	rShop->keeper		= fread_number( fp );
-	if ( rShop->keeper == 0 )
-    {
-        DISPOSE(rShop);
-	    break;
-    }
-	for ( iFix = 0; iFix < MAX_FIX; iFix++ )
-	  rShop->fix_type[iFix] = fread_number( fp );
-	rShop->profit_fix	= fread_number( fp );
-	rShop->shop_type	= fread_number( fp );
-	rShop->open_hour	= fread_number( fp );
-	rShop->close_hour	= fread_number( fp );
-				  fread_to_eol( fp );
-	pMobIndex		= get_mob_index( rShop->keeper );
-	pMobIndex->rShop	= rShop;
+        //CREATE( rShop, REPAIR_DATA, 1 );
+        CREATE( rShop, SHOP_DATA, 1 );
+        rShop->game			= tarea->game;
+        rShop->keeper		= fread_number( fp );
+        if ( rShop->keeper == 0 )
+        {
+            DISPOSE(rShop);
+            break;
+        }
+            // Defaults for shops, since repairs didn't have them.
+            BV_SET_BIT(rShop->shop_type, SHOP_FIX);
+            rShop->profit_buy	= 120;
+            rShop->profit_sell	= 90;
 
-	if ( !first_repair )
-	  first_repair		= rShop;
-	else
-	  last_repair->next	= rShop;
-	rShop->next		= NULL;
-	rShop->prev		= last_repair;
-	last_repair		= rShop;
-	top_repair++;
+            rShop->buy_type.reset();
+            char letter = fread_letter(fp);
+            if (letter == 'S')
+                fread_bitset(fp, rShop->buy_type);
+            else
+            {
+                /* Legacy format: put first non-space character back */
+                ungetc(letter, fp);
+                for ( iFix = 0; iFix < MAX_FIX; iFix++ )
+                {
+                    int fixtype = fread_number(fp);
+                    if (fixtype >= 0)
+                        rShop->buy_type.set((size_t)fixtype);
+                }
+            }
+            BV_REMOVE_BIT(rShop->buy_type, ITEM_NONE);
+            rShop->profit_fix	= fread_number( fp );
+            rShop->open_hour	= fread_number( fp );
+            rShop->close_hour	= fread_number( fp );
+                        fread_to_eol( fp );
+            pMobIndex		= get_mob_index( rShop->keeper );
+            pMobIndex->pShop	= rShop;
+
+            if ( !first_shop )
+                first_shop		= rShop;
+            else
+                last_shop->next	= rShop;
+            rShop->next		= NULL;
+            rShop->prev		= last_shop;
+            last_shop		= rShop;
+            top_shop++;
     }
     return;
 }
@@ -3288,6 +3358,7 @@ int fread_number( FILE *fp )
     if ( !isdigit(c) )
     {
         bug( "Fread_number: bad format. (%c)", c );
+        call_to_stop();
         if ( fBootDb )
             exit( 1 );
         return 0;
@@ -5955,9 +6026,9 @@ MOB_INDEX_DATA *make_mobile( GameContext *game, sh_int vnum, sh_int cvnum, char 
 	  pMobIndex->perm_lck		= 10;
 	  pMobIndex->race		= 0;
 	  pMobIndex->xflags		= 0;
-	  pMobIndex->resistant		= 0;
-	  pMobIndex->immune		= 0;
-	  pMobIndex->susceptible	= 0;
+	  pMobIndex->resistant.reset();
+	  pMobIndex->immune.reset();
+	  pMobIndex->susceptible.reset();
 	  pMobIndex->numattacks		= 1;
 	  pMobIndex->attacks		= 0;
 	  pMobIndex->defenses		= 0;
@@ -6626,13 +6697,17 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 	case 'G':
 	    if ( !str_cmp( word, "Guildoverseer" ) )
 	    {
-            sys->set_guild_overseer(fread_string_nohash( fp ));
+            char *tmp = fread_string_nohash( fp );
+            sys->set_guild_overseer(tmp);
+            STR_DISPOSE(tmp);
             fMatch = TRUE;
             break;
 	    }    
 	    if ( !str_cmp( word, "Guildadvisor" ) )
 	    {
-            sys->set_guild_advisor(fread_string_nohash( fp ));
+            char *tmp = fread_string_nohash( fp );
+            sys->set_guild_advisor(tmp);
+            STR_DISPOSE(tmp);
             fMatch = TRUE;
             break;
 	    }    
@@ -6644,7 +6719,9 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
 	    KEY( "Highplayers",	   sys->alltimemax,	  fread_number( fp ) );
 	    if ( !str_cmp( word, "Highplayertime" ) )
 	    {
-            sys->set_time_of_max(fread_string_nohash( fp ));
+            char *tmp = fread_string_nohash( fp );
+            sys->set_time_of_max(tmp);
+            STR_DISPOSE(tmp);
             fMatch = TRUE;
             break;
 	    }            

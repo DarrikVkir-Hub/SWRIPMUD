@@ -54,6 +54,8 @@
     // MOBILE_OLC mobile_olc OlcOps functions
     // OLC_MOBILE olc_mobile specific functions
     // OLC_SHOW_MOBILE mobile specific show functions
+    // SHOP_OLC shop_olc OlcOps functions
+    // OLC_SHOP olc_shop specific functions    
     // DO_COMMANDS DO_?EDIT
 
 #include <typeinfo>
@@ -118,6 +120,11 @@ void olc_room_relink_exits(ROOM_INDEX_DATA* room);
 void olc_room_apply_pending_exit_side_effect(const OlcPendingExitSideEffect& p);
 void olc_show_room_exit_help(CHAR_DATA* ch);
 
+SHOP_DATA* olc_shop_clone(const SHOP_DATA* src);
+void olc_shop_free(SHOP_DATA* shop);
+void olc_shop_apply_instance_changes(SHOP_DATA* dst, const SHOP_DATA* src);
+void olc_show_shop(CHAR_DATA* ch, SHOP_DATA* shop, bool show_help, int term_width);
+bool olc_shop_in_edit_mode(CHAR_DATA* ch);
 
 // --------------------------------------------
 // OLCSCHEMA Olc Schema declarations
@@ -309,27 +316,21 @@ static std::vector<OlcField<CHAR_DATA>> mob_fields =
     make_olc_int_field<CHAR_DATA>( "hp", &CHAR_DATA::max_hit, "Max hit points" ),
     make_olc_int_field<CHAR_DATA>( "carry_weight", &CHAR_DATA::carry_weight, "How much they are carrying - you shouldn't need to set this unless something is broken, as this does not determine their maximum carry, that's strength" ),
     make_olc_flag_field<CHAR_DATA>( "speaks", &CHAR_DATA::speaks, lang_names, "What languages the mob can understand" ),
-    OlcField<CHAR_DATA>{ "resistant", OlcValueType::FLAG, (const void*)ris_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
-        [](CHAR_DATA* mob) -> std::string { return olc_mobile_get_ris_field(mob, &CHAR_DATA::resistant); },
-        [](CHAR_DATA* /*ch*/, CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_ris_field(mob, &CHAR_DATA::resistant, value); },
-        nullptr, 0, "Resistances (RIS flags) - Reduces the damage taken corresponding to the damage type", INT_MIN, INT_MAX, false },
-    OlcField<CHAR_DATA>{ "immune", OlcValueType::FLAG, (const void*)ris_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
-        [](CHAR_DATA* mob) -> std::string { return olc_mobile_get_ris_field(mob, &CHAR_DATA::immune); },
-        [](CHAR_DATA* /*ch*/, CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_ris_field(mob, &CHAR_DATA::immune, value); },
-        nullptr, 0, "Immunities (RIS flags) - Makes the mob immune to damage taken corresponding to the damage type", INT_MIN, INT_MAX, false },
-    OlcField<CHAR_DATA>{ "susceptible", OlcValueType::FLAG, (const void*)ris_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
-        [](CHAR_DATA* mob) -> std::string { return olc_mobile_get_ris_field(mob, &CHAR_DATA::susceptible); },
-        [](CHAR_DATA* /*ch*/, CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_ris_field(mob, &CHAR_DATA::susceptible, value); },
-        nullptr, 0, "Susceptibilities (RIS flags) - Increases the damage taken corresponding to the damage type", INT_MIN, INT_MAX, false },
-    OlcField<CHAR_DATA>{ "speaking", OlcValueType::ENUM, (const void*)lang_names, OlcMetaType::FLAG_TABLE, nullptr,
+    make_olc_flag_field<CHAR_DATA>( "resistant", &CHAR_DATA::resistant, ris_flags, 
+        "Resistances (RIS flags) - Reduces the damage taken corresponding to the damage type" ),
+    make_olc_flag_field<CHAR_DATA>( "immune", &CHAR_DATA::immune, ris_flags, 
+        "Immunities (RIS flags) - Makes the mob immune to damage taken corresponding to the damage type" ),
+    make_olc_flag_field<CHAR_DATA>( "susceptible", &CHAR_DATA::susceptible, ris_flags, 
+        "Susceptibilities (RIS flags) - Increases the damage taken corresponding to the damage type" ),
+
+        OlcField<CHAR_DATA>{ "speaking", OlcValueType::ENUM, (const void*)lang_names, OlcMetaType::FLAG_TABLE, nullptr,
         [](CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_speaking(mob, value); },
         [](CHAR_DATA* mob) -> std::string {
             if (mob->speaking >= 0 && mob->speaking < LANG_MAX)
                 return lang_names[mob->speaking].name;
-            return "unknown";
-        },
+            return "unknown"; },
         nullptr, nullptr, 0, "Current spoken language, help speaks to see the list", INT_MIN, INT_MAX, false },
-    OlcField<CHAR_DATA>{ "part", OlcValueType::FLAG, (const void*)part_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
+    OlcField<CHAR_DATA>{ "parts", OlcValueType::FLAG, (const void*)part_flags, OlcMetaType::ENUM_LEGACY, nullptr, nullptr,
         [](CHAR_DATA* mob) -> std::string { return olc_mobile_get_legacy_bits_field(mob, &CHAR_DATA::xflags, part_flags); },
         [](CHAR_DATA* /*ch*/, CHAR_DATA* mob, const std::string& value) -> bool { return olc_mobile_set_legacy_bits_field(mob, &CHAR_DATA::xflags, value, part_flags); },
         nullptr, 0, "Body parts the mob has", INT_MIN, INT_MAX, false },
@@ -376,6 +377,35 @@ static std::vector<OlcField<CHAR_DATA>> mob_fields =
     mob_schema.fields = &mob_fields;
     return &mob_schema;
 }
+
+const OlcSchema<SHOP_DATA>* get_shop_schema()
+{
+    static std::vector<OlcField<SHOP_DATA>> shop_fields =
+    {
+        //make_olc_int_field<SHOP_DATA>("keeper", &SHOP_DATA::keeper,   // Not supporting changing the keeper vnum yet, although 
+        //    "Vnum of shop keeper mob", INT_MIN, INT_MAX),             // it'd be a good thing to add in the future - DV 4-8-26
+        make_olc_int_field<SHOP_DATA>("open", &SHOP_DATA::open_hour,
+            "Opening Hour - Time the shop opens", 0, 23),
+        make_olc_int_field<SHOP_DATA>("close", &SHOP_DATA::close_hour,
+            "Closing Hour - Time the shop closes", 0, 23),
+        make_olc_int_field<SHOP_DATA>("buy", &SHOP_DATA::profit_buy,
+            "Profit Margin (Buy) - Percentage the shop charges for items it buys", 100, 200),
+        make_olc_int_field<SHOP_DATA>("sell", &SHOP_DATA::profit_sell,
+            "Profit Margin (Sell) - Percentage the shop charges for items it sells", 0, 100),
+        make_olc_int_field<SHOP_DATA>("fix", &SHOP_DATA::profit_fix,
+            "Profit Margin (Fix) - Percentage the shop charges for fixing items", 0, 100),            
+        make_olc_flag_field<SHOP_DATA>("stype", &SHOP_DATA::shop_type,
+            shop_types, "Shop types: Determines what the shop will do"),            
+        make_olc_flag_field<SHOP_DATA>("itypes", &SHOP_DATA::buy_type,
+            o_types, "Item types: the object types the shop will handle"),              
+    };
+
+    static OlcSchema<SHOP_DATA> shop_schema;
+    shop_schema.name = "shop";
+    shop_schema.fields = &shop_fields;
+    return &shop_schema;
+}
+
 // Value0 through 5 use description mapping, used for help files..
 const OlcItemValueInfo g_olc_item_value_info[] =
 {
@@ -4395,67 +4425,6 @@ bool olc_mobile_set_spec2(CHAR_DATA* mob, const std::string& value)
     return true;
 }
 
-bool olc_mobile_set_ris_field(CHAR_DATA* mob, int CHAR_DATA::*member, const std::string& value)
-{
-    if (!mob)
-        return false;
-
-    int bits = mob->*member;
-    std::istringstream iss(value);
-    std::string token;
-    bool changed = false;
-
-    while (iss >> token)
-    {
-        if (token.empty())
-            continue;
-
-        char op = 0;
-        if (token[0] == '+' || token[0] == '-' || token[0] == '!')
-        {
-            op = token[0];
-            token.erase(0, 1);
-        }
-
-        if (token.empty())
-            continue;
-
-        int flag = get_risflag(const_cast<char*>(token.c_str()));
-        if (flag < 0 || flag > 31)
-            return false;
-
-        switch (op)
-        {
-            case '-':
-                REMOVE_BIT(bits, (1 << flag));
-                break;
-            case '!':
-                TOGGLE_BIT(bits, (1 << flag));
-                break;
-            case '+':
-            default:
-                SET_BIT(bits, (1 << flag));
-                break;
-        }
-
-        changed = true;
-    }
-
-    if (!changed)
-        return false;
-
-    mob->*member = bits;
-    return true;
-}
-
-std::string olc_mobile_get_ris_field(CHAR_DATA* mob, int CHAR_DATA::*member)
-{
-    if (!mob)
-        return "";
-
-    return flag_string(mob->*member, ris_flags);
-}
-
 bool olc_mobile_set_legacy_bits_field(CHAR_DATA* mob, int CHAR_DATA::*member,
                                           const std::string& value,
                                           const char* const* table)
@@ -5963,9 +5932,9 @@ void olc_show_mob(CHAR_DATA* ch, CHAR_DATA* mob, bool show_help, int term_width)
     std::string aff_flags_str   = get_flag_field(mob->affected_by, aff_flags);
     std::string vip_flags_str   = get_flag_field(mob->vip_flags, planet_flags);
     std::string part_flags_str  = flag_string(mob->xflags, part_flags);
-    std::string res_flags_str   = flag_string(mob->resistant, ris_flags);
-    std::string imm_flags_str   = flag_string(mob->immune, ris_flags);
-    std::string sus_flags_str   = flag_string(mob->susceptible, ris_flags);
+    std::string res_flags_str   = get_flag_field(mob->resistant, ris_flags);
+    std::string imm_flags_str   = get_flag_field(mob->immune, ris_flags);
+    std::string sus_flags_str   = get_flag_field(mob->susceptible, ris_flags);
     std::string att_flags_str   = flag_string(mob->attacks, attack_flags);
     std::string def_flags_str   = flag_string(mob->defenses, defense_flags);
 
@@ -6000,7 +5969,7 @@ void olc_show_mob(CHAR_DATA* ch, CHAR_DATA* mob, bool show_help, int term_width)
         send_to_char((line + "\n").c_str(), ch);
 
     auto part_lines = olc_format_line(
-        "body parts",
+        "parts",
         part_flags_str.empty() ? "none" : part_flags_str,
         OLC_COL_LIST,
         10,
@@ -6079,6 +6048,322 @@ void olc_show_mob(CHAR_DATA* ch, CHAR_DATA* mob, bool show_help, int term_width)
     }
 
 }
+
+// --------------------------------------------
+// SHOP_OLC shop_olc OlcOps functions
+// --------------------------------------------
+void* shop_olc_clone(const void* src)
+{
+    return olc_shop_clone(static_cast<const SHOP_DATA*>(src));
+}
+
+void shop_olc_free_clone(void* obj)
+{
+    olc_shop_free(static_cast<SHOP_DATA*>(obj));
+}
+
+void shop_olc_apply_changes(void* original, void* working)
+{
+    olc_shop_apply_instance_changes(
+        static_cast<SHOP_DATA*>(original),
+        static_cast<const SHOP_DATA*>(working));
+}
+
+void shop_olc_save(CHAR_DATA* ch, void* original)
+{
+    SHOP_DATA* shop = static_cast<SHOP_DATA*>(original);
+
+    if (!ch || !shop)
+        return;
+
+    send_to_char("Live shop changes saved.  You need to foldarea to save changes permanently.\n", ch);
+}
+
+void shop_olc_after_commit(CHAR_DATA* ch, void* /*original*/, void* /*working*/)
+{
+    /*
+     * IMPORTANT:
+     * Prototype delta sync is NOT done here.
+     * It must be done in the main commit path where baseline is available.
+     */
+    if (ch)
+        send_to_char("Shop committed.  You need to foldarea to save changes permanently.\n", ch);
+}
+
+void shop_olc_after_revert(CHAR_DATA* ch, void* /*original*/, void* /*working*/)
+{
+    if (ch)
+        send_to_char("Shop reverted to pre-edit state.\n", ch);
+}
+
+bool olc_shop_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
+{
+    if (!olc_shop_in_edit_mode(ch) || !command || command[0] == '\0')
+        return false;
+
+    if (olc_command_matches(command, "help") || !str_cmp(command, "?"))
+    {
+        char buf[MSL];
+        SPRINTF(buf, "%s %s", "help", argument);
+        do_shopset(ch, buf);
+        return true;
+    }
+
+    if (olc_command_matches(command, "stop"))
+    {
+        char arg[MIL] = {0};
+        argument = one_argument(argument, arg);
+
+        if (!str_cmp(arg, "save"))
+        {
+            olc_stop(ch, true);
+            return true;
+        }
+
+        if (!str_cmp(arg, "abort"))
+        {
+            olc_stop(ch, false);
+            return true;
+        }
+
+        send_to_char("Syntax: stop save|abort\n", ch);
+        return true;
+    }
+
+    if (!str_cmp(command, "abort") || !str_cmp(command, "cancel"))
+    {
+        olc_stop(ch, false);
+        return true;
+    }
+
+    if (!str_cmp(command, "save"))
+    {
+        olc_stop(ch, true);
+        return true;
+    }    
+
+    if (olc_command_matches(command, "revert"))
+    {
+        olc_shop_edit_revert(ch);
+        return true;
+    }
+
+    if (olc_command_matches(command, "commit"))
+    {
+        if (olc_commit_current(ch))
+            send_to_char("Current changes committed.\n", ch);
+        else
+            send_to_char("No pending changes to commit.\n", ch);
+        return true;
+    }
+
+    if (olc_command_matches(command, "show"))
+    {
+        do_olcshow(ch, argument);
+        return true;
+    }
+
+    if (olc_command_matches(command, "olcshow"))
+    {
+        do_olcshow(ch, argument);
+        return true;
+    }
+
+    if (olc_command_matches(command, "look"))
+        return false;
+
+    if (olc_command_matches(command, "olcset"))
+    {
+        do_olcset(ch, argument);
+        return true;
+    }
+
+    if (olc_session_command_is_field_name(ch->desc->olc, command))
+    {
+        char buf[MSL];
+        snprintf(buf, sizeof(buf), "%s %s", command, argument ? argument : "");
+        do_olcset(ch, buf);
+        return true;
+    }
+
+    return false;
+}
+
+const OlcOps shop_olc_ops =
+{
+    shop_olc_clone,
+    shop_olc_free_clone,
+    shop_olc_apply_changes,
+    shop_olc_save,
+    shop_olc_after_commit,
+    shop_olc_after_revert,
+    olc_shop_edit_interpret,
+    OlcInterpretStage::EARLY    
+};
+
+// --------------------------------------------
+// SHOP_OLC shop_olc other  functions
+// --------------------------------------------
+
+bool olc_shop_in_edit_mode(CHAR_DATA* ch)
+{
+    return ch && ch->desc && ch->desc->olc &&
+           ch->desc->olc->schema &&
+           ch->desc->olc->schema->name &&
+           !str_cmp(ch->desc->olc->schema->name, "shop");
+}
+
+void olc_shop_edit_help(CHAR_DATA* ch)
+{
+    send_to_char("SHOPSET commands:\n", ch);
+    send_to_char("  show [field]\n", ch);
+    send_to_char("  help/? [field]\n", ch);
+    send_to_char("  commit\n", ch);
+    send_to_char("  revert\n", ch);
+    send_to_char("  stop save\n", ch);
+    send_to_char("  stop abort\n", ch);
+    send_to_char("    or save/abort", ch);
+    send_to_char("  <field> <value>\n", ch);
+}
+
+bool olc_shop_edit_revert(CHAR_DATA *ch)
+{
+    if (!ch || !ch->desc || !ch->desc->olc)
+        return false;
+
+    auto sess = ch->desc->olc;
+
+    /* Must be editing a shop */
+    if (!sess->schema || !sess->schema->name ||
+        str_cmp(sess->schema->name, "shop"))
+        return false;
+
+    if (!sess->original_clone || !sess->ops ||
+        !sess->ops->clone || !sess->ops->free_clone)
+    {
+        send_to_char("No revert snapshot is available.\n", ch);
+        return false;
+    }
+
+    /* Free current working copy */
+    if (sess->working_copy)
+        sess->ops->free_clone(sess->working_copy);
+
+    /* Restore from original clone */
+    sess->working_copy = sess->ops->clone(sess->original_clone);
+    if (!sess->working_copy)
+    {
+        send_to_char("Failed to restore revert snapshot.\n", ch);
+        return false;
+    }
+
+    sess->last_cmd_arg.clear();
+    sess->dirty = false;
+
+    /* IMPORTANT: clear pending exit side effects */
+    sess->pending_exit_side_effects.clear();
+
+    if (sess->ops->after_revert)
+        sess->ops->after_revert(ch, sess->original, sess->working_copy);
+
+    send_to_char("Shop reverted to pre-edit state.\n", ch);
+    return true;
+    
+}
+
+SHOP_DATA* olc_shop_clone(const SHOP_DATA* src)
+{
+    if (!src)
+        return nullptr;
+
+    SHOP_DATA* dst = nullptr;
+    CREATE(dst, SHOP_DATA, 1);
+
+    /*
+     * -------------------------
+     * Editable / meaningful data
+     * -------------------------
+     */
+    dst->game       = src->game;
+    dst->keeper = src->keeper;
+    dst->buy_type = src->buy_type;
+    dst->profit_buy = src->profit_buy;
+    dst->profit_sell = src->profit_sell;
+    dst->shop_type = src->shop_type;
+    dst->profit_fix = src->profit_fix;
+    dst->open_hour = src->open_hour;
+    dst->close_hour = src->close_hour;
+
+    return dst;
+}
+
+void olc_shop_free(SHOP_DATA* shop)
+{
+    if (!shop)
+        return;
+
+    DISPOSE(shop);
+}
+
+void olc_shop_apply_instance_changes(SHOP_DATA* dst, const SHOP_DATA* src)
+{
+    if (!dst || !src)
+        return;
+
+    dst->game       = src->game;
+    dst->buy_type = src->buy_type;
+    dst->profit_buy = src->profit_buy;
+    dst->profit_sell = src->profit_sell;
+    dst->shop_type = src->shop_type;
+    dst->profit_fix = src->profit_fix;
+    dst->open_hour = src->open_hour;
+    dst->close_hour = src->close_hour;
+}
+
+void olc_show_shop(CHAR_DATA* ch, SHOP_DATA* shop, bool show_help, int term_width)
+{
+    if (!ch || !shop)
+        return;
+
+    ch_printf(ch, "%s[Shop %d]%s %sSTypes: %s%s \n%sITypes: %s%s%s\n",
+        OLC_COL_HEADER,
+        shop->keeper,
+        OLC_COL_RESET,
+        OLC_COL_STRING,
+        bitset_to_string(shop->shop_type, shop_types).c_str(),
+         OLC_COL_RESET,
+         OLC_COL_STRING,
+         OLC_COL_STRING,         
+         bitset_to_string(shop->buy_type, o_types).c_str(),
+        OLC_COL_RESET
+    );
+    ch_printf(ch, "%s[Buy: %s%3d%s %sSell: %s%3d%s %sFix: %s%3d%s %sOpen: %s%3d%s %sClose: %s%3d%s\n",
+         OLC_COL_STRING,
+        OLC_COL_INT,
+        shop->profit_buy,
+        OLC_COL_RESET,
+         OLC_COL_STRING,
+        OLC_COL_INT,
+        shop->profit_sell,
+         OLC_COL_RESET,
+         OLC_COL_STRING,
+         OLC_COL_INT,         
+         shop->profit_fix,
+         OLC_COL_RESET,
+         OLC_COL_STRING,
+         OLC_COL_INT,         
+            shop->open_hour,
+         OLC_COL_RESET,
+         OLC_COL_STRING,
+         OLC_COL_INT,       
+             shop->close_hour,
+         OLC_COL_RESET
+    );
+}
+
+// ------------------------
+// DO_COMMANDS
+// ------------------------
 
 void do_redit2(CHAR_DATA* ch, char* argument)
 {
@@ -6305,6 +6590,80 @@ void do_medit(CHAR_DATA* ch, char* argument)
 
     ch->desc->olc->mode = OlcEditMode::MOBILE_INLINE;
     send_to_char("Mobile inline editing mode enabled.\n", ch);
+    send_to_char("To exit, type stop save/abort, or just save/abort.\n", ch);
+
+    olc_show(ch, "", "");
+}
+
+void do_shopset(CHAR_DATA* ch, char* argument)
+{
+    char arg1[MIL];
+    char arg2[MIL];
+    MOB_INDEX_DATA *mob = nullptr;
+
+
+    if (!ch || !ch->desc)
+        return;
+
+    /*
+     * Existing shop edit session commands
+     */
+    if (olc_shop_in_edit_mode(ch))
+    {
+        if (argument[0] == '\0')
+        {
+            olc_shop_edit_help(ch);
+            return;
+        }
+
+        do_olc(ch, argument);
+        return;
+    }
+
+    argument = one_argument(argument, arg1);
+    argument = one_argument(argument, arg2);
+
+    /*
+     * Start a new shop edit session
+     */
+    SHOP_DATA *shop = nullptr;
+
+    if (arg1[0] == '\0')
+    {
+        send_to_char("Usage: shopset <vnum of shop>\n", ch);
+        return;
+    }
+    long vnum;
+    vnum = atoi( arg1 );
+
+    if ( (mob = get_mob_index(vnum)) == NULL )
+    {
+        send_to_char( "Mobile not found.\n", ch );
+        return;
+    }
+
+    if ( !can_medit(ch, mob) )
+      return;
+
+    if ( !mob->pShop )
+    {
+        send_to_char( "This mobile doesn't keep a shop.\n", ch );
+        return;
+    }
+    shop = mob->pShop;
+
+    if (ch->desc->olc)
+    {
+        send_to_char("You are already editing something.\n", ch);
+        return;
+    }
+
+    olc_start(ch, shop, get_shop_schema(), &shop_olc_ops);
+    if (!ch->desc->olc)
+        return;
+
+    ch->desc->olc->mode = OlcEditMode::SHOP_INLINE;
+    send_to_char("Shop inline editing mode enabled.\n", ch);
     send_to_char("To exit, type stop save/abort, or just save/abort.\n", ch);
 
     olc_show(ch, "", "");

@@ -706,30 +706,30 @@ void do_affected ( CHAR_DATA *ch, char *argument )
         set_char_color( AT_BLUE, ch );
         send_to_char( "\nImbued with:\n", ch );
 		set_char_color( AT_SCORE, ch );
-		ch_printf( ch, "%s\n", bitset_to_string(ch->affected_by, aff_flags, AFF_MAX ).c_str() );
+		ch_printf( ch, "%s\n", bitset_to_string(ch->affected_by, aff_flags).c_str() );
         if ( ch->top_level >= 20 )
         {
             send_to_char( "\n", ch );
-            if ( ch->resistant > 0 )
+            if ( ch->resistant.any() )
 	    {
 		set_char_color ( AT_BLUE, ch );
                 send_to_char( "Resistances:  ", ch );
                 set_char_color( AT_SCORE, ch );
-                ch_printf( ch, "%s\n", flag_string(ch->resistant, ris_flags) );
+                ch_printf( ch, "%s\n", bitset_to_string(ch->resistant, ris_flags).c_str() );
 	    }
-            if ( ch->immune > 0 )
+            if ( ch->immune.any() )
 	    {
                 set_char_color( AT_BLUE, ch );
                 send_to_char( "Immunities:   ", ch);
                 set_char_color( AT_SCORE, ch );
-                ch_printf( ch, "%s\n", flag_string(ch->immune, ris_flags) );
+                ch_printf( ch, "%s\n", bitset_to_string(ch->immune, ris_flags).c_str() );
 	    }
-            if ( ch->susceptible > 0 )
+            if ( ch->susceptible.any() )
 	    {
                 set_char_color( AT_BLUE, ch );
                 send_to_char( "Suscepts:     ", ch );
 		set_char_color( AT_SCORE, ch );
-                ch_printf( ch, "%s\n", flag_string(ch->susceptible, ris_flags) );
+                ch_printf( ch, "%s\n", bitset_to_string(ch->susceptible, ris_flags).c_str() );
 	    }
         }
 	return;      

@@ -224,6 +224,7 @@ enum class OlcEditMode
     ROOM_INLINE,
     OBJECT_INLINE,
     MOBILE_INLINE,
+    SHOP_INLINE,
 };
 
 struct OlcPendingMobPrototypeChanges
@@ -757,6 +758,8 @@ std::vector<std::string> olc_mobile_format_single_affect_lines( AFFECT_DATA* paf
 AFFECT_DATA* olc_mobile_find_affect_by_number(CHAR_DATA* mob, int index);
 std::vector<std::string> olc_object_format_affect_lines( OBJ_DATA* obj, size_t label_width, int term_width);
 std::vector<std::string> olc_mobile_format_affect_lines( CHAR_DATA* mob, size_t label_width, int term_width);
+void olc_show_shop(CHAR_DATA* ch, SHOP_DATA* shop, bool show_help, int term_width);
+bool olc_shop_edit_revert(CHAR_DATA *ch);
 
 #define OLC_COL_HEADER   "&W"
 #define OLC_COL_LABEL    "&c"
@@ -1076,7 +1079,7 @@ void olc_send_value_error(CHAR_DATA* ch, const OlcField<T>& f, const std::string
             auto values = olc_enum_values_vec(f);
             if (!values.empty())
             {
-                send_to_char("Valid flags:\n", ch);
+                send_to_char("Valid flags: (+ to add, - to remove)\n", ch);
                 std::string col = olc_format_columns(values, term_width, indent);
                 send_to_char(col.c_str(), ch);
             }
@@ -1684,7 +1687,7 @@ static void olc_show_help_typed(
     auto values = olc_enum_values_vec(*f);
     if (!values.empty())
     {
-        send_to_char("Valid values:\n", ch);
+        send_to_char("Valid values (+ to add, - to remove):\n", ch);
         send_to_char(olc_format_columns(values, term_width, indent).c_str(), ch);
     }
 }
@@ -1711,6 +1714,7 @@ static void olc_show_typed(
     ROOM_INDEX_DATA* room = nullptr;
     OBJ_DATA* objp = nullptr;
     CHAR_DATA* mob = nullptr;
+    SHOP_DATA *shop = nullptr;
 
     if (sess->mode == OlcEditMode::ROOM_INLINE)
         room = static_cast<ROOM_INDEX_DATA*>(sess->working_copy);
@@ -1718,7 +1722,8 @@ static void olc_show_typed(
         objp = static_cast<OBJ_DATA*>(sess->working_copy);
     else if (sess->mode == OlcEditMode::MOBILE_INLINE)
         mob = static_cast<CHAR_DATA*>(sess->working_copy);
-
+    else if (sess->mode == OlcEditMode::SHOP_INLINE)
+        shop = static_cast<SHOP_DATA*>(sess->working_copy);
     if (!field.empty() &&
         (!str_cmp(field.c_str(), "help") || !str_cmp(value.c_str(), "help")))
         show_help = true;
@@ -1748,6 +1753,12 @@ static void olc_show_typed(
             send_to_char("\n(Type 'olcshow help' to see field help and valid values)\n", ch);
             return;
         }
+        if (shop)
+        {
+            olc_show_shop(ch, shop, false, term_width);
+            send_to_char("\n(Type 'olcshow help' to see field help and valid values)\n", ch);
+            return;
+        }        
     }
 
     /*
@@ -1860,6 +1871,7 @@ static void olc_show_typed(
 const OlcSchema<ROOM_INDEX_DATA>* get_room_schema();
 const OlcSchema<OBJ_DATA>* get_object_schema();
 const OlcSchema<CHAR_DATA>* get_mobile_schema();
+const OlcSchema<SHOP_DATA>* get_shop_schema();
 
 typedef AFFECT_DATA* (*olc_find_affect_by_number_fn)(void* obj, int index);
 typedef bool (*olc_parse_affect_value_fn)(CHAR_DATA* ch, int loc, const std::string& value_text, int& out_value);

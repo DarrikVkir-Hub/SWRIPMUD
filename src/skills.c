@@ -1836,7 +1836,7 @@ void do_steal( CHAR_DATA *ch, char *argument )
 	       - (get_curr_lck(ch) - 15) + (get_curr_lck(victim) - 13) 
 	       + times_killed( ch, victim )*7;
 
-    if ( ( IS_SET( victim->immune, RIS_STEAL ) ) || 
+    if ( ( BV_IS_SET( victim->immune, RIS_STEAL ) ) || 
        ( victim->position != POS_STUNNED && (victim->position == POS_FIGHTING
     ||   percent > ( IS_NPC(ch) ? 90 : ch->pcdata->learned[gsn_steal] ) ) ) )
     {

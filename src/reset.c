@@ -121,26 +121,26 @@ bool is_room_reset( RESET_DATA *pReset, ROOM_INDEX_DATA *aRoom,
   case 'B':
     switch(pReset->arg2 & BIT_RESET_TYPE_MASK)
     {
-    case BIT_RESET_DOOR:
-    case BIT_RESET_ROOM:
-      return (aRoom->vnum == pReset->arg1);
-    case BIT_RESET_MOBILE:
-      for ( reset = pReset->prev; reset; reset = reset->prev )
-        if ( reset->command == 'M' && get_mob_index(reset->arg1) )
-          break;
-      if ( reset && is_room_reset(reset, aRoom, pArea) )
-        return TRUE;
-      return FALSE;
-    case BIT_RESET_OBJECT:
-      for ( reset = pReset->prev; reset; reset = reset->prev )
-        if ( (reset->command == 'O' || reset->command == 'P' ||
-              reset->command == 'G' || reset->command == 'E') &&
-             (!pReset->arg1 || pReset->arg1 == reset->arg1) &&
-              get_obj_index(reset->arg1) )
-          break;
-      if ( reset && is_room_reset(reset, aRoom, pArea) )
-        return TRUE;
-      return FALSE;
+      case BIT_RESET_DOOR:
+      case BIT_RESET_ROOM:
+        return (aRoom->vnum == pReset->arg1);
+      case BIT_RESET_MOBILE:
+        for ( reset = pReset->prev; reset; reset = reset->prev )
+          if ( reset->command == 'M' && get_mob_index(reset->arg1) )
+            break;
+        if ( reset && is_room_reset(reset, aRoom, pArea) )
+          return TRUE;
+        return FALSE;
+      case BIT_RESET_OBJECT:
+        for ( reset = pReset->prev; reset; reset = reset->prev )
+          if ( (reset->command == 'O' || reset->command == 'P' ||
+                reset->command == 'G' || reset->command == 'E') &&
+              (!pReset->arg1 || pReset->arg1 == reset->arg1) &&
+                get_obj_index(reset->arg1) )
+            break;
+        if ( reset && is_room_reset(reset, aRoom, pArea) )
+          return TRUE;
+        return FALSE;
     }
     return FALSE;
   case 'G':

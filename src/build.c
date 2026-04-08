@@ -34,6 +34,7 @@ extern bool	fBootDb;
 #define BIT_NOTFOUND ((size_t)-1)
 
 extern bool olc_set_dirty(CHAR_DATA *ch);
+extern void fwrite_bitset_noCR(FILE *fp, const char *name, const FLAG_SET &bv);
 
 /* planet constants for vip and wanted flags */
 
@@ -527,12 +528,33 @@ const flag_name wear_locs[] =
     { (size_t)-1, nullptr } // terminator
 };
 
-char *	const	ris_flags [] =
+const flag_name ris_flags[] =
 {
-"fire", "cold", "electricity", "energy", "blunt", "pierce", "slash", "acid",
-"poison", "drain", "sleep", "charm", "hold", "nonmagic", "plus1", "plus2",
-"plus3", "plus4", "plus5", "plus6", "magic", "paralysis", "steal", "r2", "r3",
-"r4", "r5", "r6", "r7", "r8", "r9", "r10", nullptr
+    { RIS_FIRE,        "fire" },
+    { RIS_COLD,        "cold" },
+    { RIS_ELECTRICITY, "electricity" },
+    { RIS_ENERGY,      "energy" },
+    { RIS_BLUNT,       "blunt" },
+    { RIS_PIERCE,      "pierce" },
+    { RIS_SLASH,       "slash" },
+    { RIS_ACID,        "acid" },
+    { RIS_POISON,      "poison" },
+    { RIS_DRAIN,       "drain" },
+    { RIS_SLEEP,       "sleep" },
+    { RIS_CHARM,       "charm" },
+    { RIS_HOLD,        "hold" },
+    { RIS_NONMAGIC,    "nonmagic" },
+    { RIS_PLUS1,       "plus1" },
+    { RIS_PLUS2,       "plus2" },
+    { RIS_PLUS3,       "plus3" },
+    { RIS_PLUS4,       "plus4" },
+    { RIS_PLUS5,       "plus5" },
+    { RIS_PLUS6,       "plus6" },
+    { RIS_MAGIC,       "magic" },
+    { RIS_PARALYSIS,   "paralysis" },
+    { RIS_STEAL,       "steal" },
+
+    { (size_t)-1, nullptr } // terminator
 };
 
 char *	const	trig_flags [] =
@@ -1076,12 +1098,11 @@ int get_plrflag( char *flag )
 
 int get_risflag( char *flag )
 {
-    int x;
-
-    for ( x = 0; x < 32; x++ )
-      if ( !str_cmp( flag, ris_flags[x] ) )
-        return x;
-    return -1;
+	const flag_name* x;
+	x = find_flag(ris_flags, flag);
+	if (!x)
+		return -1;
+	return x->bit;		
 }
 
 int get_trigflag( char *flag )
@@ -2764,46 +2785,46 @@ void do_mset( CHAR_DATA *ch, char *argument )
      */
     if ( !str_cmp( arg2, "r" ) )
     {
-	if ( !IS_NPC( victim ) && get_trust( ch ) < LEVEL_LESSER )
-	{
-	    send_to_char( "You can only modify a mobile's ris.\n", ch );
-	    return;
-	}
-	if ( !can_mmodify( ch, victim ) )
-	    return;
+		if ( !IS_NPC( victim ) && get_trust( ch ) < LEVEL_LESSER )
+		{
+			send_to_char( "You can only modify a mobile's ris.\n", ch );
+			return;
+		}
+		if ( !can_mmodify( ch, victim ) )
+			return;
 
-	SPRINTF(outbuf,"%s resistant %s",arg1, arg3);
-        do_mset( ch, outbuf );
-        return;
+		SPRINTF(outbuf,"%s resistant %s",arg1, arg3);
+		do_mset( ch, outbuf );
+		return;
     }
     if ( !str_cmp( arg2, "i" ) )
     {
-	if ( !IS_NPC( victim ) && get_trust( ch ) < LEVEL_LESSER )
-	{
-	    send_to_char( "You can only modify a mobile's ris.\n", ch );
-	    return;
-	}
-	if ( !can_mmodify( ch, victim ) )
-	    return;
+		if ( !IS_NPC( victim ) && get_trust( ch ) < LEVEL_LESSER )
+		{
+			send_to_char( "You can only modify a mobile's ris.\n", ch );
+			return;
+		}
+		if ( !can_mmodify( ch, victim ) )
+			return;
 
 
-	SPRINTF(outbuf,"%s immune %s",arg1, arg3);
-        do_mset( ch, outbuf );
-        return;
+		SPRINTF(outbuf,"%s immune %s",arg1, arg3);
+			do_mset( ch, outbuf );
+			return;
     }
     if ( !str_cmp( arg2, "s" ) )
     {
-	if ( !IS_NPC( victim ) && get_trust( ch ) < LEVEL_LESSER )
-	{
-	    send_to_char( "You can only modify a mobile's ris.\n", ch );
-	    return;
-	}
-	if ( !can_mmodify( ch, victim ) )
-	    return;
+		if ( !IS_NPC( victim ) && get_trust( ch ) < LEVEL_LESSER )
+		{
+			send_to_char( "You can only modify a mobile's ris.\n", ch );
+			return;
+		}
+		if ( !can_mmodify( ch, victim ) )
+			return;
 
-	SPRINTF(outbuf,"%s susceptible %s",arg1, arg3);
-        do_mset( ch, outbuf );
-        return;
+		SPRINTF(outbuf,"%s susceptible %s",arg1, arg3);
+			do_mset( ch, outbuf );
+			return;
     }
     if ( !str_cmp( arg2, "ri" ) )
     {
@@ -2891,10 +2912,10 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	{
 	   argument = one_argument( argument, arg3 );
 	   value = get_risflag( arg3 );
-	   if ( value < 0 || value > 31 )
+	   if ( value < 0 )
 		ch_printf( ch, "Unknown flag: %s\n", arg3 );
 	   else
-		TOGGLE_BIT( victim->resistant, 1 << value );
+		BV_TOGGLE_BIT( victim->resistant, value );
 	}
 	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	   victim->pIndexData->resistant = victim->resistant; 
@@ -2919,10 +2940,10 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	{
 	    argument = one_argument( argument, arg3 );
 	    value = get_risflag( arg3 );
-	    if ( value < 0 || value > 31 )
+	    if ( value < 0 )
 		ch_printf( ch, "Unknown flag: %s\n", arg3 );
 	    else
-		TOGGLE_BIT( victim->immune, 1 << value );
+		BV_TOGGLE_BIT( victim->immune, value );
 	}
 	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	    victim->pIndexData->immune = victim->immune; 
@@ -2947,10 +2968,10 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	{
 	    argument = one_argument( argument, arg3 );
 	    value = get_risflag( arg3 );
-	    if ( value < 0 || value > 31 )
+	    if ( value < 0 )
 		ch_printf( ch, "Unknown flag: %s\n", arg3 );
 	    else
-		TOGGLE_BIT( victim->susceptible, 1 << value );
+		BV_TOGGLE_BIT( victim->susceptible, value );
 	}
 	if ( IS_NPC( victim ) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	    victim->pIndexData->susceptible = victim->susceptible; 
@@ -6816,12 +6837,16 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 					pMobIndex->hitroll,
 					pMobIndex->damroll,
 					pMobIndex->xflags,
-					pMobIndex->resistant,
-					pMobIndex->immune,
-					pMobIndex->susceptible,
+					-9999,
+					-9999,
+					-9999,
 					pMobIndex->attacks,
 					pMobIndex->defenses );
 	  fwrite_bitset(fpout, NULL, pMobIndex->vip_flags);
+	  fwrite_bitset(fpout, NULL, pMobIndex->resistant);
+	  fwrite_bitset(fpout, NULL, pMobIndex->immune);
+	  fwrite_bitset(fpout, NULL, pMobIndex->susceptible);
+
 //	fprintf( fpout, "%d 0 0 0 0 0 0 0\n",
 //	                pMobIndex->vip_flags );
 	}
@@ -7050,16 +7075,15 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 	  continue;
 	if ( (pShop = pMobIndex->pShop) == NULL )
 	  continue;
-	fprintf( fpout, " %d   %2d %2d %2d %2d %2d   %3d %3d",
-		 pShop->keeper,
-		 pShop->buy_type[0],
-		 pShop->buy_type[1],
-		 pShop->buy_type[2],
-		 pShop->buy_type[3],
-		 pShop->buy_type[4],
+	fprintf( fpout, "%d   R ",
+		 pShop->keeper);
+		 fwrite_bitset_noCR(fpout, NULL, pShop->shop_type);
+	fprintf( fpout, " ");
+		 fwrite_bitset_noCR(fpout, NULL, pShop->buy_type);
+	fprintf( fpout, "   %3d %3d %3d       %2d %2d    ; %s\n",
 		 pShop->profit_buy,
-		 pShop->profit_sell );
-	fprintf( fpout, "        %2d %2d    ; %s\n",
+		 pShop->profit_sell,
+		 pShop->profit_fix,
 		 pShop->open_hour,
 		 pShop->close_hour,
 		 pMobIndex->short_descr );
@@ -7074,11 +7098,10 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 	  continue;
 	if ( (pRepair = pMobIndex->rShop) == NULL )
 	  continue;
-	fprintf( fpout, " %d   %2d %2d %2d         %3d %3d",
-		 pRepair->keeper,
-		 pRepair->fix_type[0],
-		 pRepair->fix_type[1],
-		 pRepair->fix_type[2],
+	fprintf( fpout, " %d  S ",
+		 pRepair->keeper);
+		 fwrite_bitset_noCR(fpout, NULL, pRepair->fix_type);		 
+	fprintf( fpout, "          %3d %3d",
 		 pRepair->profit_fix,
 		 pRepair->shop_type );
 	fprintf( fpout, "        %2d %2d    ; %s\n",

@@ -696,7 +696,6 @@ See also: OSET AFFECTTYPES
 ~
 
 101 AFFECTS~
-
 &CAffects&c on &Yobjects&c are applied when the object is equipped, and are
 removed again when the object is unequipped.
 &CAffects&c on &Ymobiles&c are always on, unless you set a duration
@@ -6704,12 +6703,14 @@ Requirements: An empty drink container, and a chemestry set.
 ~
 
 101 MAKEREPAIR~
-Syntax:  makerepair <mobvnum>
+Syntax:  makerepair (depreciated)
  
 Automatically gives the mobile the ability to repair damaged equipment.
 Use 'repairset' to set the parameters by which the shop will function.
  
-See REPAIRSET, REPAIRSTAT, REPAIRSHOPS
+This command has been eliminated as repairshops
+have been combined with shops.
+SEE : MAKESHOP
 ~
 
 1 MAKESHIELD~
@@ -8221,6 +8222,7 @@ Entering an editor:
 olc r(oom) edits your current room
 olc o(bject) edits an object in room or world
 olc m(obile) edits a mobile in room or world
+olc s(hop) #vnum edits the supplied keeper's shop.
 
 The new OLC uses a schema-driven system. Available fields, valid values,
 and help text are determined automatically by the editor type.
@@ -9314,7 +9316,7 @@ once.
 ~
 
 101 REPAIRSET~
-Syntax:  repairset <mobile vnum> <field> <value>
+Syntax:  repairset (depreciated)
  
 This command allows you to set the following fields for repair shops:
  
@@ -9332,7 +9334,9 @@ This command allows you to set the following fields for repair shops:
 | keeper | Vnum of repair shop keeper         |
 -----------------------------------------------
  
-See MAKEREPAIR, REPAIRSTAT and REPAIRSHOPS
+This command has been eliminated as repairshops have been combined with
+shops.
+SEE : SHOPSET OLC
 ~
 
 1 REPAIRSHIP~
@@ -9344,11 +9348,12 @@ engine room of a ship.  With it, you can repair 6 areas of a damaged ship:
 ~
 
 101 REPAIRSHOPS~
-Syntax: repairshops
+Syntax: repairshops (depreciated)
 
 Displays statistics on all the repair shops.
-
-See MAKEREPAIR, REPAIRSET and REPAIRSTAT.
+This command has been eliminated as repairshops have been combined with
+shops.
+SEE : SHOPS
 ~
 
 101 REPAIRSTAT~
@@ -10373,20 +10378,23 @@ See MAKESHOP, SHOPSET, SHOPSTAT and SHOPVALUES
 101 SHOPSET~
 Syntax: shopset <mobile vnum> <field> <value>
 
------------------------------------------------
-| Fields | Meaning                            |
------------------------------------------------
-| buy#   | Types of items the keeper will buy |
-| buy    | Profit on buying items             |
-| sell   | Profit on selling items            |
-| open   | Hour shop opens                    |
-| close  | Hour shop closes                   |
-| keeper | Vnum of shop keeper                |
------------------------------------------------
+-------------------------------------------------
+| Fields | Meaning                              |
+-------------------------------------------------
+|  buy     | Profit on buying items             |
+|  sell    | Profit on selling items            |
+|  fix     | Profit on fixing items             |
+| shoptype | Types of shop buy/fix/recharge     |
+| itemtype | Types of items to buy and fix      |
+|  open    | Hour shop opens                    |
+|  close   | Hour shop closes                   |
+|  keeper  | Vnum of shop keeper                |
+-------------------------------------------------
 
 Lets you set certain stats on a shop.
+Shops and repairshops have now been combined!
 
-see MAKESHOP, SHOPSTAT, SHOPS and SHOPVALUES
+SEE ALSO : SHOPS SHOPSTAT MAKESHOP
 ~
 
 101 SHOPSTAT~
