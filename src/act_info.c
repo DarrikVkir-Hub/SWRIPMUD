@@ -1228,7 +1228,7 @@ void do_look ( CHAR_DATA *ch, char *argument )
             &&   IS_SET(pexit->exit_info, EX_PORTAL) )
             {
                 if ( room_is_private( ch, pexit->to_room )
-                &&   get_trust(ch) < sysdata.level_override_private )
+                &&   get_trust(ch) < ch->game->get_sysdata()->level_override_private )
                 {
                 set_char_color( AT_WHITE, ch );
                 send_to_char( "That room is private buster!\n", ch );
@@ -1327,7 +1327,7 @@ void do_look ( CHAR_DATA *ch, char *argument )
                 }
             }
             if ( room_is_private( ch, pexit->to_room )
-            &&   get_trust(ch) < sysdata.level_override_private )
+            &&   get_trust(ch) < ch->game->get_sysdata()->level_override_private )
             {
                 set_char_color( AT_WHITE, ch );
                 send_to_char( "That room is private buster!\n", ch );
@@ -3504,7 +3504,7 @@ void do_password(CHAR_DATA *ch, char *argument)
     STR_DISPOSE(ch->pcdata->pwd);
     ch->pcdata->pwd = str_dup(pwdnewhash);
 
-    if (BV_IS_SET(sysdata.save_flags, SV_PASSCHG))
+    if (BV_IS_SET(ch->game->get_sysdata()->save_flags, SV_PASSCHG))
         save_char_obj(ch);
 
     send_to_char("Ok.\n", ch);
@@ -3604,7 +3604,7 @@ void do_password(CHAR_DATA *ch, char *argument)
     STR_DISPOSE(ch->pcdata->pwd);
     ch->pcdata->pwd = str_dup(pwdnew);
 
-    if (BV_IS_SET(sysdata.save_flags, SV_PASSCHG))
+    if (BV_IS_SET(ch->game->get_sysdata()->save_flags, SV_PASSCHG))
         save_char_obj(ch);
 
     send_to_char("Ok.\n", ch);
@@ -3801,7 +3801,7 @@ void do_channels( CHAR_DATA *ch, char *argument )
 		: " -newbie",
 		ch );
 
-	if ( get_trust(ch) >= sysdata.log_level )
+	if ( get_trust(ch) >= ch->game->get_sysdata()->log_level )
 	{
 	    send_to_char( BV_IS_SET(ch->channels, CHANNEL_LOG)
 		? " +LOG"
@@ -3895,7 +3895,7 @@ void do_channels( CHAR_DATA *ch, char *argument )
         if (ch->top_level >= LEVEL_IMMORTAL)
             BV_SET_BIT (ch->channels, CHANNEL_AVTALK);
 
-        if (ch->top_level >= sysdata.log_level )
+        if (ch->top_level >= ch->game->get_sysdata()->log_level )
         BV_SET_BIT (ch->channels, CHANNEL_COMM);
 
     } 
@@ -3915,7 +3915,7 @@ void do_channels( CHAR_DATA *ch, char *argument )
         if (ch->top_level >= LEVEL_IMMORTAL)
             BV_REMOVE_BIT (ch->channels, CHANNEL_AVTALK);
 
-        if (ch->top_level >= sysdata.log_level)
+        if (ch->top_level >= ch->game->get_sysdata()->log_level)
         BV_REMOVE_BIT (ch->channels, CHANNEL_COMM);
 
         } 

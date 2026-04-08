@@ -217,6 +217,8 @@ const OlcSchema<OBJ_DATA>* get_object_schema()
             w_flags, "Locations where this object can be worn.  If you don't have take, it can't be picked up"),
         make_olc_flag_field<OBJ_DATA>("flags", &OBJ_DATA::objflags,
             obj_flag_table, "This includes pipe flags, weapon type, and normal object flags.  Only the first (in flag order) of the weapon types will be considered"),
+        make_olc_flag_field<OBJ_DATA>("trigflags", &OBJ_DATA::trig_flags,
+            trig_flags, "This includes trigger specific flags, used only for levers, switches, buttons, and pull chains.  HELP TRIGFLAGS for more info"),
         make_olc_int_field<OBJ_DATA>("wearloc", &OBJ_DATA::wear_loc,
             "Current wear location - for fixing bugs, but shouldn't be manually set normally"),
         make_olc_int_field<OBJ_DATA>("weight", &OBJ_DATA::weight,
@@ -2888,6 +2890,7 @@ OBJ_DATA* olc_object_clone(const OBJ_DATA* src)
     set_str_field(dst->action_desc, src->action_desc ? src->action_desc : "");
 
     dst->item_type   = src->item_type;
+    dst->trig_flags  = src->trig_flags;
     dst->wear_flags  = src->wear_flags;
     dst->wear_loc    = src->wear_loc;
     dst->weight      = src->weight;
@@ -2982,6 +2985,7 @@ void olc_object_apply_instance_changes(OBJ_DATA* dst, OBJ_DATA* src)
     dst->level = src->level;
     dst->timer = src->timer;
     dst->objflags = src->objflags;
+    dst->trig_flags = src->trig_flags;
     dst->count = src->count;
 
     for (int i = 0; i < 6; ++i)
@@ -3033,6 +3037,9 @@ void olc_object_apply_prototype_changes(
 
     if (!(edited->wear_flags == baseline->wear_flags))
         dst->wear_flags = edited->wear_flags;
+
+    if (!(edited->trig_flags == baseline->trig_flags))
+        dst->trig_flags = edited->trig_flags;
 
     if (edited->weight != baseline->weight)
         dst->weight = edited->weight;
@@ -4185,6 +4192,14 @@ void olc_show_object(CHAR_DATA* ch, OBJ_DATA* obj, bool help_only_mode, int term
         get_flag_field(obj->objflags, obj_flag_table),
         proto ? get_flag_field(proto->objflags, obj_flag_table) : "",
         !(proto && obj->objflags == proto->objflags),
+        label_width, term_width, OLC_COL_LIST
+    );
+
+    olc_show_object_compare_line(
+        ch, "Trigflags",
+        get_flag_field(obj->trig_flags, trig_flags),
+        proto ? get_flag_field(proto->trig_flags, trig_flags) : "",
+        !(proto && obj->trig_flags == proto->trig_flags),
         label_width, term_width, OLC_COL_LIST
     );
 

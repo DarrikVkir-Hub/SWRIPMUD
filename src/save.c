@@ -190,7 +190,7 @@ void save_char_obj( CHAR_DATA *ch )
     /*
      * Auto-backup pfile (can cause lag with high disk access situtations
      */
-    if ( BV_IS_SET( sysdata.save_flags, SV_BACKUP ) )
+    if ( BV_IS_SET( ch->game->get_sysdata()->save_flags, SV_BACKUP ) )
     {
 		SPRINTF( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
 					capitalize( ch->name ) );
@@ -291,7 +291,7 @@ void save_clone( CHAR_DATA *ch )
     /*
      * Auto-backup pfile (can cause lag with high disk access situtations
      */
-    if ( BV_IS_SET( sysdata.save_flags, SV_BACKUP ) )
+    if ( BV_IS_SET( ch->game->get_sysdata()->save_flags, SV_BACKUP ) )
     {
 	SPRINTF( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
 				 capitalize( ch->name ) );
@@ -812,6 +812,8 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
 	obj->value[0], obj->value[1], obj->value[2],
 	obj->value[3], obj->value[4], obj->value[5]     );
 	fwrite_bitset(fp, "Objflags", obj->objflags);
+	if ( obj->trig_flags.any() )
+		fwrite_bitset(fp, "Trigflags", obj->trig_flags);
     switch ( obj->item_type )
     {
     case ITEM_PILL: /* was down there with staff and wand, wrongly - Scryn */
@@ -846,6 +848,8 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
 		skill_table[obj->value[5]]->name );
 	break;
     }
+
+	fwrite_bitset(fp, "Triggerflags", obj->trig_flags);
 
     for ( paf = obj->first_affect; paf; paf = paf->next )
     {
@@ -2360,6 +2364,11 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 
 	case 'T':
 	    KEY( "Timer",	obj->timer,		fread_number( fp ) );
+	    if ( !str_cmp( word, "Triggerflags" ) )
+	    {
+			fread_bitset( fp, obj->trig_flags );
+			fMatch = TRUE;
+	    }
 	    break;
 
 	case 'V':
@@ -2412,6 +2421,7 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 		    obj->item_type = obj->pIndexData->item_type;
 		    obj->wear_flags = obj->pIndexData->wear_flags;
 		    obj->objflags = obj->pIndexData->objflags;
+			obj->trig_flags = obj->pIndexData->trig_flags;
 		}
 		fMatch = TRUE;
 		break;

@@ -1352,7 +1352,7 @@ void equip_char( CHAR_DATA *ch, OBJ_DATA *obj, int iWear )
 	   obj_from_char( obj );
 	obj_to_room( obj, ch->in_room );
 	oprog_zap_trigger( ch, obj);
-	if ( BV_IS_SET(sysdata.save_flags, SV_ZAPDROP) && !char_died(ch) )
+	if ( BV_IS_SET(ch->game->get_sysdata()->save_flags, SV_ZAPDROP) && !char_died(ch) )
 	    save_char_obj( ch );
 	return;
     }

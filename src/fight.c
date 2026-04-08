@@ -946,9 +946,9 @@ ch_ret one_hit( CHAR_DATA *ch, CHAR_DATA *victim, int dt )
      	    chance = 100 - get_curr_con(victim) - victim->skill_level[COMBAT_ABILITY]/2;
     	/* harder for player to stun another player */
     	    if ( !IS_NPC(ch) && !IS_NPC(victim) )
-              	chance -= sysdata.stun_plr_vs_plr;
+              	chance -= ch->game->get_sysdata()->stun_plr_vs_plr;
     	    else
-      		chance -= sysdata.stun_regular;
+      		chance -= ch->game->get_sysdata()->stun_regular;
             chance = URANGE( 5, chance, 95 );
             if ( !fail && number_percent( ) < chance )
     	    {
@@ -1430,16 +1430,16 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
     if ( IS_NPC(ch) )
     {
 	if ( npcvict )
-	  dampmod = sysdata.dam_mob_vs_mob;
+	  dampmod = ch->game->get_sysdata()->dam_mob_vs_mob;
 	else
-	  dampmod = sysdata.dam_mob_vs_plr;
+	  dampmod = ch->game->get_sysdata()->dam_mob_vs_plr;
     }
     else
     {
 	if ( npcvict )
-	  dampmod = sysdata.dam_plr_vs_mob;
+	  dampmod = ch->game->get_sysdata()->dam_plr_vs_mob;
 	else
-	  dampmod = sysdata.dam_plr_vs_plr;
+	  dampmod = ch->game->get_sysdata()->dam_plr_vs_plr;
     }
     if ( dampmod > 0 )
       dam = ( dam * dampmod ) / 100;
@@ -1764,7 +1764,7 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
 	  if( victim->in_room && victim->in_room->area )
 	    boost_economy( victim->in_room->area, victim->gold );
 
-	if ( BV_IS_SET( sysdata.save_flags, SV_KILL ) )
+	if ( BV_IS_SET( ch->game->get_sysdata()->save_flags, SV_KILL ) )
 	   save_char_obj( ch );
 	return rVICT_DIED;
     }
@@ -2390,7 +2390,7 @@ else
     victim->pcdata->condition[COND_FULL]   = 12;
     victim->pcdata->condition[COND_THIRST] = 12;
     
-    if ( BV_IS_SET( sysdata.save_flags, SV_DEATH ) )
+    if ( BV_IS_SET( ch->game->get_sysdata()->save_flags, SV_DEATH ) )
 	save_char_obj( victim );
     return;
 

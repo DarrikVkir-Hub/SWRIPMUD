@@ -1874,238 +1874,406 @@ void pullorpush( CHAR_DATA *ch, OBJ_DATA *obj, bool pull )
     int			 edir;
     char		*txt;
 
-    if ( IS_SET( obj->value[0], TRIG_UP ) )
+    if ( BV_IS_SET( obj->trig_flags, TRIG_UP ) )
       isup = TRUE;
     else
       isup = FALSE;
+
     switch( obj->item_type )
     {
-	default:
-      ch_printf( ch, "You can't %s that!\n", pull ? "pull" : "push" );
-      return;
-      break;
-	case ITEM_SWITCH:
-	case ITEM_LEVER:
-	case ITEM_PULLCHAIN:
-	  if ( (!pull && isup) || (pull && !isup) )
-	  {
-      ch_printf( ch, "It is already %s.\n", isup ? "up" : "down" );
-      return;
- 	  }
-	case ITEM_BUTTON:
-	  if ( (!pull && isup) || (pull & !isup) )
-	  {
-      ch_printf( ch, "It is already %s.\n", isup ? "in" : "out" );
-      return;
-	  }
-	  break;
+        default:
+            ch_printf( ch, "You can't %s that!\n", pull ? "pull" : "push" );
+            return;
+            break;
+        case ITEM_SWITCH:
+        case ITEM_LEVER:
+        case ITEM_PULLCHAIN:
+          if ( (!pull && isup) || (pull && !isup) )
+          {
+            ch_printf( ch, "It is already %s.\n", isup ? "up" : "down" );
+            return;
+          }
+        case ITEM_BUTTON:
+          if ( (!pull && isup) || (pull & !isup) )
+          {
+            ch_printf( ch, "It is already %s.\n", isup ? "in" : "out" );
+            return;
+          }
+          break;
     }
     if( (pull) && IS_SET(obj->pIndexData->progtypes,PULL_PROG) )
     {
-      if ( !IS_SET(obj->value[0], TRIG_AUTORETURN ) )
-        REMOVE_BIT( obj->value[0], TRIG_UP );
-      oprog_pull_trigger( ch, obj );
-      return;
+        if ( !BV_IS_SET(obj->trig_flags, TRIG_AUTORETURN ) )
+          BV_REMOVE_BIT( obj->trig_flags, TRIG_UP );
+        oprog_pull_trigger( ch, obj );
+        return;
     }
     if( (!pull) && IS_SET(obj->pIndexData->progtypes,PUSH_PROG) )
     {
-      if ( !IS_SET(obj->value[0], TRIG_AUTORETURN ) )
-        SET_BIT( obj->value[0], TRIG_UP );
-      oprog_push_trigger( ch, obj );
-      return;
+        if ( !BV_IS_SET(obj->trig_flags, TRIG_AUTORETURN ) )
+          BV_SET_BIT( obj->trig_flags, TRIG_UP );
+        oprog_push_trigger( ch, obj );
+        return;
     }
 
     if ( !oprog_use_trigger( ch, obj, NULL, NULL, NULL ) )
     {
-      SPRINTF( buf, "$n %s $p.", pull ? "pulls" : "pushes" );
-      act( AT_ACTION, buf,  ch, obj, NULL, TO_ROOM );
-      SPRINTF( buf, "You %s $p.", pull ? "pull" : "push" );
-      act( AT_ACTION, buf, ch, obj, NULL, TO_CHAR );
+        SPRINTF( buf, "$n %s $p.", pull ? "pulls" : "pushes" );
+        act( AT_ACTION, buf,  ch, obj, NULL, TO_ROOM );
+        SPRINTF( buf, "You %s $p.", pull ? "pull" : "push" );
+        act( AT_ACTION, buf, ch, obj, NULL, TO_CHAR );
     }
 
-    if ( !IS_SET(obj->value[0], TRIG_AUTORETURN ) )
+    if ( !BV_IS_SET(obj->trig_flags, TRIG_AUTORETURN ) )
     {
-	if ( pull )
-	  REMOVE_BIT( obj->value[0], TRIG_UP );
-	else
-	  SET_BIT( obj->value[0], TRIG_UP );
+        if ( pull )
+          BV_REMOVE_BIT( obj->trig_flags, TRIG_UP );
+        else
+          BV_SET_BIT( obj->trig_flags, TRIG_UP );
     }
-    if ( IS_SET( obj->value[0], TRIG_TELEPORT )
-    ||   IS_SET( obj->value[0], TRIG_TELEPORTALL )
-    ||   IS_SET( obj->value[0], TRIG_TELEPORTPLUS ) )
+    if ( BV_IS_SET( obj->trig_flags, TRIG_TELEPORT )
+    ||   BV_IS_SET( obj->trig_flags, TRIG_TELEPORTALL )
+    ||   BV_IS_SET( obj->trig_flags, TRIG_TELEPORTPLUS ) )
     {
-	int flags;
+        FLAG_SET flags;
 
-	if ( ( room = get_room_index( obj->value[1] ) ) == NULL )
-	{
-	    bug( "PullOrPush: obj points to invalid room %d", obj->value[1] );
-	    return;
-	}
-	flags = 0;
-	if ( IS_SET( obj->value[0], TRIG_SHOWROOMDESC ) )
-	  SET_BIT( flags, TELE_SHOWDESC );
-	if ( IS_SET( obj->value[0], TRIG_TELEPORTALL ) )
-	  SET_BIT( flags, TELE_TRANSALL );
-	if ( IS_SET( obj->value[0], TRIG_TELEPORTPLUS ) )
-	  SET_BIT( flags, TELE_TRANSALLPLUS );
+        if ( ( room = get_room_index( obj->value[1] ) ) == NULL )
+        {
+            bug( "PullOrPush: obj points to invalid room %d", obj->value[1] );
+            return;
+        }
+        flags.reset();
+        if ( BV_IS_SET( obj->trig_flags, TRIG_SHOWROOMDESC ) )
+          BV_SET_BIT( flags, TRIG_TELE_SHOWDESC );
+        if ( BV_IS_SET( obj->trig_flags, TRIG_TELEPORTALL ) )
+          BV_SET_BIT( flags, TRIG_TELE_TRANSALL );
+        if ( BV_IS_SET( obj->trig_flags, TRIG_TELEPORTPLUS ) )
+          BV_SET_BIT( flags, TRIG_TELE_TRANSALLPLUS );
 
-	teleport( ch, obj->value[1], flags );
-	return;
+        teleport( ch, obj->value[1], flags );
+        return;
     }
 
-    if ( IS_SET( obj->value[0], TRIG_RAND4 )
-    ||	 IS_SET( obj->value[0], TRIG_RAND6 ) )
+    if ( BV_IS_SET( obj->trig_flags, TRIG_RAND4 )
+    ||	 BV_IS_SET( obj->trig_flags, TRIG_RAND6 ) )
     {
-	int maxd;
+        int maxd;
 
-	if ( ( room = get_room_index( obj->value[1] ) ) == NULL )
-	{
-	    bug( "PullOrPush: obj points to invalid room %d", obj->value[1] );
-	    return;
-	}
+        if ( ( room = get_room_index( obj->value[1] ) ) == NULL )
+        {
+            bug( "PullOrPush: obj points to invalid room %d", obj->value[1] );
+            return;
+        }
 
-	if ( IS_SET( obj->value[0], TRIG_RAND4 ) )
-	  maxd = 3;
-	else
-	  maxd = 5;
+        if ( BV_IS_SET( obj->trig_flags, TRIG_RAND4 ) )
+          maxd = 3;
+        else
+          maxd = 5;
 
-	randomize_exits( room, maxd );
-	for ( rch = room->first_person; rch; rch = rch->next_in_room )
-	{
-	   send_to_char( "You hear a loud rumbling sound.\n", rch );
-	   send_to_char( "Something seems different...\n", rch );
-	}
+        randomize_exits( room, maxd );
+        for ( rch = room->first_person; rch; rch = rch->next_in_room )
+        {
+          send_to_char( "You hear a loud rumbling sound.\n", rch );
+          send_to_char( "Something seems different...\n", rch );
+        }
     }
-    if ( IS_SET( obj->value[0], TRIG_DOOR ) )
+   /*
+    * Death support added by Remcon // Pulls these from Smaug 1.8 - DV 4-8-26
+    */
+   if( BV_IS_SET( obj->trig_flags, TRIG_DEATH ) )
+   {
+      /*
+       * Should we really send a message to the room? 
+       */
+      act( AT_DEAD, "$n falls prey to a terrible death!", ch, NULL, NULL, TO_ROOM );
+      act( AT_DEAD, "Oopsie... you're dead!\r\n", ch, NULL, NULL, TO_CHAR );
+      snprintf( buf, MAX_STRING_LENGTH, "%s hit a DEATH TRIGGER in room %d!", ch->name, ch->in_room->vnum );
+      log_string( buf );
+      to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
+
+      /*
+       * Personaly I fiqured if we wanted it to be a full DT we could just have it send them into a DT. 
+       */
+      set_cur_char( ch );
+      raw_kill( ch, ch );
+
+      return;
+   }
+
+   /*
+    * Object loading added by Remcon 
+    */
+   if( BV_IS_SET( obj->trig_flags, TRIG_OLOAD ) )
+   {
+      OBJ_INDEX_DATA *pObjIndex;
+      OBJ_DATA *tobj;
+
+      /*
+       * value[1] for the obj vnum 
+       */
+      if( !( pObjIndex = get_obj_index( obj->value[1] ) ) )
+      {
+         bug( "%s: obj points to invalid object vnum %d", __func__, obj->value[1] );
+         return;
+      }
+      /*
+       * Set room to NULL before the check 
+       */
+      room = NULL;
+      /*
+       * value[2] for the room vnum to put the object in if there is one, 0 for giving it to char or current room 
+       */
+      if( obj->value[2] > 0 && !( room = get_room_index( obj->value[2] ) ) )
+      {
+         bug( "%s: obj points to invalid room vnum %d", __func__, obj->value[2] );
+         return;
+      }
+      /*
+       * Uses value[3] for level 
+       */
+      if( !( tobj = create_object( pObjIndex, URANGE( 0, obj->value[3], MAX_LEVEL ) ) ) )
+      {
+         bug( "%s: obj couldnt create_obj vnum %d at level %d", __func__, obj->value[1], obj->value[3] );
+         return;
+      }
+      if( room )
+         obj_to_room( tobj, room );
+      else
+      {
+         if( CAN_WEAR( obj, ITEM_TAKE ) )
+            obj_to_char( tobj, ch );
+         else
+            obj_to_room( tobj, ch->in_room );
+      }
+      return;
+   }
+
+   /*
+    * Mob loading added by Remcon 
+    */
+   if( BV_IS_SET( obj->trig_flags, TRIG_MLOAD ) )
+   {
+      MOB_INDEX_DATA *pMobIndex;
+      CHAR_DATA *mob;
+
+      /*
+       * value[1] for the obj vnum 
+       */
+      if( !( pMobIndex = get_mob_index( obj->value[1] ) ) )
+      {
+         bug( "%s: obj points to invalid mob vnum %d", __func__, obj->value[1] );
+         return;
+      }
+      /*
+       * Set room to current room before the check 
+       */
+      room = ch->in_room;
+      /*
+       * value[2] for the room vnum to put the object in if there is one, 0 for giving it to char or current room 
+       */
+      if( obj->value[2] > 0 && !( room = get_room_index( obj->value[2] ) ) )
+      {
+         bug( "%s: obj points to invalid room vnum %d", __func__, obj->value[2] );
+         return;
+      }
+      if( !( mob = create_mobile( pMobIndex->game, pMobIndex ) ) )
+      {
+         bug( "%s: obj couldnt create_mobile vnum %d", __func__, obj->value[1] );
+         return;
+      }
+      char_to_room( mob, room );
+      return;
+   }
+
+   /*
+    * Spell casting support added by Remcon 
+    */
+   if( BV_IS_SET( obj->trig_flags, TRIG_CAST ) )
+   {
+      if( obj->value[1] <= 0 || !IS_VALID_SN( obj->value[1] ) )
+      {
+         bug( "%s: obj points to invalid sn [%d]", __func__, obj->value[1] );
+         return;
+      }
+      obj_cast_spell( obj->value[1], URANGE( 1, ( obj->value[2] > 0 ) ? obj->value[2] : ch->skill_level[FORCE_ABILITY], MAX_LEVEL ), ch, ch,
+                      NULL );
+      return;
+   }
+
+   /*
+    * Container support added by Remcon 
+    */
+   if( BV_IS_SET( obj->trig_flags, TRIG_CONTAINER ) )
+   {
+      OBJ_DATA *container = NULL;
+
+      room = get_room_index( obj->value[1] );
+      if( !room )
+         room = obj->in_room;
+      if( !room )
+      {
+         bug( "%s: obj points to invalid room %d", __func__, obj->value[1] );
+         return;
+      }
+
+      for( container = ch->in_room->first_content; container; container = container->next_content )
+      {
+         if( container->pIndexData->vnum == obj->value[2] )
+            break;
+      }
+      if( !container )
+      {
+         bug( "%s: obj points to a container [%d] thats not where it should be?", __func__, obj->value[2] );
+         return;
+      }
+      if( container->item_type != ITEM_CONTAINER )
+      {
+         bug( "%s: obj points to object [%d], but it isn't a container.", __func__, obj->value[2] );
+         return;
+      }
+      if( IS_SET( obj->value[3], CONT_CLOSEABLE ) )
+         TOGGLE_BIT( container->value[1], CONT_CLOSEABLE );
+      if( IS_SET( obj->value[3], CONT_PICKPROOF ) )
+         TOGGLE_BIT( container->value[1], CONT_PICKPROOF );
+      if( IS_SET( obj->value[3], CONT_CLOSED ) )
+         TOGGLE_BIT( container->value[1], CONT_CLOSED );
+      if( IS_SET( obj->value[3], CONT_LOCKED ) )
+         TOGGLE_BIT( container->value[1], CONT_LOCKED );
+      return;
+   }
+
+
+
+    if ( BV_IS_SET( obj->trig_flags, TRIG_DOOR ) )
     {
-	room = get_room_index( obj->value[1] );
-	if ( !room )
-	  room = obj->in_room;
-	if ( !room )
-	{
-	  bug( "PullOrPush: obj points to invalid room %d", obj->value[1] );
-	  return;
-	}	
-	if ( IS_SET( obj->value[0], TRIG_D_NORTH ) )
-	{
-	  edir = DIR_NORTH;
-	  txt = "to the north";
-	}
-	else
-	if ( IS_SET( obj->value[0], TRIG_D_SOUTH ) )
-	{
-	  edir = DIR_SOUTH;
-	  txt = "to the south";
-	}
-	else
-	if ( IS_SET( obj->value[0], TRIG_D_EAST ) )
-	{
-	  edir = DIR_EAST;
-	  txt = "to the east";
-	}
-	else
-	if ( IS_SET( obj->value[0], TRIG_D_WEST ) )
-	{
-	  edir = DIR_WEST;
-	  txt = "to the west";
-	}
-	else
-	if ( IS_SET( obj->value[0], TRIG_D_UP ) )
-	{
-	  edir = DIR_UP;
-	  txt = "from above";
-	}
-	else
-	if ( IS_SET( obj->value[0], TRIG_D_DOWN ) )
-	{
-	  edir = DIR_DOWN;
-	  txt = "from below";
-	}
-	else
-	{
-	  bug( "PullOrPush: door: no direction flag set.", 0 );
-	  return;
-	}
-	pexit = get_exit( room, edir );
+        room = get_room_index( obj->value[1] );
+        if ( !room )
+          room = obj->in_room;
+        if ( !room )
+        {
+          bug( "PullOrPush: obj points to invalid room %d", obj->value[1] );
+          return;
+        }	
+        if ( BV_IS_SET( obj->trig_flags, TRIG_D_NORTH ) )
+        {
+          edir = DIR_NORTH;
+          txt = "to the north";
+        }
+        else
+        if ( BV_IS_SET( obj->trig_flags, TRIG_D_SOUTH ) )
+        {
+          edir = DIR_SOUTH;
+          txt = "to the south";
+        }
+        else
+        if ( BV_IS_SET( obj->trig_flags, TRIG_D_EAST ) )
+        {
+          edir = DIR_EAST;
+          txt = "to the east";
+        }
+        else
+        if ( BV_IS_SET( obj->trig_flags, TRIG_D_WEST ) )
+        {
+          edir = DIR_WEST;
+          txt = "to the west";
+        }
+        else
+        if ( BV_IS_SET( obj->trig_flags, TRIG_D_UP ) )
+        {
+          edir = DIR_UP;
+          txt = "from above";
+        }
+        else
+        if ( BV_IS_SET( obj->trig_flags, TRIG_D_DOWN ) )
+        {
+          edir = DIR_DOWN;
+          txt = "from below";
+        }
+        else
+        {
+          bug( "PullOrPush: door: no direction flag set.", 0 );
+          return;
+        }
+        pexit = get_exit( room, edir );
 
-	to_room = get_room_index( obj->value[2] );  
-	if ( !pexit )
-	{
-	    if ( !IS_SET( obj->value[0], TRIG_PASSAGE ) )
-	    {
-		bug( "PullOrPush: obj points to non-exit %d", obj->value[1] );
-		return;
-	    }
+        to_room = get_room_index( obj->value[2] );  
+        if ( !pexit )
+        {
+            if ( !BV_IS_SET( obj->trig_flags, TRIG_PASSAGE ) )
+            {
+              bug( "PullOrPush: obj points to non-exit %d", obj->value[1] );
+              return;
+            }
 
-	    if ( !to_room )
-	    {
-		bug( "PullOrPush: dest points to invalid room %d", obj->value[2] );
-		return;
-	    }
-	    pexit = make_exit( room, to_room, edir );
-	    pexit->keyword	= STRALLOC( "" );
-	    pexit->description	= STRALLOC( "" );
-	    pexit->key		= -1;
-	    pexit->exit_info	= 0;
-	    top_exit++;
-	    act( AT_PLAIN, "A passage opens!", ch, NULL, NULL, TO_CHAR );
-	    act( AT_PLAIN, "A passage opens!", ch, NULL, NULL, TO_ROOM );
-	    return;
-	}
-	if ( IS_SET( obj->value[0], TRIG_UNLOCK )
-	&&   IS_SET( pexit->exit_info, EX_LOCKED) )
-	{
-	    REMOVE_BIT(pexit->exit_info, EX_LOCKED);
-	    act( AT_PLAIN, "You hear a faint click $T.", ch, NULL, txt, TO_CHAR );
-	    act( AT_PLAIN, "You hear a faint click $T.", ch, NULL, txt, TO_ROOM );
-	    if ( ( pexit_rev = pexit->rexit ) != NULL
-	    &&   pexit_rev->to_room == ch->in_room )
-		REMOVE_BIT( pexit_rev->exit_info, EX_LOCKED );
-	    return;
-	}
-	if ( IS_SET( obj->value[0], TRIG_LOCK   )
-	&&  !IS_SET( pexit->exit_info, EX_LOCKED) )
-	{
-	    SET_BIT(pexit->exit_info, EX_LOCKED);
-	    act( AT_PLAIN, "You hear a faint click $T.", ch, NULL, txt, TO_CHAR );
-	    act( AT_PLAIN, "You hear a faint click $T.", ch, NULL, txt, TO_ROOM );
-	    if ( ( pexit_rev = pexit->rexit ) != NULL
-	    &&   pexit_rev->to_room == ch->in_room )
-		SET_BIT( pexit_rev->exit_info, EX_LOCKED );
-	    return;
-	}
-	if ( IS_SET( obj->value[0], TRIG_OPEN   )
-	&&   IS_SET( pexit->exit_info, EX_CLOSED) )
-	{
-	    REMOVE_BIT(pexit->exit_info, EX_CLOSED);
-	    for ( rch = room->first_person; rch; rch = rch->next_in_room )
-		act( AT_ACTION, "The $d opens.", rch, NULL, pexit->keyword, TO_CHAR );
-	    if ( ( pexit_rev = pexit->rexit ) != NULL
-	    &&   pexit_rev->to_room == ch->in_room )
-	    {
-        REMOVE_BIT( pexit_rev->exit_info, EX_CLOSED );
-        for ( rch = to_room->first_person; rch; rch = rch->next_in_room )
-            act( AT_ACTION, "The $d opens.", rch, NULL, pexit_rev->keyword, TO_CHAR );
-	    }
-	    check_room_for_traps( ch, trap_door[edir]);
-	    return;
-	}
-	if ( IS_SET( obj->value[0], TRIG_CLOSE   )
-	&&  !IS_SET( pexit->exit_info, EX_CLOSED) )
-	{
-	    SET_BIT(pexit->exit_info, EX_CLOSED);
-	    for ( rch = room->first_person; rch; rch = rch->next_in_room )
-		act( AT_ACTION, "The $d closes.", rch, NULL, pexit->keyword, TO_CHAR );
-	    if ( ( pexit_rev = pexit->rexit ) != NULL
-	    &&   pexit_rev->to_room == ch->in_room )
-	    {
-		SET_BIT( pexit_rev->exit_info, EX_CLOSED );
-		for ( rch = to_room->first_person; rch; rch = rch->next_in_room )
-		    act( AT_ACTION, "The $d closes.", rch, NULL, pexit_rev->keyword, TO_CHAR );
-	    }
-	    check_room_for_traps( ch, trap_door[edir]);
-	    return;
-	}
+            if ( !to_room )
+            {
+              bug( "PullOrPush: dest points to invalid room %d", obj->value[2] );
+              return;
+            }
+            pexit = make_exit( room, to_room, edir );
+            pexit->keyword	= STRALLOC( "" );
+            pexit->description	= STRALLOC( "" );
+            pexit->key		= -1;
+            pexit->exit_info	= 0;
+            top_exit++;
+            act( AT_PLAIN, "A passage opens!", ch, NULL, NULL, TO_CHAR );
+            act( AT_PLAIN, "A passage opens!", ch, NULL, NULL, TO_ROOM );
+            return;
+        }
+        if ( BV_IS_SET( obj->trig_flags, TRIG_UNLOCK )
+        &&   IS_SET( pexit->exit_info, EX_LOCKED) )
+        {
+            REMOVE_BIT(pexit->exit_info, EX_LOCKED);
+            act( AT_PLAIN, "You hear a faint click $T.", ch, NULL, txt, TO_CHAR );
+            act( AT_PLAIN, "You hear a faint click $T.", ch, NULL, txt, TO_ROOM );
+            if ( ( pexit_rev = pexit->rexit ) != NULL
+            &&   pexit_rev->to_room == ch->in_room )
+          REMOVE_BIT( pexit_rev->exit_info, EX_LOCKED );
+            return;
+        }
+        if ( BV_IS_SET( obj->trig_flags, TRIG_LOCK   )
+        &&  !IS_SET( pexit->exit_info, EX_LOCKED) )
+        {
+            SET_BIT(pexit->exit_info, EX_LOCKED);
+            act( AT_PLAIN, "You hear a faint click $T.", ch, NULL, txt, TO_CHAR );
+            act( AT_PLAIN, "You hear a faint click $T.", ch, NULL, txt, TO_ROOM );
+            if ( ( pexit_rev = pexit->rexit ) != NULL
+            &&   pexit_rev->to_room == ch->in_room )
+          SET_BIT( pexit_rev->exit_info, EX_LOCKED );
+            return;
+        }
+        if ( BV_IS_SET( obj->trig_flags, TRIG_OPEN   )
+        &&   IS_SET( pexit->exit_info, EX_CLOSED) )
+        {
+            REMOVE_BIT(pexit->exit_info, EX_CLOSED);
+            for ( rch = room->first_person; rch; rch = rch->next_in_room )
+          act( AT_ACTION, "The $d opens.", rch, NULL, pexit->keyword, TO_CHAR );
+            if ( ( pexit_rev = pexit->rexit ) != NULL
+            &&   pexit_rev->to_room == ch->in_room )
+            {
+              REMOVE_BIT( pexit_rev->exit_info, EX_CLOSED );
+              for ( rch = to_room->first_person; rch; rch = rch->next_in_room )
+                  act( AT_ACTION, "The $d opens.", rch, NULL, pexit_rev->keyword, TO_CHAR );
+            }
+            check_room_for_traps( ch, trap_door[edir]);
+            return;
+        }
+        if ( BV_IS_SET( obj->trig_flags, TRIG_CLOSE   )
+        &&  !IS_SET( pexit->exit_info, EX_CLOSED) )
+        {
+            SET_BIT(pexit->exit_info, EX_CLOSED);
+            for ( rch = room->first_person; rch; rch = rch->next_in_room )
+          act( AT_ACTION, "The $d closes.", rch, NULL, pexit->keyword, TO_CHAR );
+            if ( ( pexit_rev = pexit->rexit ) != NULL
+            &&   pexit_rev->to_room == ch->in_room )
+            {
+          SET_BIT( pexit_rev->exit_info, EX_CLOSED );
+          for ( rch = to_room->first_person; rch; rch = rch->next_in_room )
+              act( AT_ACTION, "The $d closes.", rch, NULL, pexit_rev->keyword, TO_CHAR );
+            }
+            check_room_for_traps( ch, trap_door[edir]);
+            return;
+        }
     }
 }
 
@@ -2381,7 +2549,7 @@ void do_empty( CHAR_DATA *ch, char *argument )
 		{
 		    act( AT_ACTION, "You empty $p.", ch, obj, NULL, TO_CHAR );
 		    act( AT_ACTION, "$n empties $p.", ch, obj, NULL, TO_ROOM );
-		    if ( BV_IS_SET( sysdata.save_flags, SV_DROP ) )
+		    if ( BV_IS_SET( ch->game->get_sysdata()->save_flags, SV_DROP ) )
 			save_char_obj( ch );
 		}
 		else
@@ -2417,7 +2585,7 @@ void do_empty( CHAR_DATA *ch, char *argument )
 		    act( AT_ACTION, "You empty $p into $P.", ch, obj, dest, TO_CHAR );
 		    act( AT_ACTION, "$n empties $p into $P.", ch, obj, dest, TO_ROOM );
 		    if ( !dest->carried_by
-		    &&    BV_IS_SET( sysdata.save_flags, SV_PUT ) )
+		    &&    BV_IS_SET( ch->game->get_sysdata()->save_flags, SV_PUT ) )
 			save_char_obj( ch );
 		}
 		else
@@ -2427,9 +2595,8 @@ void do_empty( CHAR_DATA *ch, char *argument )
     }
 }
  
-/*
- * Apply a salve/ointment					-Thoric
- */
+// * Apply a salve/ointment					-Thoric
+
 void do_apply( CHAR_DATA *ch, char *argument )
 {
     OBJ_DATA *obj;
@@ -4150,6 +4317,7 @@ void quest_update(GameContext *game)
           return FALSE;
         }
       }
+      STR_DISPOSE(ln);
       FCLOSE(fp);
       return FALSE;
   }

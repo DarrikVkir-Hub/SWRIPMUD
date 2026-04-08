@@ -1340,7 +1340,7 @@ void char_update( GameContext *game )
 	 */
 	if ( !IS_NPC(ch)
 	&&    !NOT_AUTHED(ch)
-	&&    current_time - ch->pcdata->save_time > (sysdata.save_frequency*60) )
+	&&    current_time - ch->pcdata->save_time > (ch->game->get_sysdata()->save_frequency*60) )
 	    ch_save	= ch;
 	else
 	    ch_save	= NULL;
@@ -1580,7 +1580,7 @@ void char_update( GameContext *game )
         		do_quit( ch, "" );
              }
 	     else
-	     if ( ch == ch_save && BV_IS_SET( sysdata.save_flags, SV_AUTO )
+	     if ( ch == ch_save && BV_IS_SET( ch->game->get_sysdata()->save_flags, SV_AUTO )
 	     &&   ++save_count < 10 )	/* save max of 10 per tick */
 		save_char_obj( ch );
 	    }
@@ -2266,8 +2266,11 @@ void tele_update( GameContext *game )
 	{
 	    if ( tele->room->first_person )
 	    {
+		  FLAG_SET tmp;
+		  tmp.reset();
+		  BV_SET_BIT(tmp, TRIG_TELE_TRANSALLPLUS);
 		  teleport( tele->room->first_person, tele->room->tele_vnum,
-			TELE_TRANSALL );
+			 tmp);
 	    }
 	    UNLINK( tele, first_teleport, last_teleport, next, prev );
 	    DISPOSE( tele );
@@ -2363,7 +2366,7 @@ void update_handler( GameContext *game )
     {
 	pulse_second	= PULSE_PER_SECOND;
 	char_check( game);
- 	/*reboot_check( "" ); Disabled to check if its lagging a lot - Scryn*/
+ 	/*reboot_check( game, "" ); Disabled to check if its lagging a lot - Scryn*/
  	/* Much faster version enabled by Altrag..
  	   although I dunno how it could lag too much, it was just a bunch
  	   of comparisons.. */
@@ -2542,7 +2545,7 @@ void reboot_check( GameContext *game, time_t reset )
   {
     echo_to_all(AT_YELLOW, tmsg[trun], ECHOTAR_ALL);
     if ( trun <= 5 )
-      sysdata.deny_new_players = TRUE;
+      game->get_sysdata()->deny_new_players = TRUE;
     --trun;
     return;
   }
@@ -2550,7 +2553,7 @@ void reboot_check( GameContext *game, time_t reset )
 }
   
 #if 0
-void reboot_check( char *arg )
+void reboot_check( GameContext *game, char *arg )
 {
     char buf[MAX_STRING_LENGTH];
     extern bool mud_down;
@@ -2651,7 +2654,7 @@ if ((current_time % 1800) == 0)
 	SPRINTF( buf, "You feel the ground shake as the end comes near!" );
 	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 	one = TRUE;
-	sysdata.DENY_NEW_PLAYERS = TRUE;
+	game->get_sysdata()->DENY_NEW_PLAYERS = TRUE;
     }
     return;   
   }
@@ -2664,7 +2667,7 @@ if ((current_time % 1800) == 0)
 	SPRINTF( buf, "Lightning crackles in the sky above!" );
 	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 	two = TRUE;
-	sysdata.DENY_NEW_PLAYERS = TRUE;
+	game->get_sysdata()->DENY_NEW_PLAYERS = TRUE;
     }
     return;   
   }
@@ -2677,7 +2680,7 @@ if ((current_time % 1800) == 0)
 	SPRINTF( buf, "Crashes of thunder sound across the land!" );
 	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 	three = TRUE;
-	sysdata.DENY_NEW_PLAYERS = TRUE;
+	game->get_sysdata()->DENY_NEW_PLAYERS = TRUE;
     }
     return;   
   }
@@ -2690,7 +2693,7 @@ if ((current_time % 1800) == 0)
 	SPRINTF( buf, "The sky has suddenly turned midnight black." );
 	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 	four = TRUE;
-	sysdata.DENY_NEW_PLAYERS = TRUE;
+	game->get_sysdata()->DENY_NEW_PLAYERS = TRUE;
     }
     return;   
   }
@@ -2703,7 +2706,7 @@ if ((current_time % 1800) == 0)
 	SPRINTF( buf, "You notice the life forms around you slowly dwindling away." );
 	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
 	five = TRUE;
-	sysdata.DENY_NEW_PLAYERS = TRUE;
+	game->get_sysdata()->DENY_NEW_PLAYERS = TRUE;
     }
     return;   
   }
@@ -2808,7 +2811,7 @@ void auction_update (GameContext *game)
 		SPRINTF(buf, "The auctioneer pays you %d gold, charging an auction fee of %d.\n", pay, tax);
 		send_to_char(buf, auction->seller);
                 auction->item = NULL; /* reset item */
-		if ( BV_IS_SET( sysdata.save_flags, SV_AUCTION ) )
+		if ( BV_IS_SET( game->get_sysdata()->save_flags, SV_AUCTION ) )
 		{
 		    save_char_obj( auction->buyer );
 		    save_char_obj( auction->seller );
@@ -2844,7 +2847,7 @@ void auction_update (GameContext *game)
 		  auction->seller->gold = 0;
 		else
 		  auction->seller->gold -= tax;
-		if ( BV_IS_SET( sysdata.save_flags, SV_AUCTION ) )
+		if ( BV_IS_SET( game->get_sysdata()->save_flags, SV_AUCTION ) )
 		    save_char_obj( auction->seller );
 	    } /* else */
 	    auction->item = NULL; /* clear auction */

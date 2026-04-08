@@ -1307,6 +1307,10 @@ void do_ostat( CHAR_DATA *ch, char *argument )
 	obj->value[0], obj->value[1], obj->value[2], obj->value[3], obj->value[4], obj->value[5] );
     ch_printf(ch, "Object Flags: %s\n", bitset_to_string(obj->objflags,obj_flag_table).c_str());
     ch_printf(ch, "Index Object Flags: %s\n", bitset_to_string(obj->pIndexData->objflags,obj_flag_table).c_str());
+    if (obj->trig_flags.any())
+    {
+        ch_printf(ch, "Object Trigger Flags: %s\n", bitset_to_string(obj->trig_flags, trig_flags).c_str());
+    }
 
     if ( obj->pIndexData->first_extradesc )
     {

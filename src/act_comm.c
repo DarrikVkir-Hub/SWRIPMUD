@@ -864,8 +864,8 @@ void to_channel( const char *argument, int channel, const char *verb, sh_int lev
 	if ( !och || !vch )
 	  continue;
 	if ( ( !IS_IMMORTAL(vch) && channel != CHANNEL_ARENA )
-	|| ( vch->top_level < sysdata.build_level && channel == CHANNEL_BUILD )
-	|| ( vch->top_level < sysdata.log_level
+	|| ( vch->top_level < d->game->get_sysdata()->build_level && channel == CHANNEL_BUILD )
+	|| ( vch->top_level < d->game->get_sysdata()->log_level
 	&& ( channel == CHANNEL_LOG || channel == CHANNEL_COMM) ) )
 	  continue;
 

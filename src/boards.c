@@ -492,7 +492,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
               for ( pnote = board->first_note; pnote; pnote = pnote->next )
                 if (is_note_to( ch, pnote )) mfound = TRUE;
 
-              if ( !mfound && get_trust(ch) < sysdata.read_all_mail ) 
+              if ( !mfound && get_trust(ch) < ch->game->get_sysdata()->read_all_mail ) 
                {
                 ch_printf( ch, "You have no mail.\n");
                 return;
@@ -500,7 +500,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
              }
 
             for ( pnote = board->first_note; pnote; pnote = pnote->next )
-		if (is_note_to( ch, pnote ) || get_trust(ch) > sysdata.read_all_mail)
+		if (is_note_to( ch, pnote ) || get_trust(ch) > ch->game->get_sysdata()->read_all_mail)
           	    ch_printf( ch, "%2d%c %s: %s\n",
 			++vnum,
 			is_note_to( ch, pnote ) ? '-' : '}',
@@ -580,19 +580,19 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	    vnum = 0;
 	    for ( pnote = board->first_note; pnote; pnote = pnote->next )
 	    {
-		if (is_note_to(ch, pnote) || get_trust(ch) > sysdata.read_all_mail)
+		if (is_note_to(ch, pnote) || get_trust(ch) > ch->game->get_sysdata()->read_all_mail)
 		{
 		    vnum++;
 		    if ( vnum == anum || fAll )
 		    { 
 		        wasfound = TRUE;
 			if ( ch->gold < 10
-			&&   get_trust(ch) < sysdata.read_mail_free )
+			&&   get_trust(ch) < ch->game->get_sysdata()->read_mail_free )
 			{
 			    send_to_char("It costs 10 credits to read a message.\n", ch);
 			    return;
 			}
-			if (get_trust(ch) < sysdata.read_mail_free)
+			if (get_trust(ch) < ch->game->get_sysdata()->read_mail_free)
 			   ch->gold -= 10;
 			pager_printf( ch, "[%3d] %s: %s\n%s\nTo: %s\n%s",
 			    vnum,
@@ -730,7 +730,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	    send_to_char( "You cannot write a note from within another command.\n", ch );
 	    return;
 	}
-	if (get_trust (ch) < sysdata.write_mail_free)
+	if (get_trust (ch) < ch->game->get_sysdata()->write_mail_free)
 	{
 	    quill = find_quill( ch );
             if (!quill)
@@ -747,7 +747,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	if ( ( paper = get_eq_char(ch, WEAR_HOLD) ) == NULL
 	||     paper->item_type != ITEM_PAPER )
 	{
-	    if (get_trust(ch) < sysdata.write_mail_free )
+	    if (get_trust(ch) < ch->game->get_sysdata()->write_mail_free )
 	    {
 		send_to_char("You need to be holding a message disk to write a note.\n", ch);
 		return;
@@ -768,7 +768,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	    ed = SetOExtra(paper, "_text_");
 	    ch->substate = SUB_WRITING_NOTE;
 	    ch->dest_buf = ed;
-	    if ( get_trust(ch) < sysdata.write_mail_free )
+	    if ( get_trust(ch) < ch->game->get_sysdata()->write_mail_free )
 		--quill->value[0];
 	    start_editing( ch, ed->description );
 	    return;
@@ -782,7 +782,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 
     if ( !str_cmp( arg, "subject" ) )
     {
-	if(get_trust(ch) < sysdata.write_mail_free)
+	if(get_trust(ch) < ch->game->get_sysdata()->write_mail_free)
 	{
 	    quill = find_quill( ch );
 	    if ( !quill )
@@ -804,7 +804,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	if ( ( paper = get_eq_char(ch, WEAR_HOLD) ) == NULL
 	||     paper->item_type != ITEM_PAPER )
 	{
-	    if(get_trust(ch) < sysdata.write_mail_free )
+	    if(get_trust(ch) < ch->game->get_sysdata()->write_mail_free )
 	    {
 		send_to_char("You need to be holding a message disk to record a note.\n", ch);
 		return;
@@ -839,7 +839,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
     {
 	struct stat fst;
 	char fname[1024];
-	if(get_trust(ch) < sysdata.write_mail_free )
+	if(get_trust(ch) < ch->game->get_sysdata()->write_mail_free )
 	{
 	    quill = find_quill( ch );
 	    if ( !quill )
@@ -861,7 +861,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	if ( ( paper = get_eq_char(ch, WEAR_HOLD) ) == NULL
 	||     paper->item_type != ITEM_PAPER )
 	{
-	    if(get_trust(ch) < sysdata.write_mail_free )
+	    if(get_trust(ch) < ch->game->get_sysdata()->write_mail_free )
 	    {
 		send_to_char("You need to be holding a message disk to record a note.\n", ch);
 		return;
@@ -1062,7 +1062,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	for ( pnote = board->first_note; pnote; pnote = pnote->next )
 	{
 	    if (IS_MAIL && ((is_note_to(ch, pnote)) 
-	    ||  get_trust(ch) >= sysdata.take_others_mail))
+	    ||  get_trust(ch) >= ch->game->get_sysdata()->take_others_mail))
 	       vnum++;
 	    else if (!IS_MAIL)
                vnum++;
@@ -1071,7 +1071,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	    &&   ( vnum == anum ) )
 	    {
 		if ( (is_name("all", pnote->to_list))
-		&&   (get_trust( ch ) < sysdata.take_others_mail)
+		&&   (get_trust( ch ) < ch->game->get_sysdata()->take_others_mail)
 		&&   (take != 2) )
 		{
 		    send_to_char("Notes addressed to 'all' can not be taken.\n", ch);
@@ -1080,7 +1080,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 
  		if ( take != 0 )
 		{
-		    if ( ch->gold < 50 && get_trust(ch) < sysdata.read_mail_free )
+		    if ( ch->gold < 50 && get_trust(ch) < ch->game->get_sysdata()->read_mail_free )
 		    {
 			if ( take == 1 )
 			  send_to_char("It costs 50 credits to take your mail.\n", ch);
@@ -1088,7 +1088,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 			  send_to_char("It costs 50 credits to copy your mail.\n", ch);
 			return;
 		    }
-		    if ( get_trust(ch) < sysdata.read_mail_free )
+		    if ( get_trust(ch) < ch->game->get_sysdata()->read_mail_free )
 		      ch->gold -= 50;
 		    paper = create_object( get_obj_index(OBJ_VNUM_NOTE), 0 );
 		    ed = SetOExtra( paper, "_sender_" );

@@ -3126,9 +3126,9 @@ void do_torture( CHAR_DATA *ch, char *argument )
       fail = saves_para_petri( chance, victim );
 
     if ( !IS_NPC(ch) && !IS_NPC(victim) )
-      chance = sysdata.stun_plr_vs_plr;
+      chance = ch->game->get_sysdata()->stun_plr_vs_plr;
     else
-      chance = sysdata.stun_regular;
+      chance = ch->game->get_sysdata()->stun_regular;
     if ( !fail
     && (  IS_NPC(ch)
     || (number_percent( ) + chance) < ch->pcdata->learned[gsn_torture] ) )

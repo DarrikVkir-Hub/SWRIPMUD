@@ -261,29 +261,25 @@ inline const char* get_flag_name(const flag_name* table, int index, int count)
     Affect flags
     System/Autosave flags
     Resistance flags    
+    Trigger Flags/Tele flags
 
     { Flags to continue to convert: }
     *The remaining important flags
     Attack Flags
     Defense flags
-    
-    [ Someday ]
     Part Flags
 
-    [Likely never]
+    [Low Priority]
     *Very simple, therefore little demand
-
     Area loaded flags
     Area flags
     Wrap flags
-    RIS_000 flags
+    RIS_000 flags - Apparently these were never used
     
-    *These touch all sorts of things and it's a large project
-    Mprog flags
-    Trap Flags
-    Trigger Flags
-    Tele flags
-    Exit flags
+    [These touch all sorts of things and it's a large project]
+    Mprog flags - This might not be so bad - seems to be progtype variables in the three major objects, need to research if anything else is a bitmask rather than an enum
+    Trap Flags - stored in object value currently for ITEM_TRAP.  Also Resets store it.  So this is prohibitive to change.
+    Exit flags - This... doesn't actually look so bad.  The most difficult part will be the OLC system, since it's hacking all sorts of things to get exits editable.
 
 
  * RULE:
@@ -294,6 +290,8 @@ inline const char* get_flag_name(const flag_name* table, int index, int count)
 // bitset implementation
 #ifndef __BITSET_H__
 #define __BITSET_H__
+
+#define MAX_BITS 10000
 
 bool str_cmp_utf8(const char *astr, const char *bstr);
 int	number_range	args( ( int from, int to ) );
@@ -313,7 +311,7 @@ struct BitSet
     // Set a bit
     void set(size_t bit)
     {
-        if (bit > 10000)   // same bound
+        if (bit > MAX_BITS)   // same bound
         {
             // optional: log
             return;
@@ -326,6 +324,8 @@ struct BitSet
     // Clear a bit
     void clear(size_t bit)
     {
+        if (bit > MAX_BITS)   // same bound
+            return;        
         size_t idx = bit >> 6;
         if (idx < bits.size())
             bits[idx] &= ~(1ULL << (bit & 63));
@@ -334,6 +334,8 @@ struct BitSet
     // Toggle a bit
     void toggle(size_t bit)
     {
+        if (bit > MAX_BITS)   // same bound
+            return;
         ensure(bit);
         bits[bit >> 6] ^= (1ULL << (bit & 63));
     }
@@ -341,6 +343,8 @@ struct BitSet
     // Test a bit
     bool test(size_t bit) const
     {
+        if (bit > MAX_BITS)   // same bound
+            return false;        
         size_t idx = bit >> 6;
         if (idx >= bits.size())
             return false;
@@ -2064,41 +2068,41 @@ struct	smaug_affect
  * ACT bits for mobs.
  * Used in #MOBILES.
  */
-typedef enum 
+typedef enum
 {
-    ACT_IS_NPC        = 0,   /* BV00 - Auto set for mobs        */
-    ACT_SENTINEL      = 1,   /* BV01 - Stays in one room       */
-    ACT_SCAVENGER     = 2,   /* BV02 - Picks up objects        */
+    ACT_IS_NPC        = 0,   /* Auto set for mobs */
+    ACT_SENTINEL      = 1,   /* Stays in one room */
+    ACT_SCAVENGER     = 2,   /* Picks up objects */
     /* 3,4 unused */
 
-    ACT_AGGRESSIVE    = 5,   /* BV05 - Attacks PC's            */
-    ACT_STAY_AREA     = 6,   /* BV06 - Won't leave area        */
-    ACT_WIMPY         = 7,   /* BV07 - Flees when hurt         */
-    ACT_PET           = 8,   /* BV08 - Auto set for pets       */
-    ACT_TRAIN         = 9,   /* BV09 - Can train PC's          */
-    ACT_PRACTICE      = 10,  /* BV10 - Can practice PC's       */
-    ACT_IMMORTAL      = 11,  /* BV11 - Cannot be killed        */
-    ACT_DEADLY        = 12,  /* BV12 - Has a deadly poison     */
-    ACT_POLYSELF      = 13,  /* BV13                           */
-    ACT_META_AGGR     = 14,  /* BV14 - Extremely aggressive    */
-    ACT_GUARDIAN      = 15,  /* BV15 - Protects master         */
-    ACT_RUNNING       = 16,  /* BV16 - Hunts quickly           */
-    ACT_NOWANDER      = 17,  /* BV17 - Doesn't wander          */
-    ACT_MOUNTABLE     = 18,  /* BV18 - Can be mounted          */
-    ACT_MOUNTED       = 19,  /* BV19 - Is mounted              */
-    ACT_SCHOLAR       = 20,  /* BV20 - Can teach languages     */
-    ACT_SECRETIVE     = 21,  /* BV21 - Actions aren't seen     */
-    ACT_POLYMORPHED   = 22,  /* BV22 - Mob is a ch             */
-    ACT_MOBINVIS      = 23,  /* BV23 - Like wizinvis           */
-    ACT_NOASSIST      = 24,  /* BV24 - Doesn't assist mobs     */
-    ACT_NOKILL        = 25,  /* BV25 - Mob can't die           */
-    ACT_DROID         = 26,  /* BV26 - Mob is a droid          */
-    ACT_NOCORPSE      = 27,  /* BV27                           */
+    ACT_AGGRESSIVE    = 5,   /* Attacks PC's */
+    ACT_STAY_AREA     = 6,   /* Won't leave area */
+    ACT_WIMPY         = 7,   /* Flees when hurt */
+    ACT_PET           = 8,   /* Auto set for pets */
+    ACT_TRAIN         = 9,   /* Can train PC's */
+    ACT_PRACTICE      = 10,  /* Can practice PC's */
+    ACT_IMMORTAL      = 11,  /* Cannot be killed */
+    ACT_DEADLY        = 12,  /* Has a deadly poison */
+    ACT_POLYSELF      = 13,
+    ACT_META_AGGR     = 14,  /* Extremely aggressive */
+    ACT_GUARDIAN      = 15,  /* Protects master */
+    ACT_RUNNING       = 16,  /* Hunts quickly */
+    ACT_NOWANDER      = 17,  /* Doesn't wander */
+    ACT_MOUNTABLE     = 18,  /* Can be mounted */
+    ACT_MOUNTED       = 19,  /* Is mounted */
+    ACT_SCHOLAR       = 20,  /* Can teach languages */
+    ACT_SECRETIVE     = 21,  /* Actions aren't seen */
+    ACT_POLYMORPHED   = 22,  /* Mob is a ch */
+    ACT_MOBINVIS      = 23,  /* Like wizinvis */
+    ACT_NOASSIST      = 24,  /* Doesn't assist mobs */
+    ACT_NOKILL        = 25,  /* Mob can't die */
+    ACT_DROID         = 26,  /* Mob is a droid */
+    ACT_NOCORPSE      = 27,
     /* 28,29 unused */
 
-    ACT_PROTOTYPE     = 30,   /* BV30 - A prototype mob         */
-    ACT_MAX           = 31,
+    ACT_PROTOTYPE     = 30,  /* Prototype mob */
 
+    ACT_MAX           = 31
 } ActFlags;
 
 /* bits for vip flags */
@@ -2139,44 +2143,44 @@ typedef enum {
  * Bits for 'affected_by'.
 / * Used in #MOBILES.
  */
-typedef enum 
+typedef enum
 {
     AFF_NONE           = -1,  /* Special: no flags */
 
-    AFF_BLIND          = 0,   /* BV00 */
-    AFF_INVISIBLE      = 1,   /* BV01 */
-    AFF_DETECT_EVIL    = 2,   /* BV02 */
-    AFF_DETECT_INVIS   = 3,   /* BV03 */
-    AFF_DETECT_MAGIC   = 4,   /* BV04 */
-    AFF_DETECT_HIDDEN  = 5,   /* BV05 */
-    AFF_WEAKEN         = 6,   /* BV06 */
-    AFF_SANCTUARY      = 7,   /* BV07 */
-    AFF_FAERIE_FIRE    = 8,   /* BV08 */
-    AFF_INFRARED       = 9,   /* BV09 */
-    AFF_CURSE          = 10,  /* BV10 */
-    AFF_ENDURANCE      = 11,  /* BV11 */
-    AFF_POISON         = 12,  /* BV12 */
-    AFF_PROTECT        = 13,  /* BV13 */
-    AFF_PARALYSIS      = 14,  /* BV14 */
-    AFF_SNEAK          = 15,  /* BV15 */
-    AFF_HIDE           = 16,  /* BV16 */
-    AFF_SLEEP          = 17,  /* BV17 */
-    AFF_CHARM          = 18,  /* BV18 */
-    AFF_FLYING         = 19,  /* BV19 */
-    AFF_PASS_DOOR      = 20,  /* BV20 */
-    AFF_FLOATING       = 21,  /* BV21 */
-    AFF_TRUESIGHT      = 22,  /* BV22 */
-    AFF_DETECTTRAPS    = 23,  /* BV23 */
-    AFF_SCRYING        = 24,  /* BV24 */
-    AFF_FIRESHIELD     = 25,  /* BV25 */
-    AFF_SHOCKSHIELD    = 26,  /* BV26 */
-    AFF_BIND           = 27,  /* BV27 */
-    AFF_ICESHIELD      = 28,  /* BV28 */
-    AFF_POSSESS        = 29,  /* BV29 */
-    AFF_BERSERK        = 30,  /* BV30 */
-    AFF_AQUA_BREATH    = 31,   /* BV31 */
-    AFF_MAX            = 32
+    AFF_BLIND          = 0,
+    AFF_INVISIBLE      = 1,
+    AFF_DETECT_EVIL    = 2,
+    AFF_DETECT_INVIS   = 3,
+    AFF_DETECT_MAGIC   = 4,
+    AFF_DETECT_HIDDEN  = 5,
+    AFF_WEAKEN         = 6,
+    AFF_SANCTUARY      = 7,
+    AFF_FAERIE_FIRE    = 8,
+    AFF_INFRARED       = 9,
+    AFF_CURSE          = 10,
+    AFF_ENDURANCE      = 11,
+    AFF_POISON         = 12,
+    AFF_PROTECT        = 13,
+    AFF_PARALYSIS      = 14,
+    AFF_SNEAK          = 15,
+    AFF_HIDE           = 16,
+    AFF_SLEEP          = 17,
+    AFF_CHARM          = 18,
+    AFF_FLYING         = 19,
+    AFF_PASS_DOOR      = 20,
+    AFF_FLOATING       = 21,
+    AFF_TRUESIGHT      = 22,
+    AFF_DETECTTRAPS    = 23,
+    AFF_SCRYING        = 24,
+    AFF_FIRESHIELD     = 25,
+    AFF_SHOCKSHIELD    = 26,
+    AFF_BIND           = 27,
+    AFF_ICESHIELD      = 28,
+    AFF_POSSESS        = 29,
+    AFF_BERSERK        = 30,
+    AFF_AQUA_BREATH    = 31,
 
+    AFF_MAX            = 32
 } AffectFlags;
 
 /*
@@ -2332,21 +2336,8 @@ enum save_flag_bits
 
     SV_MAX
 };
-/*
-#define SV_DEATH		  BV00
-#define SV_KILL			  BV01
-#define SV_PASSCHG		  BV02
-#define SV_DROP			  BV03
-#define SV_PUT			  BV04
-#define SV_GIVE			  BV05
-#define SV_AUTO			  BV06
-#define SV_ZAPDROP		  BV07
-#define SV_AUCTION		  BV08
-#define SV_GET			  BV09
-#define SV_RECEIVE		  BV10
-#define SV_IDLE			  BV11
-#define SV_BACKUP		  BV12
-*/
+
+
 /*
  * item flags - includes pipe flags and weapon flags
  */
@@ -2616,40 +2607,47 @@ typedef enum
 #define PUT_INSIDE		4
 
 /* Lever/dial/switch/button/pullchain flags */
-#define TRIG_UP			BV00
-#define TRIG_UNLOCK		BV01
-#define TRIG_LOCK		BV02
-#define TRIG_D_NORTH		BV03
-#define TRIG_D_SOUTH		BV04
-#define TRIG_D_EAST		BV05
-#define TRIG_D_WEST		BV06
-#define TRIG_D_UP		BV07
-#define TRIG_D_DOWN		BV08
-#define TRIG_DOOR		BV09
-#define TRIG_CONTAINER		BV10
-#define TRIG_OPEN		BV11
-#define TRIG_CLOSE		BV12
-#define TRIG_PASSAGE		BV13
-#define TRIG_OLOAD		BV14
-#define TRIG_MLOAD		BV15
-#define TRIG_TELEPORT		BV16
-#define TRIG_TELEPORTALL	BV17
-#define TRIG_TELEPORTPLUS	BV18
-#define TRIG_DEATH		BV19
-#define TRIG_CAST		BV20
-#define TRIG_FAKEBLADE		BV21
-#define TRIG_RAND4		BV22
-#define TRIG_RAND6		BV23
-#define TRIG_TRAPDOOR		BV24
-#define TRIG_ANOTHEROOM		BV25
-#define TRIG_USEDIAL		BV26
-#define TRIG_ABSOLUTEVNUM	BV27
-#define TRIG_SHOWROOMDESC	BV28
-#define TRIG_AUTORETURN		BV29
+// Trigger flags are now saved in obj->trig_flags.
+enum trig_flag_bits
+{
+    TRIG_UP              = 0,
+    TRIG_UNLOCK          = 1,
+    TRIG_LOCK            = 2,
+    TRIG_D_NORTH         = 3,
+    TRIG_D_SOUTH         = 4,
+    TRIG_D_EAST          = 5,
+    TRIG_D_WEST          = 6,
+    TRIG_D_UP            = 7,
+    TRIG_D_DOWN          = 8,
+    TRIG_DOOR            = 9,
+    TRIG_CONTAINER       = 10,
+    TRIG_OPEN            = 11,
+    TRIG_CLOSE           = 12,
+    TRIG_PASSAGE         = 13,
+    TRIG_OLOAD           = 14,
+    TRIG_MLOAD           = 15,
+    TRIG_TELEPORT        = 16,
+    TRIG_TELEPORTALL     = 17,
+    TRIG_TELEPORTPLUS    = 18,
+    TRIG_DEATH           = 19,
+    TRIG_CAST            = 20,
+    TRIG_FAKEBLADE       = 21,
+    TRIG_RAND4           = 22,
+    TRIG_RAND6           = 23,
+    TRIG_TRAPDOOR        = 24,
+    TRIG_ANOTHEROOM      = 25,
+    TRIG_USEDIAL         = 26,
+    TRIG_ABSOLUTEVNUM    = 27,
+    TRIG_SHOWROOMDESC    = 28,
+    TRIG_AUTORETURN      = 29,
 
-#define TELE_SHOWDESC		BV00
-#define TELE_TRANSALL		BV01
-#define TELE_TRANSALLPLUS	BV02
+    /* Former TELE_* flags moved into same BitSet */
+    TRIG_TELE_SHOWDESC   = 30,
+    TRIG_TELE_TRANSALL   = 31,
+    TRIG_TELE_TRANSALLPLUS = 32,
+
+    TRIG_MAX             = 33
+};
 
 /* drug types */
 enum {
@@ -2786,7 +2784,7 @@ typedef enum
 typedef enum 
 {
     ROOM_DARK              = 0,   /* BV00 */
-    /* 1 reserved (BV01: track/hunt) */
+    /* 1 reserved (track/hunt) */
 
     ROOM_NO_MOB            = 2,   /* BV02 */
     ROOM_INDOORS           = 3,   /* BV03 */
@@ -2926,43 +2924,44 @@ typedef enum
 /*
  * ACT bits for players.
  */
- typedef enum 
+typedef enum
 {
-    PLR_IS_NPC         = 0,   /* BV00 - Don't EVER set.        */
-    PLR_BOUGHT_PET     = 1,   /* BV01                          */
-    PLR_SHOVEDRAG      = 2,   /* BV02                          */
-    PLR_AUTOEXIT       = 3,   /* BV03                          */
-    PLR_AUTOLOOT       = 4,   /* BV04                          */
-    PLR_AUTOSAC        = 5,   /* BV05                          */
-    PLR_BLANK          = 6,   /* BV06                          */
-    PLR_QUESTOR        = 7,   /* BV07                          */
-    PLR_BRIEF          = 8,   /* BV08                          */
-    PLR_COMBINE        = 9,   /* BV09                          */
-    PLR_PROMPT         = 10,  /* BV10                          */
-    PLR_TELNET_GA      = 11,  /* BV11                          */
+    PLR_IS_NPC         = 0,   /* Don't EVER set. */
+    PLR_BOUGHT_PET     = 1,
+    PLR_SHOVEDRAG      = 2,
+    PLR_AUTOEXIT       = 3,
+    PLR_AUTOLOOT       = 4,
+    PLR_AUTOSAC        = 5,
+    PLR_BLANK          = 6,
+    PLR_QUESTOR        = 7,
+    PLR_BRIEF          = 8,
+    PLR_COMBINE        = 9,
+    PLR_PROMPT         = 10,
+    PLR_TELNET_GA      = 11,
 
-    PLR_HOLYLIGHT      = 12,  /* BV12                          */
-    PLR_WIZINVIS       = 13,  /* BV13                          */
-    PLR_ROOMVNUM       = 14,  /* BV14                          */
+    PLR_HOLYLIGHT      = 12,
+    PLR_WIZINVIS       = 13,
+    PLR_ROOMVNUM       = 14,
 
-    PLR_SILENCE        = 15,  /* BV15                          */
-    PLR_NO_EMOTE       = 16,  /* BV16                          */
-    PLR_DONTAUTOFUEL   = 17,  /* BV17                          */
-    PLR_NO_TELL        = 18,  /* BV18                          */
-    PLR_LOG            = 19,  /* BV19                          */
-    PLR_DENY           = 20,  /* BV20                          */
-    PLR_FREEZE         = 21,  /* BV21                          */
-    PLR_KILLER         = 22,  /* BV22                          */
-    PLR_HOME_RESIDENT  = 23,  /* BV23                          */
-    PLR_LITTERBUG      = 24,  /* BV24                          */
-    PLR_ANSI           = 25,  /* BV25                          */
-    PLR_SOUND          = 26,  /* BV26                          */
-    PLR_NICE           = 27,  /* BV27                          */
-    PLR_FLEE           = 28,  /* BV28                          */
-    PLR_AUTOGOLD       = 29,  /* BV29                          */
-    PLR_AUTOMAP        = 30,  /* BV30                          */
-    PLR_AFK            = 31   /* BV31                          */
+    PLR_SILENCE        = 15,
+    PLR_NO_EMOTE       = 16,
+    PLR_DONTAUTOFUEL   = 17,
+    PLR_NO_TELL        = 18,
+    PLR_LOG            = 19,
+    PLR_DENY           = 20,
+    PLR_FREEZE         = 21,
+    PLR_KILLER         = 22,
+    PLR_HOME_RESIDENT  = 23,
+    PLR_LITTERBUG      = 24,
+    PLR_ANSI           = 25,
+    PLR_SOUND          = 26,
+    PLR_NICE           = 27,
+    PLR_FLEE           = 28,
+    PLR_AUTOGOLD       = 29,
+    PLR_AUTOMAP        = 30,
+    PLR_AFK            = 31,
 
+    PLR_MAX            = 32
 } PlrActFlags;
 
 
@@ -3018,38 +3017,38 @@ struct timer_data
  */
 typedef enum 
 {
-    CHANNEL_AUCTION      = 0,   // BV00
-    CHANNEL_CHAT         = 1,   // BV01
-    CHANNEL_QUEST        = 2,   // BV02
-    CHANNEL_IMMTALK      = 3,   // BV03
-    CHANNEL_MUSIC        = 4,   // BV04
-    CHANNEL_ASK          = 5,   // BV05
-    CHANNEL_SHOUT        = 6,   // BV06
-    CHANNEL_YELL         = 7,   // BV07
-    CHANNEL_MONITOR      = 8,   // BV08
-    CHANNEL_LOG          = 9,   // BV09
-    CHANNEL_104          = 10,  // BV10
-    CHANNEL_CLAN         = 11,  // BV11
-    CHANNEL_BUILD        = 12,  // BV12
-    CHANNEL_105          = 13,  // BV13
-    CHANNEL_AVTALK       = 14,  // BV14
-    CHANNEL_PRAY         = 15,  // BV15
-    CHANNEL_COUNCIL      = 16,  // BV16
-    CHANNEL_GUILD        = 17,  // BV17
-    CHANNEL_COMM         = 18,  // BV18
-    CHANNEL_TELLS        = 19,  // BV19
-    CHANNEL_ORDER        = 20,  // BV20
-    CHANNEL_NEWBIE       = 21,  // BV21
-    CHANNEL_VULGAR       = 22,  // BV22
-    CHANNEL_OOC          = 23,  // BV23
-    CHANNEL_SHIP         = 24,  // BV24
-    CHANNEL_SYSTEM       = 25,  // BV25
-    CHANNEL_SPACE        = 26,  // BV26
-    CHANNEL_103          = 27,  // BV27
-    CHANNEL_ARENA        = 28,  // BV28
-    CHANNEL_ALLCLAN      = 29,  // BV29
-    CHANNEL_NEWS         = 30,  // BV30
-    CHANNEL_NEWBIEASST   = 31,  // BV31
+    CHANNEL_AUCTION      = 0,
+    CHANNEL_CHAT         = 1,
+    CHANNEL_QUEST        = 2,
+    CHANNEL_IMMTALK      = 3,
+    CHANNEL_MUSIC        = 4,
+    CHANNEL_ASK          = 5,
+    CHANNEL_SHOUT        = 6,
+    CHANNEL_YELL         = 7,
+    CHANNEL_MONITOR      = 8,
+    CHANNEL_LOG          = 9,
+    CHANNEL_104          = 10,
+    CHANNEL_CLAN         = 11,
+    CHANNEL_BUILD        = 12,
+    CHANNEL_105          = 13,
+    CHANNEL_AVTALK       = 14,
+    CHANNEL_PRAY         = 15,
+    CHANNEL_COUNCIL      = 16,
+    CHANNEL_GUILD        = 17,
+    CHANNEL_COMM         = 18,
+    CHANNEL_TELLS        = 19,
+    CHANNEL_ORDER        = 20,
+    CHANNEL_NEWBIE       = 21,
+    CHANNEL_VULGAR       = 22,
+    CHANNEL_OOC          = 23,
+    CHANNEL_SHIP         = 24,
+    CHANNEL_SYSTEM       = 25,
+    CHANNEL_SPACE        = 26,
+    CHANNEL_103          = 27,
+    CHANNEL_ARENA        = 28,
+    CHANNEL_ALLCLAN      = 29,
+    CHANNEL_NEWS         = 30,
+    CHANNEL_NEWBIEASST   = 31,
     CHANNEL_CLANTALK     = CHANNEL_CLAN,
 
     CHANNEL_MAX          = 32
@@ -3454,6 +3453,7 @@ struct	obj_index_data
     sh_int      level; 
     sh_int		item_type; 
     FLAG_SET    wear_flags; 
+    FLAG_SET    trig_flags;
     sh_int		count; 
     sh_int		weight; 
     int			cost; 
@@ -3506,6 +3506,7 @@ struct	obj_data
     FLAG_SET    objflags;   // BitSet flags - this includes weapontypes, which can also be set with a different command, between WEAPON_FIRST and WEAPON_MAX
                             // objflag's names are set up in const flag_name obj_flag_table[].  flag_name being defined as (bit, name)
                             // weapontypes entry uses the same obj_flag_table but is restricted between WEAPON_FIRST and WEAPON_MAX, inclusive.
+    FLAG_SET    trig_flags; // Used exclusively in the object trigger system
     sh_int		count;		// straight integer with only INT_MIN and INT_MAX retricting it
     int			serial;		// object insance tracker - not edited directly, only touched when cloning an object 
                             // - clone_obj should be used when making a working copy so that it's handled correctly
@@ -4650,7 +4651,7 @@ extern	const flag_name	plr_flags	[];
 extern	const flag_name	pc_flags	[];
 extern	char *	const	trap_flags	[];
 extern	const flag_name	ris_flags	[];
-extern	char *	const	trig_flags	[];
+extern  const flag_name trig_flags  [];
 extern	char *	const	part_flags	[];
 extern	const flag_name	npc_race	[];
 extern  const flag_name command_groups  []; 
@@ -4678,22 +4679,22 @@ extern	int	top_vroom;
 extern	int	top_herb;
 extern  long long high_galaxy_cash;
 extern  long long low_galaxy_cash;
+extern		CHAR_DATA	  *	cur_char;
+extern		ROOM_INDEX_DATA	  *	cur_room;
+extern		bool			cur_char_died;
+extern		ch_ret			global_retcode;
+extern		int			cur_obj;
+extern		int			cur_obj_serial;
+extern		bool			cur_obj_extracted;
+extern		obj_ret			global_objcode;
+
 
 extern		CMDTYPE		  *	command_hash	[126];
 
 extern		SKILLTYPE	  *	skill_table	[MAX_SKILL];
 extern		SOCIALTYPE	  *	social_index	[27];
-extern		CHAR_DATA	  *	cur_char;
-extern		ROOM_INDEX_DATA	  *	cur_room;
-extern		bool			cur_char_died;
-extern		ch_ret			global_retcode;
 extern		SKILLTYPE	  *	herb_table	[MAX_HERB];
 extern      int             lang_sn[LANG_MAX];
-
-extern		int			cur_obj;
-extern		int			cur_obj_serial;
-extern		bool			cur_obj_extracted;
-extern		obj_ret			global_objcode;
 
 extern		HELP_DATA	  *	first_help;
 extern		HELP_DATA	  *	last_help;
@@ -4733,7 +4734,7 @@ extern          BOUNTY_DATA       *     first_bounty;
 extern          BOUNTY_DATA       *     last_bounty;
 extern          BOUNTY_DATA       *     first_disintigration;
 extern          BOUNTY_DATA       *     last_disintigration;
-extern		SYSTEM_DATA	  	sysdata;
+//extern		SYSTEM_DATA	  	sysdata;
 extern		AREA_DATA	  *	first_area;
 extern		AREA_DATA	  *	last_area;
 extern		AREA_DATA	  *	first_build;
@@ -5691,7 +5692,7 @@ ED *	get_exit	args( ( ROOM_INDEX_DATA *room, sh_int dir ) );
 ED *	get_exit_to	args( ( ROOM_INDEX_DATA *room, sh_int dir, int vnum ) );
 ED *	get_exit_num	args( ( ROOM_INDEX_DATA *room, sh_int count ) );
 ch_ret	move_char	args( ( CHAR_DATA *ch, EXIT_DATA *pexit, int fall ) );
-void	teleport	args( ( CHAR_DATA *ch, int room, int flags ) );
+void	teleport	args( ( CHAR_DATA *ch, int room, FLAG_SET flags ) );
 sh_int	encumbrance	args( ( CHAR_DATA *ch, sh_int move ) );
 bool	will_fall	args( ( CHAR_DATA *ch, int fall ) );
 int     wherehome       args( ( CHAR_DATA *ch ) );
@@ -6502,27 +6503,6 @@ extern	const   char    control_help_page[];
 #define SUB_NW    DIR_NORTHWEST
 #define SUB_SE    DIR_SOUTHEAST
 #define SUB_SW    DIR_SOUTHWEST
-
-/*
- * defines for use with this get_affect function
- */
-
-#define RIS_000		BV00
-#define RIS_R00		BV01
-#define RIS_0I0		BV02
-#define RIS_RI0		BV03
-#define RIS_00S		BV04
-#define RIS_R0S		BV05
-#define RIS_0IS		BV06
-#define RIS_RIS		BV07
-
-#define GA_AFFECTED	BV09
-#define GA_RESISTANT	BV10
-#define GA_IMMUNE	BV11
-#define GA_SUSCEPTIBLE	BV12
-#define GA_RIS          BV30
-
-
 
 /*
  *   Map Structures

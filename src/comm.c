@@ -403,7 +403,7 @@ static void SegVio()
  * IMPORTANT:
  * This must stay minimal.  It does only two things:
  *   1) records that the alarm fired
- *   2) force-closes newdesc immediately if one is in progress
+ *   2) force-closes g_pending_accept_fd immediately if one is in progress
  *
  * close() is async-signal-safe.
  * bug(), echo_to_all(), FD_CLR(), SPRINTF(), and game_loop() are not.
@@ -1021,7 +1021,7 @@ void new_descriptor( GameContext *game, int new_desc )
     }
 
  /* Noresolve now does something useful - DV - Stuff for dontresolve. - Ulysses */
-     if ( !sysdata.no_name_resolving && !check_dont_resolve(buf) )
+     if ( !game->get_sysdata()->no_name_resolving && !check_dont_resolve(buf) )
          from = gethostbyaddr( (char *) &sock.sin_addr,
      	  	sizeof(sock.sin_addr), AF_INET );
      else
@@ -1076,9 +1076,9 @@ void new_descriptor( GameContext *game, int new_desc )
     }
 
     SPRINTF( buf, "%s", inet_ntoa( sock.sin_addr ) );
-    log_printf_plus( LOG_COMM, sysdata.log_level, "Sock.sinaddr:  %s, port %d.",	buf, dnew->port );
+    log_printf_plus( LOG_COMM, game->get_sysdata()->log_level, "Sock.sinaddr:  %s, port %d.",	buf, dnew->port );
 
-    if ( !sysdata.no_name_resolving )
+    if ( !game->get_sysdata()->no_name_resolving )
     {
        STRFREE ( dnew->host);
        dnew->host = STRALLOC( (char *)( from ? from->h_name : buf) );
@@ -1154,15 +1154,15 @@ void new_descriptor( GameContext *game, int new_desc )
     }
     start_auth( dnew ); /* Start username authorization */
 
-    if ( ++num_descriptors > sysdata.maxplayers )
-    	sysdata.maxplayers = num_descriptors;
-    if ( sysdata.maxplayers > sysdata.alltimemax )
+    if ( ++num_descriptors > game->get_sysdata()->maxplayers )
+    	game->get_sysdata()->maxplayers = num_descriptors;
+    if ( game->get_sysdata()->maxplayers > game->get_sysdata()->alltimemax )
     {
       SPRINTF(buf, "%24.24s", ctime(&current_time));
-      sysdata.set_time_of_max (buf);
-      sysdata.alltimemax = sysdata.maxplayers;
-      SPRINTF( buf, "Broke all-time maximum player record: %d", sysdata.alltimemax );
-      log_string_plus( buf, LOG_COMM, sysdata.log_level );
+      game->get_sysdata()->set_time_of_max (buf);
+      game->get_sysdata()->alltimemax = game->get_sysdata()->maxplayers;
+      SPRINTF( buf, "Broke all-time maximum player record: %d", game->get_sysdata()->alltimemax );
+      log_string_plus( buf, LOG_COMM, game->get_sysdata()->log_level );
       to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
       save_sysdata( *game->get_sysdata() );
     }
@@ -1200,6 +1200,8 @@ void close_socket( DESCRIPTOR_DATA *dclose, bool force )
     CHAR_DATA *ch;
     DESCRIPTOR_DATA *d;
     bool DoNotUnlink = FALSE;
+
+    GameContext *game = dclose->game;
 
     /* flush outbuf */
     if ( !force && dclose->outtop > 0 )
@@ -1285,7 +1287,7 @@ void close_socket( DESCRIPTOR_DATA *dclose, bool force )
 
     if ( dclose->character )
     {
-	log_printf_plus( LOG_COMM, UMAX( sysdata.log_level, ch->top_level ), "Closing link to %s.", ch->name );
+	log_printf_plus( LOG_COMM, UMAX( game->get_sysdata()->log_level, ch->top_level ), "Closing link to %s.", ch->name );
 	if ( dclose->connected == CON_PLAYING
 	||   dclose->connected == CON_EDITING )
 	{
@@ -2131,7 +2133,7 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
         }
         else if ( nRead == 0 )
         {
-            log_string_plus( "EOF encountered on read.", LOG_COMM, sysdata.log_level );
+            log_string_plus( "EOF encountered on read.", LOG_COMM, d->game->get_sysdata()->log_level );
             return FALSE;
         }
         else if ( errno == EWOULDBLOCK )
@@ -3335,7 +3337,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
             {
                 /* New player */
                 /* Don't allow new players if DENY_NEW_PLAYERS is true */
-                if (sysdata.deny_new_players == TRUE)
+                if (d->game->get_sysdata()->deny_new_players == TRUE)
                 {
                     SPRINTF( buf, "The mud is currently preparing for a reboot.\n" );
                     output_to_descriptor( d, buf );
@@ -3393,7 +3395,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
         }
         if ( BV_IS_SET(ch->act, PLR_DENY) )
         {
-            log_printf_plus( LOG_COMM, sysdata.log_level, "Denying access to %s@%s.", argument, d->host );
+            log_printf_plus( LOG_COMM, d->game->get_sysdata()->log_level, "Denying access to %s@%s.", argument, d->host );
             if (d->newstate != 0)
             {
                 output_to_descriptor( d, "That name is already taken.  Please choose another: " );
@@ -3508,7 +3510,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 
         if ( ch->top_level < LEVEL_DEMI )
         {
-        log_printf_plus( LOG_COMM, sysdata.log_level, "%s@%s(%s) has connected.", ch->name, d->host, d->user );    
+        log_printf_plus( LOG_COMM, d->game->get_sysdata()->log_level, "%s@%s(%s) has connected.", ch->name, d->host, d->user );    
         }
         else
         log_printf_plus( LOG_COMM, ch->top_level, "%s@%s(%s) has connected.", ch->name, d->host, d->user );    
@@ -3831,11 +3833,11 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
             return;
         }
     /*
-        if ( !sysdata.WAIT_FOR_AUTH )
+        if ( !d->game->get_sysdata()->WAIT_FOR_AUTH )
         {
     */	    SPRINTF( buf, "%s@%s new %s.", ch->name, d->host,
                     race_table[ch->race].race_name);
-            log_string_plus( buf, LOG_COMM, sysdata.log_level);
+            log_string_plus( buf, LOG_COMM, d->game->get_sysdata()->log_level);
             to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
             output_to_descriptor( d, "Press [ENTER] " );
             show_title(d);
@@ -3891,7 +3893,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
 
         SPRINTF( buf, "%s@%s new %s.", ch->name, d->host,
                     race_table[ch->race].race_name);
-        log_string_plus( buf, LOG_COMM, sysdata.log_level );
+        log_string_plus( buf, LOG_COMM, d->game->get_sysdata()->log_level );
         to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
         output_to_descriptor( d, "\n" );
         show_title(d);
@@ -4081,7 +4083,7 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
                 }
                 }
                 
-            if (!sysdata.wait_for_auth)
+            if (!ch->game->get_sysdata()->wait_for_auth)
             {
             char_to_room( ch, get_room_index( ROOM_VNUM_SCHOOL ) );
             ch->pcdata->auth_state = 3; 
@@ -4330,7 +4332,7 @@ short check_reconnect( DESCRIPTOR_DATA *d, char *name, bool fConn )
 		ch->timer	 = 0;
 		send_to_char( "Reconnecting.\n", ch );
 		act( AT_ACTION, "$n has reconnected.", ch, NULL, NULL, TO_ROOM );
-		log_printf_plus( LOG_COMM, UMAX( sysdata.log_level, ch->top_level ), "%s@%s(%s) reconnected.", ch->name, d->host, d->user );
+		log_printf_plus( LOG_COMM, UMAX( d->game->get_sysdata()->log_level, ch->top_level ), "%s@%s(%s) reconnected.", ch->name, d->host, d->user );
 
 		d->connected = CON_PLAYING;
 	    }
@@ -4383,7 +4385,7 @@ bool check_multi( DESCRIPTOR_DATA *d , char *name )
 	           return FALSE;
 */
 		output_to_descriptor( d, "Sorry multi-playing is not allowed ... have you other character quit first.\n" );
-		log_printf_plus( LOG_COMM, sysdata.log_level, "%s attempting to multiplay with %s.", dold->original ? dold->original->name : dold->character->name , d->character->name );
+		log_printf_plus( LOG_COMM, d->game->get_sysdata()->log_level, "%s attempting to multiplay with %s.", dold->original ? dold->original->name : dold->character->name , d->character->name );
 
 	        d->character = NULL;
 	        free_char( d->character );
@@ -4415,7 +4417,7 @@ short check_playing( DESCRIPTOR_DATA *d, char *name, bool kick )
 	    || ( cstate != CON_PLAYING && cstate != CON_EDITING ) )
 	    {
         output_to_descriptor( d, "Already connected - try again.\n" );
-        log_printf_plus( LOG_COMM, sysdata.log_level, "%s already connected.", ch->name );
+        log_printf_plus( LOG_COMM, d->game->get_sysdata()->log_level, "%s already connected.", ch->name );
         return BERR;
 	    }
 	    if ( !kick )
@@ -4435,7 +4437,7 @@ short check_playing( DESCRIPTOR_DATA *d, char *name, bool kick )
 	    send_to_char( "Reconnecting.\n", ch );
 	    act( AT_ACTION, "$n has reconnected, kicking off old link.",
 	         ch, NULL, NULL, TO_ROOM );
-	    log_printf_plus( LOG_COMM, UMAX( sysdata.log_level, ch->top_level ), "%s@%s reconnected, kicking off old link.",
+	    log_printf_plus( LOG_COMM, UMAX( d->game->get_sysdata()->log_level, ch->top_level ), "%s@%s reconnected, kicking off old link.",
 	             ch->name, d->host );
 	    d->connected = cstate;
 	    return TRUE;
@@ -5466,7 +5468,7 @@ void display_prompt( DESCRIPTOR_DATA *d )
                 stat = num_descriptors;
                 break;
             case 'U':
-                stat = sysdata.maxplayers;
+                stat = d->game->get_sysdata()->maxplayers;
                 break;
             case 'v':
                 stat = ch->move;

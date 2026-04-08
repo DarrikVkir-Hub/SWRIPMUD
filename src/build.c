@@ -557,13 +557,43 @@ const flag_name ris_flags[] =
     { (size_t)-1, nullptr } // terminator
 };
 
-char *	const	trig_flags [] =
+const flag_name trig_flags[] =
 {
-"up", "unlock", "lock", "d_north", "d_south", "d_east", "d_west", "d_up",
-"d_down", "door", "container", "open", "close", "passage", "oload", "mload",
-"teleport", "teleportall", "teleportplus", "death", "cast", "fakeblade",
-"rand4", "rand6", "trapdoor", "anotherroom", "usedial", "absolutevnum",
-"showroomdesc", "autoreturn", "r2", "r3", nullptr
+    { TRIG_UP,               "up" },
+    { TRIG_UNLOCK,           "unlock" },
+    { TRIG_LOCK,             "lock" },
+    { TRIG_D_NORTH,          "d_north" },
+    { TRIG_D_SOUTH,          "d_south" },
+    { TRIG_D_EAST,           "d_east" },
+    { TRIG_D_WEST,           "d_west" },
+    { TRIG_D_UP,             "d_up" },
+    { TRIG_D_DOWN,           "d_down" },
+    { TRIG_DOOR,             "door" },
+    { TRIG_CONTAINER,        "container" },
+    { TRIG_OPEN,             "open" },
+    { TRIG_CLOSE,            "close" },
+    { TRIG_PASSAGE,          "passage" },
+    { TRIG_OLOAD,            "oload" },
+    { TRIG_MLOAD,            "mload" },
+    { TRIG_TELEPORT,         "teleport" },
+    { TRIG_TELEPORTALL,      "teleportall" },
+    { TRIG_TELEPORTPLUS,     "teleportplus" },
+    { TRIG_DEATH,            "death" },
+    { TRIG_CAST,             "cast" },
+    { TRIG_FAKEBLADE,        "fakeblade" },
+    { TRIG_RAND4,            "rand4" },
+    { TRIG_RAND6,            "rand6" },
+    { TRIG_TRAPDOOR,         "trapdoor" },
+    { TRIG_ANOTHEROOM,       "anotherroom" },
+    { TRIG_USEDIAL,          "usedial" },
+    { TRIG_ABSOLUTEVNUM,     "absolutevnum" },
+    { TRIG_SHOWROOMDESC,     "showroomdesc" },
+    { TRIG_AUTORETURN,       "autoreturn" },
+    { TRIG_TELE_SHOWDESC,    "_tele_showdesc" },
+    { TRIG_TELE_TRANSALL,    "_tele_transall" },
+    { TRIG_TELE_TRANSALLPLUS,"_tele_transallplus" },
+
+    { (size_t)-1, nullptr }
 };
 
 char *	const	part_flags [] =
@@ -792,7 +822,7 @@ bool can_rmodify( CHAR_DATA *ch, ROOM_INDEX_DATA *room )
 
 	if ( IS_NPC( ch ) )
 	  return FALSE;
-	if ( get_trust( ch ) >= sysdata.level_modify_proto )
+	if ( get_trust( ch ) >= ch->game->get_sysdata()->level_modify_proto )
 	  return TRUE;
 	if ( !ch->pcdata || !(pArea=ch->pcdata->area) )
 	{
@@ -814,7 +844,7 @@ bool can_omodify( CHAR_DATA *ch, OBJ_DATA *obj )
 	
 	if ( IS_NPC( ch ) )
 	  return FALSE;
-	if ( get_trust( ch ) >= sysdata.level_modify_proto )
+	if ( get_trust( ch ) >= ch->game->get_sysdata()->level_modify_proto )
 	  return TRUE;
 	if ( !ch->pcdata || !(pArea=ch->pcdata->area) )
 	{
@@ -862,7 +892,7 @@ bool can_mmodify( CHAR_DATA *ch, CHAR_DATA *mob )
 
 	if ( !IS_NPC( mob ) )
 	{
-	   if ( get_trust( ch ) >= sysdata.level_modify_proto && get_trust(ch) >= 
+	   if ( get_trust( ch ) >= ch->game->get_sysdata()->level_modify_proto && get_trust(ch) >= 
 		get_trust( mob ) )
 	     return TRUE;
 	   else
@@ -874,7 +904,7 @@ bool can_mmodify( CHAR_DATA *ch, CHAR_DATA *mob )
 
 	if ( IS_NPC( ch ) )
 	  return FALSE;
-	if ( get_trust( ch ) >= sysdata.level_modify_proto )
+	if ( get_trust( ch ) >= ch->game->get_sysdata()->level_modify_proto )
 	  return TRUE;
 	if ( !ch->pcdata || !(pArea=ch->pcdata->area) )
 	{
@@ -1107,12 +1137,11 @@ int get_risflag( char *flag )
 
 int get_trigflag( char *flag )
 {
-    int x;
-
-    for ( x = 0; x < 32; x++ )
-      if ( !str_cmp( flag, trig_flags[x] ) )
-        return x;
-    return -1;
+	const flag_name* x;
+	x = find_flag(trig_flags, flag);
+	if (!x)
+		return -1;
+	return x->bit;		
 }
 
 int get_partflag( char *flag )
@@ -1375,7 +1404,7 @@ void do_goto( CHAR_DATA *ch, char *argument )
 	  send_to_char( "No such location.\n", ch );
 	  return;
 	}
-	if ( get_trust( ch ) < sysdata.level_modify_proto && 
+	if ( get_trust( ch ) < ch->game->get_sysdata()->level_modify_proto && 
            !( ch->pcdata->bestowments && is_name( "intergoto", ch->pcdata->bestowments) ))
            
 	{
@@ -1411,7 +1440,7 @@ void do_goto( CHAR_DATA *ch, char *argument )
 
     if ( room_is_private(ch, location ) )
     {
-	if ( get_trust( ch ) < sysdata.level_override_private || (ch->top_level == LEVEL_SUPREME ? 0: (location->vnum == IMP_ROOM1?1:(location->vnum == IMP_ROOM2?1:0))))
+	if ( get_trust( ch ) < ch->game->get_sysdata()->level_override_private || (ch->top_level == LEVEL_SUPREME ? 0: (location->vnum == IMP_ROOM1?1:(location->vnum == IMP_ROOM2?1:0))))
 	{
        send_to_char( "That room is private right now.\n", ch );
 
@@ -1658,7 +1687,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
     }
-    if ( get_trust(ch) < sysdata.level_mset_player && (victim != ch) && !IS_NPC( victim ) )
+    if ( get_trust(ch) < ch->game->get_sysdata()->level_mset_player && (victim != ch) && !IS_NPC( victim ) )
     {
 	send_to_char( "You can't do that!\n", ch );
 	ch->dest_buf = NULL;
@@ -2235,7 +2264,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 
       STR_DISPOSE( victim->pcdata->pwd );
       victim->pcdata->pwd = str_dup( pwdnew );
-      if ( BV_IS_SET(sysdata.save_flags, SV_PASSCHG) )
+      if ( BV_IS_SET(ch->game->get_sysdata()->save_flags, SV_PASSCHG) )
  	save_char_obj( victim );
       send_to_char( "Ok.\n", ch );
       ch_printf( victim, "Your password has been changed by %s.\n", ch->name );
@@ -3774,6 +3803,40 @@ void do_oset( CHAR_DATA *ch, char *argument )
 			}
 			if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
 				obj->pIndexData->objflags = obj->objflags; 
+			return;
+		}
+
+
+		if ( !str_cmp( arg2, "trigflags" ) )
+		{
+			if ( !can_omodify( ch, obj ) )
+				return;
+
+			if ( !argument || argument[0] == '\0' )
+			{
+				send_to_char( "Usage: oset <object> trigflags <flag(s)>...\n", ch );
+				std::string result;
+
+				for (size_t i = 0; trig_flags[i].name != nullptr; ++i)
+				{
+					if (!result.empty())
+						result += " ";
+					result += trig_flags[i].name;
+				}
+				return;
+			}			
+
+			while ( argument[0] != '\0' )
+			{
+				argument = one_argument( argument, arg3 );
+				value = get_trigflag( arg3 );
+				if ( value >= 0)
+					BV_TOGGLE_BIT(obj->trig_flags, value);
+				else
+					ch_printf( ch, "Unknown flag: %s\n", arg3 );
+			}
+			if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
+				obj->pIndexData->trig_flags = obj->trig_flags; 
 			return;
 		}
 
@@ -6548,11 +6611,11 @@ void do_aassign( CHAR_DATA *ch, char *argument )
 	SPRINTF( buf, "%s", argument );
         tarea = NULL;
 
-/*	if ( get_trust(ch) >= sysdata.level_modify_proto )   */
+/*	if ( get_trust(ch) >= ch->game->get_sysdata()->level_modify_proto )   */
 
 	if ( get_trust(ch) >= LEVEL_GREATER
         ||  (is_name( buf, ch->pcdata->bestowments )
-        &&   get_trust(ch) >= sysdata.level_modify_proto) )
+        &&   get_trust(ch) >= ch->game->get_sysdata()->level_modify_proto) )
 	  for ( tmp = first_area; tmp; tmp = tmp->next )
 	    if ( !str_cmp( buf, tmp->filename ) )
 	    {  
@@ -6580,7 +6643,7 @@ void do_aassign( CHAR_DATA *ch, char *argument )
 	 
 	if ( !tarea )
 	{
-	    if ( get_trust(ch) >= sysdata.level_modify_proto )
+	    if ( get_trust(ch) >= ch->game->get_sysdata()->level_modify_proto )
 		send_to_char( "No such area.  Use 'zones'.\n", ch );
 	    else
 		send_to_char( "No such area.  Use 'newzones'.\n", ch );
@@ -6928,6 +6991,8 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 					pObjIndex->cost,
 					pObjIndex->rent ? pObjIndex->rent :
 				 (int) (pObjIndex->cost / 10)		);
+	fprintf( fpout, "T ");
+	fwrite_bitset(fpout, NULL, pObjIndex->trig_flags);
 
 	for ( ed = pObjIndex->first_extradesc; ed; ed = ed->next )
 	   fprintf( fpout, "E\n%s~\n%s~\n",
@@ -9174,7 +9239,7 @@ void do_rdelete( CHAR_DATA *ch, char *argument )
     }
 
     /* Does the player have the right to delete this room? */
-    if ( get_trust( ch ) < sysdata.level_modify_proto
+    if ( get_trust( ch ) < ch->game->get_sysdata()->level_modify_proto
     && ( location->vnum < ch->pcdata->r_range_lo || 
          location->vnum > ch->pcdata->r_range_hi ) )
     {

@@ -300,7 +300,7 @@ AREA_DATA *		last_asort;
 AREA_DATA *		first_bsort;
 AREA_DATA *		last_bsort;
 
-SYSTEM_DATA		sysdata;
+//SYSTEM_DATA		sysdata;
 
 int			top_affect;
 int			top_area;
@@ -1188,7 +1188,7 @@ void load_mobiles( AREA_DATA *tarea, FILE *fp )
 	    else
 	    {
 		pMobIndex = get_mob_index( vnum );
-		log_printf_plus( LOG_BUILD, sysdata.log_level, "Cleaning mobile: %d", vnum );
+		log_printf_plus( LOG_BUILD, tarea->game->get_sysdata()->log_level, "Cleaning mobile: %d", vnum );
 		clean_mob( pMobIndex );
 		oldmob = TRUE;
 	    }
@@ -1460,7 +1460,7 @@ void load_objects( AREA_DATA *tarea, FILE *fp )
 	    else
 	    {
 		pObjIndex = get_obj_index( vnum );
-		log_printf_plus( LOG_BUILD, sysdata.log_level, "Cleaning object: %d", vnum );
+		log_printf_plus( LOG_BUILD, tarea->game->get_sysdata()->log_level, "Cleaning object: %d", vnum );
 		clean_obj( pObjIndex );
 		oldobj = TRUE;
 	    }
@@ -1536,7 +1536,11 @@ void load_objects( AREA_DATA *tarea, FILE *fp )
 
     if (pObjIndex->item_type == ITEM_WEAPON)
         pObjIndex->objflags.set(pObjIndex->value[3]+WEAPON_FIRST);
-
+    if ((pObjIndex->item_type == ITEM_BUTTON || pObjIndex->item_type == ITEM_SWITCH ||
+        pObjIndex->item_type == ITEM_LEVER || pObjIndex->item_type == ITEM_PULLCHAIN)
+        && pObjIndex->value[0] != 0)
+        pObjIndex->trig_flags = int_to_bitset(pObjIndex->value[0]); // For old file format, set trigger flags from value[0]
+        
    for ( ; ; )
 	{
 	    letter = fread_letter( fp );
@@ -1572,6 +1576,11 @@ void load_objects( AREA_DATA *tarea, FILE *fp )
 		LINK( ed, pObjIndex->first_extradesc, pObjIndex->last_extradesc,
 			  next, prev );
 		top_ed++;
+	    }
+
+	    else if ( letter == 'T' )
+	    {
+		    fread_bitset( fp, pObjIndex->trig_flags);
 	    }
 
 	    else if ( letter == '>' )
@@ -1658,7 +1667,7 @@ void load_resets( AREA_DATA *tarea, FILE *fp )
 	 /*
 	  * Clean out the old resets
 	  */
-	  log_printf_plus( LOG_BUILD, sysdata.log_level, "Cleaning resets: %s", tarea->name );
+	  log_printf_plus( LOG_BUILD, tarea->game->get_sysdata()->log_level, "Cleaning resets: %s", tarea->name );
 	  clean_resets( tarea );
 	}	
     }
@@ -1870,7 +1879,7 @@ void load_rooms( AREA_DATA *tarea, FILE *fp )
 	    else
 	    {
 	      pRoomIndex = get_room_index( vnum );
-	      log_printf_plus( LOG_BUILD, sysdata.log_level, "Cleaning room: %d", vnum );
+	      log_printf_plus( LOG_BUILD, tarea->game->get_sysdata()->log_level, "Cleaning room: %d", vnum );
 	      clean_room( pRoomIndex );
 	      oldroom = TRUE;
 	    }
@@ -2776,6 +2785,7 @@ OBJ_DATA *create_object( OBJ_INDEX_DATA *pObjIndex, int level )
     obj->action_desc	= QUICKLINK( pObjIndex->action_desc );
     obj->item_type	= pObjIndex->item_type;
     obj->objflags	= pObjIndex->objflags;
+    obj->trig_flags	= pObjIndex->trig_flags;    
     obj->wear_flags	= pObjIndex->wear_flags;
     obj->value[0]	= pObjIndex->value[0];
     obj->value[1]	= pObjIndex->value[1];
@@ -3903,9 +3913,9 @@ void do_memory( CHAR_DATA *ch, char *argument )
     ch_printf( ch, "Rooms   %5d    VRooms  %5d\n", top_room,   top_vroom   );
     ch_printf( ch, "Shops   %5d    RepShps %5d\n", top_shop,   top_repair );
     ch_printf( ch, "CurOq's %5d    CurCq's %5d\n", cur_qobjs,  cur_qchars );
-    ch_printf( ch, "Players %5d    Maxplrs %5d\n", num_descriptors, sysdata.maxplayers );
-    ch_printf( ch, "MaxEver %5d    Topsn   %5d (%d)\n", sysdata.alltimemax, top_sn, MAX_SKILL );
-    ch_printf( ch, "MaxEver time recorded at:   %s\n", sysdata.get_time_of_max() );
+    ch_printf( ch, "Players %5d    Maxplrs %5d\n", num_descriptors, ch->game->get_sysdata()->maxplayers );
+    ch_printf( ch, "MaxEver %5d    Topsn   %5d (%d)\n", ch->game->get_sysdata()->alltimemax, top_sn, MAX_SKILL );
+    ch_printf( ch, "MaxEver time recorded at:   %s\n", ch->game->get_sysdata()->get_time_of_max() );
     if ( !str_cmp( arg, "check" ) )
     {
 #ifdef HASHSTR
@@ -4885,7 +4895,7 @@ void log_string_plus( const char *str, sh_int log_type, sh_int level )
 
 	if ( !och || !vch )
 	  continue;
-	if ( ( vch->top_level < sysdata.log_level )
+	if ( ( vch->top_level < vch->game->get_sysdata()->log_level )
 	|| ( vch->top_level < level ) )
 	  continue;
 
@@ -5924,6 +5934,7 @@ OBJ_INDEX_DATA *make_object( GameContext *game, int vnum, int cvnum, char *name 
 	  pObjIndex->action_desc	= QUICKLINK( cObjIndex->action_desc );
 	  pObjIndex->item_type		= cObjIndex->item_type;
 	  pObjIndex->objflags	    = cObjIndex->objflags; pObjIndex->objflags.set(ITEM_PROTOTYPE);
+      pObjIndex->trig_flags	= cObjIndex->trig_flags;
 	  pObjIndex->wear_flags		= cObjIndex->wear_flags;
 	  pObjIndex->value[0]		= cObjIndex->value[0];
 	  pObjIndex->value[1]		= cObjIndex->value[1];
@@ -6859,8 +6870,8 @@ bool load_systemdata( SYSTEM_DATA *sys )
 	FCLOSE( fp );
     }
 
-    if ( sysdata.empty_guild_overseer() ) sysdata.set_guild_overseer ( "" );
-    if ( sysdata.empty_guild_advisor() ) sysdata.set_guild_advisor ( "" );
+    if ( sys->empty_guild_overseer() ) sys->set_guild_overseer ( "" );
+    if ( sys->empty_guild_advisor() ) sys->set_guild_advisor ( "" );
     return found;
 }
 

@@ -1178,7 +1178,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	return;
     }
     
-    if ( get_trust(ch) < sysdata.level_mset_player && victim != ch)
+    if ( get_trust(ch) < ch->game->get_sysdata()->level_mset_player && victim != ch)
     {
 	send_to_char( "You can't do that.\n", ch );
 	return;
@@ -2540,9 +2540,9 @@ void do_stun( CHAR_DATA *ch, char *argument )
 	   -   (get_curr_dex(ch)     + get_curr_str(ch))) * 10) + 10;
     /* harder for player to stun another player */
     if ( !IS_NPC(ch) && !IS_NPC(victim) )
-      chance += sysdata.stun_plr_vs_plr;
+      chance += ch->game->get_sysdata()->stun_plr_vs_plr;
     else
-      chance += sysdata.stun_regular;
+      chance += ch->game->get_sysdata()->stun_regular;
     if ( !fail
     && (  IS_NPC(ch)
     || (number_percent( ) + chance) < ch->pcdata->learned[gsn_stun] ) )

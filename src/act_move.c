@@ -2297,32 +2297,44 @@ void teleportch( CHAR_DATA *ch, ROOM_INDEX_DATA *room, bool show )
       do_look( ch, "auto" );
 }
 
-void teleport( CHAR_DATA *ch, int room, int flags )
+void teleport( CHAR_DATA *ch, int room, FLAG_SET flags )
 {
     CHAR_DATA *nch, *nch_next;
     ROOM_INDEX_DATA *pRoomIndex;
     bool show;
+    bool transall;
+    bool transallplus;
 
     pRoomIndex = get_room_index( room );
     if ( !pRoomIndex )
     {
-      	bug( "%s: bad room vnum %d", __func__, room );
-		return;
+        bug( "%s: bad room vnum %d", __func__, room );
+        return;
     }
 
-    if ( IS_SET( flags, TELE_SHOWDESC ) )
-      show = TRUE;
-    else
-      show = FALSE;
-    if ( !IS_SET( flags, TELE_TRANSALL ) )
+    show = BV_IS_SET( flags, TRIG_TELE_SHOWDESC );
+    transall = BV_IS_SET( flags, TRIG_TELE_TRANSALL );
+    transallplus = BV_IS_SET( flags, TRIG_TELE_TRANSALLPLUS );
+
+    if ( !transall && !transallplus )
     {
-	teleportch( ch, pRoomIndex, show );
-	return;
+        teleportch( ch, pRoomIndex, show );
+        return;
     }
+
     for ( nch = ch->in_room->first_person; nch; nch = nch_next )
     {
-	nch_next = nch->next_in_room;
-	teleportch( nch, pRoomIndex, show );
+        nch_next = nch->next_in_room;
+
+        if ( transallplus )
+        {
+            teleportch( nch, pRoomIndex, show );
+            continue;
+        }
+
+        /* transall: teleport the user and other players only */
+        if ( !IS_NPC( nch ) )
+            teleportch( nch, pRoomIndex, show );
     }
 }
 
