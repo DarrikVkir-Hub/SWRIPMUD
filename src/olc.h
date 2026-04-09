@@ -559,6 +559,7 @@ OlcField<T> make_olc_custom_editor_field(
     OlcMetaType meta_type,
     std::function<bool(CHAR_DATA* ch, T* obj)> editor,
     std::function<std::string(T* obj)> getter,
+    std::function<bool(CHAR_DATA* ch, T* obj, const std::string& value)> editor_setter,    
     int editor_substate,
     const char* help,
     bool editor_takes_argument = true)
@@ -571,7 +572,7 @@ OlcField<T> make_olc_custom_editor_field(
         std::move(editor),
         nullptr,
         std::move(getter),
-        nullptr,
+        std::move(editor_setter),
         nullptr,
         editor_substate,
         help,
@@ -727,6 +728,7 @@ struct OlcSession
 
     OlcEditMode mode = OlcEditMode::NONE;
     ROOM_INDEX_DATA* anchor_room = nullptr;   // room-inline feature only
+    void* editor_context = nullptr;    
 };
 
 

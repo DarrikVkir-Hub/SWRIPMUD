@@ -2249,6 +2249,7 @@ void do_hedit( CHAR_DATA *ch, char *argument )
         } 	else
     */	lev = get_trust(ch);
         CREATE( pHelp, HELP_DATA, 1 );
+        pHelp->game = ch->game;
         pHelp->keyword = STRALLOC( strupper(argument) );
         pHelp->text    = STRALLOC( "" );
         pHelp->level   = lev;
@@ -2480,10 +2481,10 @@ void do_who( CHAR_DATA *ch, char *argument )
   for ( iRace = 0; iRace < MAX_RACE; iRace++ )
     rgfRace[iRace] = FALSE;
 
-  if ( !ch )
+  if ( !ch->pcdata )
   {
     NullCh = TRUE;
-    CREATE( ch, CHAR_DATA, 1 );
+//    CREATE( ch, CHAR_DATA, 1 ); moved to requests to get game
     ch->top_level = 1;
     ch->trust = 0;
     ch->pcdata = new PC_DATA();
@@ -2614,7 +2615,7 @@ void do_who( CHAR_DATA *ch, char *argument )
 	 nMatch = 0;
 	 buf[0] = '\0';
 	 if ( ch && !NullCh)
-	set_pager_color( AT_GREEN, ch );
+	    set_pager_color( AT_GREEN, ch );
 	 else
 	 {
 	if ( fShowHomepage )
@@ -2869,9 +2870,10 @@ snprintf(buf, sizeof(buf),
 
     if ( NullCh )
     {
-	fprintf( whoout, "%d player%s.\n", nMatch, nMatch == 1 ? "" : "s" );
-	FCLOSE( whoout );
-	return;
+        DISPOSE(ch->pcdata);
+        fprintf( whoout, "%d player%s.\n", nMatch, nMatch == 1 ? "" : "s" );
+        FCLOSE( whoout );
+        return;
     }
 
     set_char_color( AT_YELLOW, ch );
@@ -4542,6 +4544,7 @@ void do_showstatistic_web( CHAR_DATA *ch, char *argument )
     }
 
     CREATE( raceCh, CHAR_DATA, 1 );
+    raceCh->game = ch->game;
     raceCh->top_level = 1;
     raceCh->trust = 0;
     raceCh->pcdata = new PC_DATA();
@@ -4638,7 +4641,7 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
     char buf[MAX_INPUT_LENGTH];
     char buf2[MAX_INPUT_LENGTH];
 
-    if( !ch )
+    if( !ch->pcdata )
       do_showstatistic_web( NULL, argument );
 
     race = get_race_from_name( argument );
@@ -4660,6 +4663,7 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
     }
 
     CREATE( raceCh, CHAR_DATA, 1 );
+    raceCh->game = ch->game;
     raceCh->top_level = 1;
     raceCh->trust = 0;
     raceCh->pcdata = new PC_DATA();

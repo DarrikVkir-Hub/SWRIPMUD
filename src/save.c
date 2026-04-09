@@ -812,8 +812,6 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
 	obj->value[0], obj->value[1], obj->value[2],
 	obj->value[3], obj->value[4], obj->value[5]     );
 	fwrite_bitset(fp, "Objflags", obj->objflags);
-	if ( obj->trig_flags.any() )
-		fwrite_bitset(fp, "Trigflags", obj->trig_flags);
     switch ( obj->item_type )
     {
     case ITEM_PILL: /* was down there with staff and wand, wrongly - Scryn */
@@ -848,8 +846,8 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
 		skill_table[obj->value[5]]->name );
 	break;
     }
-
-	fwrite_bitset(fp, "Triggerflags", obj->trig_flags);
+	if (obj->trig_flags.any() )
+		fwrite_bitset(fp, "Triggerflags", obj->trig_flags);
 
     for ( paf = obj->first_affect; paf; paf = paf->next )
     {
@@ -1033,7 +1031,7 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
 	    }
 	    else
 	    if ( !str_cmp( word, "OBJECT" ) )	/* Objects	*/
-		fread_obj  ( ch, fp, OS_CARRY );
+		fread_obj  ( d->game, ch, fp, OS_CARRY );
 	    else
 	    if ( !str_cmp( word, "COMMENT") )
 		fread_comment(ch, fp );		/* Comments	*/
@@ -2079,7 +2077,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 }
 
 
-void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
+void fread_obj( GameContext *game, CHAR_DATA *ch, FILE *fp, sh_int os_type )
 {
     OBJ_DATA *obj;
     const char *word;
@@ -2090,7 +2088,7 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
     ROOM_INDEX_DATA *room;
 
     CREATE( obj, OBJ_DATA, 1 );
-	obj->game = ch->game;
+	obj->game = game;
     obj->count		= 1;
     obj->wear_loc	= -1;
     obj->weight		= 1;
@@ -2368,6 +2366,7 @@ void fread_obj( CHAR_DATA *ch, FILE *fp, sh_int os_type )
 	    {
 			fread_bitset( fp, obj->trig_flags );
 			fMatch = TRUE;
+			break;
 	    }
 	    break;
 
@@ -2608,9 +2607,9 @@ void load_corpses( GameContext *game )
         }
         word = fread_word( fpArea );
         if ( !str_cmp(word, "CORPSE" ) )
-          fread_obj( NULL, fpArea, OS_CORPSE );
+          fread_obj( game, NULL, fpArea, OS_CORPSE );
         else if ( !str_cmp(word, "OBJECT" ) )
-          fread_obj( NULL, fpArea, OS_CARRY );
+          fread_obj( game, NULL, fpArea, OS_CARRY );
         else if ( !str_cmp( word, "END" ) )
           break;
         else
@@ -2700,7 +2699,7 @@ if ( !(dp = opendir(STOREROOM_DIR)) )
 
 		word = fread_word( fpArea );
 		if ( !str_cmp( word, "OBJECT" ) )	/* Objects	*/
-		  fread_obj  ( supermob, fpArea, OS_CARRY );
+		  fread_obj  ( game, supermob, fpArea, OS_CARRY );
 		else
 		if ( !str_cmp( word, "END"    ) )	/* Done		*/
 		  break;
@@ -2819,7 +2818,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
 		  if ( !strcmp(word, "VENDOR" ) )
           mob = fread_vendor( game, fpArea );
         else if ( !strcmp(word, "OBJECT" ) )
-          fread_obj( mob, fpArea, OS_CARRY );
+          fread_obj( game, mob, fpArea, OS_CARRY );
         else if ( !strcmp( word, "END" ) )
           break;
        }
@@ -2924,7 +2923,7 @@ if ( !(dp = opendir(VENDOR_DIR)) )
             break;  
  	case '#':
  		if ( !strcmp( word, "#OBJECT" ) )
- 			fread_obj ( mob, fp, OS_CARRY );
+ 			fread_obj ( game, mob, fp, OS_CARRY );
  	case 'D':
  		KEY( "Description", mob->description, fread_string(fp));
  		break;

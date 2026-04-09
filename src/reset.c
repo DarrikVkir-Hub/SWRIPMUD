@@ -2104,6 +2104,7 @@ RESET_DATA *add_reset( AREA_DATA *tarea, char letter, int extra, int arg1, int a
 
     letter = UPPER(letter);
     pReset = make_reset( letter, extra, arg1, arg2, arg3 );
+    pReset->game = tarea->game;
     switch( letter )
     {
 	case 'M':  tarea->last_mob_reset = pReset;	break;

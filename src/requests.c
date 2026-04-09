@@ -43,35 +43,44 @@ void init_request_pipe( GameContext *game )
 void check_requests( GameContext *game )
 {
 #ifdef REQUESTS
-  char buf[MAX_STRING_LENGTH];
-  char buf2[MAX_STRING_LENGTH];
-  char arg[MAX_STRING_LENGTH];
-  char *argument;
-  
-  int  c;
-  if ( read( REQ, buf, sizeof( buf ) ) != 0 )
-  {
-     close( REQ );
-     init_request_pipe( game );
-     for ( c = 0; c < MAX_STRING_LENGTH; c++ )
-	if ( buf[c] == '\n' || buf[c] == '\r' )
-	{
-	   buf[c] = '\0';
-	   break;
-	}
-     log_printf( "REQUEST: %s", buf );
-     if ( strcmp( buf, "who" ) == 0 )
-	do_who( NULL, "" );
-     else
-     if ( strcmp( buf, "webwho" ) == 0 )
-	do_who( NULL, "www" );
-     else
-     {
-       argument = strdup(buf);
-       argument = one_argument( arg, argument );
-       if( !strcmp( arg, "showstat" ) )
-       	 do_showstatistic_web( NULL, argument );
-     }
+    char buf[MAX_STRING_LENGTH];
+    char buf2[MAX_STRING_LENGTH];
+    char arg[MAX_STRING_LENGTH];
+    char *argument;
+    CHAR_DATA *ch = NULL;
+    bool newchar = false;
+    
+    int  c;
+    if ( read( REQ, buf, sizeof( buf ) ) != 0 )
+    {
+        close( REQ );
+        init_request_pipe( game );
+        for ( c = 0; c < MAX_STRING_LENGTH; c++ )
+          if ( buf[c] == '\n' || buf[c] == '\r' )
+          {
+            buf[c] = '\0';
+            break;
+          }
+        
+        CREATE( ch, CHAR_DATA, 1 );
+        ch->game = game;
+        newchar = true;
+
+        log_printf( "REQUEST: %s", buf );
+        if ( strcmp( buf, "who" ) == 0 )
+            do_who( ch, "" );
+        else
+        if ( strcmp( buf, "webwho" ) == 0 )
+            do_who( ch, "www" );
+        else
+        {
+          argument = strdup(buf);
+          argument = one_argument( arg, argument );
+          if( !strcmp( arg, "showstat" ) )
+            do_showstatistic_web( ch, argument );
+        }
+
+          DISPOSE(ch);
   }
 #endif
 }

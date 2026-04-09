@@ -47,6 +47,7 @@ void do_trivia(CHAR_DATA *ch, char *argument)
 	   return;
 	 }
        CREATE(g_trivia,struct trivia_struct,1);
+       g_trivia->game = ch->game;
        g_trivia->current_question = 0;
        g_trivia->asker = ch;
        g_trivia->winners = NULL;

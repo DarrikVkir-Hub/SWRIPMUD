@@ -179,6 +179,7 @@ void disintigration ( CHAR_DATA *ch , CHAR_DATA *victim , long amount )
     if (! found)
     {
         CREATE( bounty, BOUNTY_DATA, 1 );
+        bounty->game = ch->game;
         LINK( bounty, first_disintigration, last_disintigration, next, prev );
 
         bounty->target      = STRALLOC( victim->name );

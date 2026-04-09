@@ -3933,6 +3933,7 @@ void do_ban( CHAR_DATA *ch, char *argument )
     }
 
     CREATE( pban, BAN_DATA, 1 );
+    pban->game = ch->game;
     LINK( pban, first_ban, last_ban, next, prev );
     pban->name	= str_dup( arg );
     pban->level = LEVEL_AVATAR;
@@ -4556,6 +4557,7 @@ void do_loadup( CHAR_DATA *ch, char *argument )
     if ( stat( fname, &fst ) != -1 )
     {
 	CREATE( d, DESCRIPTOR_DATA, 1 );
+    d->game = ch->game;
 	d->next = NULL;
 	d->prev = NULL;
 	d->connected = CON_GET_NAME;
@@ -4612,7 +4614,7 @@ void do_loadup( CHAR_DATA *ch, char *argument )
 
 		word = fread_word( fph );
 		if ( !str_cmp( word, "OBJECT" ) )	/* Objects	*/
-		  fread_obj  ( supermob, fph, OS_CARRY );
+		  fread_obj  ( ch->game, supermob, fph, OS_CARRY );
 		else
 		if ( !str_cmp( word, "END"    ) )	/* Done		*/
 		  break;

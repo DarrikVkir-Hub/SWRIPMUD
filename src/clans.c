@@ -469,6 +469,7 @@ bool load_clan_file( GameContext *game, char *clanfile )
     bool found;
 
     CREATE( clan, CLAN_DATA, 1 );
+    clan->game = game;
     clan->next_subclan = NULL;
     clan->prev_subclan = NULL;
     clan->last_subclan = NULL;
@@ -527,12 +528,13 @@ bool load_clan_file( GameContext *game, char *clanfile )
 
 	LINK( clan, first_clan, last_clan, next, prev );
 
-         if( !load_member_list( clan->filename ) )
+         if( !load_member_list( game, clan->filename ) )
          {
              MEMBER_LIST *members_list;
 
              log_string( "No memberlist found, creating new list" );
              CREATE( members_list, MEMBER_LIST, 1 );
+             members_list->game = game;
              members_list->name = STRALLOC( clan->name );
              LINK( members_list, first_member_list, last_member_list, next, prev );
              save_member_list( members_list );
@@ -576,7 +578,7 @@ bool load_clan_file( GameContext *game, char *clanfile )
 
 		word = fread_word( fp );
 		if ( !str_cmp( word, "OBJECT" ) )	/* Objects	*/
-		  fread_obj  ( supermob, fp, OS_CARRY );
+		  fread_obj  ( game, supermob, fp, OS_CARRY );
 		else
 		if ( !str_cmp( word, "END"    ) )	/* Done		*/
 		  break;
@@ -613,6 +615,7 @@ bool load_planet_file( GameContext *game, char *planetfile )
     bool found;
 
     CREATE( planet, PLANET_DATA, 1 );
+    planet->game = game;
     
     planet->governed_by = NULL;
     planet->next_in_system = NULL;
@@ -1515,6 +1518,7 @@ void do_makeclan( CHAR_DATA *ch, char *argument )
     SPRINTF( filename, "%s%s", CLAN_DIR, strlower(argument) );
 
     CREATE( clan, CLAN_DATA, 1 );
+    clan->game = ch->game;
     LINK( clan, first_clan, last_clan, next, prev );
     clan->next_subclan = NULL;
     clan->prev_subclan = NULL;
@@ -1545,6 +1549,7 @@ void do_makeplanet( CHAR_DATA *ch, char *argument )
     SPRINTF( filename, "%s%s", PLANET_DIR, strlower(argument) );
 
     CREATE( planet, PLANET_DATA, 1 );
+    planet->game = ch->game;
     LINK( planet, first_planet, last_planet, next, prev );
     planet->governed_by = NULL;
     planet->next_in_system = NULL;
@@ -2986,6 +2991,7 @@ void do_addsenator( CHAR_DATA *ch , char *argument )
     GOVE_DATA *gov;
     
     CREATE( gov, GOV_DATA, 1 );
+    gov->game = ch->game;
     LINK( gov, first_gov, last_gov, next, prev );
 
     gov->name		= STRALLOC( argument );
@@ -3336,6 +3342,7 @@ void do_members( CHAR_DATA *ch, char *argument )
          MEMBER_LIST *members_list;
 
          CREATE( members_list, MEMBER_LIST, 1 );
+         members_list->game = ch->game;
          members_list->name = STRALLOC( argument );
          LINK( members_list, first_member_list, last_member_list, next, prev );
          save_member_list( members_list );
@@ -3409,7 +3416,7 @@ void save_member_list( MEMBER_LIST *members_list )
 
 }
 
-bool load_member_list( char *filename )
+bool load_member_list( GameContext *game, char *filename )
 {
      FILE *fp;
      char buf[MAX_STRING_LENGTH];
@@ -3426,6 +3433,7 @@ bool load_member_list( char *filename )
      }
 
      CREATE( members_list, MEMBER_LIST, 1 );
+     members_list->game = game;
 
      for( ; ; )
      {

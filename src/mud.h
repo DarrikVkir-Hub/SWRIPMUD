@@ -953,6 +953,7 @@ struct	weather_data
  */
 struct	wizent
 {
+    GameContext *game = NULL;
     WIZENT *		next;
     WIZENT *		last;
     char *		name;
@@ -1562,6 +1563,7 @@ struct member_data
 
 struct member_list
 {
+    GameContext *game = NULL;
 	char 		*name;		/* Clan name */
 	MEMBER_DATA 	*first_member;	/* First Member */
 	MEMBER_DATA 	*last_member;	/* Last Member */
@@ -3555,6 +3557,7 @@ struct	exit_data
  */
 struct	reset_data
 {
+    GameContext *game = NULL;
     RESET_DATA *	next;
     RESET_DATA *	prev;
     char		command;
@@ -4673,7 +4676,7 @@ extern	int	numobjsloaded;
 extern	int	nummobsloaded;
 extern	int	physicalobjects;
 extern	int	num_descriptors;
-extern	struct	system_data		sysdata;
+//extern	struct	system_data		sysdata;
 extern	int	top_sn;
 extern	int	top_vroom;
 extern	int	top_herb;
@@ -4687,25 +4690,31 @@ extern		int			cur_obj;
 extern		int			cur_obj_serial;
 extern		bool			cur_obj_extracted;
 extern		obj_ret			global_objcode;
+extern		time_t			current_time;
+extern		bool			fLogAll;
+extern          AUCTION_DATA      *     auction;
 
+extern		TIME_INFO_DATA		time_info;
+extern		WEATHER_DATA		weather_info;
+
+// Won't work if multi-threaded, so will need a passed variable instead
+extern		OBJ_DATA	  *	save_equipment[MAX_WEAR][MAX_LAYERS];
 
 extern		CMDTYPE		  *	command_hash	[126];
+extern		SOCIALTYPE	  *	social_index	[27];
 
 extern		SKILLTYPE	  *	skill_table	[MAX_SKILL];
-extern		SOCIALTYPE	  *	social_index	[27];
 extern		SKILLTYPE	  *	herb_table	[MAX_HERB];
-extern      int             lang_sn[LANG_MAX];
 
+// Linked lists
 extern		HELP_DATA	  *	first_help;
 extern		HELP_DATA	  *	last_help;
 extern		SHOP_DATA	  *	first_shop;
 extern		SHOP_DATA	  *	last_shop;
 extern		REPAIR_DATA	  *	first_repair;
 extern		REPAIR_DATA	  *	last_repair;
-
 extern 		SPACE_DATA	  *	first_spaceobject;
 extern 		SPACE_DATA	  *	last_spaceobject;
-
 extern		BAN_DATA	  *	first_ban;
 extern		BAN_DATA	  *	last_ban;
 extern		CHAR_DATA	  *	first_char;
@@ -4734,7 +4743,6 @@ extern          BOUNTY_DATA       *     first_bounty;
 extern          BOUNTY_DATA       *     last_bounty;
 extern          BOUNTY_DATA       *     first_disintigration;
 extern          BOUNTY_DATA       *     last_disintigration;
-//extern		SYSTEM_DATA	  	sysdata;
 extern		AREA_DATA	  *	first_area;
 extern		AREA_DATA	  *	last_area;
 extern		AREA_DATA	  *	first_build;
@@ -4743,31 +4751,24 @@ extern		AREA_DATA	  *	first_asort;
 extern		AREA_DATA	  *	last_asort;
 extern		AREA_DATA	  *	first_bsort;
 extern		AREA_DATA	  *	last_bsort;
-/*
-extern		GOD_DATA	  *	first_imm;
-extern		GOD_DATA	  *	last_imm;
-*/
 extern		TELEPORT_DATA	  *	first_teleport;
 extern		TELEPORT_DATA	  *	last_teleport;
 extern		OBJ_DATA	  *	extracted_obj_queue;
 extern		EXTRACT_CHAR_DATA *	extracted_char_queue;
-extern		OBJ_DATA	  *	save_equipment[MAX_WEAR][MAX_LAYERS];
 extern		CHAR_DATA	  *	quitting_char;
 extern		CHAR_DATA	  *	loading_char;
 extern		CHAR_DATA	  *	saving_char;
 extern		OBJ_DATA	  *	all_obj;
 
+extern		struct act_prog_data *	mob_act_list;
+
+// Log globals
 extern		char			bug_buf		[];
-extern		time_t			current_time;
-extern		bool			fLogAll;
-extern		FILE *			fpReserve;
 extern		FILE *			fpLOG;
 extern		char			log_buf		[];
-extern		TIME_INFO_DATA		time_info;
-extern		WEATHER_DATA		weather_info;
+extern		FILE *			fpReserve;
 
-extern          AUCTION_DATA      *     auction;
-extern		struct act_prog_data *	mob_act_list;
+extern      int             lang_sn[LANG_MAX];
 
 
 /*
@@ -5747,7 +5748,7 @@ PLANET_DATA *	get_planet	args( ( char *name ) );
 void	load_planets		args( ( GameContext *game ) );
 void	save_planet		args( ( PLANET_DATA *planet ) );
 float   get_taxes               args( ( PLANET_DATA *planet ) );
-bool 	load_member_list	args( ( char *filename ) );
+bool 	load_member_list	args( ( GameContext *game, char *filename ) );
 void	update_member		args( ( CHAR_DATA *ch ) );
 void	remove_member		args( ( CHAR_DATA *ch ) );
 
@@ -6251,7 +6252,7 @@ void	set_alarm	args( ( long seconds ) );
 void	requip_char	args( ( CHAR_DATA *ch ) );
 void    fwrite_obj      args( ( CHAR_DATA *ch,  OBJ_DATA  *obj, FILE *fp, 
 				int iNest, sh_int os_type ) );
-void	fread_obj	args( ( CHAR_DATA *ch,  FILE *fp, sh_int os_type ) );
+void	fread_obj	args( ( GameContext *game, CHAR_DATA *ch,  FILE *fp, sh_int os_type ) );
 void	de_equip_char	args( ( CHAR_DATA *ch ) );
 void	re_equip_char	args( ( CHAR_DATA *ch ) );
 void	save_home	args( ( CHAR_DATA *ch ) );

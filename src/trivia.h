@@ -3,6 +3,7 @@
 #include "mud.h"
 struct trivia_struct
 {
+  GameContext *game = NULL;
   int prize;
   int current_question;
   CHAR_DATA *asker;

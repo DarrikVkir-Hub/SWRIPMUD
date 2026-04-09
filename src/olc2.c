@@ -94,7 +94,7 @@ bool olc_object_in_edit_mode(CHAR_DATA* ch);
 void olc_show_object_extradesc_help(CHAR_DATA* ch);
 AFFECT_DATA* olc_find_object_affect_by_number(OBJ_DATA* obj, int index);
 bool olc_object_parse_affect_value(CHAR_DATA* ch, int loc, const std::string& value_text, int& out_value);
-
+bool olc_object_finish_extradesc_edit( CHAR_DATA* ch, OBJ_DATA* obj, const std::string& value);
 
 void olc_mobile_reset_pending_proto(OlcSession* sess);
 void olc_mobile_init_pending_proto_from_live(OlcSession* sess, CHAR_DATA* mob);
@@ -119,6 +119,7 @@ void olc_room_edit_help(CHAR_DATA* ch);
 void olc_room_relink_exits(ROOM_INDEX_DATA* room);
 void olc_room_apply_pending_exit_side_effect(const OlcPendingExitSideEffect& p);
 void olc_show_room_exit_help(CHAR_DATA* ch);
+bool olc_room_finish_extradesc_edit( CHAR_DATA* ch, ROOM_INDEX_DATA* room, const std::string& value );
 
 SHOP_DATA* olc_shop_clone(const SHOP_DATA* src);
 void olc_shop_free(SHOP_DATA* shop);
@@ -170,6 +171,7 @@ const OlcSchema<ROOM_INDEX_DATA>* get_room_schema()
         make_olc_custom_editor_field<ROOM_INDEX_DATA>("extradesc", OlcMetaType::EXTRA_DESC_LIST,
             [](CHAR_DATA* ch, ROOM_INDEX_DATA* room) -> bool { return olc_room_edit_extradesc_field(ch, room); },
             [](ROOM_INDEX_DATA* room) -> std::string { return olc_room_extradesc_list_summary(room); },
+            [](CHAR_DATA* ch, ROOM_INDEX_DATA* room, const std::string& value) -> bool { return olc_room_finish_extradesc_edit(ch, room, value); },  
             SUB_ROOM_EXTRA,
             "These provide extra 'look (keyword)' that can provide more room depth.\nExample: If you describe a painting in the long description, an extra description can describe what the painting looks like when 'look painting'",
             true),
@@ -186,11 +188,11 @@ const OlcSchema<ROOM_INDEX_DATA>* get_room_schema()
         make_olc_custom_editor_field<ROOM_INDEX_DATA>("exit", OlcMetaType::EXIT_LIST,
             [](CHAR_DATA* ch, ROOM_INDEX_DATA* room) -> bool { return olc_room_edit_exit_field(ch, room); },
             [](ROOM_INDEX_DATA* room) -> std::string { return olc_room_exit_list_summary(room); },
-            0, "Manage room exits - type exit ? for more info", true),
+            nullptr, 0, "Manage room exits - type exit ? for more info", true),
         make_olc_custom_editor_field<ROOM_INDEX_DATA>("bexit", OlcMetaType::EXIT_LIST,
             [](CHAR_DATA* ch, ROOM_INDEX_DATA* room) -> bool { return olc_room_edit_bexit_field(ch, room); },
             [](ROOM_INDEX_DATA* room) -> std::string { return olc_room_exit_list_summary(room); },
-            0, "Manage bidirectional exit changes - type bexit ? for more info", true),
+            nullptr, 0, "Manage bidirectional exit changes - type bexit ? for more info", true),
     };
 
     static OlcSchema<ROOM_INDEX_DATA> room_schema;
@@ -240,11 +242,12 @@ const OlcSchema<OBJ_DATA>* get_object_schema()
         make_olc_custom_editor_field<OBJ_DATA>("extradesc", OlcMetaType::EXTRA_DESC_LIST,
             [](CHAR_DATA* ch, OBJ_DATA* obj) -> bool { return olc_object_edit_extradesc_field(ch, obj); },
             [](OBJ_DATA* obj) -> std::string { return olc_object_extradesc_list_summary(obj); },
+            [](CHAR_DATA* ch, OBJ_DATA* obj, const std::string& value) -> bool { return olc_object_finish_extradesc_edit(ch, obj, value); },            
             SUB_OBJ_EXTRA, "These provide extra 'look (keyword)' that can provide more object depth.", true),
         make_olc_custom_editor_field<OBJ_DATA>("affect", OlcMetaType::OBJ_AFFECT_LIST,
             [](CHAR_DATA* ch, OBJ_DATA* obj) -> bool { return olc_edit_object_affect_field(ch, obj); },
             [](OBJ_DATA* obj) -> std::string { return olc_object_affect_list_summary(obj); },
-            0, "Object affects", true)
+            nullptr, 0, "Object affects", true)
     };
 
     static OlcSchema<OBJ_DATA> object_schema;
@@ -371,7 +374,7 @@ static std::vector<OlcField<CHAR_DATA>> mob_fields =
     make_olc_custom_editor_field<CHAR_DATA>( "affect", OlcMetaType::MOB_AFFECT_LIST,
         [](CHAR_DATA* ch, CHAR_DATA* mob) -> bool { return olc_mobile_edit_affect_field(ch, mob); },
         [](CHAR_DATA* mob) -> std::string { return olc_mobile_affect_list_summary(mob); },
-        0, "Mobile affects", true ),
+        nullptr, 0, "Mobile affects", true ),
 };
 
     static OlcSchema<CHAR_DATA> mob_schema;
@@ -919,6 +922,25 @@ void olc_room_apply_changes(ROOM_INDEX_DATA* src, ROOM_INDEX_DATA* dst)
         src->last_exit = ex;
 }
 
+bool olc_room_finish_extradesc_edit(
+    CHAR_DATA* ch, ROOM_INDEX_DATA* room, const std::string& value )
+{
+    EXTRA_DESCR_DATA *ed = nullptr;
+
+    (void)room;
+
+    if ( !ch || !ch->desc || !ch->desc->olc || !ch->desc->olc->editor_context )
+    {
+        bug( "olc_room_finish_extradesc_edit: NULL editor_context", 0 );
+        return false;
+    }
+
+    ed = static_cast<EXTRA_DESCR_DATA*>( ch->desc->olc->editor_context );
+    ch->desc->olc->editor_context = nullptr;
+
+    return set_str_field( ed->description, value );
+}
+
 bool olc_room_edit_extradesc_field(CHAR_DATA* ch, ROOM_INDEX_DATA* room)
 {
     const char* arg = ch->desc->olc->last_cmd_arg.c_str();
@@ -957,7 +979,10 @@ bool olc_room_edit_extradesc_field(CHAR_DATA* ch, ROOM_INDEX_DATA* room)
     auto ed = olc_room_get_or_create_extra_desc(room, arg);
 
     ch->substate = SUB_ROOM_EXTRA;
-    ch->dest_buf = ed;
+    ch->dest_buf = room;
+    ch->last_cmd = do_olcset;
+
+    ch->desc->olc->editor_context = ed;    
     start_editing(ch, ed->description);
 
     return true;
@@ -3227,6 +3252,24 @@ std::string olc_object_extradesc_list_summary(OBJ_DATA* obj)
     return out.empty() ? "none" : out;
 }
 
+bool olc_object_finish_extradesc_edit(
+    CHAR_DATA* ch, OBJ_DATA* obj, const std::string& value )
+{
+    EXTRA_DESCR_DATA *ed = nullptr;
+
+    (void)obj;
+
+    if ( !ch || !ch->desc || !ch->desc->olc || !ch->desc->olc->editor_context )
+    {
+        bug( "olc_object_finish_extradesc_edit: NULL editor_context", 0 );
+        return false;
+    }
+
+    ed = static_cast<EXTRA_DESCR_DATA*>( ch->desc->olc->editor_context );
+    ch->desc->olc->editor_context = nullptr;
+
+    return set_str_field( ed->description, value );
+}
 
 bool olc_object_edit_extradesc_field(CHAR_DATA* ch, OBJ_DATA* obj)
 {
@@ -3264,7 +3307,9 @@ bool olc_object_edit_extradesc_field(CHAR_DATA* ch, OBJ_DATA* obj)
     auto ed = olc_object_get_or_create_extra_desc(obj, arg);
 
     ch->substate = SUB_OBJ_EXTRA;
-    ch->dest_buf = ed;
+    ch->dest_buf = obj;      
+    ch->desc->olc->editor_context = ed;
+    ch->last_cmd = do_olcset;
     start_editing(ch, ed->description);
     return true;
 }

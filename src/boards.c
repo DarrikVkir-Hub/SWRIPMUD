@@ -1163,7 +1163,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 
 
 
-BOARD_DATA *read_board( char *boardfile, FILE *fp )
+BOARD_DATA *read_board( GameContext *game, char *boardfile, FILE *fp )
 {
     BOARD_DATA *board;
     const char *word;
@@ -1184,7 +1184,7 @@ BOARD_DATA *read_board( char *boardfile, FILE *fp )
 	ungetc( letter, fp );
 
 	CREATE( board, BOARD_DATA, 1 );
-
+	board->game = game;
 #ifdef KEY
 #undef KEY
 #endif
@@ -1348,7 +1348,7 @@ void load_boards( GameContext *game )
     if ( ( board_fp = fopen( boardfile, "r" ) ) == NULL )
 	return;
 
-    while ( (board = read_board( boardfile, board_fp )) != NULL )
+    while ( (board = read_board( game, boardfile, board_fp )) != NULL )
     {
 		board->game = game;
 	LINK( board, first_board, last_board, next, prev );
@@ -1379,7 +1379,7 @@ void do_makeboard( CHAR_DATA *ch, char *argument )
     smash_tilde( argument );
 
     CREATE( board, BOARD_DATA, 1 );
-
+	board->game = ch->game;
     LINK( board, first_board, last_board, next, prev );
     board->note_file	   = str_dup( strlower( argument ) );
     board->read_group      = str_dup( "" );

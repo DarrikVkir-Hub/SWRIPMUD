@@ -1135,6 +1135,7 @@ void char_to_room( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex )
 	    return;
 
 	CREATE( tele, TELEPORT_DATA, 1 );
+    tele->game = ch->game;
 	LINK( tele, first_teleport, last_teleport, next, prev );
 	tele->room		= pRoomIndex;
 	tele->timer		= pRoomIndex->tele_delay;
@@ -3524,6 +3525,7 @@ OBJ_DATA *clone_object( OBJ_DATA *obj )
     OBJ_DATA *clone;
 
     CREATE( clone, OBJ_DATA, 1 );
+    clone->game = obj->game;
     clone->pIndexData	= obj->pIndexData;
     clone->name		= QUICKLINK( obj->name );
     clone->short_descr	= QUICKLINK( obj->short_descr );

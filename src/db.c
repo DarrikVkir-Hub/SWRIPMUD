@@ -522,6 +522,7 @@ void boot_db( GameContext *game )
     loading_char	= NULL;
     saving_char		= NULL;
     CREATE( auction, AUCTION_DATA, 1);
+    auction->game = game;
     auction->item 	= NULL;
     for ( wear = 0; wear < MAX_WEAR; wear++ )
 	for ( x = 0; x < MAX_LAYERS; x++ )
@@ -4944,7 +4945,7 @@ void towizfile( const char *line )
   }
 }
 
-void add_to_wizlist( char *name, int level )
+void add_to_wizlist( GameContext *game, char *name, int level )
 {
   WIZENT *wiz, *tmp;
 
@@ -4953,6 +4954,7 @@ void add_to_wizlist( char *name, int level )
 #endif
 
   CREATE( wiz, WIZENT, 1 );
+  wiz->game = game;
   wiz->name	= str_dup( name );
   wiz->level	= level;
 
@@ -5040,7 +5042,7 @@ void make_wizlist( GameContext *game )
             ilevel = MAX_LEVEL - 9;
           if ( BV_IS_SET( iflags, PCFLAG_GUEST ) )
             ilevel = MAX_LEVEL - 9;
-	  add_to_wizlist( dentry->d_name, ilevel );
+	  add_to_wizlist( game, dentry->d_name, ilevel );
 	}
       }
       dentry = readdir( dp );

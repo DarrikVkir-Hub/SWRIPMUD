@@ -1281,7 +1281,7 @@ void do_makeshop( CHAR_DATA *ch, char *argument )
     }
 
     CREATE( shop, SHOP_DATA, 1 );
-
+	shop->game = ch->game;
     LINK( shop, first_shop, last_shop, next, prev );
     shop->keeper	= vnum;
     shop->profit_buy	= 120;
@@ -1545,6 +1545,7 @@ void do_makerepair( CHAR_DATA *ch, char *argument )
     }
 
     CREATE( repair, REPAIR_DATA, 1 );
+	repair->game = ch->game;
 
     LINK( repair, first_repair, last_repair, next, prev );
     repair->keeper	= vnum;
@@ -2138,7 +2139,7 @@ char vnum1 [MAX_INPUT_LENGTH];
 	case '#':
 		if ( !strcmp( word, "#OBJECT" ) )
 			{
-			fread_obj ( mob, fp, OS_CARRY );
+			fread_obj ( game, mob, fp, OS_CARRY );
 			}
 			break;
 	case 'D':

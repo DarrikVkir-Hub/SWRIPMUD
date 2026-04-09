@@ -168,6 +168,7 @@ void init_supermob(GameContext *game)
 
 #ifdef NOTDEFD
    CREATE( supermob, CHAR_DATA, 1 );
+   supermob->game = game;
    clear_char( supermob );
 
    SET_BIT(supermob->act,ACT_IS_NPC);
@@ -176,6 +177,7 @@ void init_supermob(GameContext *game)
    supermob->long_descr 	= STRALLOC(".");
 
    CREATE( supermob_index, MOB_INDEX_DATA, 1 )
+   supermob_index->game = game;
 #endif
 }
 

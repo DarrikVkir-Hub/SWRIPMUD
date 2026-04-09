@@ -6550,6 +6550,7 @@ void assign_area( CHAR_DATA *ch )
 	    log_printf_plus( LOG_NORMAL, ch->top_level, "Creating area entry for %s", ch->name );
 //	    log_string_plus( buf, LOG_NORMAL, ch->top_level );
 	    CREATE( tarea, AREA_DATA, 1 );
+		tarea->game = ch->game;
 	    LINK( tarea, first_build, last_build, next, prev );
 	    tarea->first_reset	= NULL;
 	    tarea->last_reset	= NULL;

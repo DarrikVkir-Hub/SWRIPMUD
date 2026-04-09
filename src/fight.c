@@ -200,222 +200,222 @@ void violence_update( GameContext *game )
     {
         if (!ch->game)
             ch->game = game;
-	set_cur_char( ch );
+        set_cur_char( ch );
 
-	if ( ch == first_char && ch->prev )
-	{
-	   bug( "ERROR: first_char->prev != NULL, fixing...", 0 );
-	   ch->prev = NULL;
-	}
+        if ( ch == first_char && ch->prev )
+        {
+            bug( "ERROR: first_char->prev != NULL, fixing...", 0 );
+            ch->prev = NULL;
+        }
 
-	gch_prev	= ch->prev;
+        gch_prev	= ch->prev;
 
-	if ( gch_prev && gch_prev->next != ch )
-	{
-	    SPRINTF( buf, "FATAL: violence_update: %s->prev->next doesn't point to ch.",
-		ch->name );
-	    bug( buf, 0 );	    
-	    bug( "Short-cutting here", 0 );
-	    ch->prev = NULL;
-	    gch_prev = NULL;
-	    do_shout( ch, "Thoric says, 'Prepare for the worst!'" );
-	}
-
-	/*
-	 * See if we got a pointer to someone who recently died...
-	 * if so, either the pointer is bad... or it's a player who
-	 * "died", and is back at the healer...
-	 * Since he/she's in the char_list, it's likely to be the later...
-	 * and should not already be in another fight already
-	 */
-	if ( char_died(ch) )
-	    continue;
-
-	/*
-	 * See if we got a pointer to some bad looking data...
-	 */
-	if ( !ch->in_room || !ch->name )
-	{
-	    log_string( "violence_update: bad ch record!  (Shortcutting.)" );
-	    log_printf( "ch: %p  ch->in_room: %p  ch->prev: %p  ch->next: %p",
-	    	ch, ch->in_room, ch->prev, ch->next );
-	    log_string( lastplayercmd );
-	    if ( lst_ch )
-	      log_printf( "lst_ch: %p  lst_ch->prev: %p  lst_ch->next: %p",
-	      		lst_ch, lst_ch->prev, lst_ch->next );
-	    else
-	      log_printf( "lst_ch: NULL" );
-	    gch_prev = NULL;
-	    continue;
-	}
+        if ( gch_prev && gch_prev->next != ch )
+        {
+            SPRINTF( buf, "FATAL: violence_update: %s->prev->next doesn't point to ch.",
+            ch->name );
+            bug( buf, 0 );	    
+            bug( "Short-cutting here", 0 );
+            ch->prev = NULL;
+            gch_prev = NULL;
+            do_shout( ch, "Thoric says, 'Prepare for the worst!'" );
+        }
 
         /*
-         * Experience gained during battle deceases as battle drags on
-         */
-	if ( ch->fighting )
-	  if ( (++ch->fighting->duration % 24) == 0 )
-	    ch->fighting->xp = ((ch->fighting->xp * 9) / 10);
+        * See if we got a pointer to someone who recently died...
+        * if so, either the pointer is bad... or it's a player who
+        * "died", and is back at the healer...
+        * Since he/she's in the char_list, it's likely to be the later...
+        * and should not already be in another fight already
+        */
+        if ( char_died(ch) )
+            continue;
 
-
-	for ( timer = ch->first_timer; timer; timer = timer_next )
-	{
-	    timer_next = timer->next;
-	    if ( --timer->count <= 0 )
-	    {
-		if ( timer->type == TIMER_DO_FUN )
-		{
-		    int tempsub;
-
-		    tempsub = ch->substate;
-		    ch->substate = timer->value;
-		    (timer->do_fun)( ch, "" );
-		    if ( char_died(ch) )
-		      break;
-		    ch->substate = tempsub;
-		}
-		extract_timer( ch, timer );
-	    }
-	}
-
-	if ( char_died(ch) )
-	  continue;
-
-	/*
-	 * We need spells that have shorter durations than an hour.
-	 * So a melee round sounds good to me... -Thoric
-	 */
-	for ( paf = ch->first_affect; paf; paf = paf_next )
-	{
-	      paf_next	= paf->next;
-	      if ( paf->duration > 0 )
-		paf->duration--;
-	      else
-	      if ( paf->duration < 0 )
-		;
-	      else
-	      {
-		  if ( !paf_next
-		  ||    paf_next->type != paf->type
-		  ||    paf_next->duration > 0 )
-		  {
-		      skill = get_skilltype(paf->type);
-		      if ( paf->type > 0 && skill && skill->msg_off )
-		      {
-                          set_char_color( AT_WEAROFF, ch );
-			  send_to_char( skill->msg_off, ch );
-			  send_to_char( "\n", ch );
-		      }
-		  }
-		  if (paf->type == gsn_possess)
-	          {
-	            ch->desc->character       = ch->desc->original;
-    	            ch->desc->original        = NULL;
-    		    ch->desc->character->desc = ch->desc;
-   	            ch->desc->character->switched = NULL;
-    		    ch->desc                  = NULL;
-		  }
-		  affect_remove( ch, paf );
-	      }
-	}
-	
-	if ( ( victim = who_fighting( ch ) ) == NULL
-	||   IS_AFFECTED( ch, AFF_PARALYSIS ) )
-	    continue;
-
-        retcode = rNONE;
-
-	if ( BV_IS_SET(ch->in_room->room_flags, ROOM_SAFE ) )
-	{
-	   log_printf( "violence_update: %s fighting %s in a SAFE room.",
-	   	ch->name, victim->name );
-	   stop_fighting( ch, TRUE );
-	}
-	else
-	if ( IS_AWAKE(ch) && ch->in_room == victim->in_room )
-	    retcode = multi_hit( ch, victim, TYPE_UNDEFINED );
-	else
-	    stop_fighting( ch, FALSE );
-
-	if ( char_died(ch) )
-	    continue;
-
-	if ( retcode == rCHAR_DIED
-	|| ( victim = who_fighting( ch ) ) == NULL )
-	    continue;
-
-        if( IS_NPC(ch) )
+        /*
+        * See if we got a pointer to some bad looking data...
+        */
+        if ( !ch->in_room || !ch->name )
         {
-          do_wear( ch, "blaster" );
-          do_wear( ch, "all" );
+            log_string( "violence_update: bad ch record!  (Shortcutting.)" );
+            log_printf( "ch: %p  ch->in_room: %p  ch->prev: %p  ch->next: %p",
+                ch, ch->in_room, ch->prev, ch->next );
+            log_string( lastplayercmd );
+            if ( lst_ch )
+            log_printf( "lst_ch: %p  lst_ch->prev: %p  lst_ch->next: %p",
+                    lst_ch, lst_ch->prev, lst_ch->next );
+            else
+            log_printf( "lst_ch: NULL" );
+            gch_prev = NULL;
+            continue;
         }
-          
 
-	/*
-	 *  Mob triggers
-	 */
-	rprog_rfight_trigger( ch );
-	if ( char_died(ch) )
-	    continue;
-	mprog_hitprcnt_trigger( ch, victim );
-	if ( char_died(ch) )
-	    continue;
-	mprog_fight_trigger( ch, victim );
-	if ( char_died(ch) )
-	    continue;
+            /*
+            * Experience gained during battle deceases as battle drags on
+            */
+        if ( ch->fighting )
+        if ( (++ch->fighting->duration % 24) == 0 )
+            ch->fighting->xp = ((ch->fighting->xp * 9) / 10);
 
-	/*
-	 * Fun for the whole family!
-	 */
-	for ( rch = ch->in_room->first_person; rch; rch = rch_next )
-	{
-	    rch_next = rch->next_in_room;
 
-	    if ( IS_AWAKE(rch) && !rch->fighting )
-	    {
-		/*
-		 * PC's auto-assist others in their group.
-		 */
-		if ( !IS_NPC(ch) || IS_AFFECTED(ch, AFF_CHARM) )
-		{
-		    if ( ( !IS_NPC(rch) || IS_AFFECTED(rch, AFF_CHARM) )
-		    &&   is_same_group(ch, rch) )
-			multi_hit( rch, victim, TYPE_UNDEFINED );
-		    continue;
-		}
+        for ( timer = ch->first_timer; timer; timer = timer_next )
+        {
+            timer_next = timer->next;
+            if ( --timer->count <= 0 )
+            {
+            if ( timer->type == TIMER_DO_FUN )
+            {
+                int tempsub;
 
-		/*
-		 * NPC's assist NPC's of same type or 12.5% chance regardless.
-		 */
-		if ( IS_NPC(rch) && !IS_AFFECTED(rch, AFF_CHARM)
-		&&  !BV_IS_SET(rch->act, ACT_NOASSIST) )
-		{
-		    if ( char_died(ch) )
-			break;
-		    if ( rch->pIndexData == ch->pIndexData
-		    ||   number_bits( 3 ) == 0 )
-		    {
-			CHAR_DATA *vch;
-			CHAR_DATA *target;
-			int number;
+                tempsub = ch->substate;
+                ch->substate = timer->value;
+                (timer->do_fun)( ch, "" );
+                if ( char_died(ch) )
+                break;
+                ch->substate = tempsub;
+            }
+            extract_timer( ch, timer );
+            }
+        }
 
-			target = NULL;
-			number = 0;			for ( vch = ch->in_room->first_person; vch; vch = vch->next )
-			{
-			    if ( can_see( rch, vch )
-			    &&   is_same_group( vch, victim )
-			    &&   number_range( 0, number ) == 0 )
-			    {
-				target = vch;
-				number++;
-			    }
-			}
+        if ( char_died(ch) )
+        continue;
 
-			if ( target )
-			    multi_hit( rch, target, TYPE_UNDEFINED );
-		    }
-		}
-	    }
-	}
+        /*
+        * We need spells that have shorter durations than an hour.
+        * So a melee round sounds good to me... -Thoric
+        */
+        for ( paf = ch->first_affect; paf; paf = paf_next )
+        {
+            paf_next	= paf->next;
+            if ( paf->duration > 0 )
+            paf->duration--;
+            else
+            if ( paf->duration < 0 )
+            ;
+            else
+            {
+            if ( !paf_next
+            ||    paf_next->type != paf->type
+            ||    paf_next->duration > 0 )
+            {
+                skill = get_skilltype(paf->type);
+                if ( paf->type > 0 && skill && skill->msg_off )
+                {
+                            set_char_color( AT_WEAROFF, ch );
+                send_to_char( skill->msg_off, ch );
+                send_to_char( "\n", ch );
+                }
+            }
+            if (paf->type == gsn_possess)
+                {
+                    ch->desc->character       = ch->desc->original;
+                        ch->desc->original        = NULL;
+                    ch->desc->character->desc = ch->desc;
+                    ch->desc->character->switched = NULL;
+                    ch->desc                  = NULL;
+            }
+            affect_remove( ch, paf );
+            }
+        }
+        
+        if ( ( victim = who_fighting( ch ) ) == NULL
+        ||   IS_AFFECTED( ch, AFF_PARALYSIS ) )
+            continue;
+
+            retcode = rNONE;
+
+        if ( BV_IS_SET(ch->in_room->room_flags, ROOM_SAFE ) )
+        {
+            log_printf( "violence_update: %s fighting %s in a SAFE room.",
+                ch->name, victim->name );
+            stop_fighting( ch, TRUE );
+        }
+        else
+        if ( IS_AWAKE(ch) && ch->in_room == victim->in_room )
+            retcode = multi_hit( ch, victim, TYPE_UNDEFINED );
+        else
+            stop_fighting( ch, FALSE );
+
+        if ( char_died(ch) )
+            continue;
+
+        if ( retcode == rCHAR_DIED
+        || ( victim = who_fighting( ch ) ) == NULL )
+            continue;
+
+            if( IS_NPC(ch) )
+            {
+            do_wear( ch, "blaster" );
+            do_wear( ch, "all" );
+            }
+            
+
+        /*
+        *  Mob triggers
+        */
+        rprog_rfight_trigger( ch );
+        if ( char_died(ch) )
+            continue;
+        mprog_hitprcnt_trigger( ch, victim );
+        if ( char_died(ch) )
+            continue;
+        mprog_fight_trigger( ch, victim );
+        if ( char_died(ch) )
+            continue;
+
+        /*
+        * Fun for the whole family!
+        */
+        for ( rch = ch->in_room->first_person; rch; rch = rch_next )
+        {
+            rch_next = rch->next_in_room;
+
+            if ( IS_AWAKE(rch) && !rch->fighting )
+            {
+            /*
+            * PC's auto-assist others in their group.
+            */
+            if ( !IS_NPC(ch) || IS_AFFECTED(ch, AFF_CHARM) )
+            {
+                if ( ( !IS_NPC(rch) || IS_AFFECTED(rch, AFF_CHARM) )
+                &&   is_same_group(ch, rch) )
+                multi_hit( rch, victim, TYPE_UNDEFINED );
+                continue;
+            }
+
+            /*
+            * NPC's assist NPC's of same type or 12.5% chance regardless.
+            */
+            if ( IS_NPC(rch) && !IS_AFFECTED(rch, AFF_CHARM)
+            &&  !BV_IS_SET(rch->act, ACT_NOASSIST) )
+            {
+                if ( char_died(ch) )
+                break;
+                if ( rch->pIndexData == ch->pIndexData
+                ||   number_bits( 3 ) == 0 )
+                {
+                CHAR_DATA *vch;
+                CHAR_DATA *target;
+                int number;
+
+                target = NULL;
+                number = 0;			for ( vch = ch->in_room->first_person; vch; vch = vch->next )
+                {
+                    if ( can_see( rch, vch )
+                    &&   is_same_group( vch, victim )
+                    &&   number_range( 0, number ) == 0 )
+                    {
+                    target = vch;
+                    number++;
+                    }
+                }
+
+                if ( target )
+                    multi_hit( rch, target, TYPE_UNDEFINED );
+                }
+            }
+            }
+        }
     }
 
     return;

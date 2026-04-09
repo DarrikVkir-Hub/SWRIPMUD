@@ -596,6 +596,7 @@ ROOM_INDEX_DATA *generate_exit( ROOM_INDEX_DATA *in_room, EXIT_DATA **pexit )
     if ( !found )
     {
 	CREATE( room, ROOM_INDEX_DATA, 1 );
+	room->game = in_room->game;
 	room->area	  = in_room->area;
 	room->vnum	  = serial;
 	room->tele_vnum	  = roomnum;

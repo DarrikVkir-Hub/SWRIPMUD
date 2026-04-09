@@ -51,6 +51,7 @@ struct hall_of_fame_element
 
 struct struct_gladiator
 {
+  GameContext *game = NULL;
 	CHAR_DATA *ch;
 	sh_int prev_hit;
 	sh_int prev_move;
@@ -220,6 +221,7 @@ void do_arena(CHAR_DATA *ch, char *argument)
     to_channel(buf,CHANNEL_ARENA,"&RArena&W",5);
     send_to_char(buf, ch);
     CREATE(gladiator_node, struct struct_gladiator, 1);
+    gladiator_node->game = ch->game;
     gladiator_node->ch = ch;
     gladiator_node->prev_hit = ch->hit;
     gladiator_node->prev_move = ch->move;
@@ -284,6 +286,7 @@ void do_marena(CHAR_DATA *ch, char *argument)
     to_channel(buf,CHANNEL_ARENA,"&RArena&W",5);
     send_to_char(buf, mob);
     CREATE(gladiator_node, struct struct_gladiator, 1);
+    gladiator_node->game = ch->game;
     gladiator_node->ch = mob;
     gladiator_node->prev_hit = mob->hit;
     gladiator_node->prev_move = mob->move;
@@ -991,6 +994,7 @@ void do_accept(CHAR_DATA *ch, char *argument)
     char_to_room(ch, get_room_index(PREP_END));
     do_look(ch,"auto");
     CREATE(gladiator_node, struct struct_gladiator, 1);
+    gladiator_node->game = ch->game;
     gladiator_node->ch = ch;
     gladiator_node->prev_hit = ch->hit;
     gladiator_node->prev_move = ch->move;
@@ -1003,6 +1007,7 @@ void do_accept(CHAR_DATA *ch, char *argument)
     char_to_room(dch, get_room_index(PREP_START));
     do_look(dch,"auto");
     CREATE(gladiator_node, struct struct_gladiator, 1);
+    gladiator_node->game = ch->game;
     gladiator_node->ch = dch;
     gladiator_node->prev_hit = dch->hit;
     gladiator_node->prev_move = dch->move;

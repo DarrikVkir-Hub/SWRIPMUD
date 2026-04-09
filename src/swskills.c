@@ -3113,7 +3113,7 @@ void do_torture( CHAR_DATA *ch, char *argument )
  return;
     }
     
-    ch->alignment = ch->alignment -= 100;
+    ch->alignment -= 100;
     ch->alignment = URANGE( -1000, ch->alignment, 1000 );
     gmcp_evt_char_stats(ch);    
     WAIT_STATE( ch, skill_table[gsn_torture]->beats );
