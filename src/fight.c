@@ -322,7 +322,7 @@ void violence_update( GameContext *game )
         ||   IS_AFFECTED( ch, AFF_PARALYSIS ) )
             continue;
 
-            retcode = rNONE;
+        retcode = rNONE;
 
         if ( BV_IS_SET(ch->in_room->room_flags, ROOM_SAFE ) )
         {
@@ -343,11 +343,11 @@ void violence_update( GameContext *game )
         || ( victim = who_fighting( ch ) ) == NULL )
             continue;
 
-            if( IS_NPC(ch) )
-            {
+        if( IS_NPC(ch) )
+        {
             do_wear( ch, "blaster" );
             do_wear( ch, "all" );
-            }
+        }
             
 
         /*
@@ -2321,20 +2321,20 @@ else
   }
   
   SPRINTF( buf, "%s%c/%s", PLAYER_DIR, tolower(arg[0]),
-          capitalize( arg ) );
+          capitalize( arg ).c_str() );
   SPRINTF( buf2, "%s%c/%s", BACKUP_DIR, tolower(arg[0]),
-          capitalize( arg ) );
+          capitalize( arg ).c_str() );
   
   rename( buf, buf2 );
   
   SPRINTF( buf, "%s%c/%s.clone", PLAYER_DIR, tolower(arg[0]),
-          capitalize( arg ) );
+          capitalize( arg ).c_str() );
   SPRINTF( buf2, "%s%c/%s", PLAYER_DIR, tolower(arg[0]),
-          capitalize( arg ) );
+          capitalize( arg ).c_str() );
 
   rename( buf, buf2 );
 
-    SPRINTF( buf, "%s%s", GOD_DIR, capitalize(victim->name) );  
+    SPRINTF( buf, "%s%s", GOD_DIR, capitalize(victim->name).c_str() );  
  
     if ( !remove( buf ) )
       send_to_char( "Player's immortal data destroyed.\n", ch );
@@ -2349,7 +2349,7 @@ else
     }
 
     SPRINTF( buf, "%s%c/%s.home", PLAYER_DIR, tolower(arg[0]),
-          capitalize( arg ) );
+          capitalize( arg ).c_str() );
     remove( buf );
   
   return;
@@ -2721,12 +2721,12 @@ void dam_message( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
 
 void do_kill( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Kill whom?\n", ch );
 	return;
@@ -2799,13 +2799,13 @@ void do_murde( CHAR_DATA *ch, char *argument )
 
 void do_murder( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 //  char  logbuf[MAX_STRING_LENGTH];
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Murder whom?\n", ch );
 	return;
@@ -2882,7 +2882,6 @@ void do_flee( CHAR_DATA *ch, char *argument )
 {
     ROOM_INDEX_DATA *was_in;
     ROOM_INDEX_DATA *now_in;
-    char buf[MAX_STRING_LENGTH];
     int attempt;
     sh_int door;
     EXIT_DATA *pexit;
@@ -2955,15 +2954,13 @@ void do_flee( CHAR_DATA *ch, char *argument )
 	act( AT_FLEE, "$n runs for cover!", ch, NULL, NULL, TO_ROOM );
 	ch->in_room = now_in;
 	act( AT_FLEE, "$n glances around for signs of pursuit.", ch, NULL, NULL, TO_ROOM );
-        SPRINTF(buf, "You run for cover!");
-        send_to_char( buf, ch );
+        send_to_char( "You run for cover!", ch );
     
 	stop_fighting( ch, TRUE );
 	return;
     }
 
-    SPRINTF(buf, "You attempt to run for cover!");
-    send_to_char( buf, ch );
+    send_to_char( "You attempt to run for cover!", ch );
     return;
 }
 
@@ -3028,12 +3025,13 @@ void do_sla( CHAR_DATA *ch, char *argument )
 void do_slay( CHAR_DATA *ch, char *argument )
 {
     CHAR_DATA *victim;
-    char arg[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string arg2;
+    std::string argstr = argument;
 
-    argument = one_argument( argument, arg );
-    one_argument( argument, arg2 );
-    if ( arg[0] == '\0' )
+    argstr = one_argument( argstr, arg );
+    one_argument( argstr, arg2 );
+    if ( arg.empty() )
     {
 	send_to_char( "Slay whom?\n", ch );
 	return;

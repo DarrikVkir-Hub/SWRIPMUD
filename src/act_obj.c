@@ -30,7 +30,7 @@
 /*
  * External functions
  */
-void	write_corpses	args( ( CHAR_DATA *ch, char *name ) );
+void	write_corpses	args( ( CHAR_DATA *ch, const std::string& name ) );
 void    show_list_to_char  args( ( OBJ_DATA *list, CHAR_DATA *ch,
 				bool fShort, bool fShowNothing ) );
 /*
@@ -190,39 +190,41 @@ void get_obj( CHAR_DATA *ch, OBJ_DATA *obj, OBJ_DATA *container )
 
 void do_get( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+	std::string argstr;
     OBJ_DATA *obj;
     OBJ_DATA *obj_next;
     OBJ_DATA *container;
     sh_int number;
     bool found, foundowner = FALSE;
     CHAR_DATA *p, *p_prev;
-    argument = one_argument( argument, arg1 );
+
+    argstr = one_argument( argument, arg1 );
     if ( is_number(arg1) )
     {
-	number = atoi(arg1);
-	if ( number < 1 )
-	{
-	    send_to_char( "That was easy...\n", ch );
-	    return;
-	}
-	if ( (ch->carry_number + number) > can_carry_n(ch) )
-	{
-	    send_to_char( "You can't carry that many.\n", ch );
-	    return;
-	}
-	argument = one_argument( argument, arg1 );
+		number = strtoi(arg1);
+		if ( number < 1 )
+		{
+			send_to_char( "That was easy...\n", ch );
+			return;
+		}
+		if ( (ch->carry_number + number) > can_carry_n(ch) )
+		{
+			send_to_char( "You can't carry that many.\n", ch );
+			return;
+		}
+		argstr = one_argument( argstr, arg1 );
     }
     else
-	number = 0;
-    argument = one_argument( argument, arg2 );
+		number = 0;
+    argstr = one_argument( argstr, arg2 );
     /* munch optional words */
-    if ( !str_cmp( arg2, "from" ) && argument[0] != '\0' )
-	argument = one_argument( argument, arg2 );
+    if ( !str_cmp( arg2, "from" ) && !argstr.empty() )
+		argstr = one_argument( argstr, arg2 );
 
     /* Get type. */
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
 	send_to_char( "Get what?\n", ch );
 	return;
@@ -250,7 +252,7 @@ void do_get( CHAR_DATA *ch, char *argument )
      }
 
 
-    if ( arg2[0] == '\0' )
+    if ( arg2.empty() )
     {
 	if ( number <= 1 && str_cmp( arg1, "all" ) && str_prefix( "all.", arg1 ) )
 	{
@@ -279,7 +281,7 @@ void do_get( CHAR_DATA *ch, char *argument )
 	{
 	    sh_int cnt = 0;
 	    bool fAll;
-	    char *chk;
+	    std::string chk;
 
 	    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_DONATION ) )
 	    {
@@ -291,9 +293,19 @@ void do_get( CHAR_DATA *ch, char *argument )
 	    else
 		fAll = FALSE;
 	    if ( number > 1 )
-		chk = arg1;
+			chk = arg1;
 	    else
-		chk = &arg1[4];
+		{
+			if ( !str_prefix( "all.", arg1 ) )
+				if ( arg1.length() > 4 )
+					chk = arg1.substr(4);
+				else
+					chk = "";
+			else if ( !str_cmp( arg1, "all" ) )
+				chk = arg2;
+			// I can't believe Smaug actually got away with the below line.  Cause that's total BS - DV 4-10-26
+            //chk = &arg1[4];
+		}
 	    /* 'get all' or 'get all.obj' */
 	    found = FALSE;
 	    for ( obj = ch->in_room->first_content; obj; obj = obj_next )
@@ -417,7 +429,7 @@ void do_get( CHAR_DATA *ch, char *argument )
 	{
 	    int cnt = 0;
 	    bool fAll;
-	    char *chk;
+	    std::string chk;
 
 	    /* 'get all container' or 'get all.obj container' */
 	    if ( IS_OBJ_STAT( container, ITEM_DONATION ) )
@@ -430,9 +442,17 @@ void do_get( CHAR_DATA *ch, char *argument )
 	    else
 		fAll = FALSE;
 	    if ( number > 1 )
-		chk = arg1;
+			chk = arg1;
 	    else
-		chk = &arg1[4];
+		{
+			if ( !str_prefix( "all.", arg1 ) )
+				if ( arg1.length() > 4 )
+					chk = arg1.substr(4);
+				else
+					chk = "";
+			else if ( !str_cmp( arg1, "all" ) )
+				chk = arg2;
+		}
 	    found = FALSE;
 	    for ( obj = container->first_content; obj; obj = obj_next )
 	    {
@@ -490,8 +510,9 @@ void do_get( CHAR_DATA *ch, char *argument )
 
 void do_put( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+	std::string argstr;
     OBJ_DATA *container;
     OBJ_DATA *obj;
     OBJ_DATA *obj_next;
@@ -500,26 +521,26 @@ void do_put( CHAR_DATA *ch, char *argument )
     int		number;
     bool	save_char = FALSE;
 
-    argument = one_argument( argument, arg1 );
+    argstr = one_argument( argument, arg1 );
     if ( is_number(arg1) )
     {
-	number = atoi(arg1);
+	number = strtoi(arg1);
 	if ( number < 1 )
 	{
 	    send_to_char( "That was easy...\n", ch );
 	    return;
 	}
-	argument = one_argument( argument, arg1 );
+	argstr = one_argument( argstr, arg1 );
     }
     else
 	number = 0;
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg2 );
     /* munch optional words */
     if ( (!str_cmp(arg2, "into") || !str_cmp(arg2, "inside") || !str_cmp(arg2, "in"))
-    &&   argument[0] != '\0' )
-	argument = one_argument( argument, arg2 );
+    &&   !argstr.empty() )
+	argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() )
     {
 	send_to_char( "Put what in what?\n", ch );
 	return;
@@ -641,7 +662,7 @@ void do_put( CHAR_DATA *ch, char *argument )
 	bool found = FALSE;
 	int cnt = 0;
 	bool fAll;
-	char *chk;
+	std::string chk;
 
 	if ( !str_cmp(arg1, "all") )
 	    fAll = TRUE;
@@ -650,7 +671,15 @@ void do_put( CHAR_DATA *ch, char *argument )
 	if ( number > 1 )
 	    chk = arg1;
 	else
-	    chk = &arg1[4];
+	{
+		if ( !str_prefix( "all.", arg1 ) )
+			if ( arg1.length() > 4 )
+				chk = arg1.substr(4);
+			else
+				chk = "";
+		else if ( !str_cmp( arg1, "all" ) )
+			chk = arg2;
+	}
 
 	separate_obj(container);
 	/* 'put all container' or 'put all.obj container' */
@@ -719,28 +748,29 @@ void do_put( CHAR_DATA *ch, char *argument )
 
 void do_drop( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+	std::string argstr;
     OBJ_DATA *obj;
     OBJ_DATA *obj_next;
     bool found;
     CLAN_DATA *clan;
     int number;
 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argument, arg );
     if ( is_number(arg) )
     {
-	number = atoi(arg);
+	number = strtoi(arg);
 	if ( number < 1 )
 	{
 	    send_to_char( "That was easy...\n", ch );
 	    return;
 	}
-	argument = one_argument( argument, arg );
+	argstr = one_argument( argstr, arg );
     }
     else
 	number = 0;
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Drop what?\n", ch );
 	return;
@@ -841,7 +871,7 @@ void do_drop( CHAR_DATA *ch, char *argument )
     else
     {
 	int cnt = 0;
-	char *chk;
+	std::string chk;
 	bool fAll;
 
 	if ( !str_cmp(arg, "all") )
@@ -851,7 +881,15 @@ void do_drop( CHAR_DATA *ch, char *argument )
 	if ( number > 1 )
 	    chk = arg;
 	else
-	    chk = &arg[4];
+	{
+		if ( !str_prefix( "all.", arg ) )
+			if ( arg.length() > 4 )
+				chk = arg.substr(4);
+			else
+				chk = "";
+		else if ( !str_cmp( arg, "all" ) )
+			one_argument(argstr, chk);
+	}
 	/* 'drop all' or 'drop all.obj' */
 	if ( BV_IS_SET( ch->in_room->room_flags, ROOM_NODROPALL ) )
 	{
@@ -925,18 +963,19 @@ void do_drop( CHAR_DATA *ch, char *argument )
 
 void do_give( CHAR_DATA *ch, char *argument )
 {
-    char arg1 [MAX_INPUT_LENGTH];
-    char arg2 [MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
     char buf  [MAX_INPUT_LENGTH];
     CHAR_DATA *victim;
     OBJ_DATA  *obj;
+    std::string argstr;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
-    if ( !str_cmp( arg2, "to" ) && argument[0] != '\0' )
-	argument = one_argument( argument, arg2 );
+    argstr = one_argument( argument, arg1 );
+    argstr = one_argument( argstr, arg2 );
+    if ( !str_cmp( arg2, "to" ) && !argstr.empty() )
+	argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() )
     {
 	send_to_char( "Give what to whom?\n", ch );
 	return;
@@ -950,7 +989,7 @@ void do_give( CHAR_DATA *ch, char *argument )
 	/* 'give NNNN coins victim' */
 	int amount;
 
-	amount   = atoi(arg1);
+	amount   = strtoi(arg1);
 	if ( amount <= 0
 	|| ( str_cmp( arg2, "credits" ) && str_cmp( arg2, "credit" ) ) )
 	{
@@ -958,10 +997,10 @@ void do_give( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 
-	argument = one_argument( argument, arg2 );
-	if ( !str_cmp( arg2, "to" ) && argument[0] != '\0' )
-	  argument = one_argument( argument, arg2 );
-	if ( arg2[0] == '\0' )
+	argstr = one_argument( argstr, arg2 );
+	if ( !str_cmp( arg2, "to" ) && !argstr.empty() )
+	  argstr = one_argument( argstr, arg2 );
+	if ( arg2.empty() )
 	{
 	    send_to_char( "Give what to whom?\n", ch );
 	    return;
@@ -982,7 +1021,7 @@ void do_give( CHAR_DATA *ch, char *argument )
 	ch->gold     -= amount;
 	victim->gold += amount;
         STRLCPY(buf, "$n gives you ");
-        STRAPP(buf, "%s", arg1);
+        STRAPP(buf, "%s", arg1.c_str());
         STRAPP(buf, (amount > 1) ? " credits." : " credit.");
 
 	act( AT_ACTION, buf, ch, NULL, victim, TO_VICT    );
@@ -1950,18 +1989,19 @@ void wear_obj( CHAR_DATA *ch, OBJ_DATA *obj, bool fReplace, int wear_bit )
 
 void do_wear( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
     OBJ_DATA *obj;
     int wear_bit;
+	std::string argstr;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argument, arg1 );
+    argstr = one_argument( argstr, arg2 );
     if ( (!str_cmp(arg2, "on")  || !str_cmp(arg2, "upon") || !str_cmp(arg2, "around"))
-    &&   argument[0] != '\0' )
-	argument = one_argument( argument, arg2 );
+    &&   !argstr.empty() )
+	argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
 	send_to_char( "Wear, wield, or hold what?\n", ch );
 	return;
@@ -2003,13 +2043,13 @@ void do_wear( CHAR_DATA *ch, char *argument )
 
 void do_remove( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj, *obj_next;
 
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Remove what?\n", ch );
 	return;
@@ -2047,14 +2087,14 @@ void do_remove( CHAR_DATA *ch, char *argument )
 
 void do_bury( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
     bool shovel;
     sh_int move;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {    
         send_to_char( "What do you wish to bury?\n", ch );
         return;
@@ -2126,12 +2166,12 @@ void do_bury( CHAR_DATA *ch, char *argument )
 
 void do_sacrifice( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' || !str_cmp( arg, ch->name ) )
+    if ( arg.empty() || !str_cmp( arg, ch->name ) )
     {
 	send_to_char( "Junk what?", ch );
 	return;
@@ -2269,14 +2309,14 @@ void do_brandish( CHAR_DATA *ch, char *argument )
 
 void do_zap( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
     OBJ_DATA *wand;
     OBJ_DATA *obj;
     ch_ret retcode;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' && !ch->fighting )
+    if ( arg.empty() && !ch->fighting )
     {
 	send_to_char( "Zap whom or what?\n", ch );
 	return;
@@ -2295,7 +2335,7 @@ void do_zap( CHAR_DATA *ch, char *argument )
     }
 
     obj = NULL;
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	if ( ch->fighting )
 	{
@@ -2405,11 +2445,12 @@ void save_clan_storeroom( CHAR_DATA *ch, CLAN_DATA *clan )
 void do_auction (CHAR_DATA *ch, char *argument)
 {
     OBJ_DATA *obj;
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+	std::string argstr;
     char buf[MAX_STRING_LENGTH];
 
-    argument = one_argument (argument, arg1);
+    argstr = one_argument (argument, arg1);
 
     if (IS_NPC(ch)) /* NPC can be extracted at any time and thus can't auction! */
 	return;
@@ -2428,7 +2469,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
         return;
     }
 
-    if (arg1[0] == '\0')
+    if (arg1.empty())
     {
         if (auction->item != NULL)
         {
@@ -2447,8 +2488,8 @@ void do_auction (CHAR_DATA *ch, char *argument)
 	    SPRINTF( buf,
 		"Object '%s' is %s, special properties: %s.\nIts weight is %d, value is %d.\n",
 		obj->name,
-		aoran( item_type_name( obj ) ),
-		extra_bit_name( obj->objflags ),
+		aoran( item_type_name( obj ) ).c_str(),
+		extra_bit_name( obj->objflags ).c_str(),
 		obj->weight,
 		obj->cost );
 	    set_char_color( AT_LBLUE, ch );
@@ -2539,13 +2580,13 @@ void do_auction (CHAR_DATA *ch, char *argument)
 	    }
 
             /* make - perhaps - a bet now */
-            if (argument[0] == '\0')
+            if (argstr.empty() || !is_number(argstr) )
             {
                 send_to_char ("Bid how much?\n",ch);
                 return;
             }
 
-            newbet = parsebet (auction->bet, argument);
+            newbet = parsebet (auction->bet, argstr);
 /*	    ch_printf( ch, "Bid: %d\n",newbet);	*/
 
 	    if (newbet < auction->starting)
@@ -2621,12 +2662,12 @@ void do_auction (CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    argument = one_argument (argument, arg2);
+    argstr = one_argument (argstr, arg2);
 
-    if (arg2[0] == '\0')
+    if (arg2.empty())
     {
       auction->starting = 0;
-      STRLCPY(arg2, "0");
+      arg2 = "0";
     }
 
     if ( !is_number(arg2) )
@@ -2635,7 +2676,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    if ( atoi(arg2) < 0 )
+    if ( strtoi(arg2) < 0 )
     {
 	send_to_char("You can't auction something for less than 0 credits!\n", ch);
  	return;
@@ -2670,7 +2711,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
 	auction->seller = ch;
 	auction->pulse = PULSE_AUCTION;
 	auction->going = 0;
-	auction->starting = atoi(arg2);
+	auction->starting = strtoi(arg2);
 
 	if (auction->starting > 0)
 	  auction->bet = auction->starting;

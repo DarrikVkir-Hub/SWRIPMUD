@@ -58,7 +58,7 @@ const flag_name  skill_tname [] =
     { (size_t)-1, nullptr } // terminator	
 };
 
-SPELL_FUN *spell_function( char *name )
+SPELL_FUN *spell_function( const std::string& name )
 {
     if ( !str_cmp( name, "spell_smaug" ))	     return spell_smaug;
     if ( !str_cmp( name, "spell_acid_blast" ))	     return spell_acid_blast;
@@ -157,7 +157,7 @@ SPELL_FUN *spell_function( char *name )
     return spell_notfound;
 }
 
-DO_FUN *skill_function( char *name )
+DO_FUN *skill_function( const std::string& name )
 {
     switch( name[3] )
     {
@@ -1714,7 +1714,7 @@ void save_socials(GameContext *game)
     FCLOSE( fpout );
 }
 
-int get_skill( char *skilltype )
+int get_skill( const std::string& skilltype )
 {
 	return find_flag(skill_tname,skilltype)->bit;
 }
@@ -2173,6 +2173,7 @@ void fread_command( FILE *fp )
 
 	case 'C':
 	    KEY( "Code",	command->do_fun,	skill_function(fread_word(fp)) );
+
 //            KEY("CommandGroup", command->commandgroup, fread_number(fp));
 			if ( !str_cmp( word, "CommandGroup" ) )
 			{

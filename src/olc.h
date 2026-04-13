@@ -89,12 +89,20 @@ inline std::string get_int_field(int value)
     return std::to_string(value);
 }
 
+inline bool set_str_field_nohash(char*& field, const std::string& value)
+{
+    if (field)
+        STR_DISPOSE(field);
+
+    field = str_dup(const_cast<char*>(value.c_str()));
+    return true;
+}
 inline bool set_str_field(char*& field, const std::string& value)
 {
     if (field)
         STRFREE(field);
 
-    field = STRALLOC(const_cast<char*>(value.c_str()));
+    field = STRALLOC(value);
     return true;
 }
 
@@ -168,7 +176,7 @@ inline bool bitset_apply_from_legacy_string(BitSet& bs, const std::string& input
         int bit = -1;
         for (int i = 0; table && table[i] != nullptr; ++i)
         {
-            if (!str_cmp_utf8(token.c_str(), table[i]))
+            if (!str_cmp_utf8(token, table[i]))
             {
                 bit = i;
                 break;
@@ -396,6 +404,35 @@ OlcField<T> make_olc_string_field(
         [member](T* obj, const std::string& value) -> bool
         {
             return set_str_field(obj->*member, value);
+        },
+        [member](T* obj) -> std::string
+        {
+            return get_str_field(obj->*member);
+        },
+        nullptr,
+        nullptr,
+        0,
+        help,
+        INT_MIN,
+        INT_MAX,
+        false
+    };
+}
+template <typename T>
+OlcField<T> make_olc_string_nohash_field(
+    const char* name,
+    olc_member_ptr<T, char*> member,
+    const char* help)
+{
+    return OlcField<T>{
+        name,
+        OlcValueType::STRING,
+        nullptr,
+        OlcMetaType::NONE,
+        nullptr,
+        [member](T* obj, const std::string& value) -> bool
+        {
+            return set_str_field_nohash(obj->*member, value);
         },
         [member](T* obj) -> std::string
         {
@@ -706,7 +743,7 @@ struct OlcOps
     void  (*after_revert)(CHAR_DATA* ch, void* original, void* working) = nullptr;
 
     /* Optional inline interpret hook */
-    bool (*inline_interpret)(CHAR_DATA* ch, char* command, char* argument) = nullptr;
+    bool (*inline_interpret)(CHAR_DATA* ch, const std::string& command, const std::string& argument) = nullptr;
     OlcInterpretStage inline_interpret_stage = OlcInterpretStage::EARLY;    
 };
 
@@ -844,13 +881,15 @@ std::vector<std::string> olc_field_suggestions(const OlcSchema<T>* schema, const
 
     for (const auto& f : *schema->fields)
     {
-        if (str_prefix(input.c_str(), f.name) == false)
+        if (str_prefix(input, f.name) == false)
         {
             matches.push_back(f.name);
             continue;
         }
+        std::string hay = strlower(f.name ? f.name : "");
+        std::string needle = strlower(input);
 
-        if (strcasestr(f.name, input.c_str()))
+        if (hay.find(needle) != std::string::npos)
             matches.push_back(f.name);
     }
 
@@ -868,7 +907,7 @@ std::vector<std::string> olc_ambiguous_field_matches(const OlcSchema<T>* schema,
 
     for (const auto& f : *schema->fields)
     {
-        if (!str_prefix(input.c_str(), f.name))
+        if (!str_prefix(input, f.name))
             matches.push_back(f.name);
     }
 
@@ -886,7 +925,7 @@ bool olc_field_name_is_ambiguous(const OlcSchema<T>* schema, const std::string& 
 
     for (const auto& f : *schema->fields)
     {
-        if (!str_prefix(input.c_str(), f.name))
+        if (!str_prefix(input, f.name))
             ++matches;
     }
 
@@ -954,7 +993,7 @@ std::vector<std::string> olc_enum_suggestions(const std::string& input, const Ol
 
     for (const auto& v : values)
     {
-        if (str_prefix_utf8(input.c_str(), v.c_str()) == false)
+        if (str_prefix_utf8(input, v) == false)
             matches.push_back(v);
     }
 
@@ -979,11 +1018,11 @@ const OlcField<T>*  olc_find_field_fuzzy(const OlcSchema<T>* schema, const std::
     for (const auto& f : *schema->fields)
     {
         // Exact match (fast path)
-        if (!str_cmp(input.c_str(), f.name))
+        if (!str_cmp(input, f.name))
             return &f;
 
         // Prefix match
-        if (str_prefix(input.c_str(), f.name) == false)
+        if (str_prefix(input, f.name) == false)
         {
             if (prefix_match) // ambiguous
                 return nullptr;
@@ -1059,7 +1098,7 @@ void olc_send_value_error(CHAR_DATA* ch, const OlcField<T>& f, const std::string
             {
                 send_to_char("Did you mean:\n", ch);
                 std::string col = olc_format_columns(suggestions, term_width, indent);
-                send_to_char(col.c_str(), ch);
+                send_to_char(col, ch);
             }
             else
             {
@@ -1068,7 +1107,7 @@ void olc_send_value_error(CHAR_DATA* ch, const OlcField<T>& f, const std::string
                 {
                     send_to_char("Valid values:\n", ch);
                     std::string col = olc_format_columns(values, term_width, indent);
-                    send_to_char(col.c_str(), ch);
+                    send_to_char(col, ch);
                 }
             }
             break;
@@ -1083,7 +1122,7 @@ void olc_send_value_error(CHAR_DATA* ch, const OlcField<T>& f, const std::string
             {
                 send_to_char("Valid flags: (+ to add, - to remove)\n", ch);
                 std::string col = olc_format_columns(values, term_width, indent);
-                send_to_char(col.c_str(), ch);
+                send_to_char(col, ch);
             }
             break;
         }
@@ -1270,7 +1309,7 @@ static void olc_set_typed(
     {
         auto matches = olc_ambiguous_field_matches(schema, field);
         send_to_char("Ambiguous field. Did you mean:\n", ch);
-        send_to_char(olc_format_columns(matches, term_width, indent).c_str(), ch);
+        send_to_char(olc_format_columns(matches, term_width, indent), ch);
         return;
     }
 
@@ -1398,7 +1437,7 @@ bool olc_show_handle_extradesc_list(
 
         for (ed = first_extradesc; ed; ed = ed->next)
         {
-            if (nifty_is_name_prefix((char*)value.c_str(), ed->keyword))
+            if (nifty_is_name_prefix(value, ed->keyword))
                 break;
         }
 
@@ -1650,11 +1689,11 @@ static void olc_show_help_typed(
     int term_width = (ch->desc && ch->desc->term_width > 0) ? ch->desc->term_width : 80;
     int indent = 2;
 
-    if (field.empty() || !str_cmp(field.c_str(), "help"))
+    if (field.empty() || !str_cmp(field, "help"))
     {
         std::vector<std::string> names = olc_all_field_names(schema);
         send_to_char("Valid fields:\n", ch);
-        send_to_char(olc_format_columns(names, term_width, indent).c_str(), ch);
+        send_to_char(olc_format_columns(names, term_width, indent), ch);
         return;
     }
 
@@ -1662,7 +1701,7 @@ static void olc_show_help_typed(
     {
         auto matches = olc_ambiguous_field_matches(schema, field);
         send_to_char("Ambiguous field. Did you mean:\n", ch);
-        send_to_char(olc_format_columns(matches, term_width, indent).c_str(), ch);
+        send_to_char(olc_format_columns(matches, term_width, indent), ch);
         return;
     }
 
@@ -1675,7 +1714,7 @@ static void olc_show_help_typed(
         if (!suggestions.empty())
         {
             send_to_char("Did you mean:\n", ch);
-            send_to_char(olc_format_columns(suggestions, term_width, indent).c_str(), ch);
+            send_to_char(olc_format_columns(suggestions, term_width, indent), ch);
         }
         return;
     }
@@ -1690,7 +1729,7 @@ static void olc_show_help_typed(
     if (!values.empty())
     {
         send_to_char("Valid values (+ to add, - to remove):\n", ch);
-        send_to_char(olc_format_columns(values, term_width, indent).c_str(), ch);
+        send_to_char(olc_format_columns(values, term_width, indent), ch);
     }
 }
 
@@ -1727,7 +1766,7 @@ static void olc_show_typed(
     else if (sess->mode == OlcEditMode::SHOP_INLINE)
         shop = static_cast<SHOP_DATA*>(sess->working_copy);
     if (!field.empty() &&
-        (!str_cmp(field.c_str(), "help") || !str_cmp(value.c_str(), "help")))
+        (!str_cmp(field, "help") || !str_cmp(value, "help")))
         show_help = true;
 
     /*
@@ -1782,7 +1821,7 @@ static void olc_show_typed(
 
     for (const auto& f : *schema->fields)
     {
-        if (!field.empty() && str_prefix_utf8(field.c_str(), f.name))
+        if (!field.empty() && str_prefix_utf8(field, f.name))
             continue;
 
         size_t len = strlen(f.name);
@@ -1792,7 +1831,7 @@ static void olc_show_typed(
 
     for (const auto& f : *schema->fields)
     {
-        if (!field.empty() && str_prefix_utf8(field.c_str(), f.name))
+        if (!field.empty() && str_prefix_utf8(field, f.name))
             continue;
 
         found = true;
@@ -1858,14 +1897,14 @@ static void olc_show_typed(
         auto wrapped = olc_wrap_value_pairs(int_fields, term_width);
         for (const auto& line : wrapped)
         {
-            send_to_char(line.c_str(), ch);
+            send_to_char(line, ch);
             send_to_char("\n", ch);
         }
     }
 
     for (const auto& line : other_lines)
     {
-        send_to_char(line.c_str(), ch);
+        send_to_char(line, ch);
         send_to_char("\n", ch);
     }
 }
@@ -1891,7 +1930,7 @@ void olc_mobile_apply_instance_changes(CHAR_DATA* dst, const CHAR_DATA* src);
 
 bool olc_mobile_edit_affect_field(CHAR_DATA* ch, CHAR_DATA* mob);
 std::string olc_mobile_affect_list_summary(CHAR_DATA* mob);
-bool olc_mobile_edit_interpret(CHAR_DATA* ch, char* command, char* argument);
+bool olc_mobile_edit_interpret(CHAR_DATA* ch, const std::string& command, const std::string& argument);
 
 bool olc_object_edit_extradesc_field(CHAR_DATA* ch, OBJ_DATA* obj);
 std::string olc_object_extradesc_list_summary(OBJ_DATA* obj);
@@ -1901,7 +1940,7 @@ OBJ_DATA* olc_object_clone(const OBJ_DATA* src);
 void olc_object_free_clone(OBJ_DATA* obj);
 void olc_object_apply_instance_changes(OBJ_DATA* dst, OBJ_DATA* src);
 void olc_object_apply_prototype_changes(OBJ_INDEX_DATA* dst, const OBJ_DATA* edited, const OBJ_DATA* baseline);
-bool olc_object_edit_interpret(CHAR_DATA* ch, char* command, char* argument);
+bool olc_object_edit_interpret(CHAR_DATA* ch, const std::string& command, const std::string& argument);
 
 bool olc_room_delete_exit(ROOM_INDEX_DATA* room, EXIT_DATA* ex);
 ROOM_INDEX_DATA* olc_room_clone(const ROOM_INDEX_DATA* src);
@@ -1915,8 +1954,8 @@ AFFECT_DATA* olc_clone_affects(AFFECT_DATA* src);
 void olc_free_affects(AFFECT_DATA* af);
 bool olc_session_command_is_field_name(OlcSession* sess, const std::string& cmd);
 
-bool olc_is_direction_alias(const char* cmd);
-bool olc_command_matches(const char* input, const char* word);
+bool olc_is_direction_alias(const std::string& cmd);
+bool olc_command_matches(const std::string& input, const std::string& word);
 std::vector<std::string> olc_format_line( const char* name, const std::string& value, const char* val_color, int max_name_len, int term_width);
 std::vector<std::string> olc_format_exit_list_lines( ROOM_INDEX_DATA* room, size_t label_width, int term_width, bool show_help);
 bool same_str(const char* a, const char* b);

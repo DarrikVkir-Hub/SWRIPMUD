@@ -1389,18 +1389,19 @@ void do_shiptrack( CHAR_DATA *ch, char *argument)
 {
   SHIP_DATA *ship;
   SPACE_DATA *spaceobject;
-  char arg[MAX_INPUT_LENGTH];
-  char arg1[MAX_INPUT_LENGTH];
-  char arg2[MAX_INPUT_LENGTH];
-  char arg3[MAX_INPUT_LENGTH];  
-  char buf[MAX_STRING_LENGTH];
+  std::string arg;
+  std::string arg1;
+  std::string arg2;
+  std::string arg3;  
+  std::string buf;
+  std::string argstr = argument;
 //  int speed;
   float hx, hy, hz;
 
-  argument = one_argument( argument , arg);
-  argument = one_argument( argument , arg1);
-  argument = one_argument( argument , arg2);
-  argument = one_argument( argument , arg3);
+  argstr = one_argument( argstr , arg);
+  argstr = one_argument( argstr , arg1);
+  argstr = one_argument( argstr , arg2);
+  argstr = one_argument( argstr , arg3);
   
     if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
     {
@@ -1422,7 +1423,7 @@ void do_shiptrack( CHAR_DATA *ch, char *argument)
 
   if( !str_cmp( arg, "dist" ) )
   {
-    ship->tcount = atoi(arg1);
+    ship->tcount = strtoi(arg1);
     send_to_char("&RJump distance set!\n",ch);
     return;
   }
@@ -1441,16 +1442,16 @@ void do_shiptrack( CHAR_DATA *ch, char *argument)
       return;
     }
     
-      hx = atoi(arg1);
-      hy = atoi(arg2);
-      hz = atoi(arg3);
+      hx = strtoi(arg1);
+      hy = strtoi(arg2);
+      hz = strtoi(arg3);
       if( !hx )
        hx = 1;
       if( !hy )
        hy = 1;
       if( !hz )
        hz = 1;
-      SPRINTF( buf, "%.0f %.0f %.0f", ship->vx + hx, ship->vy + hy, ship->vz + hz );
+      buf = str_printf( "%.0f %.0f %.0f", ship->vx + hx, ship->vy + hy, ship->vz + hz );
       if( hx < 1000 ) hx *= 10000;
       if( hy < 1000 ) hy *= 10000;
       if( hz < 1000 ) hz *= 10000;
@@ -1462,7 +1463,7 @@ void do_shiptrack( CHAR_DATA *ch, char *argument)
  
       ship->tracking = TRUE;
       ship->ch = ch;
-      do_trajectory( ch, buf);
+      do_trajectory( ch, (char*)buf.c_str());
       
 //    speed = ship->mod->hyperspeed;
 
@@ -1516,8 +1517,9 @@ void do_shiptrack( CHAR_DATA *ch, char *argument)
 
 void do_transship(CHAR_DATA *ch, char *argument)
 {
-    char arg1[MAX_INPUT_LENGTH];
-	char arg2[MAX_INPUT_LENGTH];
+  std::string arg1;
+	std::string arg2;
+  std::string argstr = argument;
 	int arg3, origShipyard;
     SHIP_DATA *ship;
     
@@ -1527,51 +1529,49 @@ void do_transship(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
     ship = get_ship( ch->game, arg1 );
-	if ( !ship )
+    if ( !ship )
     {
-	send_to_char( "No such ship.\n", ch );
-	return;
+        send_to_char( "No such ship.\n", ch );
+        return;
     }
 
-	arg3 = atoi( arg2 );
+	  arg3 = strtoi( arg2 );
 	
-	 if ( arg1[0] == '\0' || arg2[0] == '\0' || arg1[0] == '\0' )
+	  if ( arg1.empty() || arg2.empty() || arg3 == 0 )
     {
-	send_to_char( "Usage: transship <ship> <vnum>\n", ch );
-	return;
+        send_to_char( "Usage: transship <ship> <vnum>\n", ch );
+        return;
     }
 
-     origShipyard = ship->shipyard;
-     
-     ship->shipyard = arg3;
-     ship->shipstate = SHIP_READY;
+    origShipyard = ship->shipyard;
+    
+    ship->shipyard = arg3;
+    ship->shipstate = SHIP_READY;
 
-     if ( ship->shipclass == SHIP_PLATFORM && ship->type != MOB_SHIP )
-     {
-       send_to_char( "Only nonmob midship/starfighters", ch );
-       return;
-     }
+    if ( ship->shipclass == SHIP_PLATFORM && ship->type != MOB_SHIP )
+    {
+        send_to_char( "Only nonmob midship/starfighters", ch );
+        return;
+    }
      
-     extract_ship( ship );
-     ship_to_room( ship , ship->shipyard ); 
-     
-     ship->location = ship->shipyard;
-     ship->lastdoc = ship->shipyard; 
-     ship->shipstate = SHIP_LANDED;
-     ship->shipyard = origShipyard;     
-     
-     if (ship->spaceobject)
-        ship_from_spaceobject( ship, ship->spaceobject );  
-
-
-     
-     save_ship(ship);              
-      
-     send_to_char( "Ship Transfered.\n", ch );
+    extract_ship( ship );
+    ship_to_room( ship , ship->shipyard ); 
+    
+    ship->location = ship->shipyard;
+    ship->lastdoc = ship->shipyard; 
+    ship->shipstate = SHIP_LANDED;
+    ship->shipyard = origShipyard;     
+    
+    if (ship->spaceobject)
+      ship_from_spaceobject( ship, ship->spaceobject );  
+    
+    save_ship(ship);              
+    
+    send_to_char( "Ship Transfered.\n", ch );
 }
 
 void transship(SHIP_DATA *ship, int destination)
@@ -1580,7 +1580,7 @@ void transship(SHIP_DATA *ship, int destination)
    
 
     if ( !ship )
-	return;
+	      return;
 
      origShipyard = ship->shipyard;
      
@@ -1604,14 +1604,13 @@ void transship(SHIP_DATA *ship, int destination)
 void do_override(CHAR_DATA *ch, char *argument)
 {
 	
-    char arg[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
+    std::string arg;
+    std::string arg2;
+    std::string buf;
     SHIP_DATA *ship;
     SHIP_DATA *eShip = NULL;
 
-    argument = one_argument( argument, arg );
-    SPRINTF ( arg2, "%s", argument);
+    arg2 = one_argument( argument, arg );
 
     if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
     {
@@ -1637,7 +1636,7 @@ void do_override(CHAR_DATA *ch, char *argument)
         return;
     }
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
         send_to_char("&ROverride the controls of what ship?\n", ch);
         return;
@@ -1673,75 +1672,75 @@ void do_override(CHAR_DATA *ch, char *argument)
         return;
     }
 
-    if ( !strcmp( arg2, "shields" ) )
+    if ( !str_cmp( arg2, "shields" ) )
     {
       if( eShip->shield == 0 )
       {
-        eShip->autorecharge=TRUE;
-        send_to_char( "&GShields on. Confirmed.\n", ch);
-        echo_to_cockpit( AT_YELLOW , eShip , "Shields ON. Autorecharge ON.");
-        return;
+          eShip->autorecharge=TRUE;
+          send_to_char( "&GShields on. Confirmed.\n", ch);
+          echo_to_cockpit( AT_YELLOW , eShip , "Shields ON. Autorecharge ON.");
+          return;
       }
       else
       {
-    	eShip->shield = 0;
-        eShip->autorecharge=FALSE;
-    	send_to_char("Shields down. Confirmed", ch);
-        return;
+          eShip->shield = 0;
+          eShip->autorecharge=FALSE;
+          send_to_char("Shields down. Confirmed", ch);
+          return;
       }
     }
-    if ( !strcmp( arg2, "closebay" ) )
+    if ( !str_cmp( arg2, "closebay" ) )
     {
         eShip->bayopen=FALSE;
         send_to_char( "&GBays Close. Confirmed.\n", ch);
-        echo_to_cockpit( AT_YELLOW , eShip , "Bays Open");
-        SPRINTF( buf ,"%s's bay doors close." , eShip->name );
+        echo_to_cockpit( AT_YELLOW , eShip , "Bays Closed");
+        buf = str_printf("%s's bay doors close." , eShip->name );
         echo_to_system( AT_YELLOW, eShip, buf , NULL );
         return;
     }
 
-    if ( !strcmp( arg2, "stop" ) )
+    if ( !str_cmp( arg2, "stop" ) )
     {
-    	eShip->goalspeed = 0;	
-    	eShip->accel = get_acceleration(eShip);
+        eShip->goalspeed = 0;	
+        eShip->accel = get_acceleration(eShip);
         send_to_char( "&GBraking Thrusters. Confirmed.\n", ch);
         echo_to_cockpit( AT_GREY , eShip , "Braking thrusters fire and the ship stops");
-        SPRINTF( buf ,"%s decelerates." , eShip->name );
+        buf = str_printf("%s decelerates." , eShip->name );
         echo_to_system( AT_GREY, eShip, buf , NULL );
         return;
     }
     
-    if ( !strcmp( arg2, "autopilot" ) )
+    if ( !str_cmp( arg2, "autopilot" ) )
     {
-    	if ( ship->autopilot )
-        {
-           eShip->autopilot=FALSE;
-           send_to_char( "&GYou toggle the autopilot.\n", ch);
-           echo_to_cockpit( AT_YELLOW , eShip , "Autopilot OFF.");
-           return;
-    	}      
-        else if ( !ship->autopilot )
-        {
-           eShip->autopilot=TRUE;
-           send_to_char( "&GYou toggle the autopilot.\n", ch);
-           echo_to_cockpit( AT_YELLOW , eShip , "Autopilot ON.");
-           return;
-    	}
+      if ( ship->autopilot )
+      {
+          eShip->autopilot=FALSE;
+          send_to_char( "&GYou toggle the autopilot.\n", ch);
+          echo_to_cockpit( AT_YELLOW , eShip , "Autopilot OFF.");
+          return;
+      }      
+      else if ( !ship->autopilot )
+      {
+          eShip->autopilot=TRUE;
+          send_to_char( "&GYou toggle the autopilot.\n", ch);
+          echo_to_cockpit( AT_YELLOW , eShip , "Autopilot ON.");
+          return;
+      }
     }
 
-    if ( !strcmp( arg2, "openbay" ) )
-   {
-    send_to_char("&RYou open the bay doors of the remote ship.",ch);
-    act(AT_PLAIN,"$n flips a switch on the control panel.",ch,NULL,argument,TO_ROOM);
-    eShip->bayopen = TRUE;
-    SPRINTF( buf ,"%s's bay doors open." , eShip->name );
-    echo_to_system( AT_YELLOW, ship, buf , NULL );
+    if ( !str_cmp( arg2, "openbay" ) )
+    {
+        send_to_char("&RYou open the bay doors of the remote ship.",ch);
+        act(AT_PLAIN,"$n flips a switch on the control panel.",ch,NULL,argument,TO_ROOM);
+        eShip->bayopen = TRUE;
+        buf = str_printf("%s's bay doors open." , eShip->name );
+        echo_to_system( AT_YELLOW, ship, buf , NULL );
+        return;
+    }
+    
+    send_to_char("Choices: shields - Toggle shields   autopilot - Toggle autopilot\n", ch);
+    send_to_char("         openbay   closebay  stop  \n", ch);
     return;
-   }
-   
-   send_to_char("Choices: shields - Toggle shields   autopilot - Toggle autopilot\n", ch);
-   send_to_char("         openbay   closebay  stop  \n", ch);
-   return;
 }
 
 void do_guard( CHAR_DATA *ch, char *argument )
@@ -1750,32 +1749,32 @@ void do_guard( CHAR_DATA *ch, char *argument )
     SHIP_DATA *ship;
 
 
-        if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
-        {
-            send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
-            return;
-        }
-        
-        if (  (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum))  == NULL )
-        {
-            send_to_char("&RYou must be in the pilots seat!\n",ch);
-            return;
-        }
-        
-        if ( ship->shipclass != CAPITAL_SHIP  && ship->shipclass != SHIP_PLATFORM )
-    	        {
-    	            send_to_char("&ROnly capital-class vessels and platforms have this feature.\n",ch);
-    	            return;
-    	        }
-    	        
-        chance = IS_NPC(ch) ? ch->top_level
-             : (int)  (ch->pcdata->learned[gsn_shipsystems]) ;
-        if ( number_percent( ) > chance )
-        {
-           send_to_char("&RYou fail to work the controls properly.\n",ch);
-           learn_from_failure( ch, gsn_shipsystems );
-           return;	
-        }
+    if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
+    {
+        send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
+        return;
+    }
+    
+    if (  (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum))  == NULL )
+    {
+        send_to_char("&RYou must be in the pilots seat!\n",ch);
+        return;
+    }
+    
+    if ( ship->shipclass != CAPITAL_SHIP  && ship->shipclass != SHIP_PLATFORM )
+          {
+              send_to_char("&ROnly capital-class vessels and platforms have this feature.\n",ch);
+              return;
+          }
+          
+    chance = IS_NPC(ch) ? ch->top_level
+          : (int)  (ch->pcdata->learned[gsn_shipsystems]) ;
+    if ( number_percent( ) > chance )
+    {
+        send_to_char("&RYou fail to work the controls properly.\n",ch);
+        learn_from_failure( ch, gsn_shipsystems );
+        return;	
+    }
     
     act( AT_PLAIN, "$n flips a switch on the control panell.", ch,
          NULL, argument , TO_ROOM );
@@ -1818,118 +1817,118 @@ void do_guard( CHAR_DATA *ch, char *argument )
 
 void do_sabotage(CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
 //  char buf[MAX_INPUT_LENGTH];
     int chance, change;
     SHIP_DATA *ship;
 
-    SPRINTF( arg, "%s", argument );
+    arg = argument;
 
     switch( ch->substate )
     {
     	default:
-    	        if (  (ship = ship_from_engine(ch->game, ch->in_room->vnum))  == NULL )
-    	        {
-    	            send_to_char("&RYou must be in the engine room of a ship to do that!\n",ch);
-    	            return;
-    	        }
+          if (  (ship = ship_from_engine(ch->game, ch->in_room->vnum))  == NULL )
+          {
+              send_to_char("&RYou must be in the engine room of a ship to do that!\n",ch);
+              return;
+          }
 
-                if ( str_cmp( argument , "hull" ) && str_cmp( argument , "drive" ) &&
-                     str_cmp( argument , "launcher" ) && str_cmp( argument , "laser" ) &&
-                     str_cmp( argument , "docking" ) && str_cmp( argument , "tractor" ) )
-                {
-                   send_to_char("&RYou need to specify something to sabotage:\n",ch);
-                   send_to_char("&rTry: hull, drive, launcher, laser, docking, or tractor.\n",ch);
-                   return;
-                }
+          if ( str_cmp( argument , "hull" ) && str_cmp( argument , "drive" ) &&
+                str_cmp( argument , "launcher" ) && str_cmp( argument , "laser" ) &&
+                str_cmp( argument , "docking" ) && str_cmp( argument , "tractor" ) )
+          {
+              send_to_char("&RYou need to specify something to sabotage:\n",ch);
+              send_to_char("&rTry: hull, drive, launcher, laser, docking, or tractor.\n",ch);
+              return;
+          }
 
-                chance = IS_NPC(ch) ? ch->top_level
-	                 : (int) (ch->pcdata->learned[gsn_sabotage]);
-                if ( number_percent( ) < chance )
-    		{
-    		   send_to_char( "&GYou begin your work.\n", ch);
-    		   act( AT_PLAIN, "$n begins working on the ship's $T.", ch,
-		        NULL, argument , TO_ROOM );
-    		   if ( !str_cmp(arg,"hull") )
-    		     add_timer ( ch , TIMER_DO_FUN , 15 , do_sabotage , 1 );
-    		   else
-    		     add_timer ( ch , TIMER_DO_FUN , 15 , do_sabotage , 1 );
-    		   ch->dest_buf = str_dup(arg);
-    		   return;
+          chance = IS_NPC(ch) ? ch->top_level
+              : (int) (ch->pcdata->learned[gsn_sabotage]);
+          if ( number_percent( ) < chance )
+    		  {
+            send_to_char( "&GYou begin your work.\n", ch);
+            act( AT_PLAIN, "$n begins working on the ship's $T.", ch,
+              NULL, argument , TO_ROOM );
+            if ( !str_cmp(arg,"hull") )
+                add_timer ( ch , TIMER_DO_FUN , 15 , do_sabotage , 1 );
+            else
+                add_timer ( ch , TIMER_DO_FUN , 15 , do_sabotage , 1 );
+            ch->dest_buf = str_dup(arg);
+            return;
 	        }
 	        send_to_char("&RYou fail to figure out where to start.\n",ch);
 	        learn_from_failure( ch, gsn_sabotage );
     	   	return;
 
     	case 1:
-    		if ( !ch->dest_buf )
-    		   return;
-    		SPRINTF(arg, "%s", ( const char* ) ch->dest_buf);
-    		STR_DISPOSE( ch->dest_buf);
-    		break;
+          if ( !ch->dest_buf )
+            return;
+          arg = ( const char* ) ch->dest_buf;
+          STR_DISPOSE( ch->dest_buf);
+          break;
 
     	case SUB_TIMER_DO_ABORT:
-    		STR_DISPOSE( ch->dest_buf );
-    		ch->substate = SUB_NONE;
-    		if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
-    		      return;
-    	        send_to_char("&RYou are distracted and fail to finish your work.\n", ch);
-    		return;
+          STR_DISPOSE( ch->dest_buf );
+          ch->substate = SUB_NONE;
+          if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
+              return;
+          send_to_char("&RYou are distracted and fail to finish your work.\n", ch);
+          return;
     }
 
     ch->substate = SUB_NONE;
     
     if ( (ship = ship_from_engine(ch->game, ch->in_room->vnum)) == NULL )
     {  
-       return;
+        return;
     }
     
     if ( !str_cmp(arg,"hull") )
     {
         change = URANGE( 0 , 
-                         number_range( (int) ( ch->pcdata->learned[gsn_sabotage] / 2 ) , (int) (ch->pcdata->learned[gsn_sabotage]) ),
-                         ( ship->hull ) );
+                  number_range( (int) ( ch->pcdata->learned[gsn_sabotage] / 2 ) , (int) (ch->pcdata->learned[gsn_sabotage]) ),
+                  ( ship->hull ) );
         ship->hull -= change;
         ch_printf( ch, "&GSabotage complete.. Hull strength decreased by %d points.\n", change );
     }
     
     if ( !str_cmp(arg,"drive") )
     {  
-       if (ship->location == ship->lastdoc)
-          ship->shipstate = SHIP_DISABLED;
-       else if ( ship->shipstate == SHIP_HYPERSPACE )
-         send_to_char("You realize after working that it would be a bad idea to do this while in hyperspace.\n", ch);		
-       else     
-         ship->shipstate = SHIP_DISABLED;
-       send_to_char("&GShips drive damaged.\n", ch);		
+        if (ship->location == ship->lastdoc)
+            ship->shipstate = SHIP_DISABLED;
+        else if ( ship->shipstate == SHIP_HYPERSPACE )
+            send_to_char("You realize after working that it would be a bad idea to do this while in hyperspace.\n", ch);		
+        else     
+            ship->shipstate = SHIP_DISABLED;
+        send_to_char("&GShips drive damaged.\n", ch);		
     }
 
     if ( !str_cmp(arg,"docking") )
     {  
-       ship->statetdocking = SHIP_DISABLED;
-       send_to_char("&GDocking bay sabotaged.\n", ch);
-    }
+        ship->statetdocking = SHIP_DISABLED;
+        send_to_char("&GDocking bay sabotaged.\n", ch);
+      }
     if ( !str_cmp(arg,"tractor") )
     {  
-       ship->statettractor = SHIP_DISABLED;
-       send_to_char("&GTractorbeam sabotaged.\n", ch);
+        ship->statettractor = SHIP_DISABLED;
+        send_to_char("&GTractorbeam sabotaged.\n", ch);
     }
     if ( !str_cmp(arg,"launcher") )
     {  
-       ship->missilestate = MISSILE_DAMAGED;
-       send_to_char("&GMissile launcher sabotaged.\n", ch);
+        ship->missilestate = MISSILE_DAMAGED;
+        send_to_char("&GMissile launcher sabotaged.\n", ch);
     }
     
     if ( !str_cmp(arg,"laser") )
     {  
-       ship->statet0 = LASER_DAMAGED;
-       send_to_char("&GMain laser sabotaged.\n", ch);
+        ship->statet0 = LASER_DAMAGED;
+        send_to_char("&GMain laser sabotaged.\n", ch);
     }
 
     act( AT_PLAIN, "$n finishes the work.", ch,
-         NULL, argument , TO_ROOM );
+         NULL, arg , TO_ROOM );
 
-     bug( "%s has sabotaged %s!", ch->name, ship->name );
+    bug( "%s has sabotaged %s!", ch->name, ship->name );
 
     learn_from_success( ch, gsn_sabotage );
     	
@@ -1941,60 +1940,60 @@ void do_refuel(CHAR_DATA *ch, char *argument )
 
 void do_fuel(CHAR_DATA *ch, char *argument )
 {
-  SHIP_DATA *ship, *eShip = NULL;
-  int amount = 0;
-  char arg1[MAX_INPUT_LENGTH];
-  char buf[MAX_STRING_LENGTH];
-  
-  
-  argument = one_argument( argument, arg1 );
-  
-  if (  (ship = ship_from_hanger(ch->game, ch->in_room->vnum))  == NULL )
-  {
-    if ( (ship = ship_from_entrance(ch->game, ch->in_room->vnum)) == NULL )
+    SHIP_DATA *ship, *eShip = NULL;
+    int amount = 0;
+    std::string arg1;
+    std::string buf;
+    
+    
+    one_argument( argument, arg1 );
+    
+    if (  (ship = ship_from_hanger(ch->game, ch->in_room->vnum))  == NULL )
     {
-      send_to_char("&RYou must be in the hanger or the entrance of a ship to do that!\n",ch);
+      if ( (ship = ship_from_entrance(ch->game, ch->in_room->vnum)) == NULL )
+      {
+        send_to_char("&RYou must be in the hanger or the entrance of a ship to do that!\n",ch);
+        return;
+      }
+    }
+
+    if( /* arg2[0] == '\0' || */arg1.empty() || !is_number(arg1) )
+    {
+      send_to_char( "Syntax: Fuel <amount> <ship>", ch);
       return;
     }
-  }
-
-  if( /* arg2[0] == '\0' || */arg1[0] == '\0' || !is_number(arg1) )
-  {
-    send_to_char( "Syntax: Fuel <amount> <ship>", ch);
-    return;
-  }
-  
-  if( argument[0] == '\0' || !str_cmp(argument, "" ))
-  {
-    if( !ship->docked )
-    {
-       for( eShip = first_ship; eShip; eShip = eShip->next )
-         if( eShip->docked && eShip->docked == ship )
-           break;
-    }
-    else
-      eShip = ship->docked;
-  }
-
-/*  if( !eShip )
-  {
-      eShip = ship_in_room( ch->in_room, argument );
-
-   if( !eShip )
-   {
-    eShip = get_ship( argument );
-    if( eShip && (!eShip->docked || eShip->docked != ship ) )
-      eShip = NULL;
-   }
-  }
-*/
-  if( !eShip )
-  {
-    send_to_char( "Ship not docked. Fuel what ship?", ch );
-    return;
-  }    
     
-    amount = atoi(arg1);
+
+    {
+      if( !ship->docked )
+      {
+        for( eShip = first_ship; eShip; eShip = eShip->next )
+          if( eShip->docked && eShip->docked == ship )
+            break;
+      }
+      else
+        eShip = ship->docked;
+    }
+
+  /*  if( !eShip )
+    {
+        eShip = ship_in_room( ch->in_room, argument );
+
+    if( !eShip )
+    {
+      eShip = get_ship( argument );
+      if( eShip && (!eShip->docked || eShip->docked != ship ) )
+        eShip = NULL;
+    }
+    }
+  */
+    if( !eShip )
+    {
+      send_to_char( "Ship not docked. Fuel what ship?", ch );
+      return;
+    }    
+      
+    amount = strtoi(arg1);
     
     if( amount >= ship->energy )
     {
@@ -2013,10 +2012,10 @@ void do_fuel(CHAR_DATA *ch, char *argument )
 
     eShip->energy += amount;
     
-    SPRINTF( buf, "&YFuel order filled: &O%s: %d\n", eShip->name, amount );
+    buf = "&YFuel order filled: &O" + std::string(eShip->name) + ": " + std::to_string(amount) + "\n";
     echo_to_cockpit( AT_YELLOW, ship, buf );
     send_to_char( buf, ch );
-    SPRINTF( buf, "&YFuel remaining: %d\n", ship->energy );
+    buf = "&YFuel remaining: " + std::to_string(ship->energy) + "\n";
     echo_to_cockpit( AT_YELLOW, ship, buf );
     send_to_char( buf, ch );      
     
@@ -2399,83 +2398,83 @@ void update_ship_modules( SHIP_DATA *ship )
 
 void do_install_module( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char buf[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string buf;
+    std::string argstr = argument;
     OBJ_DATA *obj;
     SHIP_DATA *ship = NULL;
     MODULE_DATA *module;    
     int chance;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
     chance = IS_NPC(ch) ? ch->top_level
              : (int) (ch->pcdata->learned[gsn_shipmaintenance]);
 
     if( chance <= 0 )
     {
-	send_to_char( "You do not know how to install a module.\n", ch );
-	return;
+        send_to_char( "You do not know how to install a module.\n", ch );
+        return;
     }
     
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
-	send_to_char( "Install what?\n", ch );
-	return;
+        send_to_char( "Install what?\n", ch );
+        return;
     }
 
-        if ( ms_find_obj(ch) )
-	  return;
+    if ( ms_find_obj(ch) )
+      return;
 
-	if ( ( obj = get_obj_carry( ch, arg1 ) ) == NULL )
-	{
-	    send_to_char( "You do not have that item.\n", ch );
-	    return;
-	}
-
-
-	if ( !( obj->item_type==ITEM_FIGHTERCOMP || obj->item_type==ITEM_MIDCOMP
-		|| obj->item_type==ITEM_CAPITALCOMP ) )
-	{
-		send_to_char("That isn't a ship module.\n",ch);
-		return;
-	}
+    if ( ( obj = get_obj_carry( ch, arg1 ) ) == NULL )
+    {
+        send_to_char( "You do not have that item.\n", ch );
+        return;
+    }
 
 
-	if ( !can_drop_obj( ch, obj ) )
-	{
-	    send_to_char( "You can't let go of it.\n", ch );
-	    return;
-	}
+    if ( !( obj->item_type==ITEM_FIGHTERCOMP || obj->item_type==ITEM_MIDCOMP
+      || obj->item_type==ITEM_CAPITALCOMP ) )
+    {
+        send_to_char("That isn't a ship module.\n",ch);
+        return;
+    }
+
+
+    if ( !can_drop_obj( ch, obj ) )
+    {
+        send_to_char( "You can't let go of it.\n", ch );
+        return;
+    }
 
     if ( obj->value[1] == MOD_FLAG )
     {
       if ( (ship = ship_from_room( ch->game, ch->in_room->vnum )) == NULL )
       {
-	send_to_char( "You need to be in the room you want to install this item!\n", ch );
-	return;
+          send_to_char( "You need to be in the room you want to install this item!\n", ch );
+          return;
       }
       
       if ( obj->value[3] >= MAXMODFLAG )
       {
-	send_to_char( "That module can not be installed!  Contact an administrator.\n", ch );
-	bug( "Module's flag is set beyond the array limits! Char: %s Module vnum: %d\n",
-			ch->name, obj->pIndexData->vnum);
-	return;
+          send_to_char( "That module can not be installed!  Contact an administrator.\n", ch );
+          bug( "Module's flag is set beyond the array limits! Char: %s Module vnum: %d\n",
+              ch->name, obj->pIndexData->vnum);
+          return;
       }
-      
-      
+
       obj->value[0] = ch->in_room->vnum;
     }
       
 
-    if ( arg2[0] == '\0' && !ship )
+    if ( arg2.empty() && !ship )
     {
       if( ( ship = ship_from_engine( ch->game, ch->in_room->vnum ) ) == NULL )
       {
-	send_to_char( "Install what in what?\n", ch );
-	return;
+          send_to_char( "Install what in what?\n", ch );
+          return;
       }
     }
 
@@ -2484,109 +2483,108 @@ void do_install_module( CHAR_DATA *ch, char *argument )
       
     if ( !ship )            
     {    
-		act( AT_PLAIN, "I see no $T here.", ch, NULL, argument, TO_CHAR );        
-		return;       
+        act( AT_PLAIN, "I see no $T here.", ch, NULL, argument, TO_CHAR );        
+        return;       
     }
 
 //	SPRINTF( buf, "Ship: %s\n", ship->personalname );
 //	send_to_char( buf, ch );
 
-      if ( obj->value[1] != MOD_FLAG )
+  if ( obj->value[1] != MOD_FLAG )
+  {
+      if ( obj->item_type==ITEM_FIGHTERCOMP && ship->shipclass != FIGHTER_SHIP )
       {
-          if ( obj->item_type==ITEM_FIGHTERCOMP && ship->shipclass != FIGHTER_SHIP )
-          {
-            send_to_char( "That module is designed for a fighter.\n",ch);
-            return;
-          }
-
-          if ( obj->item_type==ITEM_MIDCOMP && ship->shipclass != MIDSIZE_SHIP )
-          {
-            send_to_char( "That module is designed for a midship.\n",ch);
-            return;
-          }
-
-          if ( obj->item_type==ITEM_CAPITALCOMP && ship->shipclass != CAPITAL_SHIP )
-          {
-            send_to_char( "That module is designed for a capital ship.\n",ch);
-            return;
-          }
+          send_to_char( "That module is designed for a fighter.\n",ch);
+          return;
       }
+
+      if ( obj->item_type==ITEM_MIDCOMP && ship->shipclass != MIDSIZE_SHIP )
+      {
+          send_to_char( "That module is designed for a midship.\n",ch);
+          return;
+      }
+
+      if ( obj->item_type==ITEM_CAPITALCOMP && ship->shipclass != CAPITAL_SHIP )
+      {
+          send_to_char( "That module is designed for a capital ship.\n",ch);
+          return;
+      }
+  }
   if ( obj->value[1] == MOD_FLAG )
     if ( ship == ship_from_cockpit( ch->game, ch->in_room->vnum ) )
     {
-      send_to_char( "You can not place this in a control room of a ship.\n",ch);
-      return;
+        send_to_char( "You can not place this in a control room of a ship.\n",ch);
+        return;
     }
         
       
 	if ( !IS_GOD(ch) && ( ship->shipclass != SHIP_DEBRIS ) && ( !check_pilot( ch , ship ) || !str_cmp( ship->owner , "Public" ) ) )
 	{    
-		send_to_char("&RHey, thats not your ship!\n",ch);    	
-		return;    	
+      send_to_char("&RHey, thats not your ship!\n",ch);    	
+      return;    	
 	}
 
 	if ( module_type_install(obj, ship) )
 	{
-		send_to_char( "There is no room for that part!\n", ch);
-		return;
+      send_to_char( "There is no room for that part!\n", ch);
+      return;
 	}
 
 	if( obj->value[1] == MOD_FLAG )
 	{
-          if ( BV_IS_SET( ch->in_room->room_flags, modflags[obj->value[3]] ) )
-          {
-            send_to_char( "&RThis item is already placed here.\n", ch);
-            return;
-          }
-        }
+      if ( BV_IS_SET( ch->in_room->room_flags, modflags[obj->value[3]] ) )
+      {
+        send_to_char( "&RThis item is already placed here.\n", ch);
+        return;
+      }
+  }
 
-        if ( number_percent( ) > chance )
+  if ( number_percent( ) > chance )
 	{
-	  send_to_char( "You fail to figure out how to install this module.\n", ch );
-	  return;
-    	}
+      send_to_char( "You fail to figure out how to install this module.\n", ch );
+      return;
+  }
 
 	if( obj->value[1] == MOD_MISSILE )
-	  ship->missiles += obj->value[3];
+	    ship->missiles += obj->value[3];
 
 	if( obj->value[1] == MOD_TORPEDO )
-	  ship->torpedos+= obj->value[3];
+	    ship->torpedos+= obj->value[3];
 
 	if( obj->value[1] == MOD_ROCKET )
-	  ship->rockets += obj->value[3];
+	    ship->rockets += obj->value[3];
 
 	if( obj->value[1] == MOD_CHAFF)
-	  ship->chaff += obj->value[3];
+	    ship->chaff += obj->value[3];
 
 	separate_obj( obj );
 
 	act( AT_ACTION, "$n installs $p.", ch, obj, NULL, TO_ROOM );
 	act( AT_ACTION, "You install $p.", ch, obj, NULL, TO_CHAR );
 
-       if( !is_ammo_mod( obj->value[1] ) )
-       {
-	ship->modules += 1;
-	
-	CREATE( module, MODULE_DATA, 1 );
-	
-	SPRINTF( buf, "%s", obj->short_descr );
-	module->name =  STRALLOC( buf );
-	module->type = obj->value[1];
-	module->condition = obj->value[0];
-	module->size = obj->value[2];
-	module->modification = obj->value[3];
-	
-	LINK( module, ship->first_module, ship->last_module, next, prev );
+  if( !is_ammo_mod( obj->value[1] ) )
+  {
+      ship->modules += 1;
+      
+      CREATE( module, MODULE_DATA, 1 );
+      
+      buf = str_printf( "%s", obj->short_descr );
+      module->name =  STRALLOC( buf );
+      module->type = obj->value[1];
+      module->condition = obj->value[0];
+      module->size = obj->value[2];
+      module->modification = obj->value[3];
+      
+      LINK( module, ship->first_module, ship->last_module, next, prev );
 
-	update_ship_modules( ship );
-        updateship( ship, module->type );
-       }
+      update_ship_modules( ship );
+      updateship( ship, module->type );
+  }
 
-       
 	extract_obj(obj);
 	save_ship( ship );
 	  
-    return;
+  return;
 
 }
 
@@ -2666,10 +2664,10 @@ char *show_mod_type2( int type )
 }
 
 // Added for show_mod <type> - DV 5-15-04
-int show_mod_type3( char *type )
+int show_mod_type3( const std::string& type )
 {
   
-  if ( !type || type[0] == '\0' )
+  if ( type.empty() )
     return -1;
   
   if (nifty_is_name_prefix( type,  "Hyperdrive") ) return MOD_HYPERSPEED;
@@ -2820,116 +2818,117 @@ bool module_type_install(OBJ_DATA *obj, SHIP_DATA *ship)
 void do_remove_module( CHAR_DATA *ch, char *argument )
 {
 
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char buf[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    char buf[MAX_STRING_LENGTH]; // Need to handle tokens in module names
+    std::string argstr = argument;
     OBJ_DATA *obj;
     SHIP_DATA *ship = NULL;
     MODULE_DATA	*module;
     int modnum, tempnum=1, chance;
 
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-   chance = IS_NPC(ch) ? ch->top_level
+    chance = IS_NPC(ch) ? ch->top_level
              : (int) (ch->pcdata->learned[gsn_shipmaintenance]);
 
     if( chance <= 0 )
     {
-	send_to_char( "You do not know how to install a module.\n", ch );
-	return;
+        send_to_char( "You do not know how to install a module.\n", ch );
+        return;
     }
  
-   if ( arg1[0] == '\0' || !is_number( arg1 ) )
+    if ( arg1.empty() || !is_number( arg1 ) )
     {
-		send_to_char( "Remove what?\n", ch );
-		return;
+        send_to_char( "Remove what?\n", ch );
+        return;
     }
 
-    if ( arg2[0] == '\0' || !strcmp( arg2, "here" ) )
+    if ( arg2.empty() || !str_cmp( arg2, "here" ) )
     {
       if( ( ship = ship_from_engine( ch->game, ch->in_room->vnum ) ) == NULL )
       {
-	send_to_char( "Remove what from what ship?\n", ch );
-	return;
+          send_to_char( "Remove what from what ship?\n", ch );
+          return;
       }
     }
     if ( !ship )
-      ship = ship_in_room( ch->in_room , arg2 );    
+        ship = ship_in_room( ch->in_room , arg2 );    
     if ( !ship )            
-	{    
-		act( AT_PLAIN, "I see no $T here.", ch, NULL, argument, TO_CHAR );        
-		return;       
+	  {    
+        act( AT_PLAIN, "I see no $T here.", ch, NULL, argstr, TO_CHAR );        
+        return;       
     }
 
-	if ( !IS_GOD(ch) && ( ship->shipclass != SHIP_DEBRIS ) && ( !check_pilot( ch , ship ) || !str_cmp( ship->owner , "Public" ) || !str_cmp( ship->owner , "Trainer" ) ) )
-	{    
-		send_to_char("&RHey, thats not your ship!\n",ch);    	
-		return;    	
-	}
+    if ( !IS_GOD(ch) && ( ship->shipclass != SHIP_DEBRIS ) && ( !check_pilot( ch , ship ) || !str_cmp( ship->owner , "Public" ) || !str_cmp( ship->owner , "Trainer" ) ) )
+    {    
+        send_to_char("&RHey, thats not your ship!\n",ch);    	
+        return;    	
+    }
 
-        if ( number_percent( ) > chance )
-	{
-	  send_to_char( "You fail to figure out how to install this module.\n", ch );
-	  return;
-    	}
-
-	modnum = atoi(arg1);
-
-  if( modnum > 0 )
-    for ( module = ship->first_module; module; module = module->next, tempnum++ )
+    if ( number_percent( ) > chance )
     {
+      send_to_char( "You fail to figure out how to install this module.\n", ch );
+      return;
+    }
 
-      if ( modnum == tempnum )
+    modnum = strtoi(arg1);
+
+    if( modnum > 0 )
+      for ( module = ship->first_module; module; module = module->next, tempnum++ )
       {
-        
-        if( module->type == MOD_CARGO )
+
+        if ( modnum == tempnum )
         {
-          send_to_char("Use unloadcargo or transfercargo to remove cargo.\n",ch);
+          
+          if( module->type == MOD_CARGO )
+          {
+            send_to_char("Use unloadcargo or transfercargo to remove cargo.\n",ch);
+            return;
+          }
+          
+          if( ship->shipclass == FIGHTER_SHIP )
+            obj = create_object( get_obj_index( MOD_FIGHTER_OBJECT ), 100 );
+          if( ship->shipclass == MIDSIZE_SHIP )
+            obj = create_object( get_obj_index( MOD_MIDSHIP_OBJECT ), 100 );
+          if( ship->shipclass == CAPITAL_SHIP )
+            obj = create_object( get_obj_index( MOD_CAPSHIP_OBJECT ), 100 );
+          obj->value[0] = module->condition;
+          obj->value[1] = module->type;
+          obj->value[2] = module->size;
+          obj->value[3] = module->modification;
+          SPRINTF_RUNTIME (buf, obj->description, show_mod_type( module ) );
+          obj->description =  STRALLOC( buf );
+          SPRINTF (buf, "%s", module->name);
+          obj->short_descr =  STRALLOC( buf );
+          obj->name =  STRALLOC( buf );
+          
+          act( AT_ACTION, "$n removes $p.", ch, obj, NULL, TO_ROOM );	
+          act( AT_ACTION, "You remove $p.", ch, obj, NULL, TO_CHAR );
+          obj = obj_to_char( obj, ch );
+          
+          if ( module->type == MOD_FLAG )
+          {
+            ROOM_INDEX_DATA *froom;
+            if ( (froom = get_room_index(module->condition)) != NULL )
+              BV_REMOVE_BIT( froom->room_flags, modflags[module->modification] );
+          }
+          
+          UNLINK( module, ship->first_module, ship->last_module, next, prev );
+
+          STRFREE(module->name);
+          DISPOSE( module );
+
+          ship->modules = ship->modules -1;
+
+          update_ship_modules( ship );
+                updateship( ship, obj->value[1]);
+          save_ship(ship);
           return;
         }
-        
-        if( ship->shipclass == FIGHTER_SHIP )
-          obj = create_object( get_obj_index( MOD_FIGHTER_OBJECT ), 100 );
-        if( ship->shipclass == MIDSIZE_SHIP )
-          obj = create_object( get_obj_index( MOD_MIDSHIP_OBJECT ), 100 );
-        if( ship->shipclass == CAPITAL_SHIP )
-          obj = create_object( get_obj_index( MOD_CAPSHIP_OBJECT ), 100 );
-        obj->value[0] = module->condition;
-        obj->value[1] = module->type;
-        obj->value[2] = module->size;
-        obj->value[3] = module->modification;
-        SPRINTF_RUNTIME (buf, obj->description, show_mod_type( module ) );
-        obj->description =  STRALLOC( buf );
-        SPRINTF (buf, "%s", module->name);
-        obj->short_descr =  STRALLOC( buf );
-        obj->name =  STRALLOC( buf );
-        
-        act( AT_ACTION, "$n removes $p.", ch, obj, NULL, TO_ROOM );	
-        act( AT_ACTION, "You remove $p.", ch, obj, NULL, TO_CHAR );
-        obj = obj_to_char( obj, ch );
-        
-        if ( module->type == MOD_FLAG )
-        {
-          ROOM_INDEX_DATA *froom;
-          if ( (froom = get_room_index(module->condition)) != NULL )
-            BV_REMOVE_BIT( froom->room_flags, modflags[module->modification] );
-        }
-        
-        UNLINK( module, ship->first_module, ship->last_module, next, prev );
-
-        STRFREE(module->name);
-        DISPOSE( module );
-
-        ship->modules = ship->modules -1;
-
-        update_ship_modules( ship );
-              updateship( ship, obj->value[1]);
-        save_ship(ship);
-        return;
       }
-    }
 	  send_to_char("No such module installed\n",ch);
 	  return;
 }
@@ -2937,64 +2936,65 @@ void do_remove_module( CHAR_DATA *ch, char *argument )
 void do_show_modules( CHAR_DATA *ch, char *argument )
 {
 
-    char arg[MAX_INPUT_LENGTH];
-	SHIP_DATA *ship = NULL;
-	MODULE_DATA *module;
-	char buf[MAX_STRING_LENGTH];
-	int modcounter = 1, modtype = -1;
-	bool shipsearch = FALSE;
+    std::string arg;
+    std::string argstr = argument;
+    SHIP_DATA *ship = NULL;
+    MODULE_DATA *module;
+    std::string buf;
+    int modcounter = 1, modtype = -1;
+    bool shipsearch = FALSE;
 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
 
-    if ( arg[0] != '\0' )
+    if ( !arg.empty() )
     {
-	ship = ship_in_room( ch->in_room , arg );    
+	      ship = ship_in_room( ch->in_room , arg );    
 
-/*      if ( !ship )            
-	{    
-		act( AT_PLAIN, "I see no ship here.", ch, NULL, argument, TO_CHAR );        
-		return;       
+      /*if ( !ship )            
+	      {    
+            act( AT_PLAIN, "I see no ship here.", ch, NULL, argstr, TO_CHAR );        
+            return;       
         }
-*/        
-	if ( ship && ( ship->shipclass != SHIP_DEBRIS ) && !check_pilot( ch , ship ) && !IS_GOD(ch) ) 
-	{    
-		send_to_char("&RHey, thats not your ship!\n",ch);    	
-		return;    	
-	}
+      */        
+        if ( ship && ( ship->shipclass != SHIP_DEBRIS ) && !check_pilot( ch , ship ) && !IS_GOD(ch) ) 
+        {    
+          send_to_char("&RHey, thats not your ship!\n",ch);    	
+          return;    	
+        }
     }
     
     if ( ship )
-      shipsearch = TRUE;
+        shipsearch = TRUE;
     if ( !ship )
         ship = ship_from_cockpit( ch->game, ch->in_room->vnum );
         
     if( !ship )
     {
-    	send_to_char( "Show the modules on what ship?\n", ch );
-    	return;
+        send_to_char( "Show the modules on what ship?\n", ch );
+        return;
     }
 	
-    modtype = shipsearch ? (show_mod_type3( argument )) : (show_mod_type3( arg ) );
+    modtype = shipsearch ? (show_mod_type3( argstr )) : (show_mod_type3( arg ) );
     
-    SPRINTF( buf, "Modules installed on %s:\n\n", ship->name );
-	send_to_char(buf,ch);
-	for ( module = ship->first_module; module; modcounter++, module = module->next )
-	{
-		if ( modtype != -1 )
-		  if ( module->type != modtype )
-		    continue;
-		SPRINTF(buf,"%d) Name: %s\n\tType: %s Condition: %d Size: %d Mod: %d\n", 
-		        modcounter, module->name, show_mod_type( module ), module->condition, module->size, module->modification );
-		send_to_char(buf,ch);
-	}
-	if (!ship->modules)
-	{
-		send_to_char( "No Modules installed.\n",ch);
-		return;
-	}
-	ch_printf(ch,"Installed: External %d/%d  Internal %d/%d.\n", 
-	          get_extmodule_count(ship), ship->maxextmodules, get_intmodule_count(ship), ship->maxintmodules );
-	
+    buf = str_printf("Modules installed on %s:\n\n", ship->name );
+    send_to_char(buf,ch);
+    for ( module = ship->first_module; module; modcounter++, module = module->next )
+    {
+      if ( modtype != -1 )
+        if ( module->type != modtype )
+          continue;
+      buf = str_printf("%d) Name: %s\n\tType: %s Condition: %d Size: %d Mod: %d\n", 
+              modcounter, module->name, show_mod_type( module ), module->condition, module->size, module->modification );
+      send_to_char(buf,ch);
+    }
+    if (!ship->modules)
+    {
+      send_to_char( "No Modules installed.\n",ch);
+      return;
+    }
+    ch_printf(ch,"Installed: External %d/%d  Internal %d/%d.\n", 
+              get_extmodule_count(ship), ship->maxextmodules, get_intmodule_count(ship), ship->maxintmodules );
+    
 	
 	return;
 }
@@ -3003,65 +3003,64 @@ void do_show_modules( CHAR_DATA *ch, char *argument )
 
 void do_load( CHAR_DATA *ch, char *argument )
 {
- SHIP_DATA *ship;
-//  SHIP_DATA *target;
-//  char arg[MAX_STRING_LENGTH];
-  char arg1[MAX_STRING_LENGTH];
-  char arg2[MAX_STRING_LENGTH];
-  char arg3[MAX_STRING_LENGTH];
-  int amountCargo;
-  int typeCargo;
+    SHIP_DATA *ship;
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string argstr = argument;
+    int amountCargo;
+    int typeCargo;
 
-  argument = one_argument( argument , arg1);
-  argument = one_argument( argument , arg2);
-  argument = one_argument( argument , arg3);
+    argstr = one_argument( argstr , arg1);
+    argstr = one_argument( argstr , arg2);
+    argstr = one_argument( argstr , arg3);
 
-  if ( arg1[0] == '\0' || arg2[0] == '\0' )
-  {
-    send_to_char( "Syntax: load <cargotype> <amount> [ship]", ch);
-    return;
-  }
+    if ( arg1.empty() || arg2.empty() )
+    {
+      send_to_char( "Syntax: load <cargotype> <amount> [ship]", ch);
+      return;
+    }
 
-  amountCargo = atoi(arg2);
-  typeCargo = atoi(arg1);
-  
-  if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
-  {
-            if ( arg3[0] == '\0' )
-            {
-               act( AT_PLAIN, "Which ship do you want to load?.", ch, NULL, NULL, TO_CHAR );
-               return;
-            }
+    amountCargo = strtoi(arg2);
+    typeCargo = strtoi(arg1);
+    
+    if (  (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  == NULL )
+    {
+        if ( arg3.empty() )
+        {
+            act( AT_PLAIN, "Which ship do you want to load?.", ch, NULL, NULL, TO_CHAR );
+            return;
+        }
 
-            ship = ship_in_room( ch->in_room , arg3 );
-            if ( !ship )
-            {
-               act( AT_PLAIN, "I see no $T here.", ch, NULL, arg1, TO_CHAR );
-               return;
-            }
+        ship = ship_in_room( ch->in_room , arg3 );
+        if ( !ship )
+        {
+            act( AT_PLAIN, "I see no $T here.", ch, NULL, arg3, TO_CHAR );
+            return;
+        }
 
-//            target = ship;
+      //target = ship;
     }
     else if ( ship->hanger == ch->in_room->vnum )
     {
-            if ( arg3[0] == '\0' )
-            {
-               act( AT_PLAIN, "Which ship do you want to load?.", ch, NULL, NULL, TO_CHAR );
-               return;
-            }
+        if ( arg3.empty() )
+        {
+            act( AT_PLAIN, "Which ship do you want to load?.", ch, NULL, NULL, TO_CHAR );
+            return;
+        }
 
-            ship = ship_in_room( ch->in_room , arg3 );
-            if ( !ship )
-            {
-               act( AT_PLAIN, "I see no $T here.", ch, NULL, argument, TO_CHAR );
-               return;
-            }
+        ship = ship_in_room( ch->in_room , arg3 );
+        if ( !ship )
+        {
+            act( AT_PLAIN, "I see no $T here.", ch, NULL, arg3, TO_CHAR );
+            return;
+        }
 
-//            target = ship;
+        //target = ship;
     }
 
     else
-//       target = ship;
+      //target = ship;
     
     if (!typeCargo)
     {
@@ -3154,8 +3153,8 @@ void affectshipcargo( SHIP_DATA *ship, int typeCargo, int amount )
 
 void do_unload( CHAR_DATA *ch, char *argument )
 {
-send_to_char( "This is not implemented yet!\n", ch);
-return;
+    send_to_char( "This is not implemented yet!\n", ch);
+    return;
 }
 
 void do_upgradeship( CHAR_DATA *ch, char *argument )
@@ -3171,1490 +3170,1461 @@ void do_degradeship( CHAR_DATA *ch, char *argument )
 void do_gravityprojector(CHAR_DATA * ch, char *argument)
 {
 
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     int gravpower = 0;
     SHIP_DATA *ship;
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
+    arg= argument;
 
-    if(!argument || argument[0] == '\0' )
+    if(arg.empty())
     {
-      send_to_char("Syntax: gravityprojector <on/off/amt>\n",ch);
-      return;
+        send_to_char("Syntax: gravityprojector <on/off/amt>\n",ch);
+        return;
     }
     
+    if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
+    {
+        send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
+        return;
+    }
 
-    SPRINTF( arg, "%s", argument );
+    if ( ship->shipclass > SHIP_PLATFORM )
+    {
+        send_to_char("&RThis isn't a spacecraft!\n",ch);
+        return;
+    }
 
-  if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
-  {
-    send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
+
+    if (autofly (ship))
+    {
+        send_to_char("The security system will not allow you to activate a gravity well with the autopilot online.\n" , ch );
+        return;
+    }
+
+    if ( ship->mod->gravitypower == 0 )
+    {
+        send_to_char("There are no gravity well projectors installed in this craft.\n" , ch );
+        return;
+    }
+
+    if ( (ship = ship_from_coseat(ch->game, ch->in_room->vnum)) == NULL )
+    {
+        send_to_char("&RYou need to be in the pilot seat!\n",ch);
+        return;
+    }
+
+    if (ship->shipstate == SHIP_DISABLED)
+    {
+        send_to_char("&RThe ships drive is disabled. No power available.\n",ch);
+        return;
+    }
+
+    if (ship->shipstate == SHIP_LANDED)
+    {
+        send_to_char("&ROne needs to take off first!\n",ch);
+        return;
+    }
+
+
+    if (ship->shipstate == SHIP_HYPERSPACE)
+    {
+        send_to_char("&RYou can only do that in realspace!\n",ch);
+        return;
+    }
+
+    if (ship->shipstate != SHIP_READY)
+    {
+        send_to_char("&RPlease wait until the ship has finished its current manouver.\n",ch);
+        return;
+    }
+
+    buf = "Your sensors ring an alarm as a " + std::string(ship->name) + " brings up its gravity well.";
+
+    if (nifty_is_name_prefix (arg, "on"))
+    {
+        ship->mod->gravproj = ship->mod->gravitypower;
+        send_to_char("You activate the gravity projectors at full power.\n",ch);
+        echo_to_system (AT_PLAIN, ship, buf, NULL);
+        return;
+    }    
+
+    buf = "Your sensors ring an alarm as a " + std::string(ship->name) + " disengages its gravity well.";
+
+    if (nifty_is_name_prefix (arg, "off"))
+    {
+        ship->mod->gravproj = 0;
+        send_to_char("You deactivate the gravity projectors.\n",ch);
+        echo_to_system (AT_PLAIN, ship, buf, NULL);
+        return;
+    }    
+
+    if ( is_number( arg ) )
+    {
+        gravpower = strtoi(arg);
+        ship->mod->gravproj = UMIN(gravpower, ship->mod->gravitypower);
+        if( ship->mod->gravproj < ship->mod->gravitypower )
+          send_to_char("You activate the gravity projectors at partial power.\n",ch);
+        else
+          send_to_char("You activate the gravity projectors at full power.\n",ch);
+        echo_to_system (AT_PLAIN, ship, buf, NULL);
+        return;
+    }
+
     return;
-  }
-
-  if ( ship->shipclass > SHIP_PLATFORM )
-  {
-    send_to_char("&RThis isn't a spacecraft!\n",ch);
-    return;
-  }
-
-
-  if (autofly (ship))
-  {
-    send_to_char("The security system will not allow you to activate a gravity well with the autopilot online.\n" , ch );
-    return;
-  }
-
-  if ( ship->mod->gravitypower == 0 )
-  {
-    send_to_char("There are no gravity well projectors installed in this craft.\n" , ch );
-    return;
-  }
-
-  if ( (ship = ship_from_coseat(ch->game, ch->in_room->vnum)) == NULL )
-  {
-    send_to_char("&RYou need to be in the pilot seat!\n",ch);
-    return;
-  }
-
-  if (ship->shipstate == SHIP_DISABLED)
-  {
-    send_to_char("&RThe ships drive is disabled. No power available.\n",ch);
-    return;
-  }
-
-  if (ship->shipstate == SHIP_LANDED)
-  {
-
-    send_to_char("&ROne needs to take off first!\n",ch);
-    return;
-  }
-
-
-  if (ship->shipstate == SHIP_HYPERSPACE)
-  {
-
-    send_to_char("&RYou can only do that in realspace!\n",ch);
-    return;
-  }
-
-  if (ship->shipstate != SHIP_READY)
-  {
-    send_to_char("&RPlease wait until the ship has finished its current manouver.\n",ch);
-    return;
-  }
-
-  SPRINTF(buf, "Your sensors ring an alarm as a %s brings up its gravity well.", ship->name );
-
-  if (nifty_is_name_prefix (arg, "on"))
-  {
-    ship->mod->gravproj = ship->mod->gravitypower;
-    send_to_char("You activate the gravity projectors at full power.\n",ch);
-    echo_to_system (AT_PLAIN, ship, buf, NULL);
-    return;
-  }    
-
-  SPRINTF(buf, "Your sensors ring an alarm as a %s disengages its gravity well.", ship->name );
-
-  if (nifty_is_name_prefix (arg, "off"))
-  {
-    ship->mod->gravproj = 0;
-    send_to_char("You deactivate the gravity projectors.\n",ch);
-    echo_to_system (AT_PLAIN, ship, buf, NULL);
-    return;
-  }    
-
-  if ( is_number( arg ) )
-  {
-    gravpower = atoi(arg);
-    ship->mod->gravproj = UMIN(gravpower, ship->mod->gravitypower);
-    if( ship->mod->gravproj < ship->mod->gravitypower )
-      send_to_char("You activate the gravity projectors at partial power.\n",ch);
-    else
-      send_to_char("You activate the gravity projectors at full power.\n",ch);
-    echo_to_system (AT_PLAIN, ship, buf, NULL);
-    return;
-  }
-
-  return;
 
 }
 
 int get_template_price( int templatetype )
 {
-  int price = 0;
-  int shipclass = 0;
-  
-  price += (templatetypes[templatetype].maxextmodules)*400;
-  price += (templatetypes[templatetype].maxintmodules)*200;
-  price += (templatetypes[templatetype].weight)*4;
+    int price = 0;
+    int shipclass = 0;
+    
+    price += (templatetypes[templatetype].maxextmodules)*400;
+    price += (templatetypes[templatetype].maxintmodules)*200;
+    price += (templatetypes[templatetype].weight)*4;
 
-  shipclass = ((templatetypes[templatetype].shipclass%10));
-  
-  if ( shipclass == CAPITAL_SHIP )
-    price *= 10;
+    shipclass = ((templatetypes[templatetype].shipclass%10));
+    
+    if ( shipclass == CAPITAL_SHIP )
+      price *= 10;
 
-  return price;
+    return price;
 }
 
 char * get_template_string( int templatetype )
 {
-//char buf[MAX_STRING_LENGTH];
-  char *templatestring;
-  int i;
+  //char buf[MAX_STRING_LENGTH];
+    char *templatestring;
+    int i;
 
-  for ( i = 0; i < MAX_TEMPLATETYPE; i++ )
-    if( templatetypes[i].type == templatetype )
+    for ( i = 0; i < MAX_TEMPLATETYPE; i++ )
+      if( templatetypes[i].type == templatetype )
+      {
+        templatestring = STRALLOC( templatetypes[i].string );
+        break;
+      }
+    
+    if( i >= MAX_TEMPLATETYPE ) 
+      templatestring = STRALLOC( "" );
+
+  /*
+    switch(templatetype)
     {
-      templatestring = STRALLOC( templatetypes[i].string );
-      break;
+      case 1: 
+  //  	  SPRINTF( buf, "2] 1; 2)20:1" );
+        SPRINTF( buf, "2] 1)22:2" );
+        templatestring = STRALLOC( buf ); 
+        break;
+      case 2:
+        SPRINTF( buf, "1] 1; " );
+        templatestring = STRALLOC( buf );
+        break;
+      case 3:
+        SPRINTF( buf, "1] 10;" );
+        templatestring = STRALLOC( buf );
+        break;
+      default: send_to_char( "Template not found.\n", ch );return; break;
     }
-  
-  if( i >= MAX_TEMPLATETYPE ) 
-    templatestring = STRALLOC( "" );
+  */
 
-/*
-  switch(templatetype)
-  {
-  	case 1: 
-//  	  SPRINTF( buf, "2] 1; 2)20:1" );
-  	  SPRINTF( buf, "2] 1)22:2" );
-  	  templatestring = STRALLOC( buf ); 
-  	  break;
-  	case 2:
-  	  SPRINTF( buf, "1] 1; " );
-  	  templatestring = STRALLOC( buf );
-  	  break;
-  	case 3:
-  	  SPRINTF( buf, "1] 10;" );
-  	  templatestring = STRALLOC( buf );
-  	  break;
-  	default: send_to_char( "Template not found.\n", ch );return; break;
-  }
-*/
-
-  return templatestring;
+    return templatestring;
 }
 
 void do_maketemplateship(CHAR_DATA * ch, char *argument)
 {
-  SHIP_DATA *ship;
-  SHIP_MOD_DATA *ship_mod;
-  char buf[MAX_STRING_LENGTH];
-  char *templatestring;
-  char arg[MAX_STRING_LENGTH];
-  char arg2[MAX_STRING_LENGTH];
-  int templatetype, i;
-  
-  argument = one_argument( argument, arg );
-  argument = one_argument( argument, arg2 );
+    SHIP_DATA *ship;
+    SHIP_MOD_DATA *ship_mod;
+    std::string buf;
+    char *templatestring;
+    std::string arg;
+    std::string arg2;
+    std::string argstr = argument;
+    int templatetype, i;
+    
+    argstr = one_argument( argstr, arg );
+    argstr = one_argument( argstr, arg2 );
 
-  if ( !argument || argument[0] == '\0' )
-  {
-    send_to_char( "Usage: maketemplateship <templatetype> <filename> <newshipname>\n", ch );
-    return;
-  }
-  
-  if( !is_number( arg ) )
-  {
-    send_to_char( "Template type must be a number.\n", ch );
-    return;
-  }
- 
-  if( arg2[0] == '\0' || !argument || argument[0] == '\0' )
-  {
-    send_to_char( "Usage: maketemplateship <templatetype> <filename> <newshipname>\n", ch );
-    return;
-  }
-
-  if ( !ch || !ch->game )
-  {
-    send_to_char( "You need to be a game to make a ship template.\n", ch );
-    return;
-  }
-
-  templatetype = atoi(arg);
-  
-  templatestring = get_template_string( templatetype );
-  
-  if ( !templatestring || templatestring[0] == '\0' )
-  {
-    for ( i = 0; i < MAX_TEMPLATETYPE; i++ )
+    if ( argstr.empty() )
     {
-        ch_printf( ch, "Num: %d Name: %s MaxExt: %d MaxInt: %d\n   Desc: %50s\n",
-      		  templatetypes[i].type, templatetypes[i].name, 
-      		  templatetypes[i].maxextmodules, templatetypes[i].maxintmodules,
-      		  templatetypes[i].desc );
+        send_to_char( "Usage: maketemplateship <templatetype> <filename> <newshipname>\n", ch );
+        return;
     }
-      	return;
-  }
-
-#if 0
-  bug( templatestring, 0 );
-#endif  
-
-  CREATE( ship, SHIP_DATA, 1 );
-  ship->game = ch->game;
-
-  LINK( ship, first_ship, last_ship, next, prev );
-
-  ship->owner         = STRALLOC ("");
-  ship->copilot       = STRALLOC ("");
-  ship->pilot         = STRALLOC ("");
-  ship->home          = STRALLOC ("");
-  ship->description   = STRALLOC ("");
-
-  SPRINTF( buf, "%s", templatestring );
-  ship->templatestring = STRALLOC(buf);
-
-  ship->type          = SHIP_CIVILIAN;
-  ship->shipclass         = FIGHTER_SHIP;
-  ship->lasers        = 0;
-  ship->missiles      = 0;
-  ship->rockets       = 0;
-  ship->torpedos      = 0;
-  ship->maxshield     = 0;
-  ship->maxhull       = 0;
-  ship->maxenergy     = 0;
-  ship->hyperspeed    = 0;
-  ship->chaff         = 0;
-  ship->realspeed     = 0;
-  ship->currspeed     = 0;
-  ship->manuever      = 0;
-
-  ship->shipstate     = SHIP_LANDED;
-  ship->docking       = SHIP_READY;
-  ship->statei0       = LASER_READY;
-  ship->statet0       = LASER_READY;
-  ship->statettractor = SHIP_READY;
-  ship->statetdocking = SHIP_READY;
-  ship->missilestate  = MISSILE_READY;
-
-  ship->spaceobject   = NULL;
-  ship->energy        = 0;
-  ship->hull          = 1;
-  ship->in_room       = get_room_index(45);
-  ship->next_in_room  = NULL;
-  ship->prev_in_room  = NULL;
-  ship->currjump      = NULL;
-  ship->target0       = NULL;
-  ship->tractoredby   = NULL;
-  ship->tractored     = NULL;
-  ship->docked        = NULL;
-  ship->autopilot     = FALSE;
-  
-  CREATE( ship_mod, SHIP_MOD_DATA, 1 );
-  ship->mod = ship_mod;
-  update_ship_modules(ship);
-  
-  ship->shipID = ch->game->get_sysdata()->get_and_increment_shipID();
-  save_sysdata(*ch->game->get_sysdata());
-
-  ship->name          = STRALLOC (templatetypes[templatetype].name);
-  ship->owner         = STRALLOC ("");
-  ship->filename         = STRALLOC (arg2);
-  SPRINTF( buf, "TemplateShip %ld %s", ship->shipID, argument );
-  ship->personalname  = STRALLOC (buf);
-#if 0
-  send_to_char( buf, ch );
-#endif
-  
-  transship( ship, 45 );
-
-  if ( parse_ship_template(templatestring, ship) )
+    
+    if( !is_number( arg ) )
     {
-      bug( "maketemplateship: parse_ship_template failed.\n", 0 );
-      shipdelete(ship, FALSE);
+        send_to_char( "Template type must be a number.\n", ch );
+        return;
+    }
+  
+    if( arg2.empty() || argstr.empty() )
+    {
+        send_to_char( "Usage: maketemplateship <templatetype> <filename> <newshipname>\n", ch );
+        return;
+    }
+
+    if ( !ch || !ch->game )
+    {
+        send_to_char( "You need to be a game to make a ship template.\n", ch );
+        return;
+    }
+
+    templatetype = strtoi(arg);
+    
+    templatestring = get_template_string( templatetype );
+    
+    if ( !templatestring || templatestring[0] == '\0' )
+    {
+      for ( i = 0; i < MAX_TEMPLATETYPE; i++ )
+      {
+          ch_printf( ch, "Num: %d Name: %s MaxExt: %d MaxInt: %d\n   Desc: %50s\n",
+              templatetypes[i].type, templatetypes[i].name, 
+              templatetypes[i].maxextmodules, templatetypes[i].maxintmodules,
+              templatetypes[i].desc );
+      }
       return;
     }
-  
-  save_ship( ship );
-  write_ship_list( ch->game );
+    CREATE( ship, SHIP_DATA, 1 );
+    ship->game = ch->game;
 
-#if 0
-  bug( ship->templatestring, 0 );
-#endif
+    LINK( ship, first_ship, last_ship, next, prev );
 
-  return;	
+    ship->owner         = STRALLOC ("");
+    ship->copilot       = STRALLOC ("");
+    ship->pilot         = STRALLOC ("");
+    ship->home          = STRALLOC ("");
+    ship->description   = STRALLOC ("");
+
+    buf = templatestring;
+    ship->templatestring = STRALLOC(buf);
+
+    ship->type          = SHIP_CIVILIAN;
+    ship->shipclass         = FIGHTER_SHIP;
+    ship->lasers        = 0;
+    ship->missiles      = 0;
+    ship->rockets       = 0;
+    ship->torpedos      = 0;
+    ship->maxshield     = 0;
+    ship->maxhull       = 0;
+    ship->maxenergy     = 0;
+    ship->hyperspeed    = 0;
+    ship->chaff         = 0;
+    ship->realspeed     = 0;
+    ship->currspeed     = 0;
+    ship->manuever      = 0;
+
+    ship->shipstate     = SHIP_LANDED;
+    ship->docking       = SHIP_READY;
+    ship->statei0       = LASER_READY;
+    ship->statet0       = LASER_READY;
+    ship->statettractor = SHIP_READY;
+    ship->statetdocking = SHIP_READY;
+    ship->missilestate  = MISSILE_READY;
+
+    ship->spaceobject   = NULL;
+    ship->energy        = 0;
+    ship->hull          = 1;
+    ship->in_room       = get_room_index(45);
+    ship->next_in_room  = NULL;
+    ship->prev_in_room  = NULL;
+    ship->currjump      = NULL;
+    ship->target0       = NULL;
+    ship->tractoredby   = NULL;
+    ship->tractored     = NULL;
+    ship->docked        = NULL;
+    ship->autopilot     = FALSE;
+    
+    CREATE( ship_mod, SHIP_MOD_DATA, 1 );
+    ship->mod = ship_mod;
+    update_ship_modules(ship);
+    
+    ship->shipID = ch->game->get_sysdata()->get_and_increment_shipID();
+    save_sysdata(*ch->game->get_sysdata());
+
+    ship->name          = STRALLOC (templatetypes[templatetype].name);
+    ship->owner         = STRALLOC ("");
+    ship->filename         = STRALLOC (arg2);
+    buf = "TemplateShip " + std::to_string(ship->shipID) + " " + argstr;
+    ship->personalname  = STRALLOC (buf);
+    
+    transship( ship, 45 );
+
+    if ( parse_ship_template(templatestring, ship) )
+      {
+        bug( "maketemplateship: parse_ship_template failed.\n", 0 );
+        shipdelete(ship, FALSE);
+        return;
+      }
+    
+    save_ship( ship );
+    write_ship_list( ch->game );
+
+    return;	
 }
 
 
 void do_ordership( CHAR_DATA *ch, char *argument )
 {
-  SHIP_DATA *ship;
-  SHIP_MOD_DATA *ship_mod;
-  char buf[MAX_STRING_LENGTH];
-  char *templatestring;
-  char arg[MAX_STRING_LENGTH];
-//char arg2[MAX_STRING_LENGTH];
-  int templatetype, i, shipprice, shipclass, shiptype;
-  
-  argument = one_argument( argument, arg );
+    SHIP_DATA *ship;
+    SHIP_MOD_DATA *ship_mod;
+    std::string buf;
+    std::string argstr = argument;
+    char *templatestring;
+    std::string arg;
+    int templatetype, i, shipprice, shipclass, shiptype;
+    
+    argstr = one_argument( argstr, arg );
 
-  if ( ch->in_room->vnum != 5993 && ch->in_room->vnum != 32000 && ch->in_room->vnum != 1900 && ch->in_room->vnum != 1102 && ch->in_room->vnum != 100 && ch->in_room->vnum != 32050 )
-  {
-    send_to_char( "This is not one of the operational shipyards.\n", ch );
-    return;
-  }
-  
-  if( !is_number( arg ) )
-  {
-    send_to_char( "Template type must be a number.\n", ch );
-    for ( i = 0; i < MAX_TEMPLATETYPE; i++ )
+    if ( ch->in_room->vnum != 5993 && ch->in_room->vnum != 32000 && ch->in_room->vnum != 1900 && ch->in_room->vnum != 1102 && ch->in_room->vnum != 100 && ch->in_room->vnum != 32050 )
     {
-        ch_printf( ch, "Num: %d Name: %s MaxExt: %d MaxInt: %d Price: %d\n   Desc: %50s\n",
-      		  templatetypes[i].type, templatetypes[i].name, 
-      		  templatetypes[i].maxextmodules, templatetypes[i].maxintmodules,
-      		  get_template_price(i),
-      		  templatetypes[i].desc );
+        send_to_char( "This is not one of the operational shipyards.\n", ch );
+        return;
     }
-    return;
-  }
- 
-  if ( !argument || argument[0] == '\0' )
-  {
-    send_to_char( "Usage: ordership <templatetype> <newshipname>\n", ch );
-    return;
-  }
-  
-  if( !argument || argument[0] == '\0' )
-  {
-    send_to_char( "Usage: ordership <templatetype> <newshipname>\n", ch );
-    return;
-  }
-
-  templatetype = atoi(arg);
-  
-  templatestring = get_template_string( templatetype );
-  
-  if ( !templatestring || templatestring[0] == '\0' )
-  {
-    for ( i = 0; i < MAX_TEMPLATETYPE; i++ )
+    
+    if( !is_number( arg ) )
     {
-        ch_printf( ch, "Num: %d Name: %s MaxExt: %d MaxInt: %d Price: %d\n   Desc: %50s\n",
-      		  templatetypes[i].type, templatetypes[i].name, 
-      		  templatetypes[i].maxextmodules, templatetypes[i].maxintmodules,
-      		  get_template_price(i),
-      		  templatetypes[i].desc );
+        send_to_char( "Template type must be a number.\n", ch );
+        for ( i = 0; i < MAX_TEMPLATETYPE; i++ )
+        {
+            ch_printf( ch, "Num: %d Name: %s MaxExt: %d MaxInt: %d Price: %d\n   Desc: %50s\n",
+                templatetypes[i].type, templatetypes[i].name, 
+                templatetypes[i].maxextmodules, templatetypes[i].maxintmodules,
+                get_template_price(i),
+                templatetypes[i].desc );
+        }
+        return;
     }
-      	return;
-  }
-
-  shipclass = ((templatetypes[templatetype].shipclass%10));
-  shiptype = ((int)templatetypes[templatetype].shipclass/10);
-
-#if 0
-  ch_printf( ch, "Shipclass: %d\n", shipclass);
-  ch_printf( ch, "Shiptype: %d\n", shiptype);
-#endif
-
-  if( shiptype == 2 )
-    if ( ch->in_room->vnum != 32000 )
+  
+    if ( argstr.empty() )
     {
-      send_to_char( "This ship can only be built on an imperial shipyard.\n", ch );
+        send_to_char( "Usage: ordership <templatetype> <newshipname>\n", ch );
+        return;
+    }
+    
+    templatetype = strtoi(arg);
+    
+    templatestring = get_template_string( templatetype );
+    
+    if ( !templatestring || templatestring[0] == '\0' )
+    {
+      for ( i = 0; i < MAX_TEMPLATETYPE; i++ )
+      {
+          ch_printf( ch, "Num: %d Name: %s MaxExt: %d MaxInt: %d Price: %d\n   Desc: %50s\n",
+              templatetypes[i].type, templatetypes[i].name, 
+              templatetypes[i].maxextmodules, templatetypes[i].maxintmodules,
+              get_template_price(i),
+              templatetypes[i].desc );
+      }
       return;
     }
 
-  if( shiptype == 1 )
-    if ( ch->in_room->vnum != 1900 )
+    shipclass = ((templatetypes[templatetype].shipclass%10));
+    shiptype = ((int)templatetypes[templatetype].shipclass/10);
+
+    if( shiptype == 2 )
+      if ( ch->in_room->vnum != 32000 )
+      {
+        send_to_char( "This ship can only be built on an imperial shipyard.\n", ch );
+        return;
+      }
+
+    if( shiptype == 1 )
+      if ( ch->in_room->vnum != 1900 )
+      {
+        send_to_char( "This ship can only be built on an rebel shipyard.\n", ch );
+        return;
+      }
+    
+    shipprice = get_template_price(templatetype);
+
+    if ( ch->gold < shipprice )
     {
-      send_to_char( "This ship can only be built on an rebel shipyard.\n", ch );
-      return;
+        ch_printf(ch, "&RYou don't have enough credits to purchase this ship.\n");
+        return;
     }
-  
-  shipprice = get_template_price(templatetype);
 
-  if ( ch->gold < shipprice )
-  {
-    ch_printf(ch, "&RYou don't have enough credits to purchase this ship.\n");
-    return;
-  }
-
-  if ( get_ship( ch->game, argument ) )
-  {
-    ch_printf(ch, "&RA ship already exists by that name.\n");
-    return;
-  }
-  
-  if( strchr( argument, '&' ) != NULL )
-  {            
-    send_to_char( "&RColors may not be used in a ship's name.\n", ch);
-    return;
-  }
-
-  if ( !ch || !ch->game )
-  {
-    send_to_char( "You need to be a game to order a ship.\n", ch );
-    return;
-  }
-
-  ch->gold -= shipprice;
-  
-  CREATE( ship, SHIP_DATA, 1 );
-  ship->game = ch->game;
-
-  LINK( ship, first_ship, last_ship, next, prev );
-
-  ship->copilot       = STRALLOC ("");
-  ship->pilot         = STRALLOC ("");
-  ship->home          = STRALLOC ("");
-  ship->description   = STRALLOC ("");
-
-  SPRINTF( buf, "%s", templatestring );
-  ship->templatestring = STRALLOC(buf);
-
-  switch( shipclass )
-  {
-    case 0: ship->shipclass = FIGHTER_SHIP; break;
-    case 1: ship->shipclass = MIDSIZE_SHIP; break;
-    case 2: ship->shipclass = CAPITAL_SHIP; break;
-    default: ship->shipclass = FIGHTER_SHIP; break;
-  }
-  switch( shiptype )
-  {
-    case 0: ship->type = SHIP_CIVILIAN; break;
-    case 1: ship->type = SHIP_REBEL; break;
-    case 2: ship->type = SHIP_IMPERIAL; break;
-    default: ship->type = SHIP_CIVILIAN; break;
-  }
-
-  ship->lasers        = 0;
-  ship->missiles      = 0;
-  ship->rockets       = 0;
-  ship->torpedos      = 0;
-  ship->maxshield     = 0;
-  ship->maxhull       = 0;
-  ship->maxenergy     = 0;
-  ship->hyperspeed    = 0;
-  ship->chaff         = 0;
-  ship->realspeed     = 0;
-  ship->currspeed     = 0;
-  ship->manuever      = 0;
-
-  ship->shipstate     = SHIP_LANDED;
-  ship->docking       = SHIP_READY;
-  ship->statei0       = LASER_READY;
-  ship->statet0       = LASER_READY;
-  ship->statettractor = SHIP_READY;
-  ship->statetdocking = SHIP_READY;
-  ship->missilestate  = MISSILE_READY;
-
-  ship->spaceobject   = NULL;
-  ship->energy        = 0;
-  ship->hull          = 1;
-  ship->currjump      = NULL;
-  ship->target0       = NULL;
-  ship->tractoredby   = NULL;
-  ship->tractored     = NULL;
-  ship->docked        = NULL;
-  ship->autopilot     = FALSE;
-  
-  CREATE( ship_mod, SHIP_MOD_DATA, 1 );
-  ship->mod = ship_mod;
-  update_ship_modules(ship);
-  
-  ship->shipID = ch->game->get_sysdata()->get_and_increment_shipID();
-  save_sysdata(*ch->game->get_sysdata());
-
-  ship->name          = STRALLOC (templatetypes[templatetype].name);
-  SPRINTF( buf, "template%ld.ship", ship->shipID );
-  ship->filename         = STRALLOC (buf);
-  ship->personalname  = STRALLOC (argument);
-  ship->owner         = STRALLOC (ch->name);
-#if 0
-  send_to_char( buf, ch );
-#endif
-  
-  ship->maxextmodules = templatetypes[templatetype].maxextmodules;
-  ship->maxintmodules = templatetypes[templatetype].maxintmodules;
-  ship->weight	      = templatetypes[templatetype].weight;
-  
-  transship( ship, ch->in_room->vnum );
-
-  if ( parse_ship_template(templatestring, ship) )
+    if ( get_ship( ch->game, argstr ) )
     {
-      bug( "maketemplateship: parse_ship_template failed.\n", 0 );
-      shipdelete(ship, FALSE);
-      return;
+        ch_printf(ch, "&RA ship already exists by that name.\n");
+        return;
     }
-  
-  save_ship( ship );
-  write_ship_list( ch->game);
+    
+    if ( argstr.find('&') != std::string::npos )
+    {            
+        send_to_char( "&RColors may not be used in a ship's name.\n", ch);
+        return;
+    }
 
-#if 0
-  bug( ship->templatestring, 0 );
-#endif
-  
-  return;  
+    if ( !ch || !ch->game )
+    {
+        send_to_char( "You need to be a game to order a ship.\n", ch );
+        return;
+    }
+
+    ch->gold -= shipprice;
+    
+    CREATE( ship, SHIP_DATA, 1 );
+    ship->game = ch->game;
+
+    LINK( ship, first_ship, last_ship, next, prev );
+
+    ship->copilot       = STRALLOC ("");
+    ship->pilot         = STRALLOC ("");
+    ship->home          = STRALLOC ("");
+    ship->description   = STRALLOC ("");
+
+    buf = templatestring;
+    ship->templatestring = STRALLOC(buf);
+
+    switch( shipclass )
+    {
+        case 0: ship->shipclass = FIGHTER_SHIP; break;
+        case 1: ship->shipclass = MIDSIZE_SHIP; break;
+        case 2: ship->shipclass = CAPITAL_SHIP; break;
+        default: ship->shipclass = FIGHTER_SHIP; break;
+    }
+    switch( shiptype )
+    {
+        case 0: ship->type = SHIP_CIVILIAN; break;
+        case 1: ship->type = SHIP_REBEL; break;
+        case 2: ship->type = SHIP_IMPERIAL; break;
+        default: ship->type = SHIP_CIVILIAN; break;
+    }
+
+    ship->lasers        = 0;
+    ship->missiles      = 0;
+    ship->rockets       = 0;
+    ship->torpedos      = 0;
+    ship->maxshield     = 0;
+    ship->maxhull       = 0;
+    ship->maxenergy     = 0;
+    ship->hyperspeed    = 0;
+    ship->chaff         = 0;
+    ship->realspeed     = 0;
+    ship->currspeed     = 0;
+    ship->manuever      = 0;
+
+    ship->shipstate     = SHIP_LANDED;
+    ship->docking       = SHIP_READY;
+    ship->statei0       = LASER_READY;
+    ship->statet0       = LASER_READY;
+    ship->statettractor = SHIP_READY;
+    ship->statetdocking = SHIP_READY;
+    ship->missilestate  = MISSILE_READY;
+
+    ship->spaceobject   = NULL;
+    ship->energy        = 0;
+    ship->hull          = 1;
+    ship->currjump      = NULL;
+    ship->target0       = NULL;
+    ship->tractoredby   = NULL;
+    ship->tractored     = NULL;
+    ship->docked        = NULL;
+    ship->autopilot     = FALSE;
+    
+    CREATE( ship_mod, SHIP_MOD_DATA, 1 );
+    ship->mod = ship_mod;
+    update_ship_modules(ship);
+    
+    ship->shipID = ch->game->get_sysdata()->get_and_increment_shipID();
+    save_sysdata(*ch->game->get_sysdata());
+
+    ship->name          = STRALLOC (templatetypes[templatetype].name);
+    buf = "template" + std::to_string(ship->shipID) + ".ship";
+    ship->filename         = STRALLOC (buf);
+    ship->personalname  = STRALLOC (argstr);
+    ship->owner         = STRALLOC (ch->name);
+
+    ship->maxextmodules = templatetypes[templatetype].maxextmodules;
+    ship->maxintmodules = templatetypes[templatetype].maxintmodules;
+    ship->weight	      = templatetypes[templatetype].weight;
+    
+    transship( ship, ch->in_room->vnum );
+
+    if ( parse_ship_template(templatestring, ship) )
+      {
+        bug( "maketemplateship: parse_ship_template failed.\n", 0 );
+        shipdelete(ship, FALSE);
+        return;
+      }
+    
+    save_ship( ship );
+    write_ship_list( ch->game);
+    
+    return;  
 }
 
 void do_shipdelete( CHAR_DATA *ch, char *argument )
 {
-  SHIP_DATA *ship;
-  
-  if ( ( ship = get_ship( ch->game, argument ) ) == NULL )
-  {
-    ch_printf(ch, "&RNo ship exists with that name.\n");
+    SHIP_DATA *ship;
+    
+    if ( ( ship = get_ship( ch->game, argument ) ) == NULL )
+    {
+        ch_printf(ch, "&RNo ship exists with that name.\n");
+        return;
+    }
+    
+    shipdelete( ship, TRUE );
     return;
-  }
-  
-  shipdelete( ship, TRUE );
-  return;
 }
 
 void do_transferownership( CHAR_DATA *ch, char *argument )
 {
-  SHIP_DATA *ship;
-//CHAR_DATA *victim;
-  char arg[MAX_STRING_LENGTH];
-//  char * arg1;
-//char buf[MAX_STRING_LENGTH];
+    SHIP_DATA *ship;
+    std::string arg;
+    std::string argstr = argument;
+      
+    if ( argstr.empty() )
+    {
+        ch_printf(ch, "&RSyntax: transferownership '<new owner>' <ship name>.\n");
+        return;
+    }
     
-  if ( !argument || argument[0] == '\0' )
-  {
-    ch_printf(ch, "&RSyntax: transferownership '<new owner>' <ship name>.\n");
-    return;
-  }
-  
-  argument = one_argument( argument, arg );
-  
-  if ( arg[0] == '\0' || !argument || argument[0] == '\0' )
-  {
-    ch_printf(ch, "&RSyntax: transferownership <new owner> <ship name>.\n");
-    return;
-  }
-  
-  if ( ( ship = get_ship( ch->game, argument ) ) == NULL )
-  {
-    ch_printf(ch, "&RNo ship exists with that name.\n");
-    return;
-  }
-  
-  if ( !ship->owner || ship->owner[0] == '\0' )
-  {
-    ch_printf(ch, "&RYou must be the owner of this ship to transfer ownership.\n");
-    return;
-  }
-  
-  
-  if ( strcmp(ship->owner, ch->name ) )
-  {
-    ch_printf(ch, "&RYou must be the owner of this ship to transfer ownership.\n");
-    return;
-  }
-  
-//  arg1 = strlower( arg );
-  arg[0] = UPPER(arg[0]);
-  STRFREE( ship->owner );
-  ship->owner = STRALLOC( arg );
+    argstr = one_argument( argstr, arg );
+    
+    if ( arg.empty() || argstr.empty() )
+    {
+        ch_printf(ch, "&RSyntax: transferownership <new owner> <ship name>.\n");
+        return;
+    }
+    
+    if ( ( ship = get_ship( ch->game, argstr ) ) == NULL )
+    {
+        ch_printf(ch, "&RNo ship exists with that name.\n");
+        return;
+    }
+    
+    if ( !ship->owner || ship->owner[0] == '\0' )
+    {
+        ch_printf(ch, "&RYou must be the owner of this ship to transfer ownership.\n");
+        return;
+    }
+    
+    
+    if ( strcmp(ship->owner, ch->name ) )
+    {
+        ch_printf(ch, "&RYou must be the owner of this ship to transfer ownership.\n");
+        return;
+    }
+    
+  //  arg1 = strlower( arg ).c_str());
+    arg[0] = UPPER(arg[0]);
+    STRFREE( ship->owner );
+    ship->owner = STRALLOC( arg );
 
-  save_ship( ship );
+    save_ship( ship );
 
-  ch_printf(ch, "&ROwnership transferred.\n");
-  
-  log_printf( "%s transferred ship ownership to %s./n/r", ch->name, arg );
-  
-  return;
+    ch_printf(ch, "&ROwnership transferred.\n");
+    
+    log_printf( "%s transferred ship ownership to %s.\n", ch->name, arg );
+    
+    return;
 }
 
 bool add_random_modules( SHIP_DATA *ship, SHIP_DATA *origship )
 {
-  MODULE_DATA *module;
-  MODULE_DATA *origmodule;
-  MODULE_DATA *module_next;
-  int number;
-  int ranmod;
-  int i, j;
+    MODULE_DATA *module;
+    MODULE_DATA *origmodule;
+    MODULE_DATA *module_next;
+    int number;
+    int ranmod;
+    int i, j;
 
-  if ( !ship || !origship || !origship->first_module )
-    return FALSE;
-    
-  number = number_range( 1, 3 );
+    if ( !ship || !origship || !origship->first_module )
+        return FALSE;
+      
+    number = number_range( 1, 3 );
 
-  for ( j = 0; j < number; j++ )
-  {
-    ranmod = number_range( 1, 100 );
-
-    for ( origmodule = origship->first_module, i = 0; i < ranmod; i++)
+    for ( j = 0; j < number; j++ )
     {
-      module_next = origmodule->next;
-      origmodule = module_next;
-      if ( origmodule == NULL )
-        origmodule = origship->first_module;
+        ranmod = number_range( 1, 100 );
+
+        for ( origmodule = origship->first_module, i = 0; i < ranmod; i++)
+        {
+          module_next = origmodule->next;
+          origmodule = module_next;
+          if ( origmodule == NULL )
+            origmodule = origship->first_module;
+        }
+            
+        ship->modules += 1;
+      
+        CREATE( module, MODULE_DATA, 1 );
+      
+        module->name =  STRALLOC( origmodule->name );
+        module->type = origmodule->type;
+        module->condition = origmodule->condition;
+        module->size = origmodule->size;
+        module->modification = origmodule->modification;
+      
+        LINK( module, ship->first_module, ship->last_module, next, prev );
+
+        update_ship_modules( ship );
+        updateship( ship, module->type );
+      
     }
-        
-    ship->modules += 1;
-	
-    CREATE( module, MODULE_DATA, 1 );
-	
-    module->name =  STRALLOC( origmodule->name );
-    module->type = origmodule->type;
-    module->condition = origmodule->condition;
-    module->size = origmodule->size;
-    module->modification = origmodule->modification;
-	
-    LINK( module, ship->first_module, ship->last_module, next, prev );
 
-    update_ship_modules( ship );
-    updateship( ship, module->type );
-  
-  }
-
-return TRUE;
+    return TRUE;
 }
 
-char *get_cargo_name( int cargotype )
+const std::string& get_cargo_name( int cargotype )
 {
-  return (char*)get_flag_name(cargo_names, cargotype, MAX_CARGO_NAMES);
+    static std::string cargoname;
+    cargoname = get_flag_name(cargo_names, cargotype, MAX_CARGO_NAMES);
+    return cargoname;
 }
 
 bool check_cargo( SHIP_DATA *ship, int cargotype, int nummod )
 {
-  MODULE_DATA *module = NULL;
-  int shipnummod = 0;
+    MODULE_DATA *module = NULL;
+    int shipnummod = 0;
 
-  if ( !ship->first_module )
+    if ( !ship->first_module )
+      return FALSE;
+
+    for ( module = ship->first_module; module; module = module->next )
+    {
+      if ( module->modification == cargotype )
+        shipnummod++;
+    }
+
+    if ( nummod <= shipnummod )
+      return TRUE;
+      
     return FALSE;
-
-  for ( module = ship->first_module; module; module = module->next )
-  {
-    if ( module->modification == cargotype )
-      shipnummod++;
-  }
-
-  if ( nummod <= shipnummod )
-    return TRUE;
-    
-  return FALSE;
 }
 
 void remove_cargo( SHIP_DATA *ship, int cargotype, int nummod )
 {
-  MODULE_DATA *module = NULL;
-  MODULE_DATA *module_next = NULL;
-  int shipnummod = 0;
-//char buf[MAX_STRING_LENGTH];
-	
-  if ( !check_cargo( ship, cargotype, nummod ) )
-  {
-    log_printf( "remove_cargo: Ship %s failed check_cargo check\n", ship->personalname );
-    return;
-  }
-
-  for ( module = ship->first_module; ( module && shipnummod < nummod ); module = module_next )
-  {
-    module_next = module->next;
-    if ( module->modification == cargotype )
+    MODULE_DATA *module = NULL;
+    MODULE_DATA *module_next = NULL;
+    int shipnummod = 0;
+  //char buf[MAX_STRING_LENGTH];
+    
+    if ( !check_cargo( ship, cargotype, nummod ) )
     {
-      UNLINK( module, ship->first_module, ship->last_module, next, prev );
-
-      STRFREE(module->name);
-      DISPOSE( module );
-
-      ship->modules = ship->modules -1;
-      shipnummod++;
+      log_printf( "remove_cargo: Ship %s failed check_cargo check\n", ship->personalname );
+      return;
     }
-  }
-  
-  update_ship_modules( ship );
-  save_ship(ship);
 
-  return;
+    for ( module = ship->first_module; ( module && shipnummod < nummod ); module = module_next )
+    {
+      module_next = module->next;
+      if ( module->modification == cargotype )
+      {
+        UNLINK( module, ship->first_module, ship->last_module, next, prev );
+
+        STRFREE(module->name);
+        DISPOSE( module );
+
+        ship->modules = ship->modules -1;
+        shipnummod++;
+      }
+    }
+    
+    update_ship_modules( ship );
+    save_ship(ship);
+
+    return;
 }
 
 void add_cargo( SHIP_DATA *ship, int cargotype, int nummod )
 {
-  MODULE_DATA *module;
-  char cargoname[MAX_STRING_LENGTH];
-  int i;
-  
-  SPRINTF( cargoname, "%s", get_cargo_name(cargotype) );
+    MODULE_DATA *module;
+    std::string cargoname;
+    int i;
+    
+    cargoname = get_cargo_name(cargotype);
 
-  for ( i = 0; i<nummod; i++ )
-  {  
-    ship->modules += 1;
-	
-    CREATE( module, MODULE_DATA, 1 );
-	
-    module->name =  STRALLOC( cargoname );
-    module->type = MOD_CARGO;
-    module->condition = 100;
-    module->size = 1;
-    module->modification = cargotype;
-	
-    LINK( module, ship->first_module, ship->last_module, next, prev );
+    for ( i = 0; i<nummod; i++ )
+    {  
+      ship->modules += 1;
+    
+      CREATE( module, MODULE_DATA, 1 );
+    
+      module->name =  STRALLOC( cargoname );
+      module->type = MOD_CARGO;
+      module->condition = 100;
+      module->size = 1;
+      module->modification = cargotype;
+    
+      LINK( module, ship->first_module, ship->last_module, next, prev );
 
-    update_ship_modules( ship );
-    save_ship(ship);
-  }
+      update_ship_modules( ship );
+      save_ship(ship);
+    }
 
-  return;
+    return;
 }
 
 void do_loadcargo( CHAR_DATA *ch, char *argument )
 {
-  
-  SHIP_DATA *ship = NULL;
-  int nummod, cargotype, cargoprice;
-  char arg1[MAX_STRING_LENGTH];
-  SPACE_DATA *spaceobject = NULL;
-  CARGO_DATA_LIST *cargolist;
+    
+    SHIP_DATA *ship = NULL;
+    int nummod, cargotype, cargoprice;
+    std::string arg1;
+    std::string argstr = argument;
+    SPACE_DATA *spaceobject = NULL;
+    CARGO_DATA_LIST *cargolist;
 
 
-  argument = one_argument( argument, arg1 );
+    argstr = one_argument( argstr, arg1 );
 
-  if ( !is_number( arg1 ) || !argument || !is_number( argument ) )
-  {
-    send_to_char( "Syntax: loadcargo <type #> <amount>\n", ch );
+    if ( !is_number( arg1 ) || argstr.empty() || !is_number( argstr.c_str() ) )
+    {
+        send_to_char( "Syntax: loadcargo <type #> <amount>\n", ch );
+        return;
+    }
+    
+    cargotype = strtoi(arg1);
+    nummod = strtoi(argstr);
+    
+    if ( ( ship = ship_from_cockpit( ch->game, ch->in_room->vnum ) ) == NULL )
+    {
+        send_to_char( "You must be in a ship's cockpit for that!\n", ch );
+        return;
+    }
+
+    if ( module_type_install2(MOD_CARGO, ship, nummod) )
+    {
+        send_to_char( "There is no room for that much more cargo!\n", ch);
+        return;
+    }
+
+    if ( cargotype > MAX_CARGO_NAMES )
+    {
+        send_to_char( "No such cargo!\n", ch );
+        return;
+    }
+    
+    spaceobject = spaceobject_from_vnum( ship->game, ship->location );
+    
+    if( !spaceobject )
+    {
+        send_to_char( "You need to be on a planet landing pad to buy cargo!\n", ch);
+        return;
+    }
+    
+    if( !spaceobject->first_cargo )
+    {
+        send_to_char( "There is no cargo available here.\n", ch);
+        return;
+    }
+
+    for( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
+    {
+        if ( cargolist->cargo->cargotype == cargotype )
+          break;
+    }
+    
+    if ( !cargolist )
+    {
+        send_to_char( "That type of cargo is not available here.\n", ch);
+        return;
+    }
+    
+    cargoprice = cargolist->cargo->price;
+    
+    if ( nummod <= 0 )
+    {
+        send_to_char( "A positive <amount> needs to be entered.\n", ch );
+        return;
+    }
+
+    if ( ch->gold < nummod*cargoprice )
+    {
+        ch_printf( ch, "You need %d credits to purchase %d units of this cargo.\n", nummod*cargoprice, nummod );
+        return;
+    }
+    
+  /*SPRINTF( cargoname, get_cargo_name(cargotype) );
+
+    for ( i = 0; i<nummod; i++ )
+    {  
+      ship->modules += 1;
+    
+      CREATE( module, MODULE_DATA, 1 );
+    
+      module->name =  STRALLOC( cargoname );
+      module->type = MOD_CARGO;
+      module->condition = 100;
+      module->size = 1;
+      module->modification = cargotype;
+    
+      LINK( module, ship->first_module, ship->last_module, next, prev );
+
+      update_ship_modules( ship );
+      save_ship(ship);
+
+    }
+  */
+
+    add_cargo( ship, cargotype, nummod );
+    
+    send_to_char( "Your displays show your cargo request has been delivered.\n", ch );
+    
+    ch->gold -= nummod*cargoprice;
+    
     return;
-  }
-  
-  cargotype = atoi(arg1);
-  nummod = atoi(argument);
-  
-  if ( ( ship = ship_from_cockpit( ch->game, ch->in_room->vnum ) ) == NULL )
-  {
-    send_to_char( "You must be in a ship's cockpit for that!\n", ch );
-    return;
-  }
-
-  if ( module_type_install2(MOD_CARGO, ship, nummod) )
-  {
-    send_to_char( "There is no room for that much more cargo!\n", ch);
-    return;
-  }
-
-  if ( cargotype > MAX_CARGO_NAMES )
-  {
-    send_to_char( "No such cargo!\n", ch );
-    return;
-  }
-  
-  spaceobject = spaceobject_from_vnum( ship->game, ship->location );
-  
-  if( !spaceobject )
-  {
-    send_to_char( "You need to be on a planet landing pad to buy cargo!\n", ch);
-    return;
-  }
-  
-  if( !spaceobject->first_cargo )
-  {
-    send_to_char( "There is no cargo available here.\n", ch);
-    return;
-  }
-
-  for( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
-  {
-    if ( cargolist->cargo->cargotype == cargotype )
-      break;
-  }
-  
-  if ( !cargolist )
-  {
-    send_to_char( "That type of cargo is not available here.\n", ch);
-    return;
-  }
-  
-  cargoprice = cargolist->cargo->price;
-  
-  if ( nummod <= 0 )
-  {
-    send_to_char( "A positive <amount> needs to be entered.\n", ch );
-    return;
-  }
-
-  if ( ch->gold < nummod*cargoprice )
-  {
-    ch_printf( ch, "You need %d credits to purchase %d units of this cargo.\n", nummod*cargoprice, nummod );
-    return;
-  }
-  
-/*SPRINTF( cargoname, get_cargo_name(cargotype) );
-
-  for ( i = 0; i<nummod; i++ )
-  {  
-    ship->modules += 1;
-	
-    CREATE( module, MODULE_DATA, 1 );
-	
-    module->name =  STRALLOC( cargoname );
-    module->type = MOD_CARGO;
-    module->condition = 100;
-    module->size = 1;
-    module->modification = cargotype;
-	
-    LINK( module, ship->first_module, ship->last_module, next, prev );
-
-    update_ship_modules( ship );
-    save_ship(ship);
-
-  }
-*/
-
-  add_cargo( ship, cargotype, nummod );
-  
-  send_to_char( "Your displays show your cargo request has been delivered.\n", ch );
-  
-  ch->gold -= nummod*cargoprice;
-  
-  return;
 }
 
 void do_checkcargo( CHAR_DATA *ch, char *argument )
 {
-  SHIP_DATA *ship = NULL;
-  SPACE_DATA *spaceobject = NULL;
-  CARGO_DATA_LIST *cargolist;
-  int defprice;
-  if ( ( ship = ship_from_cockpit( ch->game, ch->in_room->vnum ) ) == NULL )
-  {
-    send_to_char( "You must be in a ship's cockpit to access that information.\n", ch );
-    return;
-  }
-
-  spaceobject = spaceobject_from_vnum( ship->game, ship->location );
-  
-  if( !spaceobject )
-  {
-    send_to_char( "You need to be on a planet landing pad to buy cargo!\n", ch);
-    return;
-  }
-  
-  if( !spaceobject->first_cargo )
-  {
-    send_to_char( "There is no cargo available here.\n", ch);
-    return;
-  }
-  else
-  {
-    send_to_char( "\nCargo name    Cargo type#  Price   (compare).\n", ch);
-  }
-  
-
-
-  for( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
-  {
-    if ( cargolist->cargo )
+    SHIP_DATA *ship = NULL;
+    SPACE_DATA *spaceobject = NULL;
+    CARGO_DATA_LIST *cargolist;
+    int defprice;
+    if ( ( ship = ship_from_cockpit( ch->game, ch->in_room->vnum ) ) == NULL )
     {
-      defprice = cargodefaults[cargolist->cargo->cargotype].price;
-      ch_printf( ch, "%12s  %11d  %5d   (%s)\n", get_cargo_name(cargolist->cargo->cargotype), 
-      cargolist->cargo->cargotype, cargolist->cargo->price, 
-      (cargolist->cargo->price > defprice + (int) sqrt(defprice)/4 ? "High" :
-      (cargolist->cargo->price < defprice - (int) sqrt(defprice)/4 ? "Low" : "Medium" )));
+      send_to_char( "You must be in a ship's cockpit to access that information.\n", ch );
+      return;
     }
-  }
 
-  return;
+    spaceobject = spaceobject_from_vnum( ship->game, ship->location );
+    
+    if( !spaceobject )
+    {
+      send_to_char( "You need to be on a planet landing pad to buy cargo!\n", ch);
+      return;
+    }
+    
+    if( !spaceobject->first_cargo )
+    {
+      send_to_char( "There is no cargo available here.\n", ch);
+      return;
+    }
+    else
+    {
+      send_to_char( "\nCargo name    Cargo type#  Price   (compare).\n", ch);
+    }
+    
+
+
+    for( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
+    {
+      if ( cargolist->cargo )
+      {
+        defprice = cargodefaults[cargolist->cargo->cargotype].price;
+        ch_printf( ch, "%12s  %11d  %5d   (%s)\n", get_cargo_name(cargolist->cargo->cargotype).c_str(), 
+        cargolist->cargo->cargotype, cargolist->cargo->price, 
+        (cargolist->cargo->price > defprice + (int) sqrt(defprice)/4 ? "High" :
+        (cargolist->cargo->price < defprice - (int) sqrt(defprice)/4 ? "Low" : "Medium" )));
+      }
+    }
+
+    return;
 }
 
 void do_transfercargo( CHAR_DATA *ch, char *argument )
 {
-  SHIP_DATA *ship = NULL;
-  SHIP_DATA *eShip = NULL;
-  int nummod, cargotype;
-  char arg1[MAX_STRING_LENGTH];
-  char arg2[MAX_STRING_LENGTH];
-  char cargoname[MAX_STRING_LENGTH];
+    SHIP_DATA *ship = NULL;
+    SHIP_DATA *eShip = NULL;
+    int nummod, cargotype;
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
+    std::string cargoname;
 
-  argument = one_argument( argument, arg1 );
-  argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-  if ( arg1[0] == '\0' || !is_number( arg1 ) || arg2[0] == '\0' || !is_number( arg2 ) )
-  {
-    send_to_char( "Syntax: transfercargo <type #> <amount> <ship>\n", ch );
-    return;
-  }
-
-  cargotype = atoi(arg1);
-  nummod = atoi(arg2);
-  
-  if ( ( ship = ship_from_cockpit( ch->game, ch->in_room->vnum ) ) == NULL )
-  {
-    send_to_char( "You must be in your ship's cockpit for that!\n", ch );
-    return;
-  }
-  
-  if ( !check_pilot( ch , ship ) )
+    if ( arg1.empty() || !is_number( arg1 ) || arg2.empty() || !is_number( arg2 ) )
     {
-      send_to_char("&RYou need to have pilot status to transfer cargo on this ship.\n",ch);
-      return;
+        send_to_char( "Syntax: transfercargo <type #> <amount> <ship>\n", ch );
+        return;
     }
-  
-  if ( cargotype > MAX_CARGO_NAMES )
-  {
-    send_to_char( "No such cargo!\n", ch );
-    return;
-  }
 
-  if ( nummod <= 0 )
-  {
-    send_to_char( "A positive <amount> needs to be entered.\n", ch );
-    return;
-  }
-
-  if ( !check_cargo( ship, cargotype, nummod ) )
-  {
-    SPRINTF( cargoname, "%s", get_cargo_name(cargotype) );  
-    ch_printf( ch, "An error is displayed: Not that much cargo of %s.\n", cargoname );
-    return;
-  }
-  
-  eShip = ship_from_hanger( ship->game, ship->location );
-
-  if ( !eShip )
-  {
-    eShip = get_ship( ship->game, argument );
-
-    if( eShip && eShip->docked != ship )
-      eShip = NULL;
-  }
-
-  if ( !eShip )
-    eShip = ship->docked;
-
-  if ( eShip == ship )
-    eShip = NULL;
+    cargotype = strtoi(arg1);
+    nummod = strtoi(arg2);
     
-//ch_printf( ch, "Ship: %d, eShip: %d\n", (int) ship, (int) eShip );  
+    if ( ( ship = ship_from_cockpit( ch->game, ch->in_room->vnum ) ) == NULL )
+    {
+        send_to_char( "You must be in your ship's cockpit for that!\n", ch );
+        return;
+    }
     
-  if ( !eShip )
-  {
-    act( AT_PLAIN, "An error is displayed: No ship to transfer to was found.", ch, NULL, argument, TO_CHAR );
-    return;
-  }
+    if ( !check_pilot( ch , ship ) )
+      {
+        send_to_char("&RYou need to have pilot status to transfer cargo on this ship.\n",ch);
+        return;
+      }
+    
+    if ( cargotype > MAX_CARGO_NAMES )
+    {
+        send_to_char( "No such cargo!\n", ch );
+        return;
+    }
 
-  if ( module_type_install2(MOD_CARGO, eShip, nummod) )
-  {
-    send_to_char( "There is no room on the destination ship for that much more cargo!\n", ch);
-    return;
-  }
+    if ( nummod <= 0 )
+    {
+        send_to_char( "A positive <amount> needs to be entered.\n", ch );
+        return;
+    }
 
-//ch_printf( ch, "Ship: %d eShip: %d Argument: '%s'.\n", (int) ship, (int) eShip, argument );
-  
-  remove_cargo( ship, cargotype, nummod );
-  add_cargo( eShip, cargotype, nummod );
-  
-  send_to_char( "Your display shows your cargo has been transferred.\n", ch );
-  
-  
+    if ( !check_cargo( ship, cargotype, nummod ) )
+    {
+        cargoname = get_cargo_name(cargotype);  
+        ch_printf( ch, "An error is displayed: Not that much cargo of %s.\n", cargoname.c_str() );
+        return;
+    }
+    
+    eShip = ship_from_hanger( ship->game, ship->location );
+
+    if ( !eShip )
+    {
+        eShip = get_ship( ship->game, argstr );
+
+        if( eShip && eShip->docked != ship )
+          eShip = NULL;
+    }
+
+    if ( !eShip )
+        eShip = ship->docked;
+
+    if ( eShip == ship )
+        eShip = NULL;
+      
+  //ch_printf( ch, "Ship: %d, eShip: %d\n", (int) ship, (int) eShip );  
+      
+    if ( !eShip )
+    {
+        act( AT_PLAIN, "An error is displayed: No ship to transfer to was found.", ch, NULL, argstr, TO_CHAR );
+        return;
+    }
+
+    if ( module_type_install2(MOD_CARGO, eShip, nummod) )
+    {
+        send_to_char( "There is no room on the destination ship for that much more cargo!\n", ch);
+        return;
+    }
+
+  //ch_printf( ch, "Ship: %d eShip: %d Argument: '%s'.\n", (int) ship, (int) eShip, argument );
+    
+    remove_cargo( ship, cargotype, nummod );
+    add_cargo( eShip, cargotype, nummod );
+    
+    send_to_char( "Your display shows your cargo has been transferred.\n", ch );
+    
+    
 }
 void do_unloadcargo( CHAR_DATA *ch, char *argument )
 {
   
-  SHIP_DATA *ship = NULL;
-  int nummod, cargotype, cargoprice;
-  char arg1[MAX_STRING_LENGTH];
-  char cargoname[MAX_STRING_LENGTH];
-  SPACE_DATA *spaceobject = NULL;
-  CARGO_DATA_LIST *cargolist;
+    SHIP_DATA *ship = NULL;
+    int nummod, cargotype, cargoprice;
+    std::string arg1;
+    std::string argstr = argument;
+    std::string cargoname;
+    SPACE_DATA *spaceobject = NULL;
+    CARGO_DATA_LIST *cargolist;
 
 
-  argument = one_argument( argument, arg1 );
+    argstr = one_argument( argstr, arg1 );
 
-  if ( !is_number( arg1 ) || !argument || !is_number( argument ) )
-  {
-    send_to_char( "Syntax: unloadcargo <type #> <amount>\n", ch );
-    return;
-  }
-  
-  cargotype = atoi(arg1);
-  nummod = atoi(argument);
-  
-  if ( ( ship = ship_from_cockpit( ch->game, ch->in_room->vnum ) ) == NULL )
-  {
-    send_to_char( "You must be in a ship's cockpit for that!\n", ch );
-    return;
-  }
-  
-  if ( !check_pilot( ch , ship ) )
+    if ( !is_number( arg1 ) || argstr.empty() || !is_number( argstr ) )
     {
-      send_to_char("&RYou need to have pilot status to unload cargo on this ship.\n",ch);
-      return;
+        send_to_char( "Syntax: unloadcargo <type #> <amount>\n", ch );
+        return;
     }
-  
-  if ( cargotype > MAX_CARGO_NAMES )
-  {
-    send_to_char( "No such cargo!\n", ch );
-    return;
-  }
-  
-  spaceobject = spaceobject_from_vnum( ship->game, ship->location );
-  
-  if( !spaceobject )
-  {
-    send_to_char( "You need to be on a planet landing pad to sell cargo!\n", ch);
-    return;
-  }
-  
-  if( !spaceobject->first_cargo )
-  {
-    send_to_char( "You can not sell cargo here.\n", ch);
-    return;
-  }
+    
+    cargotype = strtoi(arg1);
+    nummod = strtoi(argstr);
+    
+    if ( ( ship = ship_from_cockpit( ch->game, ch->in_room->vnum ) ) == NULL )
+    {
+        send_to_char( "You must be in a ship's cockpit for that!\n", ch );
+        return;
+    }
+    
+    if ( !check_pilot( ch , ship ) )
+      {
+          send_to_char("&RYou need to have pilot status to unload cargo on this ship.\n",ch);
+          return;
+      }
+    
+    if ( cargotype > MAX_CARGO_NAMES )
+    {
+        send_to_char( "No such cargo!\n", ch );
+        return;
+    }
+    
+    spaceobject = spaceobject_from_vnum( ship->game, ship->location );
+    
+    if( !spaceobject )
+    {
+        send_to_char( "You need to be on a planet landing pad to sell cargo!\n", ch);
+        return;
+    }
+    
+    if( !spaceobject->first_cargo )
+    {
+        send_to_char( "You can not sell cargo here.\n", ch);
+        return;
+    }
 
-  for( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
-  {
-    if ( cargolist->cargo->cargotype == cargotype )
-      break;
-  }
-  
-  if ( !cargolist )
-  {
-    send_to_char( "That type of cargo is not available to be sold here.\n", ch);
-    return;
-  }
-  
-  cargoprice = cargolist->cargo->price;
-  
-  if ( nummod <= 0 )
-  {
-    send_to_char( "A positive <amount> needs to be entered.\n", ch );
-    return;
-  }
+    for( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
+    {
+        if ( cargolist->cargo->cargotype == cargotype )
+          break;
+    }
+    
+    if ( !cargolist )
+    {
+        send_to_char( "That type of cargo is not available to be sold here.\n", ch);
+        return;
+    }
+    
+    cargoprice = cargolist->cargo->price;
+    
+    if ( nummod <= 0 )
+    {
+        send_to_char( "A positive <amount> needs to be entered.\n", ch );
+        return;
+    }
 
-  if ( !check_cargo( ship, cargotype, nummod ) )
-  {
-    SPRINTF( cargoname, "%s", get_cargo_name(cargotype) );  
-    ch_printf( ch, "An error is displayed: Not that much cargo of %s.\n", cargoname );
+    if ( !check_cargo( ship, cargotype, nummod ) )
+    {
+        cargoname = get_cargo_name(cargotype);  
+        ch_printf( ch, "An error is displayed: Not that much cargo of %s.\n", cargoname.c_str() );
+        return;
+    }
+    
+    remove_cargo( ship, cargotype, nummod );
+    
+    send_to_char( "Your displays show your cargo request has been delivered.\n", ch );
+    
+    ch->gold += nummod*cargoprice;
+    
     return;
-  }
-  
-  remove_cargo( ship, cargotype, nummod );
-  
-  send_to_char( "Your displays show your cargo request has been delivered.\n", ch );
-  
-  ch->gold += nummod*cargoprice;
-  
-  return;
 }
 
 void do_restoreship( CHAR_DATA *ch, char *argument )
 {
-//SHIP_DATA *ship;
-  char buf[MAX_STRING_LENGTH];
-  char buf2[MAX_STRING_LENGTH];
-//struct stat fst;
-  
-  SPRINTF( buf, "%s%s", BACKUPSHIP_DIR, argument );
-  SPRINTF( buf2, "%s%s", SHIP_DIR, argument );
-  
-/*if ( !stat( buf, &fst ) )
-  {
-    send_to_char( "File not found.\n", ch );
-    return;
-  }
-*/  
-  rename( buf, buf2 );
+  //SHIP_DATA *ship;
+    std::string buf;
+    std::string buf2;
+  //struct stat fst;
+    
+    buf = str_printf( "%s%s", BACKUPSHIP_DIR, argument );
+    buf2 = str_printf( "%s%s", SHIP_DIR, argument );
+    
+  /*if ( !stat( buf, &fst ) )
+    {
+      send_to_char( "File not found.\n", ch );
+      return;
+    }
+  */  
+    rename( buf.c_str(), buf2.c_str() );
 
-  if (!load_ship_file( ch->game,argument ) )
-  {
-    send_to_char( "Error loading file.\n", ch );
-    return;
-  }
+    if (!load_ship_file( ch->game,argument ) )
+    {
+      send_to_char( "Error loading file.\n", ch );
+      return;
+    }
 
-  write_ship_list( ch->game );
-	
-  return;
+    write_ship_list( ch->game );
+    
+    return;
 }
 
 sh_int get_acceleration( SHIP_DATA *ship )
 {
-  int accel = 0;
-  int speedmod;
-  
-  accel += ship->mod->maxhull/5;
-  accel += ship->weight/10;
-  accel += ship->energy/40;
-  
-  speedmod = 5000 + (ship->mod->realspeed/3);
-  
-  if ( accel )
-    accel = speedmod/accel;
+    int accel = 0;
+    int speedmod;
     
-  if( ship->shipclass == CAPITAL_SHIP )
-  {
-    accel *= 3;
-    if ( !accel )
-      accel = 1;
-  }
-  
-  return accel;
+    accel += ship->mod->maxhull/5;
+    accel += ship->weight/10;
+    accel += ship->energy/40;
+    
+    speedmod = 5000 + (ship->mod->realspeed/3);
+    
+    if ( accel )
+      accel = speedmod/accel;
+      
+    if( ship->shipclass == CAPITAL_SHIP )
+    {
+      accel *= 3;
+      if ( !accel )
+        accel = 1;
+    }
+    
+    return accel;
 }
 
 bool set_random_cargo( SPACE_DATA *spaceobject, CARGO_DATA_LIST *cargolist )
 {
-  int defprice, calcrange;
-  CARGO_DATA_LIST *cargoscroll;
-  bool dup;  // Variable for checks for duplicates of cargo type in spaceobject
+    int defprice, calcrange;
+    CARGO_DATA_LIST *cargoscroll;
+    bool dup;  // Variable for checks for duplicates of cargo type in spaceobject
 
-  if ( !cargolist )
-    return FALSE;
-  //Randomize cargo - DV 3-15-04
+    if ( !cargolist )
+      return FALSE;
+    //Randomize cargo - DV 3-15-04
 
-  do // Checks for duplicates of cargo type in spaceobject 
-  			// ( Come up with better way - DV 3-16-04 )
-  {
-    cargolist->cargo->cargotype = number_range( 0, CARGOTYPE_DEFAULT-1 );
-    
-    dup = FALSE;
-
-    for ( cargoscroll = spaceobject->first_cargo; cargoscroll && dup == FALSE; cargoscroll = cargoscroll->next )
+    do // Checks for duplicates of cargo type in spaceobject 
+          // ( Come up with better way - DV 3-16-04 )
     {
-      if( cargolist != cargoscroll )
-        dup = ( cargolist->cargo->cargotype == cargoscroll->cargo->cargotype );
-    }
+      cargolist->cargo->cargotype = number_range( 0, CARGOTYPE_DEFAULT-1 );
+      
+      dup = FALSE;
+
+      for ( cargoscroll = spaceobject->first_cargo; cargoscroll && dup == FALSE; cargoscroll = cargoscroll->next )
+      {
+        if( cargolist != cargoscroll )
+          dup = ( cargolist->cargo->cargotype == cargoscroll->cargo->cargotype );
+      }
+      
+    } while ( dup == TRUE );
+
+    defprice = cargodefaults[cargolist->cargo->cargotype].price;
     
-  } while ( dup == TRUE );
+    calcrange = ((int) sqrt(defprice))/2;
 
-  defprice = cargodefaults[cargolist->cargo->cargotype].price;
-  
-  calcrange = ((int) sqrt(defprice))/2;
+    cargolist->cargo->price = defprice + number_range( -1*defprice/calcrange, defprice/calcrange );
 
-  cargolist->cargo->price = defprice + number_range( -1*defprice/calcrange, defprice/calcrange );
-
-  return TRUE;
+    return TRUE;
 
 }
 
 bool add_random_cargo( SPACE_DATA *spaceobject )
 {
-  CARGO_DATA_LIST *cargolist, *cargoscroll;
-  CARGO_DATA *cargo;
-  bool dup = FALSE;  // Variable for checks for duplicates of cargo type in spaceobject
+    CARGO_DATA_LIST *cargolist, *cargoscroll;
+    CARGO_DATA *cargo;
+    bool dup = FALSE;  // Variable for checks for duplicates of cargo type in spaceobject
 
-  int defprice, calcrange;
+    int defprice, calcrange;
 
-  if ( !spaceobject )
-    return FALSE;
-  //Add a random cargo amount onto a spaceobject - DV 3-15-04
-  CREATE( cargolist, CARGO_DATA_LIST, 1 );
-  
-  LINK( cargolist, spaceobject->first_cargo, spaceobject->last_cargo, next, prev );
-  
-  CREATE( cargo, CARGO_DATA, 1 );
-  
-  do // Checks for duplicates of cargo type in spaceobject 
-  			// ( Come up with better way - DV 3-16-04 )
-  {
-    dup = FALSE;
-
-    cargo->cargotype = number_range( 0, CARGOTYPE_DEFAULT-1 );
+    if ( !spaceobject )
+      return FALSE;
+    //Add a random cargo amount onto a spaceobject - DV 3-15-04
+    CREATE( cargolist, CARGO_DATA_LIST, 1 );
     
-    if ( spaceobject->first_cargo )
-      for ( cargoscroll = spaceobject->first_cargo; cargoscroll && cargoscroll->cargo && dup == FALSE; cargoscroll = cargoscroll->next )
-      {
-        dup = ( cargo->cargotype == cargoscroll->cargo->cargotype );
-      }
+    LINK( cargolist, spaceobject->first_cargo, spaceobject->last_cargo, next, prev );
     
-  } while ( dup == TRUE );
+    CREATE( cargo, CARGO_DATA, 1 );
+    
+    do // Checks for duplicates of cargo type in spaceobject 
+          // ( Come up with better way - DV 3-16-04 )
+    {
+      dup = FALSE;
 
-  defprice = cargodefaults[cargo->cargotype].price;
-  
-  calcrange = ((int) sqrt(defprice))/2;
+      cargo->cargotype = number_range( 0, CARGOTYPE_DEFAULT-1 );
+      
+      if ( spaceobject->first_cargo )
+        for ( cargoscroll = spaceobject->first_cargo; cargoscroll && cargoscroll->cargo && dup == FALSE; cargoscroll = cargoscroll->next )
+        {
+          dup = ( cargo->cargotype == cargoscroll->cargo->cargotype );
+        }
+      
+    } while ( dup == TRUE );
 
-  cargo->price = defprice + number_range( -1*defprice/calcrange, defprice/calcrange );
+    defprice = cargodefaults[cargo->cargotype].price;
+    
+    calcrange = ((int) sqrt(defprice))/2;
 
-  cargolist->cargo = cargo;
-  
-  return TRUE;
+    cargo->price = defprice + number_range( -1*defprice/calcrange, defprice/calcrange );
+
+    cargolist->cargo = cargo;
+    
+    return TRUE;
 
 }
 
 #define SPACEOBJECT_CARGOAMOUNT 3
 bool randomize_spaceobject_cargo( SPACE_DATA *spaceobject )
 {
-  bool adding = TRUE;
-  CARGO_DATA_LIST *cargolist;
-  int i;
+    bool adding = TRUE;
+    CARGO_DATA_LIST *cargolist;
+    int i;
 
-  if ( spaceobject->first_cargo )
-  {
-    for( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
-      adding = set_random_cargo( spaceobject, cargolist ); // Randomize cargo
-  }
-  else
-  {
-    for( i = 0; (i<SPACEOBJECT_CARGOAMOUNT) && (adding == TRUE); i++ ) // Add random cargo to spaceobject
-      adding = add_random_cargo( spaceobject );
-  }
-  
-  return adding;
+    if ( spaceobject->first_cargo )
+    {
+      for( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
+        adding = set_random_cargo( spaceobject, cargolist ); // Randomize cargo
+    }
+    else
+    {
+      for( i = 0; (i<SPACEOBJECT_CARGOAMOUNT) && (adding == TRUE); i++ ) // Add random cargo to spaceobject
+        adding = add_random_cargo( spaceobject );
+    }
+    
+    return adding;
 }
 
 
 
 void do_cargo( CHAR_DATA *ch, char *argument )
 {
-  
-  int cargocount = 0, cargolistnum, defprice, cargotype;
-  char arg1[MAX_STRING_LENGTH];
-  char arg2[MAX_STRING_LENGTH];
-  char arg3[MAX_STRING_LENGTH];
-  char arg4[MAX_STRING_LENGTH];
-  char arg5[MAX_STRING_LENGTH];
-  char hilow[MAX_STRING_LENGTH];
-  
-  SPACE_DATA *spaceobject = NULL;
-  CARGO_DATA_LIST *cargolist;
+    
+    int cargocount = 0, cargolistnum, defprice, cargotype;
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string arg4;
+    std::string arg5;
+    std::string argstr = argument;
+    std::string hilow;
+    
+    SPACE_DATA *spaceobject = NULL;
+    CARGO_DATA_LIST *cargolist;
 
-  if ( !argument || argument[0] == '\0')
-  {
-    send_to_char( "\nSyntax: loadcargo <argument> <argument>...\n", ch );
-    send_to_char( "Arguments: planet <spaceobjectname> <argument>..., search\n", ch );
-    send_to_char( "Planet arguments: randomize, set <#list> <argument> <number>, stats\n", ch );
-    send_to_char( "Planet set arguments: type <type#>, price <amount>\n", ch );
-    send_to_char( "search arguments: overprice, underprice, cargotype <type#>\n", ch );
-    return;
-  }
+    if ( argstr.empty() )
+    {
+        send_to_char( "\nSyntax: loadcargo <argument> <argument>...\n", ch );
+        send_to_char( "Arguments: planet <spaceobjectname> <argument>..., search\n", ch );
+        send_to_char( "Planet arguments: randomize, set <#list> <argument> <number>, stats\n", ch );
+        send_to_char( "Planet set arguments: type <type#>, price <amount>\n", ch );
+        send_to_char( "search arguments: overprice, underprice, cargotype <type#>\n", ch );
+        return;
+    }
 
-  argument = one_argument( argument, arg1 );
-  argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-  if ( arg1[0] == '\0' || arg2[0] == '\0' )
-  {
+    if ( arg1.empty() || arg2.empty() )
+    {
+        send_to_char( "\nSyntax: cargo <argument> <argument>...\n", ch );
+        send_to_char( "Arguments: planet <spaceobjectname> <argument>..., search\n", ch );
+        send_to_char( "Planet arguments: randomize, set <#list> <argument> <number>, stats\n", ch );
+        send_to_char( "Planet set arguments: type <type#>, price <amount>\n", ch );
+        send_to_char( "search arguments: overprice, underprice, cargotype <type#>\n", ch );
+        return;
+    }
+    
+    if ( !str_cmp( arg1, "planet" ) )
+    {
+        if ( argstr.empty() )
+        {
+            send_to_char( "No argument: cargo planet <spaceobjname> <argument>...\n", ch );
+            return;
+        }
+          
+        argstr = one_argument( argstr, arg3 );
+        spaceobject = spaceobject_from_name( ch->game, arg2 );
+        if ( !spaceobject )
+        {
+            ch_printf( ch, "Starsystem %s not found.\n", arg2.c_str() );
+            return;
+        }
+        
+        if ( !str_cmp( arg3, "randomize" ) )
+        {
+            if ( !randomize_spaceobject_cargo( spaceobject ) )
+                send_to_char( "Error encountered in randomizing cargo.\n", ch );
+            ch_printf( ch, "Cargo data on planet %s randomized.\n", spaceobject->name );
+            save_spaceobject( spaceobject );
+
+            return;
+        }
+        if ( !str_cmp( arg3, "stats" ) )
+        {
+            if ( !spaceobject->first_cargo )
+            {
+                send_to_char( "This spaceobject has no cargo set.\n", ch );
+                return;
+              }
+            ch_printf( ch, "Cargo Data: Spaceobject %s.\n", spaceobject->name );
+            for( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
+            {
+                cargocount++;
+                if ( !cargolist->cargo )
+                {
+                  ch_printf( ch, "Error: cargolist->cargo does not exist on spaceobject %s.\n", spaceobject->name );
+                  return;
+                }
+          
+                defprice = cargodefaults[cargolist->cargo->cargotype].price;
+
+                if ( cargolist->cargo->price > defprice + (int) sqrt(defprice)/4)
+                    hilow = "High";
+                else if ( cargolist->cargo->price < defprice - (int) sqrt(defprice)/4)
+                    hilow = "Low";
+                else
+                    hilow = "Med";
+                
+                ch_printf( ch, "%d) Cargo: %.12s Price: %d (%s).\n", 
+                cargocount, get_cargo_name( cargolist->cargo->cargotype ).c_str(), 
+                cargolist->cargo->price,
+                hilow.c_str() );
+            }
+            return;
+        }
+        
+        if ( !str_cmp( arg3, "set" ) )
+        {
+            if ( !spaceobject->first_cargo )
+            {
+                send_to_char( "This spaceobject has no cargo set.\n", ch );
+                return;
+            }
+            if ( argstr.empty() )
+            {
+                send_to_char( "Missing #list and beyond.&R&w\n", ch );
+                return;
+            }
+          
+            argstr = one_argument( argstr, arg4 );
+
+            if ( !is_number( arg4 ) )
+            {
+                send_to_char( "#list needs to be a number.\n", ch );
+                return;
+            }
+            if ( argstr.empty() )
+            {
+                send_to_char( "Missing set field: <argument> and beyond.\n", ch );
+                return;
+            }
+            argstr = one_argument( argstr, arg5 );
+            if ( argstr.empty() )
+            {
+                send_to_char( "Missing set field: <type>/<amount>.\n", ch );
+                return;
+            }
+            if ( !is_number( argstr ) )
+            {
+                send_to_char( "<type>/<amount> needs to be a number.\n", ch );
+                return;
+            }
+            cargolistnum = strtoi(arg4);
+            cargolist = spaceobject->first_cargo;
+            for( cargocount = 0; cargocount < cargolistnum; cargocount++ )
+            {
+                if ( !cargolist )
+                  break;
+
+                if ( !cargolist->cargo )
+                {
+                  ch_printf( ch, "Error: cargolist->cargo does not exist on spaceobject %s.\n", spaceobject->name );
+                  return;
+                }
+                cargolist = cargolist->next;
+            }
+            if ( !cargolist )
+            {
+                ch_printf( ch, "Not that many cargo items on spaceobject %s.\n", spaceobject->name );
+                return;
+            }
+            if ( !str_cmp( arg5, "type" ) )
+            {
+                cargolist->cargo->cargotype = strtoi(argstr);
+                send_to_char( "Done.\n", ch );
+                save_spaceobject( spaceobject );
+                return;
+            }      
+            if ( !str_cmp( arg5, "price" ) )
+            {
+                cargolist->cargo->price = strtoi(argstr);
+                send_to_char( "Done.\n", ch );
+                save_spaceobject( spaceobject );
+                return;
+            }
+            send_to_char( "No such option.  Options: type, price.\n", ch );
+            return;
+        }
+        send_to_char( "No such option.  Options: randomize, set, stats.\n", ch );
+        return;
+
+    }
+    
+    if ( !str_cmp( arg1, "search" ) )
+    {
+      
+        if ( !str_cmp( arg2, "cargotype" ) )
+        {
+            if ( argstr.empty() || !is_number(argstr) )
+            {
+              send_to_char( "No cargotype value: cargo search cargotype <cargotype#>\n", ch );
+              return;
+            }
+            
+            cargotype = strtoi(argstr);
+            ch_printf( ch, "Results for cargo type %s\n", get_cargo_name( cargotype ).c_str() );
+            for ( spaceobject = first_spaceobject; spaceobject; spaceobject = spaceobject->next )
+              if ( spaceobject->first_cargo )
+                for ( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
+                  if ( cargolist->cargo->cargotype == cargotype )
+                    ch_printf( ch, "%s: Price: %d\n", spaceobject->name, cargolist->cargo->price );
+            return;            
+
+        }    
+        send_to_char( "Not yet implemented.\n", ch );
+        return;
+      
+    }
+
     send_to_char( "\nSyntax: cargo <argument> <argument>...\n", ch );
     send_to_char( "Arguments: planet <spaceobjectname> <argument>..., search\n", ch );
     send_to_char( "Planet arguments: randomize, set <#list> <argument> <number>, stats\n", ch );
     send_to_char( "Planet set arguments: type <type#>, price <amount>\n", ch );
     send_to_char( "search arguments: overprice, underprice, cargotype <type#>\n", ch );
     return;
-  }
-  
-  if ( !str_cmp( arg1, "planet" ) )
-  {
-    if ( !argument || argument[0] == '\0' )
-    {
-      send_to_char( "No argument: cargo planet <spaceobjname> <argument>...\n", ch );
-      return;
-    }
-      
-    argument = one_argument( argument, arg3 );
-    spaceobject = spaceobject_from_name( ch->game, arg2 );
-    if ( !spaceobject )
-    {
-      ch_printf( ch, "Starsystem %s not found.\n", arg2 );
-      return;
-    }
     
-    if ( !str_cmp( arg3, "randomize" ) )
-    {
-      if ( !randomize_spaceobject_cargo( spaceobject ) )
-      	send_to_char( "Error encountered in randomizing cargo.\n", ch );
-      ch_printf( ch, "Cargo data on planet %s randomized.\n", spaceobject->name );
-      save_spaceobject( spaceobject );
-
-      return;
-    }
-    if ( !str_cmp( arg3, "stats" ) )
-    {
-      if ( !spaceobject->first_cargo )
-      {
-      	send_to_char( "This spaceobject has no cargo set.\n", ch );
-      	return;
-      }
-      ch_printf( ch, "Cargo Data: Spaceobject %s.\n", spaceobject->name );
-      for( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
-      {
-      	cargocount++;
-      	if ( !cargolist->cargo )
-        {
-       	  ch_printf( ch, "Error: cargolist->cargo does not exist on spaceobject %s.\n", spaceobject->name );
-      	  return;
-        }
-	
-	defprice = cargodefaults[cargolist->cargo->cargotype].price;
-
-        if ( cargolist->cargo->price > defprice + (int) sqrt(defprice)/4)
-	  SPRINTF( hilow, "High" );
-        else if ( cargolist->cargo->price < defprice - (int) sqrt(defprice)/4)
-	  SPRINTF( hilow, "Low" );
-        else
-	  SPRINTF( hilow, "Med" );
-        
-        ch_printf( ch, "%d) Cargo: %.12s Price: %d (%s).\n", 
-        cargocount, get_cargo_name( cargolist->cargo->cargotype ), 
-        cargolist->cargo->price,
-        hilow );
-      }
-      return;
-    }
     
-    if ( !str_cmp( arg3, "set" ) )
-    {
-      if ( !spaceobject->first_cargo )
-      {
-      	send_to_char( "This spaceobject has no cargo set.\n", ch );
-      	return;
-      }
-      if ( !argument || argument[0] == '\0')
-      {
-        send_to_char( "Missing #list and beyond.&R&w\n", ch );
-        return;
-      }
-    
-      argument = one_argument( argument, arg4 );
-
-      if ( !is_number( arg4 ) )
-      {
-        send_to_char( "#list needs to be a number.\n", ch );
-        return;
-      }
-      if ( !argument || argument[0] == '\0')
-      {
-        send_to_char( "Missing set field: <argument> and beyond.\n", ch );
-        return;
-      }
-      argument = one_argument( argument, arg5 );
-      if ( !argument || argument[0] == '\0')
-      {
-        send_to_char( "Missing set field: <type>/<amount>.\n", ch );
-        return;
-      }
-      if ( !is_number( argument ) )
-      {
-        send_to_char( "<type>/<amount> needs to be a number.\n", ch );
-        return;
-      }
-      cargolistnum = atoi(arg4);
-      cargolist = spaceobject->first_cargo;
-      for( cargocount = 0; cargocount < cargolistnum; cargocount++ )
-      {
-        if ( !cargolist )
-          break;
-
-      	if ( !cargolist->cargo )
-        {
-       	  ch_printf( ch, "Error: cargolist->cargo does not exist on spaceobject %s.\n", spaceobject->name );
-      	  return;
-        }
-	cargolist = cargolist->next;
-      }
-      if ( !cargolist )
-      {
-        ch_printf( ch, "Not that many cargo items on spaceobject %s.\n", spaceobject->name );
-        return;
-      }
-      if ( !str_cmp( arg5, "type" ) )
-      {
-      	cargolist->cargo->cargotype = atoi(argument);
-      	send_to_char( "Done.\n", ch );
-      	save_spaceobject( spaceobject );
-      	return;
-      }      
-      if ( !str_cmp( arg5, "price" ) )
-      {
-      	cargolist->cargo->price = atoi(argument);
-      	send_to_char( "Done.\n", ch );
-      	save_spaceobject( spaceobject );
-      	return;
-      }
-      	send_to_char( "No such option.  Options: type, price.\n", ch );
-      	return;
-    }
-    send_to_char( "No such option.  Options: randomize, set, stats.\n", ch );
     return;
-
-  }
-  
-  if ( !str_cmp( arg1, "search" ) )
-  {
-  	
-  if ( !str_cmp( arg2, "cargotype" ) )
-  {
-    if ( !argument || argument[0] == '\0' || !is_number(argument) )
-    {
-      send_to_char( "No cargotype value: cargo search cargotype <cargotype#>\n", ch );
-      return;
-    }
-    
-    cargotype = atoi(argument);
-    ch_printf( ch, "Results for cargo type %s\n", get_cargo_name( cargotype ) );
-    for ( spaceobject = first_spaceobject; spaceobject; spaceobject = spaceobject->next )
-      if ( spaceobject->first_cargo )
-        for ( cargolist = spaceobject->first_cargo; cargolist; cargolist = cargolist->next )
-          if ( cargolist->cargo->cargotype == cargotype )
-            ch_printf( ch, "%s: Price: %d\n", spaceobject->name, cargolist->cargo->price );
-    return;            
-
-  }    
-    send_to_char( "Not yet implemented.\n", ch );
-    return;
-    
-  }
-
-  send_to_char( "\nSyntax: cargo <argument> <argument>...\n", ch );
-  send_to_char( "Arguments: planet <spaceobjectname> <argument>..., search\n", ch );
-  send_to_char( "Planet arguments: randomize, set <#list> <argument> <number>, stats\n", ch );
-  send_to_char( "Planet set arguments: type <type#>, price <amount>\n", ch );
-  send_to_char( "search arguments: overprice, underprice, cargotype <type#>\n", ch );
-  return;
-  
-  
-  return;
 }
 
 void do_repair_module ( CHAR_DATA *ch, char *argument ) // Coded by Johnson ( Michael Shattuck ) - Added 5-15-04 - DV
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
     int chance;
 
-    argument = one_argument( argument, arg );
+    one_argument( argument, arg );
 
     switch( ch->substate )
     {
     	default:
     	       
-                chance = IS_NPC(ch) ? ch->top_level
-	                 : (int) (ch->pcdata->learned[gsn_repairmodule]);
+        chance = IS_NPC(ch) ? ch->top_level
+            : (int) (ch->pcdata->learned[gsn_repairmodule]);
 
 				if( chance <= 0 )
 				{
-				send_to_char( "You do not know how to repair a module.\n", ch );
-				return;
+            send_to_char( "You do not know how to repair a module.\n", ch );
+            return;
 				}
 
 				if ( ms_find_obj(ch) )
-					return;
+					  return;
 
 				if ( ( obj = get_obj_carry( ch, arg ) ) == NULL )
 				{
-					send_to_char( "You do not have that item.\n", ch );
-					return;
+            send_to_char( "You do not have that item.\n", ch );
+            return;
 				}
 
 				if ( !( obj->item_type==ITEM_FIGHTERCOMP || obj->item_type==ITEM_MIDCOMP
 					|| obj->item_type==ITEM_CAPITALCOMP ) )
 				{
-					send_to_char("That isn't a ship module.\n",ch);
-					return;
+            send_to_char("That isn't a ship module.\n",ch);
+            return;
 				}
 
 				if ( obj->value[0] >= 100 )
 					chance = (int) ( chance*0.50 );
 
-                		if ( number_percent( ) < chance )
-    				{
-    				  send_to_char( "&GYou begin your repairs\n", ch);
-				  act( AT_PLAIN, "$n begins repairing a ship module.", ch, NULL, argument , TO_ROOM );
-    				  add_timer ( ch , TIMER_DO_FUN , 5 , do_repair_module , 1 );
-    				  ch->dest_buf = str_dup(arg);
-    				  return;
+        if ( number_percent( ) < chance )
+        {
+            send_to_char( "&GYou begin your repairs\n", ch);
+            act( AT_PLAIN, "$n begins repairing a ship module.", ch, NULL, arg , TO_ROOM );
+            add_timer ( ch , TIMER_DO_FUN , 5 , do_repair_module , 1 );
+            ch->dest_buf = str_dup(arg);
+            return;
 				}
 
 				send_to_char("&RYou fail to locate the source of the problem.\n",ch);
 
 				if ( obj->value[0] >= 100 )
 				{
-					send_to_char("&RYou failed overcharging the module and cause serious damage!.\n",ch);
-					obj->value[0] = (int) ((ch->pcdata->learned[gsn_repairmodule]) * 0.75 );
+            send_to_char("&RYou failed overcharging the module and cause serious damage!.\n",ch);
+            obj->value[0] = (int) ((ch->pcdata->learned[gsn_repairmodule]) * 0.75 );
 				}
 				else
 				{
 					if ( number_percent( ) > URANGE( 50, chance * 1.25, 100  ) )
 					{
-						send_to_char("&RYou slip up and damage it slightly!\n",ch);
-						obj->value[0] += (int) (1 - URANGE(1, number_percent( )/20, 5 ));
+              send_to_char("&RYou slip up and damage it slightly!\n",ch);
+              obj->value[0] += (int) (1 - URANGE(1, number_percent( )/20, 5 ));
 					}
 				}
 				
@@ -4662,26 +4632,26 @@ void do_repair_module ( CHAR_DATA *ch, char *argument ) // Coded by Johnson ( Mi
     	   		return;
 
     	case 1:
-    		if ( !ch->dest_buf )
-    		   return;
-    		SPRINTF(arg, "%s", (const char * )ch->dest_buf);
-    		STR_DISPOSE( ch->dest_buf);
-    		break;
+          if ( !ch->dest_buf )
+            return;
+          arg = (const char * )ch->dest_buf;
+          STR_DISPOSE( ch->dest_buf);
+          break;
 
     	case SUB_TIMER_DO_ABORT:
-    		STR_DISPOSE( ch->dest_buf );
-    		ch->substate = SUB_NONE;
-    	    send_to_char("&RYou are distracted and fail to finish your repairs.\n", ch);
-    		return;
+          STR_DISPOSE( ch->dest_buf );
+          ch->substate = SUB_NONE;
+            send_to_char("&RYou are distracted and fail to finish your repairs.\n", ch);
+          return;
     }
 
     if ( ms_find_obj(ch) )
-	return;
+        return;
 
     if ( ( obj = get_obj_carry( ch, arg ) ) == NULL )
     {
-      send_to_char( "The item you were working on seems to be gone...\n", ch );
-      return;
+        send_to_char( "The item you were working on seems to be gone...\n", ch );
+        return;
     }
 
 	ch->substate = SUB_NONE;
@@ -4690,16 +4660,16 @@ void do_repair_module ( CHAR_DATA *ch, char *argument ) // Coded by Johnson ( Mi
 
 	obj->value[0] += (int) ((ch->pcdata->learned[gsn_repairmodule]) * 0.05 );
 	if ( obj->value[0] < 100 )
-	  obj->value[0] += (int) ((ch->pcdata->learned[gsn_repairmodule]) * 0.15 );
+	    obj->value[0] += (int) ((ch->pcdata->learned[gsn_repairmodule]) * 0.15 );
 
 	if ( obj->value[0] >= 125 )
 	{
-		send_to_char("&RYou cannot repair it more than 125%!\n", ch);
-		obj->value[0] = 125;
+      send_to_char("&RYou cannot repair it more than 125%!\n", ch);
+      obj->value[0] = 125;
 	}
 	else
 	{
-	send_to_char("&GRepair successful.\n", ch);
+	    send_to_char("&GRepair successful.\n", ch);
 	}
 
 	learn_from_success( ch, gsn_repairmodule );
@@ -4710,32 +4680,33 @@ void do_repair_module ( CHAR_DATA *ch, char *argument ) // Coded by Johnson ( Mi
 
 void do_checkareaships ( CHAR_DATA *ch, char *argument )
 {
-  // Checks for ships in an area.
-  SHIP_DATA *ship;
-  AREA_DATA *tarea;
-  int shipsfound = 0, roomvnum;
-  
-  for ( tarea = first_area; tarea; tarea = tarea->next )
-  {
-    if ( !str_cmp( tarea->filename, argument ) )
-    break;
-  }
+    // Checks for ships in an area.
+    SHIP_DATA *ship;
+    AREA_DATA *tarea;
+    int shipsfound = 0, roomvnum;
     
-  if ( !tarea )
-  {
-    send_to_char( "Area not found.\n", ch );
-    return;
-  }
-  
-  for ( roomvnum = tarea->low_r_vnum; roomvnum < tarea->hi_r_vnum; roomvnum++ )
-  {    if( ( ship = ship_from_cockpit( ch->game, roomvnum ) ) != NULL )
+    for ( tarea = first_area; tarea; tarea = tarea->next )
     {
-      ch_printf( ch, "Ship: %s %s, Room: %d\n", ship->name, ship->personalname, roomvnum );
-      shipsfound++;
+        if ( !str_cmp( tarea->filename, argument ) )
+          break;
     }
-  }
-  
-  ch_printf( ch, "%d rooms found.\n", shipsfound );
-  return;
+      
+    if ( !tarea )
+    {
+        send_to_char( "Area not found.\n", ch );
+        return;
+    }
+    
+    for ( roomvnum = tarea->low_r_vnum; roomvnum < tarea->hi_r_vnum; roomvnum++ )
+    {    
+        if( ( ship = ship_from_cockpit( ch->game, roomvnum ) ) != NULL )
+        {
+            ch_printf( ch, "Ship: %s %s, Room: %d\n", ship->name, ship->personalname, roomvnum );
+            shipsfound++;
+        }
+    }
+    
+    ch_printf( ch, "%d rooms found.\n", shipsfound );
+    return;
 
 }

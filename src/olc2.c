@@ -65,10 +65,10 @@
 // extern functions
 extern size_t visible_length(const char *txt);
 extern char *wrap_text_ex(const char *txt, int width, int flags, int indent);
-extern int get_exflag( char *flag );
-extern int get_risflag( char *flag );
-extern int get_npc_race( char *type );
-extern size_t get_langflag(char *flag);
+extern int get_exflag( const std::string& flag );
+extern int get_risflag( const std::string& flag );
+extern int get_npc_race( const std::string& type );
+extern size_t get_langflag(const std::string& flag);
 extern bool command_is_authorized_for_char(CHAR_DATA* ch, CMDTYPE* cmd);
 
 
@@ -164,7 +164,7 @@ const OlcSchema<ROOM_INDEX_DATA>* get_room_schema()
 {
     static std::vector<OlcField<ROOM_INDEX_DATA>> room_fields =
     {
-        make_olc_string_field<ROOM_INDEX_DATA>("name", &ROOM_INDEX_DATA::name,
+        make_olc_string_nohash_field<ROOM_INDEX_DATA>("name", &ROOM_INDEX_DATA::name,
             "Room Name - Seen at the top when looking at a room"),
         make_olc_editor_field<ROOM_INDEX_DATA>("description", &ROOM_INDEX_DATA::description,
             SUB_ROOM_DESC, "Room's long description which shows when looking/moving and not +BRIEF"),
@@ -681,7 +681,7 @@ EXTRA_DESCR_DATA* olc_room_get_or_create_extra_desc(ROOM_INDEX_DATA* room, const
         return ed;
 
     ed = new EXTRA_DESCR_DATA();
-    ed->keyword = STRALLOC((char*)keyword.c_str());
+    ed->keyword = STRALLOC(keyword);
     ed->description = STRALLOC("");
 
     ed->next = room->first_extradesc;
@@ -744,7 +744,7 @@ ROOM_INDEX_DATA* olc_room_clone(const ROOM_INDEX_DATA* src)
 
     // Fix pointer fields
 
-    dst->name = src->name ? STRALLOC(src->name) : nullptr;
+    dst->name = src->name ? str_dup(src->name) : nullptr;
     dst->description = src->description ? STRALLOC(src->description) : nullptr;
 
     // Do NOT carry live world state
@@ -865,7 +865,7 @@ void olc_room_free(ROOM_INDEX_DATA* room)
         return;
 
     if (room->name)
-        STRFREE(room->name);
+        STR_DISPOSE(room->name);
 
     if (room->description)
         STRFREE(room->description);
@@ -888,8 +888,8 @@ void olc_room_apply_changes(ROOM_INDEX_DATA* src, ROOM_INDEX_DATA* dst)
 {
     // Strings
     if (src->name)
-        STRFREE(src->name);
-    src->name = dst->name ? STRALLOC(dst->name) : nullptr;
+        STR_DISPOSE(src->name);
+    src->name = dst->name ? str_dup(dst->name) : nullptr;
 
     if (src->description)
         STRFREE(src->description);
@@ -1001,7 +1001,7 @@ bool olc_room_parse_exit_create_options(
         return true;
 
     /* optional "two" first */
-    if (!str_prefix(next.c_str(), "two"))
+    if (!str_prefix(next, "two"))
     {
         out.two_way = true;
 
@@ -1405,7 +1405,7 @@ void olc_room_apply_pending_reverse_exit_upsert(const OlcPendingExitSideEffect& 
 
     if (back->keyword)
         STRFREE(back->keyword);
-    back->keyword = STRALLOC((char*)(p.final_keyword.empty() ? "" : p.final_keyword.c_str()));
+    back->keyword = STRALLOC(p.final_keyword);
 
     ex->rexit = back;
     back->rexit = ex;
@@ -1474,7 +1474,7 @@ const char* olc_room_match_exit_command(const std::string& input)
     /* Exact match wins immediately */
     for (int i = 0; cmds[i] != nullptr; ++i)
     {
-        if (!str_cmp(input.c_str(), cmds[i]))
+        if (!str_cmp(input, cmds[i]))
             return cmds[i];
     }
 
@@ -1483,7 +1483,7 @@ const char* olc_room_match_exit_command(const std::string& input)
 
     for (int i = 0; cmds[i] != nullptr; ++i)
     {
-        if (!str_prefix(input.c_str(), cmds[i]))
+        if (!str_prefix(input, cmds[i]))
         {
             if (match)
                 return nullptr; /* ambiguous */
@@ -1513,7 +1513,7 @@ bool olc_room_exit_command_is_ambiguous(const std::string& input)
 
     for (int i = 0; cmds[i] != nullptr; ++i)
     {
-        if (!str_prefix(input.c_str(), cmds[i]))
+        if (!str_prefix(input, cmds[i]))
             ++matches;
     }
 
@@ -1532,12 +1532,12 @@ void olc_room_show_ambiguous_exit_command(CHAR_DATA* ch, const std::string& inpu
         nullptr
     };
 
-    send_to_char(("Ambiguous exit command: " + input + "\n").c_str(), ch);
+    send_to_char(("Ambiguous exit command: " + input + "\n"), ch);
     send_to_char("Matches:\n", ch);
 
     for (int i = 0; cmds[i] != nullptr; ++i)
     {
-        if (!str_prefix(input.c_str(), cmds[i]))
+        if (!str_prefix(input, cmds[i]))
         {
             send_to_char("  ", ch);
             send_to_char(cmds[i], ch);
@@ -1719,7 +1719,7 @@ bool olc_room_handle_exit_flags(CHAR_DATA* ch, EXIT_DATA* ex, const std::string&
         if (!col.empty())
         {
             send_to_char("Valid flags:\n", ch);
-            send_to_char(col.c_str(), ch);
+            send_to_char(col, ch);
         }
 
         send_to_char("Usage: exit <dir> flags <flag> [flag]...\n", ch);
@@ -1740,16 +1740,16 @@ bool olc_room_handle_exit_flags(CHAR_DATA* ch, EXIT_DATA* ex, const std::string&
             word = word.substr(1);
         }
 
-        int bit = get_exflag(const_cast<char*>(word.c_str()));
+        int bit = get_exflag(word);
         if (bit < 0)
         {
-            send_to_char(("Unknown flag: " + word + "\n").c_str(), ch);
+            send_to_char(("Unknown flag: " + word + "\n"), ch);
 
             std::string col = olc_format_exit_flags_list();
             if (!col.empty())
             {
                 send_to_char("Valid flags:\n", ch);
-                send_to_char(col.c_str(), ch);
+                send_to_char(col, ch);
             }
 
             return false;
@@ -1846,7 +1846,7 @@ bool olc_room_handle_bexit_flags(CHAR_DATA* ch, ROOM_INDEX_DATA* room, EXIT_DATA
         if (!col.empty())
         {
             send_to_char("Valid flags:\n", ch);
-            send_to_char(col.c_str(), ch);
+            send_to_char(col, ch);
         }
 
         send_to_char("Usage: bexit <selector> flags <flag> [flag]...\n", ch);
@@ -1874,16 +1874,16 @@ bool olc_room_handle_bexit_flags(CHAR_DATA* ch, ROOM_INDEX_DATA* room, EXIT_DATA
             word = word.substr(1);
         }
 
-        int bit = get_exflag(const_cast<char*>(word.c_str()));
+        int bit = get_exflag((word));
         if (bit < 0)
         {
-            send_to_char(("Unknown flag: " + word + "\n").c_str(), ch);
+            send_to_char(("Unknown flag: " + word + "\n"), ch);
 
             std::string col = olc_format_exit_flags_list();
             if (!col.empty())
             {
                 send_to_char("Valid flags:\n", ch);
-                send_to_char(col.c_str(), ch);
+                send_to_char(col, ch);
             }
 
             return false;
@@ -1990,7 +1990,7 @@ bool olc_room_edit_exit_field_impl(CHAR_DATA* ch, ROOM_INDEX_DATA* room, bool re
 
         std::string opt;
         iss >> opt;
-        bool two_way = reverse_default || (!opt.empty() && !str_prefix(opt.c_str(), "two"));
+        bool two_way = reverse_default || (!opt.empty() && !str_prefix(opt, "two"));
 
         return olc_room_handle_exit_delete(ch, room, sel.ex, two_way);
     }
@@ -2062,7 +2062,7 @@ bool olc_room_edit_exit_field_impl(CHAR_DATA* ch, ROOM_INDEX_DATA* room, bool re
     {
         std::string opt;
         iss >> opt;
-        bool two_way = reverse_default || (!opt.empty() && !str_prefix(opt.c_str(), "two"));
+        bool two_way = reverse_default || (!opt.empty() && !str_prefix(opt, "two"));
         return olc_room_handle_exit_delete(ch, room, sel.ex, two_way);
     }
 
@@ -2078,7 +2078,7 @@ bool olc_room_edit_exit_field_impl(CHAR_DATA* ch, ROOM_INDEX_DATA* room, bool re
             flags.erase(0, pos);
 
         if (reverse_default)
-            return olc_room_handle_bexit_flags(ch, room, sel.ex, flags);
+            olc_room_handle_bexit_flags(ch, room, sel.ex, flags);
 
         return olc_room_handle_exit_flags(ch, sel.ex, flags);
     }
@@ -2086,7 +2086,7 @@ bool olc_room_edit_exit_field_impl(CHAR_DATA* ch, ROOM_INDEX_DATA* room, bool re
     if (!str_cmp(resolved, "key"))
     {
         if (reverse_default)
-            return olc_room_handle_bexit_key(ch, room, sel.ex, iss);
+            olc_room_handle_bexit_key(ch, room, sel.ex, iss);
 
         return olc_room_handle_exit_key(ch, sel.ex, iss);
     }
@@ -2097,7 +2097,7 @@ bool olc_room_edit_exit_field_impl(CHAR_DATA* ch, ROOM_INDEX_DATA* room, bool re
     if (!str_cmp(resolved, "keyword"))
     {
         if (reverse_default)
-            return olc_room_handle_bexit_keyword(ch, room, sel.ex);
+            olc_room_handle_bexit_keyword(ch, room, sel.ex);
 
         return olc_room_handle_exit_keyword(ch, sel.ex);
     }
@@ -2229,9 +2229,9 @@ void olc_room_edit_switch_to_room(CHAR_DATA* ch, ROOM_INDEX_DATA* room)
     send_to_char("Now editing this room.\n", ch);
 }
 
-bool olc_room_is_field_name(const char* input)
+bool olc_room_is_field_name(const std::string& input)
 {
-    if (!input || input[0] == '\0')
+    if (input.empty())
         return false;
 
     const auto* schema = get_room_schema();
@@ -2275,12 +2275,13 @@ void olc_room_edit_help(CHAR_DATA* ch)
     send_to_char("Direction commands always take priority over field prefixes.\n", ch);
 }
 
-bool olc_room_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
+bool olc_room_edit_interpret(CHAR_DATA* ch, const std::string& command, const std::string& argument)
 {
-
+    char buf[MSL];
     //log_printf("OLC INLINE: command='%s'", command);
+    SPRINTF(buf, "%s", argument.c_str());
 
-    if (!olc_room_in_edit_mode(ch) || !command || command[0] == '\0')
+    if (!olc_room_in_edit_mode(ch) || command.empty())
         return false;
 
     if (olc_is_direction_alias(command))
@@ -2288,12 +2289,11 @@ bool olc_room_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
 
     if (olc_command_matches(command, "help") || !str_cmp(command, "?"))
     {
-        if (argument[0] == '\0')
+        if (argument.empty())
             olc_room_edit_help(ch);
         else
         {
-            char buf[MSL];
-            SPRINTF(buf, "%s %s", "help", argument);
+            SPRINTF(buf, "%s %s", "help", argument.c_str());
             do_redit2(ch, buf);
         }
         return true;
@@ -2301,8 +2301,8 @@ bool olc_room_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
 
     if (olc_command_matches(command, "stop"))
     {
-        char arg[MIL] = {0};
-        argument = one_argument(argument, arg);
+        std::string arg;
+        one_argument(argument, arg);
 
         if (!str_cmp(arg, "save"))
         {
@@ -2348,13 +2348,13 @@ bool olc_room_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
 
     if (olc_command_matches(command, "show"))
     {
-        do_olcshow(ch, argument);
+        do_olcshow(ch, buf);
         return true;
     }
 
     if (olc_command_matches(command, "olcshow"))
     {
-        do_olcshow(ch, argument);
+        do_olcshow(ch, buf);
         return true;
     }
 
@@ -2363,20 +2363,19 @@ bool olc_room_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
         auto sess = ch->desc->olc;
         olc_show_room_preview(ch,
             static_cast<ROOM_INDEX_DATA*>(sess->working_copy),
-            argument ? argument : const_cast<char*>(""));
+            buf);
         return true;
     }
 
     if (olc_command_matches(command, "olcset"))
     {
-        do_olcset(ch, argument);
+        do_olcset(ch, buf);
         return true;
     }
 
     if (olc_room_is_field_name(command))
     {
-        char buf[MSL];
-        snprintf(buf, sizeof(buf), "%s %s", command, argument ? argument : "");
+        snprintf(buf, sizeof(buf), "%s %s", command.c_str(), argument.empty() ? "" : argument.c_str());
         do_olcset(ch, buf);
         return true;
     }
@@ -2406,24 +2405,24 @@ void olc_show_room_preview_exits( CHAR_DATA* ch, ROOM_INDEX_DATA* room )
         if ( IS_SET(pexit->exit_info, EX_CLOSED) )
         {
             STRAPP( buf, "%-5s - (closed)",
-            capitalize( dir_name[pexit->vdir] ) );
+            capitalize( dir_name[pexit->vdir] ).c_str() );
         }
         else if ( IS_SET(pexit->exit_info, EX_WINDOW) )
         {
             STRAPP( buf, "%-5s - (window)",
-            capitalize( dir_name[pexit->vdir] ) );
+            capitalize( dir_name[pexit->vdir] ).c_str() );
         }
         else if ( IS_SET(pexit->exit_info, EX_xAUTO) )
         {
         STRAPP( buf, "%-5s - %s",
-            capitalize( pexit->keyword ),
+            capitalize( pexit->keyword ).c_str(),
             room_is_dark( pexit->to_room )
             ?  "Too dark to tell"
             : pexit->to_room->name );
         }
         else
             STRAPP( buf, "%-5s - %s",
-            capitalize( dir_name[pexit->vdir] ),
+            capitalize( dir_name[pexit->vdir] ).c_str(),
             room_is_dark( pexit->to_room )
             ?  "Too dark to tell"
             : pexit->to_room->name ); 
@@ -2460,7 +2459,7 @@ void olc_show_room_exit_help(CHAR_DATA* ch)
     if (!col.empty())
     {
         send_to_char("Valid flags:\n", ch);
-        send_to_char(col.c_str(), ch);
+        send_to_char(col, ch);
     }
 }
 
@@ -2494,7 +2493,7 @@ void olc_show_room_preview(CHAR_DATA* ch, ROOM_INDEX_DATA* room, const char* arg
                 {
                     set_char_color( AT_CYAN, ch );
                     send_to_char( "[", ch );
-                    send_to_char( bitset_to_string( room->room_flags, r_flags ).c_str(), ch );
+                    send_to_char( bitset_to_string( room->room_flags, r_flags ), ch );
                     send_to_char( "]", ch );
                 }
             }
@@ -2515,14 +2514,14 @@ void olc_show_room_preview(CHAR_DATA* ch, ROOM_INDEX_DATA* room, const char* arg
         if ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_AUTOEXIT) )
                 olc_show_room_preview_exits( ch, room );
     }
-    const char* ed = get_extra_descr(arg.c_str(), room->first_extradesc);
+    const char* ed = get_extra_descr(arg, room->first_extradesc);
     if (ed)
     {
         out = ed;
         if (!out.empty())
         {
             send_to_char("\n", ch);
-            send_to_char(out.c_str(), ch);
+            send_to_char(out, ch);
             return;
         }
     }
@@ -2706,7 +2705,7 @@ void olc_show_room(CHAR_DATA* ch, ROOM_INDEX_DATA* room, bool show_help, int ter
     }
 
     for (const auto& l : other_lines)
-        send_to_char((l + "\n").c_str(), ch);
+        send_to_char((l + "\n"), ch);
 }
 
 // --------------------------------------------
@@ -3185,7 +3184,7 @@ EXTRA_DESCR_DATA* olc_object_get_or_create_extra_desc(OBJ_DATA* obj, const std::
         return ed;
 
     ed = new EXTRA_DESCR_DATA{};
-    ed->keyword = STRALLOC((char*)keyword.c_str());
+    ed->keyword = STRALLOC(keyword);
     ed->description = STRALLOC("");
 
     ed->prev = nullptr;
@@ -3458,7 +3457,7 @@ bool olc_object_parse_affect_value(
 {
     if (loc == APPLY_AFFECT)
     {
-        out_value = get_aflag(const_cast<char*>(value_text.c_str()));
+        out_value = get_aflag(value_text);
         if (out_value < 0)
         {
             ch_printf(ch, "Unknown affect flag: %s\n", value_text.c_str());
@@ -3469,7 +3468,7 @@ bool olc_object_parse_affect_value(
 
     if (loc > APPLY_AFFECT && loc < APPLY_WEAPONSPELL)
     {
-        out_value = get_risflag(const_cast<char*>(value_text.c_str()));
+        out_value = get_risflag((value_text));
         if (out_value < 0)
         {
             ch_printf(ch, "Unknown resistance flag: %s\n", value_text.c_str());
@@ -3767,9 +3766,9 @@ bool olc_object_in_inline_mode(CHAR_DATA* ch)
         && ch->desc->olc->mode == OlcEditMode::OBJECT_INLINE;
 }
 
-bool olc_object_is_field_name(const char* command)
+bool olc_object_is_field_name(const std::string& command)
 {
-    if (!command || command[0] == '\0')
+    if (command.empty())
         return false;
 
     return olc_find_field_fuzzy(get_object_schema(), command) != nullptr;
@@ -3789,23 +3788,24 @@ void olc_object_edit_help(CHAR_DATA* ch)
     return;
 }
 
-bool olc_object_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
+bool olc_object_edit_interpret(CHAR_DATA* ch, const std::string& command, const std::string& argument)
 {
-    if (!olc_object_in_inline_mode(ch) || !command || command[0] == '\0')
+    char buf[MSL];
+    SPRINTF(buf, "%s", argument.c_str());
+    if (!olc_object_in_inline_mode(ch) || command.empty())
         return false;
 
-    if (olc_is_direction_alias(command))
+    if (olc_is_direction_alias(command.c_str()))
         return false;
 
     if (olc_command_matches(command, "help") || !str_cmp(command, "?"))
     {
         
-        if (argument[0] == '\0')
+        if (argument.empty())
             olc_object_edit_help(ch);
         else
         {
-            char buf[MSL];
-            SPRINTF(buf, "%s %s", "help", argument);
+            SPRINTF(buf, "%s %s", "help", argument.c_str() );
             do_oedit(ch, buf);
         }
         return true;
@@ -3813,8 +3813,8 @@ bool olc_object_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
 
     if (olc_command_matches(command, "stop"))
     {
-        char arg[MIL] = {0};
-        argument = one_argument(argument, arg);
+        std::string arg;
+        one_argument(argument, arg);
 
         if (!str_cmp(arg, "save"))
         {
@@ -3861,13 +3861,13 @@ bool olc_object_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
 
     if (olc_command_matches(command, "show"))
     {
-        do_olcshow(ch, argument);
+        do_olcshow(ch, buf);
         return true;
     }
 
     if (olc_command_matches(command, "olcshow"))
     {
-        do_olcshow(ch, argument);
+        do_olcshow(ch, buf);
         return true;
     }
 
@@ -3878,14 +3878,13 @@ bool olc_object_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
 
     if (olc_command_matches(command, "olcset"))
     {
-        do_olcset(ch, argument);
+        do_olcset(ch, buf);
         return true;
     }
 
     if (olc_object_is_field_name(command))
     {
-        char buf[MSL];
-        snprintf(buf, sizeof(buf), "%s %s", command, argument ? argument : "");
+        snprintf(buf, sizeof(buf), "%s %s", command.c_str(), argument.empty() ? "" : argument.c_str());
         do_olcset(ch, buf);
         return true;
     }
@@ -4035,7 +4034,7 @@ void olc_show_object_string_compare_block(
 
     for (const auto& l : lines)
     {
-        send_to_char(l.c_str(), ch);
+        send_to_char(l, ch);
         send_to_char("\n", ch);
     }
 
@@ -4053,7 +4052,7 @@ void olc_show_object_string_compare_block(
 
     for (const auto& l : plines)
     {
-        send_to_char(l.c_str(), ch);
+        send_to_char(l, ch);
         send_to_char("\n", ch);
     }
 }
@@ -4080,7 +4079,7 @@ void olc_show_object_compare_block(
 
     for (const auto& l : lines)
     {
-        send_to_char(l.c_str(), ch);
+        send_to_char(l, ch);
         send_to_char("\n", ch);
     }
 
@@ -4094,7 +4093,7 @@ void olc_show_object_compare_block(
 
     for (const auto& l : plines)
     {
-        send_to_char(l.c_str(), ch);
+        send_to_char(l, ch);
         send_to_char("\n", ch);
     }
 }
@@ -4292,7 +4291,7 @@ void olc_show_object(CHAR_DATA* ch, OBJ_DATA* obj, bool help_only_mode, int term
         auto lines = olc_format_line("Timer", get_int_field(obj->timer), OLC_COL_INT, label_width, term_width);
         for (const auto& l : lines)
         {
-            send_to_char(l.c_str(), ch);
+            send_to_char(l, ch);
             send_to_char("\n", ch);
         }
     }
@@ -4302,7 +4301,7 @@ void olc_show_object(CHAR_DATA* ch, OBJ_DATA* obj, bool help_only_mode, int term
         auto lines = olc_format_line("Wear Loc", get_int_field(obj->wear_loc), OLC_COL_INT, label_width, term_width);
         for (const auto& l : lines)
         {
-            send_to_char(l.c_str(), ch);
+            send_to_char(l, ch);
             send_to_char("\n", ch);
         }
     }
@@ -4371,7 +4370,7 @@ void olc_show_object(CHAR_DATA* ch, OBJ_DATA* obj, bool help_only_mode, int term
         auto lines = olc_object_format_affect_lines(obj, label_width, term_width);
         for (const auto& l : lines)
         {
-            send_to_char(l.c_str(), ch);
+            send_to_char(l, ch);
             send_to_char("\n", ch);
         }
     }
@@ -4380,7 +4379,7 @@ void olc_show_object(CHAR_DATA* ch, OBJ_DATA* obj, bool help_only_mode, int term
         auto lines = olc_format_line("Affects", "none", OLC_COL_LIST, label_width, term_width);
         for (const auto& l : lines)
         {
-            send_to_char(l.c_str(), ch);
+            send_to_char(l, ch);
             send_to_char("\n", ch);
         }
     }
@@ -4389,7 +4388,7 @@ void olc_show_object(CHAR_DATA* ch, OBJ_DATA* obj, bool help_only_mode, int term
         auto plines = olc_object_format_proto_affect_lines(proto, label_width, term_width);
         for (const auto& l : plines)
         {
-            send_to_char(l.c_str(), ch);
+            send_to_char(l, ch);
             send_to_char("\n", ch);
         }
     }    
@@ -4452,13 +4451,13 @@ bool olc_mobile_set_spec(CHAR_DATA* mob, const std::string& value)
     if (!mob)
         return false;
 
-    if (!str_cmp(value.c_str(), "none"))
+    if (!str_cmp(value, "none"))
     {
         mob->spec_fun = nullptr;
         return true;
     }
 
-    SPEC_FUN* spec = spec_lookup(value.c_str());
+    SPEC_FUN* spec = spec_lookup(value);
     if (!spec)
         return false;
 
@@ -4471,13 +4470,13 @@ bool olc_mobile_set_spec2(CHAR_DATA* mob, const std::string& value)
     if (!mob)
         return false;
 
-    if (!str_cmp(value.c_str(), "none"))
+    if (!str_cmp(value, "none"))
     {
         mob->spec_2 = nullptr;
         return true;
     }
 
-    SPEC_FUN* spec = spec_lookup(value.c_str());
+    SPEC_FUN* spec = spec_lookup(value);
     if (!spec)
         return false;
 
@@ -4515,7 +4514,7 @@ bool olc_mobile_set_legacy_bits_field(CHAR_DATA* mob, int CHAR_DATA::*member,
         int flag = -1;
         for (int i = 0; table[i] != nullptr; ++i)
         {
-            if (!str_cmp(token.c_str(), table[i]))
+            if (!str_cmp(token, table[i]))
             {
                 flag = i;
                 break;
@@ -4783,7 +4782,7 @@ bool olc_mobile_set_level(CHAR_DATA* mob, const std::string& value)
 
 bool olc_mobile_set_race(CHAR_DATA* mob, const std::string& value)
 {
-    int race = get_npc_race((char*)value.c_str());
+    int race = get_npc_race(value);
 
     if (!mob)
         return false;
@@ -4803,7 +4802,7 @@ bool olc_mobile_set_race(CHAR_DATA* mob, const std::string& value)
 
 bool olc_mobile_set_speaking(CHAR_DATA* mob, const std::string& value)
 {
-    int lang = get_langflag(const_cast<char*>(value.c_str()));
+    int lang = get_langflag(value);
 
     if (!mob)
         return false;
@@ -4838,10 +4837,10 @@ CHAR_DATA* olc_mobile_clone(const CHAR_DATA* src)
     dst->game       = src->game;
     dst->pIndexData = src->pIndexData;
 
-    dst->name        = src->name        ? STRALLOC(src->name)        : nullptr;
-    dst->short_descr = src->short_descr ? STRALLOC(src->short_descr) : nullptr;
-    dst->long_descr  = src->long_descr  ? STRALLOC(src->long_descr)  : nullptr;
-    dst->description = src->description ? STRALLOC(src->description) : nullptr;
+    dst->name        = src->name        ? STRALLOC(src->name)        : STRALLOC("");
+    dst->short_descr = src->short_descr ? STRALLOC(src->short_descr) : STRALLOC("");
+    dst->long_descr  = src->long_descr  ? STRALLOC(src->long_descr)  : STRALLOC("");
+    dst->description = src->description ? STRALLOC(src->description) : STRALLOC("");
 
     dst->sex         = src->sex;
     dst->race        = src->race;
@@ -5481,23 +5480,24 @@ void olc_mobile_edit_help(CHAR_DATA* ch)
     send_to_char("  <field> <value>\n", ch);
 }
 
-bool olc_mobile_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
+bool olc_mobile_edit_interpret(CHAR_DATA* ch, const std::string& command, const std::string& argument)
 {
-    if (!olc_mobile_in_edit_mode(ch) || !command || command[0] == '\0')
+    char buf[MSL];
+    SPRINTF(buf, "%s", argument.c_str());
+    if (!olc_mobile_in_edit_mode(ch) || command.empty())
         return false;
 
     if (olc_command_matches(command, "help") || !str_cmp(command, "?"))
     {
-        char buf[MSL];
-        SPRINTF(buf, "%s %s", "help", argument);
+        SPRINTF(buf, "%s %s", "help", argument.c_str());
         do_medit(ch, buf);
         return true;
     }
 
     if (olc_command_matches(command, "stop"))
     {
-        char arg[MIL] = {0};
-        argument = one_argument(argument, arg);
+        std::string arg;
+        one_argument(argument, arg);
 
         if (!str_cmp(arg, "save"))
         {
@@ -5544,13 +5544,13 @@ bool olc_mobile_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
 
     if (olc_command_matches(command, "show"))
     {
-        do_olcshow(ch, argument);
+        do_olcshow(ch, buf);
         return true;
     }
 
     if (olc_command_matches(command, "olcshow"))
     {
-        do_olcshow(ch, argument);
+        do_olcshow(ch, buf);
         return true;
     }
 
@@ -5559,14 +5559,13 @@ bool olc_mobile_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
 
     if (olc_command_matches(command, "olcset"))
     {
-        do_olcset(ch, argument);
+        do_olcset(ch, buf);
         return true;
     }
 
     if (olc_session_command_is_field_name(ch->desc->olc, command))
     {
-        char buf[MSL];
-        snprintf(buf, sizeof(buf), "%s %s", command, argument ? argument : "");
+        snprintf(buf, sizeof(buf), "%s %s", command.c_str(), !argument.empty() ? argument.c_str() : "");
         do_olcset(ch, buf);
         return true;
     }
@@ -5582,7 +5581,7 @@ bool olc_mobile_parse_affect_value(
 {
     if (loc == APPLY_AFFECT)
     {
-        out_value = get_aflag(const_cast<char*>(value_text.c_str()));
+        out_value = get_aflag(value_text);
         if (out_value < 0)
         {
             ch_printf(ch, "Unknown affect flag: %s\n", value_text.c_str());
@@ -5593,7 +5592,7 @@ bool olc_mobile_parse_affect_value(
 
     if (loc > APPLY_AFFECT && loc < APPLY_WEAPONSPELL)
     {
-        out_value = get_risflag(const_cast<char*>(value_text.c_str()));
+        out_value = get_risflag(value_text);
         if (out_value < 0)
         {
             ch_printf(ch, "Unknown resistance flag: %s\n", value_text.c_str());
@@ -6006,7 +6005,7 @@ void olc_show_mob(CHAR_DATA* ch, CHAR_DATA* mob, bool show_help, int term_width)
         term_width
     );
     for (const auto& line : act_lines)
-        send_to_char((line + "\n").c_str(), ch);
+        send_to_char((line + "\n"), ch);
 
     auto aff_lines = olc_format_line(
         "affected",
@@ -6016,7 +6015,7 @@ void olc_show_mob(CHAR_DATA* ch, CHAR_DATA* mob, bool show_help, int term_width)
         term_width
     );
     for (const auto& line : aff_lines)
-        send_to_char((line + "\n").c_str(), ch);
+        send_to_char((line + "\n"), ch);
 
     auto vip_lines = olc_format_line(
         "vip",
@@ -6026,7 +6025,7 @@ void olc_show_mob(CHAR_DATA* ch, CHAR_DATA* mob, bool show_help, int term_width)
         term_width
     );
     for (const auto& line : vip_lines)
-        send_to_char((line + "\n").c_str(), ch);
+        send_to_char((line + "\n"), ch);
 
     auto part_lines = olc_format_line(
         "parts",
@@ -6036,7 +6035,7 @@ void olc_show_mob(CHAR_DATA* ch, CHAR_DATA* mob, bool show_help, int term_width)
         term_width
     );
     for (const auto& line : part_lines)
-        send_to_char((line + "\n").c_str(), ch);        
+        send_to_char((line + "\n"), ch);        
 
     auto res_lines = olc_format_line(
         "resistant",
@@ -6046,7 +6045,7 @@ void olc_show_mob(CHAR_DATA* ch, CHAR_DATA* mob, bool show_help, int term_width)
         term_width
     );
     for (const auto& line : res_lines)
-        send_to_char((line + "\n").c_str(), ch);        
+        send_to_char((line + "\n"), ch);        
 
     auto imm_lines = olc_format_line(
         "immune",
@@ -6056,7 +6055,7 @@ void olc_show_mob(CHAR_DATA* ch, CHAR_DATA* mob, bool show_help, int term_width)
         term_width
     );
     for (const auto& line : imm_lines)
-        send_to_char((line + "\n").c_str(), ch);    
+        send_to_char((line + "\n"), ch);    
 
     auto sus_lines = olc_format_line(
         "suscept",
@@ -6066,7 +6065,7 @@ void olc_show_mob(CHAR_DATA* ch, CHAR_DATA* mob, bool show_help, int term_width)
         term_width
     );
     for (const auto& line : sus_lines)
-        send_to_char((line + "\n").c_str(), ch);   
+        send_to_char((line + "\n"), ch);   
 
     auto att_lines = olc_format_line(
         "attacks",
@@ -6076,7 +6075,7 @@ void olc_show_mob(CHAR_DATA* ch, CHAR_DATA* mob, bool show_help, int term_width)
         term_width
     );
     for (const auto& line : att_lines)
-        send_to_char((line + "\n").c_str(), ch);           
+        send_to_char((line + "\n"), ch);           
 
     auto def_lines = olc_format_line(
         "defenses",
@@ -6086,14 +6085,14 @@ void olc_show_mob(CHAR_DATA* ch, CHAR_DATA* mob, bool show_help, int term_width)
         term_width
     );
     for (const auto& line : def_lines)
-        send_to_char((line + "\n").c_str(), ch);          
+        send_to_char((line + "\n"), ch);          
 
     if (mob->first_affect)
     {
         auto lines = olc_mobile_format_affect_lines(mob, 10, term_width);
         for (const auto& l : lines)
         {
-            send_to_char(l.c_str(), ch);
+            send_to_char(l, ch);
             send_to_char("\n", ch);
         }
     }
@@ -6102,7 +6101,7 @@ void olc_show_mob(CHAR_DATA* ch, CHAR_DATA* mob, bool show_help, int term_width)
         auto lines = olc_format_line("Affects", "none", OLC_COL_LIST, 10, term_width);
         for (const auto& l : lines)
         {
-            send_to_char(l.c_str(), ch);
+            send_to_char(l, ch);
             send_to_char("\n", ch);
         }
     }
@@ -6156,23 +6155,24 @@ void shop_olc_after_revert(CHAR_DATA* ch, void* /*original*/, void* /*working*/)
         send_to_char("Shop reverted to pre-edit state.\n", ch);
 }
 
-bool olc_shop_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
+bool olc_shop_edit_interpret(CHAR_DATA* ch, const std::string& command, const std::string& argument)
 {
-    if (!olc_shop_in_edit_mode(ch) || !command || command[0] == '\0')
+    char buf[MSL];
+    SPRINTF(buf, "%s", argument.c_str());
+    if (!olc_shop_in_edit_mode(ch) || command.empty())
         return false;
 
     if (olc_command_matches(command, "help") || !str_cmp(command, "?"))
     {
-        char buf[MSL];
-        SPRINTF(buf, "%s %s", "help", argument);
+        SPRINTF(buf, "%s %s", "help", argument.c_str());
         do_shopset(ch, buf);
         return true;
     }
 
     if (olc_command_matches(command, "stop"))
     {
-        char arg[MIL] = {0};
-        argument = one_argument(argument, arg);
+        std::string arg;
+        one_argument(argument, arg);
 
         if (!str_cmp(arg, "save"))
         {
@@ -6219,13 +6219,13 @@ bool olc_shop_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
 
     if (olc_command_matches(command, "show"))
     {
-        do_olcshow(ch, argument);
+        do_olcshow(ch, buf);
         return true;
     }
 
     if (olc_command_matches(command, "olcshow"))
     {
-        do_olcshow(ch, argument);
+        do_olcshow(ch, buf);
         return true;
     }
 
@@ -6234,14 +6234,13 @@ bool olc_shop_edit_interpret(CHAR_DATA* ch, char* command, char* argument)
 
     if (olc_command_matches(command, "olcset"))
     {
-        do_olcset(ch, argument);
+        do_olcset(ch, buf);
         return true;
     }
 
     if (olc_session_command_is_field_name(ch->desc->olc, command))
     {
-        char buf[MSL];
-        snprintf(buf, sizeof(buf), "%s %s", command, argument ? argument : "");
+        snprintf(buf, sizeof(buf), "%s %s", command.c_str(), argument.empty() ? "" : argument.c_str());
         do_olcset(ch, buf);
         return true;
     }
@@ -6427,11 +6426,12 @@ void olc_show_shop(CHAR_DATA* ch, SHOP_DATA* shop, bool show_help, int term_widt
 
 void do_redit2(CHAR_DATA* ch, char* argument)
 {
-    char arg[MIL] = {0};
+    std::string arg;
+    std::string argstr = argument;
 
     if (olc_room_in_edit_mode(ch))
     {
-        if (!argument || argument[0] == '\0')
+        if (argstr.empty())
         {
             olc_room_edit_help(ch);
             return;
@@ -6441,9 +6441,9 @@ void do_redit2(CHAR_DATA* ch, char* argument)
         return;
     }
 
-    argument = one_argument(argument, arg);
+    argstr = one_argument(argstr, arg);
 
-    if (arg[0] == '\0' || !str_cmp(arg, "start"))
+    if (arg.empty() || !str_cmp(arg, "start"))
     {
         olc_room_edit_enter(ch);
         return;
@@ -6451,8 +6451,8 @@ void do_redit2(CHAR_DATA* ch, char* argument)
 
     if (!str_cmp(arg, "help") || !str_cmp(arg, "?"))
     {
-        if (argument[0] != '\0')
-            olc_show(ch, argument, "help");
+        if (!argstr.empty())
+            olc_show(ch, argstr, "help");
         else
             olc_show(ch, arg, "");
         return;
@@ -6460,10 +6460,10 @@ void do_redit2(CHAR_DATA* ch, char* argument)
 
     if (!str_cmp(arg, "stop"))
     {
-        char arg2[MIL] = {0};
-        argument = one_argument(argument, arg2);
+        std::string arg2;
+        argstr = one_argument(argstr, arg2);
 
-        if (!str_cmp(arg2, "save") || arg2[0] == '\0')
+        if (!str_cmp(arg2, "save") || arg2.empty())
         {
             olc_stop(ch, true);
             return;
@@ -6495,8 +6495,9 @@ void do_redit2(CHAR_DATA* ch, char* argument)
 
 void do_oedit(CHAR_DATA* ch, char* argument)
 {
-    char arg1[MIL];
-    char arg2[MIL];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
 
     if (!ch || !ch->desc)
         return;
@@ -6506,7 +6507,7 @@ void do_oedit(CHAR_DATA* ch, char* argument)
      * ========================= */
     if (olc_object_in_edit_mode(ch))
     {
-        if (argument[0] == '\0')
+        if (argstr.empty())
         {
             olc_object_edit_help(ch);
             return;
@@ -6515,12 +6516,12 @@ void do_oedit(CHAR_DATA* ch, char* argument)
         return;
     }
 
-    argument = one_argument(argument, arg1);
-    argument = one_argument(argument, arg2);
+    argstr = one_argument(argstr, arg1);
+    argstr = one_argument(argstr, arg2);
 
     //Start a new object edit session
     OBJ_DATA* obj = NULL;
-    if (arg1[0] == '\0')
+    if (arg1.empty())
     {
         send_to_char("Usage: oedit <object>\n", ch);
         return;
@@ -6568,8 +6569,9 @@ void do_oedit(CHAR_DATA* ch, char* argument)
 
 void do_medit(CHAR_DATA* ch, char* argument)
 {
-    char arg1[MIL];
-    char arg2[MIL];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
 
     if (!ch || !ch->desc)
         return;
@@ -6579,7 +6581,7 @@ void do_medit(CHAR_DATA* ch, char* argument)
      */
     if (olc_mobile_in_edit_mode(ch))
     {
-        if (argument[0] == '\0')
+        if (argstr.empty())
         {
             olc_mobile_edit_help(ch);
             return;
@@ -6589,15 +6591,15 @@ void do_medit(CHAR_DATA* ch, char* argument)
         return;
     }
 
-    argument = one_argument(argument, arg1);
-    argument = one_argument(argument, arg2);
+    argstr = one_argument(argstr, arg1);
+    argstr = one_argument(argstr, arg2);
 
     /*
      * Start a new mobile edit session
      */
     CHAR_DATA* victim = nullptr;
 
-    if (arg1[0] == '\0')
+    if (arg1.empty())
     {
         send_to_char("Usage: medit <mobile>\n", ch);
         return;
@@ -6657,8 +6659,9 @@ void do_medit(CHAR_DATA* ch, char* argument)
 
 void do_shopset(CHAR_DATA* ch, char* argument)
 {
-    char arg1[MIL];
-    char arg2[MIL];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     MOB_INDEX_DATA *mob = nullptr;
 
 
@@ -6670,7 +6673,7 @@ void do_shopset(CHAR_DATA* ch, char* argument)
      */
     if (olc_shop_in_edit_mode(ch))
     {
-        if (argument[0] == '\0')
+        if (argstr.empty())
         {
             olc_shop_edit_help(ch);
             return;
@@ -6680,21 +6683,21 @@ void do_shopset(CHAR_DATA* ch, char* argument)
         return;
     }
 
-    argument = one_argument(argument, arg1);
-    argument = one_argument(argument, arg2);
+    argstr = one_argument(argstr, arg1);
+    argstr = one_argument(argstr, arg2);
 
     /*
      * Start a new shop edit session
      */
     SHOP_DATA *shop = nullptr;
 
-    if (arg1[0] == '\0')
+    if (arg1.empty())
     {
         send_to_char("Usage: shopset <vnum of shop>\n", ch);
         return;
     }
     long vnum;
-    vnum = atoi( arg1 );
+    vnum = atoi( arg1.c_str() );
 
     if ( (mob = get_mob_index(vnum)) == NULL )
     {

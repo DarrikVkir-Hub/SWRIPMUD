@@ -63,7 +63,7 @@ static	OBJ_DATA *	rgObjNest	[MAX_NEST];
 
 void	fwrite_char	args( ( CHAR_DATA *ch, FILE *fp ) );
 void	fread_char	args( ( CHAR_DATA *ch, FILE *fp, bool preload) );
-void	write_corpses	args( ( CHAR_DATA *ch, char *name ) );
+void	write_corpses	args( ( CHAR_DATA *ch, const std::string& name ) );
 CHAR_DATA *  fread_mobile( GameContext *game, FILE *fp );
 void write_char_mobile( CHAR_DATA *ch , char *argument );
 void read_char_mobile( GameContext *game, char *argument );
@@ -81,7 +81,7 @@ void save_home( CHAR_DATA *ch )
 
 
        	SPRINTF( filename, "%s%c/%s.home", PLAYER_DIR, tolower(ch->name[0]),
-				 capitalize( ch->name ) );
+				 capitalize( ch->name ).c_str() );
     	if ( ( fp = fopen( filename, "w" ) ) == NULL )
     	{
     	}
@@ -185,7 +185,7 @@ void save_char_obj( CHAR_DATA *ch )
 
     ch->pcdata->save_time = current_time;
     SPRINTF( strsave, "%s%c/%s", PLAYER_DIR, tolower(ch->name[0]),
-				 capitalize( ch->name ) );
+				 capitalize( ch->name ).c_str() );
 
     /*
      * Auto-backup pfile (can cause lag with high disk access situtations
@@ -193,7 +193,7 @@ void save_char_obj( CHAR_DATA *ch )
     if ( BV_IS_SET( ch->game->get_sysdata()->save_flags, SV_BACKUP ) )
     {
 		SPRINTF( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
-					capitalize( ch->name ) );
+					capitalize( ch->name ).c_str() );
 		if (rename(strsave, strback) != 0)
 		{
 			perror("rename failed");
@@ -210,7 +210,7 @@ void save_char_obj( CHAR_DATA *ch )
      */
     if ( get_trust(ch) > LEVEL_HERO )
     {
-      SPRINTF( strback, "%s%s", GOD_DIR, capitalize( ch->name ) );
+      SPRINTF( strback, "%s%s", GOD_DIR, capitalize( ch->name ).c_str() );
 
       if ( ( fp = fopen( strback, "w" ) ) == NULL )
       {
@@ -257,7 +257,7 @@ void save_char_obj( CHAR_DATA *ch )
 
     re_equip_char( ch );
 
-    write_corpses(ch, NULL);
+    write_corpses(ch, "");
     quitting_char = NULL;
     saving_char   = NULL;
     return;
@@ -286,7 +286,7 @@ void save_clone( CHAR_DATA *ch )
     
     ch->pcdata->save_time = current_time;
     SPRINTF( strsave, "%s%c/%s.clone", PLAYER_DIR, tolower(ch->name[0]),
-				 capitalize( ch->name ) );
+				 capitalize( ch->name ).c_str() );
 
     /*
      * Auto-backup pfile (can cause lag with high disk access situtations
@@ -294,7 +294,7 @@ void save_clone( CHAR_DATA *ch )
     if ( BV_IS_SET( ch->game->get_sysdata()->save_flags, SV_BACKUP ) )
     {
 	SPRINTF( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
-				 capitalize( ch->name ) );
+				 capitalize( ch->name ).c_str() );
 	rename( strsave, strback );
     }
 
@@ -315,7 +315,7 @@ void save_clone( CHAR_DATA *ch )
     ch->pcdata->clones--;
     re_equip_char( ch );
 
-    write_corpses(ch, NULL);
+    write_corpses(ch, "");
     quitting_char = NULL;
     saving_char   = NULL;
     return;
@@ -901,7 +901,7 @@ void fwrite_obj( CHAR_DATA *ch, OBJ_DATA *obj, FILE *fp, int iNest,
 /*
  * Load a char and inventory into a new ch structure.
  */
-bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool preload )
+bool load_char_obj( DESCRIPTOR_DATA *d, const std::string& name, bool preload )
 {
   return load_char_obj_v2(d,name,preload,0);
 }
@@ -909,7 +909,7 @@ bool load_char_obj( DESCRIPTOR_DATA *d, char *name, bool preload )
 /*
  * Load a char and inventory into a new ch structure with option of restoring from backup.
  */
-bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead)
+bool load_char_obj_v2( DESCRIPTOR_DATA *d, const std::string& name, bool preload , int undead)
 {
     char strsave[MAX_INPUT_LENGTH];
     CHAR_DATA *ch;
@@ -970,17 +970,17 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
     found = FALSE;
     if (undead) {
       SPRINTF( strsave, "%s%c/%s", BACKUP_DIR, tolower(name[0]),
-                        capitalize( name ) );
+                        capitalize( name ).c_str() );
     } else {
       SPRINTF( strsave, "%s%c/%s", PLAYER_DIR, tolower(name[0]),
-			capitalize( name ) );
+			capitalize( name ).c_str() );
     }
     if ( stat( strsave, &fst ) != -1 )
     {
       if ( fst.st_size == 0 )
       {
 	SPRINTF( strsave, "%s%c/%s", BACKUP_DIR, tolower(name[0]),
-			capitalize( name ) );
+			capitalize( name ).c_str() );
 	send_to_char( "Restoring your backup player file...", ch );
       }
       else
@@ -1018,7 +1018,7 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
 	    if ( letter != '#' )
 	    {
 		bug( "Load_char_obj: # not found.", 0 );
-		bug( name, 0 );
+		bug( name.c_str(), 0 );
 		break;
 	    }
 
@@ -1042,7 +1042,7 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
 		if (!d->game)
 		{
 		  bug( "Load_char_obj: Mobile not loaded as no game was found on the char.", 0 );
-		  bug( name, 0 );
+		  bug( name.c_str(), 0 );
 		  break;
 		}
 		mob = fread_mobile( d->game, fp );
@@ -1056,7 +1056,7 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, char *name, bool preload , int undead
 	    else
 	    {
 		bug( "Load_char_obj: bad section.", 0 );
-		bug( name, 0 );
+		bug( name.c_str(), 0 );
 		break;
 	    }
 	}
@@ -2053,6 +2053,12 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 			fMatch = TRUE;
 			break;		
 		}
+		if ( !str_cmp( word, "WantedEx" ) )
+		{
+			fread_bitset(fp, ch->pcdata->wanted_flags);
+			fMatch = TRUE;
+			break;		
+		}		
 //	    KEY( "Wanted",	ch->pcdata->wanted_flags,  fread_number( fp ) );
 	    if ( !str_cmp( word, "Weapon" ) )		
 		{
@@ -2493,28 +2499,29 @@ void set_alarm( long seconds )
  */
 void do_last( CHAR_DATA *ch, char *argument )
 {
-    char buf [MAX_STRING_LENGTH];
-    char arg [MAX_INPUT_LENGTH];
-    char name[MAX_INPUT_LENGTH];
+    std::string buf;
+    std::string arg;
+    std::string name;
     struct stat fst;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Usage: last <playername>\n", ch );
 	return;
     }
-    SPRINTF( name, "%s", capitalize(arg) );
-    SPRINTF( buf, "%s%c/%s", PLAYER_DIR, tolower(arg[0]), name );
-    if ( stat( buf, &fst ) != -1 )
-      SPRINTF( buf, "%s was last on: %s\n", name, ctime( &fst.st_mtime ) );
+    name = capitalize(arg);
+    buf =str_printf( "%s%c/%s", PLAYER_DIR, tolower(arg[0]), name.c_str() );
+    if ( stat( buf.c_str(), &fst ) != -1 )
+      buf = str_printf( "%s was last on: %s\n", name.c_str(), ctime( &fst.st_mtime ) );
     else
-      SPRINTF( buf, "%s was not found.\n", name );
+      buf = str_printf( "%s was not found.\n", name.c_str() );
    send_to_char( buf, ch );
 }
 
-void write_corpses( CHAR_DATA *ch, char *name )
+void write_corpses( CHAR_DATA *ch, const std::string& name )
 {
+  std::string namestr = name;
   OBJ_DATA *corpse;
   FILE *fp = NULL;
   
@@ -2526,18 +2533,18 @@ void write_corpses( CHAR_DATA *ch, char *name )
     return;
   }
   if ( ch )
-    name = ch->name;
+    namestr = ch->name;
   /* Go by vnum, less chance of screwups. -- Altrag */
   for ( corpse = first_object; corpse; corpse = corpse->next )
     if ( corpse->pIndexData->vnum == OBJ_VNUM_CORPSE_PC &&
          corpse->in_room != NULL && corpse->value[1] != 1 &&
-        !str_cmp(corpse->short_descr+14, name) )
+        !str_cmp(corpse->short_descr+14, namestr) )
     {
       if ( !fp )
       {
         char buf[127];
         
-        SPRINTF(buf, "%s%s", CORPSE_DIR, capitalize(name));
+        SPRINTF(buf, "%s%s", CORPSE_DIR, capitalize(namestr).c_str());
         if ( !(fp = fopen(buf, "w")) )
         {
           bug( "Write_corpses: Cannot open file.", 0 );
@@ -2556,7 +2563,7 @@ void write_corpses( CHAR_DATA *ch, char *name )
   {
     char buf[127];
     
-    SPRINTF(buf, "%s%s", CORPSE_DIR, capitalize(name));
+    SPRINTF(buf, "%s%s", CORPSE_DIR, capitalize(namestr).c_str());
     remove(buf);
   }
   return;

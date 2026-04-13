@@ -681,110 +681,7 @@ void do_setblaster( CHAR_DATA *ch, char *argument )
 
 }
 
-void do_use( CHAR_DATA *ch, char *argument )
-{
-    char arg[MAX_INPUT_LENGTH];
-    char argd[MAX_INPUT_LENGTH];
-    CHAR_DATA *victim;
-    OBJ_DATA *device;
-    OBJ_DATA *obj;
-    ch_ret retcode;
-
-    argument = one_argument( argument, argd );
-    argument = one_argument( argument, arg );
-    
-    if ( !str_cmp( arg , "on" ) )
-       argument = one_argument( argument, arg );
-    
-    if ( argd[0] == '\0' )
-    {
-	send_to_char( "Use what?\n", ch );
-	return;
-    }
-
-    if ( ( device = get_eq_char( ch, WEAR_HOLD ) ) == NULL ||
-       !nifty_is_name(argd, device->name) )
-    {
-        do_takedrug( ch , argd );    
-	return;
-    }
-    
-    if ( device->item_type == ITEM_SPICE )
-    {
-        do_takedrug( ch , argd );
-        return;
-    }
-    
-    if ( device->item_type != ITEM_DEVICE )
-    {
-	send_to_char( "You can't figure out what it is your supposed to do with it.\n", ch );
-	return;
-    }
-    
-    if ( device->value[2] <= 0 )
-    {
-        send_to_char( "It has no more charge left.", ch);
-        return;
-    }
-    
-    obj = NULL;
-    if ( arg[0] == '\0' )
-    {
-	if ( ch->fighting )
-	{
-	    victim = who_fighting( ch );
-	}
-	else
-	{
-	    send_to_char( "Use on whom or what?\n", ch );
-	    return;
-	}
-    }
-    else
-    {
-	if ( ( victim = get_char_room ( ch, arg ) ) == NULL
-	&&   ( obj    = get_obj_here  ( ch, arg ) ) == NULL )
-	{
-	    send_to_char( "You can't find your target.\n", ch );
-	    return;
-	}
-    }
-
-    WAIT_STATE( ch, 1 * PULSE_VIOLENCE );
-
-    if ( device->value[2] > 0 )
-    {
-        device->value[2]--;
-	if ( victim )
-	{
-          if ( !oprog_use_trigger( ch, device, victim, NULL, NULL ) )
-          {
-	    act( AT_MAGIC, "$n uses $p on $N.", ch, device, victim, TO_ROOM );
-	    act( AT_MAGIC, "You use $p on $N.", ch, device, victim, TO_CHAR );
-          }
-	}
-	else
-	{
-          if ( !oprog_use_trigger( ch, device, NULL, obj, NULL ) )
-          {
-	    act( AT_MAGIC, "$n uses $p on $P.", ch, device, obj, TO_ROOM );
-	    act( AT_MAGIC, "You use $p on $P.", ch, device, obj, TO_CHAR );
-          }
-	}
-
-	retcode = obj_cast_spell( device->value[3], device->value[0], ch, victim, obj );
-	if ( retcode == rCHAR_DIED || retcode == rBOTH_DIED )
-	{
-	   bug( "do_use: char died", 0 );
-	   return;
-	}
-    }
-
-
-    return;
-}
-
-void do_takedrug( CHAR_DATA *ch, char *argument )
+void do_takedrug( CHAR_DATA *ch, const std::string& argument )
 {
     OBJ_DATA *obj;
     AFFECT_DATA af;
@@ -793,51 +690,51 @@ void do_takedrug( CHAR_DATA *ch, char *argument )
     
     if ( argument[0] == '\0' || !str_cmp(argument, "") )
     {
-	send_to_char( "Use what?\n", ch );
-	return;
+        send_to_char( "Use what?\n", ch );
+        return;
     }
 
     if( is_droid(ch) )
     {
-	send_to_char( "That would have no affect on you.\n", ch );
-	return;
+        send_to_char( "That would have no affect on you.\n", ch );
+        return;
     }
 
     if ( (obj = find_obj(ch, argument, TRUE)) == NULL )
-	return;
+        return;
 
     if ( obj->item_type == ITEM_DEVICE )
     {
         send_to_char( "Try holding it first.\n", ch );
-	return;
+        return;
     }
 
     if ( obj->item_type != ITEM_SPICE )
     {
-	act( AT_ACTION, "$n looks at $p and scratches $s head.", ch, obj, NULL, TO_ROOM );
-	act( AT_ACTION, "You can't quite figure out what to do with $p.", ch, obj, NULL, TO_CHAR );
-	return;
+        act( AT_ACTION, "$n looks at $p and scratches $s head.", ch, obj, NULL, TO_ROOM );
+        act( AT_ACTION, "You can't quite figure out what to do with $p.", ch, obj, NULL, TO_CHAR );
+        return;
     }
 
     separate_obj( obj );
     if ( obj->in_obj )
     {
-	act( AT_PLAIN, "You take $p from $P.", ch, obj, obj->in_obj, TO_CHAR );
-	act( AT_PLAIN, "$n takes $p from $P.", ch, obj, obj->in_obj, TO_ROOM );
+        act( AT_PLAIN, "You take $p from $P.", ch, obj, obj->in_obj, TO_CHAR );
+        act( AT_PLAIN, "$n takes $p from $P.", ch, obj, obj->in_obj, TO_ROOM );
     }
 
     if ( ch->fighting && number_percent( ) > (get_curr_dex(ch) * 2 + 48) )
     {
-	act( AT_MAGIC, "$n accidentally drops $p rendering it useless.", ch, obj, NULL, TO_ROOM );
-	act( AT_MAGIC, "Oops... $p gets knocked from your hands rendering it completely useless!", ch, obj, NULL ,TO_CHAR );
+        act( AT_MAGIC, "$n accidentally drops $p rendering it useless.", ch, obj, NULL, TO_ROOM );
+        act( AT_MAGIC, "Oops... $p gets knocked from your hands rendering it completely useless!", ch, obj, NULL ,TO_CHAR );
     }
     else
     {
-	if ( !oprog_use_trigger( ch, obj, NULL, NULL, NULL ) )
-	{
-	    act( AT_ACTION, "$n takes $p.",  ch, obj, NULL, TO_ROOM );
-	    act( AT_ACTION, "You take $p.", ch, obj, NULL, TO_CHAR );
-	}
+        if ( !oprog_use_trigger( ch, obj, NULL, NULL, NULL ) )
+        {
+            act( AT_ACTION, "$n takes $p.",  ch, obj, NULL, TO_ROOM );
+            act( AT_ACTION, "You take $p.", ch, obj, NULL, TO_CHAR );
+        }
         
         if ( IS_NPC(ch) )
         {
@@ -849,129 +746,238 @@ void do_takedrug( CHAR_DATA *ch, char *argument )
         
         WAIT_STATE( ch, PULSE_PER_SECOND/4 );
         
-	gain_condition( ch, COND_THIRST, 1 );
-	
-	ch->pcdata->drug_level[drug] = UMIN(ch->pcdata->drug_level[drug]+obj->value[1] , 255);
-	if ( ch->pcdata->drug_level[drug] >=255 
-	     || ch->pcdata->drug_level[drug] > ( ch->pcdata->addiction[drug]+100 ) ) 
-	{
-	   act( AT_POISON, "$n sputters and gags.", ch, NULL, NULL, TO_ROOM );
-	   act( AT_POISON, "You feel sick. You may have taken too much.", ch, NULL, NULL, TO_CHAR );
-	     ch->mental_state = URANGE( 20, ch->mental_state + 5, 100 );
-	     af.type      = gsn_poison;
-	     af.location  = APPLY_INT;
-	     af.modifier  = -5;
-	     af.duration  = ch->pcdata->drug_level[drug];
-	     af.bitvector = AFF_POISON;
-	     affect_to_char( ch, &af );
-	     ch->hit = 1;
-       gmcp_evt_char_vitals(ch);
-	}
+        gain_condition( ch, COND_THIRST, 1 );
+        
+        ch->pcdata->drug_level[drug] = UMIN(ch->pcdata->drug_level[drug]+obj->value[1] , 255);
+        if ( ch->pcdata->drug_level[drug] >=255 
+            || ch->pcdata->drug_level[drug] > ( ch->pcdata->addiction[drug]+100 ) ) 
+        {
+          act( AT_POISON, "$n sputters and gags.", ch, NULL, NULL, TO_ROOM );
+          act( AT_POISON, "You feel sick. You may have taken too much.", ch, NULL, NULL, TO_CHAR );
+            ch->mental_state = URANGE( 20, ch->mental_state + 5, 100 );
+            af.type      = gsn_poison;
+            af.location  = APPLY_INT;
+            af.modifier  = -5;
+            af.duration  = ch->pcdata->drug_level[drug];
+            af.bitvector = AFF_POISON;
+            affect_to_char( ch, &af );
+            ch->hit = 1;
+            gmcp_evt_char_vitals(ch);
+        }
 		  
-	switch (drug)
-	{ 
-	    default:
-	    case SPICE_GLITTERSTIM:
-	
-	       sn=skill_lookup("true sight");
-	       if ( sn < MAX_SKILL && !IS_AFFECTED( ch, AFF_TRUESIGHT ) )
-	       { 
-	  	   af.type      = sn;
-	  	   af.location  = APPLY_AC;
-	  	   af.modifier  = -10;
-	  	   af.duration  = URANGE( 1, ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug] ,obj->value[1] );
-	  	   af.bitvector = AFF_TRUESIGHT;
-	  	   affect_to_char( ch, &af );
-	       }
-	       break;
+        switch (drug)
+        { 
+          default:
+          case SPICE_GLITTERSTIM:
+      
+            sn=skill_lookup("true sight");
+            if ( sn < MAX_SKILL && !IS_AFFECTED( ch, AFF_TRUESIGHT ) )
+            { 
+            af.type      = sn;
+            af.location  = APPLY_AC;
+            af.modifier  = -10;
+            af.duration  = URANGE( 1, ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug] ,obj->value[1] );
+            af.bitvector = AFF_TRUESIGHT;
+            affect_to_char( ch, &af );
+            }
+            break;
+            
+                case SPICE_CARSANUM:
+                
+                  sn=skill_lookup("heightened awareness");
+            if ( sn < MAX_SKILL && !IS_AFFECTED( ch, AFF_SANCTUARY ) )
+            { 
+            af.type      = sn;
+            af.location  = APPLY_NONE;
+            af.modifier  = 0;
+            af.duration  = URANGE( 1, ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug] ,obj->value[1] );
+            af.bitvector = AFF_DETECT_HIDDEN;
+            affect_to_char( ch, &af );
+            }
+            break;
+            
+                case SPICE_LUMNI:
+                
+                  sn=skill_lookup("sanctuary");
+            if ( sn < MAX_SKILL && !IS_AFFECTED( ch, AFF_SANCTUARY ) )
+            { 
+            af.type      = sn;
+            af.location  = APPLY_NONE;
+            af.modifier  = 0;
+            af.duration  = URANGE( 1, ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug] ,obj->value[1] );
+            af.bitvector = AFF_SANCTUARY;
+            affect_to_char( ch, &af );
+            }
+            break;
+
+              // shattuck 4/30/04 begin
+            case SPICE_LYCIN:
+            af.type = -1;
+            af.location = APPLY_NONE;
+            af.modifier = 0;
+            af.duration = URANGE( 1, ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug] ,obj->value[1] );
+            af.bitvector = AFF_ENDURANCE;
+            affect_to_char( ch, &af );
+            break;
+            // shattuck 4/30/04 end
+
+                case SPICE_RYLL:
+                
+            af.type      = -1;
+            af.location  = APPLY_CON;
+            af.modifier  = 4;
+            af.duration  = URANGE( 1, 2*(ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug]) ,2*obj->value[1] );
+            af.bitvector = AFF_NONE;
+            affect_to_char( ch, &af );
+            
+            af.type      = -1;
+            af.location  = APPLY_IMMUNE;
+            af.modifier  = RIS_POISON;
+            af.duration  = URANGE( 1, 2*(ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug]) ,2*obj->value[1] );
+            af.bitvector = AFF_NONE;
+            affect_to_char( ch, &af );
+
+            af.type      = -1;
+            af.location  = APPLY_HIT;
+            af.modifier  = 10;
+            af.duration  = URANGE( 1, 2*(ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug]) ,2*obj->value[1] );
+            af.bitvector = AFF_NONE;
+            affect_to_char( ch, &af );	  	   
+              break;
+            
+                case SPICE_ANDRIS:
         
-            case SPICE_CARSANUM:
-            
-               sn=skill_lookup("heightened awareness");
-	       if ( sn < MAX_SKILL && !IS_AFFECTED( ch, AFF_SANCTUARY ) )
-	       { 
-	  	   af.type      = sn;
-	  	   af.location  = APPLY_NONE;
-	  	   af.modifier  = 0;
-	  	   af.duration  = URANGE( 1, ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug] ,obj->value[1] );
-	  	   af.bitvector = AFF_DETECT_HIDDEN;
-	  	   affect_to_char( ch, &af );
-	       }
-	       break;
-         
-            case SPICE_LUMNI:
-            
-               sn=skill_lookup("sanctuary");
-	       if ( sn < MAX_SKILL && !IS_AFFECTED( ch, AFF_SANCTUARY ) )
-	       { 
-	  	   af.type      = sn;
-	  	   af.location  = APPLY_NONE;
-	  	   af.modifier  = 0;
-	  	   af.duration  = URANGE( 1, ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug] ,obj->value[1] );
-	  	   af.bitvector = AFF_SANCTUARY;
-	  	   affect_to_char( ch, &af );
-	       }
-	       break;
-
-		   // shattuck 4/30/04 begin
-	   case SPICE_LYCIN:
-		af.type = -1;
-		af.location = APPLY_NONE;
-		af.modifier = 0;
-		af.duration = URANGE( 1, ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug] ,obj->value[1] );
-		af.bitvector = AFF_ENDURANCE;
-		affect_to_char( ch, &af );
-	       break;
-		   // shattuck 4/30/04 end
-
-            case SPICE_RYLL:
-            
-	  	   af.type      = -1;
-	  	   af.location  = APPLY_CON;
-	  	   af.modifier  = 4;
-	  	   af.duration  = URANGE( 1, 2*(ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug]) ,2*obj->value[1] );
-	  	   af.bitvector = AFF_NONE;
-	  	   affect_to_char( ch, &af );
-	  	   
-	  	   af.type      = -1;
-	  	   af.location  = APPLY_IMMUNE;
-	  	   af.modifier  = RIS_POISON;
-	  	   af.duration  = URANGE( 1, 2*(ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug]) ,2*obj->value[1] );
-	  	   af.bitvector = AFF_NONE;
-	  	   affect_to_char( ch, &af );
-
-	  	   af.type      = -1;
-	  	   af.location  = APPLY_HIT;
-	  	   af.modifier  = 10;
-	  	   af.duration  = URANGE( 1, 2*(ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug]) ,2*obj->value[1] );
-	  	   af.bitvector = AFF_NONE;
-	  	   affect_to_char( ch, &af );	  	   
-	        break;
-        
-            case SPICE_ANDRIS:
-     
-	  	   af.type      = -1;
-	  	   af.location  = APPLY_PARRY;
-	  	   af.modifier  = 50;
-	  	   af.duration  = URANGE( 1, 2*(ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug]) ,2*obj->value[1] );
-	  	   af.bitvector = AFF_NONE;
-	  	   affect_to_char( ch, &af );
-	           
-	           af.type      = -1;
-	  	   af.location  = APPLY_DEX;
-	  	   af.modifier  = 2;
-	  	   af.duration  = URANGE( 1, 2*(ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug]) ,2*obj->value[1] );
-	  	   af.bitvector = AFF_NONE;
-	  	   affect_to_char( ch, &af );
-	           
-	       break;
-           
+            af.type      = -1;
+            af.location  = APPLY_PARRY;
+            af.modifier  = 50;
+            af.duration  = URANGE( 1, 2*(ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug]) ,2*obj->value[1] );
+            af.bitvector = AFF_NONE;
+            affect_to_char( ch, &af );
+                
+                af.type      = -1;
+            af.location  = APPLY_DEX;
+            af.modifier  = 2;
+            af.duration  = URANGE( 1, 2*(ch->pcdata->drug_level[drug] - ch->pcdata->addiction[drug]) ,2*obj->value[1] );
+            af.bitvector = AFF_NONE;
+            affect_to_char( ch, &af );
+                
+            break;
+              
         }
         	
     }
     if ( cur_obj == obj->serial )
       global_objcode = rOBJ_EATEN;
     extract_obj( obj );
+    return;
+}
+
+void do_takedrug( CHAR_DATA *ch, char *argument )
+{
+    do_takedrug( ch , std::string(argument) );
+}
+
+void do_use( CHAR_DATA *ch, char *argument )
+{
+    std::string arg;
+    std::string argd;
+    std::string argstr = argument;
+    CHAR_DATA *victim;
+    OBJ_DATA *device;
+    OBJ_DATA *obj;
+    ch_ret retcode;
+
+    argstr = one_argument( argstr, argd );
+    argstr = one_argument( argstr, arg );
+    
+    if ( !str_cmp( arg , "on" ) )
+       argstr = one_argument( argstr, arg );
+    
+    if ( argd.empty() )
+    {
+      send_to_char( "Use what?\n", ch );
+      return;
+    }
+
+    if ( ( device = get_eq_char( ch, WEAR_HOLD ) ) == NULL ||
+       !nifty_is_name(argd, device->name) )
+    {
+        do_takedrug( ch , argd );    
+      	return;
+    }
+    
+    if ( device->item_type == ITEM_SPICE )
+    {
+        do_takedrug( ch , argd );
+        return;
+    }
+    
+    if ( device->item_type != ITEM_DEVICE )
+    {
+        send_to_char( "You can't figure out what it is your supposed to do with it.\n", ch );
+        return;
+    }
+    
+    if ( device->value[2] <= 0 )
+    {
+        send_to_char( "It has no more charge left.", ch);
+        return;
+    }
+    
+    obj = NULL;
+    if ( arg.empty() )
+    {
+        if ( ch->fighting )
+        {
+            victim = who_fighting( ch );
+        }
+        else
+        {
+            send_to_char( "Use on whom or what?\n", ch );
+            return;
+        }
+    }
+    else
+    {
+        if ( ( victim = get_char_room ( ch, arg ) ) == NULL
+        &&   ( obj    = get_obj_here  ( ch, arg ) ) == NULL )
+        {
+            send_to_char( "You can't find your target.\n", ch );
+            return;
+        }
+    }
+
+    WAIT_STATE( ch, 1 * PULSE_VIOLENCE );
+
+    if ( device->value[2] > 0 )
+    {
+        device->value[2]--;
+        if ( victim )
+        {
+                if ( !oprog_use_trigger( ch, device, victim, NULL, NULL ) )
+                {
+            act( AT_MAGIC, "$n uses $p on $N.", ch, device, victim, TO_ROOM );
+            act( AT_MAGIC, "You use $p on $N.", ch, device, victim, TO_CHAR );
+                }
+        }
+        else
+        {
+                if ( !oprog_use_trigger( ch, device, NULL, obj, NULL ) )
+                {
+            act( AT_MAGIC, "$n uses $p on $P.", ch, device, obj, TO_ROOM );
+            act( AT_MAGIC, "You use $p on $P.", ch, device, obj, TO_CHAR );
+                }
+        }
+
+        retcode = obj_cast_spell( device->value[3], device->value[0], ch, victim, obj );
+        if ( retcode == rCHAR_DIED || retcode == rBOTH_DIED )
+        {
+          bug( "do_use: char died", 0 );
+          return;
+        }
+    }
+
+
     return;
 }
 
@@ -1007,87 +1013,88 @@ void sith_penalty( CHAR_DATA *ch )
  */
 void do_fill( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     OBJ_DATA *obj;
     OBJ_DATA *source;
     sh_int    dest_item, src_item1, src_item2, src_item3, src_item4;
     int       diff;
     bool      all = FALSE;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
     /* munch optional words */
     if ( (!str_cmp( arg2, "from" ) || !str_cmp( arg2, "with" ))
-    &&    argument[0] != '\0' )
-	argument = one_argument( argument, arg2 );
+    &&    argstr.empty() == false )
+        argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
-	send_to_char( "Fill what?\n", ch );
-	return;
+        send_to_char( "Fill what?\n", ch );
+        return;
     }
 
     if ( ms_find_obj(ch) )
-	return;
+        return;
 
     if ( ( obj = get_obj_carry( ch, arg1 ) ) == NULL )
     {
-	send_to_char( "You do not have that item.\n", ch );
-	return;
+        send_to_char( "You do not have that item.\n", ch );
+        return;
     }
     else
-	dest_item = obj->item_type;
+        dest_item = obj->item_type;
 
     src_item1 = src_item2 = src_item3 = src_item4 = -1;
     switch( dest_item )
     {
-	default:
-	  act( AT_ACTION, "$n tries to fill $p... (Don't ask me how)", ch, obj, NULL, TO_ROOM );
-	  send_to_char( "You cannot fill that.\n", ch );
-	  return;
-	/* place all fillable item types here */
-	case ITEM_DRINK_CON:
-	  src_item1 = ITEM_FOUNTAIN;	src_item2 = ITEM_BLOOD;		break;
-	case ITEM_HERB_CON:
-	  src_item1 = ITEM_HERB;	src_item2 = ITEM_HERB_CON;	break;
-	case ITEM_PIPE:
-	  src_item1 = ITEM_HERB;	src_item2 = ITEM_HERB_CON;	break;
-	case ITEM_CONTAINER:
-	  src_item1 = ITEM_CONTAINER;	src_item2 = ITEM_CORPSE_NPC;
-	  src_item3 = ITEM_CORPSE_PC;	src_item4 = ITEM_CORPSE_NPC;    break;
+        default:
+          act( AT_ACTION, "$n tries to fill $p... (Don't ask me how)", ch, obj, NULL, TO_ROOM );
+          send_to_char( "You cannot fill that.\n", ch );
+          return;
+        /* place all fillable item types here */
+        case ITEM_DRINK_CON:
+          src_item1 = ITEM_FOUNTAIN;	src_item2 = ITEM_BLOOD;		break;
+        case ITEM_HERB_CON:
+          src_item1 = ITEM_HERB;	src_item2 = ITEM_HERB_CON;	break;
+        case ITEM_PIPE:
+          src_item1 = ITEM_HERB;	src_item2 = ITEM_HERB_CON;	break;
+        case ITEM_CONTAINER:
+          src_item1 = ITEM_CONTAINER;	src_item2 = ITEM_CORPSE_NPC;
+          src_item3 = ITEM_CORPSE_PC;	src_item4 = ITEM_CORPSE_NPC;    break;
     }
 
     if ( dest_item == ITEM_CONTAINER )
     {
-	if ( IS_SET(obj->value[1], CONT_CLOSED) )
-	{
-	    act( AT_PLAIN, "The $d is closed.", ch, NULL, obj->name, TO_CHAR );
-	    return;
-	}
-	if ( get_obj_weight( obj ) / obj->count
-	>=   obj->value[0] )
-	{
-	   send_to_char( "It's already full as it can be.\n", ch );
-	   return;
-	}
+        if ( IS_SET(obj->value[1], CONT_CLOSED) )
+        {
+            act( AT_PLAIN, "The $d is closed.", ch, NULL, obj->name, TO_CHAR );
+            return;
+        }
+        if ( get_obj_weight( obj ) / obj->count
+        >=   obj->value[0] )
+        {
+          send_to_char( "It's already full as it can be.\n", ch );
+          return;
+        }
     }
     else
     {
-	diff = obj->value[0] - obj->value[1];
-	if ( diff < 1 || obj->value[1] >= obj->value[0] )
-	{
-	   send_to_char( "It's already full as it can be.\n", ch );
-	   return;
-	}
+        diff = obj->value[0] - obj->value[1];
+        if ( diff < 1 || obj->value[1] >= obj->value[0] )
+        {
+          send_to_char( "It's already full as it can be.\n", ch );
+          return;
+        }
     }
 
     if ( dest_item == ITEM_PIPE
     &&   BV_IS_SET( obj->objflags, PIPE_FULLOFASH ) )
     {
-	send_to_char( "It's full of ashes, and needs to be emptied first.\n", ch );
-	return;
+        send_to_char( "It's full of ashes, and needs to be emptied first.\n", ch );
+        return;
     }
 
     if ( arg2[0] != '\0' )
@@ -1095,8 +1102,8 @@ void do_fill( CHAR_DATA *ch, char *argument )
       if ( dest_item == ITEM_CONTAINER
       && (!str_cmp( arg2, "all" ) || !str_prefix( "all.", arg2 )) )
       {
-	all = TRUE;
-	source = NULL;
+          all = TRUE;
+          source = NULL;
       }
       else
       /* This used to let you fill a pipe from an object on the ground.  Seems
@@ -1106,224 +1113,224 @@ void do_fill( CHAR_DATA *ch, char *argument )
       if ( dest_item == ITEM_PIPE )
       {
         if ( ( source = get_obj_carry( ch, arg2 ) ) == NULL )
-	{
-	   send_to_char( "You don't have that item.\n", ch );
-	   return;
-	}
-	if ( source->item_type != src_item1 && source->item_type != src_item2
-	&&   source->item_type != src_item3 &&   source->item_type != src_item4  )
-	{
-	   act( AT_PLAIN, "You cannot fill $p with $P!", ch, obj, source, TO_CHAR );
-	   return;
-	}
-      }
-      else
-      {
-	if ( ( source =  get_obj_here( ch, arg2 ) ) == NULL )
-	{
-	   send_to_char( "You cannot find that item.\n", ch );
-	   return;
-	}
+        {
+          send_to_char( "You don't have that item.\n", ch );
+          return;
+        }
+        if ( source->item_type != src_item1 && source->item_type != src_item2
+        &&   source->item_type != src_item3 &&   source->item_type != src_item4  )
+        {
+          act( AT_PLAIN, "You cannot fill $p with $P!", ch, obj, source, TO_CHAR );
+          return;
+        }
+            }
+            else
+            {
+        if ( ( source =  get_obj_here( ch, arg2 ) ) == NULL )
+        {
+          send_to_char( "You cannot find that item.\n", ch );
+          return;
+        }
       }
     }
     else
-	source = NULL;
+	      source = NULL;
 
     if ( !source && dest_item == ITEM_PIPE )
     {
-	send_to_char( "Fill it with what?\n", ch );
-	return;
+        send_to_char( "Fill it with what?\n", ch );
+        return;
     }
 
     if ( !source )
     {
-	bool      found = FALSE;
-	OBJ_DATA *src_next;
+        bool      found = FALSE;
+        OBJ_DATA *src_next;
 
-	found = FALSE;
-	separate_obj( obj );
-	for ( source = ch->in_room->first_content;
-	      source;
-	      source = src_next )
-	{
-	    src_next = source->next_content;
-	    if (dest_item == ITEM_CONTAINER)
-	    {
-		if ( !CAN_WEAR(source, ITEM_TAKE)
-		||   (IS_OBJ_STAT( source, ITEM_PROTOTYPE) && !can_take_proto(ch))
-		||    ch->carry_weight + get_obj_weight(source) > can_carry_w(ch)
-		||   (get_obj_weight(source) + get_obj_weight(obj)/obj->count)
-		    > obj->value[0] )
-		  continue;
-		if ( all && arg2[3] == '.'
-		&&  !nifty_is_name( &arg2[4], source->name ) )
-		   continue;
-		obj_from_room(source);
-		if ( source->item_type == ITEM_MONEY )
-		{
-		   ch->gold += source->value[0];
-		   extract_obj( source );
-		}
-		else
-		   obj_to_obj(source, obj);
-		found = TRUE;
-	    }
-	    else
-	    if (source->item_type == src_item1
-	    ||  source->item_type == src_item2
-	    ||  source->item_type == src_item3
-	    ||  source->item_type == src_item4 )
-	    {
-		found = TRUE;
-		break;
-	    }
-	}
-	if ( !found )
-	{
-	    switch( src_item1 )
-	    {
-		default:
-		  send_to_char( "There is nothing appropriate here!\n", ch );
-		  return;
-		case ITEM_FOUNTAIN:
-		  send_to_char( "There is no fountain or pool here!\n", ch );
-		  return;
-		case ITEM_BLOOD:
-		  send_to_char( "There is no blood pool here!\n", ch );
-		  return;
-		case ITEM_HERB_CON:
-		  send_to_char( "There are no herbs here!\n", ch );
-		  return;
-		case ITEM_HERB:
-		  send_to_char( "You cannot find any smoking herbs.\n", ch );
-		  return;
-	    }
-	}
-	if (dest_item == ITEM_CONTAINER)
-	{
-	  act( AT_ACTION, "You fill $p.", ch, obj, NULL, TO_CHAR );
-	  act( AT_ACTION, "$n fills $p.", ch, obj, NULL, TO_ROOM );
-	  return;
-	}
+        found = FALSE;
+        separate_obj( obj );
+        for ( source = ch->in_room->first_content;
+              source;
+              source = src_next )
+        {
+            src_next = source->next_content;
+            if (dest_item == ITEM_CONTAINER)
+            {
+          if ( !CAN_WEAR(source, ITEM_TAKE)
+          ||   (IS_OBJ_STAT( source, ITEM_PROTOTYPE) && !can_take_proto(ch))
+          ||    ch->carry_weight + get_obj_weight(source) > can_carry_w(ch)
+          ||   (get_obj_weight(source) + get_obj_weight(obj)/obj->count)
+              > obj->value[0] )
+            continue;
+          if ( all && arg2[3] == '.'
+          &&  !nifty_is_name( &arg2[4], source->name ) )
+            continue;
+          obj_from_room(source);
+          if ( source->item_type == ITEM_MONEY )
+          {
+            ch->gold += source->value[0];
+            extract_obj( source );
+          }
+          else
+            obj_to_obj(source, obj);
+          found = TRUE;
+            }
+            else
+            if (source->item_type == src_item1
+            ||  source->item_type == src_item2
+            ||  source->item_type == src_item3
+            ||  source->item_type == src_item4 )
+            {
+          found = TRUE;
+          break;
+            }
+        }
+        if ( !found )
+        {
+            switch( src_item1 )
+            {
+          default:
+            send_to_char( "There is nothing appropriate here!\n", ch );
+            return;
+          case ITEM_FOUNTAIN:
+            send_to_char( "There is no fountain or pool here!\n", ch );
+            return;
+          case ITEM_BLOOD:
+            send_to_char( "There is no blood pool here!\n", ch );
+            return;
+          case ITEM_HERB_CON:
+            send_to_char( "There are no herbs here!\n", ch );
+            return;
+          case ITEM_HERB:
+            send_to_char( "You cannot find any smoking herbs.\n", ch );
+            return;
+            }
+        }
+        if (dest_item == ITEM_CONTAINER)
+        {
+          act( AT_ACTION, "You fill $p.", ch, obj, NULL, TO_CHAR );
+          act( AT_ACTION, "$n fills $p.", ch, obj, NULL, TO_ROOM );
+          return;
+        }
     }
 
     if (dest_item == ITEM_CONTAINER)
     {
-	OBJ_DATA *otmp, *otmp_next;
-	char name[MAX_INPUT_LENGTH];
-	CHAR_DATA *gch;
-	char *pd;
-	bool found = FALSE;
+        OBJ_DATA *otmp, *otmp_next;
+        std::string name;
+        CHAR_DATA *gch;
+        std::string pd;
+        bool found = FALSE;
 
-	if ( source == obj )
-	{
-	    send_to_char( "You can't fill something with itself!\n", ch );
-	    return;
-	}
+        if ( source == obj )
+        {
+            send_to_char( "You can't fill something with itself!\n", ch );
+            return;
+        }
 
-	switch( source->item_type )
-	{
-	    default:	/* put something in container */
-		if ( !source->in_room	/* disallow inventory items */
-		||   !CAN_WEAR(source, ITEM_TAKE)
-		||   (IS_OBJ_STAT( source, ITEM_PROTOTYPE) && !can_take_proto(ch))
-		||    ch->carry_weight + get_obj_weight(source) > can_carry_w(ch)
-		||   (get_obj_weight(source) + get_obj_weight(obj)/obj->count)
-		    > obj->value[0] )
-		{
-		    send_to_char( "You can't do that.\n", ch );
-		    return;
-		}
-		separate_obj( obj );
-		act( AT_ACTION, "You take $P and put it inside $p.", ch, obj, source, TO_CHAR );
-		act( AT_ACTION, "$n takes $P and puts it inside $p.", ch, obj, source, TO_ROOM );
-		obj_from_room(source);
-		obj_to_obj(source, obj);
-		break;
-	    case ITEM_MONEY:
-		send_to_char( "You can't do that... yet.\n", ch );
-		break;
-	    case ITEM_CORPSE_PC:
-		if ( IS_NPC(ch) )
-		{
-		    send_to_char( "You can't do that.\n", ch );
-		    return;
-		}
-		
-		    pd = source->short_descr;
-		    pd = one_argument( pd, name );
-		    pd = one_argument( pd, name );
-		    pd = one_argument( pd, name );
-		    pd = one_argument( pd, name );
+        switch( source->item_type )
+        {
+          default:	/* put something in container */
+              if ( !source->in_room	/* disallow inventory items */
+              ||   !CAN_WEAR(source, ITEM_TAKE)
+              ||   (IS_OBJ_STAT( source, ITEM_PROTOTYPE) && !can_take_proto(ch))
+              ||    ch->carry_weight + get_obj_weight(source) > can_carry_w(ch)
+              ||   (get_obj_weight(source) + get_obj_weight(obj)/obj->count)
+                  > obj->value[0] )
+              {
+                  send_to_char( "You can't do that.\n", ch );
+                  return;
+              }
+              separate_obj( obj );
+              act( AT_ACTION, "You take $P and put it inside $p.", ch, obj, source, TO_CHAR );
+              act( AT_ACTION, "$n takes $P and puts it inside $p.", ch, obj, source, TO_ROOM );
+              obj_from_room(source);
+              obj_to_obj(source, obj);
+              break;
+                case ITEM_MONEY:
+              send_to_char( "You can't do that... yet.\n", ch );
+              break;
+                case ITEM_CORPSE_PC:
+              if ( IS_NPC(ch) )
+              {
+                  send_to_char( "You can't do that.\n", ch );
+                  return;
+              }
+              
+              pd = source->short_descr;
+              pd = one_argument( pd, name );
+              pd = one_argument( pd, name );
+              pd = one_argument( pd, name );
+              pd = one_argument( pd, name );
 
-		    if ( str_cmp( name, ch->name ) && !IS_IMMORTAL(ch) )
-		    {
-			bool fGroup;
+              if ( str_cmp( name, ch->name ) && !IS_IMMORTAL(ch) )
+              {
+                  bool fGroup;
 
-			fGroup = FALSE;
-			for ( gch = first_char; gch; gch = gch->next )
-			{
-			    if ( !IS_NPC(gch)
-			    &&   is_same_group( ch, gch )
-			    &&   !str_cmp( name, gch->name ) )
-			    {
-				fGroup = TRUE;
-				break;
-			    }
-			}
-			if ( !fGroup )
-			{
-			    send_to_char( "That's someone else's corpse.\n", ch );
-			    return;
-			}
-		     }
-		      
-	    case ITEM_CONTAINER:
-		if ( source->item_type == ITEM_CONTAINER  /* don't remove */
-		&&   IS_SET(source->value[1], CONT_CLOSED) )
-		{
-		    act( AT_PLAIN, "The $d is closed.", ch, NULL, source->name, TO_CHAR );
-		    return;
-		}
-	    case ITEM_DROID_CORPSE:
-	    case ITEM_CORPSE_NPC:
-		if ( (otmp=source->first_content) == NULL )
-		{
-		    send_to_char( "It's empty.\n", ch );
-		    return;
-		}
-		separate_obj( obj );
-		for ( ; otmp; otmp = otmp_next )
-		{
-		    otmp_next = otmp->next_content;
+                  fGroup = FALSE;
+                  for ( gch = first_char; gch; gch = gch->next )
+                  {
+                      if ( !IS_NPC(gch)
+                      &&   is_same_group( ch, gch )
+                      &&   !str_cmp( name, gch->name ) )
+                      {
+                    fGroup = TRUE;
+                    break;
+                      }
+                  }
+                  if ( !fGroup )
+                  {
+                      send_to_char( "That's someone else's corpse.\n", ch );
+                      return;
+                  }
+              }
+                
+          case ITEM_CONTAINER:
+            if ( source->item_type == ITEM_CONTAINER  /* don't remove */
+            &&   IS_SET(source->value[1], CONT_CLOSED) )
+            {
+                act( AT_PLAIN, "The $d is closed.", ch, NULL, source->name, TO_CHAR );
+                return;
+            }
+              case ITEM_DROID_CORPSE:
+              case ITEM_CORPSE_NPC:
+            if ( (otmp=source->first_content) == NULL )
+            {
+                send_to_char( "It's empty.\n", ch );
+                return;
+            }
+            separate_obj( obj );
+            for ( ; otmp; otmp = otmp_next )
+            {
+                otmp_next = otmp->next_content;
 
-		    if ( !CAN_WEAR(otmp, ITEM_TAKE)
-		    ||   (IS_OBJ_STAT( otmp, ITEM_PROTOTYPE) && !can_take_proto(ch))
-		    ||    ch->carry_number + otmp->count > can_carry_n(ch)
-		    ||    ch->carry_weight + get_obj_weight(otmp) > can_carry_w(ch)
-		    ||   (get_obj_weight(source) + get_obj_weight(obj)/obj->count)
-			> obj->value[0] )
-			continue;
-		    obj_from_obj(otmp);
-		    obj_to_obj(otmp, obj);
-		    found = TRUE;
-		}
-		if ( found )
-		{
-		   act( AT_ACTION, "You fill $p from $P.", ch, obj, source, TO_CHAR );
-		   act( AT_ACTION, "$n fills $p from $P.", ch, obj, source, TO_ROOM );
-		}
-		else
-		   send_to_char( "There is nothing appropriate in there.\n", ch );
-		break;
-	}
-	return;
+                if ( !CAN_WEAR(otmp, ITEM_TAKE)
+                ||   (IS_OBJ_STAT( otmp, ITEM_PROTOTYPE) && !can_take_proto(ch))
+                ||    ch->carry_number + otmp->count > can_carry_n(ch)
+                ||    ch->carry_weight + get_obj_weight(otmp) > can_carry_w(ch)
+                ||   (get_obj_weight(source) + get_obj_weight(obj)/obj->count)
+              > obj->value[0] )
+              continue;
+                obj_from_obj(otmp);
+                obj_to_obj(otmp, obj);
+                found = TRUE;
+            }
+            if ( found )
+            {
+              act( AT_ACTION, "You fill $p from $P.", ch, obj, source, TO_CHAR );
+              act( AT_ACTION, "$n fills $p from $P.", ch, obj, source, TO_ROOM );
+            }
+            else
+              send_to_char( "There is nothing appropriate in there.\n", ch );
+            break;
+        }
+        return;
     }
 
     if ( source->value[1] < 1 )
     {
-	send_to_char( "There's none left!\n", ch );
-	return;
+        send_to_char( "There's none left!\n", ch );
+        return;
     }
     if ( source->count > 1 && source->item_type != ITEM_FOUNTAIN )
       separate_obj( source );
@@ -1331,98 +1338,99 @@ void do_fill( CHAR_DATA *ch, char *argument )
 
     switch( source->item_type )
     {
-	default:
-	  bug( "do_fill: got bad item type: %d", source->item_type );
-	  send_to_char( "Something went wrong...\n", ch );
-	  return;
-	case ITEM_FOUNTAIN:
-	  if ( obj->value[1] != 0 && obj->value[2] != 0 )
-	  {
-	     send_to_char( "There is already another liquid in it.\n", ch );
-	     return;
-	  }
-	  obj->value[2] = 0;
-	  obj->value[1] = obj->value[0];
-	  act( AT_ACTION, "You fill $p from $P.", ch, obj, source, TO_CHAR );
-	  act( AT_ACTION, "$n fills $p from $P.", ch, obj, source, TO_ROOM );
-	  return;
-	case ITEM_BLOOD:
-	  if ( obj->value[1] != 0 && obj->value[2] != 13 )
-	  {
-	     send_to_char( "There is already another liquid in it.\n", ch );
-	     return;
-	  }
-	  obj->value[2] = 13;
-	  if ( source->value[1] < diff )
-	    diff = source->value[1];
-	  obj->value[1] += diff;
-	  act( AT_ACTION, "You fill $p from $P.", ch, obj, source, TO_CHAR );
-	  act( AT_ACTION, "$n fills $p from $P.", ch, obj, source, TO_ROOM );
-	  if ( (source->value[1] -= diff) < 1 )
-	  {
- 	     extract_obj( source );
-	     make_bloodstain( ch );
-	  }
-	  return;
-	case ITEM_HERB:
-	  if ( obj->value[1] != 0 && obj->value[2] != source->value[2] )
-	  {
-	     send_to_char( "There is already another type of herb in it.\n", ch );
-	     return;
-	  }
-	  obj->value[2] = source->value[2];
-	  if ( source->value[1] < diff )
-	    diff = source->value[1];
-	  obj->value[1] += diff;
-	  act( AT_ACTION, "You fill $p with $P.", ch, obj, source, TO_CHAR );
-	  act( AT_ACTION, "$n fills $p with $P.", ch, obj, source, TO_ROOM );
-	  if ( (source->value[1] -= diff) < 1 )
- 	     extract_obj( source );
-	  return;
-	case ITEM_HERB_CON:
-	  if ( obj->value[1] != 0 && obj->value[2] != source->value[2] )
-	  {
-	     send_to_char( "There is already another type of herb in it.\n", ch );
-	     return;
-	  }
-	  obj->value[2] = source->value[2];
-	  if ( source->value[1] < diff )
-	    diff = source->value[1];
-	  obj->value[1] += diff;
-	  source->value[1] -= diff;
-	  act( AT_ACTION, "You fill $p from $P.", ch, obj, source, TO_CHAR );
-	  act( AT_ACTION, "$n fills $p from $P.", ch, obj, source, TO_ROOM );
-	  return;
-	case ITEM_DRINK_CON:
-	  if ( obj->value[1] != 0 && obj->value[2] != source->value[2] )
-	  {
-	     send_to_char( "There is already another liquid in it.\n", ch );
-	     return;
-	  }
-	  obj->value[2] = source->value[2];
-	  if ( source->value[1] < diff )
-	    diff = source->value[1];
-	  obj->value[1] += diff;
-	  source->value[1] -= diff;
-	  act( AT_ACTION, "You fill $p from $P.", ch, obj, source, TO_CHAR );
-	  act( AT_ACTION, "$n fills $p from $P.", ch, obj, source, TO_ROOM );
-	  return;
+      default:
+        bug( "do_fill: got bad item type: %d", source->item_type );
+        send_to_char( "Something went wrong...\n", ch );
+        return;
+      case ITEM_FOUNTAIN:
+        if ( obj->value[1] != 0 && obj->value[2] != 0 )
+        {
+          send_to_char( "There is already another liquid in it.\n", ch );
+          return;
+        }
+        obj->value[2] = 0;
+        obj->value[1] = obj->value[0];
+        act( AT_ACTION, "You fill $p from $P.", ch, obj, source, TO_CHAR );
+        act( AT_ACTION, "$n fills $p from $P.", ch, obj, source, TO_ROOM );
+        return;
+      case ITEM_BLOOD:
+        if ( obj->value[1] != 0 && obj->value[2] != 13 )
+        {
+          send_to_char( "There is already another liquid in it.\n", ch );
+          return;
+        }
+        obj->value[2] = 13;
+        if ( source->value[1] < diff )
+          diff = source->value[1];
+        obj->value[1] += diff;
+        act( AT_ACTION, "You fill $p from $P.", ch, obj, source, TO_CHAR );
+        act( AT_ACTION, "$n fills $p from $P.", ch, obj, source, TO_ROOM );
+        if ( (source->value[1] -= diff) < 1 )
+        {
+          extract_obj( source );
+          make_bloodstain( ch );
+        }
+        return;
+      case ITEM_HERB:
+        if ( obj->value[1] != 0 && obj->value[2] != source->value[2] )
+        {
+          send_to_char( "There is already another type of herb in it.\n", ch );
+          return;
+        }
+        obj->value[2] = source->value[2];
+        if ( source->value[1] < diff )
+          diff = source->value[1];
+        obj->value[1] += diff;
+        act( AT_ACTION, "You fill $p with $P.", ch, obj, source, TO_CHAR );
+        act( AT_ACTION, "$n fills $p with $P.", ch, obj, source, TO_ROOM );
+        if ( (source->value[1] -= diff) < 1 )
+          extract_obj( source );
+        return;
+      case ITEM_HERB_CON:
+        if ( obj->value[1] != 0 && obj->value[2] != source->value[2] )
+        {
+          send_to_char( "There is already another type of herb in it.\n", ch );
+          return;
+        }
+        obj->value[2] = source->value[2];
+        if ( source->value[1] < diff )
+          diff = source->value[1];
+        obj->value[1] += diff;
+        source->value[1] -= diff;
+        act( AT_ACTION, "You fill $p from $P.", ch, obj, source, TO_CHAR );
+        act( AT_ACTION, "$n fills $p from $P.", ch, obj, source, TO_ROOM );
+        return;
+      case ITEM_DRINK_CON:
+        if ( obj->value[1] != 0 && obj->value[2] != source->value[2] )
+        {
+          send_to_char( "There is already another liquid in it.\n", ch );
+          return;
+        }
+        obj->value[2] = source->value[2];
+        if ( source->value[1] < diff )
+          diff = source->value[1];
+        obj->value[1] += diff;
+        source->value[1] -= diff;
+        act( AT_ACTION, "You fill $p from $P.", ch, obj, source, TO_CHAR );
+        act( AT_ACTION, "$n fills $p from $P.", ch, obj, source, TO_ROOM );
+        return;
     }
 }
 
 void do_drink( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string argstr = argument;
     OBJ_DATA *obj;
     int amount;
     int liquid;
 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
     /* munch optional words */
-    if ( !str_cmp( arg, "from" ) && argument[0] != '\0' )
-	argument = one_argument( argument, arg );
+    if ( !str_cmp( arg, "from" ) && !argstr.empty() )
+	      argstr = one_argument( argstr, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
       for ( obj = ch->in_room->first_content; obj; obj = obj->next_content )
           if ( (obj->item_type == ITEM_FOUNTAIN)
@@ -1437,11 +1445,11 @@ void do_drink( CHAR_DATA *ch, char *argument )
     }
     else
     {
-	if ( ( obj = get_obj_here( ch, arg ) ) == NULL )
-	{
-	    send_to_char( "You can't find it.\n", ch );
-	    return;
-	}
+        if ( ( obj = get_obj_here( ch, arg ) ) == NULL )
+        {
+            send_to_char( "You can't find it.\n", ch );
+            return;
+        }
     }
 
     if ( obj->count > 1 && obj->item_type != ITEM_FOUNTAIN )
@@ -1782,17 +1790,18 @@ void do_quaff( CHAR_DATA *ch, char *argument )
 
 void do_recite( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     OBJ_DATA *scroll;
     OBJ_DATA *obj;
     ch_ret    retcode;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
 	send_to_char( "Activate what?\n", ch );
 	return;
@@ -1829,7 +1838,7 @@ void do_recite( CHAR_DATA *ch, char *argument )
     }
 
     obj = NULL;
-    if ( arg2[0] == '\0' )
+    if ( arg2.empty() )
 	victim = ch;
     else
     {
@@ -2280,11 +2289,11 @@ void pullorpush( CHAR_DATA *ch, OBJ_DATA *obj, bool pull )
 
 void do_pull( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Pull what?\n", ch );
 	return;
@@ -2295,8 +2304,8 @@ void do_pull( CHAR_DATA *ch, char *argument )
 
     if ( ( obj = get_obj_here( ch, arg ) ) == NULL )
     {
-	act( AT_PLAIN, "I see no $T here.", ch, NULL, arg, TO_CHAR );
-	return;
+      act( AT_PLAIN, "I see no $T here.", ch, NULL, arg, TO_CHAR );
+      return;
     }
 
     pullorpush( ch, obj, TRUE );
@@ -2304,23 +2313,23 @@ void do_pull( CHAR_DATA *ch, char *argument )
 
 void do_push( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
-	send_to_char( "Push what?\n", ch );
-	return;
+        send_to_char( "Push what?\n", ch );
+        return;
     }
 
     if ( ms_find_obj(ch) )
-	return;
+        return;
 
     if ( ( obj = get_obj_here( ch, arg ) ) == NULL )
     {
-	act( AT_PLAIN, "I see no $T here.", ch, NULL, arg, TO_CHAR );
-	return;
+        act( AT_PLAIN, "I see no $T here.", ch, NULL, arg, TO_CHAR );
+        return;
     }
 
     pullorpush( ch, obj, FALSE );
@@ -2330,10 +2339,10 @@ void do_push( CHAR_DATA *ch, char *argument )
 void do_tamp( CHAR_DATA *ch, char *argument )
 {
     OBJ_DATA *pipe;
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Tamp what?\n", ch );
 	return;
@@ -2365,10 +2374,10 @@ void do_tamp( CHAR_DATA *ch, char *argument )
 void do_smoke( CHAR_DATA *ch, char *argument )
 {
     OBJ_DATA *pipe;
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Smoke what?\n", ch );
 	return;
@@ -2430,10 +2439,10 @@ void do_smoke( CHAR_DATA *ch, char *argument )
 void do_light( CHAR_DATA *ch, char *argument )
 {
     OBJ_DATA *pipe;
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Light what?\n", ch );
 	return;
@@ -2471,15 +2480,16 @@ void do_light( CHAR_DATA *ch, char *argument )
 void do_empty( CHAR_DATA *ch, char *argument )
 {
     OBJ_DATA *obj;
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
-    if ( !str_cmp( arg2, "into" ) && argument[0] != '\0' )
-	argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
+    if ( !str_cmp( arg2, "into" ) && !argstr.empty() )
+	    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
 	send_to_char( "Empty what?\n", ch );
 	return;
@@ -2529,7 +2539,7 @@ void do_empty( CHAR_DATA *ch, char *argument )
 		send_to_char( "It's already empty.\n", ch );
 		return;
 	  }
-	  if ( arg2[0] == '\0' )
+	  if ( arg2.empty() )
 	  {
 		if ( BV_IS_SET( ch->in_room->room_flags, ROOM_NODROP )
 		|| ( !IS_NPC(ch) &&  BV_IS_SET( ch->act, PLR_LITTERBUG ) ) )
@@ -2778,16 +2788,17 @@ void do_hail( CHAR_DATA *ch , char *argument )
     long gold = 1;
     bool steal = FALSE;
     ROOM_INDEX_DATA *room;
-  char arg[MAX_INPUT_LENGTH];
-  char arg2[MAX_INPUT_LENGTH];
-  char buf[MAX_STRING_LENGTH];
+  std::string arg;
+  std::string arg2;
+  std::string argstr = argument;
+  std::string buf;
   SHIP_DATA *ship;
   SHIP_DATA *target = NULL;
 
-  argument = one_argument( argument, arg );
-  SPRINTF ( arg2, "%s", argument);
+  argstr = one_argument( argstr, arg );
+  arg2 =  argstr;
 
-  if ( arg[0] != '\0' )
+  if ( !arg.empty() )
 {
   if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
 
@@ -2796,7 +2807,7 @@ void do_hail( CHAR_DATA *ch , char *argument )
     return;
   }
 
-  if ( arg2[0] == '\0' )
+  if ( arg2.empty() )
   {
     send_to_char( "&RUsage: hail <ship> <message>\n&w", ch);
     return;
@@ -2832,20 +2843,9 @@ void do_hail( CHAR_DATA *ch , char *argument )
       return;
     }
 
-    SPRINTF( buf , "You hail the " );
-    STRAPP( buf , "%s", target->name );
-    STRAPP( buf , ": &C" );
-    STRAPP( buf , "%s", arg2 );
-    STRAPP( buf , "&w\n" );
-
+    buf = "You hail the " + std::string(target->name) + ": &C" + arg2 + "&w\n";
     echo_to_ship( AT_WHITE , ship , buf);
-
-
-    SPRINTF( buf , "%s", ship->name );
-    STRAPP( buf , " hails you: &C" );
-    STRAPP( buf , "%s", arg2 );
-    STRAPP( buf , "&w\n" );
-
+    buf = "The " + std::string(ship->name) + " hails you: &C" + arg2 + "&w\n";
     echo_to_ship( AT_WHITE , target , buf);
 
     return;
@@ -2855,7 +2855,7 @@ void do_hail( CHAR_DATA *ch , char *argument )
     if ( !ch->in_room )
        return;
 
-    if ( ch->position < POS_FIGHTING )
+    if ( ch->position == POS_FIGHTING )
     {
        send_to_char( "You might want to stop fighting first!\n", ch );
        return;
@@ -2952,7 +2952,7 @@ void do_hail( CHAR_DATA *ch , char *argument )
 
 void do_train( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *mob;
     bool tfound = FALSE;
     bool successful = FALSE;
@@ -2960,13 +2960,13 @@ void do_train( CHAR_DATA *ch, char *argument )
     if ( IS_NPC(ch) )
 	return;
 
-    SPRINTF( arg, "%s", argument );    
+    arg = argument;
     
     switch( ch->substate )
     { 
     	default:
 
-	    	if ( arg[0] == '\0' )
+	    	if ( arg.empty() )
                 {
                    send_to_char( "Train what?\n", ch );
 	           send_to_char( "\nChoices: strength, intelligence, wisdom, dexterity, constitution or charisma\n", ch );
@@ -3070,7 +3070,7 @@ void do_train( CHAR_DATA *ch, char *argument )
     	case 1:
     		if ( !ch->dest_buf )
     		   return;
-    		SPRINTF(arg, "%s", (const char* ) ch->dest_buf);
+    		arg = (const char* ) ch->dest_buf;
     		STR_DISPOSE( ch->dest_buf);
     		break;
 
@@ -3219,17 +3219,18 @@ if (strcmp(pwdhash, ch->pcdata->pwd))
 
 void do_bank( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char arg3[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string argstr = argument;
     long amount = 0;
     CHAR_DATA *victim;
     OBJ_DATA *obj;
     bool ch_comlink = FALSE;
 
-    argument = one_argument( argument , arg1 );
-    argument = one_argument( argument , arg2 );
-    argument = one_argument( argument , arg3 );
+    argstr = one_argument( argstr , arg1 );
+    argstr = one_argument( argstr , arg2 );
+    argstr = one_argument( argstr , arg3 );
 
     if ( IS_NPC(ch) || !ch->pcdata )
        return;
@@ -3258,14 +3259,14 @@ void do_bank( CHAR_DATA *ch, char *argument )
         }
       }
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
        send_to_char( "Usage: BANK <deposit|withdraw|balance|transfer> [amount] [recievee]\n", ch );
        return;
     }
 
-    if (arg2[0] != '\0' )
-        amount = atoi(arg2);
+    if ( !arg2.empty() )
+        amount = strtoi(arg2);
 
     if ( !str_prefix( arg1 , "deposit" ) )
     {
@@ -3360,7 +3361,7 @@ void do_bank( CHAR_DATA *ch, char *argument )
         
 }
 
-bool check_bad_name( char *name ){
+bool check_bad_name( const std::string& name ){
   /* Problems with the badname snippet? Contact kre@iname.com */  FILE *fp;
   char *ln;
   if ( (fp = fopen(BAD_NAME_FILE,"r")) == NULL) {
@@ -3377,20 +3378,23 @@ bool check_bad_name( char *name ){
       ln = fread_string_nohash(fp);
       if (is_name(name,ln))
       {
+        STR_DISPOSE(ln);
         FCLOSE(fp);
         return TRUE;
       }
       if (is_name("$",ln))
       {
+        STR_DISPOSE(ln);
         FCLOSE(fp);
         return FALSE;
       }
     }
+    STR_DISPOSE(ln);
     FCLOSE(fp);
     return FALSE;
 }
 
-int add_bad_name(char *name)
+int add_bad_name(const std::string& name)
 {
   FILE *fp;
   char *ln;
@@ -3414,8 +3418,9 @@ int add_bad_name(char *name)
 
   fsetpos(fp, &pos -2);
   fsetpos(fp, &pos);
-  fprintf(fp,"%s~\n",name);
+  fprintf(fp,"%s~\n",name.c_str());
   fprintf(fp,"$~");
+  STR_DISPOSE(ln);
   FCLOSE(fp);
   return 1;
 }
@@ -3670,14 +3675,15 @@ void do_aquest(CHAR_DATA *ch, char *argument)
     OBJ_INDEX_DATA *obj1, *obj2, *obj3, *obj4, *obj5;
     OBJ_INDEX_DATA *questinfoobj;
     MOB_INDEX_DATA *questinfo;
-    char buf [MAX_STRING_LENGTH];
-    char arg1 [MAX_INPUT_LENGTH];
-    char arg2 [MAX_INPUT_LENGTH];
+    std::string buf;
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
 
-    argument = one_argument(argument, arg1);
-    argument = one_argument(argument, arg2);
+    argstr = one_argument(argstr, arg1);
+    argstr = one_argument(argstr, arg2);
 
-    if (!strcmp(arg1, "info"))
+    if (!str_cmp(arg1, "info"))
     {
         if (BV_IS_SET(ch->act, PLR_QUESTOR))
       {
@@ -3710,34 +3716,30 @@ void do_aquest(CHAR_DATA *ch, char *argument)
           send_to_char("You aren't currently on a quest.\n",ch);
 	    return;
     }
-    if (!strcmp(arg1, "points"))
+    if (!str_cmp(arg1, "points"))
     {
-	SPRINTF(buf, "You have %d quest points.\n",ch->questpoints);
-	send_to_char(buf, ch);
-	return;
+        send_to_char(str_printf("You have %d quest points.\n",ch->questpoints), ch);
+        return;
     }
-    else if (!strcmp(arg1, "time"))
+    else if (!str_cmp(arg1, "time"))
     {
         if (!BV_IS_SET(ch->act, PLR_QUESTOR))
-	{
-	    send_to_char("You aren't currently on a quest.\n",ch);
-	    if (ch->nextquest > 1)
-	    {
-		SPRINTF(buf, "There are %d minutes remaining until you can go on another quest.\n",ch->nextquest);
-		send_to_char(buf, ch);
-	    }
-	    else if (ch->nextquest == 1)
-	    {
-		SPRINTF(buf, "There is less than a minute remaining until you can go on another quest.\n");
-		send_to_char(buf, ch);
-	    }
-	}
+        {
+            send_to_char("You aren't currently on a quest.\n",ch);
+            if (ch->nextquest > 1)
+            {
+          send_to_char(str_printf("There are %d minutes remaining until you can go on another quest.\n",ch->nextquest), ch);
+            }
+            else if (ch->nextquest == 1)
+            {
+          send_to_char("There is less than a minute remaining until you can go on another quest.\n", ch);
+            }
+        }
         else if (ch->countdown > 0)
         {
-	    SPRINTF(buf, "Time left for current quest: %d\n",ch->countdown);
-	    send_to_char(buf, ch);
-	}
-	return;
+            send_to_char(str_printf("Time left for current quest: %d\n",ch->countdown), ch);
+        }
+        return;
     }
 
 /* Checks for a character in the room with spec_questmaster set. This special
@@ -3746,8 +3748,9 @@ void do_aquest(CHAR_DATA *ch, char *argument)
 
     for ( questman = ch->in_room->first_person; questman != NULL; questman = questman->next_in_room )
     {
-	if (!IS_NPC(questman)) continue;
-        if (questman->spec_fun == spec_lookup( "spec_questmaster" )) break;
+        if (!IS_NPC(questman)) continue;
+            if (questman->spec_fun == spec_lookup( "spec_questmaster" )) 
+                break;
     }
 
     if (questman == NULL || questman->spec_fun != spec_lookup( "spec_questmaster" ))
@@ -3778,298 +3781,274 @@ void do_aquest(CHAR_DATA *ch, char *argument)
 
     if ( obj1 == NULL || obj2 == NULL || obj3 == NULL || obj4 == NULL || obj5 == NULL )
     {
-     bug("Error loading quest objects. Char: ", ch->name);
-     return;
+      bug("Error loading quest objects. Char: ", ch->name);
+      return;
     }
 
-    if (!strcmp(arg1, "list"))
+    if (!str_cmp(arg1, "list"))
     {
         act(AT_PLAIN,"$n asks $N for a list of quest items.",ch,NULL,questman,TO_ROOM); 
-	act(AT_PLAIN,"You ask $N for a list of quest items.",ch,NULL,questman,TO_CHAR);
-	SPRINTF(buf, "Current Quest Items available for Purchase:\n\n\
-[1] %dqp.......%s\n\
-[2] %dqp.......%s\n\
-[3] %dqp........%s\n\
-[4] %dqp........%s\n\
-[5] %dqp......%s\n\
-[6] 500qp........100,000 gold pieces\n\
-[7] 500qp........10 health points\n",
-QUEST_VALUE1, obj1->short_descr, QUEST_VALUE2, obj2->short_descr, 
-QUEST_VALUE3, obj3->short_descr, QUEST_VALUE4, obj4->short_descr, 
-QUEST_VALUE5, obj5->short_descr);
+        act(AT_PLAIN,"You ask $N for a list of quest items.",ch,NULL,questman,TO_CHAR);
+        buf = str_printf("Current Quest Items available for Purchase:\n\n\
+          [1] %dqp.......%s\n\
+          [2] %dqp.......%s\n\
+          [3] %dqp........%s\n\
+          [4] %dqp........%s\n\
+          [5] %dqp......%s\n\
+          [6] 500qp........100,000 gold pieces\n\
+          [7] 500qp........10 health points\n",
+          QUEST_VALUE1, obj1->short_descr, QUEST_VALUE2, obj2->short_descr, 
+          QUEST_VALUE3, obj3->short_descr, QUEST_VALUE4, obj4->short_descr, 
+          QUEST_VALUE5, obj5->short_descr);
 
-	send_to_char(buf, ch);
-	return;
+          send_to_char(buf, ch);
+          return;
     }
 
-    else if (!strcmp(arg1, "buy"))
+    else if (!str_cmp(arg1, "buy"))
     {
-	if (arg2[0] == '\0')
-	{
-	    send_to_char("To buy an item, type 'QUEST BUY <item>'.\n",ch);
-	    return;
-	}
+        if (arg2.empty())
+        {
+            send_to_char("To buy an item, type 'QUEST BUY <item>'.\n",ch);
+            return;
+        }
         if (is_name(arg2, "1"))
-	{
+        {
             if (ch->questpoints >= QUEST_VALUE1)
-	    {
+            {
                 ch->questpoints -= QUEST_VALUE1;
-	        obj = create_object(get_obj_index(QUEST_ITEM1),ch->top_level);
-	    }
-	    else
-	    {
-		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
-		do_say(questman,buf);
-		return;
-	    }
-	}
+                obj = create_object(get_obj_index(QUEST_ITEM1),ch->top_level);
+            }
+            else
+            {
+                do_say(questman,(char*)str_printf("Sorry, %s, but you don't have enough quest points for that.",ch->name).c_str());
+                return;
+            }
+        }
         else if (is_name(arg2, "2"))
-	{
+        {
             if (ch->questpoints >= QUEST_VALUE2)
-	    {
+            {
                 ch->questpoints -= QUEST_VALUE2;
-	        obj = create_object(get_obj_index(QUEST_ITEM2),ch->top_level);
-	    }
-	    else
-	    {
-		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
-		do_say(questman,buf);
-		return;
-	    }
-	}
+                obj = create_object(get_obj_index(QUEST_ITEM2),ch->top_level);
+            }
+            else
+            {
+                do_say(questman,(char*)str_printf("Sorry, %s, but you don't have enough quest points for that.",ch->name).c_str());
+                return;
+            }
+        }
         else if (is_name(arg2, "3"))
-	{
+        {
             if (ch->questpoints >= QUEST_VALUE3)
-	    {
+            {
                 ch->questpoints -= QUEST_VALUE3;
-	        obj = create_object(get_obj_index(QUEST_ITEM3),ch->top_level);
-	    }
-	    else
-	    {
-		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
-		do_say(questman,buf);
-		return;
-	    }
-	}
+                obj = create_object(get_obj_index(QUEST_ITEM3),ch->top_level);
+            }
+            else
+            {
+                do_say(questman,(char*)str_printf("Sorry, %s, but you don't have enough quest points for that.",ch->name).c_str());
+                return;
+            }
+        }
         else if (is_name(arg2, "4"))
-	{
+        {
             if (ch->questpoints >= QUEST_VALUE4)
-	    {
+            {
                 ch->questpoints -= QUEST_VALUE4;
-	        obj = create_object(get_obj_index(QUEST_ITEM4),ch->top_level);
-	    }
-	    else
-	    {
-		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
-		do_say(questman,buf);
-		return;
-	    }
-	}
+                obj = create_object(get_obj_index(QUEST_ITEM4),ch->top_level);
+            }
+            else
+            {
+                do_say(questman,(char*)str_printf("Sorry, %s, but you don't have enough quest points for that.",ch->name).c_str());
+                return;
+            }
+        }
         else if (is_name(arg2, "5"))
-	{
+        {
             if (ch->questpoints >= QUEST_VALUE5)
-	    {
+            {
                 ch->questpoints -= QUEST_VALUE5;
-	        obj = create_object(get_obj_index(QUEST_ITEM5),ch->top_level);
-	    }
-	    else
-	    {
-		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
-		do_say(questman,buf);
-		return;
-	    }
-	}
+                obj = create_object(get_obj_index(QUEST_ITEM5),ch->top_level);
+            }
+            else
+            {
+                do_say(questman,(char*)str_printf("Sorry, %s, but you don't have enough quest points for that.",ch->name).c_str());
+                return;
+            }
+        }
         else if (is_name(arg2, "6"))
-	{
-	    if (ch->questpoints >= 500)
-	    {
-		ch->questpoints -= 500;
+        {
+            if (ch->questpoints >= 500)
+            {
+                ch->questpoints -= 500;
                 ch->gold += 100000;
                 act(AT_MAGIC,"$N gives a pouch of gold to $n.", ch, NULL, 
-			questman, TO_ROOM );
+                  questman, TO_ROOM );
                 act(AT_MAGIC,"$N hands you a pouch of gold pieces.",   ch, NULL, 
-			questman, TO_CHAR );
-	        return;
-	    }
-	    else
-	    {
-		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
-		do_say(questman,buf);
-		return;
-	    }
-	}
+                  questman, TO_CHAR );
+                return;
+            }
+            else
+            {
+                do_say(questman,(char*)str_printf("Sorry, %s, but you don't have enough quest points for that.",ch->name).c_str());
+                return;
+            }
+        }
         else if (is_name(arg2, "7"))
-	{
-	    if (ch->questpoints >= 750)
-	    {
-		ch->questpoints -= 750;
+        {
+            if (ch->questpoints >= 750)
+            {
+                ch->questpoints -= 750;
                 ch->max_hit += 10;
                 act(AT_MAGIC,"$N waves his hand over $n. $n looks stronger.", ch, NULL, 
-			questman, TO_ROOM );
+                  questman, TO_ROOM );
                 act(AT_MAGIC,"$N waves his hand over you. You feel stronger.",   ch, NULL, 
-			questman, TO_CHAR );
-        gmcp_evt_char_vitals(ch);
-	        return;
-	    }
-	    else
-	    {
-		SPRINTF(buf, "Sorry, %s, but you don't have enough quest points for that.",ch->name);
-		do_say(questman,buf);
-		return;
-	    }
-	}
-	else
-	{
-	    SPRINTF(buf, "I don't have that item, %s.",ch->name);
-	    do_say(questman, buf);
-	}
-	if (obj != NULL)
-	{
+                  questman, TO_CHAR );
+                gmcp_evt_char_vitals(ch);
+                return;
+            }
+            else
+            {
+                do_say(questman,(char*)str_printf("Sorry, %s, but you don't have enough quest points for that.",ch->name).c_str());
+                return;
+            }
+        }
+        else
+        {
+            do_say(questman,(char*)str_printf("I don't have that item, %s.",ch->name).c_str());
+        }
+        if (obj != NULL)
+        {
             act(AT_PLAIN,"$N gives something to $n.", ch, obj, questman, TO_ROOM );
             act(AT_PLAIN,"$N gives you your reward.",   ch, obj, questman, TO_CHAR );
-	    obj_to_char(obj, ch);
-	}
-	return;
+            obj_to_char(obj, ch);
+        }
+        return;
     }
-    else if (!strcmp(arg1, "request"))
+    else if (!str_cmp(arg1, "request"))
     {
 
-            SPRINTF(buf, "Do to extreme stupidity of its system, the quest system has been removed\nThere are other ways to gain quest points now!");
-	    do_say(questman, buf);
-	    return;
+        do_say(questman, "Due to extreme stupidity of its system, the quest system has been removed\nThere are other ways to gain quest points now!");
+        return;
 
         act(AT_PLAIN,"$n asks $N for a quest.", ch, NULL, questman, TO_ROOM); 
-	act(AT_PLAIN,"You ask $N for a quest.",ch, NULL, questman, TO_CHAR);
+	      act(AT_PLAIN,"You ask $N for a quest.",ch, NULL, questman, TO_CHAR);
         if (BV_IS_SET(ch->act, PLR_QUESTOR))
-	{
-            SPRINTF(buf, "But you're already on a quest!\nBetter hurry up and finish it!");
-	    do_say(questman, buf);
-	    return;
-	}
-	if (ch->nextquest > 0)
-	{
-	    SPRINTF(buf, "You're very brave, %s, but let someone else have a chance.",ch->name);
-	    do_say(questman, buf);
-	    SPRINTF(buf, "Come back later.");
-	    do_say(questman, buf);
-	    return;
-	}
+        {
+                  do_say(questman, "But you're already on a quest!\nBetter hurry up and finish it!");
+            return;
+        }
+        if (ch->nextquest > 0)
+        {
+            do_say(questman, (char*)str_printf("You're very brave, %s, but let someone else have a chance.",ch->name).c_str());
+            do_say(questman, "Come back later.");
+            return;
+        }
 
-	SPRINTF(buf, "Thank you, brave %s!",ch->name);
-	do_say(questman, buf);
+        do_say(questman, (char*)str_printf("Thank you, brave %s!",ch->name).c_str());
 
-	generate_quest(ch, questman);
+        generate_quest(ch, questman);
 
         if (ch->questmob > 0 || ch->questobj > 0)
-	{
-            ch->countdown = number_range(10,30);
-            BV_SET_BIT(ch->act, PLR_QUESTOR);
-	    SPRINTF(buf, "You have %d minutes to complete this quest.",ch->countdown);
-	    do_say(questman, buf);
-	    SPRINTF(buf, "May the gods go with you!");
-	    do_say(questman, buf);
-	}
-	return;
+        {
+                  ch->countdown = number_range(10,30);
+                  BV_SET_BIT(ch->act, PLR_QUESTOR);
+            do_say(questman, (char*)str_printf("You have %d minutes to complete this quest.",ch->countdown).c_str());
+            do_say(questman, "May the gods go with you!");
+        }
+        return;
     }
-    else if (!strcmp(arg1, "complete"))
+    else if (!str_cmp(arg1, "complete"))
     {
-        act(AT_PLAIN,"$n informs $N $e has completed $s quest.", ch, NULL, questman, 
-		TO_ROOM); 
-        act(AT_PLAIN,"You inform $N you have completed $s quest.",ch, NULL, 
-		questman, TO_CHAR);
-	if (ch->questgiver != questman)
-	{
-	    SPRINTF(buf, "I never sent you on a quest! Perhaps you're thinking of someone else.");
-	    do_say(questman,buf);
-	    return;
-	}
+        act(AT_PLAIN,"$n informs $N $e has completed $s quest.", ch, NULL, questman, TO_ROOM); 
+        act(AT_PLAIN,"You inform $N you have completed $s quest.",ch, NULL, questman, TO_CHAR);
+        if (ch->questgiver != questman)
+        {
+            do_say(questman, "I never sent you on a quest! Perhaps you're thinking of someone else.");
+            return;
+        }
 
         if (BV_IS_SET(ch->act, PLR_QUESTOR))
-	{
-	    if (ch->questmob == -1 && ch->countdown > 0)
-	    {
-		int reward, pointreward;
+        {
+            if (ch->questmob == -1 && ch->countdown > 0)
+            {
+                int reward, pointreward;
 
-                reward = number_range(5000,10000);
-                pointreward = number_range(1,5);
+                  reward = number_range(5000,10000);
+                  pointreward = number_range(1,5);
 
-		SPRINTF(buf, "Congratulations on completing your quest!");
-		do_say(questman,buf);
-		SPRINTF(buf,"As a reward, I am giving you %d quest points, and %d gold.",pointreward,reward);
-		do_say(questman,buf);
+                do_say(questman, "Congratulations on completing your quest!");
+                do_say(questman, (char*)str_printf("As a reward, I am giving you %d quest points, and %d gold.",pointreward,reward).c_str());
 
                 BV_REMOVE_BIT(ch->act, PLR_QUESTOR);
-	        ch->questgiver = NULL;
-	        ch->countdown = 0;
-	        ch->questmob = 0;
-		ch->questobj = 0;
-	        ch->nextquest = 30;
-		ch->gold += reward;
-		ch->questpoints += pointreward;
+                ch->questgiver = NULL;
+                ch->countdown = 0;
+                ch->questmob = 0;
+                ch->questobj = 0;
+                ch->nextquest = 30;
+                ch->gold += reward;
+                ch->questpoints += pointreward;
 
-	        return;
-	    }
-	    else if (ch->questobj > 0 && ch->countdown > 0)
-	    {
-		bool obj_found = FALSE;
+                return;
+            }
+	          else if (ch->questobj > 0 && ch->countdown > 0)
+	          {
+                bool obj_found = FALSE;
 
                 for (obj = ch->first_carrying; obj != NULL; obj=obj_next)
-    		{
+                {
                     obj_next = obj->next;
 
-                  if ( obj->carried_by == ch )
-		    if (obj != NULL && obj->pIndexData->vnum == ch->questobj)
-		    {
-			obj_found = TRUE;
-            	        break;
-		    }
-        	}
-		if (obj_found == TRUE)
-		{
-		    int reward, pointreward;
+                    if ( obj->carried_by == ch )
+                        if (obj != NULL && obj->pIndexData->vnum == ch->questobj)
+                        {
+                            obj_found = TRUE;
+                            break;
+                        }
+                }
+                if (obj_found == TRUE)
+                {
+                    int reward, pointreward;
 
                     reward = number_range(5000,10000);
                     pointreward = number_range(1,5);
 
-		    act(AT_PLAIN,"You hand $p to $N.",ch, obj, questman, TO_CHAR);
-		    act(AT_PLAIN,"$n hands $p to $N.",ch, obj, questman, TO_ROOM);
+                    act(AT_PLAIN,"You hand $p to $N.",ch, obj, questman, TO_CHAR);
+                    act(AT_PLAIN,"$n hands $p to $N.",ch, obj, questman, TO_ROOM);
 
-	    	    SPRINTF(buf, "Congratulations on completing your quest!");
-		    do_say(questman,buf);
-		    SPRINTF(buf,"As a reward, I am giving you %d quest points, and %d gold.",pointreward,reward);
-		    do_say(questman,buf);
+                    do_say(questman, "Congratulations on completing your quest!");
+                    do_say(questman, (char*)str_printf("As a reward, I am giving you %d quest points, and %d gold.",pointreward,reward).c_str());
 
                     BV_REMOVE_BIT(ch->act, PLR_QUESTOR);
-	            ch->questgiver = NULL;
-	            ch->countdown = 0;
-	            ch->questmob = 0;
-		    ch->questobj = 0;
-	            ch->nextquest = 30;
-		    ch->gold += reward;
-		    ch->questpoints += pointreward;
-		    extract_obj(obj);
-		    return;
-		}
-		else
-		{
-		    SPRINTF(buf, "You haven't completed the quest yet, but there is still time!");
-		    do_say(questman, buf);
-		    return;
-		}
-		return;
-	    }
-	    else if ((ch->questmob > 0 || ch->questobj > 0) && ch->countdown > 0)
-	    {
-		SPRINTF(buf, "You haven't completed the quest yet, but there is still time!");
-		do_say(questman, buf);
-		return;
-	    }
-	}
-	if (ch->nextquest > 0)
-	    SPRINTF(buf,"But you didn't complete your quest in time!");
-	else SPRINTF(buf, "You have to REQUEST a quest first, %s.",ch->name);
-	do_say(questman, buf);
-	return;
+                    ch->questgiver = NULL;
+                    ch->countdown = 0;
+                    ch->questmob = 0;
+                    ch->questobj = 0;
+                    ch->nextquest = 30;
+                    ch->gold += reward;
+                    ch->questpoints += pointreward;
+                    extract_obj(obj);
+                    return;
+                }
+                else
+                {
+                    do_say(questman, "You haven't completed the quest yet, but there is still time!");
+                    return;
+                }
+                return;
+            }
+            else if ((ch->questmob > 0 || ch->questobj > 0) && ch->countdown > 0)
+            {
+                do_say(questman, "You haven't completed the quest yet, but there is still time!");
+                return;
+            }
+        } 
+        if (ch->nextquest > 0)
+            do_say(questman, "But you didn't complete your quest in time!");
+        else
+            do_say(questman, (char*)str_printf("You have to REQUEST a quest first, %s.", ch->name).c_str());
+        return;
     }
 
     send_to_char("QUEST commands: POINTS INFO TIME REQUEST COMPLETE LIST BUY.\n",ch);
@@ -4290,7 +4269,7 @@ void quest_update(GameContext *game)
   /* dontresolve: don't resolve certain IP blocks - Ulysses
    * A hack of badname by Kre
    */
-  bool check_dont_resolve( char *ip ){
+  bool check_dont_resolve( const std::string& ip ){
     FILE *fp;
     char *ln;
     if ( (fp = fopen(DONT_RESOLVE_FILE,"r")) == NULL) {
@@ -4322,7 +4301,7 @@ void quest_update(GameContext *game)
       return FALSE;
   }
   
-  int add_dont_resolve(char *ipmatch)
+  int add_dont_resolve(const std::string& ipmatch)
   {
     FILE *fp;
     char *ln;
@@ -4346,8 +4325,9 @@ void quest_update(GameContext *game)
   
     fsetpos(fp, &pos -2);
     fsetpos(fp, &pos);
-    fprintf(fp,"%s~\n",ipmatch);
+    fprintf(fp,"%s~\n",ipmatch.c_str());
     fprintf(fp,"$~");
+    STR_DISPOSE(ln);
     FCLOSE(fp);
     return 1;
    }

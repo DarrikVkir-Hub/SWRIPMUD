@@ -84,17 +84,13 @@ void  explode( OBJ_DATA *obj )
                             
                         if ( room )
                         {
-                            char buf[MAX_STRING_LENGTH];
-
                             if( !held )
                             {
-                                SPRINTF( buf, "%s EXPLODES!\n", objcont->short_descr );
-                                echo_to_room( AT_BLOOD, room, buf );
+                                echo_to_room( AT_BLOOD, room, str_printf("%s EXPLODES!\n", objcont->short_descr) );
                             }
                             else
                             {
-                                SPRINTF( buf, "%s EXLODES in %s'shands!\n", objcont->short_descr, xch->name );
-                                echo_to_room( AT_BLOOD, room, buf );
+                                echo_to_room( AT_BLOOD, room, str_printf("%s EXLODES in %s's hands!\n", objcont->short_descr, xch->name) );
                             }
                             room_explode( obj , xch, room );
                         }
@@ -542,31 +538,47 @@ bool can_take_proto( CHAR_DATA *ch )
 /*
  * See if a string is one of the names of an object.
  */
-bool is_name( const char *str, char *namelist )
+bool is_name(const char* str, const char* namelist)
 {
-    char name[MAX_INPUT_LENGTH];
+    if (!str || !namelist)
+        return FALSE;
+    return is_name(std::string(str), std::string(namelist));
+}
 
-    for ( ; ; )
+bool is_name_prefix(const char* str, const char* namelist)
+{
+    if (!str || !namelist)
+        return FALSE;
+    return is_name_prefix(std::string(str), std::string(namelist));
+}
+
+bool is_name(const std::string& str, const std::string& namelist)
+{
+    std::string list = namelist;
+    std::string name;
+
+    for (;;)
     {
-	namelist = one_argument( namelist, name );
-	if ( name[0] == '\0' )
-	    return FALSE;
-	if ( !str_cmp( str, name ) )
-	    return TRUE;
+        list = one_argument(list, name);
+        if (name.empty())
+            return FALSE;
+        if (!str_cmp(str, name))
+            return TRUE;
     }
 }
 
-bool is_name_prefix( const char *str, char *namelist )
+bool is_name_prefix(const std::string& str, const std::string& namelist)
 {
-    char name[MAX_INPUT_LENGTH];
+    std::string list = namelist;
+    std::string name;
 
-    for ( ; ; )
+    for (;;)
     {
-	namelist = one_argument( namelist, name );
-	if ( name[0] == '\0' )
-	    return FALSE;
-	if ( !str_prefix( str, name ) )
-	    return TRUE;
+        list = one_argument(list, name);
+        if (name.empty())
+            return FALSE;
+        if (!str_prefix(str, name))
+            return TRUE;
     }
 }
 
@@ -574,68 +586,96 @@ bool is_name_prefix( const char *str, char *namelist )
  * See if a string is one of the names of an object.		-Thoric
  * Treats a dash as a word delimiter as well as a space
  */
-bool is_name2( const char *str, char *namelist )
+bool is_name2(const char* str, const char* namelist)
 {
-    char name[MAX_INPUT_LENGTH];
+    if (!str || !namelist)
+        return FALSE;
+    return is_name2(std::string(str), std::string(namelist));
+}
 
-    for ( ; ; )
+bool is_name2_prefix(const char* str, const char* namelist)
+{
+    if (!str || !namelist)
+        return FALSE;
+    return is_name2_prefix(std::string(str), std::string(namelist));
+}
+
+bool is_name2(const std::string& str, const std::string& namelist)
+{
+    std::string list = namelist;
+    std::string name;
+
+    for (;;)
     {
-	namelist = one_argument2( namelist, name );
-	if ( name[0] == '\0' )
-	    return FALSE;
-	if ( !str_cmp( str, name ) )
-	    return TRUE;
+        list = one_argument2(list, name);
+        if (name.empty())
+            return FALSE;
+        if (!str_cmp(str, name))
+            return TRUE;
     }
 }
 
-bool is_name2_prefix( const char *str, char *namelist )
+bool is_name2_prefix(const std::string& str, const std::string& namelist)
 {
-    char name[MAX_INPUT_LENGTH];
+    std::string list = namelist;
+    std::string name;
 
-    for ( ; ; )
+    for (;;)
     {
-	namelist = one_argument2( namelist, name );
-	if ( name[0] == '\0' )
-	    return FALSE;
-	if ( !str_prefix( str, name ) )
-	    return TRUE;
+        list = one_argument2(list, name);
+        if (name.empty())
+            return FALSE;
+        if (!str_prefix(str, name))
+            return TRUE;
     }
 }
 
 /*								-Thoric
  * Checks if str is a name in namelist supporting multiple keywords
  */
-bool nifty_is_name( char *str, char *namelist )
+bool nifty_is_name(const char* str, const char* namelist)
 {
-    char name[MAX_INPUT_LENGTH];
-    
-    if ( !str || str[0] == '\0' )
-      return FALSE;
- 
-    for ( ; ; )
+    return nifty_is_name(str ? std::string(str) : std::string(), namelist);
+}
+
+bool nifty_is_name_prefix(const char* str, const char* namelist)
+{
+    return nifty_is_name_prefix(str ? std::string(str) : std::string(), namelist);
+}
+
+bool nifty_is_name(const std::string& str, const std::string& namelist)
+{
+    std::string argument = str;
+    std::string name;
+
+    if (argument.empty())
+        return FALSE;
+
+    for (;;)
     {
-	str = one_argument2( str, name );
-	if ( name[0] == '\0' )
-	    return TRUE;
-	if ( !is_name2( name, namelist ) )
-	    return FALSE;
+        argument = one_argument2(argument, name);
+        if (name.empty())
+            return TRUE;
+        if (!is_name2(name, namelist))
+            return FALSE;
     }
 }
 
-bool nifty_is_name_prefix( char *str, char *namelist )
+bool nifty_is_name_prefix(const std::string& str, const std::string& namelist)
 {
-    char name[MAX_INPUT_LENGTH];
-    
-    if ( !str || str[0] == '\0' )
-      return FALSE;
- 
-    for ( ; ; )
+    std::string argument = str;
+    std::string name;
+
+    if (argument.empty())
+        return FALSE;
+
+    for (;;)
     {
-	str = one_argument2( str, name );
-	if ( name[0] == '\0' )
-	    return TRUE;
-	if ( !is_name2_prefix( name, namelist ) )
-	    return FALSE;
+        argument = one_argument2(argument, name);
+        if (name.empty())
+            return TRUE;
+        if (!is_name2_prefix(name, namelist))
+            return FALSE;
     }
 }
 
@@ -1443,7 +1483,7 @@ int count_obj_list( OBJ_INDEX_DATA *pObjIndex, OBJ_DATA *list )
 /*
  * Move an obj out of a room.
  */
-void	write_corpses	args( ( CHAR_DATA *ch, char *name ) );
+void	write_corpses	args( ( CHAR_DATA *ch, const std::string& name ) );
 
 int falling;
 
@@ -1800,131 +1840,129 @@ void extract_char( CHAR_DATA *ch, bool fPull )
 /*
  * Find a char in the room.
  */
-CHAR_DATA *get_char_room( CHAR_DATA *ch, char *argument )
+CHAR_DATA *get_char_room(CHAR_DATA *ch, const std::string& argument_in)
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string argument = argument_in;
+    std::string arg;
     CHAR_DATA *rch;
     int number, count, vnum;
 
-    number = number_argument( argument, arg );
-    if ( !str_cmp( arg, "self" ) )
-	return ch;
+    number = number_argument(argument, arg);
 
-    if ( get_trust(ch) >= LEVEL_SAVIOR && is_number( arg ) )
-	vnum = atoi( arg );
+    if (!str_cmp(arg, "self"))
+        return ch;
+
+    if (get_trust(ch) >= LEVEL_SAVIOR && is_number(arg))
+        vnum = strtoi(arg);
     else
-	vnum = -1;
+        vnum = -1;
 
-    count  = 0;
+    count = 0;
 
-    for ( rch = ch->in_room->first_person; rch; rch = rch->next_in_room )
-	if ( can_see( ch, rch )
-	&&  (( (nifty_is_name( arg, rch->name ) || (!IS_NPC(rch) && nifty_is_name( arg, rch->pcdata->title )))
-	||  (IS_NPC(rch) && vnum == rch->pIndexData->vnum))) )
-	{
-	    if ( number == 0 && !IS_NPC(rch) )
-		return rch;
-	    else
-	    if ( ++count == number )
-		return rch;
-	}
+    for (rch = ch->in_room->first_person; rch; rch = rch->next_in_room)
+        if (can_see(ch, rch)
+        && (((nifty_is_name(arg, rch->name)
+           || (!IS_NPC(rch) && nifty_is_name(arg, rch->pcdata->title)))
+        || (IS_NPC(rch) && vnum == rch->pIndexData->vnum))))
+        {
+            if (number == 0 && !IS_NPC(rch))
+                return rch;
+            else if (++count == number)
+                return rch;
+        }
 
-    if ( vnum != -1 )
-	return NULL;
+    if (vnum != -1)
+        return NULL;
 
     /* If we didn't find an exact match, run through the list of characters
        again looking for prefix matching, ie gu == guard.
        Added by Narn, Sept/96
     */
-    count  = 0;
-    for ( rch = ch->in_room->first_person; rch; rch = rch->next_in_room )
+    count = 0;
+    for (rch = ch->in_room->first_person; rch; rch = rch->next_in_room)
     {
-	if ( !can_see( ch, rch ) || 
-	    (!nifty_is_name_prefix( arg, rch->name ) && 
-	     (IS_NPC(rch) || (!IS_NPC(rch) && !nifty_is_name_prefix( arg, rch->pcdata->title )))
-	    )
-	   )
-	    continue;
-	if ( number == 0 && !IS_NPC(rch) )
-	    return rch;
-	else
-	if ( ++count == number )
-	    return rch;
+        if (!can_see(ch, rch)
+        || (!nifty_is_name_prefix(arg, rch->name)
+        && (IS_NPC(rch)
+        || (!IS_NPC(rch) && !nifty_is_name_prefix(arg, rch->pcdata->title)))))
+            continue;
+
+        if (number == 0 && !IS_NPC(rch))
+            return rch;
+        else if (++count == number)
+            return rch;
     }
 
     return NULL;
 }
 
 
-
-
 /*
  * Find a char in the world.
  */
-CHAR_DATA *get_char_world( CHAR_DATA *ch, char *argument )
+CHAR_DATA *get_char_world(CHAR_DATA *ch, const std::string& argument_in)
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string argument = argument_in;
+    std::string arg;
     CHAR_DATA *wch;
     int number, count, vnum;
 
-    number = number_argument( argument, arg );
-    count  = 0;
-    if ( !str_cmp( arg, "self" ) )
-	return ch;
+    number = number_argument(argument, arg);
+    count = 0;
+
+    if (!str_cmp(arg, "self"))
+        return ch;
 
     /*
-     * Allow reference by vnum for saints+			-Thoric
+     * Allow reference by vnum for saints+            -Thoric
      */
-    if ( get_trust(ch) >= LEVEL_SAVIOR && is_number( arg ) )
-	vnum = atoi( arg );
+    if (get_trust(ch) >= LEVEL_SAVIOR && is_number(arg))
+        vnum = strtoi(arg);
     else
-	vnum = -1;
+        vnum = -1;
 
     /* check the room for an exact match */
-    for ( wch = ch->in_room->first_person; wch; wch = wch->next_in_room )
-	if ( (nifty_is_name( arg, wch->name )
-	||  (IS_NPC(wch) && vnum == wch->pIndexData->vnum)) && is_wizvis(ch,wch))	
-	{
-	    if ( number == 0 && !IS_NPC(wch) )
-		return wch;
-	    else
-	    if ( ++count == number )
-		return wch;
-	}
+    for (wch = ch->in_room->first_person; wch; wch = wch->next_in_room)
+        if ((nifty_is_name(arg, wch->name)
+        || (IS_NPC(wch) && vnum == wch->pIndexData->vnum)) && is_wizvis(ch, wch))
+        {
+            if (number == 0 && !IS_NPC(wch))
+                return wch;
+            else if (++count == number)
+                return wch;
+        }
 
     count = 0;
 
     /* check the world for an exact match */
-    for ( wch = first_char; wch; wch = wch->next )
-	if ( (nifty_is_name( arg, wch->name )
-	||  (IS_NPC(wch) && vnum == wch->pIndexData->vnum)) && is_wizvis(ch,wch) )
-	{
-	    if ( number == 0 && !IS_NPC(wch) )
-		return wch;
-	    else
-	    if ( ++count == number  )
-		return wch;
-	}
+    for (wch = first_char; wch; wch = wch->next)
+        if ((nifty_is_name(arg, wch->name)
+        || (IS_NPC(wch) && vnum == wch->pIndexData->vnum)) && is_wizvis(ch, wch))
+        {
+            if (number == 0 && !IS_NPC(wch))
+                return wch;
+            else if (++count == number)
+                return wch;
+        }
 
     /* bail out if looking for a vnum match */
-    if ( vnum != -1 )
-	return NULL;
+    if (vnum != -1)
+        return NULL;
 
     /*
      * If we didn't find an exact match, check the room for
      * for a prefix match, ie gu == guard.
      * Added by Narn, Sept/96
      */
-    count  = 0;
-    for ( wch = ch->in_room->first_person; wch; wch = wch->next_in_room )
+    count = 0;
+    for (wch = ch->in_room->first_person; wch; wch = wch->next_in_room)
     {
-	if ( !nifty_is_name_prefix( arg, wch->name ) )
-	    continue;
-	if ( number == 0 && !IS_NPC(wch) && is_wizvis(ch,wch))
-	    return wch;
-	else
-	if ( ++count == number  && is_wizvis(ch, wch) )
-	    return wch;
+        if (!nifty_is_name_prefix(arg, wch->name))
+            continue;
+        if (number == 0 && !IS_NPC(wch) && is_wizvis(ch, wch))
+            return wch;
+        else if (++count == number && is_wizvis(ch, wch))
+            return wch;
     }
 
     /*
@@ -1932,16 +1970,15 @@ CHAR_DATA *get_char_world( CHAR_DATA *ch, char *argument )
      * of characters looking for prefix matching, ie gu == guard.
      * Added by Narn, Sept/96
      */
-    count  = 0;
-    for ( wch = first_char; wch; wch = wch->next )
+    count = 0;
+    for (wch = first_char; wch; wch = wch->next)
     {
-	if ( !nifty_is_name_prefix( arg, wch->name ) )
-	    continue;
-	if ( number == 0 && !IS_NPC(wch) && is_wizvis(ch, wch) )
-	    return wch;
-	else
-	if ( ++count == number  && is_wizvis(ch, wch) )
-	    return wch;
+        if (!nifty_is_name_prefix(arg, wch->name))
+            continue;
+        if (number == 0 && !IS_NPC(wch) && is_wizvis(ch, wch))
+            return wch;
+        else if (++count == number && is_wizvis(ch, wch))
+            return wch;
     }
 
     return NULL;
@@ -1968,59 +2005,61 @@ OBJ_DATA *get_obj_type( OBJ_INDEX_DATA *pObjIndex )
 /*
  * Find an obj in a list.
  */
-OBJ_DATA *get_obj_list( CHAR_DATA *ch, char *argument, OBJ_DATA *list )
+OBJ_DATA *get_obj_list(CHAR_DATA *ch, const std::string& argument, OBJ_DATA *list)
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
     int number;
     int count;
 
-    number = number_argument( argument, arg );
-    count  = 0;
-    for ( obj = list; obj; obj = obj->next_content )
-	if ( can_see_obj( ch, obj ) && nifty_is_name( arg, obj->name ) )
-	    if ( (count += obj->count) >= number )
-		return obj;
+    number = number_argument(argument, arg);
+    count = 0;
+
+    for (obj = list; obj; obj = obj->next_content)
+        if (can_see_obj(ch, obj) && nifty_is_name(arg, obj->name))
+            if ((count += obj->count) >= number)
+                return obj;
 
     /* If we didn't find an exact match, run through the list of objects
        again looking for prefix matching, ie swo == sword.
        Added by Narn, Sept/96
     */
     count = 0;
-    for ( obj = list; obj; obj = obj->next_content )
-	if ( can_see_obj( ch, obj ) && nifty_is_name_prefix( arg, obj->name ) )
-	    if ( (count += obj->count) >= number )
-		return obj;
+    for (obj = list; obj; obj = obj->next_content)
+        if (can_see_obj(ch, obj) && nifty_is_name_prefix(arg, obj->name))
+            if ((count += obj->count) >= number)
+                return obj;
 
     return NULL;
 }
 
 /*
- * Find an obj in a list...going the other way			-Thoric
+ * Find an obj in a list...going the other way            -Thoric
  */
-OBJ_DATA *get_obj_list_rev( CHAR_DATA *ch, char *argument, OBJ_DATA *list )
+OBJ_DATA *get_obj_list_rev(CHAR_DATA *ch, const std::string& argument, OBJ_DATA *list)
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
     int number;
     int count;
 
-    number = number_argument( argument, arg );
-    count  = 0;
-    for ( obj = list; obj; obj = obj->prev_content )
-	if ( can_see_obj( ch, obj ) && nifty_is_name( arg, obj->name ) )
-	    if ( (count += obj->count) >= number )
-		return obj;
+    number = number_argument(argument, arg);
+    count = 0;
+
+    for (obj = list; obj; obj = obj->prev_content)
+        if (can_see_obj(ch, obj) && nifty_is_name(arg, obj->name))
+            if ((count += obj->count) >= number)
+                return obj;
 
     /* If we didn't find an exact match, run through the list of objects
        again looking for prefix matching, ie swo == sword.
        Added by Narn, Sept/96
     */
     count = 0;
-    for ( obj = list; obj; obj = obj->prev_content )
-	if ( can_see_obj( ch, obj ) && nifty_is_name_prefix( arg, obj->name ) )
-	    if ( (count += obj->count) >= number )
-		return obj;
+    for (obj = list; obj; obj = obj->prev_content)
+        if (can_see_obj(ch, obj) && nifty_is_name_prefix(arg, obj->name))
+            if ((count += obj->count) >= number)
+                return obj;
 
     return NULL;
 }
@@ -2030,40 +2069,41 @@ OBJ_DATA *get_obj_list_rev( CHAR_DATA *ch, char *argument, OBJ_DATA *list )
 /*
  * Find an obj in player's inventory.
  */
-OBJ_DATA *get_obj_carry( CHAR_DATA *ch, char *argument )
+OBJ_DATA *get_obj_carry(CHAR_DATA *ch, const std::string& argument)
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
     int number, count, vnum;
 
-    number = number_argument( argument, arg );
-    if ( get_trust(ch) >= LEVEL_SAVIOR && is_number( arg ) )
-	vnum = atoi( arg );
+    number = number_argument(argument, arg);
+
+    if (get_trust(ch) >= LEVEL_SAVIOR && is_number(arg))
+        vnum = strtoi(arg);
     else
-	vnum = -1;
+        vnum = -1;
 
-    count  = 0;
-    for ( obj = ch->last_carrying; obj; obj = obj->prev_content )
-	if ( obj->wear_loc == WEAR_NONE
-	&&   can_see_obj( ch, obj )
-	&&  (nifty_is_name( arg, obj->name ) || obj->pIndexData->vnum == vnum) )
-	    if ( (count += obj->count) >= number )
-		return obj;
+    count = 0;
+    for (obj = ch->last_carrying; obj; obj = obj->prev_content)
+        if (obj->wear_loc == WEAR_NONE
+        &&  can_see_obj(ch, obj)
+        && (nifty_is_name(arg, obj->name) || obj->pIndexData->vnum == vnum))
+            if ((count += obj->count) >= number)
+                return obj;
 
-    if ( vnum != -1 )
-	return NULL;
+    if (vnum != -1)
+        return NULL;
 
     /* If we didn't find an exact match, run through the list of objects
        again looking for prefix matching, ie swo == sword.
        Added by Narn, Sept/96
     */
     count = 0;
-    for ( obj = ch->last_carrying; obj; obj = obj->prev_content )
-	if ( obj->wear_loc == WEAR_NONE
-	&&   can_see_obj( ch, obj )
-	&&   nifty_is_name_prefix( arg, obj->name ) )
-	    if ( (count += obj->count) >= number )
-		return obj;
+    for (obj = ch->last_carrying; obj; obj = obj->prev_content)
+        if (obj->wear_loc == WEAR_NONE
+        &&  can_see_obj(ch, obj)
+        &&  nifty_is_name_prefix(arg, obj->name))
+            if ((count += obj->count) >= number)
+                return obj;
 
     return NULL;
 }
@@ -2073,46 +2113,46 @@ OBJ_DATA *get_obj_carry( CHAR_DATA *ch, char *argument )
 /*
  * Find an obj in player's equipment.
  */
-OBJ_DATA *get_obj_wear( CHAR_DATA *ch, char *argument )
+OBJ_DATA *get_obj_wear(CHAR_DATA *ch, const std::string& argument)
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
     int number, count, vnum;
 
-    if ( !ch )
+    if (!ch)
     {
-       bug( "get_obj_wear: null ch" );
+        bug("get_obj_wear: null ch");
     }
 
-    number = number_argument( argument, arg );
+    number = number_argument(argument, arg);
 
-    if ( get_trust(ch) >= LEVEL_SAVIOR && is_number( arg ) )
-	vnum = atoi( arg );
+    if (get_trust(ch) >= LEVEL_SAVIOR && is_number(arg))
+        vnum = strtoi(arg);
     else
-	vnum = -1;
+        vnum = -1;
 
-    count  = 0;
-    for ( obj = ch->last_carrying; obj; obj = obj->prev_content )
-	if ( obj->wear_loc != WEAR_NONE
-	&&   can_see_obj( ch, obj )
-	&&  (nifty_is_name( arg, obj->name ) || obj->pIndexData->vnum == vnum) )
-	    if ( ++count == number )
-		return obj;
+    count = 0;
+    for (obj = ch->last_carrying; obj; obj = obj->prev_content)
+        if (obj->wear_loc != WEAR_NONE
+        &&  can_see_obj(ch, obj)
+        && (nifty_is_name(arg, obj->name) || obj->pIndexData->vnum == vnum))
+            if (++count == number)
+                return obj;
 
-    if ( vnum != -1 )
-	return NULL;
+    if (vnum != -1)
+        return NULL;
 
     /* If we didn't find an exact match, run through the list of objects
        again looking for prefix matching, ie swo == sword.
        Added by Narn, Sept/96
     */
     count = 0;
-    for ( obj = ch->last_carrying; obj; obj = obj->prev_content )
-	if ( obj->wear_loc != WEAR_NONE
-	&&   can_see_obj( ch, obj )
-	&&   nifty_is_name_prefix( arg, obj->name ) )
-	    if ( ++count == number )
-		return obj;
+    for (obj = ch->last_carrying; obj; obj = obj->prev_content)
+        if (obj->wear_loc != WEAR_NONE
+        &&  can_see_obj(ch, obj)
+        &&  nifty_is_name_prefix(arg, obj->name))
+            if (++count == number)
+                return obj;
 
     return NULL;
 }
@@ -2122,22 +2162,22 @@ OBJ_DATA *get_obj_wear( CHAR_DATA *ch, char *argument )
 /*
  * Find an obj in the room or in inventory.
  */
-OBJ_DATA *get_obj_here( CHAR_DATA *ch, char *argument )
+OBJ_DATA *get_obj_here(CHAR_DATA *ch, const std::string& argument)
 {
     OBJ_DATA *obj;
 
-    if ( !ch || !ch->in_room ) 
-       return NULL;
+    if (!ch || !ch->in_room)
+        return NULL;
 
-    obj = get_obj_list_rev( ch, argument, ch->in_room->last_content );
-    if ( obj )
-	return obj;
+    obj = get_obj_list_rev(ch, argument, ch->in_room->last_content);
+    if (obj)
+        return obj;
 
-    if ( ( obj = get_obj_carry( ch, argument ) ) != NULL )
-	return obj;
+    if ((obj = get_obj_carry(ch, argument)) != NULL)
+        return obj;
 
-    if ( ( obj = get_obj_wear( ch, argument ) ) != NULL )
-	return obj;
+    if ((obj = get_obj_wear(ch, argument)) != NULL)
+        return obj;
 
     return NULL;
 }
@@ -2147,48 +2187,48 @@ OBJ_DATA *get_obj_here( CHAR_DATA *ch, char *argument )
 /*
  * Find an obj in the world.
  */
-OBJ_DATA *get_obj_world( CHAR_DATA *ch, char *argument )
+OBJ_DATA *get_obj_world(CHAR_DATA *ch, const std::string& argument)
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
     int number, count, vnum;
 
     if (!ch)
-       return NULL;
+        return NULL;
 
-    if ( ( obj = get_obj_here( ch, argument ) ) != NULL )
-	return obj;
+    if ((obj = get_obj_here(ch, argument)) != NULL)
+        return obj;
 
-    number = number_argument( argument, arg );
+    number = number_argument(argument, arg);
 
     /*
-     * Allow reference by vnum for saints+			-Thoric
+     * Allow reference by vnum for saints+            -Thoric
      */
-    if ( get_trust(ch) >= LEVEL_SAVIOR && is_number( arg ) )
-	vnum = atoi( arg );
+    if (get_trust(ch) >= LEVEL_SAVIOR && is_number(arg))
+        vnum = strtoi(arg);
     else
-	vnum = -1;
+        vnum = -1;
 
-    count  = 0;
-    for ( obj = first_object; obj; obj = obj->next )
-	if ( can_see_obj( ch, obj ) && (nifty_is_name( arg, obj->name )
-	||   vnum == obj->pIndexData->vnum) )
-	    if ( (count += obj->count) >= number )
-		return obj;
+    count = 0;
+    for (obj = first_object; obj; obj = obj->next)
+        if (can_see_obj(ch, obj) && (nifty_is_name(arg, obj->name)
+        ||  vnum == obj->pIndexData->vnum))
+            if ((count += obj->count) >= number)
+                return obj;
 
     /* bail out if looking for a vnum */
-    if ( vnum != -1 )
-	return NULL;
+    if (vnum != -1)
+        return NULL;
 
     /* If we didn't find an exact match, run through the list of objects
        again looking for prefix matching, ie swo == sword.
        Added by Narn, Sept/96
     */
-    count  = 0;
-    for ( obj = first_object; obj; obj = obj->next )
-	if ( can_see_obj( ch, obj ) && nifty_is_name_prefix( arg, obj->name ) )
-	    if ( (count += obj->count) >= number )
-		return obj;
+    count = 0;
+    for (obj = first_object; obj; obj = obj->next)
+        if (can_see_obj(ch, obj) && nifty_is_name_prefix(arg, obj->name))
+            if ((count += obj->count) >= number)
+                return obj;
 
     return NULL;
 }
@@ -2262,20 +2302,21 @@ bool ms_find_obj( CHAR_DATA *ch )
  * Generic get obj function that supports optional containers.	-Thoric
  * currently only used for "eat" and "quaff".
  */
-OBJ_DATA *find_obj( CHAR_DATA *ch, char *argument, bool carryonly )
+OBJ_DATA *find_obj( CHAR_DATA *ch, const std::string& argument, bool carryonly )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     OBJ_DATA *obj;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    one_argument( argstr, arg2 );
 
     if ( !str_cmp( arg2, "from" )
-    &&   argument[0] != '\0' )
-	argument = one_argument( argument, arg2 );
+    &&   !argstr.empty() )
+	one_argument( argstr, arg2 );
 
-    if ( arg2[0] == '\0' )
+    if ( arg2.empty() )
     {
 	if ( carryonly && ( obj = get_obj_carry( ch, arg1 ) ) == NULL )
 	{
@@ -2323,6 +2364,11 @@ OBJ_DATA *find_obj( CHAR_DATA *ch, char *argument, bool carryonly )
 	return obj;
     }
     return NULL;
+}
+
+OBJ_DATA *find_obj( CHAR_DATA *ch, char *argument, bool carryonly )
+{
+    return find_obj( ch, std::string(argument), carryonly );
 }
 
 int get_obj_number( OBJ_DATA *obj )
@@ -2555,7 +2601,7 @@ bool can_drop_obj( CHAR_DATA *ch, OBJ_DATA *obj )
 /*
  * Return ascii name of an item type.
  */
-char *item_type_name( OBJ_DATA *obj )
+const std::string item_type_name( OBJ_DATA *obj )
 {
     if ( obj->item_type < 1 || obj->item_type > MAX_ITEM_TYPE )
     {
@@ -2563,7 +2609,7 @@ char *item_type_name( OBJ_DATA *obj )
 	return "(unknown)";
     }
 
-    return (char*)get_flag_name(o_types, obj->item_type, ITEMTYPE_MAX);
+    return get_flag_name(o_types, obj->item_type, ITEMTYPE_MAX);
 }
 
 
@@ -2571,7 +2617,7 @@ char *item_type_name( OBJ_DATA *obj )
 /*
  * Return ascii name of an affect location.
  */
-char *affect_loc_name( int location )
+const std::string affect_loc_name( int location )
 {
     switch ( location )
     {
@@ -2653,7 +2699,7 @@ char *affect_loc_name( int location )
 /*
  * Return ascii name of an affect bit vector.
  */
-char *affect_bit_name_obs( int vector )
+const std::string affect_bit_name_obs( int vector )
 {
     // Obsolete, use bitset_to_string.c_str()
     return "";
@@ -2664,21 +2710,21 @@ char *affect_bit_name_obs( int vector )
 /*
  * Return ascii name of extra flags vector.
  */
-const char *extra_bit_name( FLAG_SET extra_flags )
+const std::string extra_bit_name( FLAG_SET extra_flags )
 {
     return bitset_to_string(extra_flags, obj_flag_table,
                              ITEM_FIRST,
-                             ITEM_MAX).c_str();    
+                             ITEM_MAX);    
 }
 
 /*
  * Return ascii name of magic flags vector. - Scryn
  */
-const char *magic_bit_name( FLAG_SET magic_flags )
+const std::string magic_bit_name( FLAG_SET magic_flags )
 {
     return bitset_to_string(magic_flags, obj_flag_table,
                              ITEM_MAGIC_FLAG_FIRST,
-                             ITEM_MAGIC_FLAG_MAX).c_str();
+                             ITEM_MAGIC_FLAG_MAX);
 //    return flag_bit_name(magic_flags, obj_flag_table); 
 //    static char buf[512];
 
@@ -3126,11 +3172,11 @@ void showaffect( CHAR_DATA *ch, AFFECT_DATA *paf )
 	    {
 	      default:
 		SPRINTF( buf, "Affects %s by %d.\n",
-		  affect_loc_name( paf->location ), paf->modifier );
+		  affect_loc_name( paf->location ).c_str(), paf->modifier );
 		break;
 	      case APPLY_AFFECT:
 		SPRINTF( buf, "Affects %s by",
-		  affect_loc_name( paf->location ) );
+		  affect_loc_name( paf->location ).c_str() );
 		for ( x = 0; x < AFF_MAX ; x++ )
 		    if ( IS_SET( paf->modifier, x ) )
 		    {
@@ -3150,7 +3196,7 @@ void showaffect( CHAR_DATA *ch, AFFECT_DATA *paf )
 	      case APPLY_IMMUNE:
 	      case APPLY_SUSCEPTIBLE:
 		SPRINTF( buf, "Affects %s by",
-		  affect_loc_name( paf->location ) );
+		  affect_loc_name( paf->location ).c_str() );
 		  STRAPP( buf, " " );
 		  STRAPP( buf, "%s", get_flag_name(ris_flags,paf->modifier, RIS_MAX) );
 		STRAPP( buf, "\n" );

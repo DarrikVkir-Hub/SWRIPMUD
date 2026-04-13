@@ -76,7 +76,7 @@ int ch_slookup( CHAR_DATA *ch, const char *name )
 /*
  * Lookup an herb by name.
  */
-int herb_lookup( const char *name )
+int herb_lookup( const std::string& name )
 {
     int sn;
 
@@ -102,7 +102,7 @@ int personal_lookup( CHAR_DATA *ch, const char *name )
 /*
  * Lookup a skill by name.
  */
-int skill_lookup( const char *name )
+int skill_lookup( const std::string&name )
 {
     int sn;
 
@@ -144,7 +144,7 @@ SKILLTYPE *get_skilltype( int sn )
  * Perform a binary search on a section of the skill table	-Thoric
  * Each different section of the skill table is sorted alphabetically
  */
-int bsearch_skill( const char *name, int first, int top )
+int bsearch_skill( const std::string& name, int first, int top )
 {
     int sn;
 
@@ -156,7 +156,7 @@ int bsearch_skill( const char *name, int first, int top )
             return sn;
         if (first >= top)
             return -1;
-        if( strcasecmp( name, skill_table[sn]->name ) < 1 )
+        if( strcasecmp( name.c_str(), skill_table[sn]->name ) < 1 )
 	    top = sn - 1;
     	else
 	    first = sn + 1;
@@ -169,7 +169,7 @@ int bsearch_skill( const char *name, int first, int top )
  * Each different section of the skill table is sorted alphabetically
  * Check for exact matches only
  */
-int bsearch_skill_exact( const char *name, int first, int top )
+int bsearch_skill_exact( const std::string& name, int first, int top )
 {
     int sn;
 
@@ -180,7 +180,7 @@ int bsearch_skill_exact( const char *name, int first, int top )
             return sn;
         if (first >= top)
             return -1;
-    	if (strcmp(name, skill_table[sn]->name) < 1)
+    	if (strcmp(name.c_str(), skill_table[sn]->name) < 1)
 	    top = sn - 1;
     	else
 	    first = sn + 1;
@@ -193,7 +193,7 @@ int bsearch_skill_exact( const char *name, int first, int top )
  * Each different section of the skill table is sorted alphabetically
  * Only match skills player knows				-Thoric
  */
-int ch_bsearch_skill( CHAR_DATA *ch, const char *name, int first, int top )
+int ch_bsearch_skill( CHAR_DATA *ch, const std::string& name, int first, int top )
 {
     int sn;
 
@@ -207,7 +207,7 @@ int ch_bsearch_skill( CHAR_DATA *ch, const char *name, int first, int top )
 		return sn;
 	if (first >= top)
 	    return -1;
-    	if (strcmp( name, skill_table[sn]->name) < 1)
+    	if (strcmp(name.c_str(), skill_table[sn]->name) < 1)
 	    top = sn - 1;
     	else
 	    first = sn + 1;
@@ -216,7 +216,7 @@ int ch_bsearch_skill( CHAR_DATA *ch, const char *name, int first, int top )
 }
 
 
-int find_spell( CHAR_DATA *ch, const char *name, bool know )
+int find_spell( CHAR_DATA *ch, const std::string& name, bool know )
 {
     if ( IS_NPC(ch) || !know )
 	return bsearch_skill( name, gsn_first_spell, gsn_first_skill-1 );
@@ -224,7 +224,7 @@ int find_spell( CHAR_DATA *ch, const char *name, bool know )
 	return ch_bsearch_skill( ch, name, gsn_first_spell, gsn_first_skill-1 );
 }
 
-int find_skill( CHAR_DATA *ch, const char *name, bool know )
+int find_skill( CHAR_DATA *ch, const std::string& name, bool know )
 {
     if ( IS_NPC(ch) || !know )
 	return bsearch_skill( name, gsn_first_skill, gsn_first_weapon-1 );
@@ -232,7 +232,7 @@ int find_skill( CHAR_DATA *ch, const char *name, bool know )
 	return ch_bsearch_skill( ch, name, gsn_first_skill, gsn_first_weapon-1 );
 }
 
-int find_weapon( CHAR_DATA *ch, const char *name, bool know )
+int find_weapon( CHAR_DATA *ch, const std::string& name, bool know )
 {
     if ( IS_NPC(ch) || !know )
 	return bsearch_skill( name, gsn_first_weapon, gsn_first_tongue-1 );
@@ -240,7 +240,7 @@ int find_weapon( CHAR_DATA *ch, const char *name, bool know )
 	return ch_bsearch_skill( ch, name, gsn_first_weapon, gsn_first_tongue-1 );
 }
 
-int find_tongue( CHAR_DATA *ch, const char *name, bool know )
+int find_tongue( CHAR_DATA *ch, const std::string& name, bool know )
 {
     if ( IS_NPC(ch) || !know )
 	return bsearch_skill( name, gsn_first_tongue, gsn_top_sn-1 );
@@ -670,22 +670,22 @@ bool saves_spell_staff( int level, CHAR_DATA *victim )
 bool process_spell_components( CHAR_DATA *ch, int sn )
 {
      SKILLTYPE *skill	= get_skilltype(sn);
-     char *comp		= skill->components;
-     char *check;
-     char arg[MAX_INPUT_LENGTH];
+     std::string comp		= skill->components ? skill->components : "";
+     std::string check;
+     std::string arg;
      bool consume, fail, found;
      int  val, value;
      OBJ_DATA *obj;
 
      /* if no components necessary, then everything is cool */
-     if ( !comp || comp[0] == '\0' )
-	return TRUE;
+     if ( comp.empty() )
+	    return TRUE;
 
 /* disable the whole damn shabang */
 
       return TRUE;
       
-     while ( comp[0] != '\0' )
+     while ( !comp.empty() )
      {
 	comp = one_argument( comp, arg );
 	consume = TRUE;
@@ -693,17 +693,17 @@ bool process_spell_components( CHAR_DATA *ch, int sn )
 	val = -1;
 	switch( arg[1] )
 	{
-	    default:	check = arg+1;				break;
-	    case '!':	check = arg+2;	fail = TRUE;		break;
-	    case '+':	check = arg+2;	consume = FALSE;	break;
-	    case '@':	check = arg+2;	val = 0;		break;
-	    case '#':	check = arg+2;	val = 1;		break;
-	    case '$':	check = arg+2;	val = 2;		break;
-	    case '%':	check = arg+2;	val = 3;		break;
-	    case '^':	check = arg+2;	val = 4;		break;
-	    case '&':	check = arg+2;	val = 5;		break;
+	    default:	check = arg.substr(1);				break;
+	    case '!':	check = arg.substr(2);	fail = TRUE;		break;
+	    case '+':	check = arg.substr(2);	consume = FALSE;	break;
+	    case '@':	check = arg.substr(2);	val = 0;		break;
+	    case '#':	check = arg.substr(2);	val = 1;		break;
+	    case '$':	check = arg.substr(2);	val = 2;		break;
+	    case '%':	check = arg.substr(2);	val = 3;		break;
+	    case '^':	check = arg.substr(2);	val = 4;		break;
+	    case '&':	check = arg.substr(2);	val = 5;		break;
 	}
-	value = atoi(check);
+	value = strtoi(check);
 	obj = NULL;
 	switch( UPPER(arg[0]) )
 	{
@@ -841,7 +841,7 @@ int pAbort;
 /*
  * Locate targets.
  */
-void *locate_targets( CHAR_DATA *ch, char *arg, int sn,
+void *locate_targets( CHAR_DATA *ch, const std::string&arg, int sn,
 		      CHAR_DATA **victim, OBJ_DATA **obj )
 {
     SKILLTYPE *skill = get_skilltype( sn );
@@ -861,7 +861,7 @@ void *locate_targets( CHAR_DATA *ch, char *arg, int sn,
 
 	case TAR_CHAR_OFFENSIVE:
 	case TAR_CHAR_SEMIOFFENSIVE:
-	  if ( arg[0] == '\0' )
+	  if ( arg.empty() )
 	  {
 		if ( ( *victim = who_fighting( ch ) ) == NULL )
 		{
@@ -924,7 +924,7 @@ void *locate_targets( CHAR_DATA *ch, char *arg, int sn,
 	  break;
 
 	case TAR_CHAR_DEFENSIVE:
-	  if ( arg[0] == '\0' )
+	  if ( arg.empty() )
 		*victim = ch;
 	  else
 	  {
@@ -938,7 +938,7 @@ void *locate_targets( CHAR_DATA *ch, char *arg, int sn,
 	  break;
 
 	case TAR_CHAR_SELF:
-	  if ( arg[0] != '\0' && !nifty_is_name( arg, ch->name ) )
+	  if ( !arg.empty() && !nifty_is_name( arg, ch->name ) )
 	  {
 		send_to_char( "You cannot cast this spell on another.\n", ch );
 		return &pAbort;
@@ -948,7 +948,7 @@ void *locate_targets( CHAR_DATA *ch, char *arg, int sn,
 	  break;
 
 	case TAR_OBJ_INV:
-	  if ( arg[0] == '\0' )
+	  if ( arg.empty() )
 	  {
 		send_to_char( "What should the spell be cast upon?\n", ch );
 		return &pAbort;
@@ -971,7 +971,7 @@ void *locate_targets( CHAR_DATA *ch, char *arg, int sn,
 /*
  * The kludgy global is for spells who want more stuff from command line.
  */
-char *target_name;
+std::string target_name;
 
 
 /*
@@ -979,8 +979,9 @@ char *target_name;
  */
 void do_cast( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     static char staticbuf[MAX_INPUT_LENGTH];
     CHAR_DATA *victim;
     OBJ_DATA *obj;
@@ -1012,10 +1013,10 @@ void do_cast( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 
-	target_name = one_argument( argument, arg1 );
+	target_name =  one_argument( argstr, arg1 );
 	one_argument( target_name, arg2 );
 
-	if ( arg1[0] == '\0' )
+	if ( arg1.empty() )
 	{
 	    send_to_char( "Cast which what where?\n", ch );
 	    return;
@@ -1131,7 +1132,7 @@ void do_cast( CHAR_DATA *ch, char *argument )
 		do_cast, 1 );
 	act( AT_MAGIC, "You begin to feel the force in yourself and those around you...", ch, NULL, NULL, TO_CHAR );
 	act( AT_MAGIC, "$n reaches out with the force to those around...", ch, NULL, NULL, TO_ROOM );
-	n = snprintf( staticbuf, sizeof(staticbuf), "%s %s", arg2, target_name );
+	n = snprintf( staticbuf, sizeof(staticbuf), "%s %s", arg2.c_str(), target_name.c_str() );
 
         if (n >= (int)sizeof(staticbuf))
             staticbuf[sizeof(staticbuf)-1] = '\0';  // ensure null-terminated
@@ -1174,7 +1175,7 @@ void do_cast( CHAR_DATA *ch, char *argument )
 	}
         	mana = IS_NPC(ch) ? 0 : skill->min_mana;
 	SPRINTF( staticbuf, "%s", (const char* ) ch->dest_buf );
-	target_name = one_argument(staticbuf, arg2);
+    target_name = one_argument(staticbuf, arg2);
 	STR_DISPOSE( ch->dest_buf );
 	ch->substate = SUB_NONE;
 	if ( skill->participants > 1 )
@@ -2546,7 +2547,7 @@ ch_ret spell_identify( int sn, int level, CHAR_DATA *ch, void *vo )
     SKILLTYPE *sktmp;
     SKILLTYPE *skill = get_skilltype(sn);
 
-    if ( target_name[0] == '\0' )
+    if ( target_name.empty() )
     {
       send_to_char( "What would you like identified?\n", ch );
       return rSPELL_FAILED;
@@ -2558,8 +2559,8 @@ ch_ret spell_identify( int sn, int level, CHAR_DATA *ch, void *vo )
 	ch_printf( ch,
 	"Object '%s' is %s, special properties: %s.\nIts weight is %d, value is %d.\n",
 	obj->name,
-	aoran( item_type_name( obj ) ),
-	extra_bit_name( obj->objflags ),
+	aoran( item_type_name( obj ) ).c_str(),
+	extra_bit_name( obj->objflags ).c_str(),
 	obj->weight,
 	obj->cost
 	);
@@ -2697,7 +2698,7 @@ ch_ret spell_identify( int sn, int level, CHAR_DATA *ch, void *vo )
     }
 
     ch_printf(ch, "%s looks like %s.\n", 
-            victim->name, aoran(get_race(victim)));
+            victim->name, aoran(get_race(victim)).c_str() );
 
     if ( (chance(ch, 50) && ch->top_level >= victim->top_level + 10 )
     ||    IS_IMMORTAL(ch) )
@@ -2737,7 +2738,7 @@ ch_ret spell_identify( int sn, int level, CHAR_DATA *ch, void *vo )
   
   else
   {
-    ch_printf(ch, "You can't find %s!\n", target_name );
+    ch_printf(ch, "You can't find %s!\n", target_name.c_str() );
     return rSPELL_FAILED;
   }
   return rNONE;
@@ -2752,7 +2753,7 @@ ch_ret spell_invis( int sn, int level, CHAR_DATA *ch, void *vo )
 
 /* Modifications on 1/2/96 to work on player/object - Scryn */
 
-    if (target_name[0] == '\0')
+    if (target_name.empty())
 	victim = ch;
     else
 	victim = get_char_room(ch, target_name);
@@ -2803,7 +2804,7 @@ ch_ret spell_invis( int sn, int level, CHAR_DATA *ch, void *vo )
 	    return rNONE;
 	}
     }
-    ch_printf(ch, "You can't find %s!\n", target_name);
+    ch_printf(ch, "You can't find %s!\n", target_name.c_str() );
     return rSPELL_FAILED;
 }
 
@@ -3050,7 +3051,7 @@ ch_ret spell_remove_trap( int sn, int level, CHAR_DATA *ch, void *vo )
     int retcode;
     SKILLTYPE *skill = get_skilltype(sn);
 
-    if ( !target_name || target_name[0] == '\0' )
+    if ( target_name.empty() )
     {
        send_to_char( "Remove trap on what?\n", ch );
        return rSPELL_FAILED;
@@ -3246,13 +3247,16 @@ ch_ret spell_ventriloquate( int sn, int level, CHAR_DATA *ch, void *vo )
 {
     char buf1[MAX_STRING_LENGTH];
     char buf2[MAX_STRING_LENGTH];
+    char targbuf[MAX_INPUT_LENGTH];
     char speaker[MAX_INPUT_LENGTH];
+    std::string speaker_name;
     CHAR_DATA *vch;
 
-    target_name = one_argument( target_name, speaker );
+    SPRINTF(targbuf, "%s", one_argument( (target_name), speaker_name ).c_str());
+    SPRINTF( speaker, "%s", speaker_name.c_str() );
 
-    SPRINTF( buf1, "%s says '%s'.\n",              speaker, target_name );
-    SPRINTF( buf2, "Someone makes %s say '%s'.\n", speaker, target_name );
+    SPRINTF( buf1, "%s says '%s'.\n",              speaker, targbuf );
+    SPRINTF( buf2, "Someone makes %s say '%s'.\n", speaker, targbuf );
     buf1[0] = UPPER(buf1[0]);
 
     for ( vch = ch->in_room->first_person; vch; vch = vch->next_in_room )
@@ -3740,7 +3744,7 @@ ch_ret spell_remove_invis( int sn, int level, CHAR_DATA *ch, void *vo )
     OBJ_DATA *obj;
     SKILLTYPE *skill = get_skilltype(sn);
 
-    if ( target_name[0] == '\0' )
+    if ( target_name.empty() )
     {
       send_to_char( "What should the spell be cast upon?\n", ch );
       return rSPELL_FAILED;
@@ -3769,7 +3773,7 @@ ch_ret spell_remove_invis( int sn, int level, CHAR_DATA *ch, void *vo )
       {
 	if(!can_see(ch, victim))
 	{
-	  ch_printf(ch, "You don't see %s!\n", target_name);
+	  ch_printf(ch, "You don't see %s!\n", target_name.c_str());
 	  return rSPELL_FAILED;
 	}
 	
@@ -3818,7 +3822,7 @@ ch_ret spell_remove_invis( int sn, int level, CHAR_DATA *ch, void *vo )
     	return rNONE;
 	}
 
-      ch_printf(ch, "You can't find %s!\n", target_name);
+      ch_printf(ch, "You can't find %s!\n", target_name.c_str());
       return rSPELL_FAILED;
       }	   
 }	
@@ -3842,7 +3846,7 @@ ch_ret spell_animate_dead( int sn, int level, CHAR_DATA *ch, void *vo )
 
     found = FALSE;
 
-    if ( target_name[0] != '\0' )
+    if ( !target_name.empty() )
     {
         if( ( corpse = get_obj_here( ch, target_name ) ) == NULL )
         {
@@ -4090,9 +4094,12 @@ ch_ret spell_knock( int sn, int level, CHAR_DATA *ch, void *vo )
 ch_ret spell_dream( int sn, int level, CHAR_DATA *ch, void *vo )
 {
   CHAR_DATA *victim;
-  char arg[MAX_INPUT_LENGTH];
-  
-  target_name = one_argument(target_name, arg);
+  std::string arg;
+  char targbuf[MAX_INPUT_LENGTH];
+  std::string argstr;
+  SPRINTF(targbuf, "%s", one_argument( (target_name), argstr ).c_str());
+  arg = argstr;
+
   set_char_color(AT_MAGIC, ch);
   if ( !(victim = get_char_world(ch, arg)) )
   {
@@ -4110,7 +4117,7 @@ ch_ret spell_dream( int sn, int level, CHAR_DATA *ch, void *vo )
     return rSPELL_FAILED;
   }
   
-  if ( !target_name )
+  if ( target_name.empty() )
   {
     send_to_char("What do you want them to dream about?\n", ch );
     return rSPELL_FAILED;
@@ -4118,7 +4125,7 @@ ch_ret spell_dream( int sn, int level, CHAR_DATA *ch, void *vo )
 
   set_char_color(AT_TELL, victim);
   ch_printf(victim, "You have dreams about %s telling you '%s'.\n",
-	 PERS(ch, victim), target_name);
+	 PERS(ch, victim), targbuf);
   send_to_char("Ok.\n", ch);
   return rNONE;
 }

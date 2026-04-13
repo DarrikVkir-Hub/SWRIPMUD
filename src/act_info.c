@@ -70,14 +70,14 @@ void	show_char_to_char	args( ( CHAR_DATA *list, CHAR_DATA *ch ) );
 void	show_ships_to_char	args( ( SHIP_DATA *ship, CHAR_DATA *ch ) );
 bool	check_blind		args( ( CHAR_DATA *ch ) );
 void    show_condition          args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );
-int	get_race_from_name	args( ( char *arg ) );
-int	get_class_from_name	args( ( char *arg ) );
+int	get_race_from_name	args( ( const std::string& arg ) );
+int	get_class_from_name	args( ( const std::string& arg ) );
 //Similar Helpfile Snippet Declarations
-sh_int str_similarity( const char *astr, const char *bstr );
-sh_int str_prefix_level( const char *astr, const char *bstr );
-void similar_help_files(CHAR_DATA *ch, char *argument);
+sh_int str_similarity( const std::string& astr, const std::string& bstr );
+sh_int str_prefix_level( const std::string& astr, const std::string& bstr );
+void similar_help_files(CHAR_DATA *ch, const std::string& argument);
 
-char * get_sex( CHAR_DATA *ch )
+const std::string get_sex( CHAR_DATA *ch )
 {
 	switch( ch->sex )
 	{
@@ -91,7 +91,7 @@ char * get_sex( CHAR_DATA *ch )
 }
 
 /*
-char * get_disguise( CHAR_DATA *ch )
+const std::string& get_disguise( CHAR_DATA *ch )
 {
 	if ( ( obj = get_eq_char( victim, WEAR_DISGUISE ) ) == NULL )
 	  return ch->name;
@@ -100,7 +100,7 @@ char * get_disguise( CHAR_DATA *ch )
 
 }
 */
-int get_race_from_name( char *arg )
+int get_race_from_name( const std::string&arg )
 {
   int iRace;
 
@@ -115,7 +115,7 @@ int get_race_from_name( char *arg )
   return iRace;
 }
 
-int get_class_from_name( char *arg )
+int get_class_from_name( const std::string& arg )
 {
   int iClass;
   
@@ -130,7 +130,7 @@ int get_class_from_name( char *arg )
   return iClass;
 }
 
-char *format_obj_to_char( OBJ_DATA *obj, CHAR_DATA *ch, bool fShort )
+const std::string format_obj_to_char( OBJ_DATA *obj, CHAR_DATA *ch, bool fShort )
 {
     static char buf[MAX_STRING_LENGTH];
 
@@ -164,7 +164,7 @@ char *format_obj_to_char( OBJ_DATA *obj, CHAR_DATA *ch, bool fShort )
 /*
  * Some increasingly freaky halucinated objects		-Thoric
  */
-char *halucinated_object( int ms, bool fShort )
+std::string halucinated_object( int ms, bool fShort )
 {
     int sms = URANGE( 1, (ms+10)/5, 20 );
 
@@ -223,199 +223,196 @@ char *halucinated_object( int ms, bool fShort )
  * Show a list to a character.
  * Can coalesce duplicated items.
  */
+struct ShowEntry
+{
+    std::string text;
+    int count;
+    int item_type;
+};
+
 void show_list_to_char( OBJ_DATA *list, CHAR_DATA *ch, bool fShort, bool fShowNothing )
 {
-    char **prgpstrShow;
-    int *prgnShow;
-    int *pitShow;
-    char *pstrShow;
+    struct ShowEntry
+    {
+        std::string text;
+        int count;
+        int item_type;
+    };
+
     OBJ_DATA *obj;
-    int nShow;
-    int iShow;
     int count, offcount, tmp, ms, cnt;
     bool fCombine;
 
     if ( !ch->desc )
-	return;
+        return;
 
     /*
      * if there's no list... then don't do all this crap!  -Thoric
      */
     if ( !list )
     {
-    	if ( fShowNothing )
-    	{
-	   if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) )
-	      send_to_char( "     ", ch );
-	   send_to_char( "Nothing.\n", ch );
-	}
-	return;
+        if ( fShowNothing )
+        {
+            if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) )
+                send_to_char( "     ", ch );
+            send_to_char( "Nothing.\n", ch );
+        }
+        return;
     }
+
     /*
-     * Alloc space for output lines.
+     * Count objects.
      */
     count = 0;
     for ( obj = list; obj; obj = obj->next_content )
-	count++;
+        count++;
 
-    ms  = (ch->mental_state ? ch->mental_state : 1)
-	* (IS_NPC(ch) ? 1 : (ch->pcdata->condition[COND_DRUNK] ? (ch->pcdata->condition[COND_DRUNK]/12) : 1));
+    ms = ( ch->mental_state ? ch->mental_state : 1 )
+        * ( IS_NPC(ch) ? 1 :
+            ( ch->pcdata->condition[COND_DRUNK]
+                ? ( ch->pcdata->condition[COND_DRUNK] / 12 )
+                : 1 ) );
 
     /*
      * If not mentally stable...
      */
     if ( abs(ms) > 40 )
     {
-	offcount = URANGE( -(count), (count * ms) / 100, count*2 );
-	if ( offcount < 0 )
-	  offcount += number_range(0, abs(offcount));
-	else
-	if ( offcount > 0 )
-	  offcount -= number_range(0, offcount);
+        offcount = URANGE( -(count), (count * ms) / 100, count * 2 );
+        if ( offcount < 0 )
+            offcount += number_range( 0, abs(offcount) );
+        else if ( offcount > 0 )
+            offcount -= number_range( 0, offcount );
     }
     else
-	offcount = 0;
+        offcount = 0;
 
     if ( count + offcount <= 0 )
     {
-    	if ( fShowNothing )
-    	{
-	   if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) )
-	      send_to_char( "     ", ch );
-	   send_to_char( "Nothing.\n", ch );
-	}
-	return;
+        if ( fShowNothing )
+        {
+            if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) )
+                send_to_char( "     ", ch );
+            send_to_char( "Nothing.\n", ch );
+        }
+        return;
     }
 
-    CREATE_ARRAY( prgpstrShow,	char*,	count + ((offcount > 0) ? offcount : 0) );
-    CREATE_ARRAY( prgnShow,		int,	count + ((offcount > 0) ? offcount : 0) );
-    CREATE_ARRAY( pitShow,		int,	count + ((offcount > 0) ? offcount : 0) );
-    nShow	= 0;
-    tmp		= (offcount > 0) ? offcount : 0;
-    cnt		= 0;
+    std::vector<ShowEntry> show;
+    show.reserve( count + ( ( offcount > 0 ) ? offcount : 0 ) );
+
+    tmp = ( offcount > 0 ) ? offcount : 0;
+    cnt = 0;
 
     /*
      * Format the list of objects.
      */
     for ( obj = list; obj; obj = obj->next_content )
     {
-	if ( offcount < 0 && ++cnt > (count + offcount) )
-	    break;
-	if ( tmp > 0 && number_bits(1) == 0 )
-	{
-	    prgpstrShow [nShow] = str_dup( halucinated_object(ms, fShort) );
-	    prgnShow	[nShow] = 1;
-	    pitShow	[nShow] = number_range( ITEM_LIGHT, ITEM_BOOK );
-	    nShow++;
-	    --tmp;
-	}
-	if ( obj->wear_loc == WEAR_NONE
-	&& can_see_obj( ch, obj ) 
-	&& ( ( obj->description && obj->description[0] != '\0' ) || ( BV_IS_SET(ch->act, PLR_HOLYLIGHT) || IS_NPC(ch) ) )
-	&& (obj->item_type != ITEM_TRAP || IS_AFFECTED(ch, AFF_DETECTTRAPS) ) )
-	{
-	    pstrShow = format_obj_to_char( obj, ch, fShort );
-	    fCombine = FALSE;
+        if ( offcount < 0 && ++cnt > ( count + offcount ) )
+            break;
 
-	    if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) )
-	    {
-		/*
-		 * Look for duplicates, case sensitive.
-		 * Matches tend to be near end so run loop backwords.
-		 */
-		for ( iShow = nShow - 1; iShow >= 0; iShow-- )
-		{
-		    if ( !strcmp( prgpstrShow[iShow], pstrShow ) )
-		    {
-			prgnShow[iShow] += obj->count;
-			fCombine = TRUE;
-			break;
-		    }
-		}
-	    }
+        if ( tmp > 0 && number_bits(1) == 0 )
+        {
+            show.push_back( { halucinated_object( ms, fShort ), 1,
+                              number_range( ITEM_LIGHT, ITEM_BOOK ) } );
+            --tmp;
+        }
 
-	    pitShow[nShow] = obj->item_type;
-	    /*
-	     * Couldn't combine, or didn't want to.
-	     */
-	    if ( !fCombine )
-	    {
-		prgpstrShow [nShow] = str_dup( pstrShow );
-		prgnShow    [nShow] = obj->count;
-		nShow++;
-	    }
-	}
+        if ( obj->wear_loc == WEAR_NONE
+        &&   can_see_obj( ch, obj )
+        &&   ( ( obj->description && obj->description[0] != '\0' )
+            || ( BV_IS_SET(ch->act, PLR_HOLYLIGHT) || IS_NPC(ch) ) )
+        &&   ( obj->item_type != ITEM_TRAP || IS_AFFECTED(ch, AFF_DETECTTRAPS) ) )
+        {
+            std::string pstrShow = format_obj_to_char( obj, ch, fShort );
+            fCombine = FALSE;
+
+            if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) )
+            {
+                /*
+                 * Look for duplicates, case sensitive.
+                 * Matches tend to be near end so run loop backwards.
+                 */
+                for ( int iShow = static_cast<int>( show.size() ) - 1; iShow >= 0; --iShow )
+                {
+                    if ( show[iShow].text == pstrShow )
+                    {
+                        show[iShow].count += obj->count;
+                        fCombine = TRUE;
+                        break;
+                    }
+                }
+            }
+
+            /*
+             * Couldn't combine, or didn't want to.
+             */
+            if ( !fCombine )
+            {
+                show.push_back( { pstrShow, obj->count, obj->item_type } );
+            }
+        }
     }
-    if ( tmp > 0 )
+
+    while ( tmp > 0 )
     {
-	int x;
-	for ( x = 0; x < tmp; x++ )
-	{
-	    prgpstrShow [nShow] = str_dup( halucinated_object(ms, fShort) );
-	    prgnShow	[nShow] = 1; 	    pitShow	[nShow] = number_range( ITEM_LIGHT, ITEM_BOOK );
-	    nShow++;
-	}
+        show.push_back( { halucinated_object( ms, fShort ), 1,
+                          number_range( ITEM_LIGHT, ITEM_BOOK ) } );
+        --tmp;
     }
 
     /*
-     * Output the formatted list.		-Color support by Thoric
+     * Output the formatted list. -Color support by Thoric
      */
-    for ( iShow = 0; iShow < nShow; iShow++ )
+    for ( const auto &entry : show )
     {
-	switch(pitShow[iShow]) {
-	default:
-	  set_char_color( AT_OBJECT, ch );
-	  break;
-	case ITEM_BLOOD:
-	  set_char_color( AT_BLOOD, ch );
-	  break;
-	case ITEM_MONEY:
-	case ITEM_TREASURE:
-	  set_char_color( AT_YELLOW, ch );
-	  break;
-	case ITEM_FOOD:
-	  set_char_color( AT_HUNGRY, ch );
-	  break;
-	case ITEM_DRINK_CON:
-	case ITEM_FOUNTAIN:
-	  set_char_color( AT_THIRSTY, ch );
-	  break;
-	case ITEM_FIRE:
-	  set_char_color( AT_FIRE, ch );
-	  break;
-	case ITEM_SCROLL:
-	case ITEM_WAND:
-	case ITEM_STAFF:
-	  set_char_color( AT_MAGIC, ch );
-	  break;
-	}
-	if ( fShowNothing )
-	    send_to_char( "     ", ch );
-	send_to_char( prgpstrShow[iShow], ch );
-/*	if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) ) */
-	{
-	    if ( prgnShow[iShow] != 1 )
-		ch_printf( ch, " (%d)", prgnShow[iShow] );
-	}
+        switch ( entry.item_type )
+        {
+            default:
+                set_char_color( AT_OBJECT, ch );
+                break;
+            case ITEM_BLOOD:
+                set_char_color( AT_BLOOD, ch );
+                break;
+            case ITEM_MONEY:
+            case ITEM_TREASURE:
+                set_char_color( AT_YELLOW, ch );
+                break;
+            case ITEM_FOOD:
+                set_char_color( AT_HUNGRY, ch );
+                break;
+            case ITEM_DRINK_CON:
+            case ITEM_FOUNTAIN:
+                set_char_color( AT_THIRSTY, ch );
+                break;
+            case ITEM_FIRE:
+                set_char_color( AT_FIRE, ch );
+                break;
+            case ITEM_SCROLL:
+            case ITEM_WAND:
+            case ITEM_STAFF:
+                set_char_color( AT_MAGIC, ch );
+                break;
+        }
 
-	send_to_char( "\n", ch );
-	STR_DISPOSE( prgpstrShow[iShow] );
+        if ( fShowNothing )
+            send_to_char( "     ", ch );
+
+        send_to_char( entry.text, ch );
+
+        if ( entry.count != 1 )
+            ch_printf( ch, " (%d)", entry.count );
+
+        send_to_char( "\n", ch );
     }
 
-    if ( fShowNothing && nShow == 0 )
+    if ( fShowNothing && show.empty() )
     {
-	if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) )
-	    send_to_char( "     ", ch );
-	send_to_char( "Nothing.\n", ch );
+        if ( IS_NPC(ch) || BV_IS_SET(ch->act, PLR_COMBINE) )
+            send_to_char( "     ", ch );
+        send_to_char( "Nothing.\n", ch );
     }
-
-    /*
-     * Clean up.
-     */
-    DISPOSE_ARRAY( prgpstrShow );
-    DISPOSE_ARRAY( prgnShow	 );
-    DISPOSE_ARRAY( pitShow	 );
-    return;
 }
 
 
@@ -433,32 +430,32 @@ void show_visible_affects_to_char( CHAR_DATA *victim, CHAR_DATA *ch )
         {
             set_char_color( AT_WHITE, ch );
             ch_printf( ch, "%s glows with an aura of divine radiance.\n",
-		IS_NPC( victim ) ? capitalize(victim->short_descr) : (victim->name) );
+		IS_NPC( victim ) ? capitalize(victim->short_descr).c_str() : (victim->name) );
         }
         else if ( IS_EVIL(victim) )
         {
             set_char_color( AT_WHITE, ch );
             ch_printf( ch, "%s shimmers beneath an aura of dark energy.\n",
-		IS_NPC( victim ) ? capitalize(victim->short_descr) : (victim->name) );
+		IS_NPC( victim ) ? capitalize(victim->short_descr).c_str() : (victim->name) );
         }
         else
         {
             set_char_color( AT_WHITE, ch );
             ch_printf( ch, "%s is shrouded in flowing shadow and light.\n",
-		IS_NPC( victim ) ? capitalize(victim->short_descr) : (victim->name) );
+		IS_NPC( victim ) ? capitalize(victim->short_descr).c_str() : (victim->name) );
         }
     }
     if ( IS_AFFECTED(victim, AFF_FIRESHIELD) )
     {
         set_char_color( AT_FIRE, ch );
         ch_printf( ch, "%s is engulfed within a blaze of mystical flame.\n",
-	    IS_NPC( victim ) ? capitalize(victim->short_descr) : (victim->name) );
+	    IS_NPC( victim ) ? capitalize(victim->short_descr).c_str() : (victim->name) );
     }
     if ( IS_AFFECTED(victim, AFF_SHOCKSHIELD) )
     {
         set_char_color( AT_BLUE, ch );
 	ch_printf( ch, "%s is surrounded by cascading torrents of energy.\n",
-	    IS_NPC( victim ) ? capitalize(victim->short_descr) : (victim->name) );
+	    IS_NPC( victim ) ? capitalize(victim->short_descr).c_str() : (victim->name) );
     }
     */
 /*Scryn 8/13*/
@@ -467,14 +464,14 @@ void show_visible_affects_to_char( CHAR_DATA *victim, CHAR_DATA *ch )
     {
         set_char_color( AT_LBLUE, ch );
         ch_printf( ch, "%s is ensphered by shards of glistening ice.\n",
-	    IS_NPC( victim ) ? capitalize(victim->short_descr) : (victim->name) );
+	    IS_NPC( victim ) ? capitalize(victim->short_descr).c_str() : (victim->name) );
     }
     */
     if ( IS_AFFECTED(victim, AFF_CHARM)       )
     {
 	set_char_color( AT_MAGIC, ch );
 	ch_printf( ch, "%s looks ahead free of expression.\n",
-	    IS_NPC( victim ) ? capitalize(victim->short_descr) : (victim->name) );
+	    IS_NPC( victim ) ? capitalize(victim->short_descr).c_str() : (victim->name) );
     }
     if ( !IS_NPC(victim) && !victim->desc
     &&    victim->switched && IS_AFFECTED(victim->switched, AFF_POSSESS) )
@@ -768,7 +765,7 @@ void show_char_to_char_1( CHAR_DATA *victim, CHAR_DATA *ch )
     act( AT_ACTION, "$n looks at $N.",  ch, NULL, victim, TO_NOTVICT );
     }
 
-    ch_printf( ch, "%s is a %s %s\n", PERS(victim, ch), get_sex( victim ), get_flag_name(npc_race, victim->race, MAX_NPC_RACE) );
+    ch_printf( ch, "%s is a %s %s\n", PERS(victim, ch), get_sex( victim ).c_str(), get_flag_name(npc_race, victim->race, MAX_NPC_RACE) );
 
     if ( victim->description[0] != '\0' )
     {
@@ -929,7 +926,7 @@ bool check_blind( CHAR_DATA *ch )
 /*
  * Returns classical DIKU door direction based on text in arg	-Thoric
  */
-int get_door( char *arg )
+int get_door( const std::string& arg )
 {
     int door;
 
@@ -947,513 +944,501 @@ int get_door( char *arg )
     return door;
 }
 
-void do_look ( CHAR_DATA *ch, char *argument )
+void do_look_str(CHAR_DATA *ch, const std::string& argument_in)
 {
-    char arg  [MAX_INPUT_LENGTH];
-    char arg1 [MAX_INPUT_LENGTH];
-    char arg2 [MAX_INPUT_LENGTH];
-    char arg3 [MAX_INPUT_LENGTH];
+    std::string argument = argument_in;
+    std::string arg;
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
     EXIT_DATA *pexit;
     CHAR_DATA *victim;
     OBJ_DATA *obj;
     ROOM_INDEX_DATA *original;
-    char *pdesc;
-    bool doexaprog; 
+    char *pdesc; // Pointer for extra descs
+    bool doexaprog;
     sh_int door;
     int number, cnt;
     SPACE_DATA *spaceobject;
 
-    if ( !ch->desc )
-	return;
+    if (!ch->desc)
+        return;
 
-    if ( ch->position < POS_SLEEPING )
+    if (ch->position < POS_SLEEPING)
     {
-	send_to_char( "You can't see anything but stars!\n", ch );
-	return;
+        send_to_char("You can't see anything but stars!\n", ch);
+        return;
     }
 
-    if ( ch->position == POS_SLEEPING )
+    if (ch->position == POS_SLEEPING)
     {
-	send_to_char( "You can't see anything, you're sleeping!\n", ch );
-	return;
+        send_to_char("You can't see anything, you're sleeping!\n", ch);
+        return;
     }
 
-    if ( !check_blind( ch ) )
-	return;
+    if (!check_blind(ch))
+        return;
 
-    if ( !IS_NPC(ch)
-    &&   !BV_IS_SET(ch->act, PLR_HOLYLIGHT)
-    &&   !IS_AFFECTED(ch, AFF_TRUESIGHT)
-    &&   room_is_dark( ch->in_room ) )
+    if (!IS_NPC(ch)
+    &&  !BV_IS_SET(ch->act, PLR_HOLYLIGHT)
+    &&  !IS_AFFECTED(ch, AFF_TRUESIGHT)
+    &&  room_is_dark(ch->in_room))
     {
-	set_char_color( AT_DGREY, ch );
-	send_to_char( "It is pitch black ... \n", ch );
-	show_char_to_char( ch->in_room->first_person, ch );
-	return;
+        set_char_color(AT_DGREY, ch);
+        send_to_char("It is pitch black ... \n", ch);
+        show_char_to_char(ch->in_room->first_person, ch);
+        return;
     }
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
-    argument = one_argument( argument, arg3 );
+    argument = one_argument(argument, arg1);
+    argument = one_argument(argument, arg2);
+    argument = one_argument(argument, arg3);
 
-    doexaprog = str_cmp( "noprog", arg2 ) && str_cmp( "noprog", arg3 );
+    doexaprog = str_cmp("noprog", arg2) && str_cmp("noprog", arg3);
 
-    if ( arg1[0] == '\0' || !str_cmp( arg1, "auto" ) )
+    if (arg1.empty() || !str_cmp(arg1, "auto"))
     {
-        SHIP_DATA * ship;
-        
+        SHIP_DATA *ship;
+
         /* 'look' or 'look auto' */
-        set_char_color( AT_RMNAME, ch);
-        send_to_char( ch->in_room->name, ch);
+        set_char_color(AT_RMNAME, ch);
+        send_to_char(ch->in_room->name, ch);
         send_to_char(" ", ch);
 
-        if( !ch->desc->original )
+        if (!ch->desc->original)
         {
-            if( ( get_trust( ch ) >= LEVEL_IMMORTAL ) )             
+            if ((get_trust(ch) >= LEVEL_IMMORTAL))
             {
-                if( BV_IS_SET( ch->act, PLR_ROOMVNUM ) )
+                if (BV_IS_SET(ch->act, PLR_ROOMVNUM))
                 {
-                    set_char_color( AT_BLUE, ch );      /* Added 10/17 by Kuran of */
-                    send_to_char( "{", ch );            /* SWReality */
-                    ch_printf( ch, "%d", ch->in_room->vnum );
-                    send_to_char( "}", ch );
+                    set_char_color(AT_BLUE, ch);
+                    send_to_char("{", ch);
+                    ch_printf(ch, "%d", ch->in_room->vnum);
+                    send_to_char("}", ch);
                 }
-                if( BV_IS_SET( ch->pcdata->flags, PCFLAG_ROOM ) )
+                if (BV_IS_SET(ch->pcdata->flags, PCFLAG_ROOM))
                 {
-                    set_char_color( AT_CYAN, ch );
-                    send_to_char( "[", ch );
-                    send_to_char( bitset_to_string( ch->in_room->room_flags, r_flags ).c_str(), ch );
-                    send_to_char( "]", ch );
+                    set_char_color(AT_CYAN, ch);
+                    send_to_char("[", ch);
+                    send_to_char(bitset_to_string(ch->in_room->room_flags, r_flags), ch);
+                    send_to_char("]", ch);
                 }
             }
         }
 
-        send_to_char( "\n", ch );
-        set_char_color( AT_RMDESC, ch ); 	
-        
-        if ( arg1[0] == '\0'
-        || ( !IS_NPC(ch) && !BV_IS_SET(ch->act, PLR_BRIEF) ) )
-            send_to_char( ch->in_room->description, ch );
-    
-        if ( BV_IS_SET( ch->in_room->room_flags, ROOM_CAN_LAND ) )
-            send_to_char( "&GYou can rent ships here. ( Type rent )&R&W\n", ch );
-        
-        if ( is_bus_stop( ch->in_room->vnum ) )
-        send_to_char( "&GA Serin shuttle picks up passengers here. ( Type findserin )&R&W\n", ch );
-            
+        send_to_char("\n", ch);
+        set_char_color(AT_RMDESC, ch);
 
-        if ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_AUTOEXIT) )
-                do_exits( ch, "" );
+        if (arg1.empty()
+        || (!IS_NPC(ch) && !BV_IS_SET(ch->act, PLR_BRIEF)))
+            send_to_char(ch->in_room->description, ch);
 
-        show_ships_to_char( ch->in_room->first_ship, ch );
-        show_list_to_char( ch->in_room->first_content, ch, FALSE, FALSE );
-        show_char_to_char( ch->in_room->first_person,  ch );
-        
-        if ( str_cmp( arg1, "auto" ) )
-            if (   (ship = ship_from_cockpit(ch->game, ch->in_room->vnum))  != NULL )
+        if (BV_IS_SET(ch->in_room->room_flags, ROOM_CAN_LAND))
+            send_to_char("&GYou can rent ships here. ( Type rent )&R&W\n", ch);
+
+        if (is_bus_stop(ch->in_room->vnum))
+            send_to_char("&GA Serin shuttle picks up passengers here. ( Type findserin )&R&W\n", ch);
+
+        if (!IS_NPC(ch) && BV_IS_SET(ch->act, PLR_AUTOEXIT))
+            do_exits(ch, "");
+
+        show_ships_to_char(ch->in_room->first_ship, ch);
+        show_list_to_char(ch->in_room->first_content, ch, FALSE, FALSE);
+        show_char_to_char(ch->in_room->first_person, ch);
+
+        if (str_cmp(arg1, "auto"))
+            if ((ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) != NULL)
             {
-                set_char_color(  AT_WHITE, ch );
-                                ch_printf( ch , "\nThrough the transparisteel windows you see:\n" );
-                        
-                if ( ship->location || ship->shipstate == SHIP_LANDED )
+                set_char_color(AT_WHITE, ch);
+                ch_printf(ch, "\nThrough the transparisteel windows you see:\n");
+
+                if (ship->location || ship->shipstate == SHIP_LANDED)
                 {
                     ROOM_INDEX_DATA *to_room;
-                
-                    if ( (to_room = get_room_index( ship->location ) ) != NULL )
+
+                    if ((to_room = get_room_index(ship->location)) != NULL)
                     {
-                        ch_printf( ch, "\n" );
+                        ch_printf(ch, "\n");
                         original = ch->in_room;
-                            char_from_room( ch );
-                            char_to_room( ch, to_room );
-                            do_glance( ch, "" );	
-                            char_from_room( ch );
-                            char_to_room( ch, original );
-                        }
-                        else
-                        ch_printf( ch, "no room?\n" );
+                        char_from_room(ch);
+                        char_to_room(ch, to_room);
+                        do_glance(ch, "");
+                        char_from_room(ch);
+                        char_to_room(ch, original);
+                    }
+                    else
+                        ch_printf(ch, "no room?\n");
                 }
-                else if (ship->spaceobject )
+                else if (ship->spaceobject)
                 {
-                    //MISSILE_DATA *missile;
                     SHIP_DATA *target;
-                    
-                        set_char_color(  AT_GREEN, ch );
-                    for( spaceobject = first_spaceobject; spaceobject; spaceobject = spaceobject->next )
-                        if ( space_in_range( ship, spaceobject) && spaceobject->name && str_cmp(spaceobject->name,"") ) 
-                                ch_printf(ch, "%s\n" , 
-                                        spaceobject->name);
-                    for ( target = first_ship; target; target = target->next )
+
+                    set_char_color(AT_GREEN, ch);
+                    for (spaceobject = first_spaceobject; spaceobject; spaceobject = spaceobject->next)
+                        if (space_in_range(ship, spaceobject) && spaceobject->name && str_cmp(spaceobject->name, ""))
+                            ch_printf(ch, "%s\n", spaceobject->name);
+
+                    for (target = first_ship; target; target = target->next)
+                    {
+                        if (target != ship && target->spaceobject)
                         {
-                                if ( target != ship && target->spaceobject )
-                                {
-                                if ( abs((int) ( target->vx - ship->vx )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+1) &&
-                                abs( (int) ( target->vy - ship->vy )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+1) &&
-                                abs( (int) ( target->vz - ship->vz )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+1) )
-
-                                    ch_printf(ch, "%s    %.0f %.0f %.0f\n",
+                            if (abs((int)(target->vx - ship->vx)) < 100 * (ship->mod->sensor + 10) * ((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass) + 1) &&
+                                abs((int)(target->vy - ship->vy)) < 100 * (ship->mod->sensor + 10) * ((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass) + 1) &&
+                                abs((int)(target->vz - ship->vz)) < 100 * (ship->mod->sensor + 10) * ((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass) + 1))
+                            {
+                                ch_printf(ch, "%s    %.0f %.0f %.0f\n",
                                     target->name,
-                        (target->vx - ship->vx),
-                        (target->vy - ship->vy),
-                        (target->vz - ship->vz));
-
-
-                                else if ( abs( (int) ( target->vx - ship->vx )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+3) &&
-                                abs((int) ( target->vy - ship->vy )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+3) &&
-                                abs((int) ( target->vz - ship->vz )) < 100*(ship->mod->sensor+10)*((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass)+3) )
-                                {
-                                if ( target->shipclass == FIGHTER_SHIP )
-                                    ch_printf(ch, "A small metallic mass    %.0f %.0f %.0f\n",
-                        (target->vx - ship->vx),
-                        (target->vy - ship->vy),
-                        (target->vz - ship->vz));
-                                if ( target->shipclass == MIDSIZE_SHIP )
-                                    ch_printf(ch, "A goodsize metallic mass    %.0f %.0f %.0f\n",
-                        (target->vx - ship->vx),
-                        (target->vy - ship->vy),
-                        (target->vz - ship->vz));
-                                if ( target->shipclass == SHIP_DEBRIS )
-                                    ch_printf(ch, "scattered metallic reflections    %.0f %.0f %.0f\n",
-                        (target->vx - ship->vx),
-                        (target->vy - ship->vy),
-                        (target->vz - ship->vz));
-                                else if ( target->shipclass >= CAPITAL_SHIP )
-                                    ch_printf(ch, "A huge metallic mass    %.0f %.0f %.0f\n",
-                        (target->vx - ship->vx),
-                        (target->vy - ship->vy),
-                        (target->vz - ship->vz));
-                                }
-
+                                    (target->vx - ship->vx),
+                                    (target->vy - ship->vy),
+                                    (target->vz - ship->vz));
                             }
-
+                            else if (abs((int)(target->vx - ship->vx)) < 100 * (ship->mod->sensor + 10) * ((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass) + 3) &&
+                                     abs((int)(target->vy - ship->vy)) < 100 * (ship->mod->sensor + 10) * ((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass) + 3) &&
+                                     abs((int)(target->vz - ship->vz)) < 100 * (ship->mod->sensor + 10) * ((target->shipclass == SHIP_DEBRIS ? 2 : target->shipclass) + 3))
+                            {
+                                if (target->shipclass == FIGHTER_SHIP)
+                                    ch_printf(ch, "A small metallic mass    %.0f %.0f %.0f\n",
+                                        (target->vx - ship->vx),
+                                        (target->vy - ship->vy),
+                                        (target->vz - ship->vz));
+                                if (target->shipclass == MIDSIZE_SHIP)
+                                    ch_printf(ch, "A goodsize metallic mass    %.0f %.0f %.0f\n",
+                                        (target->vx - ship->vx),
+                                        (target->vy - ship->vy),
+                                        (target->vz - ship->vz));
+                                if (target->shipclass == SHIP_DEBRIS)
+                                    ch_printf(ch, "scattered metallic reflections    %.0f %.0f %.0f\n",
+                                        (target->vx - ship->vx),
+                                        (target->vy - ship->vy),
+                                        (target->vz - ship->vz));
+                                else if (target->shipclass >= CAPITAL_SHIP)
+                                    ch_printf(ch, "A huge metallic mass    %.0f %.0f %.0f\n",
+                                        (target->vx - ship->vx),
+                                        (target->vy - ship->vy),
+                                        (target->vz - ship->vz));
+                            }
                         }
-                        ch_printf(ch,"\n");
-
-                        /*
-                        for ( missile = ship->spaceobject->first_missile; missile; missile = missile->next_in_spaceobject )
-                        {        
-                                ch_printf(ch, "%s\n", 
-                                    missile->missiletype == CONCUSSION_MISSILE ? "A Concusion Missile" : 
-                                ( missile->missiletype ==  PROTON_TORPEDO ? "A Torpedo" : 
-                                ( missile->missiletype ==  HEAVY_ROCKET ? "A Heavy Rocket" : "A Heavy Bomb" ) ) );
-                        }
-                        */                     
+                    }
+                    ch_printf(ch, "\n");
                 }
-                
-                
             }
-        
+
         return;
     }
 
-    if ( !str_cmp( arg1, "under" ) )
+    if (!str_cmp(arg1, "under"))
     {
         int count;
 
         /* 'look under' */
-        if ( arg2[0] == '\0' )
+        if (arg2.empty())
         {
-            send_to_char( "Look beneath what?\n", ch );
+            send_to_char("Look beneath what?\n", ch);
             return;
         }
 
-        if ( ( obj = get_obj_here( ch, arg2 ) ) == NULL )
+        if ((obj = get_obj_here(ch, arg2)) == NULL)
         {
-            send_to_char( "You do not see that here.\n", ch );
+            send_to_char("You do not see that here.\n", ch);
             return;
         }
-        if ( ch->carry_weight + obj->weight > can_carry_w( ch ) )
+        if (ch->carry_weight + obj->weight > can_carry_w(ch))
         {
-            send_to_char( "It's too heavy for you to look under.\n", ch );
+            send_to_char("It's too heavy for you to look under.\n", ch);
             return;
         }
         count = obj->count;
         obj->count = 1;
-        act( AT_PLAIN, "You lift $p and look beneath it:", ch, obj, NULL, TO_CHAR );
-        act( AT_PLAIN, "$n lifts $p and looks beneath it:", ch, obj, NULL, TO_ROOM );
+        act(AT_PLAIN, "You lift $p and look beneath it:", ch, obj, NULL, TO_CHAR);
+        act(AT_PLAIN, "$n lifts $p and looks beneath it:", ch, obj, NULL, TO_ROOM);
         obj->count = count;
-        if ( IS_OBJ_STAT( obj, ITEM_COVERING ) )
-        show_list_to_char( obj->first_content, ch, TRUE, TRUE );
+        if (IS_OBJ_STAT(obj, ITEM_COVERING))
+            show_list_to_char(obj->first_content, ch, TRUE, TRUE);
         else
-        send_to_char( "Nothing.\n", ch );
-        if ( doexaprog ) oprog_examine_trigger( ch, obj );
+            send_to_char("Nothing.\n", ch);
+        if (doexaprog) oprog_examine_trigger(ch, obj);
         return;
     }
 
-    if ( !str_cmp( arg1, "i" ) || !str_cmp( arg1, "in" ) )
+    if (!str_cmp(arg1, "i") || !str_cmp(arg1, "in"))
     {
         int count;
 
         /* 'look in' */
-        if ( arg2[0] == '\0' )
+        if (arg2.empty())
         {
-            send_to_char( "Look in what?\n", ch );
+            send_to_char("Look in what?\n", ch);
             return;
         }
 
-        if ( ( obj = get_obj_here( ch, arg2 ) ) == NULL )
+        if ((obj = get_obj_here(ch, arg2)) == NULL)
         {
-            send_to_char( "You do not see that here.\n", ch );
+            send_to_char("You do not see that here.\n", ch);
             return;
         }
 
-        switch ( obj->item_type )
+        switch (obj->item_type)
         {
         default:
-            send_to_char( "That is not a container.\n", ch );
+            send_to_char("That is not a container.\n", ch);
             break;
 
         case ITEM_DRINK_CON:
-            if ( obj->value[1] <= 0 )
+            if (obj->value[1] <= 0)
             {
-                send_to_char( "It is empty.\n", ch );
-                if ( doexaprog ) oprog_examine_trigger( ch, obj );
+                send_to_char("It is empty.\n", ch);
+                if (doexaprog) oprog_examine_trigger(ch, obj);
                 break;
             }
 
-            ch_printf( ch, "It's %s full of a %s liquid.\n",
-            obj->value[1] <     obj->value[0] / 4
-                ? "less than" :
-            obj->value[1] < 3 * obj->value[0] / 4
-                ? "about"     : "more than",
-            liq_table[obj->value[2]].liq_color
-            );
+            ch_printf(ch, "It's %s full of a %s liquid.\n",
+                obj->value[1] < obj->value[0] / 4 ? "less than" :
+                obj->value[1] < 3 * obj->value[0] / 4 ? "about" : "more than",
+                liq_table[obj->value[2]].liq_color);
 
-            if ( doexaprog ) oprog_examine_trigger( ch, obj );
+            if (doexaprog) oprog_examine_trigger(ch, obj);
             break;
 
         case ITEM_PORTAL:
-            for ( pexit = ch->in_room->first_exit; pexit; pexit = pexit->next )
+            for (pexit = ch->in_room->first_exit; pexit; pexit = pexit->next)
             {
-            if ( pexit->vdir == DIR_PORTAL
-            &&   IS_SET(pexit->exit_info, EX_PORTAL) )
-            {
-                if ( room_is_private( ch, pexit->to_room )
-                &&   get_trust(ch) < ch->game->get_sysdata()->level_override_private )
+                if (pexit->vdir == DIR_PORTAL
+                &&  IS_SET(pexit->exit_info, EX_PORTAL))
                 {
-                set_char_color( AT_WHITE, ch );
-                send_to_char( "That room is private buster!\n", ch );
-                return;
+                    if (room_is_private(ch, pexit->to_room)
+                    &&  get_trust(ch) < ch->game->get_sysdata()->level_override_private)
+                    {
+                        set_char_color(AT_WHITE, ch);
+                        send_to_char("That room is private buster!\n", ch);
+                        return;
+                    }
+                    original = ch->in_room;
+                    char_from_room(ch);
+                    char_to_room(ch, pexit->to_room);
+                    do_look_str(ch, std::string("auto"));
+                    char_from_room(ch);
+                    char_to_room(ch, original);
+                    return;
                 }
-                original = ch->in_room;
-                char_from_room( ch );
-                char_to_room( ch, pexit->to_room );
-                do_look( ch, "auto" );
-                char_from_room( ch );
-                char_to_room( ch, original );
-                return;
             }
-            }
-            send_to_char( "You see a swirling chaos...\n", ch );
+            send_to_char("You see a swirling chaos...\n", ch);
             break;
+
         case ITEM_CONTAINER:
         case ITEM_CORPSE_NPC:
         case ITEM_CORPSE_PC:
         case ITEM_DROID_CORPSE:
-            if ( IS_SET(obj->value[1], CONT_CLOSED) )
+            if (IS_SET(obj->value[1], CONT_CLOSED))
             {
-            send_to_char( "It is closed.\n", ch );
-            break;
+                send_to_char("It is closed.\n", ch);
+                break;
             }
 
             count = obj->count;
             obj->count = 1;
-            act( AT_PLAIN, "$p contains:", ch, obj, NULL, TO_CHAR );
+            act(AT_PLAIN, "$p contains:", ch, obj, NULL, TO_CHAR);
             obj->count = count;
-            show_list_to_char( obj->first_content, ch, TRUE, TRUE );
-            if ( doexaprog ) oprog_examine_trigger( ch, obj );
+            show_list_to_char(obj->first_content, ch, TRUE, TRUE);
+            if (doexaprog) oprog_examine_trigger(ch, obj);
             break;
         }
         return;
     }
 
-    if ( (pdesc=get_extra_descr(arg1, ch->in_room->first_extradesc)) != NULL )
+    if ((pdesc = get_extra_descr(arg1, ch->in_room->first_extradesc)) != NULL)
     {
-        send_to_char( "\n", ch );
-        send_to_char( pdesc, ch );
+        send_to_char("\n", ch);
+        send_to_char(pdesc, ch);
         return;
     }
 
-    door = get_door( arg1 );
-    if ( ( pexit = find_door( ch, arg1, TRUE ) ) != NULL )
+    door = get_door(arg1);
+    if ((pexit = find_door(ch, arg1, TRUE)) != NULL)
     {
-        if ( pexit->keyword )
+        if (pexit->keyword)
         {
-        if ( IS_SET(pexit->exit_info, EX_CLOSED)
-        &&  !IS_SET(pexit->exit_info, EX_WINDOW) )
-        {
-            if ( IS_SET(pexit->exit_info, EX_SECRET)
-            &&   door != -1 )
-            send_to_char( "Nothing special there.\n", ch );
-            else
-            act( AT_PLAIN, "The $d is closed.", ch, NULL, pexit->keyword, TO_CHAR );
-            return;
-        }
-        if ( IS_SET( pexit->exit_info, EX_BASHED ) )
-            act(AT_RED, "The $d has been bashed from its hinges!",ch, NULL, pexit->keyword, TO_CHAR);
+            if (IS_SET(pexit->exit_info, EX_CLOSED)
+            &&  !IS_SET(pexit->exit_info, EX_WINDOW))
+            {
+                if (IS_SET(pexit->exit_info, EX_SECRET)
+                &&  door != -1)
+                    send_to_char("Nothing special there.\n", ch);
+                else
+                    act(AT_PLAIN, "The $d is closed.", ch, NULL, pexit->keyword, TO_CHAR);
+                return;
+            }
+            if (IS_SET(pexit->exit_info, EX_BASHED))
+                act(AT_RED, "The $d has been bashed from its hinges!", ch, NULL, pexit->keyword, TO_CHAR);
         }
 
-        if ( pexit->description && pexit->description[0] != '\0' )
-        send_to_char( pexit->description, ch );
+        if (pexit->description && pexit->description[0] != '\0')
+            send_to_char(pexit->description, ch);
         else
-        send_to_char( "Nothing special there.\n", ch );
+            send_to_char("Nothing special there.\n", ch);
 
         /*
-        * Ability to look into the next room			-Thoric
-        */
-        if ( pexit->to_room
-        && ( IS_AFFECTED( ch, AFF_SCRYING )
-        ||   IS_SET( pexit->exit_info, EX_xLOOK )
-        ||   get_trust(ch) >= LEVEL_IMMORTAL ) )
+         * Ability to look into the next room            -Thoric
+         */
+        if (pexit->to_room
+        && (IS_AFFECTED(ch, AFF_SCRYING)
+        ||  IS_SET(pexit->exit_info, EX_xLOOK)
+        ||  get_trust(ch) >= LEVEL_IMMORTAL))
         {
-            if ( !IS_SET( pexit->exit_info, EX_xLOOK )
-            &&    get_trust( ch ) < LEVEL_IMMORTAL )
+            if (!IS_SET(pexit->exit_info, EX_xLOOK)
+            &&  get_trust(ch) < LEVEL_IMMORTAL)
             {
-                set_char_color( AT_MAGIC, ch );
-                send_to_char( "You attempt to scry...\n", ch );
-            /* Change by Narn, Sept 96 to allow characters who don't have the
-                scry spell to benefit from objects that are affected by scry.
-            */
-                if (!IS_NPC(ch) )
+                set_char_color(AT_MAGIC, ch);
+                send_to_char("You attempt to scry...\n", ch);
+                if (!IS_NPC(ch))
                 {
-                /*int percent = ch->pcdata->learned[ skill_lookup("scry") ];
-                if ( percent < 10 )
-                */  int percent = 99;
-            
-                    if(  number_percent( ) > percent ) 
+                    int percent = 99;
+
+                    if (number_percent() > percent)
                     {
-                        send_to_char( "You fail.\n", ch );
+                        send_to_char("You fail.\n", ch);
                         return;
                     }
                 }
             }
-            if ( room_is_private( ch, pexit->to_room )
-            &&   get_trust(ch) < ch->game->get_sysdata()->level_override_private )
+            if (room_is_private(ch, pexit->to_room)
+            &&  get_trust(ch) < ch->game->get_sysdata()->level_override_private)
             {
-                set_char_color( AT_WHITE, ch );
-                send_to_char( "That room is private buster!\n", ch );
+                set_char_color(AT_WHITE, ch);
+                send_to_char("That room is private buster!\n", ch);
                 return;
             }
             original = ch->in_room;
-            if ( pexit->distance > 1 )
-            {  
-                ROOM_INDEX_DATA * to_room;
-                if ( (to_room=generate_exit(ch->in_room, &pexit)) != NULL )
+            if (pexit->distance > 1)
+            {
+                ROOM_INDEX_DATA *to_room;
+                if ((to_room = generate_exit(ch->in_room, &pexit)) != NULL)
                 {
-                    char_from_room( ch );
-                    char_to_room( ch, to_room );
+                    char_from_room(ch);
+                    char_to_room(ch, to_room);
                 }
                 else
                 {
-                    char_from_room( ch );
-                    char_to_room( ch, pexit->to_room );
+                    char_from_room(ch);
+                    char_to_room(ch, pexit->to_room);
                 }
             }
             else
             {
-                char_from_room( ch );
-                char_to_room( ch, pexit->to_room );
+                char_from_room(ch);
+                char_to_room(ch, pexit->to_room);
             }
-            do_look( ch, "auto" );
-            char_from_room( ch );
-            char_to_room( ch, original );
+            do_look_str(ch, std::string("auto"));
+            char_from_room(ch);
+            char_to_room(ch, original);
         }
         return;
     }
-    else
-        if ( door != -1 )
-        {
-        send_to_char( "Nothing special there.\n", ch );
-        return;
-        }
-
-    if ( ( victim = get_char_room( ch, arg1 ) ) != NULL )
+    else if (door != -1)
     {
-        show_char_to_char_1( victim, ch );
+        send_to_char("Nothing special there.\n", ch);
         return;
     }
 
-
-    /* finally fixed the annoying look 2.obj desc bug	-Thoric */
-    number = number_argument( arg1, arg );
-    for ( cnt = 0, obj = ch->last_carrying; obj; obj = obj->prev_content )
+    if ((victim = get_char_room(ch, arg1)) != NULL)
     {
-        if ( can_see_obj( ch, obj ) )
+        show_char_to_char_1(victim, ch);
+        return;
+    }
+
+    /* finally fixed the annoying look 2.obj desc bug    -Thoric */
+    number = number_argument(arg1, arg);
+
+    for (cnt = 0, obj = ch->last_carrying; obj; obj = obj->prev_content)
+    {
+        if (can_see_obj(ch, obj))
         {
-            if ( (pdesc=get_extra_descr(arg, obj->first_extradesc)) != NULL )
+            if ((pdesc = get_extra_descr(arg, obj->first_extradesc)) != NULL)
             {
-            if ( (cnt += obj->count) < number )
-            continue;
-            send_to_char( pdesc, ch );
-                if ( doexaprog ) oprog_examine_trigger( ch, obj );
-            return;
+                if ((cnt += obj->count) < number)
+                    continue;
+                send_to_char(pdesc, ch);
+                if (doexaprog)
+                    oprog_examine_trigger(ch, obj);
+                return;
             }
 
-            if ( (pdesc=get_extra_descr(arg, obj->pIndexData->first_extradesc)) != NULL )
+            if ((pdesc = get_extra_descr(arg, obj->pIndexData->first_extradesc)) != NULL)
             {
-            if ( (cnt += obj->count) < number )
-            continue;
-            send_to_char( pdesc, ch );
-                if ( doexaprog ) oprog_examine_trigger( ch, obj );
-            return;
+                if ((cnt += obj->count) < number)
+                    continue;
+                send_to_char(pdesc, ch);
+                if (doexaprog)
+                    oprog_examine_trigger(ch, obj);
+                return;
             }
-            
-            if ( nifty_is_name_prefix( arg, obj->name ) )
+
+            if (nifty_is_name_prefix(arg, obj->name))
             {
-            if ( (cnt += obj->count) < number )
-            continue;
-            pdesc = get_extra_descr( obj->name, obj->pIndexData->first_extradesc );
-            if ( !pdesc )
-            pdesc = get_extra_descr( obj->name, obj->first_extradesc );
-            if ( !pdesc )
-            send_to_char( "You see nothing special.\r\n", ch );
-            else
-            send_to_char( pdesc, ch );
-            if ( doexaprog ) oprog_examine_trigger( ch, obj );
-            return;
+                if ((cnt += obj->count) < number)
+                    continue;
+                pdesc = get_extra_descr(obj->name, obj->pIndexData->first_extradesc);
+                if (!pdesc)
+                    pdesc = get_extra_descr(obj->name, obj->first_extradesc);
+                if (!pdesc)
+                    send_to_char("You see nothing special.\r\n", ch);
+                else
+                    send_to_char(pdesc, ch);
+                if (doexaprog)
+                    oprog_examine_trigger(ch, obj);
+                return;
             }
         }
     }
 
-    for ( obj = ch->in_room->last_content; obj; obj = obj->prev_content )
+    for (obj = ch->in_room->last_content; obj; obj = obj->prev_content)
     {
-        if ( can_see_obj( ch, obj ) )
+        if (can_see_obj(ch, obj))
         {
-            if ( (pdesc=get_extra_descr(arg, obj->first_extradesc)) != NULL )
+            if ((pdesc = get_extra_descr(arg, obj->first_extradesc)) != NULL)
             {
-            if ( (cnt += obj->count) < number )
-            continue;
-            send_to_char( pdesc, ch );
-                if ( doexaprog ) oprog_examine_trigger( ch, obj );
-            return;
+                if ((cnt += obj->count) < number)
+                    continue;
+                send_to_char(pdesc, ch);
+                if (doexaprog)
+                    oprog_examine_trigger(ch, obj);
+                return;
             }
 
-            if ( (pdesc=get_extra_descr(arg, obj->pIndexData->first_extradesc)) != NULL )
+            if ((pdesc = get_extra_descr(arg, obj->pIndexData->first_extradesc)) != NULL)
             {
-            if ( (cnt += obj->count) < number )
-            continue;
-            send_to_char( pdesc, ch );
-                if ( doexaprog ) oprog_examine_trigger( ch, obj );
-            return;
+                if ((cnt += obj->count) < number)
+                    continue;
+                send_to_char(pdesc, ch);
+                if (doexaprog)
+                    oprog_examine_trigger(ch, obj);
+                return;
             }
-            if ( nifty_is_name_prefix( arg, obj->name ) )
+
+            if (nifty_is_name_prefix(arg, obj->name))
             {
-            if ( (cnt += obj->count) < number )
-            continue;
-            pdesc = get_extra_descr( obj->name, obj->pIndexData->first_extradesc );
-            if ( !pdesc )
-            pdesc = get_extra_descr( obj->name, obj->first_extradesc );
-            if ( !pdesc )
-            send_to_char( "You see nothing special.\r\n", ch );
-            else
-            send_to_char( pdesc, ch );
-            if ( doexaprog ) oprog_examine_trigger( ch, obj );
-            return;
+                if ((cnt += obj->count) < number)
+                    continue;
+                pdesc = get_extra_descr(obj->name, obj->pIndexData->first_extradesc);
+                if (!pdesc)
+                    pdesc = get_extra_descr(obj->name, obj->first_extradesc);
+                if (!pdesc)
+                    send_to_char("You see nothing special.\r\n", ch);
+                else
+                    send_to_char(pdesc, ch);
+                if (doexaprog)
+                    oprog_examine_trigger(ch, obj);
+                return;
             }
         }
     }
 
-    send_to_char( "You do not see that here.\n", ch );
+    send_to_char("You do not see that here.\n", ch);
     return;
+}
+
+void do_look(CHAR_DATA *ch, char *argument)
+{
+    do_look_str(ch, argument ? std::string(argument) : std::string());
 }
 
 void show_condition( CHAR_DATA *ch, CHAR_DATA *victim )
@@ -1514,7 +1499,7 @@ same you would see if you enter the room and have config +brief.
 */
 void do_glance( CHAR_DATA *ch, char *argument )
 {
-  char arg1 [MAX_INPUT_LENGTH];
+  std::string arg1;
   CHAR_DATA *victim;
   FLAG_SET save_act;
 
@@ -1536,9 +1521,9 @@ void do_glance( CHAR_DATA *ch, char *argument )
   if ( !check_blind( ch ) )
     return;
 
-  argument = one_argument( argument, arg1 );
+  one_argument( argument, arg1 );
 
-  if ( arg1[0] == '\0' )
+  if ( arg1.empty() )
   {
     save_act = ch->act;
     BV_SET_BIT( ch->act, PLR_BRIEF );
@@ -1571,7 +1556,7 @@ void do_glance( CHAR_DATA *ch, char *argument )
 void do_examine( CHAR_DATA *ch, char *argument )
 {
     char buf[MAX_STRING_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
     BOARD_DATA *board;
     sh_int dam;
@@ -1590,14 +1575,13 @@ void do_examine( CHAR_DATA *ch, char *argument )
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Examine what?\n", ch );
 	return;
     }
 
-    SPRINTF( buf, "%s noprog", arg );
-    do_look( ch, buf );
+    do_look_str( ch, str_printf("%s noprog", arg.c_str() ) );
 
     /*
      * Support for looking at boards, checking equipment conditions,
@@ -1756,8 +1740,7 @@ void do_examine( CHAR_DATA *ch, char *argument )
 	    if ( IS_OBJ_STAT( obj, ITEM_COVERING ) )
 	      break;
 	    send_to_char( "When you look inside, you see:\n", ch );
-	    SPRINTF( buf, "in %s noprog", arg );
-	    do_look( ch, buf );
+	    do_look_str( ch, str_printf("in %s noprog", arg.c_str() ) );
 	    break;
 	
 	case ITEM_DROID_CORPSE:
@@ -1791,13 +1774,11 @@ void do_examine( CHAR_DATA *ch, char *argument )
 
 	case ITEM_DRINK_CON:
 	    send_to_char( "When you look inside, you see:\n", ch );
-	    SPRINTF( buf, "in %s noprog", arg );
-	    do_look( ch, buf );
+	    do_look_str( ch, str_printf("in %s noprog", arg.c_str() ) );
 	}
 	if ( IS_OBJ_STAT( obj, ITEM_COVERING ) )
 	{
-	    SPRINTF( buf, "under %s noprog", arg );
-	    do_look( ch, buf );
+	    do_look_str( ch, str_printf("in %s noprog", arg.c_str() ) );
 	}
 	oprog_examine_trigger( ch, obj );
 	if( char_died(ch) || obj_extracted(obj) )
@@ -1844,24 +1825,24 @@ void do_exits( CHAR_DATA *ch, char *argument )
             if ( IS_SET(pexit->exit_info, EX_CLOSED) )
             {
                 STRAPP( buf, "%-5s - (closed)\n",
-                capitalize( dir_name[pexit->vdir] ) );
+                capitalize( dir_name[pexit->vdir] ).c_str() );
             }
             else if ( IS_SET(pexit->exit_info, EX_WINDOW) )
             {
                 STRAPP( buf, "%-5s - (window)\n",
-                capitalize( dir_name[pexit->vdir] ) );
+                capitalize( dir_name[pexit->vdir] ).c_str() );
             }
             else if ( IS_SET(pexit->exit_info, EX_xAUTO) )
             {
             STRAPP( buf, "%-5s - %s\n",
-                capitalize( pexit->keyword ),
+                capitalize( pexit->keyword ).c_str(),
                 room_is_dark( pexit->to_room )
                 ?  "Too dark to tell"
                 : pexit->to_room->name );
             }
             else
                 STRAPP( buf, "%-5s - %s\n",
-                capitalize( dir_name[pexit->vdir] ),
+                capitalize( dir_name[pexit->vdir] ).c_str(),
                 room_is_dark( pexit->to_room )
                 ?  "Too dark to tell"
                 : pexit->to_room->name );
@@ -1869,7 +1850,7 @@ void do_exits( CHAR_DATA *ch, char *argument )
 	    else
 	    {
 	        STRAPP( buf, " %s",
-		    capitalize( dir_name[pexit->vdir] ) );
+		    capitalize( dir_name[pexit->vdir] ).c_str() );
 	    }
 	}
     }
@@ -1901,7 +1882,7 @@ void do_time( CHAR_DATA *ch, char *argument )
 {
     extern char str_boot_time[];
     extern char reboot_time[];
-    char *suf;
+    std::string suf;
     int day;
 
     day     = time_info.day + 1;
@@ -1922,7 +1903,7 @@ void do_time( CHAR_DATA *ch, char *argument )
 	(time_info.hour % 12 == 0) ? 12 : time_info.hour % 12,
 	time_info.hour >= 12 ? "pm" : "am",
 	day_name[day % 7],
-	day, suf,
+	day, suf.c_str(),
 	month_name[time_info.month],
 	str_boot_time,
 	(char *) ctime( &current_time ),
@@ -1965,93 +1946,80 @@ void do_weather( CHAR_DATA *ch, char *argument )
  * Moved into a separate function so it can be used for other things
  * ie: online help editing				-Thoric
  */
-HELP_DATA *get_help( CHAR_DATA *ch, char *argument )
+HELP_DATA *get_help(CHAR_DATA *ch, const std::string& argument_in)
 {
-    char argall[MAX_INPUT_LENGTH];
-    char argone[MAX_INPUT_LENGTH];
-    char argnew[MAX_INPUT_LENGTH];
+    std::string argument = argument_in;
+    std::string argall;
+    std::string argone;
+    std::string argnew;
     HELP_DATA *pHelp;
     int lev;
 
-    if ( argument[0] == '\0' )
-	argument = "summary";
+    if (argument.empty())
+        argument = "summary";
 
-    if ( isdigit(argument[0]) )
+    if (isdigit(static_cast<unsigned char>(argument[0])))
     {
-	lev = number_argument( argument, argnew );
-	argument = argnew;
+        lev = number_argument(argument, argnew);
+        argument = argnew;
     }
     else
-	lev = -2;
+        lev = -2;
+
     /*
      * Tricky argument handling so 'help a b' doesn't match a.
      */
-    argall[0] = '\0';
-    while ( argument[0] != '\0' )
+    while (!argument.empty())
     {
-	argument = one_argument( argument, argone );
-	if ( argall[0] != '\0' )
-	    STRAPP( argall, " " );
-	STRAPP( argall, "%s", argone );
+        argument = one_argument(argument, argone);
+        if (!argall.empty())
+            argall += ' ';
+        argall += argone;
     }
 
-    for ( pHelp = first_help; pHelp; pHelp = pHelp->next )
+    for (pHelp = first_help; pHelp; pHelp = pHelp->next)
     {
-	if ( pHelp->level > get_trust( ch ) )
-	    continue;
-	if ( lev != -2 && pHelp->level != lev )
-	    continue;
+        if (pHelp->level > get_trust(ch))
+            continue;
+        if (lev != -2 && pHelp->level != lev)
+            continue;
 
-	if ( is_name( argall, pHelp->keyword ) )
-	    return pHelp;
+        if (is_name(argall, pHelp->keyword))
+            return pHelp;
     }
 
     return NULL;
 }
 
-
-//  Ranks by number of matches between two whole words. Coded for the Similar Helpfiles
-//  Snippet by Senir.
-sh_int str_similarity( const char *astr, const char *bstr )
+// Ranks by number of matches between two whole words.
+// Coded for the Similar Helpfiles Snippet by Senir.
+sh_int str_similarity( const std::string &astr, const std::string &bstr )
 {
-   sh_int matches=0;
+    sh_int matches = 0;
+    size_t len = std::min( astr.size(), bstr.size() );
 
-    if (!astr || !bstr)
-       return matches;
-
-    for ( ; *astr; astr++)
+    for ( size_t i = 0; i < len; ++i )
     {
-        if ( LOWER(*astr) == LOWER(*bstr) )
-           matches++;
-
-        bstr++;
-
-        if (*bstr == '\0')
-           return matches;                
+        if ( LOWER( astr[i] ) == LOWER( bstr[i] ) )
+            matches++;
     }
-    
+
     return matches;
 }
 
-//  Ranks by number of matches until there's a nonmatching character between two words.
-//  Coded for the Similar Helpfiles Snippet by Senir.
-sh_int str_prefix_level( const char *astr, const char *bstr )
+// Ranks by number of matches until there's a nonmatching character between two words.
+// Coded for the Similar Helpfiles Snippet by Senir.
+sh_int str_prefix_level( const std::string &astr, const std::string &bstr )
 {
-   sh_int matches=0;
+    sh_int matches = 0;
+    size_t len = std::min( astr.size(), bstr.size() );
 
-    if (!astr || !bstr)
-       return matches;
-
-    for ( ; *astr; astr++)
+    for ( size_t i = 0; i < len; ++i )
     {
-        if ( LOWER(*astr) == LOWER(*bstr) )
-           matches++;
+        if ( LOWER( astr[i] ) == LOWER( bstr[i] ) )
+            matches++;
         else
-           return matches;
-
-        ++bstr;
-        if (*bstr == '\0')
-        return matches;
+            return matches;
     }
 
     return matches;
@@ -2062,93 +2030,84 @@ sh_int str_prefix_level( const char *astr, const char *bstr )
 // helpfiles to the argument. It then checks for singles. Then, if matching helpfiles
 // are found at all, it loops through and prints out the closest matching helpfiles.
 // If its a single(there's only one), it opens the helpfile.
-void similar_help_files(CHAR_DATA *ch, char *argument)
+void similar_help_files(CHAR_DATA *ch, const std::string& argument)
 {
-   HELP_DATA *pHelp=NULL;
-   char buf[MAX_STRING_LENGTH];
-   char *extension;
-   sh_int lvl=0;
-   bool single=FALSE;
-// char argnew[MAX_INPUT_LENGTH];    
+    HELP_DATA *pHelp = NULL;
+    std::string word;
+    sh_int lvl = 0;
+    bool single = FALSE;
 
-/*
-    if ( isdigit(argument[0]) && (index(argument, '.')))
-    {
-	number_argument( argument, argnew );
-	argument = argnew;
-    }
+    send_to_pager_color("&C&BSimilar Help Files:\n", ch);
 
-*/        
-    send_to_pager_color( "&C&BSimilar Help Files:\n", ch);
-        
-    for ( pHelp = first_help; pHelp; pHelp=pHelp->next)
+    /* First pass: find best similarity level */
+    for (pHelp = first_help; pHelp; pHelp = pHelp->next)
     {
-        buf[0]='\0';      
-        extension=pHelp->keyword;
-        
         if (pHelp->level > get_trust(ch))
-           continue;
+            continue;
 
-        while ( extension[0] != '\0' )
+        std::string extension = pHelp->keyword;
+
+        while (!extension.empty())
         {
-              extension= one_argument(extension, buf);
-              
-              if ( str_similarity(argument, buf) > lvl)
-              {
-                 lvl=str_similarity(argument, buf);
-                 single=TRUE;
-              }        
-              else if ( str_similarity(argument, buf) == lvl && lvl > 0)
-              {
-                 single=FALSE;
-              }
+            extension = one_argument(extension, word);
+
+            int sim = str_similarity(argument, word);
+
+            if (sim > lvl)
+            {
+                lvl = sim;
+                single = TRUE;
+            }
+            else if (sim == lvl && lvl > 0)
+            {
+                single = FALSE;
+            }
         }
     }
-        
-    if (lvl==0)
+
+    if (lvl == 0)
     {
-       send_to_pager_color( "&C&GNo similar help files.\n", ch);   
-       return;
+        send_to_pager_color("&C&GNo similar help files.\n", ch);
+        return;
     }
 
-    for ( pHelp = first_help; pHelp; pHelp=pHelp->next)
+    /* Second pass: display matches or open best match */
+    for (pHelp = first_help; pHelp; pHelp = pHelp->next)
     {
-        buf[0]='\0';      
-        extension=pHelp->keyword;
+        if (pHelp->level > get_trust(ch))
+            continue;
 
-        while ( extension[0] != '\0' )
+        std::string extension = pHelp->keyword;
+
+        while (!extension.empty())
         {
-              extension=one_argument(extension, buf);
+            extension = one_argument(extension, word);
 
-              if ( str_similarity(argument, buf) >= lvl
-                   && pHelp->level <= get_trust(ch))
-              {
-                    if (single)
+            if (str_similarity(argument, word) >= lvl)
+            {
+                if (single)
+                {
+                    send_to_pager_color("&C&GOpening closest helpfile.&C\n", ch);
+
+                    if (pHelp->level >= 0 && str_cmp(argument, "imotd"))
                     {
-                        send_to_pager_color("&C&GOpening closest helpfile.&C\n", ch);
-
-                        if ( pHelp->level >= 0 && str_cmp( argument, "imotd" ) )
-                        {
-                            send_to_pager( pHelp->keyword, ch );
-                            send_to_pager( "\n", ch );
-                        }
-
-                        if (pHelp->text[0] == '.')
-                            send_to_pager_color(pHelp->text + 1, ch);
-                        else
-                            send_to_pager_color(pHelp->text, ch);
-
-                        return;
+                        send_to_pager(pHelp->keyword, ch);
+                        send_to_pager("\n", ch);
                     }
 
-                 pager_printf(ch, "&C&G   %s\n", pHelp->keyword);
-                 break;
+                    if (pHelp->text[0] == '.')
+                        send_to_pager_color(pHelp->text + 1, ch);
+                    else
+                        send_to_pager_color(pHelp->text, ch);
 
-              }
+                    return;
+                }
 
+                pager_printf(ch, "&C&G   %s\n", pHelp->keyword);
+                break;
+            }
         }
     }
-    return;
 }
 
 
@@ -2278,12 +2237,14 @@ char *help_fix( char *text )
 void do_hset( CHAR_DATA *ch, char *argument )
 {
     HELP_DATA *pHelp;
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argumentstr;
+
 
     smash_tilde( argument );
-    argument = one_argument( argument, arg1 );
-    if ( arg1[0] == '\0' )
+    argumentstr = one_argument( argument, arg1 );
+    if ( arg1.empty() )
     {
         send_to_char( "Syntax: hset <field> [value] [help page]\n",	ch );
         send_to_char( "\n",						ch );
@@ -2320,9 +2281,9 @@ void do_hset( CHAR_DATA *ch, char *argument )
         return;
     }
     if ( str_cmp( arg1, "remove" ) )
-	    argument = one_argument( argument, arg2 );
+	    argumentstr = one_argument( argumentstr, arg2 );
 
-    if ( (pHelp = get_help( ch, argument )) == NULL )
+    if ( (pHelp = get_help( ch, argumentstr )) == NULL )
     {
         send_to_char( "Cannot find help on that subject.\n", ch );
         return;
@@ -2346,7 +2307,7 @@ void do_hset( CHAR_DATA *ch, char *argument )
             return;
         }
 
-        lev = atoi(arg2);
+        lev = strtoi(arg2);
         if( lev < -1 || lev > get_trust(ch) )
         {
             send_to_char( "You can't set the level to that.\r\n", ch );
@@ -2374,17 +2335,18 @@ void do_hset( CHAR_DATA *ch, char *argument )
 void do_hlist( CHAR_DATA *ch, char *argument )
 {
     int min, max, minlimit, maxlimit, cnt;
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string argumentstr;
     HELP_DATA *help;
 
     maxlimit = get_trust(ch);
     minlimit = maxlimit >= LEVEL_GREATER ? -1 : 0;
-    argument = one_argument( argument, arg );
-    if ( arg[0] != '\0' )
+    argumentstr = one_argument( argument, arg );
+    if ( !arg.empty() )
     {
-	min = URANGE( minlimit, atoi(arg), maxlimit );
-	if ( argument[0] != '\0' )
-	    max = URANGE( min, atoi(argument), maxlimit );
+	min = URANGE( minlimit, strtoi(arg), maxlimit );
+	if ( !argumentstr.empty() )
+	    max = URANGE( min, strtoi(argumentstr), maxlimit );
 	else
 	    max = maxlimit;
     }
@@ -2494,12 +2456,14 @@ void do_who( CHAR_DATA *ch, char *argument )
    * Parse arguments.
    */
 
+  std::string argstr = argument;   
   nNumber = 0;
   for ( ;; )
   {
-    char arg[MAX_STRING_LENGTH];
-    argument = one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    std::string arg;
+
+    argstr = one_argument( argstr, arg );
+    if ( arg.empty() )
       break;
 
 	 if ( is_number( arg ) )
@@ -2508,8 +2472,8 @@ void do_who( CHAR_DATA *ch, char *argument )
       {
         switch ( ++nNumber )
         {
-          case 1: iLevelLower = atoi( arg ); break;
-          case 2: iLevelUpper = atoi( arg ); break;
+          case 1: iLevelLower = strtoi( arg ); break;
+          case 2: iLevelUpper = strtoi( arg ); break;
           default:
             send_to_char( "Only two level numbers allowed.\n", ch );             return;
         }
@@ -2551,7 +2515,7 @@ void do_who( CHAR_DATA *ch, char *argument )
         }
       }
 
-	   if ( strlen(arg) < 3 )
+	   if ( arg.length() < 3 )
       {
         send_to_char( "Be a little more specific please.\n", ch );
         return;
@@ -2574,7 +2538,7 @@ void do_who( CHAR_DATA *ch, char *argument )
 	        else		 /* SB who clan (order), guild */
             {
                 if (!str_cmp( arg, "clan" ) && ch->pcdata && ch->pcdata->clan)
-                    STRLCPY(arg, ch->pcdata->clan->name);
+                    arg = ch->pcdata->clan->name;
                 if ( (pClan = get_clan (arg)) && (fClanMatch != TRUE))
                 {
                     if ((ch->top_level >= LEVEL_IMMORTAL) || (ch->pcdata && ch->pcdata->clan && !strcmp(ch->pcdata->clan->name, pClan->name)))
@@ -2890,17 +2854,18 @@ snprintf(buf, sizeof(buf),
 
 void do_compare( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argumentstr;
     OBJ_DATA *obj1;
     OBJ_DATA *obj2;
     int value1;
     int value2;
-    char *msg;
+    std::string msg;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
-    if ( arg1[0] == '\0' )
+    argumentstr = one_argument( argument, arg1 );
+    argumentstr = one_argument( argumentstr, arg2 );
+    if ( arg1.empty() )
     {
 	send_to_char( "Compare what to what?\n", ch );
 	return;
@@ -2911,7 +2876,7 @@ void do_compare( CHAR_DATA *ch, char *argument )
 	send_to_char( "You do not have that item.\n", ch );
 	return;
     }
-     if ( arg2[0] == '\0' )
+     if ( arg2.empty() )
     {
 	for ( obj2 = ch->first_carrying; obj2; obj2 = obj2->next_content )
 	{
@@ -2938,7 +2903,6 @@ void do_compare( CHAR_DATA *ch, char *argument )
 	}
     }
 
-    msg		= NULL;
     value1	= 0;
     value2	= 0;
 
@@ -2970,14 +2934,14 @@ void do_compare( CHAR_DATA *ch, char *argument )
 	}
     }
 
-    if ( !msg )
+    if ( msg.empty() )
     {
 	     if ( value1 == value2 ) msg = "$p and $P look about the same.";
 	else if ( value1  > value2 ) msg = "$p looks better than $P.";
 	else                         msg = "$p looks worse than $P.";
     }
 
-    act( AT_PLAIN, msg, ch, obj1, obj2, TO_CHAR );
+    act( AT_PLAIN, msg.c_str(), ch, obj1, obj2, TO_CHAR );
     return;
 }
 
@@ -2985,7 +2949,7 @@ void do_compare( CHAR_DATA *ch, char *argument )
 
 void do_where( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
     DESCRIPTOR_DATA *d;
     bool found;
@@ -2999,7 +2963,7 @@ void do_where( CHAR_DATA *ch, char *argument )
     one_argument( argument, arg );
 
     set_pager_color( AT_PERSON, ch );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
         if (get_trust(ch) >= LEVEL_IMMORTAL)
            send_to_pager( "Players logged in:\n", ch );
@@ -3049,14 +3013,14 @@ void do_where( CHAR_DATA *ch, char *argument )
 
 void do_consider( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
-    char *msg;
+    std::string msg;
     int diff;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Consider killing whom?\n", ch );
 	return;
@@ -3285,14 +3249,15 @@ void do_teach( CHAR_DATA *ch, char *argument )
 {
     char buf[MAX_STRING_LENGTH];
     int sn;
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string argumentstr;
     
     if ( IS_NPC(ch) )
 	return;
 
-    argument = one_argument(argument, arg);
+    argumentstr = one_argument(argument, arg);
 
-    if ( argument[0] == '\0' )
+    if ( argumentstr.empty() )
     {
         send_to_char( "Teach who, what?\n", ch );
 	return;
@@ -3320,7 +3285,7 @@ void do_teach( CHAR_DATA *ch, char *argument )
 	    return;
 	}
         
-	sn = skill_lookup( argument );
+	sn = skill_lookup( argumentstr );
    
         if ( sn == -1 )
         {
@@ -3379,15 +3344,15 @@ void do_teach( CHAR_DATA *ch, char *argument )
 
 void do_wimpy( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     int wimpy;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
 	wimpy = (int) ch->max_hit / 5;
     else
-	wimpy = atoi( arg );
+	wimpy = strtoi( arg );
 
     if ( wimpy < 0 )
     {
@@ -3402,7 +3367,7 @@ void do_wimpy( CHAR_DATA *ch, char *argument )
     }
 
     ch->wimpy	= wimpy;
-    ch_printf( ch, "Wimpy set to %d hit points.\n", wimpy );
+    ch_printf( ch, "Wimpy set to %d hit points.\n", ch->wimpy );
     gmcp_evt_char_status(ch);
 
     return;
@@ -3512,108 +3477,6 @@ void do_password(CHAR_DATA *ch, char *argument)
     send_to_char("Ok.\n", ch);
 }
 
-
-/* Old Crypt version
-void do_password(CHAR_DATA *ch, char *argument)
-{
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char *pArg;
-    char *pwdnew;
-    char *p;
-    char cEnd;
-    size_t count;
-
-    if (IS_NPC(ch))
-        return;
-
-    // ---------------------- ARG1 ---------------------- 
-    pArg = arg1;
-    count = 0;
-    while (*argument && isspace_utf8(argument))
-        UTF8_NEXT(argument);
-
-    cEnd = ' ';
-    if (*argument == '\'' || *argument == '"')
-        cEnd = *argument++;
-
-    while (*argument != '\0' && count < sizeof(arg1) - 1)
-    {
-        if (*argument == cEnd)
-        {
-            argument++;
-            break;
-        }
-        *pArg++ = *argument++;
-        count++;
-    }
-    *pArg = '\0';  // null terminate
-
-    // ---------------------- ARG2 ---------------------- 
-    pArg = arg2;
-    count = 0;
-    while (*argument && isspace_utf8(argument))
-        UTF8_NEXT(argument);
-
-    cEnd = ' ';
-    if (*argument == '\'' || *argument == '"')
-        cEnd = *argument++;
-
-    while (*argument != '\0' && count < sizeof(arg2) - 1)
-    {
-        if (*argument == cEnd)
-        {
-            argument++;
-            break;
-        }
-        *pArg++ = *argument++;
-        count++;
-    }
-    *pArg = '\0';  // null terminate
-
-    // ---------------------- VALIDATION ---------------------- 
-    if (arg1[0] == '\0' || arg2[0] == '\0')
-    {
-        send_to_char("Syntax: password <old> <new>.\n", ch);
-        return;
-    }
-
-    if (strcmp(crypt(arg1, ch->pcdata->pwd), ch->pcdata->pwd))
-    {
-        WAIT_STATE(ch, 40);
-        send_to_char("Wrong password.  Wait 10 seconds.\n", ch);
-        return;
-    }
-
-    if (strlen(arg2) < 5)
-    {
-        send_to_char(
-            "New password must be at least five characters long.\n", ch);
-        return;
-    }
-
-    // No tilde allowed because of player file format 
-    pwdnew = crypt(arg2, ch->name);
-    for (p = pwdnew; *p != '\0'; p++)
-    {
-        if (*p == '~')
-        {
-            send_to_char("New password not acceptable, try again.\n", ch);
-            return;
-        }
-    }
-
-    STR_DISPOSE(ch->pcdata->pwd);
-    ch->pcdata->pwd = str_dup(pwdnew);
-
-    if (BV_IS_SET(ch->game->get_sysdata()->save_flags, SV_PASSCHG))
-        save_char_obj(ch);
-
-    send_to_char("Ok.\n", ch);
-}
-*/
-
-
 void do_socials( CHAR_DATA *ch, char *argument )
 {
     int iHash;
@@ -3689,11 +3552,11 @@ void do_commands( CHAR_DATA *ch, char *argument )
 
 void do_channels( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	if ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_SILENCE) )
 	{
@@ -3828,50 +3691,66 @@ void do_channels( CHAR_DATA *ch, char *argument )
     }
     else
     {
-	bool fClear;
-	bool ClearAll;
-	int bit;
+        bool fClear;
+        bool ClearAll;
+        int bit = 0;
 
-        bit=0;
         ClearAll = FALSE;
 
-	     if ( arg[0] == '+' ) fClear = TRUE;
-	else if ( arg[0] == '-' ) fClear = FALSE;
-	else
-	{
-	    send_to_char( "Channels -channel or +channel?\n", ch );
-	    return;
-	}
+        if (arg.empty())
+        {
+            send_to_char("Channels -channel or +channel?\n", ch);
+            return;
+        }
 
-	     if ( !str_cmp( arg+1, "auction"  ) ) bit = CHANNEL_AUCTION;
-	else if ( !str_cmp( arg+1, "chat"     ) ) bit = CHANNEL_CHAT;
-	else if ( !str_cmp( arg+1, "ooc"      ) ) bit = CHANNEL_OOC;
-	else if ( !str_cmp( arg+1, "clan"     ) ) bit = CHANNEL_CLAN;
-        else if ( !str_cmp( arg+1, "guild"    ) ) bit = CHANNEL_GUILD;  
-	else if ( !str_cmp( arg+1, "quest"    ) ) bit = CHANNEL_QUEST;
-	else if ( !str_cmp( arg+1, "tells"    ) ) bit = CHANNEL_TELLS;
-	else if ( !str_cmp( arg+1, "immtalk"  ) ) bit = CHANNEL_IMMTALK;
-	else if ( !str_cmp( arg+1, "log"      ) ) bit = CHANNEL_LOG;
-	else if ( !str_cmp( arg+1, "build"    ) ) bit = CHANNEL_BUILD;
-	else if ( !str_cmp( arg+1, "pray"     ) ) bit = CHANNEL_PRAY;
-	else if ( !str_cmp( arg+1, "avatar"   ) ) bit = CHANNEL_AVTALK;
-	else if ( !str_cmp( arg+1, "monitor"  ) ) bit = CHANNEL_MONITOR;
-	else if ( !str_cmp( arg+1, "newbie"   ) ) bit = CHANNEL_NEWBIE;
-	else if ( !str_cmp( arg+1, "music"    ) ) bit = CHANNEL_MUSIC;
-	else if ( !str_cmp( arg+1, "ask"      ) ) bit = CHANNEL_ASK;
-	else if ( !str_cmp( arg+1, "shout"    ) ) bit = CHANNEL_SHOUT;
-	else if ( !str_cmp( arg+1, "yell"     ) ) bit = CHANNEL_YELL;
-	else if ( !str_cmp( arg+1, "comm"     ) ) bit = CHANNEL_COMM;
-	else if ( !str_cmp( arg+1, "order"    ) ) bit = CHANNEL_ORDER;
-        else if ( !str_cmp( arg+1, "vulgar"  ) ) bit = CHANNEL_VULGAR;
-        else if ( !str_cmp( arg+1, "arena"  ) ) bit = CHANNEL_ARENA;
-        else if ( !str_cmp( arg+1, "newbieasst"  ) ) bit = CHANNEL_NEWBIEASST;
-	else if ( !str_cmp( arg+1, "all"      ) ) ClearAll = TRUE;
-	else
-	{
-	    send_to_char( "Set or clear which channel?\n", ch );
-	    return;
-	}
+        if (arg[0] == '+')
+            fClear = TRUE;
+        else if (arg[0] == '-')
+            fClear = FALSE;
+        else
+        {
+            send_to_char("Channels -channel or +channel?\n", ch);
+            return;
+        }
+
+        /* Extract channel name (equivalent to arg+1) */
+        std::string chan = arg.substr(1);
+
+        if (chan.empty())
+        {
+            send_to_char("Set or clear which channel?\n", ch);
+            return;
+        }
+
+            if ( !str_cmp(chan, "auction"  ) ) bit = CHANNEL_AUCTION;
+        else if ( !str_cmp(chan, "chat"     ) ) bit = CHANNEL_CHAT;
+        else if ( !str_cmp(chan, "ooc"      ) ) bit = CHANNEL_OOC;
+        else if ( !str_cmp(chan, "clan"     ) ) bit = CHANNEL_CLAN;
+        else if ( !str_cmp(chan, "guild"    ) ) bit = CHANNEL_GUILD;
+        else if ( !str_cmp(chan, "quest"    ) ) bit = CHANNEL_QUEST;
+        else if ( !str_cmp(chan, "tells"    ) ) bit = CHANNEL_TELLS;
+        else if ( !str_cmp(chan, "immtalk"  ) ) bit = CHANNEL_IMMTALK;
+        else if ( !str_cmp(chan, "log"      ) ) bit = CHANNEL_LOG;
+        else if ( !str_cmp(chan, "build"    ) ) bit = CHANNEL_BUILD;
+        else if ( !str_cmp(chan, "pray"     ) ) bit = CHANNEL_PRAY;
+        else if ( !str_cmp(chan, "avatar"   ) ) bit = CHANNEL_AVTALK;
+        else if ( !str_cmp(chan, "monitor"  ) ) bit = CHANNEL_MONITOR;
+        else if ( !str_cmp(chan, "newbie"   ) ) bit = CHANNEL_NEWBIE;
+        else if ( !str_cmp(chan, "music"    ) ) bit = CHANNEL_MUSIC;
+        else if ( !str_cmp(chan, "ask"      ) ) bit = CHANNEL_ASK;
+        else if ( !str_cmp(chan, "shout"    ) ) bit = CHANNEL_SHOUT;
+        else if ( !str_cmp(chan, "yell"     ) ) bit = CHANNEL_YELL;
+        else if ( !str_cmp(chan, "comm"     ) ) bit = CHANNEL_COMM;
+        else if ( !str_cmp(chan, "order"    ) ) bit = CHANNEL_ORDER;
+        else if ( !str_cmp(chan, "vulgar"   ) ) bit = CHANNEL_VULGAR;
+        else if ( !str_cmp(chan, "arena"    ) ) bit = CHANNEL_ARENA;
+        else if ( !str_cmp(chan, "newbieasst") ) bit = CHANNEL_NEWBIEASST;
+        else if ( !str_cmp(chan, "all"      ) ) ClearAll = TRUE;
+        else
+        {
+            send_to_char("Set or clear which channel?\n", ch);
+            return;
+        }
 
 	if (( fClear ) && ( ClearAll ))
 	{
@@ -3951,7 +3830,7 @@ void do_wizlist( CHAR_DATA *ch, char *argument )
  */
 void do_config( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
 
     if ( IS_NPC(ch) )
 	return;
@@ -3959,7 +3838,7 @@ void do_config( CHAR_DATA *ch, char *argument )
     one_argument( argument, arg );
 
     set_char_color( AT_WHITE, ch );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
         send_to_char( "[ Keyword  ] Option\n", ch );
 
@@ -4101,7 +3980,7 @@ void do_config( CHAR_DATA *ch, char *argument )
         bool fSet;
         int bit = 0;
 
-            if ( arg[0] == '+' ) fSet = TRUE;
+        if ( arg[0] == '+' ) fSet = TRUE;
         else if ( arg[0] == '-' ) fSet = FALSE;
         else
         {
@@ -4109,25 +3988,33 @@ void do_config( CHAR_DATA *ch, char *argument )
             return;
         }
 
-        if ( !str_prefix( arg+1, "autoexit" ) ) bit = PLR_AUTOEXIT;
-        else if ( !str_prefix( arg+1, "autoloot" ) ) bit = PLR_AUTOLOOT;
-        else if ( !str_prefix( arg+1, "autosac"  ) ) bit = PLR_AUTOSAC;
-        else if ( !str_prefix( arg+1, "autocred" ) ) bit = PLR_AUTOGOLD;
-        else if ( !str_prefix( arg+1, "blank"    ) ) bit = PLR_BLANK;
-        else if ( !str_prefix( arg+1, "brief"    ) ) bit = PLR_BRIEF;
-        else if ( !str_prefix( arg+1, "combine"  ) ) bit = PLR_COMBINE;
-        else if ( !str_prefix( arg+1, "prompt"   ) ) bit = PLR_PROMPT;
-        else if ( !str_prefix( arg+1, "telnetga" ) ) bit = PLR_TELNET_GA;
-        else if ( !str_prefix( arg+1, "ansi"     ) ) bit = PLR_ANSI;
-        else if ( !str_prefix( arg+1, "sound"      ) ) bit = PLR_SOUND;
-        else if ( !str_prefix( arg+1, "flee"     ) ) bit = PLR_FLEE;
-        else if ( !str_prefix( arg+1, "nice"     ) ) bit = PLR_NICE;
-        else if ( !str_prefix( arg+1, "shovedrag") ) bit = PLR_SHOVEDRAG;
-        else if ( !str_prefix( arg+1, "dontautofuel") ) bit = PLR_DONTAUTOFUEL;
+        std::string chan = arg.substr(1);
+
+        if (chan.empty())
+        {
+            send_to_char("Set or clear which channel?\n", ch);
+            return;
+        }        
+
+        if ( !str_prefix( chan, "autoexit" ) ) bit = PLR_AUTOEXIT;
+        else if ( !str_prefix( chan, "autoloot" ) ) bit = PLR_AUTOLOOT;
+        else if ( !str_prefix( chan, "autosac"  ) ) bit = PLR_AUTOSAC;
+        else if ( !str_prefix( chan, "autocred" ) ) bit = PLR_AUTOGOLD;
+        else if ( !str_prefix( chan, "blank"    ) ) bit = PLR_BLANK;
+        else if ( !str_prefix( chan, "brief"    ) ) bit = PLR_BRIEF;
+        else if ( !str_prefix( chan, "combine"  ) ) bit = PLR_COMBINE;
+        else if ( !str_prefix( chan, "prompt"   ) ) bit = PLR_PROMPT;
+        else if ( !str_prefix( chan, "telnetga" ) ) bit = PLR_TELNET_GA;
+        else if ( !str_prefix( chan, "ansi"     ) ) bit = PLR_ANSI;
+        else if ( !str_prefix( chan, "sound"      ) ) bit = PLR_SOUND;
+        else if ( !str_prefix( chan, "flee"     ) ) bit = PLR_FLEE;
+        else if ( !str_prefix( chan, "nice"     ) ) bit = PLR_NICE;
+        else if ( !str_prefix( chan, "shovedrag") ) bit = PLR_SHOVEDRAG;
+        else if ( !str_prefix( chan, "dontautofuel") ) bit = PLR_DONTAUTOFUEL;
         else if ( IS_IMMORTAL( ch )
-            &&   !str_prefix( arg+1, "vnum"     ) ) bit = PLR_ROOMVNUM;
+            &&   !str_prefix( chan, "vnum"     ) ) bit = PLR_ROOMVNUM;
         else if ( IS_IMMORTAL( ch )
-            &&   !str_prefix( arg+1, "map"      ) ) bit = PLR_AUTOMAP;     /* maps */
+            &&   !str_prefix( chan, "map"      ) ) bit = PLR_AUTOMAP;     /* maps */
 
 	    if (bit)
         {
@@ -4141,12 +4028,12 @@ void do_config( CHAR_DATA *ch, char *argument )
         }
         else
         {
-            if ( !str_prefix( arg+1, "norecall" ) ) bit = PCFLAG_NORECALL;
-            else if ( !str_prefix( arg+1, "nointro"  ) ) bit = PCFLAG_NOINTRO;
-            else if ( !str_prefix( arg+1, "nosummon" ) ) bit = PCFLAG_NOSUMMON;
-            else if ( !str_prefix( arg+1, "gag"      ) ) bit = PCFLAG_GAG; 
-            else if ( !str_prefix( arg+1, "pager"    ) ) bit = PCFLAG_PAGERON;
-            else if ( !str_prefix( arg+1, "roomflags") 
+            if ( !str_prefix( chan, "norecall" ) ) bit = PCFLAG_NORECALL;
+            else if ( !str_prefix( chan, "nointro"  ) ) bit = PCFLAG_NOINTRO;
+            else if ( !str_prefix( chan, "nosummon" ) ) bit = PCFLAG_NOSUMMON;
+            else if ( !str_prefix( chan, "gag"      ) ) bit = PCFLAG_GAG; 
+            else if ( !str_prefix( chan, "pager"    ) ) bit = PCFLAG_PAGERON;
+            else if ( !str_prefix( chan, "roomflags") 
                         && (IS_IMMORTAL(ch))) bit = PCFLAG_ROOM;
             else
             {
@@ -4175,34 +4062,6 @@ void do_credits( CHAR_DATA *ch, char *argument )
 
 
 extern int top_area;
-
-/*
-void do_areas( CHAR_DATA *ch, char *argument )
-{
-    AREA_DATA *pArea1;
-    AREA_DATA *pArea2;
-    int iArea;
-    int iAreaHalf;
-
-    iAreaHalf = (top_area + 1) / 2;
-    pArea1    = first_area;
-    pArea2    = first_area;
-    for ( iArea = 0; iArea < iAreaHalf; iArea++ )
-	pArea2 = pArea2->next;
-
-    for ( iArea = 0; iArea < iAreaHalf; iArea++ )
-    {
-	ch_printf( ch, "%-39s%-39s\n",
-	    pArea1->name, pArea2 ? pArea2->name : "" );
-	pArea1 = pArea1->next;
-	if ( pArea2 )
-	    pArea2 = pArea2->next;
-    }
-
-    return;
-}
-*/
-
 /* 
  * New do_areas with soft/hard level ranges 
  */
@@ -4250,8 +4109,9 @@ void do_slist( CHAR_DATA *ch, char *argument )
    char skn[MAX_INPUT_LENGTH];
 
    char skn2[MAX_INPUT_LENGTH];
-   char arg1[MAX_INPUT_LENGTH];
-   char arg2[MAX_INPUT_LENGTH];
+   std::string arg1;
+   std::string arg2;
+   std::string argstr;
    int lowlev, hilev;
    int col = 0;
    int ability;
@@ -4259,20 +4119,20 @@ void do_slist( CHAR_DATA *ch, char *argument )
    if ( IS_NPC(ch) )
      return;
 
-   argument = one_argument( argument, arg1 );
-   argument = one_argument( argument, arg2 );
+   argstr = one_argument( argument, arg1 );
+   argstr = one_argument( argstr, arg2 );
 
    lowlev=1;
    hilev=150;
 
-   if (arg1[0]!='\0')
-      lowlev=atoi(arg1);
+   if (!arg1.empty())
+      lowlev=strtoi(arg1);
 
    if ((lowlev<1) || (lowlev>LEVEL_IMMORTAL))
       lowlev=1;
 
-   if (arg2[0]!='\0')
-      hilev=atoi(arg2);
+   if (!arg2.empty())
+      hilev=strtoi(arg2);
 
    if ((hilev<0) || (hilev>=LEVEL_IMMORTAL))
       hilev=LEVEL_HERO;
@@ -4487,29 +4347,29 @@ void do_whois( CHAR_DATA *ch, char *argument)
 
 void do_pager( CHAR_DATA *ch, char *argument )
 {
-  char arg[MAX_INPUT_LENGTH];
-  
-  if ( IS_NPC(ch) )
+    std::string arg;
+    
+    if ( IS_NPC(ch) )
+        return;
+    one_argument(argument, arg);
+    if ( arg.empty() )
+    {
+        if ( BV_IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
+        do_config(ch, "-pager");
+        else
+        do_config(ch, "+pager");
+        return;
+    }
+    if ( !is_number(arg) )
+    {
+        send_to_char( "Set page pausing to how many lines?\n", ch );
+        return;
+    }
+    ch->pcdata->pagerlen = strtoi(arg);
+    if ( ch->pcdata->pagerlen < 5 )
+        ch->pcdata->pagerlen = 5;
+    ch_printf( ch, "Page pausing set to %d lines.\n", ch->pcdata->pagerlen );
     return;
-  argument = one_argument(argument, arg);
-  if ( !*arg )
-  {
-    if ( BV_IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
-      do_config(ch, "-pager");
-    else
-      do_config(ch, "+pager");
-    return;
-  }
-  if ( !is_number(arg) )
-  {
-    send_to_char( "Set page pausing to how many lines?\n", ch );
-    return;
-  }
-  ch->pcdata->pagerlen = atoi(arg);
-  if ( ch->pcdata->pagerlen < 5 )
-    ch->pcdata->pagerlen = 5;
-  ch_printf( ch, "Page pausing set to %d lines.\n", ch->pcdata->pagerlen );
-  return;
 }
 
 void do_showstatistic_web( CHAR_DATA *ch, char *argument )
@@ -4764,10 +4624,10 @@ void do_nohelps(CHAR_DATA *ch, char *argument)
 {
   CMDTYPE *command;
   AREA_DATA *tArea;
-  char arg[MAX_STRING_LENGTH];
+  std::string arg;
   int hash, col=0, sn=0;
   
-   argument = one_argument( argument, arg );
+   one_argument( argument, arg );
 
    if(!IS_IMMORTAL(ch) || IS_NPC(ch) )
     {
@@ -4775,7 +4635,7 @@ void do_nohelps(CHAR_DATA *ch, char *argument)
 	return;
     }
 
-   if ( arg[0] == '\0' || !str_cmp(arg, "all") )
+   if ( arg.empty() || !str_cmp(arg, "all") )
    {
       do_nohelps(ch, "commands");
       send_to_char( "\n", ch);

@@ -27,7 +27,7 @@ struct player_struct
 struct trivia_struct *g_trivia = NULL;
 
 void do_trivia(CHAR_DATA *ch, char *argument);
-void send_to_trivia(char *string);
+void send_to_trivia(const std::string& string);
 bool is_trivia_player(CHAR_DATA *ch);
 void do_trivia_join(CHAR_DATA *ch, char *argument);
 void do_trivia_answer(CHAR_DATA *ch, char *argument);

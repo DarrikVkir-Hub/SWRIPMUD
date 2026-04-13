@@ -28,10 +28,10 @@
 #include <sys/stat.h>
 #include "mud.h"
 
-ALIAS_DATA *find_alias( CHAR_DATA *ch, char *argument )
+ALIAS_DATA *find_alias( CHAR_DATA *ch, const std::string& argument )
 {
     ALIAS_DATA *pal;
-    char buf[MAX_INPUT_LENGTH];;
+    std::string buf;
     
     if (!ch || !ch->pcdata)
         return(NULL);
@@ -48,14 +48,14 @@ ALIAS_DATA *find_alias( CHAR_DATA *ch, char *argument )
 void do_alias( CHAR_DATA *ch, char *argument )
 {
     ALIAS_DATA *pal = NULL;
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg, argstr = argument;
     
     if (!ch || !ch->pcdata)
         return;
     
-    argument = one_argument(argument, arg);
+    argstr = one_argument(argstr, arg);
     
-    if ( !*arg ) 
+    if ( arg.empty() )
     {
         if (!ch->pcdata->first_alias)
         {
@@ -69,7 +69,7 @@ void do_alias( CHAR_DATA *ch, char *argument )
         return;
     }
     
-    if ( !*argument)
+    if ( argstr.empty() )
     {
         if ( (pal = find_alias(ch, arg)) != NULL )
         {
@@ -88,7 +88,7 @@ void do_alias( CHAR_DATA *ch, char *argument )
     {
         CREATE(pal, ALIAS_DATA, 1);
         pal->name = str_dup(arg);
-        pal->cmd  = str_dup(argument);
+        pal->cmd  = str_dup(argstr);
         LINK(pal, ch->pcdata->first_alias, ch->pcdata->last_alias, next, prev);
         send_to_char("Created Alias.\n", ch);
     } 
@@ -96,7 +96,7 @@ void do_alias( CHAR_DATA *ch, char *argument )
     {
         if (pal->cmd)
             STR_DISPOSE(pal->cmd);
-        pal->cmd  = str_dup(argument);
+        pal->cmd  = str_dup(argstr);
         send_to_char("Modified Alias.\n", ch);
     }
 }
@@ -119,13 +119,13 @@ void free_aliases( CHAR_DATA *ch )
     }
 }
 
-bool check_alias( CHAR_DATA *ch, char *command, char *argument )
+bool check_alias( CHAR_DATA *ch, const std::string& command, const std::string&argument )
 {
     char arg[MAX_INPUT_LENGTH];
     ALIAS_DATA *alias;
     bool nullarg = TRUE;
     
-    if ( argument && *argument!='\0' )
+    if ( !argument.empty() )
       nullarg = FALSE;
       
     if ( (alias=find_alias(ch,command)) == NULL )
@@ -160,10 +160,10 @@ bool check_alias( CHAR_DATA *ch, char *command, char *argument )
     }
    }
 */
-    if (argument && *argument!='\0' && !nullarg)
+    if (!argument.empty() && !nullarg)
     {
-	STRAPP(arg, " ");
-	STRAPP(arg, "%s", argument);
+        STRAPP(arg, " ");
+        STRAPP(arg, "%s", argument.c_str());
     }
 
     interpret(ch, arg);

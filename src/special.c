@@ -77,7 +77,7 @@ DECLARE_SPEC_FUN(       spec_questmaster         );
 /*
  * Given a name, return the appropriate spec fun.
  */
-SPEC_FUN *spec_lookup( const char *name )
+SPEC_FUN *spec_lookup( const std::string& name )
 {
     if ( !str_cmp( name, "spec_jedi"	  ) ) return spec_jedi;
     if ( !str_cmp( name, "spec_dark_jedi"	  ) ) return spec_dark_jedi;
@@ -166,51 +166,43 @@ bool spec_newbie_pilot( CHAR_DATA *ch )
         {
            case RACE_MON_CALAMARI:
                  home = 21100;
-                 SPRINTF ( buf , "After a brief journey you arrive on Mon Calamari.\n\n" );
-                 echo_to_room( AT_ACTION , ch->in_room, buf );
+                 echo_to_room( AT_ACTION , ch->in_room, "After a brief journey you arrive on Mon Calamari.\n\n" );
                  break;
            
            case RACE_QUARREN:
                  home = 6904;
-                 SPRINTF ( buf , "After a brief journey you arrive on Mon Calamari.\n\n" );
-                 echo_to_room( AT_ACTION , ch->in_room, buf );
+                 echo_to_room( AT_ACTION , ch->in_room, "After a brief journey you arrive on Mon Calamari.\n\n" );
                  break;
 
            case RACE_GAMORREAN:
                  home = 28038;
-                 SPRINTF ( buf , "After a brief journey you arrive on Gamorr.\n\n" );
-                 echo_to_room( AT_ACTION , ch->in_room, buf );
+                 echo_to_room( AT_ACTION , ch->in_room, "After a brief journey you arrive on Gamorr.\n\n" );
                  break;
 
            case RACE_ADARIAN:
                  home = 29006;
-                 SPRINTF ( buf , "After a brief journey you arrive on Adari.\n\n" );
-                 echo_to_room( AT_ACTION , ch->in_room, buf );
+                 echo_to_room( AT_ACTION , ch->in_room, "After a brief journey you arrive on Adari.\n\n" );
                  break;
            
            case RACE_JAWA:
                  home = 31821;
-                 SPRINTF ( buf , "After a brief journey you arrive on Tatooine.\n\n" );
-                 echo_to_room( AT_ACTION , ch->in_room, buf );
+                 echo_to_room( AT_ACTION , ch->in_room, "After a brief journey you arrive on Tatooine.\n\n" );
                  break;
 
            case RACE_WOOKIEE:
                  home = 28600;
-                 SPRINTF ( buf , "After a brief journey you arrive on Kashyyyk.\n\n" );
-                 echo_to_room( AT_ACTION , ch->in_room, buf );
+                 echo_to_room( AT_ACTION , ch->in_room, "After a brief journey you arrive on Kashyyyk.\n\n" );
                  break;
            
            case RACE_HUMAN:
                  home = 201;
-                 SPRINTF ( buf , "After a brief journey you arrive at Coruscants Menari Spaceport.\n\n" );
-                 echo_to_room( AT_ACTION , ch->in_room, buf );
+                 echo_to_room( AT_ACTION , ch->in_room, "After a brief journey you arrive at Coruscants Menari Spaceport.\n\n" );
                  break;
 
 /*           
            case RACE_NOGHRI:
                  home = 1001;
-                 SPRINTF ( buf , "After a brief journey you arrive at Honoghr's Nystao Spaceport.\n\n" );
-                 echo_to_room( AT_ACTION , ch->in_room, buf );
+                 echo_to_room( AT_ACTION , ch->in_room, "After a brief journey you arrive at Honoghr's Nystao Spaceport.\n\n" );
                  break;
 */
            default:
@@ -228,8 +220,7 @@ bool spec_newbie_pilot( CHAR_DATA *ch )
         
         do_look ( victim , "" );
         
-        SPRINTF ( buf , "%s steps out and the shuttle quickly returns to the academy.\n" , victim->name );
-        echo_to_room( AT_ACTION , ch->in_room, buf );
+        echo_to_room( AT_ACTION , ch->in_room, str_printf("%s steps out and the shuttle quickly returns to the academy.\n" , victim->name) );
     }
 
    return FALSE;

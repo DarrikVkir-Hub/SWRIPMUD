@@ -44,12 +44,12 @@
 extern	int	top_reset;
 char *		sprint_reset	args( ( CHAR_DATA *ch, RESET_DATA *pReset,
 					sh_int num, bool rlist ) );
-RESET_DATA *	parse_reset	args( ( AREA_DATA *tarea, char *argument,
+RESET_DATA *	parse_reset	args( ( AREA_DATA *tarea, const std::string& argument,
 					CHAR_DATA *ch ) );
-int		get_wearloc	args( ( char *type ) );
-int		get_trapflag	args( ( char *flag ) );
-int		get_exflag	args( ( char *flag ) );
-int		get_rflag	args( ( char *flag ) );
+int		get_wearloc	args( ( const std::string& type ) );
+int		get_trapflag	args( ( const std::string& flag ) );
+int		get_exflag	args( ( const std::string& flag ) );
+int		get_rflag	args( ( const std::string& flag ) );
 extern	const char *	const		ex_flags[];
 
 bool is_room_reset  args( ( RESET_DATA *pReset, ROOM_INDEX_DATA *aRoom,
@@ -60,10 +60,10 @@ void delete_reset   args( ( AREA_DATA *pArea, RESET_DATA *pReset ) );
 void instaroom      args( ( AREA_DATA *pArea, ROOM_INDEX_DATA *pRoom,
 			    bool dodoors ) );
 #define RID ROOM_INDEX_DATA
-RID *find_room      args( ( CHAR_DATA *ch, char *argument,
+RID *find_room      args( ( CHAR_DATA *ch, const std::string& argument,
                             ROOM_INDEX_DATA *pRoom ) );
 #undef RID
-void edit_reset     args( ( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
+void edit_reset     args( ( CHAR_DATA *ch, const std::string& argumentin, AREA_DATA *pArea,
                             ROOM_INDEX_DATA *aRoom ) );
 #define RD RESET_DATA
 RD *find_reset      args( ( AREA_DATA *pArea, ROOM_INDEX_DATA *pRoom,
@@ -163,10 +163,10 @@ bool is_room_reset( RESET_DATA *pReset, ROOM_INDEX_DATA *aRoom,
   return FALSE;
 }
 
-ROOM_INDEX_DATA *find_room( CHAR_DATA *ch, char *argument,
+ROOM_INDEX_DATA *find_room( CHAR_DATA *ch, const std::string& argument,
                             ROOM_INDEX_DATA *pRoom )
 {
-  char arg[MAX_INPUT_LENGTH];
+  std::string arg;
   
   if ( pRoom )
     return pRoom;
@@ -176,10 +176,10 @@ ROOM_INDEX_DATA *find_room( CHAR_DATA *ch, char *argument,
     send_to_char( "Reset to which room?\n", ch );
     return NULL;
   }
-  if ( arg[0] == '\0' )
+  if ( arg.empty() )
     pRoom = ch->in_room;
   else
-    pRoom = get_room_index(atoi(arg));
+    pRoom = get_room_index(strtoi(arg));
   if ( !pRoom )
   {
     send_to_char( "Room does not exist.\n", ch );
@@ -256,11 +256,11 @@ void delete_reset( AREA_DATA *pArea, RESET_DATA *pReset )
 #undef DEL_RESET
 
 RESET_DATA *find_oreset(CHAR_DATA *ch, AREA_DATA *pArea,
-			ROOM_INDEX_DATA *pRoom, char *name)
+			ROOM_INDEX_DATA *pRoom, const std::string& name)
 {
   RESET_DATA *reset;
   
-  if ( !*name )
+  if ( name.empty() )
   {
     for ( reset = pArea->last_reset; reset; reset = reset->prev )
     {
@@ -281,7 +281,7 @@ RESET_DATA *find_oreset(CHAR_DATA *ch, AREA_DATA *pArea,
   }
   else
   {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     int cnt = 0, num = number_argument(name, arg);
     OBJ_INDEX_DATA *pObjTo = NULL;
     
@@ -310,11 +310,11 @@ RESET_DATA *find_oreset(CHAR_DATA *ch, AREA_DATA *pArea,
 }
 
 RESET_DATA *find_mreset(CHAR_DATA *ch, AREA_DATA *pArea,
-			ROOM_INDEX_DATA *pRoom, char *name)
+			ROOM_INDEX_DATA *pRoom, const std::string& name)
 {
   RESET_DATA *reset;
   
-  if ( !*name )
+  if ( name.empty() )
   {
     for ( reset = pArea->last_reset; reset; reset = reset->prev )
     {
@@ -335,7 +335,7 @@ RESET_DATA *find_mreset(CHAR_DATA *ch, AREA_DATA *pArea,
   }
   else
   {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     int cnt = 0, num = number_argument(name, arg);
     MOB_INDEX_DATA *pMob = NULL;
     
@@ -363,10 +363,10 @@ RESET_DATA *find_mreset(CHAR_DATA *ch, AREA_DATA *pArea,
   return reset;
 }
 
-void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
-		 ROOM_INDEX_DATA *aRoom )
+void edit_reset( CHAR_DATA *ch, const std::string &argument_in, AREA_DATA *pArea,
+                 ROOM_INDEX_DATA *aRoom )
 {
-  char arg[MAX_INPUT_LENGTH];
+  std::string arg;
   RESET_DATA *pReset = NULL;
   RESET_DATA *reset;
   MOB_INDEX_DATA *pMob = NULL;
@@ -374,13 +374,14 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
   OBJ_INDEX_DATA *pObj;
   int num = 0;
   int vnum;
-  char *origarg = argument;
+  std::string argument = argument_in;
+  std::string origarg = argument_in;
   
   argument = one_argument(argument, arg);
-  if ( !*arg || !str_cmp(arg, "?") )
+  if ( arg.empty() || !str_cmp(arg, "?") )
   {
     const char *nm = (ch->substate == SUB_REPEATCMD ? "" : (aRoom ? "rreset "
-    		: "reset "));
+            : "reset "));
     const char *rn = (aRoom ? "" : " [room#]");
     ch_printf(ch, "Syntax: %s<list|edit|delete|add|insert|place%s>\n",
         nm, (aRoom ? "" : "|area"));
@@ -444,9 +445,9 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
     int start, end;
     
     argument = one_argument(argument, arg);
-    start = is_number(arg) ? atoi(arg) : -1;
+    start = is_number(arg) ? strtoi(arg) : -1;
     argument = one_argument(argument, arg);
-    end   = is_number(arg) ? atoi(arg) : -1;
+    end   = is_number(arg) ? strtoi(arg) : -1;
     list_resets(ch, pArea, aRoom, start, end);
     return;
   }
@@ -454,11 +455,12 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
   if ( !str_cmp(arg, "edit") )
   {
     argument = one_argument(argument, arg);
-    if ( !*arg || !is_number(arg) )
+    if ( arg.empty() || !is_number(arg) )
     {
       send_to_char( "Usage: reset edit <number> <command>\n", ch );
       return;
     }
+    num = strtoi(arg);
     if ( !(pReset = find_reset(pArea, aRoom, num)) )
     {
       send_to_char( "Reset not found.\n", ch );
@@ -512,12 +514,12 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
   if ( !str_cmp(arg, "insert") )
   {
     argument = one_argument(argument, arg);
-    if ( !*arg || !is_number(arg) )
+    if ( arg.empty() || !is_number(arg) )
     {
       send_to_char( "Usage: reset insert <number> <command>\n", ch );
       return;
     }
-    num = atoi(arg);
+    num = strtoi(arg);
     if ( (reset = find_reset(pArea, aRoom, num)) == NULL )
     {
       send_to_char( "Reset not found.\n", ch );
@@ -537,14 +539,14 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
     int start, end;
     bool found;
     
-    if ( !*argument )
+    if ( argument.empty() )
     {
       send_to_char( "Usage: reset delete <start> [end]\n", ch );
       return;
     }
     argument = one_argument(argument, arg);
-    start = is_number(arg) ? atoi(arg) : -1;
-    end   = is_number(arg) ? atoi(arg) : -1;
+    start = is_number(arg) ? strtoi(arg) : -1;
+    end   = is_number(arg) ? strtoi(arg) : -1;
     num = 0; found = FALSE;
     for ( pReset = pArea->first_reset; pReset; pReset = reset )
     {
@@ -574,12 +576,12 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
     int iarg;
     
     argument = one_argument(argument, arg);
-    if ( arg[0] == '\0' || !is_number(arg) )
+    if ( arg.empty() || !is_number(arg) )
     {
       send_to_char( "Delete which reset?\n", ch );
       return;
     }
-    iarg = atoi(arg);
+    iarg = strtoi(arg);
     for ( pReset = pArea->first_reset; pReset; pReset = pReset->next )
     {
       if ( is_room_reset( pReset, aRoom, pArea ) && ++num == iarg )
@@ -597,18 +599,18 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
   if ( !str_prefix( arg, "mobile" ) )
   {
     argument = one_argument(argument, arg);
-    if ( arg[0] == '\0' || !is_number(arg) )
+    if ( arg.empty() || !is_number(arg) )
     {
       send_to_char( "Reset which mobile vnum?\n", ch );
       return;
     }
-    if ( !(pMob = get_mob_index(atoi(arg))) )
+    if ( !(pMob = get_mob_index(strtoi(arg))) )
     {
       send_to_char( "Mobile does not exist.\n", ch );
       return;
     }
     argument = one_argument(argument, arg);
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
       num = 1;
     else if ( !is_number(arg) )
     {
@@ -616,7 +618,7 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
       return;
     }
     else
-      num = atoi(arg);
+      num = strtoi(arg);
     if ( !(pRoom = find_room(ch, argument, aRoom)) )
       return;
     pReset = make_reset('M', 0, pMob->vnum, num, pRoom->vnum);
@@ -627,19 +629,19 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
   if ( !str_prefix(arg, "object") )
   {
     argument = one_argument(argument, arg);
-    if ( arg[0] == '\0' || !is_number(arg) )
+    if ( arg.empty() || !is_number(arg) )
     {
       send_to_char( "Reset which object vnum?\n", ch );
       return;
     }
-    if ( !(pObj = get_obj_index(atoi(arg))) )
+    if ( !(pObj = get_obj_index(strtoi(arg))) )
     {
       send_to_char( "Object does not exist.\n", ch );
       return;
     }
     argument = one_argument(argument, arg);
-    if ( arg[0] == '\0' )
-      SPRINTF(arg, "room");
+    if ( arg.empty() )
+      arg = "room";
     if ( !str_prefix( arg, "put" ) )
     {
       argument = one_argument(argument, arg);
@@ -649,9 +651,8 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
       while ( reset->next && (reset->next->command == 'H' ||
               reset->next->command == 'T' || reset->next->command == 'B') )
         reset = reset->next;
-/*      pReset = make_reset('P', 1, pObj->vnum, num, reset->arg1);*/
       argument = one_argument(argument, arg);
-      if ( (vnum = atoi(arg)) < 1 )
+      if ( (vnum = strtoi(arg)) < 1 )
         vnum = 1;
       pReset = make_reset('P', reset->extra+1, pObj->vnum, vnum, 0);
       /* Grumble.. insert puts pReset before reset, and we need it after,
@@ -668,7 +669,7 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
       while ( reset->next && reset->next->command == 'B' )
         reset = reset->next;
       argument = one_argument(argument, arg);
-      if ( (vnum = atoi(arg)) < 1 )
+      if ( (vnum = strtoi(arg)) < 1 )
         vnum = 1;
       pReset = make_reset('G', 1, pObj->vnum, vnum, 0);
       INSERT(pReset, reset, pArea->last_reset, prev, next);
@@ -699,14 +700,14 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
         }
       }
       argument = one_argument(argument, arg);
-      if ( (vnum = atoi(arg)) < 1 )
+      if ( (vnum = strtoi(arg)) < 1 )
         vnum = 1;
       pReset = make_reset('E', 1, pObj->vnum, vnum, num);
       INSERT(pReset, reset, pArea->last_reset, prev, next);
       send_to_char( "Object reset equipped by mobile created.\n", ch );
       return;
     }
-    if ( arg[0] == '\0' || !(num = (int)str_cmp(arg, "room")) ||
+    if ( arg.empty() || !(num = (int)str_cmp(arg, "room")) ||
          is_number(arg) )
     {
       if ( !(bool)num )
@@ -718,7 +719,7 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
         send_to_char( "Cannot reset objects to other areas.\n", ch );
         return;
       }
-      if ( (vnum = atoi(arg)) < 1 )
+      if ( (vnum = strtoi(arg)) < 1 )
         vnum = 1;
       pReset = make_reset('O', 0, pObj->vnum, vnum, pRoom->vnum);
       LINK(pReset, pArea->first_reset, pArea->last_reset, next, prev);
@@ -755,15 +756,15 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
   }
   if ( !str_cmp(arg, "trap") )
   {
-    char oname[MAX_INPUT_LENGTH];
+    std::string oname;
     int chrg, value, extra = 0;
     bool isobj;
     
     argument = one_argument(argument, oname);
     argument = one_argument(argument, arg);
-    num = is_number(arg) ? atoi(arg) : -1;
+    num = is_number(arg) ? strtoi(arg) : -1;
     argument = one_argument(argument, arg);
-    chrg = is_number(arg) ? atoi(arg) : -1;
+    chrg = is_number(arg) ? strtoi(arg) : -1;
     isobj = is_name(argument, "obj");
     if ( isobj == is_name(argument, "room") )
     {
@@ -779,7 +780,7 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
     {
       if ( is_number(oname) && !isobj )
       {
-        vnum = atoi(oname);
+        vnum = strtoi(oname);
         if ( !get_room_index(vnum) )
         {
           send_to_char( "Reset: TRAP: no such room\n", ch );
@@ -792,7 +793,6 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
       {
         if ( !(reset = find_oreset(ch, pArea, aRoom, oname)) )
           return;
-/*        vnum = reset->arg1;*/
         vnum = 0;
         extra = TRAP_OBJ;
       }
@@ -807,7 +807,7 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
       send_to_char( "Reset: TRAP: invalid trap charges\n", ch );
       return;
     }
-    while ( *argument )
+    while ( !argument.empty() )
     {
       argument = one_argument(argument, arg);
       value = get_trapflag(arg);
@@ -828,13 +828,13 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
   }
   if ( !str_cmp(arg, "bit") )
   {
-    int (*flfunc)(char *type);
+    int (*flfunc)(const std::string& type);
     int flags = 0;
-    char option[MAX_INPUT_LENGTH];
-    char *parg;
+    std::string option;
+    std::string parg;
     
     argument = one_argument(argument, option);
-    if ( !*option )
+    if ( option.empty() )
     {
       send_to_char( "You must specify SET, REMOVE, or TOGGLE.\n", ch );
       return;
@@ -852,7 +852,7 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
     argument = one_argument(argument, option);
     parg = argument;
     argument = one_argument(argument, arg);
-    if ( !*option )
+    if ( option.empty() )
     {
       send_to_char( "Must specify OBJECT, MOBILE, ROOM, or DOOR.\n", ch );
       return;
@@ -873,7 +873,7 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
       else if ( !(pRoom = find_room(ch, arg, aRoom)) )
         return;
       argument = one_argument(argument, arg);
-      if ( !*arg )
+      if ( arg.empty() )
       {
         send_to_char( "Must specify direction.\n", ch );
         return;
@@ -924,7 +924,7 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
       send_to_char( "Must specify OBJECT, MOBILE, ROOM, or DOOR.\n", ch );
       return;
     }
-    while ( *argument )
+    while ( !argument.empty() )
     {
       int value;
       argument = one_argument(argument, arg);
@@ -946,7 +946,8 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
           return;
         }
         SET_BIT(flags, value);
-      }    }
+      }
+    }
     if ( !flags )
     {
       send_to_char( "Set which flags?\n", ch );
@@ -965,7 +966,6 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
     argument = one_argument(argument, arg);
     if ( !(reset = find_oreset(ch, pArea, aRoom, arg)) )
       return;
-/*    pReset = make_reset('H', 1, reset->arg1, 0, 0);*/
     pReset = make_reset('H', 1, 0, 0, 0);
     INSERT(pReset, reset, pArea->last_reset, prev, next);
     send_to_char( "Object hide reset created.\n", ch );
@@ -986,10 +986,11 @@ void edit_reset( CHAR_DATA *ch, char *argument, AREA_DATA *pArea,
 void do_reset( CHAR_DATA *ch, char *argument )
 {
   AREA_DATA *pArea = NULL;
-  char arg[MAX_INPUT_LENGTH];
-  char *parg;
+  std::string arg;
+  std::string parg;
+  std::string argstr = argument;
   
-  parg = one_argument(argument, arg);
+  parg = one_argument(argstr, arg);
   if ( ch->substate == SUB_REPEATCMD )
   {
     pArea = (AREA_DATA *) ch->dest_buf;
@@ -1014,7 +1015,7 @@ void do_reset( CHAR_DATA *ch, char *argument )
         return;
       }
     }
-    if ( !*arg )
+    if ( arg.empty() )
     {
       ch_printf(ch, "Editing resets for area: %s\n", pArea->name);
       return;
@@ -1031,11 +1032,11 @@ void do_reset( CHAR_DATA *ch, char *argument )
   {
     char fname[80];
     
-    SPRINTF(fname, "%s.are", capitalize(arg));
+    SPRINTF(fname, "%s.are", capitalize(arg).c_str());
     for ( pArea = first_build; pArea; pArea = pArea->next )
       if ( !str_cmp(fname, pArea->filename) )
       {
-        argument = parg;
+        argstr = parg;
         break;
       }
     if ( !pArea )
@@ -1050,7 +1051,7 @@ void do_reset( CHAR_DATA *ch, char *argument )
     send_to_char( "You do not have an assigned area.\n", ch );
     return;
   }
-  edit_reset(ch, argument, pArea, NULL);
+  edit_reset(ch, argstr, pArea, NULL);
   return;
 }
 
@@ -1187,7 +1188,8 @@ void do_instaroom( CHAR_DATA *ch, char *argument )
   AREA_DATA *pArea;
   ROOM_INDEX_DATA *pRoom;
   bool dodoors;
-  char arg[MAX_INPUT_LENGTH];
+  std::string arg;
+  std::string argstr = argument;
 
   if ( IS_NPC(ch) || get_trust(ch) < LEVEL_SAVIOR || !ch->pcdata ||
       !ch->pcdata->area )
@@ -1196,8 +1198,8 @@ void do_instaroom( CHAR_DATA *ch, char *argument )
         ch );
     return;
   }
-  argument = one_argument(argument, arg);
-  if ( !str_cmp(argument, "nodoors") )
+  argstr = one_argument(argstr, arg);
+  if ( !str_cmp(argstr, "nodoors") )
     dodoors = FALSE;
   else
     dodoors = TRUE;

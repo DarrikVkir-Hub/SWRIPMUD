@@ -1084,18 +1084,18 @@ void load_helps( GameContext *game, AREA_DATA *tarea, FILE *fp )
         CREATE( pHelp, HELP_DATA, 1 );
         pHelp->game = game;
         pHelp->level	= fread_number( fp );
-        pHelp->keyword	= fread_string( fp );
+        pHelp->keyword	= fread_string_nohash( fp );
         if ( pHelp->keyword[0] == '$' )
         {
-            STRFREE( pHelp->keyword );
+            STR_DISPOSE( pHelp->keyword );
             DISPOSE( pHelp );
             break;
         }
-        pHelp->text	= fread_string( fp );
+        pHelp->text	= fread_string_nohash( fp );
         if ( pHelp->keyword[0] == '\0' )
         {
-            STRFREE( pHelp->text );
-            STRFREE( pHelp->keyword );
+            STR_DISPOSE( pHelp->text );
+            STR_DISPOSE( pHelp->keyword );
             DISPOSE( pHelp );
             continue;
         }
@@ -1909,7 +1909,7 @@ void load_rooms( AREA_DATA *tarea, FILE *fp )
 	  if ( vnum > tarea->hi_r_vnum )
 	    tarea->hi_r_vnum		= vnum;
 	}
-	pRoomIndex->name		= fread_string( fp );
+	pRoomIndex->name		= fread_string_nohash( fp );
 	pRoomIndex->description		= fread_string( fp );
 
 	/* Area number			  fread_number( fp ); */
@@ -3122,7 +3122,7 @@ void free_char( CHAR_DATA *ch )
 /*
  * Get an extra description from a list.
  */
-char *get_extra_descr( const char *name, EXTRA_DESCR_DATA *ed )
+char *get_extra_descr( const std::string& name, EXTRA_DESCR_DATA *ed )
 {
     for ( ; ed; ed = ed->next )
 	if ( is_name( name, ed->keyword ) )
@@ -3442,6 +3442,10 @@ int fread_number( FILE *fp )
     return number;
 }
 
+char *str_dup( const std::string &str )
+{
+    return str_dup( str.c_str() );
+}
 
 /*
  * custom str_dup using create					-Thoric
@@ -3462,30 +3466,30 @@ char *str_dup(const char *str)
     return ret;
 }
 
-bool is_valid_filename( CHAR_DATA *ch, const char *direct, const char *filename )
+bool is_valid_filename( CHAR_DATA *ch, const std::string& direct, const std::string&filename )
 {
    char newfilename[256];
    struct stat fst;
 
    /* Length restrictions */
-   if( !filename || filename[0] == '\0' || strlen( filename ) < 3 )
+   if( filename.empty() || filename.length() < 3 )
    {
-      if( !filename || !str_cmp( filename, "" ) )
+      if( filename.empty() )
          send_to_char( "Empty filename is not valid.\n", ch );
       else
-         ch_printf( ch, "%s: Filename is too short.\n", filename );
+         ch_printf( ch, "%s: Filename is too short.\n", filename.c_str() );
       return FALSE;
    }
 
    /* Illegal characters */
-   if( strstr( filename, ".." ) || strstr( filename, "/" ) || strstr( filename, "\\" ) )
+   if( filename.find("..") != std::string::npos || filename.find("/") != std::string::npos || filename.find("\\") != std::string::npos )
    {
       send_to_char( "A filename may not contain a '..', '/', or '\\' in it.\n", ch );
       return FALSE;
    }
 
    /* If that filename is already being used lets not allow it now to be on the safe side */
-   snprintf( newfilename, sizeof( newfilename ), "%s%s", direct, filename );
+   snprintf( newfilename, sizeof( newfilename ), "%s%s", direct.c_str(), filename.c_str() );
    if( stat( newfilename, &fst ) != -1 )
    {
       ch_printf( ch, "%s is already an existing filename.\n", newfilename );
@@ -3902,10 +3906,11 @@ char *fread_word(FILE *fp)
 
 void do_memory( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     int hash;
+    std::string argstr = argument;
 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
     ch_printf( ch, "Affects %5d    Areas   %5d\n",  top_affect, top_area   );
     ch_printf( ch, "ExtDes  %5d    Exits   %5d\n", top_ed,	 top_exit   );
     ch_printf( ch, "Helps   %5d    Resets  %5d\n", top_help,   top_reset  );
@@ -3920,35 +3925,37 @@ void do_memory( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg, "check" ) )
     {
 #ifdef HASHSTR
-	send_to_char( check_hash(argument), ch );
+        send_to_char( check_hash(argstr.c_str()), ch );
 #else
-	send_to_char( "Hash strings not enabled.\n", ch );
+        send_to_char( "Hash strings not enabled.\n", ch );
 #endif
-	return;
+        return;
     }
     if ( !str_cmp( arg, "showhigh" ) )
     {
 #ifdef HASHSTR
-	show_high_hash( atoi(argument) );
+        show_high_hash( strtoi(argstr) );
 #else
-	send_to_char( "Hash strings not enabled.\n", ch );
+        send_to_char( "Hash strings not enabled.\n", ch );
 #endif
 	return;
     }
-    if ( argument[0] != '\0' )
-      hash = atoi(argument);
+    if ( argstr[0] != '\0' )
+      hash = strtoi(argstr);
     else
       hash = -1;
     if ( !str_cmp( arg, "hash" ) )
     {
 #ifdef HASHSTR
-	ch_printf( ch, "Hash statistics:\n%s", hash_stats() );
-	if ( hash != -1 )
-	  hash_dump( hash );
+        ch_printf( ch, "Hash statistics:\n%s", hash_stats() );
+        if ( hash != -1 )
+        hash_dump( hash );
 #else
-	send_to_char( "Hash strings not enabled.\n", ch );
+        send_to_char( "Hash strings not enabled.\n", ch );
 #endif
     }
+    if ( !str_cmp(arg, "uniquehash"))
+        hash_unique( !argstr.empty() ? strtoi(argstr) : 50 );
     return;
 }
 
@@ -4191,13 +4198,23 @@ char *stripclr( char *text )
  * Removes the tildes from a string.
  * Used for player-entered strings that go into disk files.
  */
-void smash_tilde( char *str )
+void smash_tilde(char *str)
 {
-    for ( ; *str != '\0'; str++ )
-	if ( *str == '~' )
-	    *str = '-';
+    if (!str)
+        return;
 
-    return;
+    std::string tmp = str;
+    smash_tilde(tmp);
+    std::strcpy(str, tmp.c_str());
+}
+
+void smash_tilde(std::string& str)
+{
+    for (char& c : str)
+    {
+        if (c == '~')
+            c = '-';
+    }
 }
 
 /*
@@ -4238,91 +4255,109 @@ char *show_tilde( char *str )
  * Return TRUE if different
  *   (compatibility with historical functions).
  */
-bool str_suffix_utf8(const char *astr, const char *bstr)
+bool str_cmp_utf8(const std::string& astr, const std::string& bstr)
 {
-    if (!astr || !bstr)
-        return TRUE;
+    const char *a = astr.c_str();
+    const char *b = bstr.c_str();
 
-    size_t len_a = strlen(astr);
-    size_t len_b = strlen(bstr);
-
-    if (len_a > len_b)
-        return TRUE;
-
-    const char *end_b = bstr + len_b;
-
-    /* Walk backwards safely */
-    const char *p = end_b;
-    size_t remaining = len_a;
-
-    while (p > bstr && remaining > 0)
+    while (*a || *b)
     {
-        /* Step back one UTF-8 char */
-        do { p--; } while ((unsigned char)(*p & 0xC0) == 0x80);
+        size_t la = utf8_char_len_safe(a);
+        size_t lb = utf8_char_len_safe(b);
 
-        size_t clen = utf8_char_len_safe(p);
-        remaining -= (remaining >= clen) ? clen : remaining;
+        if (la == 1 && lb == 1)
+        {
+            if (LOWER(*a) != LOWER(*b))
+                return TRUE;
+        }
+        else
+        {
+            /* UTF-8 -> exact match required */
+            if (la != lb || memcmp(a, b, la) != 0)
+                return TRUE;
+        }
+
+        if (*a)
+            a += la;
+        if (*b)
+            b += lb;
     }
 
-    return str_cmp(astr, p);
+    return FALSE;
+}
+bool str_prefix_utf8(const std::string& astr, const std::string& bstr)
+{
+    const char *a = astr.c_str();
+    const char *b = bstr.c_str();
+
+    while (*a)
+    {
+        size_t la = utf8_char_len_safe(a);
+        size_t lb = utf8_char_len_safe(b);
+
+        if (la == 1 && lb == 1)
+        {
+            if (LOWER(*a) != LOWER(*b))
+                return TRUE;
+        }
+        else
+        {
+            if (la != lb || memcmp(a, b, la) != 0)
+                return TRUE;
+        }
+
+        a += la;
+        b += lb;
+    }
+
+    return FALSE;
 }
 
-bool str_infix_utf8(const char *astr, const char *bstr)
+bool str_infix_utf8(const std::string& astr, const std::string& bstr)
 {
-    if (!astr || !bstr)
-        return TRUE;
-
-    if (*astr == '\0')
+    if (astr.empty())
         return FALSE;
 
-    for (; *bstr; )
+    const char *b = bstr.c_str();
+
+    for (; *b; )
     {
         /* Check match at this position */
-        if (!str_prefix(astr, bstr))
+        if (!str_prefix_utf8(astr, std::string(b)))
             return FALSE;
 
         /* Advance bstr by one UTF-8 character */
-        bstr += utf8_char_len_safe(bstr);
+        b += utf8_char_len_safe(b);
     }
 
     return TRUE;
 }
 
-bool str_prefix_utf8(const char *astr, const char *bstr)
+bool str_suffix_utf8(const std::string& astr, const std::string& bstr)
 {
-    if (!astr)
-    {
-        bug("Strn_cmp: null astr.");
+    size_t len_a = astr.size();
+    size_t len_b = bstr.size();
+
+    if (len_a > len_b)
         return TRUE;
-    }
 
-    if (!bstr)
+    const char *b = bstr.c_str();
+    const char *end_b = b + len_b;
+
+    /* Walk backwards safely */
+    const char *p = end_b;
+    size_t remaining = len_a;
+
+    while (p > b && remaining > 0)
     {
-        bug("Strn_cmp: null bstr.");
-        return TRUE;
+        /* Step back one UTF-8 char */
+        do { p--; } while (p > b && (((unsigned char)*p & 0xC0) == 0x80));
+
+        size_t clen = utf8_char_len_safe(p);
+        remaining -= (remaining >= clen) ? clen : remaining;
     }
 
-    while (*astr)
-    {
-        size_t la = utf8_char_len_safe(astr);
-        size_t lb = utf8_char_len_safe(bstr);
-
-        if (la == 1 && lb == 1)
-        {
-            if (LOWER(*astr) != LOWER(*bstr))
-                return TRUE;
-        }
-        else
-        {
-            if (la != lb || memcmp(astr, bstr, la) != 0)
-                return TRUE;
-        }
-
-        astr += la;
-        bstr += lb;
-    }
-
-    return FALSE;
+    return str_cmp_utf8(astr, std::string(p));
 }
 
 bool str_cmp_utf8(const char *astr, const char *bstr)
@@ -4343,28 +4378,40 @@ bool str_cmp_utf8(const char *astr, const char *bstr)
         return TRUE;
     }
 
-    while (*astr || *bstr)
+    return str_cmp_utf8(std::string(astr), std::string(bstr));
+}
+
+bool str_prefix_utf8(const char *astr, const char *bstr)
+{
+    if (!astr)
     {
-        size_t la = utf8_char_len_safe(astr);
-        size_t lb = utf8_char_len_safe(bstr);
-
-        if (la == 1 && lb == 1)
-        {
-            if (LOWER(*astr) != LOWER(*bstr))
-                return TRUE;
-        }
-        else
-        {
-            /* UTF-8 → exact match required */
-            if (la != lb || memcmp(astr, bstr, la) != 0)
-                return TRUE;
-        }
-
-        if (*astr) astr += la;
-        if (*bstr) bstr += lb;
+        bug("Strn_cmp: null astr.");
+        return TRUE;
     }
 
-    return FALSE;
+    if (!bstr)
+    {
+        bug("Strn_cmp: null bstr.");
+        return TRUE;
+    }
+
+    return str_prefix_utf8(std::string(astr), std::string(bstr));
+}
+
+bool str_infix_utf8(const char *astr, const char *bstr)
+{
+    if (!astr || !bstr)
+        return TRUE;
+
+    return str_infix_utf8(std::string(astr), std::string(bstr));
+}
+
+bool str_suffix_utf8(const char *astr, const char *bstr)
+{
+    if (!astr || !bstr)
+        return TRUE;
+
+    return str_suffix_utf8(std::string(astr), std::string(bstr));
 }
 
 /*
@@ -4480,191 +4527,187 @@ bool str_suffix( const char *astr, const char *bstr )
  * Returns an initial-capped string.
  * Rewritten by FearItself@AvP for FUSS - DV added 3-14-26
  */
-char *capitalize( const char *str )
-{ 
-   static char buf[MAX_STRING_LENGTH];
-   char *dest = buf;
-   enum { Normal, Color } state = Normal;
-   bool bFirst = TRUE;
-   const unsigned char *p = (const unsigned char *)str;
+std::string capitalize(const std::string& str)
+{
+    std::string result;
+    result.reserve(str.size());
 
-   while( *p )
-   {
-      unsigned int codepoint = 0;
-      int len = 1;
+    enum { Normal, Color } state = Normal;
+    bool bFirst = TRUE;
+    const unsigned char *p = reinterpret_cast<const unsigned char *>(str.c_str());
 
-      // Decode UTF-8 sequence
-      if( *p < 0x80 )
-      {
-         codepoint = *p;
-         len = 1;
-      }
-      else if( (*p & 0xE0) == 0xC0 )
-      {
-         codepoint = (*p & 0x1F) << 6;
-         codepoint |= (p[1] & 0x3F);
-         len = 2;
-      }
-      else if( (*p & 0xF0) == 0xE0 )
-      {
-         codepoint = (*p & 0x0F) << 12;
-         codepoint |= (p[1] & 0x3F) << 6;
-         codepoint |= (p[2] & 0x3F);
-         len = 3;
-      }
-      else if( (*p & 0xF8) == 0xF0 )
-      {
-         codepoint = (*p & 0x07) << 18;
-         codepoint |= (p[1] & 0x3F) << 12;
-         codepoint |= (p[2] & 0x3F) << 6;
-         codepoint |= (p[3] & 0x3F);
-         len = 4;
-      }
-      else
-      {
-         // Invalid byte, copy raw
-         *dest++ = *p++;
-         continue;
-      }
+    while (*p)
+    {
+        unsigned int codepoint = 0;
+        int len = 1;
 
-      if( state == Normal )
-      {
-         // Only treat ASCII color triggers
-         if( codepoint == '&' || codepoint == '^' || codepoint == '}' )
-         {
-            state = Color;
-         }
-         // Only apply alpha logic to ASCII
-         else if( codepoint < 128 && isalpha((unsigned char)codepoint) )
-         {
-            codepoint = bFirst
-               ? toupper((unsigned char)codepoint)
-               : tolower((unsigned char)codepoint);
-            bFirst = FALSE;
-         }
-      }
-      else
-      {
-         state = Normal;
-      }
+        // Decode UTF-8 sequence
+        if (*p < 0x80)
+        {
+            codepoint = *p;
+            len = 1;
+        }
+        else if ((*p & 0xE0) == 0xC0)
+        {
+            codepoint = (*p & 0x1F) << 6;
+            codepoint |= (p[1] & 0x3F);
+            len = 2;
+        }
+        else if ((*p & 0xF0) == 0xE0)
+        {
+            codepoint = (*p & 0x0F) << 12;
+            codepoint |= (p[1] & 0x3F) << 6;
+            codepoint |= (p[2] & 0x3F);
+            len = 3;
+        }
+        else if ((*p & 0xF8) == 0xF0)
+        {
+            codepoint = (*p & 0x07) << 18;
+            codepoint |= (p[1] & 0x3F) << 12;
+            codepoint |= (p[2] & 0x3F) << 6;
+            codepoint |= (p[3] & 0x3F);
+            len = 4;
+        }
+        else
+        {
+            // Invalid byte, copy raw
+            result.push_back(static_cast<char>(*p));
+            ++p;
+            continue;
+        }
 
-      // Re-encode UTF-8 safely
-      if( codepoint < 0x80 )
-      {
-         *dest++ = codepoint;
-      }
-      else if( codepoint < 0x800 )
-      {
-         *dest++ = 0xC0 | (codepoint >> 6);
-         *dest++ = 0x80 | (codepoint & 0x3F);
-      }
-      else if( codepoint < 0x10000 )
-      {
-         *dest++ = 0xE0 | (codepoint >> 12);
-         *dest++ = 0x80 | ((codepoint >> 6) & 0x3F);
-         *dest++ = 0x80 | (codepoint & 0x3F);
-      }
-      else
-      {
-         *dest++ = 0xF0 | (codepoint >> 18);
-         *dest++ = 0x80 | ((codepoint >> 12) & 0x3F);
-         *dest++ = 0x80 | ((codepoint >> 6) & 0x3F);
-         *dest++ = 0x80 | (codepoint & 0x3F);
-      }
+        if (state == Normal)
+        {
+            // Only treat ASCII color triggers
+            if (codepoint == '&' || codepoint == '^' || codepoint == '}')
+            {
+                state = Color;
+            }
+            // Only apply alpha logic to ASCII
+            else if (codepoint < 128 && isalpha(static_cast<unsigned char>(codepoint)))
+            {
+                codepoint = bFirst
+                    ? toupper(static_cast<unsigned char>(codepoint))
+                    : tolower(static_cast<unsigned char>(codepoint));
+                bFirst = FALSE;
+            }
+        }
+        else
+        {
+            state = Normal;
+        }
 
-      p += len;
-   }
+        // Re-encode UTF-8 safely
+        if (codepoint < 0x80)
+        {
+            result.push_back(static_cast<char>(codepoint));
+        }
+        else if (codepoint < 0x800)
+        {
+            result.push_back(static_cast<char>(0xC0 | (codepoint >> 6)));
+            result.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+        }
+        else if (codepoint < 0x10000)
+        {
+            result.push_back(static_cast<char>(0xE0 | (codepoint >> 12)));
+            result.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
+            result.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+        }
+        else
+        {
+            result.push_back(static_cast<char>(0xF0 | (codepoint >> 18)));
+            result.push_back(static_cast<char>(0x80 | ((codepoint >> 12) & 0x3F)));
+            result.push_back(static_cast<char>(0x80 | ((codepoint >> 6) & 0x3F)));
+            result.push_back(static_cast<char>(0x80 | (codepoint & 0x3F)));
+        }
 
-   *dest = '\0';  // 🔥 CHANGED: safer termination
+        p += len;
+    }
 
-   return buf;
+    return result;
 }
 
 
 /*
  * Returns a lowercase string.
  */
-char *strlower( const char *str )
+std::string strlower(const std::string& str)
 {
-    static char strlow[MAX_STRING_LENGTH];
-    int i;
+    std::string result = str;
 
-    for ( i = 0; str[i] != '\0'; i++ )
-	strlow[i] = LOWER(str[i]);
-    strlow[i] = '\0';
-    return strlow;
+    for (size_t i = 0; i < result.size(); ++i)
+        result[i] = LOWER(static_cast<unsigned char>(result[i]));
+
+    return result;
 }
 
 /*
  * Returns an uppercase string.
  */
-char *strupper( const char *str )
+std::string strupper(const std::string& str)
 {
-    static char strup[MAX_STRING_LENGTH];
-    int i;
+    std::string result = str;
 
-    for ( i = 0; str[i] != '\0'; i++ )
-	strup[i] = UPPER(str[i]);
-    strup[i] = '\0';
-    return strup;
+    for (size_t i = 0; i < result.size(); ++i)
+        result[i] = UPPER(static_cast<unsigned char>(result[i]));
+
+    return result;
 }
 
 /*
- * Returns TRUE or FALSE if a letter is a vowel			-Thoric
+ * Returns TRUE or FALSE if a letter is a vowel            -Thoric
  */
-bool isavowel( char letter )
+bool isavowel(char letter)
 {
-    char c;
-
-    c = tolower( letter );
-    if ( c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u' )
-      return TRUE;
-    else
-      return FALSE;
+    char c = static_cast<char>(tolower(static_cast<unsigned char>(letter)));
+    return (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u') ? TRUE : FALSE;
 }
 
 /*
  * Shove either "a " or "an " onto the beginning of a string	-Thoric
  */
-char *aoran( const char *str )
+std::string aoran(const std::string& str)
 {
-    static char temp[MAX_STRING_LENGTH];
-
-    if ( !str )
+    if (str.empty())
     {
-	bug( "Aoran(): NULL str" );
-	return "";
+        bug("Aoran(): empty str");
+        return "";
     }
 
-    if ( isavowel(str[0])
-    || ( strlen(str) > 1 && tolower(str[0]) == 'y' && !isavowel(str[1])) )
-      SPRINTF( temp, "an " );
+    char c0 = str[0];
+
+    bool use_an =
+        isavowel(c0) ||
+        (str.size() > 1 &&
+         tolower(static_cast<unsigned char>(c0)) == 'y' &&
+         !isavowel(str[1]));
+
+    if (use_an)
+        return "an " + str;
     else
-      SPRINTF( temp, "a " );
-    STRAPP( temp, "%s", str );
-    return temp;
+        return "a " + str;
 }
 
 
 /*
  * Append a string to a file.
  */
-void append_file( CHAR_DATA *ch, char *file, char *str )
+void append_file( CHAR_DATA *ch, const std::string& file, const std::string& str )
 {
     FILE *fp;
 
-    if ( IS_NPC(ch) || str[0] == '\0' )
+    if ( IS_NPC(ch) || str.empty() )
 	return;
 
     FCLOSE( fpLOG );
-    if ( ( fp = fopen( file, "a" ) ) == NULL )
+    if ( ( fp = fopen( file.c_str(), "a" ) ) == NULL )
     {
 	send_to_char( "Could not open the file!\n", ch );
     }
     else
     {
 	fprintf( fp, "[%5d] %s: %s\n",
-	    ch->in_room ? ch->in_room->vnum : 0, ch->name, str );
+	    ch->in_room ? ch->in_room->vnum : 0, ch->name, str.c_str() );
 	FCLOSE( fp );
     }
 
@@ -4675,15 +4718,15 @@ void append_file( CHAR_DATA *ch, char *file, char *str )
 /*
  * Append a string to a file.
  */
-void append_to_file( char *file, char *str )
+void append_to_file( const std::string& file, const std::string& str )
 {
     FILE *fp;
 
-    if ( ( fp = fopen( file, "a" ) ) == NULL )
+    if ( ( fp = fopen( file.c_str(), "a" ) ) == NULL )
     {}
     else
     {
-	fprintf( fp, "%s\n", str );
+	fprintf( fp, "%s\n", str.c_str() );
 	FCLOSE( fp );
     }
 
@@ -4801,17 +4844,16 @@ void do_dmesg( CHAR_DATA *ch, char *argument )
 
 // Two log_printf and a buffer_printf functions - DV added 3-14-26.  Going to replace log buf as I come across them.  Feel free to follow!
 
-void buffer_printf( DESCRIPTOR_DATA * d, const char *fmt, ... )
+void out_printf( DESCRIPTOR_DATA *d, const char *fmt, ... )
 {
-    char buf[MAX_STRING_LENGTH * 2];
-
     va_list args;
-
     va_start( args, fmt );
-    vsnprintf( buf, sizeof(buf), fmt, args );
+
+    std::string result = vstr_printf( fmt, args );
+
     va_end( args );
 
-    write_to_buffer( d, buf, strnlen( buf, MAX_STRING_LENGTH ) );
+    output_to_descriptor( d, result );
 }
 
 void log_channelf(int channel, const char *channel_name, int level,
@@ -5338,9 +5380,9 @@ void mprog_read_programs( FILE *fp, MOB_INDEX_DATA *pMobIndex)
       break;
      default:
 	pMobIndex->progtypes = pMobIndex->progtypes | mprg->type;
-	mprg->arglist        = fread_string( fp );
+	mprg->arglist        = fread_string_nohash( fp );
 	fread_to_eol( fp );
-	mprg->comlist        = fread_string( fp );
+	mprg->comlist        = fread_string_nohash( fp );
 	fread_to_eol( fp );
 	switch ( letter = fread_letter( fp ) )
 	{
@@ -5427,8 +5469,8 @@ MPROG_DATA *oprog_file_read( char *f, MPROG_DATA *mprg,
       break;
      default:
 	pObjIndex->progtypes = pObjIndex->progtypes | mprg2->type;
-	mprg2->arglist       = fread_string( progfile );
-	mprg2->comlist       = fread_string( progfile );
+	mprg2->arglist       = fread_string_nohash( progfile );
+	mprg2->comlist       = fread_string_nohash( progfile );
 	switch ( letter = fread_letter( progfile ) )
 	{
 	  case '>':
@@ -5553,9 +5595,9 @@ void oprog_read_programs( FILE *fp, OBJ_INDEX_DATA *pObjIndex)
       break;
      default:
 	pObjIndex->progtypes = pObjIndex->progtypes | mprg->type;
-	mprg->arglist        = fread_string( fp );
+	mprg->arglist        = fread_string_nohash( fp );
 	fread_to_eol( fp );
-	mprg->comlist        = fread_string( fp );
+	mprg->comlist        = fread_string_nohash( fp );
 	fread_to_eol( fp );
 	switch ( letter = fread_letter( fp ) )
 	{
@@ -5639,8 +5681,8 @@ MPROG_DATA *rprog_file_read( char *f, MPROG_DATA *mprg,
       break;
      default:
 	RoomIndex->progtypes = RoomIndex->progtypes | mprg2->type;
-	mprg2->arglist       = fread_string( progfile );
-	mprg2->comlist       = fread_string( progfile );
+	mprg2->arglist       = fread_string_nohash( progfile );
+	mprg2->comlist       = fread_string_nohash( progfile );
 	switch ( letter = fread_letter( progfile ) )
 	{
 	  case '>':
@@ -5765,9 +5807,9 @@ void rprog_read_programs( FILE *fp, ROOM_INDEX_DATA *pRoomIndex)
       break;
      default:
 	pRoomIndex->progtypes = pRoomIndex->progtypes | mprg->type;
-	mprg->arglist        = fread_string( fp );
+	mprg->arglist        = fread_string_nohash( fp );
 	fread_to_eol( fp );
-	mprg->comlist        = fread_string( fp );
+	mprg->comlist        = fread_string_nohash( fp );
 	fread_to_eol( fp );
 	switch ( letter = fread_letter( fp ) )
 	{
@@ -5889,7 +5931,7 @@ ROOM_INDEX_DATA *make_room( GameContext *game, int vnum )
  * Create a new INDEX object (for online building)		-Thoric
  * Option to clone an existing index object.
  */
-OBJ_INDEX_DATA *make_object( GameContext *game, int vnum, int cvnum, char *name )
+OBJ_INDEX_DATA *make_object( GameContext *game, int vnum, int cvnum, const std::string& name )
 {
 	OBJ_INDEX_DATA *pObjIndex, *cObjIndex;
 	char buf[MAX_STRING_LENGTH];
@@ -5909,9 +5951,9 @@ OBJ_INDEX_DATA *make_object( GameContext *game, int vnum, int cvnum, char *name 
 	pObjIndex->last_extradesc	= NULL;
 	if ( !cObjIndex )
 	{
-	  SPRINTF( buf, "A %s", name );
+	  SPRINTF( buf, "A %s", name.c_str() );
 	  pObjIndex->short_descr	= STRALLOC( buf  );
-	  SPRINTF( buf, "A %s is here.", name );
+	  SPRINTF( buf, "A %s is here.", name.c_str() );
 	  pObjIndex->description	= STRALLOC( buf );
 	  pObjIndex->action_desc	= STRALLOC( "" );
 	  pObjIndex->short_descr[0]	= LOWER(pObjIndex->short_descr[0]);
@@ -5979,7 +6021,7 @@ OBJ_INDEX_DATA *make_object( GameContext *game, int vnum, int cvnum, char *name 
  * Create a new INDEX mobile (for online building)		-Thoric
  * Option to clone an existing index mobile.
  */
-MOB_INDEX_DATA *make_mobile( GameContext *game, sh_int vnum, sh_int cvnum, char *name )
+MOB_INDEX_DATA *make_mobile( GameContext *game, sh_int vnum, sh_int cvnum, const std::string& name )
 {
 	MOB_INDEX_DATA *pMobIndex, *cMobIndex;
 	char buf[MAX_STRING_LENGTH];
@@ -5997,9 +6039,9 @@ MOB_INDEX_DATA *make_mobile( GameContext *game, sh_int vnum, sh_int cvnum, char 
 	pMobIndex->player_name		= STRALLOC( name );
 	if ( !cMobIndex )
 	{
-	  SPRINTF( buf, "A newly created %s", name );
+	  SPRINTF( buf, "A newly created %s", name.c_str() );
 	  pMobIndex->short_descr	= STRALLOC( buf  );
-	  SPRINTF( buf, "Some god abandoned a newly created %s here.\n", name );
+	  SPRINTF( buf, "Some god abandoned a newly created %s here.\n", name.c_str() );
 	  pMobIndex->long_descr		= STRALLOC( buf );
 	  pMobIndex->description	= STRALLOC( "" );
 	  pMobIndex->short_descr[0]	= LOWER(pMobIndex->short_descr[0]);
@@ -6547,18 +6589,19 @@ void show_vnums( CHAR_DATA *ch, int low, int high, bool proto, bool shownl,
 
 void do_vnums( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     int low, high;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
     low = 0;	high = 32766;
     if ( arg1[0] != '\0' )
     {
-	low = atoi(arg1);
+	low = strtoi(arg1);
 	if ( arg2[0] != '\0' )
-	  high = atoi(arg2);
+	  high = strtoi(arg2);
     }
     show_vnums( ch, low, high, TRUE, TRUE, " *", "" );
 }
@@ -6568,21 +6611,22 @@ void do_vnums( CHAR_DATA *ch, char *argument )
  */
 void do_zones( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     int low, high;
 
     do_vnums( ch, argument);
     
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
     low = 0;	high = 32766;
     
     if ( arg1[0] != '\0' )
     {
-	low = atoi(arg1);
+	low = strtoi(arg1);
 	if ( arg2[0] != '\0' )
-	  high = atoi(arg2);
+	  high = strtoi(arg2);
     }
     
     show_vnums( ch, low, high, FALSE, TRUE, "", " X" );
@@ -6594,18 +6638,19 @@ void do_zones( CHAR_DATA *ch, char *argument )
  */
 void do_newzones( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     int low, high;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
     low = 0;	high = 32766;
     if ( arg1[0] != '\0' )
     {
-	low = atoi(arg1);
+	low = strtoi(arg1);
 	if ( arg2[0] != '\0' )
-	  high = atoi(arg2);
+	  high = strtoi(arg2);
     }
     show_vnums( ch, low, high, TRUE, FALSE, "", " X" );
 }
@@ -6921,11 +6966,12 @@ void load_banlist( GameContext *game )
 
 void do_check_vnums( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
-    char buf2[MAX_STRING_LENGTH];
+    std::string buf;
+    std::string buf2;
     AREA_DATA *pArea;
-    char arg1[MAX_STRING_LENGTH];
-    char arg2[MAX_STRING_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     bool room, mob, obj, all, area_conflict;
     int low_range, high_range;
 
@@ -6934,10 +6980,10 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
     obj  = FALSE;
     all  = FALSE;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if (arg1[0] == '\0')
+    if (arg1.empty())
     {
       send_to_char("Please specify room, mob, object, or all as your first argument.\n", ch);
       return;
@@ -6960,20 +7006,20 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
       return;
     }
 
-    if(arg2[0] == '\0')
+    if(arg2.empty())
     {
       send_to_char("Please specify the low end of the range to be searched.\n", ch);
       return;
     }
 
-    if(argument[0] == '\0')
+    if(argstr.empty())
     {
       send_to_char("Please specify the high end of the range to be searched.\n", ch);
       return;
     }
 
-    low_range = atoi(arg2);
-    high_range = atoi(argument);
+    low_range = strtoi(arg2);
+    high_range = strtoi(argstr);
 
     if (low_range < 1 || low_range > 32767 )
     {
@@ -6995,12 +7041,12 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
     
     if (all)
     {
-      SPRINTF(buf, "room %d %d", low_range, high_range);
-      do_check_vnums(ch, buf);
-      SPRINTF(buf, "mob %d %d", low_range, high_range);
-      do_check_vnums(ch, buf);
-      SPRINTF(buf, "object %d %d", low_range, high_range);
-      do_check_vnums(ch, buf);
+      buf = str_printf( "room %d %d", low_range, high_range);
+      do_check_vnums(ch, (char*)buf.c_str());
+      buf = str_printf( "mob %d %d", low_range, high_range);
+      do_check_vnums(ch, (char*)buf.c_str());
+      buf = str_printf( "object %d %d", low_range, high_range);
+      do_check_vnums(ch, (char*)buf.c_str());
       return;
     }
     set_char_color( AT_PLAIN, ch );
@@ -7063,19 +7109,18 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
 
 	if (area_conflict)
 	{
-	SPRINTF(buf, "Conflict:%-15s| ",
+	buf = str_printf( "Conflict:%-15s| ",
 		(pArea->filename ? pArea->filename : "(invalid)"));
         if(room)
-          SPRINTF( buf2, "Rooms: %5d - %-5d\n", pArea->low_r_vnum, 
+          buf2 = str_printf( "Rooms: %5d - %-5d\n", pArea->low_r_vnum, 
           pArea->hi_r_vnum);
         if(mob)
-          SPRINTF( buf2, "Mobs: %5d - %-5d\n", pArea->low_m_vnum, 
+          buf2 = str_printf( "Mobs: %5d - %-5d\n", pArea->low_m_vnum, 
           pArea->hi_m_vnum);
         if(obj)
-          SPRINTF( buf2, "Objects: %5d - %-5d\n", pArea->low_o_vnum, 
+          buf2 = str_printf( "Objects: %5d - %-5d\n", pArea->low_o_vnum, 
           pArea->hi_o_vnum);
-        
-        STRAPP( buf, "%s", buf2 );
+        buf = buf + buf2;
 	send_to_char(buf, ch);
     	}
     }    
@@ -7137,19 +7182,18 @@ void do_check_vnums( CHAR_DATA *ch, char *argument )
 
 	if (area_conflict)
 	{
-	SPRINTF(buf, "Conflict:%-15s| ",
+	buf = str_printf( "Conflict:%-15s| ",
 		(pArea->filename ? pArea->filename : "(invalid)"));
         if(room)
-          SPRINTF( buf2, "Rooms: %5d - %-5d\n", pArea->low_r_vnum, 
+          buf2 = str_printf( "Rooms: %5d - %-5d\n", pArea->low_r_vnum, 
           pArea->hi_r_vnum);
         if(mob)
-          SPRINTF( buf2, "Mobs: %5d - %-5d\n", pArea->low_m_vnum, 
+          buf2 = str_printf( "Mobs: %5d - %-5d\n", pArea->low_m_vnum, 
           pArea->hi_m_vnum);
         if(obj)
-          SPRINTF( buf2, "Objects: %5d - %-5d\n", pArea->low_o_vnum, 
+          buf2 = str_printf( "Objects: %5d - %-5d\n", pArea->low_o_vnum, 
           pArea->hi_o_vnum);
-        
-        STRAPP( buf, "%s", buf2 );
+        buf = buf + buf2;
 	send_to_char(buf, ch);
     	}
     }    

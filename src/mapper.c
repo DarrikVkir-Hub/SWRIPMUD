@@ -109,6 +109,22 @@ void clear_room( int x, int y )
     }
 }
 
+static inline char get_map_exit_char( int door )
+{
+    switch ( door )
+    {
+        case 0: return '|';  /* north */
+        case 1: return '-';  /* east  */
+        case 2: return '|';  /* south */
+        case 3: return '-';  /* west  */
+        case 6: return '/';  /* northeast */
+        case 7: return '\\'; /* northwest */
+        case 8: return '\\'; /* southeast */
+        case 9: return '/';  /* southwest */
+        default: return '?';
+    }
+}
+
 /* This function is recursive, ie it calls itself */
 void map_exits( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoom,
                 int x, int y, int depth )
@@ -165,7 +181,7 @@ void map_exits( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoom,
         map[exitx][exity].depth = depth;
         map[exitx][exity].vnum = pExit->to_room->vnum;
         map[exitx][exity].info = pExit->exit_info;
-        map[exitx][exity].mapch = map_chars[door];
+        map[exitx][exity].mapch = get_map_exit_char( door );
 
         /* More to do? If so we recurse */
         if ( ( ( map[roomx][roomy].vnum == pExit->to_room->vnum ) ||

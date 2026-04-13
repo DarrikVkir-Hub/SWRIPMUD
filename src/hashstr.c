@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <string>
 
 const bool TRUE = true;
 const bool FALSE = false;
@@ -64,7 +65,7 @@ struct hashstr_data
     unsigned short int	 length;	/* length of string */
 };
 
-char *		str_alloc( char *str );
+char *		str_alloc( const char *str );
 char *		quick_link( char *str );
 int		str_free( char *str );
 void		show_hash( int count );
@@ -93,7 +94,7 @@ void sha256_hash(const char *password, char out[65])
  * If found, increase link count, and return pointer,
  * otherwise add new string to hash table, and return pointer.
  */
-char *str_alloc( char *str )
+char *str_alloc( const char *str )
 {
    int len, hash, psize;
    struct hashstr_data *ptr;
@@ -102,12 +103,12 @@ char *str_alloc( char *str )
    psize = sizeof(struct hashstr_data);
    hash = len % STR_HASH_SIZE;
    for (ptr = string_hash[hash]; ptr; ptr = ptr->next )
-     if ( len == ptr->length && !strcmp(str,(char *)ptr+psize) )
-     {
-	if ( ptr->links < 65535 )
-	  ++ptr->links;
-	return (char *) ptr+psize;
-     }
+        if ( len == ptr->length && !strcmp(str,(char *)ptr+psize) )
+        {
+            if ( ptr->links < 65535 )
+            ++ptr->links;
+            return (char *) ptr+psize;
+        }
    ptr = (struct hashstr_data *) malloc(len+psize+1);
    ptr->links		= 1;
    ptr->length		= len;
@@ -119,6 +120,11 @@ char *str_alloc( char *str )
    ptr->next		= string_hash[hash];
    string_hash[hash]	= ptr;
    return (char *) ptr+psize;
+}
+
+char *str_alloc(const std::string& str)
+{
+    return str_alloc(str.c_str());
 }
 
 /*
@@ -222,7 +228,7 @@ void hash_dump( int hash )
     fprintf( stderr, "Total strings in hash %d: %d\n", hash, c );
 }
 
-char *check_hash( char *str )
+char *check_hash( const char *str )
 {
    static char buf[1024];
    int len, hash, psize, p, c;
@@ -272,6 +278,27 @@ char *hash_stats( )
     return buf;
 }
 
+void hash_unique( int count)
+{
+
+    int nolinks = 0;
+    for (int hash = 0; hash < STR_HASH_SIZE && nolinks < count; ++hash)
+    {
+        for (hashstr_data *ptr = string_hash[hash]; ptr && nolinks < count; ptr = ptr->next)
+        {
+            const char *s = (const char *)ptr + sizeof(struct hashstr_data);
+
+            if (ptr->links == 1)
+            {
+                fprintf(stderr, "hash=%d len=%d links=%d str=[%s]\n",
+                       hash, ptr->length, ptr->links, s);
+                nolinks++;
+            }
+        }
+    }
+    return;
+}
+
 void show_high_hash( int top )
 {
     struct hashstr_data *ptr;
@@ -290,7 +317,7 @@ void show_high_hash( int top )
 	  }
 }
 
-bool in_hash_table( char *str )
+bool in_hash_table( const char *str )
 {
    int len, hash, psize;
    struct hashstr_data *ptr;

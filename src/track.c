@@ -199,8 +199,8 @@ int find_first_step(ROOM_INDEX_DATA *src, ROOM_INDEX_DATA *target, int maxdist )
 void do_track( CHAR_DATA *ch, char *argument )
 {
    CHAR_DATA *vict;
-   char arg[MAX_INPUT_LENGTH];
-   char buf[MAX_STRING_LENGTH];
+   std::string arg;
+   std::string buf;
    int dir, maxdist;
 
    if ( !IS_NPC(ch) && !ch->pcdata->learned[gsn_track] )
@@ -210,7 +210,7 @@ void do_track( CHAR_DATA *ch, char *argument )
    }
 
    one_argument(argument, arg);
-   if ( arg[0]=='\0' ) {
+   if ( arg.empty() ) {
       send_to_char("Whom are you trying to track?\n", ch);
       return;
    }
@@ -236,7 +236,7 @@ void do_track( CHAR_DATA *ch, char *argument )
          send_to_char("You're already in the same room!\n", ch);
          break;
       case BFS_NO_PATH:
-         SPRINTF(buf, "You can't sense a trail from here.\n" );
+         buf = "You can't sense a trail from here.\n";
          send_to_char(buf, ch);
 	 learn_from_failure( ch, gsn_track );
          break;
@@ -250,8 +250,8 @@ void do_track( CHAR_DATA *ch, char *argument )
 
 void found_prey( CHAR_DATA *ch, CHAR_DATA *victim )
 {
-     char buf[MAX_STRING_LENGTH];
-     char victname[MAX_STRING_LENGTH];
+     std::string buf;
+     std::string victname;
 
      
 
@@ -273,7 +273,7 @@ void found_prey( CHAR_DATA *ch, CHAR_DATA *victim )
         return;
      }
 
-     SPRINTF( victname, "%s", IS_NPC( victim ) ? victim->short_descr : victim->name );
+     victname = IS_NPC( victim ) ? victim->short_descr : victim->name;
 
      if ( !can_see(ch, victim) )
      {
@@ -281,17 +281,17 @@ void found_prey( CHAR_DATA *ch, CHAR_DATA *victim )
 	  return;
 	switch( number_bits( 2 ) )
  	{
-	case 0: SPRINTF( buf, "Don't make me find you!" );
-		do_say( ch, buf );
+	case 0: buf = "Don't make me find you!";
+		do_say( ch, (char*)buf.c_str() );
 	        break;
 	case 1: act( AT_ACTION, "$n sniffs around the room for someone.", ch, NULL, victim, TO_NOTVICT );
 		act( AT_ACTION, "You sniff around the room for someone.", ch, NULL, victim, TO_CHAR );
 		act( AT_ACTION, "$n sniffs around the room for someone.", ch, NULL, victim, TO_VICT );
-		SPRINTF( buf, "I can smell your blood!" );
-		do_say( ch, buf );
+		buf = "I can smell your blood!";
+		do_say( ch, (char*)buf.c_str() );
 		break;
-	case 2: SPRINTF( buf, "I'm going to tear you apart!" );
-		do_yell( ch, buf );
+	case 2: buf = "I'm going to tear you apart!";
+		do_yell( ch, (char*)buf.c_str() );
 		break;
 	case 3: do_say( ch, "Just wait until I find you...");
 		break;
@@ -306,14 +306,16 @@ void found_prey( CHAR_DATA *ch, CHAR_DATA *victim )
 	switch( number_bits( 2 ) )
 	{
 	case 0:	do_say( ch, "C'mon out, you coward!" );
-		SPRINTF( buf, "%.30s is a bloody coward!", victname );
-		do_yell( ch, buf );
+		buf = victname + " is a bloody coward!";
+		do_yell( ch, (char*)buf.c_str() );
 		break;
-	case 1: SPRINTF( buf, "Let's take this outside, %.30s", victname );
-		do_say( ch, buf );
+	case 1: 
+      buf = str_printf( "Let's take this outside, %.30s", victname );
+		do_say( ch, (char*)buf.c_str() );
 		break;
-	case 2: SPRINTF( buf, "%.30s is a yellow-bellied wimp!", victname );
-		do_yell( ch, buf );
+	case 2: 
+      buf = str_printf( "%.30s is a yellow-bellied wimp!", victname );
+		do_yell( ch, (char*)buf.c_str() );
 		break;
 	case 3: act( AT_ACTION, "$n takes a few swipes at someone.", ch, NULL, victim, TO_NOTVICT );
 		act( AT_ACTION, "You try to take a few swipes someone.", ch, NULL, victim, TO_CHAR );
@@ -325,14 +327,15 @@ void found_prey( CHAR_DATA *ch, CHAR_DATA *victim )
 
      switch( number_bits( 2 ) )
      {
-     case 0: SPRINTF( buf, "Your blood is mine!" );
-	     do_yell( ch, buf);
+     case 0: 
+        buf = "Your blood is mine!";
+	     do_yell( ch, (char*)buf.c_str() );
 	     break;
-     case 1: SPRINTF( buf, "Alas, we meet again!" );
-     	     do_say( ch, buf );
+     case 1: buf = "Alas, we meet again!";
+     	     do_say( ch, (char*)buf.c_str() );
      	     break;
-     case 2: SPRINTF( buf, "What do you want on your tombstone?" );
-     	     do_say( ch, buf );
+     case 2: buf = "What do you want on your tombstone?";
+     	     do_say( ch, (char*)buf.c_str() );
      	     break;
      case 3: act( AT_ACTION, "$n lunges at $N from out of nowhere!", ch, NULL, victim, TO_NOTVICT );
 	     act( AT_ACTION, "You lunge at $N catching $M off guard!", ch, NULL, victim, TO_CHAR );

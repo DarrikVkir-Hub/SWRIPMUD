@@ -58,10 +58,10 @@ const flag_name save_flag[] =
 /*
  * Local functions.
  */
-ROOM_INDEX_DATA * find_location	args( ( CHAR_DATA *ch, char *arg ) );
+ROOM_INDEX_DATA * find_location	args( ( CHAR_DATA *ch, const std::string& arg ) );
 void              save_banlist  args( ( void ) );
 void              close_area    args( ( AREA_DATA *pArea ) );
-int               get_color (char *argument); /* function proto */
+int               get_color (const std::string& argument); /* function proto */
 bool 		  check_for_immroom( CHAR_DATA *ch, ROOM_INDEX_DATA *location);
 
 
@@ -82,7 +82,7 @@ bool check_for_immroom( CHAR_DATA *ch, ROOM_INDEX_DATA *location)
     return FALSE;
 }
 
-int get_saveflag( char *name )
+int get_saveflag( const std::string& name )
 {
     size_t x;
 
@@ -117,8 +117,9 @@ void do_wizhelp( CHAR_DATA *ch, char *argument )
 
 void do_restrict( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string arg2;
+    std::string argstr;
     char buf[MAX_STRING_LENGTH];
     sh_int level, hash;
     CMDTYPE *cmd;
@@ -126,18 +127,18 @@ void do_restrict( CHAR_DATA *ch, char *argument )
 
     found = FALSE;
 
-    argument = one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    argstr = one_argument( argument, arg );
+    if ( arg.empty() )
     {
 	send_to_char( "Restrict which command?\n", ch );
 	return;
     }
 
-    argument = one_argument ( argument, arg2 );
-    if ( arg2[0] == '\0' )
+    argstr = one_argument ( argstr, arg2 );
+    if ( arg2.empty() )
       level = get_trust( ch );
     else
-      level = atoi( arg2 );
+      level = strtoi( arg2 );
 
     level = UMAX( UMIN( get_trust( ch ), level ), 0 );
 
@@ -176,7 +177,7 @@ void do_restrict( CHAR_DATA *ch, char *argument )
 /* 
  * Check if the name prefix uniquely identifies a char descriptor
  */ 
-CHAR_DATA *get_waiting_desc( CHAR_DATA *ch, char *name ) 
+CHAR_DATA *get_waiting_desc( CHAR_DATA *ch, const std::string& name ) 
 { 
   DESCRIPTOR_DATA *d; 
   CHAR_DATA       *ret_char; 
@@ -190,7 +191,7 @@ CHAR_DATA *get_waiting_desc( CHAR_DATA *ch, char *name )
       { 
       if ( ++number_of_hits > 1 ) 
          { 
-         ch_printf( ch, "%s does not uniquely identify a char.\n", name ); 
+         ch_printf( ch, "%s does not uniquely identify a char.\n", name.c_str() ); 
          return NULL; 
          } 
       ret_char = d->character;       /* return current char on exit */
@@ -207,16 +208,17 @@ CHAR_DATA *get_waiting_desc( CHAR_DATA *ch, char *name )
 
 void do_authorize( CHAR_DATA *ch, char *argument )
 {
-  char arg1[MAX_INPUT_LENGTH];
-  char arg2[MAX_INPUT_LENGTH];
+  std::string arg1;
+  std::string arg2;
+  std::string argstr;
   char buf[MAX_STRING_LENGTH];
   CHAR_DATA *victim;
   DESCRIPTOR_DATA *d;
 
-  argument = one_argument( argument, arg1 );
-  argument = one_argument( argument, arg2 );
+  argstr = one_argument( argument, arg1 );
+  argstr = one_argument( argstr, arg2 );
 
-  if ( arg1[0] == '\0' )
+  if ( arg1.empty() )
      {
      send_to_char( "Usage:  authorize <player> <yes|name|no/deny>\n", ch );
      send_to_char( "Pending authorizations:\n", ch );
@@ -235,7 +237,7 @@ void do_authorize( CHAR_DATA *ch, char *argument )
   if ( victim == NULL )
      return;
 
-  if ( arg2[0]=='\0' || !str_cmp( arg2,"accept" ) || !str_cmp( arg2,"yes" ))
+  if ( arg2.empty() || !str_cmp( arg2,"accept" ) || !str_cmp( arg2,"yes" ))
      {
 	victim->pcdata->auth_state = 3;
 	BV_REMOVE_BIT(victim->pcdata->flags, PCFLAG_UNAUTHED);
@@ -289,10 +291,10 @@ void do_bamfin( CHAR_DATA *ch, char *argument )
 {
     if ( !IS_NPC(ch) )
     {
-	smash_tilde( argument );
-	STR_DISPOSE( ch->pcdata->bamfin );
-	ch->pcdata->bamfin = str_dup( argument );
-	send_to_char( "Ok.\n", ch );
+        smash_tilde( argument );
+        STR_DISPOSE( ch->pcdata->bamfin );
+        ch->pcdata->bamfin = str_dup( argument );
+        send_to_char( "Ok.\n", ch );
     }
     return;
 }
@@ -303,10 +305,10 @@ void do_bamfout( CHAR_DATA *ch, char *argument )
 {
     if ( !IS_NPC(ch) )
     {
-	smash_tilde( argument );
-	STR_DISPOSE( ch->pcdata->bamfout );
-	ch->pcdata->bamfout = str_dup( argument );
-	send_to_char( "Ok.\n", ch );
+        smash_tilde( argument );
+        STR_DISPOSE( ch->pcdata->bamfout );
+        ch->pcdata->bamfout = str_dup( argument );
+        send_to_char( "Ok.\n", ch );
     }
     return;
 }
@@ -337,11 +339,11 @@ void do_rank( CHAR_DATA *ch, char *argument )
 
 void do_retire( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Retire whom?\n", ch );
 	return;
@@ -388,11 +390,11 @@ void do_retire( CHAR_DATA *ch, char *argument )
 
 void do_deny( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Deny whom?\n", ch );
 	return;
@@ -428,12 +430,12 @@ void do_deny( CHAR_DATA *ch, char *argument )
 
 void do_disconnect( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     DESCRIPTOR_DATA *d;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Disconnect whom?\n", ch );
 	return;
@@ -478,10 +480,11 @@ void do_disconnect( CHAR_DATA *ch, char *argument )
 void do_fquit( CHAR_DATA *ch, char *argument ) 
 { 
   CHAR_DATA *victim; 
-  char arg1[MAX_INPUT_LENGTH]; 
-  argument = one_argument( argument, arg1 ); 
+  std::string arg1; 
+  std::string argstr;
+  argstr = one_argument( argument, arg1 ); 
  
-  if ( arg1[0] == '\0' ) 
+  if ( arg1.empty() ) 
      { 
      send_to_char( "Force whom to quit?\n", ch ); 
      return; 
@@ -508,17 +511,17 @@ void do_fquit( CHAR_DATA *ch, char *argument )
 
 void do_forceclose( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     DESCRIPTOR_DATA *d;
     int desc;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Usage: forceclose <descriptor#>\n", ch );
 	return;
     }
-    desc = atoi( arg );
+    desc = strtoi( arg );
 
     for ( d = first_descriptor; d; d = d->next )
     {
@@ -543,14 +546,15 @@ void do_forceclose( CHAR_DATA *ch, char *argument )
 
 void do_pardon( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr;
     CHAR_DATA *victim;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argument, arg1 );
+    one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() )
     {
 	send_to_char( "Syntax: pardon <character> <planet>.\n", ch );
 	return;
@@ -573,13 +577,12 @@ void do_pardon( CHAR_DATA *ch, char *argument )
 }
 
 
-void echo_to_all( sh_int AT_COLOR, char *argument, sh_int tar )
+void echo_to_all( sh_int AT_COLOR, const std::string& argument, sh_int tar )
 {
     DESCRIPTOR_DATA *d;
 
-    if ( !argument || argument[0] == '\0' )
+    if ( argument.empty() )
 	return;
-
     for ( d = first_descriptor; d; d = d->next )
     {
         /* Added showing echoes to players who are editing, so they won't
@@ -601,10 +604,12 @@ void echo_to_all( sh_int AT_COLOR, char *argument, sh_int tar )
 
 void do_echo( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string argstr;
     sh_int color;
     int target;
-    char *parg;
+    std::string parg;
+    argstr = argument;
 
     if ( BV_IS_SET(ch->act, PLR_NO_EMOTE) )
     {
@@ -612,16 +617,16 @@ void do_echo( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( argument[0] == '\0' )
+    if ( argstr.empty() )
     {
 	send_to_char( "Echo what?\n", ch );
 	return;
     }
 
-    if ( (color = get_color(argument)) )
-      argument = one_argument(argument, arg);
-    parg = argument;
-    argument = one_argument(argument, arg);
+    if ( (color = get_color(argstr)) )
+      argstr = one_argument(argstr, arg);
+    parg = argstr;
+    argstr = one_argument(argstr, arg);
     if ( !str_cmp( arg, "PC" )
     ||   !str_cmp( arg, "player" ) )
       target = ECHOTAR_PC;
@@ -630,23 +635,23 @@ void do_echo( CHAR_DATA *ch, char *argument )
     else
     {
       target = ECHOTAR_ALL;
-      argument = parg;
+      argstr = parg;
     }
-    if ( !color && (color = get_color(argument)) )
-      argument = one_argument(argument, arg);
+    if ( !color && (color = get_color(argstr)) )
+      argstr = one_argument(argstr, arg);
     if ( !color )
       color = AT_IMMORT;
-    one_argument(argument, arg);
+    one_argument(argstr, arg);
     if ( !str_cmp( arg, "Merth" )
     ||   !str_cmp( arg, "Durga" ))
     {
-	ch_printf( ch, "I don't think %s would like that!\n", arg );
+	ch_printf( ch, "I don't think %s would like that!\n", arg.c_str() );
 	return;
     }
-    echo_to_all ( color, argument, target );
+    echo_to_all ( color, argstr, target );
 }
 
-void echo_to_room( sh_int AT_COLOR, ROOM_INDEX_DATA *room, char *argument )
+void echo_to_room( sh_int AT_COLOR, ROOM_INDEX_DATA *room, const std::string& argument )
 {
     CHAR_DATA *vic;
     
@@ -664,7 +669,8 @@ void echo_to_room( sh_int AT_COLOR, ROOM_INDEX_DATA *room, char *argument )
 
 void do_recho( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string argstr = argument;
     sh_int color;
 
     if ( BV_IS_SET(ch->act, PLR_NO_EMOTE) )
@@ -673,13 +679,13 @@ void do_recho( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( argument[0] == '\0' )
+    if ( argstr.empty() )
     {
 	send_to_char( "Recho what?\n", ch );
 	return;
     }
 
-    one_argument( argument, arg );
+    one_argument( argstr, arg );
     if ( !str_cmp( arg, "Thoric" )
     ||   !str_cmp( arg, "Dominus" )
     ||   !str_cmp( arg, "Circe" )
@@ -689,13 +695,13 @@ void do_recho( CHAR_DATA *ch, char *argument )
     ||   !str_cmp( arg, "Blodkai" )
     ||   !str_cmp( arg, "Damian" ) )
     {
-	ch_printf( ch, "I don't think %s would like that!\n", arg );
+	ch_printf( ch, "I don't think %s would like that!\n", arg.c_str() );
 	return;
     }
-    if ( (color = get_color ( argument )) )
+    if ( (color = get_color ( argstr )) )
        {
-       argument = one_argument ( argument, arg );
-       echo_to_room ( color, ch->in_room, argument );
+       argstr = one_argument ( argstr, arg );
+       echo_to_room ( color, ch->in_room, argstr );
        }
     else if( ch->top_level < LEVEL_IMMORTAL )
 	echo_to_room( AT_ACTION, ch->in_room, argument );
@@ -704,13 +710,13 @@ void do_recho( CHAR_DATA *ch, char *argument )
 }
 
 
-ROOM_INDEX_DATA *find_location( CHAR_DATA *ch, char *arg )
+ROOM_INDEX_DATA *find_location( CHAR_DATA *ch, const std::string& arg )
 {
     CHAR_DATA *victim;
     OBJ_DATA *obj;
 
     if ( is_number(arg) )
-	return get_room_index( atoi( arg ) );
+	return get_room_index( strtoi( arg ) );
 
     if ( ( victim = get_char_world( ch, arg ) ) != NULL )
 	return victim->in_room;
@@ -780,18 +786,19 @@ void transfer_char( CHAR_DATA *ch, CHAR_DATA *victim, ROOM_INDEX_DATA *location 
    }
 }
 
-void do_transfer( CHAR_DATA *ch, char *argument )
+void do_transfer( CHAR_DATA *ch, const std::string& argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     ROOM_INDEX_DATA *location;
     DESCRIPTOR_DATA *d;
     CHAR_DATA *victim;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
 	send_to_char( "Transfer whom (and where)?\n", ch );
 	return;
@@ -800,7 +807,7 @@ void do_transfer( CHAR_DATA *ch, char *argument )
     /*
      * Thanks to Grodyn for the optional location parameter.
      */
-    if ( arg2[0] == '\0' )
+    if ( arg2.empty() )
     {
 	    location = ch->in_room;
     }
@@ -850,14 +857,19 @@ void do_transfer( CHAR_DATA *ch, char *argument )
    transfer_char( ch, victim, location );
 }
 
+void do_transfer( CHAR_DATA *ch, char *argument )
+{
+    do_transfer( ch, (const std::string&)(argument) );
+}
+
 void do_retran( CHAR_DATA *ch, char *argument )
 {
-	char arg[MAX_INPUT_LENGTH];
+	std::string arg;
 	CHAR_DATA *victim;
-	char buf[MAX_STRING_LENGTH];
+	std::string buf;
 	
-	argument = one_argument( argument, arg );
-	if ( arg[0] == '\0' )
+	one_argument( argument, arg );
+	if ( arg.empty() )
 	{
 		send_to_char("Retransfer whom?\n", ch );
 		return;
@@ -867,30 +879,30 @@ void do_retran( CHAR_DATA *ch, char *argument )
 		send_to_char("They aren't here.\n", ch );
 		return;
 	}
-	SPRINTF(buf, "'%s' %d", victim->name, victim->retran);
+	buf = str_printf("'%s' %d", victim->name, victim->retran);
 	do_transfer(ch, buf);
 	return;
 }
 
 void do_regoto( CHAR_DATA *ch, char *argument )
 {
-	char buf[MAX_STRING_LENGTH];
+	std::string buf;
 	
-	SPRINTF(buf, "%d", ch->regoto);
-	do_goto(ch, buf);
+	buf = str_printf("%d", ch->regoto);
+	do_goto(ch, (char*)buf.c_str());
 	return;
 }
 
 void do_scatter( CHAR_DATA *ch, char *argument )
 {
     CHAR_DATA *victim;
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     ROOM_INDEX_DATA *pRoomIndex;
 
     set_char_color( AT_IMMORT, ch );
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' ) {
+    if ( arg.empty() ) {
       send_to_char( "Scatter whom?\n", ch );
       return; }
     if ( ( victim = get_char_room( ch, arg ) ) == NULL ) {
@@ -930,13 +942,14 @@ void do_mortalize( CHAR_DATA *ch, char *argument )
 void do_delay( CHAR_DATA *ch, char *argument )
 {
     CHAR_DATA *victim;
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string argstr = argument;
     int delay;
 
     set_char_color( AT_IMMORT, ch );
  
-    argument = one_argument( argument, arg );
-    if ( !*arg ) {
+    argstr = one_argument( argstr, arg );
+    if ( arg.empty() ) {
       send_to_char( "Syntax:  delay <victim> <# of rounds>\n", ch );
       return;
     }
@@ -952,8 +965,8 @@ void do_delay( CHAR_DATA *ch, char *argument )
       send_to_char( "You haven't the power to succeed against them.\n", ch );
       return;
     }
-    argument = one_argument(argument, arg);
-    if ( !*arg ) {
+    argstr = one_argument(argstr, arg);
+    if ( arg.empty() ) {
       send_to_char( "For how long do you wish to delay them?\n", ch );
       return;
     }
@@ -962,7 +975,7 @@ void do_delay( CHAR_DATA *ch, char *argument )
       victim->wait = 0;
       return;
     }
-    delay = atoi( arg );
+    delay = strtoi( arg );
     if ( delay < 1 ) {
       send_to_char( "Pointless.  Try a positive number.\n", ch );
       return;
@@ -980,14 +993,15 @@ void do_delay( CHAR_DATA *ch, char *argument )
 	
 void do_at( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string argstr = argument;
     ROOM_INDEX_DATA *location;
     ROOM_INDEX_DATA *original;
     CHAR_DATA *wch;
 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
 
-    if ( arg[0] == '\0' || argument[0] == '\0' )
+    if ( arg.empty() || argstr.empty() )
     {
 	send_to_char( "At where what?\n", ch );
 	return;
@@ -1019,7 +1033,7 @@ void do_at( CHAR_DATA *ch, char *argument )
     original = ch->in_room;
     char_from_room( ch );
     char_to_room( ch, location );
-    interpret( ch, argument );
+    interpret( ch, argstr );
 
     /*
      * See if 'ch' still exists before continuing!
@@ -1040,22 +1054,23 @@ void do_at( CHAR_DATA *ch, char *argument )
 
 void do_rat( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     ROOM_INDEX_DATA *location;
     ROOM_INDEX_DATA *original;
     int Start, End, vnum;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' || argument[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() || argstr.empty() )
     {
 	send_to_char( "Syntax: rat <start> <end> <command>\n", ch );
 	return;
     }
 
-    Start = atoi( arg1 );	End = atoi( arg2 );
+    Start = strtoi( arg1 );	End = strtoi( arg2 );
 
     if ( Start < 1 || End < Start || Start > End || Start == End || End > 32767 )
     {
@@ -1063,7 +1078,7 @@ void do_rat( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( !str_cmp( argument, "quit" ) )
+    if ( !str_cmp( argstr, "quit" ) )
     {
 	send_to_char( "I don't think so!\n", ch );
 	return;
@@ -1076,7 +1091,7 @@ void do_rat( CHAR_DATA *ch, char *argument )
 	  continue;
 	char_from_room( ch );
 	char_to_room( ch, location );
-	interpret( ch, argument );
+	interpret( ch, argstr );
     }
 
     char_from_room( ch );
@@ -1088,8 +1103,8 @@ void do_rat( CHAR_DATA *ch, char *argument )
 
 void do_rstat( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
+    std::string buf;
+    std::string arg;
     ROOM_INDEX_DATA *location;
     OBJ_DATA *obj;
     CHAR_DATA *rch;
@@ -1143,7 +1158,7 @@ void do_rstat( CHAR_DATA *ch, char *argument )
 		pexit->distance );
 	return;
     }
-    location = ( arg[0] == '\0' ) ? ch->in_room : find_location( ch, arg );
+    location = ( arg.empty() ) ? ch->in_room : find_location( ch, arg );
     if ( !location )
     {
 	send_to_char( "No such location.\n", ch );
@@ -1233,20 +1248,21 @@ void do_rstat( CHAR_DATA *ch, char *argument )
 
 void do_ostat( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string argstr = argument;
     AFFECT_DATA *paf;
     OBJ_DATA *obj;
     char *pdesc;
 
-    one_argument( argument, arg );
+    one_argument( argstr, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Ostat what?\n", ch );
 	return;
     }
-    if ( arg[0] != '\'' && arg[0] != '"' && strlen(argument) > strlen(arg) )
-	STRLCPY( arg, argument );
+    if ( arg[0] != '\'' && arg[0] != '"' && argstr.length() > arg.length() )
+	arg = argstr;
 
     if ( ( obj = get_obj_world( ch, arg ) ) == NULL )
     {
@@ -1340,11 +1356,11 @@ void do_ostat( CHAR_DATA *ch, char *argument )
     }
 
     for ( paf = obj->first_affect; paf; paf = paf->next )
-	ch_printf( ch, "Affects %s by %d. (extra)\n",
+	ch_printf( ch, "Affects (object) %s by %d.\n",
 	    affect_loc_name( paf->location ), paf->modifier );
 
     for ( paf = obj->pIndexData->first_affect; paf; paf = paf->next )
-	ch_printf( ch, "Affects %s by %d.\n",
+	ch_printf( ch, "Affects (proto)  %s by %d.\n",
 	    affect_loc_name( paf->location ), paf->modifier );
 
     return;
@@ -1354,7 +1370,8 @@ void do_ostat( CHAR_DATA *ch, char *argument )
 
 void do_mstat( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string argstr = argument;
     AFFECT_DATA *paf;
     CHAR_DATA *victim;
     SKILLTYPE *skill;
@@ -1362,14 +1379,14 @@ void do_mstat( CHAR_DATA *ch, char *argument )
 
     set_char_color( AT_PLAIN, ch );
 
-    one_argument( argument, arg );
+    one_argument( argstr, arg );
     if ( arg[0] == '\0' )
     {
 	send_to_char( "Mstat whom?\n", ch );
 	return;
     }
-    if ( arg[0] != '\'' && arg[0] != '"' && strlen(argument) > strlen(arg) )
-	STRLCPY( arg, argument );
+    if ( arg[0] != '\'' && arg[0] != '"' && argstr.length() > arg.length() )
+	arg = argstr;
 
     if ( ( victim = get_char_world( ch, arg ) ) == NULL )
     {
@@ -1549,7 +1566,7 @@ ch_printf( ch,
             "%s: '%s' modifies %s by %d(%s) for %d rounds",
             skill ? get_flag_name(skill_tname,skill->type,SKILL_MAX) : "none",
             skill ? skill->name : "none",
-            affect_loc_name( paf->location ),
+            affect_loc_name( paf->location ).c_str(),
             paf->modifier,
             get_flag_name(aff_flags, paf->modifier, AFF_MAX),
             paf->duration
@@ -1568,7 +1585,7 @@ ch_printf( ch,
 void do_mfind( CHAR_DATA *ch, char *argument )
 {
 /*  extern int top_mob_index; */
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     MOB_INDEX_DATA *pMobIndex;
 /*  int vnum; */
     int hash;
@@ -1576,7 +1593,7 @@ void do_mfind( CHAR_DATA *ch, char *argument )
     bool fAll;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Mfind whom?\n", ch );
 	return;
@@ -1600,7 +1617,7 @@ void do_mfind( CHAR_DATA *ch, char *argument )
 	    {
 		nMatch++;
 		SPRINTF( buf, "[%5d] %s\n",
-		    pMobIndex->vnum, capitalize( pMobIndex->short_descr ) );
+		    pMobIndex->vnum, capitalize( pMobIndex->short_descr ).c_str() );
 		send_to_char( buf, ch );
 	    }
 	}
@@ -1626,7 +1643,7 @@ void do_mfind( CHAR_DATA *ch, char *argument )
 	    {
 		nMatch++;
 		pager_printf( ch, "[%5d] %s\n",
-		    pMobIndex->vnum, capitalize( pMobIndex->short_descr ) );
+		    pMobIndex->vnum, capitalize( pMobIndex->short_descr ).c_str() );
 	    }
 
     if ( nMatch )
@@ -1642,7 +1659,7 @@ void do_mfind( CHAR_DATA *ch, char *argument )
 void do_ofind( CHAR_DATA *ch, char *argument )
 {
 /*  extern int top_obj_index; */
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_INDEX_DATA *pObjIndex;
 /*  int vnum; */
     int hash;
@@ -1650,7 +1667,7 @@ void do_ofind( CHAR_DATA *ch, char *argument )
     bool fAll;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Ofind what?\n", ch );
 	return;
@@ -1675,7 +1692,7 @@ void do_ofind( CHAR_DATA *ch, char *argument )
 	    {
 		nMatch++;
 		SPRINTF( buf, "[%5d] %s\n",
-		    pObjIndex->vnum, capitalize( pObjIndex->short_descr ) );
+		    pObjIndex->vnum, capitalize( pObjIndex->short_descr ).c_str() );
 		send_to_char( buf, ch );
 	    }
 	}
@@ -1701,7 +1718,7 @@ void do_ofind( CHAR_DATA *ch, char *argument )
 	    {
 		nMatch++;
 		pager_printf( ch, "[%5d] %s\n",
-		    pObjIndex->vnum, capitalize( pObjIndex->short_descr ) );
+		    pObjIndex->vnum, capitalize( pObjIndex->short_descr ).c_str() );
 	    }
 
     if ( nMatch )
@@ -1716,12 +1733,12 @@ void do_ofind( CHAR_DATA *ch, char *argument )
 
 void do_mwhere( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
     bool found;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Mwhere whom?\n", ch );
 	return;
@@ -1753,23 +1770,23 @@ void do_mwhere( CHAR_DATA *ch, char *argument )
 
 void do_bodybag( CHAR_DATA *ch, char *argument )
 {
-    char buf2[MAX_STRING_LENGTH];
-    char buf3[MAX_STRING_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
+    std::string buf2;
+    std::string buf3;
+    std::string arg;
     OBJ_DATA *obj;
     bool found;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Bodybag whom?\n", ch );
 	return;
     }
 
     /* make sure the buf3 is clear? */
-    SPRINTF(buf3, " ");
+    buf3 = " ";
     /* check to see if vict is playing? */
-    SPRINTF(buf2,"the corpse of %s",arg); 
+    buf2 = "the corpse of " + arg;
     found = FALSE;
     for ( obj = first_object; obj; obj = obj->next )
     {
@@ -1789,7 +1806,7 @@ void do_bodybag( CHAR_DATA *ch, char *argument )
     }
 
     if ( !found )
-	ch_printf(ch," You couldn't find any %s\n",buf2);
+	ch_printf(ch," You couldn't find any %s\n",buf2.c_str());
     return;
 }
 
@@ -1798,22 +1815,23 @@ void do_bodybag( CHAR_DATA *ch, char *argument )
 void do_owhere( CHAR_DATA *ch, char *argument )
 {
     char buf[MAX_STRING_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
-    char arg1[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string arg1;
+    std::string argstr = argument;
     OBJ_DATA *obj;
     bool found;
     int icnt = 0;
 
-    argument = one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    argstr = one_argument( argstr, arg );
+    if ( arg.empty() )
     {
 	send_to_char( "Owhere what?\n", ch );
 	return;
     }
-    argument = one_argument(argument, arg1);
+    argstr = one_argument(argstr, arg1);
     
     set_pager_color( AT_PLAIN, ch );
-    if ( arg1[0] != '\0' && !str_prefix(arg1, "nesthunt") )
+    if ( !arg1.empty() && !str_prefix(arg1, "nesthunt") )
     {
       if ( !(obj = get_obj_world(ch, arg)) )
       {
@@ -1897,21 +1915,21 @@ void trunc1(char *s, int len)
 void do_owhere( CHAR_DATA *ch, char *argument )
 {
     char buf[MAX_STRING_LENGTH], field[MAX_INPUT_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj, *outer_obj;
     bool found = FALSE;
     int icnt=0, vnum=0;
     char heading[] =
 "    Vnum  Short Desc        Vnum  Room/Char          Vnum  Container\n";
 
-    argument = one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    one_argument( argument, arg );
+    if ( arg.empty() )
     {
         pager_printf( ch, "Owhere what?\n" );
         return;
     }
     if ( is_number(arg) )
-       vnum=atoi(arg);
+       vnum=strtoi(arg);
 
     for ( obj = first_object; obj; obj = obj->next )
     {
@@ -1982,38 +2000,45 @@ void do_owhere( CHAR_DATA *ch, char *argument )
  * null, I return NULL (meaning no match was found). str_infix returns
  * FALSE (meaning a match was found).  *grumble*
  */
-char *str_str( char *astr, char *bstr )
+
+size_t str_str(const std::string& astr, const std::string& bstr, size_t start = 0)
 {
-    int sstr1, sstr2, ichar;
-    char c0;
+    if (bstr.empty())
+        return std::string::npos;
 
-    if ( ( c0 = LOWER(bstr[0]) ) == '\0' )
-        return NULL;
+    char c0 = LOWER(bstr[0]);
 
-    sstr1 = strlen(astr);
-    sstr2 = strlen(bstr);
+    for (size_t i = start; i + bstr.size() <= astr.size(); ++i)
+    {
+        if (LOWER(astr[i]) == c0 &&
+            !str_prefix(bstr, astr.c_str() + i))
+        {
+            return i;
+        }
+    }
 
-    for ( ichar = 0; ichar <= sstr1 - sstr2; ichar++ )
-        if ( c0 == LOWER(astr[ichar]) && !str_prefix(bstr, astr+ichar) )
-            return (astr+ichar);
-    return NULL;
+    return std::string::npos;
 }
 
 /*
  * Counts the number of times a target string occurs in a source string.
  * case insensitive -- Gorog
  */
-int str_count(char *psource, char *ptarget)
+int str_count(const std::string& source, const std::string& target)
 {
-   char *ptemp=psource;
-   int count=0;
-   
-   while ( (ptemp=str_str(ptemp, ptarget)) )
-   {
-      ptemp++;
-      count++;
-   }
-   return count;
+    if (target.empty())
+        return 0;
+
+    int count = 0;
+    size_t pos = 0;
+
+    while ((pos = str_str(source, target, pos)) != std::string::npos)
+    {
+        ++count;
+        ++pos; // match original behavior: overlapping allowed
+    }
+
+    return count;
 }
 
 /*
@@ -2050,29 +2075,30 @@ void do_opfind( CHAR_DATA *ch, char *argument )   /* Gorog */
 {
    OBJ_INDEX_DATA  *   pObj;
    MPROG_DATA      *   pProg;
-   char                arg1 [MAX_INPUT_LENGTH];
-   char                arg2 [MAX_INPUT_LENGTH];
-   char                arg3 [MAX_INPUT_LENGTH];
+   std::string         arg1;
+   std::string         arg2;
+   std::string         arg3;
+   std::string         argstr = argument;
    int                 lo_vnum=1, hi_vnum=32767;
    int                 tot_vnum, tot_hits=0;
    int                 i, disp_cou=0, disp_limit;
    
-   argument = one_argument( argument, arg1 );   /* display_limit */
-   argument = one_argument( argument, arg2 );
+   argstr = one_argument( argstr, arg1 );   /* display_limit */
+   argstr = one_argument( argstr, arg2 );
 
-   if ( arg1[0]=='\0' || arg2[0]=='\0' || !is_number(arg1) )
+   if ( arg1.empty() || arg2.empty() || !is_number(arg1) )
    {
       opfind_help(ch);
       return;
    }
 
-   disp_limit = atoi (arg1);
+   disp_limit = strtoi(arg1);
    disp_limit = UMAX(0, disp_limit);
 
    if ( str_cmp(arg2, "mud") )
    {
-      argument = one_argument( argument, arg3 );
-      if ( arg3[0]=='\0' || argument[0]=='\0' 
+      argstr = one_argument( argstr, arg3 );
+      if ( arg3.empty() || argstr.empty() 
       ||   !is_number(arg2) || !is_number(arg3) )
       {
          opfind_help(ch);
@@ -2080,8 +2106,8 @@ void do_opfind( CHAR_DATA *ch, char *argument )   /* Gorog */
       }
       else
       {
-         lo_vnum = URANGE(1, atoi(arg2), 32767);
-         hi_vnum = URANGE(1, atoi(arg3), 32767);
+         lo_vnum = URANGE(1, strtoi(arg2), 32767);
+         hi_vnum = URANGE(1, strtoi(arg3), 32767);
          if ( lo_vnum > hi_vnum )
          {
             opfind_help(ch);
@@ -2089,7 +2115,7 @@ void do_opfind( CHAR_DATA *ch, char *argument )   /* Gorog */
          }
       }
    }   
-   if ( argument[0] == '\0' )
+   if ( argstr.empty() )
    {
       opfind_help(ch);
       return;
@@ -2101,7 +2127,7 @@ void do_opfind( CHAR_DATA *ch, char *argument )   /* Gorog */
       {
          tot_vnum = 0;
          for ( ; pProg; pProg=pProg->next)
-             tot_vnum += str_count(pProg->comlist, argument);
+             tot_vnum += str_count(pProg->comlist, argstr);
          tot_hits += tot_vnum;
          if ( tot_vnum && ++disp_cou <= disp_limit)
             pager_printf( ch, "%5d %5d %5d\n", disp_cou, i, tot_vnum);
@@ -2144,37 +2170,38 @@ void do_mpfind( CHAR_DATA *ch, char *argument )   /* Gorog */
 {
    MOB_INDEX_DATA  *   pMob;
    MPROG_DATA      *   pProg;
-   char                arg1 [MAX_INPUT_LENGTH];
-   char                arg2 [MAX_INPUT_LENGTH];
-   char                arg3 [MAX_INPUT_LENGTH];
+   std::string         arg1;
+   std::string         arg2;
+   std::string         arg3;
+   std::string         argstr = argument;
    int                 lo_vnum=1, hi_vnum=32767;
    int                 tot_vnum, tot_hits=0;
    int                 i, disp_cou=0, disp_limit;
    
-   argument = one_argument( argument, arg1 );   /* display_limit */
-   argument = one_argument( argument, arg2 );
+   argstr = one_argument( argstr, arg1 );   /* display_limit */
+   argstr = one_argument( argstr, arg2 );
 
-   if ( arg1[0]=='\0' || arg2[0]=='\0' || !is_number(arg1) )
+   if ( arg1.empty() || arg2.empty() || !is_number(arg1) )
    {
       mpfind_help(ch);
       return;
    }
 
-   disp_limit = atoi (arg1);
+   disp_limit = strtoi(arg1);
    disp_limit = UMAX(0, disp_limit);
 
    if ( str_cmp(arg2, "mud") )
    {
-      argument = one_argument( argument, arg3 );
-      if ( arg3[0]=='\0' || !is_number(arg2) || !is_number(arg3) )
+      argstr = one_argument( argstr, arg3 );
+      if ( arg3.empty() || !is_number(arg2) || !is_number(arg3) )
       {
          mpfind_help(ch);
          return;
       }
       else
       {
-         lo_vnum = URANGE(1, atoi(arg2), 32767);
-         hi_vnum = URANGE(1, atoi(arg3), 32767);
+         lo_vnum = URANGE(1, strtoi(arg2), 32767);
+         hi_vnum = URANGE(1, strtoi(arg3), 32767);
          if ( lo_vnum > hi_vnum )
          {
             mpfind_help(ch);
@@ -2182,7 +2209,7 @@ void do_mpfind( CHAR_DATA *ch, char *argument )   /* Gorog */
          }
       }
    }   
-   if ( argument[0] == '\0' )
+   if ( argstr.empty() )
    {
       mpfind_help(ch);
       return;
@@ -2194,7 +2221,7 @@ void do_mpfind( CHAR_DATA *ch, char *argument )   /* Gorog */
       {
          tot_vnum = 0;
          for ( ; pProg; pProg=pProg->next)
-             tot_vnum += str_count(pProg->comlist, argument);
+             tot_vnum += str_count(pProg->comlist, argstr);
          tot_hits += tot_vnum;
          if ( tot_vnum && ++disp_cou <= disp_limit)
             pager_printf( ch, "%5d %5d %5d\n", disp_cou, i, tot_vnum);
@@ -2237,29 +2264,30 @@ void do_rpfind( CHAR_DATA *ch, char *argument )   /* Gorog */
 {
    ROOM_INDEX_DATA *   pRoom;
    MPROG_DATA      *   pProg;
-   char                arg1 [MAX_INPUT_LENGTH];
-   char                arg2 [MAX_INPUT_LENGTH];
-   char                arg3 [MAX_INPUT_LENGTH];
+   std::string         arg1;
+   std::string         arg2;
+   std::string         arg3;
+   std::string         argstr = argument;
    int                 lo_vnum=1, hi_vnum=32767;
    int                 tot_vnum, tot_hits=0;
    int                 i, disp_cou=0, disp_limit;
    
-   argument = one_argument( argument, arg1 );   /* display_limit */
-   argument = one_argument( argument, arg2 );
+   argstr = one_argument( argstr, arg1 );   /* display_limit */
+   argstr = one_argument( argstr, arg2 );
 
-   if ( arg1[0]=='\0' || arg2[0]=='\0' || !is_number(arg1) )
+   if ( arg1.empty() || arg2.empty() || !is_number(arg1) )
    {
       rpfind_help(ch);
       return;
    }
 
-   disp_limit = atoi (arg1);
+   disp_limit = strtoi(arg1);
    disp_limit = UMAX(0, disp_limit);
 
    if ( str_cmp(arg2, "mud") )
    {
-      argument = one_argument( argument, arg3 );
-      if ( arg3[0]=='\0' || argument[0]=='\0' 
+      argstr = one_argument( argstr, arg3 );
+      if ( arg3.empty() || argstr.empty() 
       ||   !is_number(arg2) || !is_number(arg3) )
       {
          rpfind_help(ch);
@@ -2267,8 +2295,8 @@ void do_rpfind( CHAR_DATA *ch, char *argument )   /* Gorog */
       }
       else
       {
-         lo_vnum = URANGE(1, atoi(arg2), 32767);
-         hi_vnum = URANGE(1, atoi(arg3), 32767);
+         lo_vnum = URANGE(1, strtoi(arg2), 32767);
+         hi_vnum = URANGE(1, strtoi(arg3), 32767);
          if ( lo_vnum > hi_vnum )
          {
             rpfind_help(ch);
@@ -2276,14 +2304,14 @@ void do_rpfind( CHAR_DATA *ch, char *argument )   /* Gorog */
          }
       }
    }   
-   if ( argument[0] == '\0' )
+   if ( argstr.empty() )
    {
       rpfind_help(ch);
       return;
    }
 /*
    pager_printf( ch, "display:%d lo:%d hi:%d test=\"%s\"\n", 
-                 disp_limit, lo_vnum, hi_vnum, argument);
+                 disp_limit, lo_vnum, hi_vnum, argstr.c_str());
 */
    for (i = lo_vnum; i <= hi_vnum; i++)
    {
@@ -2291,7 +2319,7 @@ void do_rpfind( CHAR_DATA *ch, char *argument )   /* Gorog */
       {
          tot_vnum = 0;
          for ( ; pProg; pProg=pProg->next)
-             tot_vnum += str_count(pProg->comlist, argument);
+             tot_vnum += str_count(pProg->comlist, argstr);
          tot_hits += tot_vnum;
          if ( tot_vnum && ++disp_cou <= disp_limit)
             pager_printf( ch, "%5d %5d %5d\n", disp_cou, i, tot_vnum);
@@ -2402,13 +2430,13 @@ void do_shutdown( CHAR_DATA *ch, char *argument )
 
 void do_snoop( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     DESCRIPTOR_DATA *d;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Snoop whom?\n", ch );
 	return;
@@ -2475,12 +2503,12 @@ void do_snoop( CHAR_DATA *ch, char *argument )
 
 void do_switch( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Switch into whom?\n", ch );
 	return;
@@ -2567,14 +2595,14 @@ void do_return( CHAR_DATA *ch, char *argument )
 
 void do_minvoke( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     MOB_INDEX_DATA *pMobIndex;
     CHAR_DATA *victim;
     sh_int vnum;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Syntax: minvoke <vnum>.\n", ch );
 	return;
@@ -2582,7 +2610,7 @@ void do_minvoke( CHAR_DATA *ch, char *argument )
 
     if ( !is_number( arg ) )
     {
-	char arg2[MAX_INPUT_LENGTH];
+	std::string arg2;
 	int  hash, cnt;
 	int  count = number_argument( arg, arg2 );
 
@@ -2604,7 +2632,7 @@ void do_minvoke( CHAR_DATA *ch, char *argument )
 	}
     }
     else
-	vnum = atoi( arg );
+	vnum = strtoi( arg );
 
     if ( get_trust(ch) < LEVEL_DEMI )
     {
@@ -2650,23 +2678,24 @@ void do_minvoke( CHAR_DATA *ch, char *argument )
 
 void do_oinvoke( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     OBJ_INDEX_DATA *pObjIndex;
     OBJ_DATA *obj;
     sh_int vnum;
     int level;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
 	send_to_char( "Syntax: oinvoke <vnum> <level>.\n", ch );
 	return;
     }
 
-    if ( arg2[0] == '\0' )
+    if ( arg2.empty() )
     {
 	level = get_trust( ch );
     }
@@ -2677,7 +2706,7 @@ void do_oinvoke( CHAR_DATA *ch, char *argument )
 	    send_to_char( "Syntax: oinvoke <vnum> <level>.\n", ch );
 	    return;
 	}
-	level = atoi( arg2 );
+	level = strtoi( arg2 );
 	if ( level < 0 || level > get_trust( ch ) )
 	{
 	    send_to_char( "Limited to your trust level.\n", ch );
@@ -2687,7 +2716,7 @@ void do_oinvoke( CHAR_DATA *ch, char *argument )
 
     if ( !is_number( arg1 ) )
     {
-	char arg[MAX_INPUT_LENGTH];
+	std::string arg;
 	int  hash, cnt;
 	int  count = number_argument( arg1, arg );
 
@@ -2709,7 +2738,7 @@ void do_oinvoke( CHAR_DATA *ch, char *argument )
 	}
     }
     else
-	vnum = atoi( arg1 );
+	vnum = strtoi( arg1 );
 
     if ( get_trust(ch) < LEVEL_DEMI )
     {
@@ -2767,13 +2796,13 @@ void do_oinvoke( CHAR_DATA *ch, char *argument )
 
 void do_purge( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
     OBJ_DATA *obj;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	/* 'purge' */
 	CHAR_DATA *vnext;
@@ -2850,13 +2879,13 @@ void do_purge( CHAR_DATA *ch, char *argument )
 
 void do_low_purge( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
     OBJ_DATA *obj;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Purge what?\n", ch );
 	return;
@@ -2900,15 +2929,15 @@ void do_low_purge( CHAR_DATA *ch, char *argument )
 
 void do_balzhur( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     char buf[MAX_STRING_LENGTH];
     char buf2[MAX_STRING_LENGTH];
     CHAR_DATA *victim;
     int sn;
 
-    argument = one_argument( argument, arg );
+    one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Who is deserving of such a fate?\n", ch );
 	return;
@@ -2945,8 +2974,7 @@ void do_balzhur( CHAR_DATA *ch, char *argument )
     send_to_char( "Balzhur sneers at you evilly, then vanishes in a puff of smoke.\n", ch );
     set_char_color( AT_IMMORT, victim );
     send_to_char( "You hear an ungodly sound in the distance that makes your blood run cold!\n", victim );
-    snprintf( buf, MAX_STRING_LENGTH, "Balzhur screams, 'You are MINE %s!!!'", victim->name );
-    echo_to_all( AT_IMMORT, buf, ECHOTAR_ALL );
+    echo_to_all( AT_IMMORT, str_printf("Balzhur screams, 'You are MINE %s!!!'", victim->name), ECHOTAR_ALL );
 	{
 	   for ( int ability = 0 ; ability < MAX_ABILITY ; ability++ )
 	   {
@@ -2964,7 +2992,7 @@ void do_balzhur( CHAR_DATA *ch, char *argument )
 	victim->move     = victim->max_move;
     gmcp_evt_char_vitals(victim);
 
-    SPRINTF( buf, "%s%s", GOD_DIR, capitalize(victim->name) );  
+    SPRINTF( buf, "%s%s", GOD_DIR, capitalize(victim->name).c_str() );  
  
     if ( !remove( buf ) )
       send_to_char( "Player's immortal data destroyed.\n", ch );
@@ -2975,7 +3003,7 @@ void do_balzhur( CHAR_DATA *ch, char *argument )
       SPRINTF( buf2, "%s balzhuring %s", ch->name, buf );
       perror( buf2 );
     }
-    SPRINTF( buf2, "%s.are", capitalize(arg) );
+    SPRINTF( buf2, "%s.are", capitalize(arg).c_str() );
 /*    for ( pArea = first_build; pArea; pArea = pArea->next )
       if ( pArea && !str_cmp( pArea->filename, buf2 ) )
       {
@@ -3011,18 +3039,19 @@ Thoric.\n",
 
 void do_advance( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char arg3[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     int level, ability;
     int iLevel, iAbility;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg3 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg3 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' || arg3[0] == '\0' || !is_number( arg2 ) )
+    if ( arg1.empty() || arg2.empty() || arg3.empty() || !is_number( arg2 ) )
     {
 	send_to_char( "Syntax: advance <char> <ability> <level>.\n", ch );
 	return;
@@ -3065,7 +3094,7 @@ void do_advance( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( ( level = atoi( arg2 ) ) < 1 || level > 500 )
+    if ( ( level = strtoi( arg2 ) ) < 1 || level > 500 )
     {
 	send_to_char( "Level must be 1 to 500.\n", ch );
 	return;
@@ -3107,12 +3136,12 @@ void do_advance( CHAR_DATA *ch, char *argument )
 
 void do_immortalize( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
-    argument = one_argument( argument, arg );
+    one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Syntax: immortalize <char>\n", ch );
 	return;
@@ -3162,15 +3191,16 @@ void do_immortalize( CHAR_DATA *ch, char *argument )
 
 void do_trust( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     int level;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' || !is_number( arg2 ) )
+    if ( arg1.empty() || arg2.empty() || !is_number( arg2 ) )
     {
 	send_to_char( "Syntax: trust <char> <level>.\n", ch );
 	return;
@@ -3182,7 +3212,7 @@ void do_trust( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( ( level = atoi( arg2 ) ) < 0 || level > MAX_LEVEL )
+    if ( ( level = strtoi( arg2 ) ) < 0 || level > MAX_LEVEL )
     {
 	send_to_char( "Level must be 0 (reset) or 1 to 60.\n", ch );
 	return;
@@ -3207,15 +3237,16 @@ void do_trust( CHAR_DATA *ch, char *argument )
 
 void do_toplevel( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     int level;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' || !is_number( arg2 ) )
+    if ( arg1.empty() || arg2.empty() || !is_number( arg2 ) )
     {
 	send_to_char( "Syntax: toplevel <char> <level>.\n", ch );
 	return;
@@ -3227,7 +3258,7 @@ void do_toplevel( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( ( level = atoi( arg2 ) ) < 0 || level > MAX_LEVEL )
+    if ( ( level = strtoi( arg2 ) ) < 0 || level > MAX_LEVEL )
     {
 	send_to_char( "Level must be 0 (reset) or 1 to 60.\n", ch );
 	return;
@@ -3253,10 +3284,10 @@ void do_toplevel( CHAR_DATA *ch, char *argument )
 
 void do_restore( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Restore whom?\n", ch );
 	return;
@@ -3376,12 +3407,12 @@ void do_restoretime( CHAR_DATA *ch, char *argument )
 
 void do_freeze( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Freeze whom?\n", ch );
 	return;
@@ -3438,12 +3469,12 @@ void do_freeze( CHAR_DATA *ch, char *argument )
 
 void do_log( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Log whom?\n", ch );
 	return;
@@ -3496,12 +3527,12 @@ void do_log( CHAR_DATA *ch, char *argument )
 
 void do_litterbug( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Set litterbug flag on whom?\n", ch );
 	return;
@@ -3544,12 +3575,12 @@ void do_litterbug( CHAR_DATA *ch, char *argument )
 
 void do_noemote( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Noemote whom?\n", ch );
 	return;
@@ -3593,12 +3624,12 @@ void do_noemote( CHAR_DATA *ch, char *argument )
 
 void do_notell( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Notell whom?", ch );
 	return;
@@ -3641,13 +3672,12 @@ void do_notell( CHAR_DATA *ch, char *argument )
 
 void do_notitle( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
  
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
         send_to_char( "Notitle whom?\n", ch );
         return;
@@ -3680,8 +3710,7 @@ void do_notitle( CHAR_DATA *ch, char *argument )
     else
     {
         BV_SET_BIT(victim->pcdata->flags, PCFLAG_NOTITLE);
-        SPRINTF( buf, "%s", victim->name );
-        set_title( victim, buf );   
+        set_title( victim, victim->name );   
         send_to_char( "You can't set your own title!\n", victim );
         send_to_char( "NOTITLE set.\n", ch );
     }
@@ -3691,12 +3720,12 @@ void do_notitle( CHAR_DATA *ch, char *argument )
 
 void do_silence( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Silence whom?", ch );
 	return;
@@ -3736,12 +3765,12 @@ void do_silence( CHAR_DATA *ch, char *argument )
 
 void do_unsilence( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Unsilence whom?\n", ch );
 	return;
@@ -3836,17 +3865,18 @@ void save_banlist( void )
 void do_ban( CHAR_DATA *ch, char *argument )
 {
     char buf[MAX_STRING_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string argstr = argument;
     BAN_DATA *pban;
     int bnum;
 
     if ( IS_NPC(ch) )
 	return;
 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
 
     set_pager_color( AT_PLAIN, ch );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_pager( "Banned sites:\n", ch );
 	send_to_pager( "[ #] (Lv) Time                     Site\n", ch );
@@ -3862,33 +3892,33 @@ void do_ban( CHAR_DATA *ch, char *argument )
     if ( is_number(arg) )
     {
       for ( pban = first_ban, bnum = 1; pban; pban = pban->next, bnum++ )
-        if ( bnum == atoi(arg) )
+        if ( bnum == strtoi(arg) )
           break;
       if ( !pban )
       {
         do_ban(ch, "");
         return;
       }
-      argument = one_argument(argument, arg);
-      if ( arg[0] == '\0' )
+      argstr = one_argument(argstr, arg);
+      if ( arg.empty() )
       {
         do_ban( ch, "help" );
         return;
       }
       if ( !str_cmp(arg, "level") )
       {
-        argument = one_argument(argument, arg);
-        if ( arg[0] == '\0' || !is_number(arg) )
+        argstr = one_argument(argstr, arg);
+        if ( arg.empty() || !is_number(arg) )
         {
           do_ban( ch, "help" );
           return;
         }
-        if ( atoi(arg) < 1 || atoi(arg) > LEVEL_SUPREME )
+        if ( strtoi(arg) < 1 || strtoi(arg) > LEVEL_SUPREME )
         {
           ch_printf(ch, "Level range: 1 - %d.\n", LEVEL_SUPREME);
           return;
         }
-        pban->level = atoi(arg);
+        pban->level = strtoi(arg);
         send_to_char( "Ban level set.\n", ch );
       }
       else if ( !str_cmp(arg, "newban") )
@@ -3947,12 +3977,12 @@ void do_ban( CHAR_DATA *ch, char *argument )
 
 void do_allow( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     BAN_DATA *pban;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Remove which site from the ban list?\n", ch );
 	return;
@@ -4016,7 +4046,7 @@ void do_users( CHAR_DATA *ch, char *argument )
     char buf[MAX_STRING_LENGTH];
     DESCRIPTOR_DATA *d;
     int count;
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
 
     one_argument (argument, arg);
     count	= 0;
@@ -4032,7 +4062,7 @@ void do_users( CHAR_DATA *ch, char *argument )
 
     for ( d = first_descriptor; d; d = d->next )
     {
-      if (arg[0] == '\0')
+      if (arg.empty())
       {     
 	if (  get_trust(ch) >= LEVEL_SUPREME
 	||   (d->character && can_see( ch, d->character )) )
@@ -4090,11 +4120,12 @@ void do_users( CHAR_DATA *ch, char *argument )
  */
 void do_force( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string argstr = argument;
     bool mobsonly; 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
 
-    if ( arg[0] == '\0' || argument[0] == '\0' )
+    if ( arg.empty() || argstr.empty() )
     {
 	send_to_char( "Force whom to do what?\n", ch );
 	return;
@@ -4124,8 +4155,8 @@ void do_force( CHAR_DATA *ch, char *argument )
 
 	    if ( !IS_NPC(vch) && get_trust( vch ) < get_trust( ch ) )
 	    {
-		act( AT_IMMORT, "$n forces you to '$t'.", ch, argument, vch, TO_VICT );
-		interpret( vch, argument );
+		act( AT_IMMORT, "$n forces you to '$t'.", ch, argstr, vch, TO_VICT );
+		interpret( vch, argstr );
 	    }
 	}
     }
@@ -4152,8 +4183,8 @@ void do_force( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 
-    act( AT_IMMORT, "$n forces you to '$t'.", ch, argument, victim, TO_VICT );
-	interpret( victim, argument );
+    act( AT_IMMORT, "$n forces you to '$t'.", ch, argstr, victim, TO_VICT );
+	interpret( victim, argstr );
     }
 
     send_to_char( "Ok.\n", ch );
@@ -4163,7 +4194,7 @@ void do_force( CHAR_DATA *ch, char *argument )
 
 void do_invis( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     sh_int level;
     
     /*
@@ -4171,15 +4202,15 @@ void do_invis( CHAR_DATA *ch, char *argument )
 	return;
     */
 
-    argument = one_argument( argument, arg );
-    if ( *arg && arg[0] != '\0' )
+    one_argument( argument, arg );
+    if ( !arg.empty() )
     {
 	if ( !is_number( arg ) )
 	{
 	   send_to_char( "Usage: invis | invis <level>\n", ch );
 	   return;
 	}
-	level = atoi( arg );
+	level = strtoi( arg );
 	if ( level < 2 || level > ch->top_level)
 	{
 	    send_to_char( "Invalid level.\n", ch );
@@ -4248,18 +4279,19 @@ void do_holylight( CHAR_DATA *ch, char *argument )
 
 void do_rassign( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char arg3[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string argstr = argument;
     sh_int  r_lo, r_hi;
     CHAR_DATA *victim;
     
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
-    argument = one_argument( argument, arg3 );
-    r_lo = atoi( arg2 );  r_hi = atoi( arg3 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
+    argstr = one_argument( argstr, arg3 );
+    r_lo = strtoi( arg2 );  r_hi = strtoi( arg3 );
 
-    if ( arg1[0] == '\0' || r_lo < 0 || r_hi < 0 )
+    if ( arg1.empty() || r_lo < 0 || r_hi < 0 )
     {
 	send_to_char( "Syntax: assign <who> <low> <high>\n", ch );
 	return;
@@ -4358,18 +4390,19 @@ bool check_area_conflicts( int lo, int hi )
 
 void do_vassign( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char arg3[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string argstr = argument;
     sh_int  r_lo, r_hi;
     CHAR_DATA *victim;
     
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
-    argument = one_argument( argument, arg3 );
-    r_lo = atoi( arg2 );  r_hi = atoi( arg3 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
+    argstr = one_argument( argstr, arg3 );
+    r_lo = strtoi( arg2 );  r_hi = strtoi( arg3 );
 
-    if ( arg1[0] == '\0' || r_lo < 0 || r_hi < 0 )
+    if ( arg1.empty() || r_lo < 0 || r_hi < 0 )
     {
         send_to_char( "Syntax: vassign <who> <low> <high>\n", ch );
         return;
@@ -4429,18 +4462,19 @@ void do_vassign( CHAR_DATA *ch, char *argument )
 
 void do_oassign( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char arg3[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string argstr = argument;
     sh_int  o_lo, o_hi;
     CHAR_DATA *victim;
     
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
-    argument = one_argument( argument, arg3 );
-    o_lo = atoi( arg2 );  o_hi = atoi( arg3 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
+    argstr = one_argument( argstr, arg3 );
+    o_lo = strtoi( arg2 );  o_hi = strtoi( arg3 );
 
-    if ( arg1[0] == '\0' || o_lo < 0 || o_hi < 0 )
+    if ( arg1.empty() || o_lo < 0 || o_hi < 0 )
     {
 	send_to_char( "Syntax: oassign <who> <low> <high>\n", ch );
 	return;
@@ -4471,18 +4505,19 @@ void do_oassign( CHAR_DATA *ch, char *argument )
 
 void do_massign( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char arg3[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string argstr = argument;
     sh_int  m_lo, m_hi;
     CHAR_DATA *victim;
     
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
-    argument = one_argument( argument, arg3 );
-    m_lo = atoi( arg2 );  m_hi = atoi( arg3 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
+    argstr = one_argument( argstr, arg3 );
+    m_lo = strtoi( arg2 );  m_hi = strtoi( arg3 );
 
-    if ( arg1[0] == '\0' || m_lo < 0 || m_hi < 0 )
+    if ( arg1.empty() || m_lo < 0 || m_hi < 0 )
     {
 	send_to_char( "Syntax: massign <who> <low> <high>\n", ch );
 	return;
@@ -4535,8 +4570,8 @@ void do_cmdtable( CHAR_DATA *ch, char *argument )
  */
 void do_loadup( CHAR_DATA *ch, char *argument )
 {
-    char fname[1024];
-    char name[256];
+    std::string fname;
+    std::string name;
     struct stat fst;
 //    bool loaded;
     DESCRIPTOR_DATA *d;
@@ -4544,17 +4579,17 @@ void do_loadup( CHAR_DATA *ch, char *argument )
     char buf[MAX_STRING_LENGTH];
 
     one_argument( argument, name );
-    if ( name[0] == '\0' )
+    if ( name.empty() )
     {
-	send_to_char( "Usage: loadup <playername>\n", ch );
-	return;
+        send_to_char( "Usage: loadup <playername>\n", ch );
+        return;
     }
 
     name[0] = UPPER(name[0]);
 
-    SPRINTF( fname, "%s%c/%s", PLAYER_DIR, tolower(name[0]),
-			capitalize( name ) );
-    if ( stat( fname, &fst ) != -1 )
+    fname = str_printf( "%s%c/%s", PLAYER_DIR, tolower(name[0]), capitalize( name ).c_str() );
+
+    if ( stat( fname.c_str(), &fst ) != -1 )
     {
 	CREATE( d, DESCRIPTOR_DATA, 1 );
     d->game = ch->game;
@@ -4570,75 +4605,75 @@ void do_loadup( CHAR_DATA *ch, char *argument )
 	char_to_room( d->character, ch->in_room );
 
     if ( d->character->plr_home != NULL )
-    	{
-	 char filename[256];
-         FILE *fph;
-         ROOM_INDEX_DATA *storeroom = d->character->plr_home;
-         OBJ_DATA *obj;
-         OBJ_DATA *obj_next;
-           
-         for ( obj = storeroom->first_content; obj; obj = obj_next )
-	 {
-	    obj_next = obj->next_content;
-	    extract_obj( obj );
-	 }
+    {
+        FILE *fph;
+        ROOM_INDEX_DATA *storeroom = d->character->plr_home;
+        OBJ_DATA *obj;
+        OBJ_DATA *obj_next;
+        
+        for ( obj = storeroom->first_content; obj; obj = obj_next )
+        {
+            obj_next = obj->next_content;
+            extract_obj( obj );
+        }
 
-	 SPRINTF( filename, "%s%c/%s.home", PLAYER_DIR, tolower(d->character->name[0]),
-				 capitalize( d->character->name ) );
-	 if ( ( fph = fopen( filename, "r" ) ) != NULL )
-	 {
-//	    bool found;
-	    OBJ_DATA *tobj, *tobj_next;
+        char filename[256];
+        SPRINTF( filename, "%s%c/%s.home", PLAYER_DIR, tolower(d->character->name[0]),
+                capitalize( d->character->name ).c_str() );
+        if ( ( fph = fopen( filename, "r" ) ) != NULL )
+        {
+            //bool found;
+            OBJ_DATA *tobj, *tobj_next;
 
-	    rset_supermob(storeroom);
+            rset_supermob(storeroom);
 
-//	    found = TRUE;
-	    for ( ; ; )
-	    {
-		char letter;
-		char *word;
+            //found = TRUE;
+            for ( ; ; )
+            {
+            char letter;
+            char *word;
 
-		letter = fread_letter( fph );
-		if ( letter == '*' )
-		{
-		    fread_to_eol( fph );
-		    continue;
-		}
+            letter = fread_letter( fph );
+            if ( letter == '*' )
+            {
+                fread_to_eol( fph );
+                continue;
+            }
 
-		if ( letter != '#' )
-		{
-		    bug( "Load_plr_home: # not found.", 0 );
-		    bug( d->character->name, 0 );
-		    break;
-		}
+            if ( letter != '#' )
+            {
+                bug( "Load_plr_home: # not found.", 0 );
+                bug( d->character->name, 0 );
+                break;
+            }
 
-		word = fread_word( fph );
-		if ( !str_cmp( word, "OBJECT" ) )	/* Objects	*/
-		  fread_obj  ( ch->game, supermob, fph, OS_CARRY );
-		else
-		if ( !str_cmp( word, "END"    ) )	/* Done		*/
-		  break;
-		else
-		{
-		    bug( "Load_plr_home: bad section.", 0 );
-		    bug( d->character->name, 0 );
-		    break;
-		}
-	    }
+            word = fread_word( fph );
+            if ( !str_cmp( word, "OBJECT" ) )	/* Objects	*/
+            fread_obj  ( ch->game, supermob, fph, OS_CARRY );
+            else
+            if ( !str_cmp( word, "END"    ) )	/* Done		*/
+            break;
+            else
+            {
+                bug( "Load_plr_home: bad section.", 0 );
+                bug( d->character->name, 0 );
+                break;
+            }
+            }
 
-	    FCLOSE( fph );
+            FCLOSE( fph );
 
-	    for ( tobj = supermob->first_carrying; tobj; tobj = tobj_next )
-	    {
-		tobj_next = tobj->next_content;
-		obj_from_char( tobj );
-                if( tobj->item_type != ITEM_MONEY )
-		  obj_to_room( tobj, storeroom );
-	    }
-	    
-	    release_supermob(ch->game);
+            for ( tobj = supermob->first_carrying; tobj; tobj = tobj_next )
+            {
+            tobj_next = tobj->next_content;
+            obj_from_char( tobj );
+                    if( tobj->item_type != ITEM_MONEY )
+            obj_to_room( tobj, storeroom );
+            }
+            
+            release_supermob(ch->game);
 
-         }
+        }
     }
 
 
@@ -4653,10 +4688,10 @@ void do_loadup( CHAR_DATA *ch, char *argument )
 	d->character->desc	= NULL;
 	d->character->retran    = old_room_vnum;
 	d->character		= NULL;	
-	STR_DISPOSE( d->outbuf );
+	DISPOSE_ARRAY( d->outbuf );
 	DISPOSE( d );
-	ch_printf(ch, "Player %s loaded from room %d.\n", capitalize( name ),old_room_vnum );
-	SPRINTF(buf, "%s appears from nowhere, eyes glazed over.\n", capitalize( name ) );
+	ch_printf(ch, "Player %s loaded from room %d.\n", capitalize( name ).c_str(),old_room_vnum );
+	SPRINTF(buf, "%s appears from nowhere, eyes glazed over.\n", capitalize( name ).c_str() );
         act( AT_IMMORT, buf, ch, NULL, NULL, TO_ROOM );
 
 	send_to_char( "Done.\n", ch );
@@ -4669,20 +4704,20 @@ void do_loadup( CHAR_DATA *ch, char *argument )
 
 void do_fixchar( CHAR_DATA *ch, char *argument )
 {
-    char name[MAX_STRING_LENGTH];
+    std::string name;
     CHAR_DATA *victim;
 
     one_argument( argument, name );
-    if ( name[0] == '\0' )
+    if ( name.empty() )
     {
-	send_to_char( "Usage: fixchar <playername>\n", ch );
-	return;
+        send_to_char( "Usage: fixchar <playername>\n", ch );
+        return;
     }
     victim = get_char_room( ch, name );
     if ( !victim )
     {
-	send_to_char( "They're not here.\n", ch );
-	return;
+        send_to_char( "They're not here.\n", ch );
+        return;
     }
     fix_char( victim );
 /*  victim->armor	= 100;
@@ -4702,15 +4737,16 @@ void do_fixchar( CHAR_DATA *ch, char *argument )
 
 void do_newbieset( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     OBJ_DATA *obj;
     CHAR_DATA *victim;
         
-    argument = one_argument( argument, arg1 );
-    argument = one_argument (argument, arg2);
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument (argstr, arg2);
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
 	send_to_char( "Syntax: newbieset <char>.\n", ch );
 	return;
@@ -4773,21 +4809,24 @@ void do_newbieset( CHAR_DATA *ch, char *argument )
  * e.g. "aset joe.are sedit susan.are cset" --> "joe.are susan.are"
  * - Gorog
  */
-void extract_area_names (char *inp, char *out, long unsigned out_size)
+void extract_area_names(const std::string& input, std::string& output)
 {
-char buf[MAX_INPUT_LENGTH], *pbuf=buf;
-int  len;
+    std::string inp = input;
+    std::string buf;
 
-*out='\0';
-while (inp && *inp)
-   {
-   inp = one_argument(inp, buf);
-   if ( (len=strlen(buf)) >= 5 && !strcmp(".are", pbuf+len-4) )
-       {
-            STRLCAT( out, " ", out_size );
-         STRLCAT( out, buf, out_size );
-       }
-   }
+    output.clear();
+
+    while (!inp.empty())
+    {
+        inp = one_argument(inp, buf);
+
+        if (buf.size() >= 5 && buf.compare(buf.size() - 4, 4, ".are") == 0)
+        {
+            if (!output.empty())
+                output += ' ';
+            output += buf;
+        }
+    }
 }
 
 /*
@@ -4795,32 +4834,34 @@ while (inp && *inp)
  * e.g. "aset joe.are sedit susan.are cset" --> "aset sedit cset"
  * - Gorog
  */
-void remove_area_names (char *inp, char *out, long unsigned out_size)
+void remove_area_names(const std::string& input, std::string& output)
 {
-    char buf[MAX_INPUT_LENGTH], *pbuf=buf;
-    int  len;
+    std::string inp = input;
+    std::string buf;
 
-    *out='\0';
-    while( inp && *inp )
+    output.clear();
+
+    while (!inp.empty())
     {
-        inp = one_argument( inp, buf );
-        if( ( len = strlen( buf ) ) < 5 || strcmp( ".are", pbuf + len - 4 ) )
+        inp = one_argument(inp, buf);
+
+        if (buf.size() < 5 || buf.compare(buf.size() - 4, 4, ".are") != 0)
         {
-            if( *out )
-                STRLCAT( out, " ", out_size );
-            STRLCAT( out, buf, out_size );
+            if (!output.empty())
+                output += ' ';
+            output += buf;
         }
     }
 }
 
 void do_bestowarea( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
+    std::string arg;
+    std::string argstr = argument;
     CHAR_DATA *victim;
-    int  arg_len;
+    std::string buf;
 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
 
     if ( get_trust (ch) < LEVEL_SUB_IMPLEM )
        {
@@ -4828,7 +4869,7 @@ void do_bestowarea( CHAR_DATA *ch, char *argument )
        return;
        }
 
-    if ( !*arg )
+    if ( arg.empty() )
         {
         send_to_char(
         "Syntax:\n"
@@ -4860,49 +4901,48 @@ void do_bestowarea( CHAR_DATA *ch, char *argument )
     if (!victim->pcdata->bestowments)
        victim->pcdata->bestowments = str_dup("");
 
-    if ( !*argument || !str_cmp (argument, "list") )
+    if ( argstr.empty() || !str_cmp (argstr, "list") )
        {
-       extract_area_names (victim->pcdata->bestowments, buf, sizeof(buf));
-       ch_printf( ch, "Bestowed areas: %s\n", buf);
+       std::string buf;
+       extract_area_names (victim->pcdata->bestowments, buf);
+       ch_printf( ch, "Bestowed areas: %s\n", buf.c_str());
        return;
        }
 
-    if ( !str_cmp (argument, "none") )
+    if ( !str_cmp (argstr, "none") )
        {
-       remove_area_names (victim->pcdata->bestowments, buf, sizeof(buf));
+       remove_area_names (victim->pcdata->bestowments, buf);
        STR_DISPOSE( victim->pcdata->bestowments );
-       victim->pcdata->bestowments = str_dup( buf );
+       victim->pcdata->bestowments = str_dup( buf.c_str() );
        send_to_char( "Done.\n", ch);
        return;
        }
 
-    arg_len = strlen(argument);
-    if ( arg_len < 5 
-    || argument[arg_len-4] != '.' || argument[arg_len-3] != 'a'
-    || argument[arg_len-2] != 'r' || argument[arg_len-1] != 'e' )
+    if (argstr.size() < 5 || argstr.compare(argstr.size() - 4, 4, ".are") != 0)
     {
         send_to_char( "You can only bestow an area name\n", ch );
         send_to_char( "E.G. bestow joe sam.are\n", ch );
         return;
     }
 
-    SPRINTF( buf, "%s %s", victim->pcdata->bestowments, argument );
+    buf = str_printf( "%s %s", victim->pcdata->bestowments, argstr.c_str() );
     STR_DISPOSE( victim->pcdata->bestowments );
-    victim->pcdata->bestowments = str_dup( buf );
+    victim->pcdata->bestowments = str_dup( buf.c_str() );
     ch_printf( victim, "%s has bestowed on you the area: %s\n", 
-             ch->name, argument );
+             ch->name, argstr.c_str() );
     send_to_char( "Done.\n", ch );
 }
 
 void do_bestow( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
+    std::string arg;
+    std::string argstr = argument;
+    std::string buf;
     CHAR_DATA *victim;
 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Bestow whom with what?\n", ch );
 	return;
@@ -4929,14 +4969,14 @@ void do_bestow( CHAR_DATA *ch, char *argument )
     if (!victim->pcdata->bestowments)
       victim->pcdata->bestowments = str_dup("");
 
-    if ( argument[0] == '\0' || !str_cmp( argument, "list" ) )
+    if ( argstr.empty() || !str_cmp( argstr, "list" ) )
     {
         ch_printf( ch, "Current bestowed commands on %s: %s.\n",
                       victim->name, victim->pcdata->bestowments );
         return;
     }
 
-    if ( !str_cmp( argument, "none" ) )
+    if ( !str_cmp( argstr, "none" ) )
     {
         STR_DISPOSE( victim->pcdata->bestowments );
 	victim->pcdata->bestowments = str_dup("");
@@ -4946,11 +4986,11 @@ void do_bestow( CHAR_DATA *ch, char *argument )
         return;
     }
 
-    SPRINTF( buf, "%s %s", victim->pcdata->bestowments, argument );
+    buf = str_printf( "%s %s", victim->pcdata->bestowments, argstr.c_str() );
     STR_DISPOSE( victim->pcdata->bestowments );
-    victim->pcdata->bestowments = str_dup( buf );
+    victim->pcdata->bestowments = str_dup( buf.c_str() );
     ch_printf( victim, "%s has bestowed on you the command(s): %s\n", 
-             ch->name, argument );
+             ch->name, argstr.c_str() );
     send_to_char( "Done.\n", ch );
 }
 
@@ -4964,15 +5004,16 @@ struct tm *update_time ( struct tm *old_time )
 
 void do_set_boot_time( CHAR_DATA *ch, char *argument)
 {
-   char arg[MAX_INPUT_LENGTH];
-   char arg1[MAX_INPUT_LENGTH];
+   std::string arg;
+   std::string arg1;
+   std::string argstr = argument;
    bool check;
  
    check = FALSE;
 
-   argument = one_argument(argument, arg);
+   argstr = one_argument(argstr, arg);
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Syntax: setboot time {hour minute <day> <month> <year>}\n", ch);
 	send_to_char( "        setboot manual {0/1}\n", ch);
@@ -4992,46 +5033,46 @@ void do_set_boot_time( CHAR_DATA *ch, char *argument)
     {
       struct tm *now_time;
       
-      argument = one_argument(argument, arg);
-      argument = one_argument(argument, arg1);
-      if ( !*arg || !*arg1 || !is_number(arg) || !is_number(arg1) )
+      argstr = one_argument(argstr, arg);
+      argstr = one_argument(argstr, arg1);
+      if ( arg.empty() || arg1.empty() || !is_number(arg) || !is_number(arg1) )
       {
 	send_to_char("You must input a value for hour and minute.\n", ch);
  	return;
       }
       now_time = localtime(&current_time);
 
-      if ( (now_time->tm_hour = atoi(arg)) < 0 || now_time->tm_hour > 23 )
+      if ( (now_time->tm_hour = strtoi(arg)) < 0 || now_time->tm_hour > 23 )
       {
         send_to_char("Valid range for hour is 0 to 23.\n", ch);
         return;
       }
  
-      if ( (now_time->tm_min = atoi(arg1)) < 0 || now_time->tm_min > 59 )
+      if ( (now_time->tm_min = strtoi(arg1)) < 0 || now_time->tm_min > 59 )
       {
         send_to_char("Valid range for minute is 0 to 59.\n", ch);
         return;
       }
 
-      argument = one_argument(argument, arg);
-      if ( *arg != '\0' && is_number(arg) )
+      argstr = one_argument(argstr, arg);
+      if ( !arg.empty() && is_number(arg) )
       {
-        if ( (now_time->tm_mday = atoi(arg)) < 1 || now_time->tm_mday > 31 )
+        if ( (now_time->tm_mday = strtoi(arg)) < 1 || now_time->tm_mday > 31 )
         {
 	  send_to_char("Valid range for day is 1 to 31.\n", ch);
 	  return;
         }
-        argument = one_argument(argument, arg);
-        if ( *arg != '\0' && is_number(arg) )
+        argstr = one_argument(argstr, arg);
+        if ( !arg.empty() && is_number(arg) )
         {
-          if ( (now_time->tm_mon = atoi(arg)) < 1 || now_time->tm_mon > 12 )
+          if ( (now_time->tm_mon = strtoi(arg)) < 1 || now_time->tm_mon > 12 )
           {
             send_to_char( "Valid range for month is 1 to 12.\n", ch );
             return;
           }
           now_time->tm_mon--;
-          argument = one_argument(argument, arg);
-          if ( (now_time->tm_year = atoi(arg)-1900) < 0 ||
+          argstr = one_argument(argstr, arg);
+          if ( (now_time->tm_year = strtoi(arg)-1900) < 0 ||
                 now_time->tm_year > 199 )
           {
             send_to_char( "Valid range for year is 1900 to 2099.\n", ch );
@@ -5058,8 +5099,8 @@ void do_set_boot_time( CHAR_DATA *ch, char *argument)
     }  
     else if ( !str_cmp(arg, "manual") )
     {
-      argument = one_argument(argument, arg1);
-      if (arg1[0] == '\0')
+      argstr = one_argument(argstr, arg1);
+      if (arg1.empty())
       {
 	send_to_char("Please enter a value for manual boot on/off\n", ch);
 	return;
@@ -5071,14 +5112,14 @@ void do_set_boot_time( CHAR_DATA *ch, char *argument)
 	return;
       }
 
-      if (atoi(arg1) < 0 || atoi(arg1) > 1)
+      if (strtoi(arg1) < 0 || strtoi(arg1) > 1)
       {
 	send_to_char("Value for manual must be 0 (off) or 1 (on)\n", ch);
 	return;
       }
    
-      set_boot_time->manual = atoi(arg1);
-      ch_printf(ch, "Manual bit set to %s\n", arg1);
+      set_boot_time->manual = strtoi(arg1);
+      ch_printf(ch, "Manual bit set to %s\n", arg1.c_str());
       check = TRUE;
       get_reboot_string(ch->game);
       return;
@@ -5125,23 +5166,23 @@ void do_set_boot_time( CHAR_DATA *ch, char *argument)
  */ 
 void do_form_password(CHAR_DATA *ch, char *argument)
 {
-    char arg[MAX_STRING_LENGTH];
+    std::string arg;
     char hashbuf[65]; // SHA-256 hex string buffer
 
     /* Get first argument */
-    argument = one_argument(argument, arg);
+    one_argument(argument, arg);
 
-    if (arg[0] == '\0')
+    if (arg.empty())
     {
         send_to_char("Syntax: form_password <text>\n", ch);
         return;
     }
 
     /* Hash the argument with SHA-256 */
-    sha256_hash(arg, hashbuf);
+    sha256_hash(arg.c_str(), hashbuf);
 
     /* Display the hash */
-    ch_printf(ch, "SHA-256 hash of \"%s\" is: %s\n", arg, hashbuf);
+    ch_printf(ch, "SHA-256 hash of \"%s\" is: %s\n", arg.c_str(), hashbuf);
 }
 
 /*
@@ -5405,10 +5446,10 @@ void do_destroy( CHAR_DATA *ch, char *argument )
   CHAR_DATA *victim;
   char buf[MAX_STRING_LENGTH];
   char buf2[MAX_STRING_LENGTH];
-  char arg[MAX_INPUT_LENGTH];
+  std::string arg;
 
   one_argument( argument, arg );
-  if ( arg[0] == '\0' )
+  if ( arg.empty() )
   {
       send_to_char( "Destroy what player file?\n", ch );
       return;
@@ -5443,16 +5484,16 @@ void do_destroy( CHAR_DATA *ch, char *argument )
   }
   
   SPRINTF( buf, "%s%c/%s", PLAYER_DIR, tolower(arg[0]),
-          capitalize( arg ) );
+          capitalize( arg ).c_str() );
   SPRINTF( buf2, "%s%c/%s", BACKUP_DIR, tolower(arg[0]),
-          capitalize( arg ) );
+          capitalize( arg ).c_str() );
   if ( !rename( buf, buf2 ) )
   {
     AREA_DATA *pArea;
     
     set_char_color( AT_RED, ch );
     send_to_char( "Player destroyed.  Pfile saved in backup directory.\n", ch );
-    SPRINTF( buf, "%s%s", GOD_DIR, capitalize(arg) );
+    SPRINTF( buf, "%s%s", GOD_DIR, capitalize(arg).c_str() );
     if ( !remove( buf ) )
       send_to_char( "Player's immortal data destroyed.\n", ch );
     else if ( errno != ENOENT )
@@ -5463,7 +5504,7 @@ void do_destroy( CHAR_DATA *ch, char *argument )
       perror( buf2 );
     }
 
-    SPRINTF( buf2, "%s.are", capitalize(arg) );
+    SPRINTF( buf2, "%s.are", capitalize(arg).c_str() );
     for ( pArea = first_build; pArea; pArea = pArea->next )
       if ( !strcmp( pArea->filename, buf2 ) )
       {
@@ -5494,7 +5535,7 @@ void do_destroy( CHAR_DATA *ch, char *argument )
     set_char_color( AT_WHITE, ch );
     ch_printf( ch, "Unknown error #%d - %s.  Report to Thoric.\n",
             errno, strerror( errno ) );
-    SPRINTF( buf, "%s destroying %s", ch->name, arg );
+    SPRINTF( buf, "%s destroying %s", ch->name, arg.c_str() );
     perror( buf );
   }
   return;
@@ -5545,7 +5586,7 @@ const char * name_expand (CHAR_DATA *ch)
 {
 	int count = 1;
 	CHAR_DATA *rch;
-	char name[MAX_INPUT_LENGTH]; /*  HOPEFULLY no mob has a name longer than THAT */
+	std::string name;
 
 	static char outbuf[MAX_INPUT_LENGTH];	
 	
@@ -5554,7 +5595,7 @@ const char * name_expand (CHAR_DATA *ch)
 		
 	one_argument (ch->name, name); /* copy the first word into name */
 	
-	if (!name[0]) /* weird mob .. no keywords */
+	if (name.empty()) /* weird mob .. no keywords */
 	{
 		STRLCPY (outbuf, ""); /* Do not return NULL, just an empty buffer */
 		return outbuf;
@@ -5567,29 +5608,30 @@ const char * name_expand (CHAR_DATA *ch)
 			count++;
 			
 
-	SPRINTF(outbuf, "%d.%s", count, name);
+	SPRINTF(outbuf, "%d.%s", count, name.c_str());
     return outbuf;
 }
 
 
 void do_for (CHAR_DATA *ch, char *argument)
 {
-	char range[MAX_INPUT_LENGTH];
+	std::string range;
+    std::string argstr = argument;
 	char buf[MAX_STRING_LENGTH];
 	bool fGods = FALSE, fMortals = FALSE, fMobs = FALSE, fEverywhere = FALSE, found;
 	ROOM_INDEX_DATA *room, *old_room;
 	CHAR_DATA *p, *p_prev;  /* p_next to p_prev -- TRI */
 	int i;
 	
-	argument = one_argument (argument, range);
+	argstr = one_argument (argstr, range);
 	
-	if (!range[0] || !argument[0]) /* invalid usage? */
+	if (range.empty() || argstr.empty()) /* invalid usage? */
 	{
 		do_help (ch, "for");
 		return;
 	}
 	
-	if (!str_prefix("quit", argument))
+	if (!str_prefix("quit", argstr))
 	{
 		send_to_char ("Are you trying to crash the MUD or something?\n",ch);
 		return;
@@ -5613,13 +5655,13 @@ void do_for (CHAR_DATA *ch, char *argument)
 		do_help (ch, "for"); /* show syntax */
 
 	/* do not allow # to make it easier */		
-	if (fEverywhere && strchr (argument, '#'))
+	if (fEverywhere && argstr.find('#') != std::string::npos)
 	{
 		send_to_char ("Cannot use FOR EVERYWHERE with the # thingie.\n",ch);
 		return;
 	}
 		
-	if (strchr (argument, '#')) /* replace # ? */
+	if (argstr.find('#') != std::string::npos) /* replace # ? */
 	{ 
 		/* char_list - last_char, p_next - gch_prev -- TRI */
 		for (p = last_char; p ; p = p_prev )
@@ -5641,7 +5683,7 @@ void do_for (CHAR_DATA *ch, char *argument)
 			/* It looks ugly to me.. but it works :) */				
 			if (found) /* p is 'appropriate' */
 			{
-				char *pSource = argument; /* head of buffer to be parsed */
+				const char *pSource = argstr.c_str(); /* head of buffer to be parsed */
 				char *pDest = buf; /* parse into this */
 				
 				while (*pSource)
@@ -5713,7 +5755,7 @@ void do_for (CHAR_DATA *ch, char *argument)
 					old_room = ch->in_room;
 					char_from_room (ch);
 					char_to_room (ch, room);
-					interpret (ch, argument);
+					interpret (ch, argstr);
 					char_from_room (ch);
 					char_to_room (ch, old_room);
 				} /* if found */
@@ -5725,7 +5767,8 @@ void save_sysdata  args( ( SYSTEM_DATA sys ) );
 
 void do_cset( CHAR_DATA *ch, char *argument )
 {
-  char arg[MAX_STRING_LENGTH];
+  std::string arg;
+  std::string argstr = argument;
   sh_int level;
 
   set_char_color( AT_IMMORT, ch );
@@ -5738,7 +5781,7 @@ void do_cset( CHAR_DATA *ch, char *argument )
 
   SYSTEM_DATA &sysdata = *ch->game->get_sysdata();
 
-  if (argument[0] == '\0')
+  if (argstr.empty())
   {
     ch_printf(ch, "Mail:\n  Read all mail: %d. Read mail for free: %d. Write mail for free: %d.\n",
 	    sysdata.read_all_mail, sysdata.read_mail_free, sysdata.write_mail_free );
@@ -5765,7 +5808,7 @@ void do_cset( CHAR_DATA *ch, char *argument )
     return;
   }
 
-  argument = one_argument( argument, arg );
+  argstr = one_argument( argstr, arg );
 
   if (!str_cmp(arg, "help"))
   {
@@ -5781,7 +5824,7 @@ void do_cset( CHAR_DATA *ch, char *argument )
 
   if (!str_cmp(arg, "saveflag"))
   {
-	int x = get_saveflag( argument );
+	int x = get_saveflag( argstr );
 
 	if ( x == -1 )
 	    send_to_char( "Not a save flag.\n", ch );
@@ -5795,18 +5838,18 @@ void do_cset( CHAR_DATA *ch, char *argument )
 
   if (!str_prefix( arg, "guild_overseer" ) )
   {
-    sysdata.set_guild_overseer(argument);
+    sysdata.set_guild_overseer(argstr);
     send_to_char("Ok.\n", ch);      
     return;
   }
   if (!str_prefix( arg, "guild_advisor" ) )
   {
-    sysdata.set_guild_advisor(argument);
+    sysdata.set_guild_advisor(argstr);
     send_to_char("Ok.\n", ch);      
     return;
   }
 
-  level = (sh_int) atoi(argument);
+  level = (sh_int) strtoi(argstr);
 
   if (!str_prefix( arg, "savefrequency" ) )
   {
@@ -5971,13 +6014,14 @@ void do_mrange( CHAR_DATA *ch, char *argument )
 void do_hell( CHAR_DATA *ch, char *argument )
 {
   CHAR_DATA *victim;
-  char arg[MAX_INPUT_LENGTH];
+  std::string arg;
+  std::string argstr = argument;
   sh_int time;
   bool h_d = FALSE;
   struct tm *tms;
   
-  argument = one_argument(argument, arg);
-  if ( !*arg )
+  argstr = one_argument(argstr, arg);
+  if ( arg.empty() )
   {
     send_to_char( "Hell who, and for how long?\n", ch );
     return;
@@ -5998,20 +6042,20 @@ void do_hell( CHAR_DATA *ch, char *argument )
             ctime(&victim->pcdata->release_date), victim->pcdata->helled_by);
     return;
   }
-  argument = one_argument(argument, arg);
-  if ( !*arg || !is_number(arg) )
+  argstr = one_argument(argstr, arg);
+  if ( arg.empty() || !is_number(arg) )
   {
     send_to_char( "Hell them for how long?\n", ch );
     return;
   }
-  time = atoi(arg);
+  time = strtoi(arg);
   if ( time <= 0 )
   {
     send_to_char( "You cannot hell for zero or negative time.\n", ch );
     return;
   }
-  argument = one_argument(argument, arg);
-  if ( !*arg || !str_prefix(arg, "hours") )
+  argstr = one_argument(argstr, arg);
+  if ( arg.empty() || !str_prefix(arg, "hours") )
     h_d = TRUE;
   else if ( str_prefix(arg, "days") )
   {
@@ -6047,11 +6091,11 @@ void do_hell( CHAR_DATA *ch, char *argument )
 void do_unhell( CHAR_DATA *ch, char *argument )
 {
   CHAR_DATA *victim;
-  char arg[MAX_INPUT_LENGTH];
+  std::string arg;
   ROOM_INDEX_DATA *location;
   
-  argument = one_argument(argument, arg);
-  if ( !*arg )
+  one_argument(argument, arg);
+  if ( arg.empty() )
   {
     send_to_char( "Unhell whom..?\n", ch );
     return;
@@ -6095,7 +6139,7 @@ void do_unhell( CHAR_DATA *ch, char *argument )
 /* Vnum search command by Swordbearer */
 void do_vsearch( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     bool found = FALSE;
     OBJ_DATA *obj;
     OBJ_DATA *in_obj;
@@ -6111,7 +6155,7 @@ void do_vsearch( CHAR_DATA *ch, char *argument )
     }
  
     set_pager_color( AT_PLAIN, ch );
-    argi=atoi(arg);
+    argi=strtoi(arg);
     if (argi<0 || argi>32600)
     {
 	send_to_char( "Vnum out of range.\n", ch);
@@ -6154,10 +6198,10 @@ void do_vsearch( CHAR_DATA *ch, char *argument )
 void do_sober( CHAR_DATA *ch, char *argument )
 {
   CHAR_DATA *victim;
-  char arg1 [MAX_INPUT_LENGTH];
+  std::string arg1;
 
   smash_tilde( argument );
-  argument = one_argument( argument, arg1 );
+  one_argument( argument, arg1 );
   if ( ( victim = get_char_room( ch, arg1 ) ) == NULL )
   {
     send_to_char( "They aren't here.\n", ch );
@@ -6316,16 +6360,17 @@ void add_social( SOCIALTYPE *social )
 void do_sedit( CHAR_DATA *ch, char *argument )
 {
     SOCIALTYPE *social;
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
 
     smash_tilde( argument );
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
     set_char_color( AT_SOCIAL, ch );
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
 	send_to_char( "Syntax: sedit <social> [field]\n", ch );
 	send_to_char( "Syntax: sedit <social> create\n", ch );
@@ -6356,7 +6401,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
 	}
 	CREATE( social, SOCIALTYPE, 1 );
 	social->name = str_dup( arg1 );
-	SPRINTF( arg2, "You %s.", arg1 );
+	arg2 = str_printf( "You %s.", arg1.c_str() );
 
    social->char_no_arg = str_dup( arg2 );
 	add_social( social );
@@ -6370,7 +6415,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( arg2[0] == '\0' || !str_cmp( arg2, "show" ) )
+    if ( arg2.empty() || !str_cmp( arg2, "show" ) )
     {
 	ch_printf( ch, "Social: %s\n\nCNoArg: %s\n",
 	    social->name,	social->char_no_arg );
@@ -6395,14 +6440,14 @@ void do_sedit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "cnoarg" ) )
     {
-	if ( argument[0] == '\0' || !str_cmp( argument, "clear" ) )
+	if ( argstr.empty() || !str_cmp( argstr, "clear" ) )
 	{
 	    send_to_char( "You cannot clear this field.  It must have a message.\n", ch );
 	    return;
 	}
 	if ( social->char_no_arg )
 	    STR_DISPOSE( social->char_no_arg );
-	social->char_no_arg = str_dup( argument );
+	social->char_no_arg = str_dup( argstr );
 	send_to_char( "Done.\n", ch );
 	return;
     }
@@ -6411,8 +6456,8 @@ void do_sedit( CHAR_DATA *ch, char *argument )
     {
 	if ( social->others_no_arg )
 	    STR_DISPOSE( social->others_no_arg );
-	if ( argument[0] != '\0' && str_cmp( argument, "clear" ) )
-	    social->others_no_arg = str_dup( argument );
+	if ( argstr.empty() || !str_cmp( argstr, "clear" ) )
+	    social->others_no_arg = str_dup( argstr );
 	send_to_char( "Done.\n", ch );
 	return;
     }
@@ -6421,8 +6466,8 @@ void do_sedit( CHAR_DATA *ch, char *argument )
     {
 	if ( social->char_found )
 	    STR_DISPOSE( social->char_found );
-	if ( argument[0] != '\0' && str_cmp( argument, "clear" ) )
-	    social->char_found = str_dup( argument );
+	if ( argstr.empty() || !str_cmp( argstr, "clear" ) )
+	    social->char_found = str_dup( argstr );
 	send_to_char( "Done.\n", ch );
 	return;
     }
@@ -6431,8 +6476,8 @@ void do_sedit( CHAR_DATA *ch, char *argument )
     {
 	if ( social->others_found )
 	    STR_DISPOSE( social->others_found );
-	if ( argument[0] != '\0' && str_cmp( argument, "clear" ) )
-	    social->others_found = str_dup( argument );
+	if ( argstr.empty() || !str_cmp( argstr, "clear" ) )
+	    social->others_found = str_dup( argstr );
 	send_to_char( "Done.\n", ch );
 	return;
     }
@@ -6441,8 +6486,8 @@ void do_sedit( CHAR_DATA *ch, char *argument )
     {
 	if ( social->vict_found )
 	    STR_DISPOSE( social->vict_found );
-	if ( argument[0] != '\0' && str_cmp( argument, "clear" ) )
-	    social->vict_found = str_dup( argument );
+	if ( argstr.empty() || !str_cmp( argstr, "clear" ) )
+	    social->vict_found = str_dup( argstr );
 	send_to_char( "Done.\n", ch );
 	return;
     }
@@ -6451,8 +6496,8 @@ void do_sedit( CHAR_DATA *ch, char *argument )
     {
 	if ( social->char_auto )
 	    STR_DISPOSE( social->char_auto );
-	if ( argument[0] != '\0' && str_cmp( argument, "clear" ) )
-	    social->char_auto = str_dup( argument );
+	if ( argstr.empty() || !str_cmp( argstr, "clear" ) )
+	    social->char_auto = str_dup( argstr );
 	send_to_char( "Done.\n", ch );
 	return;
     }
@@ -6461,8 +6506,8 @@ void do_sedit( CHAR_DATA *ch, char *argument )
     {
 	if ( social->others_auto )
 	    STR_DISPOSE( social->others_auto );
-	if ( argument[0] != '\0' && str_cmp( argument, "clear" ) )
-	    social->others_auto = str_dup( argument );
+	if ( argstr.empty() || !str_cmp( argstr, "clear" ) )
+	    social->others_auto = str_dup( argstr );
 	send_to_char( "Done.\n", ch );
 	return;
     }
@@ -6600,17 +6645,18 @@ void add_command( CMDTYPE *command )
 void do_cedit( CHAR_DATA *ch, char *argument )
 {
     CMDTYPE *command;
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     char buf[128];
 
     smash_tilde( argument );
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
     set_char_color( AT_IMMORT, ch );
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
 	send_to_char( "Syntax: cedit save\n", ch );
 	if ( get_trust(ch) > LEVEL_SUB_IMPLEM )
@@ -6644,11 +6690,11 @@ void do_cedit( CHAR_DATA *ch, char *argument )
 	CREATE( command, CMDTYPE, 1 );
 	command->name = str_dup( arg1 );
 	command->level = get_trust(ch);
-	if ( *argument )
-	  one_argument(argument, arg2);
+	if ( !argstr.empty() )
+	  one_argument(argstr, arg2);
 	else
 	{
-	    SPRINTF( arg2, "do_%s", arg1 );
+	    arg2 = str_printf( "do_%s", arg1.c_str() );
 	}
 	command->do_fun = skill_function( arg2 );
 	add_command( command );
@@ -6670,7 +6716,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( arg2[0] == '\0' || !str_cmp( arg2, "show" ) )
+    if ( arg2.empty() || !str_cmp( arg2, "show" ) )
     {
         int i;
 	ch_printf( ch, "Command:  %s\nLevel:    %d\nPosition: %d\nLog:      %d\nCode:     %s\n",
@@ -6704,7 +6750,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "code" ) )
     {
-	DO_FUN *fun = skill_function( argument );
+	DO_FUN *fun = skill_function( argstr );
 	
 	if ( fun == skill_notfound )
 	{
@@ -6719,7 +6765,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg2, "commandgroup" ) )
     {
         int i;
-        int grp = atoi(argument);
+        int grp = strtoi(argstr);
 
         if (grp < 0 || grp > MAX_COMMAND_GROUP )
         {
@@ -6738,7 +6784,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
 
     if( !str_cmp( arg2, "level" ) )
     {
-      int level = atoi( argument );
+      int level = strtoi( argstr );
 
       if( ( level < 0 || level > get_trust( ch ) ) )
       {
@@ -6759,7 +6805,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "log" ) )
     {
-	int log = atoi( argument );
+	int log = strtoi( argstr );
 
 	if ( log < 0 || log > LOG_COMM )
 	{
@@ -6773,7 +6819,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "position" ) )
     {
-	int position = atoi( argument );
+	int position = strtoi( argstr );
 
 	if ( position < 0 || position > POS_DRAG )
 	{
@@ -6790,15 +6836,15 @@ void do_cedit( CHAR_DATA *ch, char *argument )
     	bool relocate;
           CMDTYPE *checkcmd;    
 
-        one_argument( argument, arg1 );
-        if ( arg1[0] == '\0' )
+        one_argument( argstr, arg1 );
+        if ( arg1.empty() )
         {
             send_to_char( "Cannot clear name field!\n", ch );
             return;
         }
         if( ( checkcmd = find_command( arg1 ) ) != NULL )
         {
-            ch_printf( ch, "There is already a command named %s.\n", arg1 );
+            ch_printf( ch, "There is already a command named %s.\n", arg1.c_str() );
             return;
         }        
         if ( arg1[0] != command->name[0] )
@@ -6820,14 +6866,14 @@ void do_cedit( CHAR_DATA *ch, char *argument )
     /* display usage message */
     do_cedit( ch, "" );
 }
-void do_badname(CHAR_DATA *ch, char *arguments)
+void do_badname(CHAR_DATA *ch, char *argument)
 {
-  if (arguments[0] == '\0')
+  if (argument[0] == '\0')
   {
     send_to_char("Usage: badname <name>\n",ch);
     return;
   }
-  switch (add_bad_name(arguments))
+  switch (add_bad_name(argument))
   {
     case -1 : send_to_char("Error opening badname file.\n",ch); break;
     case  0 : send_to_char("That name is already in the badname file.\n",ch); break;
@@ -6855,14 +6901,14 @@ void do_dnd( CHAR_DATA *ch, char *argument )
    send_to_char( "huh?\n", ch );
 }
 
- void do_dontresolve(CHAR_DATA *ch, char *arguments)
+ void do_dontresolve(CHAR_DATA *ch, char *argument)
  {
-   if (arguments[0] == '\0')
+   if (argument[0] == '\0')
    {
      send_to_char("Usage: dontresolve <IP match>\n",ch);
      return;
    }
-   switch (add_dont_resolve(arguments))
+   switch (add_dont_resolve(argument))
    {
      case -1 : send_to_char("Error opening dontresolve file.\n",ch); break;
      case  0 : send_to_char("That IP match is already in the dontresolve file.\n",ch); break;
@@ -6874,14 +6920,14 @@ void do_dnd( CHAR_DATA *ch, char *argument )
 
 void do_viewskills( CHAR_DATA *ch, char *argument )
 {
-   char arg[MAX_INPUT_LENGTH];
-   char buf[MAX_STRING_LENGTH];
+   std::string arg;
+   std::string buf;
    CHAR_DATA *victim;
    int sn;
    int col;
 
-    argument = one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    one_argument( argument, arg );
+    if ( arg.empty() )
    {
 	send_to_char( "&zSyntax: skills <player>.\n", ch );
 	return;
@@ -6904,7 +6950,7 @@ void do_viewskills( CHAR_DATA *ch, char *argument )
 	if ( victim->pcdata->learned[sn] == 0 )
 	    continue;
 
-    SPRINTF( buf, "%20s %3d%% ", skill_table[sn]->name,
+    buf = str_printf( "%20s %3d%% ", skill_table[sn]->name,
     victim->pcdata->learned[sn]);
 	send_to_char( buf, ch );
 
@@ -6917,17 +6963,18 @@ void do_viewskills( CHAR_DATA *ch, char *argument )
 
 void do_undead( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string arg2;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     ROOM_INDEX_DATA *in_room;
     DESCRIPTOR_DATA *d;
 
 
-    argument = one_argument( argument, arg );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg );
+    argstr = one_argument( argstr, arg2 );
 
-    if (arg[0] == '\0' || arg2[0] =='\0') {
+    if (arg.empty() || arg2.empty()) {
       send_to_char("Usage: undead <dead char> <current char>\n",ch);
       return;
     }

@@ -98,8 +98,9 @@ void comment_remove( CHAR_DATA *ch, CHAR_DATA *victim, NOTE_DATA *pnote )
 void do_comment( CHAR_DATA *ch, char *argument )
 {
 //  char buf[MAX_STRING_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
-    char arg1[MAX_INPUT_LENGTH];
+    std::string	arg;
+    std::string arg1;
+	std::string argstr = argument;
     NOTE_DATA  *pnote;
     CHAR_DATA  *victim;
     int vnum;
@@ -147,13 +148,13 @@ void do_comment( CHAR_DATA *ch, char *argument )
     }
 
     set_char_color( AT_NOTE, ch );
-    argument = one_argument( argument, arg );
-    smash_tilde( argument );
+    argstr = one_argument( argstr, arg );
+    smash_tilde( argstr );
 
     if ( !str_cmp( arg, "about" ) )
     {
 
-        victim = get_char_world(ch, argument);
+        victim = get_char_world(ch, argstr);
 	if (!victim)
 	{
 	   send_to_char("They're not logged on!\n", ch);   /* maybe fix this? */
@@ -172,7 +173,7 @@ void do_comment( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "list" ) )
     {
-        victim = get_char_world(ch, argument);
+        victim = get_char_world(ch, argstr);
 	if (!victim)
 	{
 	   send_to_char("They're not logged on!\n", ch);   /* maybe fix this? */
@@ -217,7 +218,7 @@ void do_comment( CHAR_DATA *ch, char *argument )
     {
 	bool fAll;
 
-        argument = one_argument( argument, arg1 );
+        argstr = one_argument( argstr, arg1 );
         victim = get_char_world(ch, arg1);
 	if (!victim)
 	{
@@ -245,16 +246,16 @@ void do_comment( CHAR_DATA *ch, char *argument )
 
 
 
-	if ( !str_cmp( argument, "all" ) )
+	if ( !str_cmp( argstr, "all" ) )
 	{
 	    fAll = TRUE;
 	    anum = 0;
 	}
 	else
-	if ( is_number( argument ) )
+	if ( is_number( argstr ) )
 	{
 	    fAll = FALSE;
-	    anum = atoi( argument );
+	    anum = strtoi( argstr );
 	}
 	else
 	{
@@ -298,7 +299,7 @@ void do_comment( CHAR_DATA *ch, char *argument )
     {
 	note_attach( ch );
 	STRFREE( ch->pcdata->pnote->subject );
-	ch->pcdata->pnote->subject = STRALLOC( argument );
+	ch->pcdata->pnote->subject = STRALLOC( argstr );
 	send_to_char( "Ok.\n", ch );
 	return;
     }
@@ -307,7 +308,7 @@ void do_comment( CHAR_DATA *ch, char *argument )
     {
 	note_attach( ch );
 	STRFREE( ch->pcdata->pnote->to_list );
-	ch->pcdata->pnote->to_list = STRALLOC( argument );
+	ch->pcdata->pnote->to_list = STRALLOC( argstr );
 	send_to_char( "Ok.\n", ch );
 	return;
     }
@@ -356,7 +357,7 @@ void do_comment( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 
-        argument = one_argument(argument, arg1);
+        argstr = one_argument(argstr, arg1);
         victim = get_char_world(ch, arg1);
 	if (!victim)
 	{
@@ -423,7 +424,7 @@ void do_comment( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "remove" ) )
     {
-        argument = one_argument(argument, arg1);
+        argstr = one_argument(argstr, arg1);
         victim = get_char_world(ch, arg1);
 	if (!victim)
 	{
@@ -445,13 +446,13 @@ void do_comment( CHAR_DATA *ch, char *argument )
 	}
 
 	/*argument = one_argument(argument, arg); */
-	if ( !is_number( argument ) )
+	if ( !is_number( argstr ) )
 	{
 	    send_to_char( "Comment remove which number?\n", ch );
 	    return;
 	}
 
-	anum = atoi( argument );
+	anum = strtoi( argstr );
 	vnum = 0;
 	for ( pnote = victim->pcdata->comments; pnote; pnote = pnote->next )
 	{

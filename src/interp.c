@@ -32,11 +32,11 @@
  */
 
 void subtract_times( struct timeval *etime, struct timeval *stime );
-bool olc_try_inline_interpret(CHAR_DATA* ch, char* command, char* argument, OlcInterpretStage stage);
+bool olc_try_inline_interpret(CHAR_DATA* ch, const std::string& command, const std::string& argument, OlcInterpretStage stage);
 
 
-bool	check_social	args( ( CHAR_DATA *ch, char *command,
-			    char *argument ) );
+bool	check_social	args( ( CHAR_DATA *ch, const std::string& command,
+			    const std::string& argument ) );
 
 
 /*
@@ -101,114 +101,103 @@ extern char lastplayercmd[MAX_INPUT_LENGTH*2];
 
 char multicommand[MAX_INPUT_LENGTH]; 
 
-char  * parse_target( CHAR_DATA *ch, char *oldstring )
-{  
-    const 	char 	*str;
-    int		count = 0;
-//  char 		*i = NULL; 
-    char 		*point;
-    char 		buf[ MAX_INPUT_LENGTH   ];
-    
-    buf[0]  = '\0';
-    str     = oldstring;
-    point   = buf;
-    while (*str != '\0')
+std::string parse_target( CHAR_DATA *ch, const std::string &oldstring )
+{
+    std::string result;
+
+    if ( !ch || !ch->pcdata )
+        return oldstring;
+
+    result.reserve( oldstring.size() );
+
+    const char *str = oldstring.c_str();
+    int count = 0;
+
+    while ( *str != '\0' )
     {
-        if (*str != '$')
+        if ( *str != '$' )
         {
-            int len = utf8_char_len_safe(str);
+            int len = utf8_char_len_safe( str );
 
-            for (int j = 0; j < len; j++)
-                *point++ = *str++;
-
-            count += len;
-
-            if (count >= MAX_INPUT_LENGTH - 1)
+            if ( count + len >= MAX_INPUT_LENGTH )
                 break;
 
+            result.append( str, len );
+            str += len;
+            count += len;
             continue;
         }
 
         ++str;
 
-        if (*str == '$' && ch->pcdata->target[0] != '\0')
+        if ( *str == '$' && ch->pcdata->target[0] != '\0' )
         {
             const char *i = ch->pcdata->target;
 
-            while (*i != '\0')
+            while ( *i != '\0' )
             {
-                int len = utf8_char_len_safe(i);
+                int len = utf8_char_len_safe( i );
 
-                for (int j = 0; j < len; j++)
-                    *point++ = *i++;
-
-                count += len;
-
-                if (count >= MAX_INPUT_LENGTH - 1)
+                if ( count + len >= MAX_INPUT_LENGTH )
                 {
-                    send_to_char("Target substitution too long; not processed.\n", ch);
+                    send_to_char( "Target substitution too long; not processed.\n", ch );
                     return oldstring;
                 }
+
+                result.append( i, len );
+                i += len;
+                count += len;
             }
+
             ++str;
         }
         else
         {
-            *point++ = '$';
-            count++;
+            if ( count + 1 >= MAX_INPUT_LENGTH )
+                break;
+
+            result.push_back( '$' );
+            ++count;
         }
     }
-    buf[count] = '\0';
-    oldstring = strdup( buf );
-    return oldstring;
- }
+
+    return result;
+}
  
- char *get_multi_command( DESCRIPTOR_DATA *d, char *argument ) 
- { 
-    int counter, counter2; 
-    char leftover[MAX_INPUT_LENGTH]; 
-    multicommand[0] = '\0'; 
-    
-    for (counter = 0; argument[counter] != '\0'; counter++)
+ std::string get_multi_command( DESCRIPTOR_DATA *d, const std::string &argument )
+{
+    std::string first;
+    std::string remainder;
+
+    first.reserve( argument.size() );
+
+    for ( size_t i = 0; i < argument.size(); ++i )
     {
-        /* Split on single '|' */
-        if (argument[counter] == '|' && argument[counter + 1] != '|')
+        if ( argument[i] == '|' )
         {
-            multicommand[counter] = '\0';
-            counter++;
+            /* Escaped || becomes literal | */
+            if ( i + 1 < argument.size() && argument[i + 1] == '|' )
+            {
+                first.push_back( '|' );
+                ++i;
+                continue;
+            }
 
-            /* Copy remainder into leftover */
-            for (counter2 = 0; argument[counter] != '\0'; counter2++, counter++)
-                leftover[counter2] = argument[counter];
-
-            leftover[counter2] = '\0';
-
-            /* Safe copy */
-            snprintf(d->incomm, MAX_INPUT_LENGTH, "%s", leftover);
-
-            return multicommand;
-        }
-        /* Handle escaped '||' safely */
-        else if (argument[counter] == '|' && argument[counter + 1] == '|')
-        {
-            /* UTF-8 SAFE SHIFT */
-            memmove(&argument[counter],
-                    &argument[counter + 1],
-                    strlen(&argument[counter + 1]) + 1);
-
-            /* Stay on same index to re-evaluate */
-            counter--;
-            continue;
+            /* Single | splits command */
+            remainder = argument.substr( i + 1 );
+            if ( d )
+                d->incomm_str = remainder;
+            return first;
         }
 
-        /* Normal copy */
-        multicommand[counter] = argument[counter];
+        first.push_back( argument[i] );
     }
-    d->incomm[0] = '\0'; 
-    multicommand[counter] = '\0'; 
-    
-    return (multicommand); 
- } 
+
+    if ( d )
+        d->incomm_str.clear();
+
+    return first;
+}
 
 bool command_is_authorized_for_char(CHAR_DATA* ch, CMDTYPE* cmd)
 {
@@ -235,11 +224,18 @@ bool command_is_authorized_for_char(CHAR_DATA* ch, CMDTYPE* cmd)
     return false;
 }
 
-void interpret( CHAR_DATA *ch, char *argument )
+static inline void call_do_fun_str( DO_FUN *fun, CHAR_DATA *ch, const std::string &arg )
 {
-    char command[MAX_INPUT_LENGTH];
-    char logline[MAX_INPUT_LENGTH];
-    char logname[MAX_INPUT_LENGTH];
+    std::vector<char> buf( arg.begin(), arg.end() );
+    buf.push_back( '\0' );
+    ( *fun )( ch, buf.data() );
+}
+
+void interpret( CHAR_DATA *ch, const std::string &argument )
+{
+    std::string arg = argument;
+    std::string command;
+    std::string logline;
     TIMER *timer = NULL;
     CMDTYPE *cmd = NULL;
     int loglvl;
@@ -290,14 +286,14 @@ void interpret( CHAR_DATA *ch, char *argument )
                 bug( "interpret: SUB_REPEATCMD: last_cmd invalid", 0 );
                 return;
             }
-            SPRINTF( logline, "(%s) %s", cmd->name, argument );
+            logline = "(" + std::string( cmd->name ) + ") " + arg;
         }
     }
 
     if ( !cmd )
     {
         /* Changed the order of these ifchecks to prevent crashing. */
-        if ( !argument || !strcmp(argument,"") ) 
+        if ( arg.empty() ) 
         {
             bug( "interpret: null argument!", 0 );
             return;
@@ -306,9 +302,14 @@ void interpret( CHAR_DATA *ch, char *argument )
         /*
         * Strip leading spaces.
         */
-        while (*argument && isspace_utf8(argument))
-            UTF8_NEXT(argument);
-        if ( argument[0] == '\0' )
+        while ( !arg.empty() && isspace_utf8( arg.c_str() ) )
+        {
+            const char *p = arg.c_str();
+            UTF8_NEXT( p );
+            arg.erase( 0, p - arg.c_str() );
+        }
+
+        if ( arg.empty() )
             return;
 
         timer = get_timerptr( ch, TIMER_DO_FUN );
@@ -329,50 +330,43 @@ void interpret( CHAR_DATA *ch, char *argument )
         * Special parsing so ' can be a command,
         *   also no spaces needed after punctuation.
         */
-        SPRINTF( logline, "%s", argument );
+        logline = arg;
 
-        if (ch->desc && strchr(argument, '|'))
-            argument = get_multi_command( ch->desc, argument ); 
+        if ( ch->desc && arg.find( '|' ) != std::string::npos )
+            arg = get_multi_command( ch->desc, arg ); 
 
         if ( !IS_NPC(ch) && ch->pcdata && ch->pcdata->target )
             if ( ch->pcdata->target[0] != '\0' )
-                if( strchr(argument, '$'))
-                    argument = parse_target(ch, argument);
+                if ( arg.find( '$' ) != std::string::npos )
+                    arg = parse_target( ch, arg );
     
-        if ( !isalpha(argument[0]) && !isdigit(argument[0]) )
+        if ( !arg.empty() && !isalpha( static_cast<unsigned char>( arg[0] ) )
+        &&   !isdigit( static_cast<unsigned char>( arg[0] ) ) )
         {
-            command[0] = argument[0];
-            command[1] = '\0';
-            argument++;
-            while (*argument && isspace_utf8(argument))
-                UTF8_NEXT(argument);
+            command.assign( 1, arg[0] );
+            arg.erase( 0, 1 );
+            while ( !arg.empty() && isspace_utf8( arg.c_str() ) )
+            {
+                const char *p = arg.c_str();
+                UTF8_NEXT( p );
+                arg.erase( 0, p - arg.c_str() );
+            }
         }
         else
-            argument = one_argument( argument, command );
+            arg = one_argument( arg, command );
 
         /*
         * Look for command in command table.
         * Check for council powers and/or bestowments
         */
         for ( cmd = command_hash[LOWER(command[0])%126]; cmd; cmd = cmd->next )
-            if ( !str_prefix( command, cmd->name )
+            if ( !str_prefix( command.c_str(), cmd->name )
             &&   command_is_authorized_for_char(ch, cmd) )
             {
                 found = TRUE;
                 break;
             }
-/*        trust = get_trust( ch );
-        for ( cmd = command_hash[LOWER(command[0])%126]; cmd; cmd = cmd->next )
-            if ( !str_prefix( command, cmd->name )
-            &&   ((cmd->level <= trust && (IS_NPC(ch) || !cmd->commandgroup.any() || (cmd->commandgroup.intersects(ch->pcdata->commandgroup))))
-            ||  (!IS_NPC(ch) && ch->pcdata->bestowments && ch->pcdata->bestowments[0] != '\0'
-            &&    is_name( cmd->name, ch->pcdata->bestowments )
-            &&    cmd->level <= (trust+5)) ) )
-            {
-                found = TRUE;
-                break;
-            }
-*/
+
         /*
         * Turn off afk bit when any command performed.
         */
@@ -386,10 +380,11 @@ void interpret( CHAR_DATA *ch, char *argument )
     /*
      * Log and snoop.
      */
-    SPRINTF( lastplayercmd, "** %s: %s", ch->name, logline );
+    snprintf( lastplayercmd, MAX_INPUT_LENGTH * 2, "** %s: %s",
+        ch->name ? ch->name : "(null)", logline.c_str() );
 
     if ( found && cmd->log == LOG_NEVER )
-	    SPRINTF( logline, "XXXXXXXX XXXXXXXX XXXXXXXX" );
+        logline = "XXXXXXXX XXXXXXXX XXXXXXXX";
 
     loglvl = found ? cmd->log : LOG_NORMAL;
 
@@ -411,18 +406,17 @@ void interpret( CHAR_DATA *ch, char *argument )
            a logged command.  Check for descriptor in case force is used. */
         if ( ch->desc && ch->desc->original ) 
           log_printf_plus( loglvl, ch->top_level, "Log %s (%s): %s", ch->name,
-                   ch->desc->original->name, logline );
+                   ch->desc->original->name, logline.c_str() );
         else
-          log_printf_plus( loglvl, ch->top_level, "Log %s: %s", ch->name, logline );
+          log_printf_plus( loglvl, ch->top_level, "Log %s: %s", ch->name, logline.c_str() );
     }
 
     if ( ch->desc && ch->desc->snoop_by )
     {
-        SPRINTF( logname, "%s", ch->name);
-        write_to_buffer( ch->desc->snoop_by, logname, strnlen(logname, MAX_INPUT_LENGTH) );
-        write_to_buffer( ch->desc->snoop_by, "% ",    2 );
-        write_to_buffer( ch->desc->snoop_by, logline, strnlen(logline, MAX_INPUT_LENGTH) );
-        write_to_buffer( ch->desc->snoop_by, "\n",  2 );
+        output_to_descriptor( ch->desc->snoop_by, std::string( ch->name ? ch->name : "" ) );
+        output_to_descriptor( ch->desc->snoop_by, "% " );
+        output_to_descriptor( ch->desc->snoop_by, logline );
+        output_to_descriptor( ch->desc->snoop_by, "\n" );
     }
 
     
@@ -433,7 +427,7 @@ void interpret( CHAR_DATA *ch, char *argument )
 
         tempsub = ch->substate;
         ch->substate = SUB_TIMER_DO_ABORT;
-        (timer->do_fun)(ch,"");
+        call_do_fun_str( timer->do_fun, ch, "" );
         if ( char_died(ch) )
             return;
         if ( ch->substate != SUB_TIMER_CANT_ABORT )
@@ -448,20 +442,22 @@ void interpret( CHAR_DATA *ch, char *argument )
         }
     }
 
-    if (olc_try_inline_interpret(ch, command, argument, OlcInterpretStage::EARLY))
+    if (olc_try_inline_interpret(ch, command, arg, OlcInterpretStage::EARLY))
         return;
+
+    bool foundother = true;
 
     /*
      * Look for command in skill and socials table.
      */
     if ( !found )
     {
-        if ( !check_skill( ch, command, argument )
-        &&   !check_alias( ch, command, argument )
-        &&   !check_social( ch, command, argument ) )
+        if ( !check_skill( ch, command, arg )
+        &&   !check_alias( ch, command, arg )
+        &&   !check_social( ch, command, arg ) )
         {
             EXIT_DATA *pexit;
-
+            foundother = false;
             /* check for an auto-matic exit command */
             if ( (pexit = find_door( ch, command, TRUE )) != NULL
             &&   IS_SET( pexit->exit_info, EX_xAUTO ))
@@ -482,12 +478,13 @@ void interpret( CHAR_DATA *ch, char *argument )
         }
     }
 
-    if (olc_try_inline_interpret(ch, command, argument, OlcInterpretStage::LATE)) // Needs to be after the above as room inline editing allows for movement - DV 4-5-26
+    if (olc_try_inline_interpret(ch, command, arg, OlcInterpretStage::LATE)) // Needs to be after the above as room inline editing allows for movement - DV 4-5-26
         return;
 
-    if (!found)  // Need to move this return below the olc edit checking, otherwise if an olc 
-    {            // short command doesn't match something in the command table, it won't reach it - DV
-        send_to_char( "Huh?\n", ch );
+    if (!found )  // Need to move this return below the olc edit checking, otherwise if an olc 
+    {                           // short command doesn't match something in the command table, it won't reach it - DV
+        if ( !foundother )
+            send_to_char( "Huh?\n", ch );
         return; 
     }
 
@@ -512,7 +509,7 @@ void interpret( CHAR_DATA *ch, char *argument )
     ch->prev_cmd = ch->last_cmd;    /* haus, for automapping */
     ch->last_cmd = cmd->do_fun;
     start_timer(&time_used);
-    (*cmd->do_fun) ( ch, argument );
+    call_do_fun_str( cmd->do_fun, ch, arg );
     end_timer(&time_used);
     /*
      * Update the record of how many times this command has been used (haus)
@@ -524,7 +521,7 @@ void interpret( CHAR_DATA *ch, char *argument )
     if ( tmptime > 1500000 )
     {
         log_printf_plus(LOG_NORMAL, get_trust(ch), "[*****] LAG: %s: %s %s (R:%d S:%d.%06d)", ch->name,
-                cmd->name, (cmd->log == LOG_NEVER ? "XXX" : argument),
+                cmd->name, (cmd->log == LOG_NEVER ? "XXX" : arg.c_str() ),
 		ch->in_room ? ch->in_room->vnum : 0,
 		(int) (time_used.tv_sec),(int) (time_used.tv_usec) );
     }
@@ -532,7 +529,12 @@ void interpret( CHAR_DATA *ch, char *argument )
     tail_chain( ch->game );
 }
 
-CMDTYPE *find_command( char *command )
+void interpret( CHAR_DATA *ch, char *argument )
+{
+    interpret( ch, std::string( argument ? argument : "" ) );
+}
+
+CMDTYPE *find_command( const std::string& command )
 {
     CMDTYPE *cmd;
     int hash;
@@ -546,7 +548,7 @@ CMDTYPE *find_command( char *command )
     return NULL;
 }
 
-SOCIALTYPE *find_social( const char *command )
+SOCIALTYPE *find_social( const std::string& command )
 {
     SOCIALTYPE *social;
     int hash;
@@ -565,116 +567,117 @@ SOCIALTYPE *find_social( const char *command )
     return NULL;
 }
 
-bool check_social( CHAR_DATA *ch, char *command, char *argument )
+bool check_social( CHAR_DATA *ch, const std::string& command, const std::string& argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     SOCIALTYPE *social;
 
     if ( (social=find_social(command)) == NULL )
-	return FALSE;
+	    return FALSE;
 
     if ( !IS_NPC(ch) && BV_IS_SET(ch->act, PLR_NO_EMOTE) )
     {
-	send_to_char( "You are anti-social!\n", ch );
-	return TRUE;
+        send_to_char( "You are anti-social!\n", ch );
+        return TRUE;
     }
 
     switch ( ch->position )
     {
-    case POS_DEAD:
-	send_to_char( "Lie still; you are DEAD.\n", ch );
-	return TRUE;
+        case POS_DEAD:
+        send_to_char( "Lie still; you are DEAD.\n", ch );
+        return TRUE;
 
-    case POS_INCAP:
-    case POS_MORTAL:
-	send_to_char( "You are hurt far too bad for that.\n", ch );
-	return TRUE;
+        case POS_INCAP:
+        case POS_MORTAL:
+        send_to_char( "You are hurt far too bad for that.\n", ch );
+        return TRUE;
 
-    case POS_STUNNED:
-	send_to_char( "You are too stunned to do that.\n", ch );
-	return TRUE;
+        case POS_STUNNED:
+        send_to_char( "You are too stunned to do that.\n", ch );
+        return TRUE;
 
-    case POS_SLEEPING:
-	/*
-	 * I just know this is the path to a 12" 'if' statement.  :(
-	 * But two players asked for it already!  -- Furey
-	 */
-	if ( !str_cmp( social->name, "snore" ) )
-	    break;
-	send_to_char( "In your dreams, or what?\n", ch );
-	return TRUE;
+        case POS_SLEEPING:
+        /*
+        * I just know this is the path to a 12" 'if' statement.  :(
+        * But two players asked for it already!  -- Furey
+        */
+        if ( !str_cmp( social->name, "snore" ) )
+            break;
+        send_to_char( "In your dreams, or what?\n", ch );
+        return TRUE;
 
     }
 
-    one_argument( argument, arg );
+    one_argument( argstr, arg );
     victim = NULL;
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
-	act( AT_SOCIAL, social->others_no_arg, ch, NULL, victim, TO_ROOM    );
-	act( AT_SOCIAL, social->char_no_arg,   ch, NULL, victim, TO_CHAR    );
+        act( AT_SOCIAL, social->others_no_arg, ch, NULL, victim, TO_ROOM    );
+        act( AT_SOCIAL, social->char_no_arg,   ch, NULL, victim, TO_CHAR    );
     }
     else if ( ( victim = get_char_room( ch, arg ) ) == NULL )
     {
-	send_to_char( "They aren't here.\n", ch );
+        send_to_char( "They aren't here.\n", ch );
     }
     else if ( victim == ch )
     {
-	act( AT_SOCIAL, social->others_auto,   ch, NULL, victim, TO_ROOM    );
-	act( AT_SOCIAL, social->char_auto,     ch, NULL, victim, TO_CHAR    );
+        act( AT_SOCIAL, social->others_auto,   ch, NULL, victim, TO_ROOM    );
+        act( AT_SOCIAL, social->char_auto,     ch, NULL, victim, TO_CHAR    );
     }
     else
     {
-	act( AT_SOCIAL, social->others_found,  ch, NULL, victim, TO_NOTVICT );
-	act( AT_SOCIAL, social->char_found,    ch, NULL, victim, TO_CHAR    );
-	act( AT_SOCIAL, social->vict_found,    ch, NULL, victim, TO_VICT    );
+        act( AT_SOCIAL, social->others_found,  ch, NULL, victim, TO_NOTVICT );
+        act( AT_SOCIAL, social->char_found,    ch, NULL, victim, TO_CHAR    );
+        act( AT_SOCIAL, social->vict_found,    ch, NULL, victim, TO_VICT    );
 
-	if ( !IS_NPC(ch) && IS_NPC(victim)
-	&&   !IS_AFFECTED(victim, AFF_CHARM)
-	&&   IS_AWAKE(victim) 
-        &&   !IS_SET( victim->pIndexData->progtypes, ACT_PROG ) )
-	{
-	    switch ( number_bits( 4 ) )
-	    {
-	    case 0:
-		if ( !BV_IS_SET(ch->in_room->room_flags, ROOM_SAFE )
-		&&    IS_EVIL(ch) )
-		{
-         	  if ( !str_cmp( social->name, "slap" ) || !str_cmp( social->name, "punch" ) )
-		    multi_hit( victim, ch, TYPE_UNDEFINED );
-		}
-		else
-		if ( IS_NEUTRAL(ch) )
-		{
-		    act( AT_ACTION, "$n slaps $N.",  victim, NULL, ch, TO_NOTVICT );
-		    act( AT_ACTION, "You slap $N.",  victim, NULL, ch, TO_CHAR    );
-		    act( AT_ACTION, "$n slaps you.", victim, NULL, ch, TO_VICT    );
-		}
-		else
-		{
-		    act( AT_ACTION, "$n acts like $N doesn't even exist.",  victim, NULL, ch, TO_NOTVICT );
-		    act( AT_ACTION, "You just ignore $N.",  victim, NULL, ch, TO_CHAR    );
-		    act( AT_ACTION, "$n appears to be ignoring you.", victim, NULL, ch, TO_VICT    );
-		}
-		break;
+        if ( !IS_NPC(ch) && IS_NPC(victim)
+        &&   !IS_AFFECTED(victim, AFF_CHARM)
+        &&   IS_AWAKE(victim) 
+            &&   !IS_SET( victim->pIndexData->progtypes, ACT_PROG ) )
+        {
+            switch ( number_bits( 4 ) )
+            {
+            case 0:
+            if ( !BV_IS_SET(ch->in_room->room_flags, ROOM_SAFE )
+            &&    IS_EVIL(ch) )
+            {
+                if ( !str_cmp( social->name, "slap" ) || !str_cmp( social->name, "punch" ) )
+                multi_hit( victim, ch, TYPE_UNDEFINED );
+            }
+            else
+            if ( IS_NEUTRAL(ch) )
+            {
+                act( AT_ACTION, "$n slaps $N.",  victim, NULL, ch, TO_NOTVICT );
+                act( AT_ACTION, "You slap $N.",  victim, NULL, ch, TO_CHAR    );
+                act( AT_ACTION, "$n slaps you.", victim, NULL, ch, TO_VICT    );
+            }
+            else
+            {
+                act( AT_ACTION, "$n acts like $N doesn't even exist.",  victim, NULL, ch, TO_NOTVICT );
+                act( AT_ACTION, "You just ignore $N.",  victim, NULL, ch, TO_CHAR    );
+                act( AT_ACTION, "$n appears to be ignoring you.", victim, NULL, ch, TO_VICT    );
+            }
+            break;
 
-	    case 1: case 2: case 3: case 4:
-	    case 5: case 6: case 7: case 8:
-		act( AT_SOCIAL, social->others_found,
-		    victim, NULL, ch, TO_NOTVICT );
-		act( AT_SOCIAL, social->char_found,
-		    victim, NULL, ch, TO_CHAR    );
-		act( AT_SOCIAL, social->vict_found,
-		    victim, NULL, ch, TO_VICT    );
-		break;
+            case 1: case 2: case 3: case 4:
+            case 5: case 6: case 7: case 8:
+            act( AT_SOCIAL, social->others_found,
+                victim, NULL, ch, TO_NOTVICT );
+            act( AT_SOCIAL, social->char_found,
+                victim, NULL, ch, TO_CHAR    );
+            act( AT_SOCIAL, social->vict_found,
+                victim, NULL, ch, TO_VICT    );
+            break;
 
-	    case 9: case 10: case 11: case 12:
-		act( AT_ACTION, "$n slaps $N.",  victim, NULL, ch, TO_NOTVICT );
-		act( AT_ACTION, "You slap $N.",  victim, NULL, ch, TO_CHAR    );
-		act( AT_ACTION, "$n slaps you.", victim, NULL, ch, TO_VICT    );
-		break;
-	    }
-	}
+            case 9: case 10: case 11: case 12:
+            act( AT_ACTION, "$n slaps $N.",  victim, NULL, ch, TO_NOTVICT );
+            act( AT_ACTION, "You slap $N.",  victim, NULL, ch, TO_CHAR    );
+            act( AT_ACTION, "$n slaps you.", victim, NULL, ch, TO_VICT    );
+            break;
+            }
+        }
     }
 
     return TRUE;
@@ -685,15 +688,22 @@ bool check_social( CHAR_DATA *ch, char *command, char *argument )
 /*
  * Return true if an argument is completely numeric.
  */
-bool is_number( char *arg )
+bool is_number(char *arg)
 {
-    if ( *arg == '\0' )
-	return FALSE;
+    if (!arg)
+        return FALSE;
 
-    for ( ; *arg != '\0'; arg++ )
+    return is_number(std::string(arg));
+}
+bool is_number(const std::string& arg)
+{
+    if (arg.empty())
+        return FALSE;
+
+    for (unsigned char c : arg)
     {
-	if ( !isdigit(*arg) && *arg != '-' )
-	    return FALSE;
+        if (!isdigit(c) && c != '-')
+            return FALSE;
     }
 
     return TRUE;
@@ -704,7 +714,7 @@ bool is_number( char *arg )
 /*
  * Given a string like 14.foo, return 14 and 'foo'
  */
-int number_argument( char *argument, char *arg )
+int number_argument_old( char *argument, char *arg )
 {
     char *pdot;
     int number;
@@ -725,22 +735,116 @@ int number_argument( char *argument, char *arg )
     return 1;
 }
 
+int number_argument(const std::string& argument, std::string& arg)
+{
+    std::string::size_type dot = argument.find('.');
 
+    if (dot != std::string::npos)
+    {
+        std::string number_part = argument.substr(0, dot);
+        arg = argument.substr(dot + 1);
+
+        return strtoi(number_part);
+    }
+
+    arg = argument;
+    return 1;
+}
 
 /*
  * Pick off one argument from a string and return the rest.
  * Understands quotes.
- * Rewritten with AI to be buffer safe - DV 3-12-26
-
  */
-
-char *one_argument(char *argument, char *arg_first)
+static std::pair<std::string, std::string>
+one_argument_std(const std::string& input)
 {
+    const char* p = input.c_str();
+    char cEnd = ' ';
+    std::string first;
+
+    first.reserve(input.size());
+
+    /* Skip leading spaces */
+    while (*p && isspace_utf8(p))
+        UTF8_NEXT(p);
+
+    /* Determine delimiter */
+    if (*p == '\'' || *p == '"')
+        cEnd = *p++;
+
+    /* Copy first argument */
+    size_t count = 0;
+    while (*p != '\0' && *p != cEnd)
+    {
+        size_t char_len = utf8_char_len_safe(p);
+
+        /* Respect old MAX_INPUT_LENGTH - 1 truncation behavior */
+        if (count + char_len >= MAX_INPUT_LENGTH - 1)
+            break;
+
+        if (char_len == 1)
+        {
+            first.push_back(static_cast<char>(
+                tolower(static_cast<unsigned char>(*p))
+            ));
+        }
+        else
+        {
+            first.append(p, char_len);
+        }
+
+        p += char_len;
+        count += char_len;
+    }
+
+    /* Skip closing quote if present */
+    if (*p == cEnd)
+        ++p;
+
+    /* Skip trailing spaces */
+    while (*p && isspace_utf8(p))
+        UTF8_NEXT(p);
+
+    return { first, std::string(p) };
+}
+
+std::string one_argument(const std::string& input, std::string& arg_first)
+{
+    auto result = one_argument_std(input);
+    arg_first = std::move(result.first);
+    return result.second;
+}
+/*
+char* one_argument(char* argument, char* arg_first)
+{
+    static std::string remainder_storage;
+
+    if (!argument || !arg_first)
+        return argument;
+
+    auto result = one_argument_std(argument);
+
+    std::strncpy(arg_first, result.first.c_str(), MAX_INPUT_LENGTH - 1);
+    arg_first[MAX_INPUT_LENGTH - 1] = '\0';
+
+    remainder_storage = std::move(result.second);
+    return remainder_storage.empty() ? const_cast<char*>("")
+                                     : remainder_storage.data();
+}
+*/
+
+/*
+ * Pick off one argument from a string and return the rest.
+ * Understands quotes.  Delimiters = { ' ', '-' }
+ * Rewritten to use std::string - MDM 3-12-26
+ */
+std::string one_argument2(const std::string& input, std::string& arg_first)
+{
+    const char* argument = input.c_str();
     char cEnd;
     size_t count = 0;
 
-    if (!argument || !arg_first)
-        return argument;  // safety check
+    arg_first.clear();
 
     // Skip leading spaces
     while (*argument && isspace_utf8(argument))
@@ -752,47 +856,102 @@ char *one_argument(char *argument, char *arg_first)
         cEnd = *argument++;
 
     // Copy argument safely
-    while (*argument != '\0' && *argument != cEnd)
+    while (*argument != '\0')
     {
-        size_t char_len = utf8_char_len_safe(argument); 
+        /* ASCII-safe delimiter checks */
+        if ((unsigned char)*argument == (unsigned char)cEnd ||
+            (unsigned char)*argument == (unsigned char)'-')
+            break;
+
+        size_t char_len = utf8_char_len_safe(argument);
 
         /* Prevent overflow (respect multibyte) */
-        if (count + char_len >= MAX_INPUT_LENGTH - 1) 
+        if (count + char_len >= MAX_INPUT_LENGTH - 1)
             break;
 
         if (char_len == 1) /* ASCII */
         {
-            *arg_first = tolower((unsigned char)*argument);
-            arg_first++;
+            arg_first.push_back(
+                static_cast<char>(tolower(static_cast<unsigned char>(*argument)))
+            );
         }
         else /* UTF-8 multibyte */
         {
-            memcpy(arg_first, argument, char_len); 
-            arg_first += char_len;
+            arg_first.append(argument, char_len);
         }
 
-        argument += char_len;  /* UTF-8 FIX */
-        count += char_len;     /* UTF-8 FIX */
+        argument += char_len;
+        count += char_len;
     }
 
-    // Skip closing quote if any
-    if (*argument == cEnd)
+    // Skip closing delimiter or '-' if present
+    if (*argument == cEnd || *argument == '-')
         argument++;
-
-    *arg_first = '\0';  // null terminate
 
     // Skip trailing spaces
     while (*argument && isspace_utf8(argument))
         UTF8_NEXT(argument);
 
-    return argument;
+    return std::string(argument);
+}
+
+char *one_argument(char *argument, char *arg_first)
+{
+    static thread_local char remainders[16][MAX_INPUT_LENGTH];
+    static thread_local int slot = 0;
+
+    if (!argument || !arg_first)
+        return argument;
+
+    std::string first;
+    std::string rest = one_argument(std::string(argument), first);
+
+    std::strncpy(arg_first, first.c_str(), MAX_INPUT_LENGTH - 1);
+    arg_first[MAX_INPUT_LENGTH - 1] = '\0';
+
+    slot = (slot + 1) % 16;
+    std::strncpy(remainders[slot], rest.c_str(), MAX_INPUT_LENGTH - 1);
+    remainders[slot][MAX_INPUT_LENGTH - 1] = '\0';
+
+    return remainders[slot];
+}
+
+char *one_argument2(char *argument, char *arg_first)
+{
+    static thread_local char remainders[16][MAX_INPUT_LENGTH];
+    static thread_local int slot = 0;
+
+    if (!argument || !arg_first)
+        return argument;
+
+    std::string first;
+    std::string rest = one_argument2(std::string(argument), first);
+
+    std::strncpy(arg_first, first.c_str(), MAX_INPUT_LENGTH - 1);
+    arg_first[MAX_INPUT_LENGTH - 1] = '\0';
+
+    slot = (slot + 1) % 16;
+    std::strncpy(remainders[slot], rest.c_str(), MAX_INPUT_LENGTH - 1);
+    remainders[slot][MAX_INPUT_LENGTH - 1] = '\0';
+
+    return remainders[slot];
+}
+
+int number_argument(char *argument, char *arg)
+{
+    if (!argument || !arg)
+        return 1;
+
+    std::string out;
+    int number = number_argument(std::string(argument), out);
+
+    std::strncpy(arg, out.c_str(), MAX_INPUT_LENGTH - 1);
+    arg[MAX_INPUT_LENGTH - 1] = '\0';
+
+    return number;
 }
 
 /*
- * Pick off one argument from a string and return the rest.
- * Understands quotes.  Delimiters = { ' ', '-' }
- * Rewritten with AI to be buffer safe - MDM 3-12-26
- */
 char *one_argument2(char *argument, char *arg_first)
 {
     char cEnd;
@@ -813,22 +972,22 @@ char *one_argument2(char *argument, char *arg_first)
     // Copy argument safely
     while (*argument != '\0')
     {
-        /* UTF-8 FIX: ASCII-safe delimiter checks */
+        // UTF-8 FIX: ASCII-safe delimiter checks 
         if ((unsigned char)*argument == (unsigned char)cEnd ||
             (unsigned char)*argument == (unsigned char)'-')
             break;
 
         size_t char_len = utf8_char_len_safe(argument); 
 
-        /* Prevent overflow (respect multibyte) */
+        // Prevent overflow (respect multibyte) 
         if (count + char_len >= MAX_INPUT_LENGTH - 1) 
             break;
 
-        if (char_len == 1) /* ASCII */
+        if (char_len == 1) // ASCII 
         {
             *arg_first++ = tolower((unsigned char)*argument);
         }
-        else /* UTF-8 multibyte */
+        else // UTF-8 multibyte
         {
             memcpy(arg_first, argument, char_len); 
             arg_first += char_len;
@@ -850,7 +1009,7 @@ char *one_argument2(char *argument, char *arg_first)
 
     return argument;
 }
-
+*/
 void do_timecmd( CHAR_DATA *ch, char *argument )
 {
   struct timeval stime;

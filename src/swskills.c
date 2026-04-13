@@ -31,7 +31,7 @@ ch_ret  one_hit             args( ( CHAR_DATA *ch, CHAR_DATA *victim, int dt ) )
 int     xp_compute                ( CHAR_DATA *ch , CHAR_DATA *victim );
 ROOM_INDEX_DATA *generate_exit( ROOM_INDEX_DATA *in_room, EXIT_DATA **pexit );
 int ris_save( CHAR_DATA *ch, int chance, int ris );
-CHAR_DATA *get_char_room_mp( CHAR_DATA *ch, char *argument );
+CHAR_DATA *get_char_room_mp( CHAR_DATA *ch, const std::string& argument );
 bool    autofly(SHIP_DATA *ship);
 bool    aff_paralysis( CHAR_DATA *ch, CHAR_DATA *victim );
 
@@ -1740,103 +1740,104 @@ void do_makelight( CHAR_DATA *ch, char *argument )
 
 void do_makejewelry( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
-    int level, chance;
-    bool checktool, checkoven, checkmetal; 
-    OBJ_DATA *obj;
-    OBJ_DATA *metal = NULL;
-    int value, cost;
-            
-    argument = one_argument( argument, arg );
-    SPRINTF ( arg2, "%s", argument);
-    
-    if ( !str_cmp( arg, "body" )
-    || !str_cmp( arg, "head" )
-    || !str_cmp( arg, "legs" )
-    || !str_cmp( arg, "arms" )
-    || !str_cmp( arg, "about" )
-    || !str_cmp( arg, "waist" )
-    || !str_cmp( arg, "hold" )
-    || !str_cmp( arg, "feet" )
-    || !str_cmp( arg, "over" )
-    || !str_cmp( arg, "floating" )
-    || !str_cmp( arg, "hands" ) )
-    {
-        send_to_char( "&RYou cannot make jewelry for that body part.\n&w", ch);
-        send_to_char( "&RTry MAKEARMOR.\n&w", ch);
-        return;
-    }
-    if ( !str_cmp( arg, "shield" ) )
-    {
-        send_to_char( "&RYou cannot make jewelry worn as a shield.\n&w", ch);
-        send_to_char( "&RTry MAKESHIELD.\n&w", ch);
-        return;
-    }
-    if ( !str_cmp( arg, "wield" ) )
-    {
-        send_to_char( "&RAre you going to fight with your jewelry?\n&w", ch);
-        send_to_char( "&RTry MAKEBLADE...\n&w", ch);
-        return;
-    }
-    
-    switch( ch->substate )
-    { 
-     default:
+   std::string arg;
+   std::string arg2;
+   std::string buf;
+   std::string argstr = argument;
+   int level, chance;
+   bool checktool, checkoven, checkmetal; 
+   OBJ_DATA *obj;
+   OBJ_DATA *metal = NULL;
+   int value, cost;
+         
+   argstr = one_argument( argstr, arg );
+   arg2 = argstr;
+   
+   if ( !str_cmp( arg, "body" )
+   || !str_cmp( arg, "head" )
+   || !str_cmp( arg, "legs" )
+   || !str_cmp( arg, "arms" )
+   || !str_cmp( arg, "about" )
+   || !str_cmp( arg, "waist" )
+   || !str_cmp( arg, "hold" )
+   || !str_cmp( arg, "feet" )
+   || !str_cmp( arg, "over" )
+   || !str_cmp( arg, "floating" )
+   || !str_cmp( arg, "hands" ) )
+   {
+      send_to_char( "&RYou cannot make jewelry for that body part.\n&w", ch);
+      send_to_char( "&RTry MAKEARMOR.\n&w", ch);
+      return;
+   }
+   if ( !str_cmp( arg, "shield" ) )
+   {
+      send_to_char( "&RYou cannot make jewelry worn as a shield.\n&w", ch);
+      send_to_char( "&RTry MAKESHIELD.\n&w", ch);
+      return;
+   }
+   if ( !str_cmp( arg, "wield" ) )
+   {
+      send_to_char( "&RAre you going to fight with your jewelry?\n&w", ch);
+      send_to_char( "&RTry MAKEBLADE...\n&w", ch);
+      return;
+   }
+   
+   switch( ch->substate )
+   { 
+      default:
              
-             if ( arg2[0] == '\0' )
-                {
-                  send_to_char( "&RUsage: Makejewelry <wearloc> <name>\n&w", ch);
-                  return;
-                }
- 
-             checktool = FALSE;
-                checkoven = FALSE;
-                checkmetal = FALSE;
-        
-                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
-                {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
-                   return;
-                }
-                
-                for ( obj = ch->last_carrying; obj; obj = obj->prev_content )
-                {
-                  if (obj->item_type == ITEM_TOOLKIT)
-                    checktool = TRUE;
-                  if (obj->item_type == ITEM_OVEN)
-               checkoven = TRUE;
-                  if (obj->item_type == ITEM_RARE_METAL)
-               checkmetal = TRUE;
-                }
-                
-                if ( !checktool )
-                {
-                   send_to_char( "&RYou need a toolkit.\n", ch);
-                   return;
-                }
- 
-                if ( !checkoven )
-                {
-                   send_to_char( "&RYou need an oven.\n", ch);
-                   return;
-                }
-                
-                if ( !checkmetal )
-                {
-                   send_to_char( "&RYou need some precious metal.\n", ch);
-                   return;
-                }
+      if ( arg2.empty() )
+      {
+         send_to_char( "&RUsage: Makejewelry <wearloc> <name>\n&w", ch);
+         return;
+      }
 
-             chance = IS_NPC(ch) ? ch->top_level
-                  : (int) (ch->pcdata->learned[gsn_makejewelry]);
-                if ( number_percent( ) < chance )
+      checktool = FALSE;
+      checkoven = FALSE;
+      checkmetal = FALSE;
+
+      if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+      {
+         send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
+         return;
+      }
+      
+      for ( obj = ch->last_carrying; obj; obj = obj->prev_content )
+      {
+      if (obj->item_type == ITEM_TOOLKIT)
+         checktool = TRUE;
+      if (obj->item_type == ITEM_OVEN)
+         checkoven = TRUE;
+      if (obj->item_type == ITEM_RARE_METAL)
+         checkmetal = TRUE;
+      }
+      
+      if ( !checktool )
+      {
+         send_to_char( "&RYou need a toolkit.\n", ch);
+         return;
+      }
+
+      if ( !checkoven )
+      {
+         send_to_char( "&RYou need an oven.\n", ch);
+         return;
+      }
+      
+      if ( !checkmetal )
+      {
+         send_to_char( "&RYou need some precious metal.\n", ch);
+         return;
+      }
+
+      chance = IS_NPC(ch) ? ch->top_level
+      : (int) (ch->pcdata->learned[gsn_makejewelry]);
+      if ( number_percent( ) < chance )
       {
          send_to_char( "&GYou begin the long process of creating some jewelry.\n", ch);
          act( AT_PLAIN, "$n takes $s toolkit and some metal and begins to work.", ch,
-          NULL, argument , TO_ROOM );
-     add_timer ( ch , TIMER_DO_FUN , 15 , do_makejewelry , 1 );
+          NULL, argstr , TO_ROOM );
+         add_timer ( ch , TIMER_DO_FUN , 15 , do_makejewelry , 1 );
          ch->dest_buf = str_dup(arg);
          ch->dest_buf_2 = str_dup(arg2);
          return;
@@ -1845,23 +1846,23 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
          learn_from_failure( ch, gsn_makejewelry );
          return;
 
-     case 1:
-      if ( !ch->dest_buf )
-           return;
-      if ( !ch->dest_buf_2 )
-           return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      STR_DISPOSE( ch->dest_buf);
-      SPRINTF(arg2, "%s", (const char*) ch->dest_buf_2);
-      STR_DISPOSE( ch->dest_buf_2);
-      break;
+      case 1:
+         if ( !ch->dest_buf )
+            return;
+         if ( !ch->dest_buf_2 )
+            return;
+         arg = (const char*) ch->dest_buf;
+         STR_DISPOSE( ch->dest_buf);
+         arg2 = (const char*) ch->dest_buf_2;
+         STR_DISPOSE( ch->dest_buf_2);
+         break;
 
-     case SUB_TIMER_DO_ABORT:
-      STR_DISPOSE( ch->dest_buf );
-      STR_DISPOSE( ch->dest_buf_2 );
-      ch->substate = SUB_NONE;
-             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
-             return;
+      case SUB_TIMER_DO_ABORT:
+         STR_DISPOSE( ch->dest_buf );
+         STR_DISPOSE( ch->dest_buf_2 );
+         ch->substate = SUB_NONE;
+               send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
+               return;
     }
 
     ch->substate = SUB_NONE;
@@ -1919,13 +1920,11 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
         BV_SET_BIT( obj->wear_flags, value );
     obj->level = level;
     STRFREE( obj->name );
-    SPRINTF( buf, "%s", arg2 );
-    obj->name = STRALLOC( buf );
-    SPRINTF( buf, "%s", arg2 );
+    obj->name = STRALLOC( arg2 );
     STRFREE( obj->short_descr );
-    obj->short_descr = STRALLOC( buf );        
+    obj->short_descr = STRALLOC( arg2 );        
     STRFREE( obj->description );
-    STRAPP( buf, " was dropped here." );
+    buf = arg2 + " was dropped here.";
     obj->description = STRALLOC( buf );
     obj->value[0] = obj->value[1];
     obj->cost *= 10;
@@ -1935,7 +1934,7 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
                                                             
     send_to_char( "&GYou finish your work and hold up your newly created jewelry.&w\n", ch);
     act( AT_PLAIN, "$n finishes sewing some new jewelry.", ch,
-         NULL, argument , TO_ROOM );
+         NULL, argstr , TO_ROOM );
     
     {
          long xpgain;
@@ -1950,816 +1949,803 @@ void do_makejewelry( CHAR_DATA *ch, char *argument )
 
 void do_makearmor( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
-    int level, chance;
-    bool checksew, checkfab; 
-    OBJ_DATA *obj;
-    OBJ_DATA *material = NULL;
-    int value;
-            
-    argument = one_argument( argument, arg );
-    SPRINTF ( arg2, "%s", argument);
-    
-    if ( !str_cmp( arg, "eyes" )
-    || !str_cmp( arg, "ears" )
-    || !str_cmp( arg, "finger" )
-    || !str_cmp( arg, "neck" )
-    || !str_cmp( arg, "floating" )
-    || !str_cmp( arg, "wrist" ) )
-    {
-        send_to_char( "&RYou cannot make clothing for that body part.\n&w", ch);
-        send_to_char( "&RTry MAKEJEWELRY.\n&w", ch);
-        return;
-    }
-    if ( !str_cmp( arg, "shield" ) )
-    {
-        send_to_char( "&RYou cannot make clothing worn as a shield.\n&w", ch);
-        send_to_char( "&RTry MAKESHIELD.\n&w", ch);
-        return;
-    }
-    if ( !str_cmp( arg, "wield" ) )
-    {
-        send_to_char( "&RAre you going to fight with your clothing?\n&w", ch);
-        send_to_char( "&RTry MAKEBLADE...\n&w", ch);
-        return;
-    }
-    
-    switch( ch->substate )
-    { 
-     default:
+   std::string arg;
+   std::string arg2;
+   std::string buf;
+   int level, chance;
+   bool checksew, checkfab; 
+   OBJ_DATA *obj;
+   OBJ_DATA *material = NULL;
+   int value;
+         
+   arg2 = one_argument( argument, arg );
+   
+   if ( !str_cmp( arg, "eyes" )
+   || !str_cmp( arg, "ears" )
+   || !str_cmp( arg, "finger" )
+   || !str_cmp( arg, "neck" )
+   || !str_cmp( arg, "floating" )
+   || !str_cmp( arg, "wrist" ) )
+   {
+      send_to_char( "&RYou cannot make clothing for that body part.\n&w", ch);
+      send_to_char( "&RTry MAKEJEWELRY.\n&w", ch);
+      return;
+   }
+   if ( !str_cmp( arg, "shield" ) )
+   {
+      send_to_char( "&RYou cannot make clothing worn as a shield.\n&w", ch);
+      send_to_char( "&RTry MAKESHIELD.\n&w", ch);
+      return;
+   }
+   if ( !str_cmp( arg, "wield" ) )
+   {
+      send_to_char( "&RAre you going to fight with your clothing?\n&w", ch);
+      send_to_char( "&RTry MAKEBLADE...\n&w", ch);
+      return;
+   }
+   
+   switch( ch->substate )
+   { 
+      default:
              
-             if ( arg2[0] == '\0' )
-                {
-                  send_to_char( "&RUsage: Makearmor <wearloc> <name>\n&w", ch);
-                  return;   
-                }
- 
-             checksew = FALSE;
-                checkfab = FALSE;
-        
-                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
-                {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
-                   return;
-                }
-                
-                for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
-                {
-                  if (obj->item_type == ITEM_FABRIC)
-                    checkfab = TRUE;
-                  if (obj->item_type == ITEM_THREAD)
+         if ( arg2.empty() )
+         {
+            send_to_char( "&RUsage: Makearmor <wearloc> <name>\n&w", ch);
+            return;   
+         }
+
+         checksew = FALSE;
+         checkfab = FALSE;
+
+         if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+         {
+            send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
+            return;
+         }
+         
+         for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
+         {
+            if (obj->item_type == ITEM_FABRIC)
+               checkfab = TRUE;
+            if (obj->item_type == ITEM_THREAD)
                checksew = TRUE;
-                }
-                
-                if ( !checkfab )
-                {
-                   send_to_char( "&RYou need some sort of fabric or material.\n", ch);
-                   return;
-                }
+         }
+         
+         if ( !checkfab )
+         {
+            send_to_char( "&RYou need some sort of fabric or material.\n", ch);
+            return;
+         }
 
-                if ( !checksew )
-                {
-                   send_to_char( "&RYou need a needle and some thread.\n", ch);
-                   return;
-                }
+         if ( !checksew )
+         {
+            send_to_char( "&RYou need a needle and some thread.\n", ch);
+            return;
+         }
 
-             chance = IS_NPC(ch) ? ch->top_level
-                  : (int) (ch->pcdata->learned[gsn_makearmor]);
-                if ( number_percent( ) < chance )
-      {
-         send_to_char( "&GYou begin the long process of creating some armor.\n", ch);
-         act( AT_PLAIN, "$n takes $s sewing kit and some material and begins to work.", ch,
-          NULL, argument , TO_ROOM );
-     add_timer ( ch , TIMER_DO_FUN , 15 , do_makearmor , 1 );
-         ch->dest_buf = str_dup(arg);
-         ch->dest_buf_2 = str_dup(arg2);
-         return;
+         chance = IS_NPC(ch) ? ch->top_level
+         : (int) (ch->pcdata->learned[gsn_makearmor]);
+         if ( number_percent( ) < chance )
+         {
+            send_to_char( "&GYou begin the long process of creating some armor.\n", ch);
+            act( AT_PLAIN, "$n takes $s sewing kit and some material and begins to work.", ch,
+            NULL, argument , TO_ROOM );
+            add_timer ( ch , TIMER_DO_FUN , 15 , do_makearmor , 1 );
+            ch->dest_buf = str_dup(arg);
+            ch->dest_buf_2 = str_dup(arg2);
+            return;
          }
          send_to_char("&RYou can't figure out what to do.\n",ch);
          learn_from_failure( ch, gsn_makearmor );
          return; 
      
-     case 1: 
-      if ( !ch->dest_buf )
-           return;
-      if ( !ch->dest_buf_2 )
-           return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      STR_DISPOSE( ch->dest_buf);
-      SPRINTF(arg2, "%s", (const char*) ch->dest_buf_2);
-      STR_DISPOSE( ch->dest_buf_2);
-      break;
+      case 1: 
+         if ( !ch->dest_buf )
+            return;
+         if ( !ch->dest_buf_2 )
+            return;
+         arg = (const char*) ch->dest_buf;
+         STR_DISPOSE( ch->dest_buf);
+         arg2 = (const char*) ch->dest_buf_2;
+         STR_DISPOSE( ch->dest_buf_2);
+         break;
       
      case SUB_TIMER_DO_ABORT:
-      STR_DISPOSE( ch->dest_buf );
-      STR_DISPOSE( ch->dest_buf_2 );
-      ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
-             return;
-    }
-    
-    ch->substate = SUB_NONE;
-    
-    level = IS_NPC(ch) ? ch->top_level : (int) (ch->pcdata->learned[gsn_makearmor]);
-    
-    checksew = FALSE;
-    checkfab = FALSE;
-    
-    for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
-    {
-       if (obj->item_type == ITEM_THREAD)
-          checksew = TRUE;
-       if (obj->item_type == ITEM_FABRIC && checkfab == FALSE)
-       {
-          checkfab = TRUE;
-          separate_obj( obj );
-          obj_from_char( obj );
-          material = obj;
-       }
-    }                            
-    
-    chance = IS_NPC(ch) ? ch->top_level
-                : (int) (ch->pcdata->learned[gsn_makearmor]) ;
-                
-    if ( number_percent( ) > chance*2  || ( !checkfab ) || ( !checksew ) )
-    {
-       send_to_char( "&RYou hold up your newly created armor.\n", ch);
-       send_to_char( "&RIt suddenly dawns upon you that you have created the most useless\n", ch);
-       send_to_char( "&Rgarment you've ever seen. You quickly hide your mistake...\n", ch);
-       learn_from_failure( ch, gsn_makearmor );
-       return;
-    }
+         STR_DISPOSE( ch->dest_buf );
+         STR_DISPOSE( ch->dest_buf_2 );
+         ch->substate = SUB_NONE;                                         
+               send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
+               return;
+   }
+   
+   ch->substate = SUB_NONE;
+   
+   level = IS_NPC(ch) ? ch->top_level : (int) (ch->pcdata->learned[gsn_makearmor]);
+   
+   checksew = FALSE;
+   checkfab = FALSE;
+   
+   for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
+   {
+      if (obj->item_type == ITEM_THREAD)
+         checksew = TRUE;
+      if (obj->item_type == ITEM_FABRIC && checkfab == FALSE)
+      {
+         checkfab = TRUE;
+         separate_obj( obj );
+         obj_from_char( obj );
+         material = obj;
+      }
+   }                            
+   
+   chance = IS_NPC(ch) ? ch->top_level
+               : (int) (ch->pcdata->learned[gsn_makearmor]) ;
+               
+   if ( number_percent( ) > chance*2  || ( !checkfab ) || ( !checksew ) )
+   {
+      send_to_char( "&RYou hold up your newly created armor.\n", ch);
+      send_to_char( "&RIt suddenly dawns upon you that you have created the most useless\n", ch);
+      send_to_char( "&Rgarment you've ever seen. You quickly hide your mistake...\n", ch);
+      learn_from_failure( ch, gsn_makearmor );
+      return;
+   }
 
-    obj = material; 
+   obj = material; 
 
-    obj->item_type = ITEM_ARMOR;
-    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
-    value = get_wflag( arg );
-    if ( value < 0 )
-        BV_SET_BIT( obj->wear_flags, ITEM_WEAR_BODY );                    
-    else
-        BV_SET_BIT( obj->wear_flags, value );
-    obj->level = level;
-    STRFREE( obj->name );
-    SPRINTF( buf, "%s", arg2 );
-    obj->name = STRALLOC( buf );
-    SPRINTF( buf, "%s", arg2 );
-    STRFREE( obj->short_descr );
-    obj->short_descr = STRALLOC( buf );        
-    STRFREE( obj->description );
-    STRAPP( buf, " was dropped here." );
-    obj->description = STRALLOC( buf );
-    obj->value[0] = obj->value[1];
-    obj->cost *= 10;
+   obj->item_type = ITEM_ARMOR;
+   BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
+   value = get_wflag( arg );
+   if ( value < 0 )
+      BV_SET_BIT( obj->wear_flags, ITEM_WEAR_BODY );                    
+   else
+      BV_SET_BIT( obj->wear_flags, value );
+   obj->level = level;
+   STRFREE( obj->name );
+   obj->name = STRALLOC( arg2 );
+   STRFREE( obj->short_descr );
+   obj->short_descr = STRALLOC( arg2 );        
+   STRFREE( obj->description );
+   buf = arg2 + " was dropped here.";
+   obj->description = STRALLOC( buf );
+   obj->value[0] = obj->value[1];
+   obj->cost *= 10;
 
-    obj = obj_to_char( obj, ch );
-                                                            
-    send_to_char( "&GYou finish your work and hold up your newly created garment.&w\n", ch);
-    act( AT_PLAIN, "$n finishes sewing some new armor.", ch,
-         NULL, argument , TO_ROOM );
-    
-    {
-         long xpgain;
-         
-         xpgain = UMIN( obj->cost*100 ,( exp_level(ch->skill_level[ENGINEERING_ABILITY]+1) - exp_level(ch->skill_level[ENGINEERING_ABILITY]) ) );
-         gain_exp(ch, xpgain, ENGINEERING_ABILITY);
-         ch_printf( ch , "You gain %d engineering experience.", xpgain );
-    }
-        learn_from_success( ch, gsn_makearmor );
+   obj = obj_to_char( obj, ch );
+                                                         
+   send_to_char( "&GYou finish your work and hold up your newly created garment.&w\n", ch);
+   act( AT_PLAIN, "$n finishes sewing some new armor.", ch,
+      NULL, argument , TO_ROOM );
+   
+   {
+      long xpgain;
+      
+      xpgain = UMIN( obj->cost*100 ,( exp_level(ch->skill_level[ENGINEERING_ABILITY]+1) - exp_level(ch->skill_level[ENGINEERING_ABILITY]) ) );
+      gain_exp(ch, xpgain, ENGINEERING_ABILITY);
+      ch_printf( ch , "You gain %d engineering experience.", xpgain );
+   }
+   learn_from_success( ch, gsn_makearmor );
 }
 
 
 void do_makecomlink( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
-    int chance;
-    bool checktool, checkgem, checkbatt, checkcirc;
-    OBJ_DATA *obj;
-    int value;
-    OBJ_INDEX_DATA *pObjIndex;
-    int vnum;
+   std::string arg;
+   std::string arg2;
+   std::string buf;
+   int chance;
+   bool checktool, checkgem, checkbatt, checkcirc;
+   OBJ_DATA *obj;
+   int value;
+   OBJ_INDEX_DATA *pObjIndex;
+   int vnum;
 
-    argument = one_argument( argument, arg );
-    SPRINTF ( arg2, "%s", argument);
+   arg2 = one_argument( argument, arg );
 
-    if ( !str_cmp( arg, "body" )
-    || !str_cmp( arg, "head" )
-    || !str_cmp( arg, "legs" )
-    || !str_cmp( arg, "arms" )
-    || !str_cmp( arg, "about" )
-    || !str_cmp( arg, "eyes" )
-    || !str_cmp( arg, "waist" )
-    || !str_cmp( arg, "hold" )
-    || !str_cmp( arg, "feet" )
-    || !str_cmp( arg, "hands" ) )
-    {
-        send_to_char( "&RYou cannot make a comlink for that body part.\n&w", ch);
-        return;
-    }
-    if ( !str_cmp( arg, "shield" ) )
-    {
-        send_to_char( "&RYou cannot make a comlink worn as a shield.\n&w", ch);
-        send_to_char( "&RTry MAKESHIELD.\n&w", ch);
-        return;
-    }
-    if ( !str_cmp( arg, "wield" ) )
-    {
-        send_to_char( "&RAre you going to fight with your comlink?\n&w", ch);
-        return;
-    }
+   if ( !str_cmp( arg, "body" )
+   || !str_cmp( arg, "head" )
+   || !str_cmp( arg, "legs" )
+   || !str_cmp( arg, "arms" )
+   || !str_cmp( arg, "about" )
+   || !str_cmp( arg, "eyes" )
+   || !str_cmp( arg, "waist" )
+   || !str_cmp( arg, "hold" )
+   || !str_cmp( arg, "feet" )
+   || !str_cmp( arg, "hands" ) )
+   {
+      send_to_char( "&RYou cannot make a comlink for that body part.\n&w", ch);
+      return;
+   }
+   if ( !str_cmp( arg, "shield" ) )
+   {
+      send_to_char( "&RYou cannot make a comlink worn as a shield.\n&w", ch);
+      send_to_char( "&RTry MAKESHIELD.\n&w", ch);
+      return;
+   }
+   if ( !str_cmp( arg, "wield" ) )
+   {
+      send_to_char( "&RAre you going to fight with your comlink?\n&w", ch);
+      return;
+   }
 
-    switch( ch->substate )
-    { 
-     default:
-             if ( arg2[0] == '\0' )
-                {
-                  send_to_char( "&RUsage: Makecomlink <wearloc> <name>\n&w", ch);
-                  return;   
-                }
- 
-                checktool = FALSE;
-                checkgem = FALSE;
-                checkbatt = FALSE;
-                checkcirc = FALSE;
-        
-                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
-                {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
-                   return;
-                }
-                
-                for ( obj = ch->last_carrying; obj; obj = obj->prev_content )
-                {
-                  if (obj->item_type == ITEM_TOOLKIT)
-                    checktool = TRUE;
-                  if (obj->item_type == ITEM_CRYSTAL)
-               checkgem = TRUE;
-                  if (obj->item_type == ITEM_BATTERY)
-                  checkbatt = TRUE;
-                  if (obj->item_type == ITEM_CIRCUIT)
-                  checkcirc = TRUE;                  
-                }
-                
-                if ( !checktool )
-                {
-                   send_to_char( "&RYou need toolkit to make a comlink.\n", ch);
-                   return;
-                }
- 
-                if ( !checkgem )
-                {
-                   send_to_char( "&RYou need a small crystal.\n", ch);
-                   return;
-                }
+   switch( ch->substate )
+   { 
+      default:
+         if ( arg2.empty() )
+         {
+            send_to_char( "&RUsage: Makecomlink <wearloc> <name>\n&w", ch);
+            return;   
+         }
 
-                if ( !checkbatt )
-                {
-                   send_to_char( "&RYou need a power source for your comlink.\n", ch);
-                   return;
-                }
-                
-                if ( !checkcirc )
-                {
-                   send_to_char( "&RYou need a small circuit.\n", ch);
-                   return;
-                }
+         checktool = FALSE;
+         checkgem = FALSE;
+         checkbatt = FALSE;
+         checkcirc = FALSE;
 
-             chance = IS_NPC(ch) ? ch->top_level
-                  : (int) (ch->pcdata->learned[gsn_makecomlink]);
-                if ( number_percent( ) < chance )
-      {
-         send_to_char( "&GYou begin the long process of making a comlink.\n", ch);
-         act( AT_PLAIN, "$n takes $s tools and begins to work on something.", ch,
-          NULL, argument , TO_ROOM );
-     add_timer ( ch , TIMER_DO_FUN , 10 , do_makecomlink , 1 );
-         ch->dest_buf = str_dup(arg);
-            ch->dest_buf_2 = str_dup(arg2);
-         return;
+         if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+         {
+            send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
+            return;
+         }
+         
+         for ( obj = ch->last_carrying; obj; obj = obj->prev_content )
+         {
+         if (obj->item_type == ITEM_TOOLKIT)
+            checktool = TRUE;
+         if (obj->item_type == ITEM_CRYSTAL)
+            checkgem = TRUE;
+         if (obj->item_type == ITEM_BATTERY)
+         checkbatt = TRUE;
+         if (obj->item_type == ITEM_CIRCUIT)
+         checkcirc = TRUE;                  
+         }
+         
+         if ( !checktool )
+         {
+            send_to_char( "&RYou need toolkit to make a comlink.\n", ch);
+            return;
+         }
+
+         if ( !checkgem )
+         {
+            send_to_char( "&RYou need a small crystal.\n", ch);
+            return;
+         }
+
+         if ( !checkbatt )
+         {
+            send_to_char( "&RYou need a power source for your comlink.\n", ch);
+            return;
+         }
+         
+         if ( !checkcirc )
+         {
+            send_to_char( "&RYou need a small circuit.\n", ch);
+            return;
+         }
+
+         chance = IS_NPC(ch) ? ch->top_level
+         : (int) (ch->pcdata->learned[gsn_makecomlink]);
+         if ( number_percent( ) < chance )
+         {
+            send_to_char( "&GYou begin the long process of making a comlink.\n", ch);
+            act( AT_PLAIN, "$n takes $s tools and begins to work on something.", ch,
+            NULL, arg2 , TO_ROOM );
+            add_timer ( ch , TIMER_DO_FUN , 10 , do_makecomlink , 1 );
+            ch->dest_buf = str_dup(arg);
+               ch->dest_buf_2 = str_dup(arg2);
+            return;
          }
          send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
          learn_from_failure( ch, gsn_makecomlink );
          return;
 
-     case 1:
-      if ( !ch->dest_buf )
-           return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      STR_DISPOSE( ch->dest_buf);
-      if ( !ch->dest_buf_2 )
-              return;
-         SPRINTF(arg2, "%s", (const char*) ch->dest_buf_2);
-         STR_DISPOSE( ch->dest_buf_2);
-         break;
-     case SUB_TIMER_DO_ABORT:
-      STR_DISPOSE( ch->dest_buf );
-      if ( ch->dest_buf_2 )
-         STR_DISPOSE(ch->dest_buf_2);
-      ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
-             return;
-    }
+      case 1:
+         if ( !ch->dest_buf )
+            return;
+         arg = (const char*) ch->dest_buf;
+         STR_DISPOSE( ch->dest_buf);
+         if ( !ch->dest_buf_2 )
+               return;
+            arg2 = (const char*) ch->dest_buf_2;
+            STR_DISPOSE( ch->dest_buf_2);
+            break;
+      case SUB_TIMER_DO_ABORT:
+         STR_DISPOSE( ch->dest_buf );
+         if ( ch->dest_buf_2 )
+            STR_DISPOSE(ch->dest_buf_2);
+         ch->substate = SUB_NONE;                                         
+               send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
+               return;
+   }
 
-    ch->substate = SUB_NONE;
+   ch->substate = SUB_NONE;
 
-    vnum = 10430;
+   vnum = 10430;
 
-    if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
-    {
-         send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
-         return;
-    }
-    
-    checktool = FALSE;
-    checkgem  = FALSE;
-    checkbatt = FALSE;
-    checkcirc = FALSE;
-    
-    for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
-    {
-       if (obj->item_type == ITEM_TOOLKIT)
-          checktool = TRUE;
-       if (obj->item_type == ITEM_CRYSTAL && checkgem == FALSE)
-       {
-          checkgem = TRUE;
-          separate_obj( obj );
-          obj_from_char( obj );
-          extract_obj( obj );
-       }
-       if (obj->item_type == ITEM_CIRCUIT && checkcirc == FALSE)
-       {
-          checkcirc = TRUE;
-          separate_obj( obj );
-          obj_from_char( obj );
-          extract_obj( obj );
-       }
-       if (obj->item_type == ITEM_BATTERY && checkbatt == FALSE )
-       {
-          separate_obj( obj );
-          obj_from_char( obj );
-          extract_obj( obj );
-          checkbatt = TRUE;
-       }
-    }                            
-    
-    chance = IS_NPC(ch) ? ch->top_level
-                : (int) (ch->pcdata->learned[gsn_makecomlink]) ;
+   if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
+   {
+      send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
+      return;
+   }
+   
+   checktool = FALSE;
+   checkgem  = FALSE;
+   checkbatt = FALSE;
+   checkcirc = FALSE;
+   
+   for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
+   {
+      if (obj->item_type == ITEM_TOOLKIT)
+         checktool = TRUE;
+      if (obj->item_type == ITEM_CRYSTAL && checkgem == FALSE)
+      {
+         checkgem = TRUE;
+         separate_obj( obj );
+         obj_from_char( obj );
+         extract_obj( obj );
+      }
+      if (obj->item_type == ITEM_CIRCUIT && checkcirc == FALSE)
+      {
+         checkcirc = TRUE;
+         separate_obj( obj );
+         obj_from_char( obj );
+         extract_obj( obj );
+      }
+      if (obj->item_type == ITEM_BATTERY && checkbatt == FALSE )
+      {
+         separate_obj( obj );
+         obj_from_char( obj );
+         extract_obj( obj );
+         checkbatt = TRUE;
+      }
+   }                            
+   
+   chance = IS_NPC(ch) ? ch->top_level
+               : (int) (ch->pcdata->learned[gsn_makecomlink]) ;
 
-    if ( number_percent( ) > chance*2  || ( !checktool ) || ( !checkcirc ) || ( !checkbatt ) || ( !checkgem ) )
-    {
-       send_to_char( "&RYou hold up your newly created comlink....\n", ch);
-       send_to_char( "&Rand it falls apart in your hands.\n", ch);
-       learn_from_failure( ch, gsn_makecomlink );
-       return;
-    }
+   if ( number_percent( ) > chance*2  || ( !checktool ) || ( !checkcirc ) || ( !checkbatt ) || ( !checkgem ) )
+   {
+      send_to_char( "&RYou hold up your newly created comlink....\n", ch);
+      send_to_char( "&Rand it falls apart in your hands.\n", ch);
+      learn_from_failure( ch, gsn_makecomlink );
+      return;
+   }
 
-    obj = create_object( pObjIndex, ch->top_level );
-    
-    obj->item_type = ITEM_COMLINK;
-    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
-    value = get_wflag( arg );
-    if ( value < 0 )
-        BV_SET_BIT( obj->wear_flags, ITEM_WEAR_NECK );                    
-    else
-        BV_SET_BIT( obj->wear_flags, value );
-    obj->weight = 1;
-    STRFREE( obj->name );
-    SPRINTF( buf, "%s", arg2 );
-    STRAPP( buf, " comlink" );
-    obj->name = STRALLOC( buf );
-    SPRINTF( buf, "%s", arg2 );
-    STRFREE( obj->short_descr );
-    obj->short_descr = STRALLOC( buf );
-    STRFREE( obj->description );
-    STRAPP( buf, " was left here." );
-    obj->description = STRALLOC( buf );
-    obj->cost = 50;
+   obj = create_object( pObjIndex, ch->top_level );
+   
+   obj->item_type = ITEM_COMLINK;
+   BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
+   value = get_wflag( arg );
+   if ( value < 0 )
+      BV_SET_BIT( obj->wear_flags, ITEM_WEAR_NECK );                    
+   else
+      BV_SET_BIT( obj->wear_flags, value );
+   obj->weight = 1;
+   STRFREE( obj->name );
+   obj->name = STRALLOC( str_printf("%s comlink", arg2.c_str()) );
+   STRFREE( obj->short_descr );
+   obj->short_descr = STRALLOC( arg2 );
+   STRFREE( obj->description );
+   obj->description = STRALLOC( (arg2 + " was left here.") );
+   obj->cost = 50;
 
-    obj = obj_to_char( obj, ch );
-                                                            
-    send_to_char( "&GYou finish your work and hold up your newly created comlink.&w\n", ch);
-    act( AT_PLAIN, "$n finishes crafting a comlink.", ch,
-         NULL, argument , TO_ROOM );
-    
-    {
-         long xpgain;
-         
-         xpgain = UMIN( obj->cost*100 ,( exp_level(ch->skill_level[ENGINEERING_ABILITY]+1) - exp_level(ch->skill_level[ENGINEERING_ABILITY]) ) );
-         gain_exp(ch, xpgain, ENGINEERING_ABILITY);
-         ch_printf( ch , "You gain %ld engineering experience.", xpgain );
-    }
-        learn_from_success( ch, gsn_makecomlink );
+   obj = obj_to_char( obj, ch );
+                                                         
+   send_to_char( "&GYou finish your work and hold up your newly created comlink.&w\n", ch);
+   act( AT_PLAIN, "$n finishes crafting a comlink.", ch,
+      NULL, argument , TO_ROOM );
+   
+   {
+      long xpgain;
+      
+      xpgain = UMIN( obj->cost*100 ,( exp_level(ch->skill_level[ENGINEERING_ABILITY]+1) - exp_level(ch->skill_level[ENGINEERING_ABILITY]) ) );
+      gain_exp(ch, xpgain, ENGINEERING_ABILITY);
+      ch_printf( ch , "You gain %ld engineering experience.", xpgain );
+   }
+   learn_from_success( ch, gsn_makecomlink );
      
 }
 
 void do_makeshield( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
-    int chance;
-    bool checktool, checkbatt, checkcond, checkcirc, checkgems;
-    OBJ_DATA *obj;
-    OBJ_INDEX_DATA *pObjIndex;
-    int vnum, level, charge, gemtype = 0;
+   std::string arg;
+   std::string buf;
+   int chance;
+   bool checktool, checkbatt, checkcond, checkcirc, checkgems;
+   OBJ_DATA *obj;
+   OBJ_INDEX_DATA *pObjIndex;
+   int vnum, level, charge, gemtype = 0;
+   
+   arg = argument;
     
-    SPRINTF( arg, "%s", argument );    
-    
-    switch( ch->substate )
-    { 
-     default:
-             if ( arg[0] == '\0' )
-                {
-                  send_to_char( "&RUsage: Makeshield <name>\n&w", ch);
-                  return;   
-                }
+   switch( ch->substate )
+   { 
+      default:
+      if ( arg.empty() )
 
-             checktool = FALSE;
-                checkbatt = FALSE;
-                checkcond = FALSE;
-                checkcirc = FALSE;
-                checkgems = FALSE;
+         {
+            send_to_char( "&RUsage: Makeshield <name>\n&w", ch);
+            return;   
+         }
 
-                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
-                {
-                   send_to_char( "&RYou need to be in a workshop.\n", ch);
-                   return;
-                }
-                
-                for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
-                {
-                  if (obj->item_type == ITEM_TOOLKIT)
-                    checktool = TRUE;
-                  if (obj->item_type == ITEM_CRYSTAL)
-                    checkgems = TRUE;                    
-                  if (obj->item_type == ITEM_BATTERY)
-                    checkbatt = TRUE;
-                  if (obj->item_type == ITEM_CIRCUIT)
-                    checkcirc = TRUE;
-                  if (obj->item_type == ITEM_SUPERCONDUCTOR)
-                    checkcond = TRUE;                  
-                }
-                
-                if ( !checktool )
-                {
-                   send_to_char( "&RYou need toolkit to make an energy shield.\n", ch);
-                   return;
-                }
- 
-                if ( !checkbatt )
-                {
-                   send_to_char( "&RYou need a power source for your energy shield.\n", ch);
-                   return;
-                }
-                
-                if ( !checkcirc )
-                {
-                   send_to_char( "&RYou need a small circuit board.\n", ch);
-                   return;
-                }
-                
-                if ( !checkcond )
-                {
-                   send_to_char( "&RYou still need a small superconductor for your energy shield.\n", ch);
-                   return;
-                }
-                
-                if ( !checkgems )
-                {
-                   send_to_char( "&RYou need a small crystal.\n", ch);
-                   return;
-                }
-                
-             chance = IS_NPC(ch) ? ch->top_level
-                  : (int) (ch->pcdata->learned[gsn_makeshield]);
-                if ( number_percent( ) < chance )
-      {
-         send_to_char( "&GYou begin the long process of crafting an energy shield.\n", ch);
-         act( AT_PLAIN, "$n takes $s tools and begins to work on something.", ch,
-          NULL, argument , TO_ROOM );
-     add_timer ( ch , TIMER_DO_FUN , 20 , do_makeshield , 1 );
-         ch->dest_buf = str_dup(arg);
-         return;
+         checktool = FALSE;
+         checkbatt = FALSE;
+         checkcond = FALSE;
+         checkcirc = FALSE;
+         checkgems = FALSE;
+
+         if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+         {
+            send_to_char( "&RYou need to be in a workshop.\n", ch);
+            return;
+         }
+         
+         for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
+         {
+         if (obj->item_type == ITEM_TOOLKIT)
+            checktool = TRUE;
+         if (obj->item_type == ITEM_CRYSTAL)
+            checkgems = TRUE;                    
+         if (obj->item_type == ITEM_BATTERY)
+            checkbatt = TRUE;
+         if (obj->item_type == ITEM_CIRCUIT)
+            checkcirc = TRUE;
+         if (obj->item_type == ITEM_SUPERCONDUCTOR)
+            checkcond = TRUE;                  
+         }
+         
+         if ( !checktool )
+         {
+            send_to_char( "&RYou need toolkit to make an energy shield.\n", ch);
+            return;
+         }
+
+         if ( !checkbatt )
+         {
+            send_to_char( "&RYou need a power source for your energy shield.\n", ch);
+            return;
+         }
+         
+         if ( !checkcirc )
+         {
+            send_to_char( "&RYou need a small circuit board.\n", ch);
+            return;
+         }
+         
+         if ( !checkcond )
+         {
+            send_to_char( "&RYou still need a small superconductor for your energy shield.\n", ch);
+            return;
+         }
+         
+         if ( !checkgems )
+         {
+            send_to_char( "&RYou need a small crystal.\n", ch);
+            return;
+         }
+         
+         chance = IS_NPC(ch) ? ch->top_level
+         : (int) (ch->pcdata->learned[gsn_makeshield]);
+         if ( number_percent( ) < chance )
+         {
+            send_to_char( "&GYou begin the long process of crafting an energy shield.\n", ch);
+            act( AT_PLAIN, "$n takes $s tools and begins to work on something.", ch,
+            NULL, arg , TO_ROOM );
+            add_timer ( ch , TIMER_DO_FUN , 20 , do_makeshield , 1 );
+            ch->dest_buf = str_dup(arg);
+            return;
          }
          send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
          learn_from_failure( ch, gsn_makeshield );
          return; 
      
-     case 1: 
-      if ( !ch->dest_buf )
-           return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      STR_DISPOSE( ch->dest_buf);
-      break;
-      
-     case SUB_TIMER_DO_ABORT:
-      STR_DISPOSE( ch->dest_buf );
-      ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
-             return;
-    }
-    
-    ch->substate = SUB_NONE;
-    
-    level = IS_NPC(ch) ? ch->top_level : (int) (ch->pcdata->learned[gsn_makeshield]);
-    vnum = 10429;
-    
-    if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
-    {
-         send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
-         return;
-    }
-
-    checktool = FALSE;
-    checkbatt = FALSE;
-    checkcond = FALSE;
-    checkcirc = FALSE;
-    checkgems = FALSE;
-    charge = 0;
-
-    for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
-    {
-       if (obj->item_type == ITEM_TOOLKIT)
-          checktool = TRUE;
-
-       if (obj->item_type == ITEM_BATTERY && checkbatt == FALSE)
-       {
-          charge = UMIN(obj->value[1], 10);
-          separate_obj( obj );
-          obj_from_char( obj );
-          extract_obj( obj );
-          checkbatt = TRUE;
-       }
-       if (obj->item_type == ITEM_SUPERCONDUCTOR && checkcond == FALSE)
-       {
-          separate_obj( obj );
-          obj_from_char( obj );
-          extract_obj( obj );
-          checkcond = TRUE;
-       }
-       if (obj->item_type == ITEM_CIRCUIT && checkcirc == FALSE)
-       {
-          separate_obj( obj );
-          obj_from_char( obj );
-          extract_obj( obj );
-          checkcirc = TRUE;
-       }
-       if (obj->item_type == ITEM_CRYSTAL && checkgems == FALSE)
-       {
-          gemtype = obj->value[0];
-          separate_obj( obj );
-          obj_from_char( obj );
-          extract_obj( obj );
-          checkgems = TRUE;
-       }
-    }                            
-    
-    chance = IS_NPC(ch) ? ch->top_level
-                : (int) (ch->pcdata->learned[gsn_makeshield]) ;
-                
-    if ( number_percent( ) > chance*2  || ( !checktool ) || ( !checkbatt )
-                                       || ( !checkgems ) || ( !checkcond ) || ( !checkcirc) )
-    
-    {
-       send_to_char( "&RYou hold up your new energy shield and press the switch hoping for the best.\n", ch);
-       send_to_char( "&RInstead of a field of energy being created, smoke starts pouring from the device.\n", ch);
-       send_to_char( "&RYou drop the hot device and watch as it melts on away on the floor.\n", ch);
-       learn_from_failure( ch, gsn_makeshield );
-       return;
-    }
-
-    obj = create_object( pObjIndex, level );
-    
-    obj->item_type = ITEM_ARMOR;
-    BV_SET_BIT( obj->wear_flags, ITEM_WIELD );
-    BV_SET_BIT( obj->wear_flags, ITEM_WEAR_SHIELD );
-    obj->level = level;
-    obj->weight = 2;
-    STRFREE( obj->name );
-    obj->name = STRALLOC( "energy shield" );
-    SPRINTF( buf, "%s", arg );
-    STRFREE( obj->short_descr );
-    obj->short_descr = STRALLOC( buf );        
-    STRFREE( obj->description );
-    STRAPP( buf, " was carelessly misplaced here." );
-    obj->description = STRALLOC( buf );
-    obj->value[0] = (int) (level/10+gemtype*2);      /* condition */
-    obj->value[1] = (int) (level/10+gemtype*2);      /* armor */
-    obj->value[4] = charge;
-    obj->value[5] = charge;
-    obj->cost = obj->value[2]*100;
-                                                                    
-    obj = obj_to_char( obj, ch );
-                                                            
-    send_to_char( "&GYou finish your work and hold up your newly created energy shield.&w\n", ch);
-    act( AT_PLAIN, "$n finishes making $s new energy shield.", ch,
-         NULL, argument , TO_ROOM );
-    
-    {
-         long xpgain;
+      case 1: 
+         if ( !ch->dest_buf )
+            return;
+         arg = (const char*) ch->dest_buf;
+         STR_DISPOSE( ch->dest_buf);
+         break;
          
-         xpgain = UMIN( obj->cost*50 ,( exp_level(ch->skill_level[ENGINEERING_ABILITY]+1) - exp_level(ch->skill_level[ENGINEERING_ABILITY]) ) );
-         gain_exp(ch, xpgain, ENGINEERING_ABILITY);
-         ch_printf( ch , "You gain %ld engineering experience.", xpgain );
-    }
-        learn_from_success( ch, gsn_makeshield );
+      case SUB_TIMER_DO_ABORT:
+         STR_DISPOSE( ch->dest_buf );
+         ch->substate = SUB_NONE;                                         
+         send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
+         return;
+   }
+   
+   ch->substate = SUB_NONE;
+   
+   level = IS_NPC(ch) ? ch->top_level : (int) (ch->pcdata->learned[gsn_makeshield]);
+   vnum = 10429;
+   
+   if ( ( pObjIndex = get_obj_index( vnum ) ) == NULL )
+   {
+      send_to_char( "&RThe item you are trying to create is missing from the database.\nPlease inform the administration of this error.\n", ch );
+      return;
+   }
+
+   checktool = FALSE;
+   checkbatt = FALSE;
+   checkcond = FALSE;
+   checkcirc = FALSE;
+   checkgems = FALSE;
+   charge = 0;
+
+   for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
+   {
+      if (obj->item_type == ITEM_TOOLKIT)
+         checktool = TRUE;
+
+      if (obj->item_type == ITEM_BATTERY && checkbatt == FALSE)
+      {
+         charge = UMIN(obj->value[1], 10);
+         separate_obj( obj );
+         obj_from_char( obj );
+         extract_obj( obj );
+         checkbatt = TRUE;
+      }
+      if (obj->item_type == ITEM_SUPERCONDUCTOR && checkcond == FALSE)
+      {
+         separate_obj( obj );
+         obj_from_char( obj );
+         extract_obj( obj );
+         checkcond = TRUE;
+      }
+      if (obj->item_type == ITEM_CIRCUIT && checkcirc == FALSE)
+      {
+         separate_obj( obj );
+         obj_from_char( obj );
+         extract_obj( obj );
+         checkcirc = TRUE;
+      }
+      if (obj->item_type == ITEM_CRYSTAL && checkgems == FALSE)
+      {
+         gemtype = obj->value[0];
+         separate_obj( obj );
+         obj_from_char( obj );
+         extract_obj( obj );
+         checkgems = TRUE;
+      }
+   }                            
+   
+   chance = IS_NPC(ch) ? ch->top_level
+               : (int) (ch->pcdata->learned[gsn_makeshield]) ;
+               
+   if ( number_percent( ) > chance*2  || ( !checktool ) || ( !checkbatt )
+                                    || ( !checkgems ) || ( !checkcond ) || ( !checkcirc) )
+   
+   {
+      send_to_char( "&RYou hold up your new energy shield and press the switch hoping for the best.\n", ch);
+      send_to_char( "&RInstead of a field of energy being created, smoke starts pouring from the device.\n", ch);
+      send_to_char( "&RYou drop the hot device and watch as it melts on away on the floor.\n", ch);
+      learn_from_failure( ch, gsn_makeshield );
+      return;
+   }
+
+   obj = create_object( pObjIndex, level );
+   
+   obj->item_type = ITEM_ARMOR;
+   BV_SET_BIT( obj->wear_flags, ITEM_WIELD );
+   BV_SET_BIT( obj->wear_flags, ITEM_WEAR_SHIELD );
+   obj->level = level;
+   obj->weight = 2;
+   STRFREE( obj->name );
+   obj->name = STRALLOC( "energy shield" );
+   STRFREE( obj->short_descr );
+   obj->short_descr = STRALLOC( arg );        
+   STRFREE( obj->description );
+   obj->description = STRALLOC( (arg + " was carelessly misplaced here.") );
+   obj->value[0] = (int) (level/10+gemtype*2);      /* condition */
+   obj->value[1] = (int) (level/10+gemtype*2);      /* armor */
+   obj->value[4] = charge;
+   obj->value[5] = charge;
+   obj->cost = obj->value[2]*100;
+                                                                  
+   obj = obj_to_char( obj, ch );
+                                                         
+   send_to_char( "&GYou finish your work and hold up your newly created energy shield.&w\n", ch);
+   act( AT_PLAIN, "$n finishes making $s new energy shield.", ch,
+      NULL, arg , TO_ROOM );
+   
+   {
+      long xpgain;
+      
+      xpgain = UMIN( obj->cost*50 ,( exp_level(ch->skill_level[ENGINEERING_ABILITY]+1) - exp_level(ch->skill_level[ENGINEERING_ABILITY]) ) );
+      gain_exp(ch, xpgain, ENGINEERING_ABILITY);
+      ch_printf( ch , "You gain %ld engineering experience.", xpgain );
+   }
+   learn_from_success( ch, gsn_makeshield );
 
 }
 
 void do_makecontainer( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
-    int level, chance;
-    bool checksew, checkfab; 
-    OBJ_DATA *obj;
-    OBJ_DATA *material = NULL;
-    int value;
-            
-    argument = one_argument( argument, arg );
-    SPRINTF( arg2 , "%s", argument );
-    
-    if ( !str_cmp( arg, "eyes" )
-    || !str_cmp( arg, "ears" )
-    || !str_cmp( arg, "finger" )
-    || !str_cmp( arg, "neck" )
-    || !str_cmp( arg, "floating" )
-    || !str_cmp( arg, "over" )
-    || !str_cmp( arg, "wrist" ) )
-    {
-        send_to_char( "&RYou cannot make a container for that body part.\n&w", ch);
-        send_to_char( "&RTry MAKEJEWELRY.\n&w", ch);
-        return;
-    }
-    if ( !str_cmp( arg, "feet" ) 
-    || !str_cmp( arg, "hands" ) )
-    {
-        send_to_char( "&RYou cannot make a container for that body part.\n&w", ch);
-        send_to_char( "&RTry MAKEARMOR.\n&w", ch);
-        return;
-    }
-    if ( !str_cmp( arg, "shield" ) )
-    {
-        send_to_char( "&RYou cannot make a container a shield.\n&w", ch);
-        send_to_char( "&RTry MAKESHIELD.\n&w", ch);
-        return;
-    }
-    if ( !str_cmp( arg, "wield" ) )
-    {
-        send_to_char( "&RAre you going to fight with a container?\n&w", ch);
-        send_to_char( "&RTry MAKEBLADE...\n&w", ch);
-        return;
-    }
+   std::string arg;
+   std::string arg2;
+   std::string buf;
+   int level, chance;
+   bool checksew, checkfab; 
+   OBJ_DATA *obj;
+   OBJ_DATA *material = NULL;
+   int value;
+         
+   arg2 = one_argument( argument, arg );
+   
+   if ( !str_cmp( arg, "eyes" )
+   || !str_cmp( arg, "ears" )
+   || !str_cmp( arg, "finger" )
+   || !str_cmp( arg, "neck" )
+   || !str_cmp( arg, "floating" )
+   || !str_cmp( arg, "over" )
+   || !str_cmp( arg, "wrist" ) )
+   {
+      send_to_char( "&RYou cannot make a container for that body part.\n&w", ch);
+      send_to_char( "&RTry MAKEJEWELRY.\n&w", ch);
+      return;
+   }
+   if ( !str_cmp( arg, "feet" ) 
+   || !str_cmp( arg, "hands" ) )
+   {
+      send_to_char( "&RYou cannot make a container for that body part.\n&w", ch);
+      send_to_char( "&RTry MAKEARMOR.\n&w", ch);
+      return;
+   }
+   if ( !str_cmp( arg, "shield" ) )
+   {
+      send_to_char( "&RYou cannot make a container a shield.\n&w", ch);
+      send_to_char( "&RTry MAKESHIELD.\n&w", ch);
+      return;
+   }
+   if ( !str_cmp( arg, "wield" ) )
+   {
+      send_to_char( "&RAre you going to fight with a container?\n&w", ch);
+      send_to_char( "&RTry MAKEBLADE...\n&w", ch);
+      return;
+   }
     
 
-    switch( ch->substate )
-    { 
-     default:
+   switch( ch->substate )
+   { 
+      default:
              
-             if ( arg2[0] == '\0' )
-                {
-                  send_to_char( "&RUsage: Makecontainer <wearloc> <name>\n&w", ch);
-                  return;   
-                }
- 
-             checksew = FALSE;
-                checkfab = FALSE;
-        
-                if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
-                {
-                   send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
-                   return;
-                }
-                
-                for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
-                {
-                  if (obj->item_type == ITEM_FABRIC)
-                    checkfab = TRUE;
-                  if (obj->item_type == ITEM_THREAD)
-               checksew = TRUE;
-                }
-                
-                if ( !checkfab )
-                {
-                   send_to_char( "&RYou need some sort of fabric or material.\n", ch);
-                   return;
-                }
- 
-                if ( !checksew )
-                {
-                   send_to_char( "&RYou need a needle and some thread.\n", ch);
-                   return;
-                }
+         if ( arg2.empty() )
+         {
+            send_to_char( "&RUsage: Makecontainer <wearloc> <name>\n&w", ch);
+            return;   
+         }
 
-             chance = IS_NPC(ch) ? ch->top_level
-                  : (int) (ch->pcdata->learned[gsn_makecontainer]);
-                if ( number_percent( ) < chance )
-      {
-         send_to_char( "&GYou begin the long process of creating a bag.\n", ch);
-         act( AT_PLAIN, "$n takes $s sewing kit and some material and begins to work.", ch,
-          NULL, argument , TO_ROOM );
-     add_timer ( ch , TIMER_DO_FUN , 10 , do_makecontainer , 1 );
-         ch->dest_buf = str_dup(arg);
-         ch->dest_buf_2 = str_dup(arg2);
-         return;
+         checksew = FALSE;
+         checkfab = FALSE;
+
+         if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_FACTORY ) )
+         {
+            send_to_char( "&RYou need to be in a factory or workshop to do that.\n", ch);
+            return;
+         }
+         
+         for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
+         {
+         if (obj->item_type == ITEM_FABRIC)
+            checkfab = TRUE;
+         if (obj->item_type == ITEM_THREAD)
+            checksew = TRUE;
+         }
+         
+         if ( !checkfab )
+         {
+            send_to_char( "&RYou need some sort of fabric or material.\n", ch);
+            return;
+         }
+
+         if ( !checksew )
+         {
+            send_to_char( "&RYou need a needle and some thread.\n", ch);
+            return;
+         }
+
+         chance = IS_NPC(ch) ? ch->top_level
+         : (int) (ch->pcdata->learned[gsn_makecontainer]);
+         if ( number_percent( ) < chance )
+         {
+            send_to_char( "&GYou begin the long process of creating a bag.\n", ch);
+            act( AT_PLAIN, "$n takes $s sewing kit and some material and begins to work.", ch,
+            NULL, argument , TO_ROOM );
+            add_timer ( ch , TIMER_DO_FUN , 10 , do_makecontainer , 1 );
+            ch->dest_buf = str_dup(arg);
+            ch->dest_buf_2 = str_dup(arg2);
+            return;
          }
          send_to_char("&RYou can't figure out what to do.\n",ch);
          learn_from_failure( ch, gsn_makecontainer );
          return; 
      
-     case 1: 
-      if ( !ch->dest_buf )
-           return;
-      if ( !ch->dest_buf_2 )
-           return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      STR_DISPOSE( ch->dest_buf);
-      SPRINTF(arg2, "%s", (const char*) ch->dest_buf_2);
-      STR_DISPOSE( ch->dest_buf_2);
-      break;
+      case 1: 
+         if ( !ch->dest_buf )
+            return;
+         if ( !ch->dest_buf_2 )
+            return;
+         arg = (const char*) ch->dest_buf;
+         STR_DISPOSE( ch->dest_buf);
+         arg2 = (const char*) ch->dest_buf_2;
+         STR_DISPOSE( ch->dest_buf_2);
+         break;
       
-     case SUB_TIMER_DO_ABORT:
-      STR_DISPOSE( ch->dest_buf );
-      STR_DISPOSE( ch->dest_buf_2 );
-      ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
-             return;
-    }
-    
-    ch->substate = SUB_NONE;
-    
-    level = IS_NPC(ch) ? ch->top_level : (int) (ch->pcdata->learned[gsn_makecontainer]);
-    
-    checksew = FALSE;
-    checkfab = FALSE;
-    
-    for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
-    {
-       if (obj->item_type == ITEM_THREAD)
-          checksew = TRUE;
-       if (obj->item_type == ITEM_FABRIC && checkfab == FALSE)
-       {
-          checkfab = TRUE;
-          separate_obj( obj );
-          obj_from_char( obj );
-          material = obj;
-       }
-    }                            
-    
-    chance = IS_NPC(ch) ? ch->top_level
-                : (int) (ch->pcdata->learned[gsn_makecontainer]) ;
-                
-    if ( number_percent( ) > chance*2  || ( !checkfab ) || ( !checksew ) )
-    {
-       send_to_char( "&RYou hold up your newly created container.\n", ch);
-       send_to_char( "&RIt suddenly dawns upon you that you have created the most useless\n", ch);
-       send_to_char( "&Rcontainer you've ever seen. You quickly hide your mistake...\n", ch);
-       learn_from_failure( ch, gsn_makecontainer );
-       return;
-    }
+      case SUB_TIMER_DO_ABORT:
+         STR_DISPOSE( ch->dest_buf );
+         STR_DISPOSE( ch->dest_buf_2 );
+         ch->substate = SUB_NONE;                                         
+               send_to_char("&RYou are interupted and fail to finish your work.\n", ch);
+               return;
+   }
+   
+   ch->substate = SUB_NONE;
+   
+   level = IS_NPC(ch) ? ch->top_level : (int) (ch->pcdata->learned[gsn_makecontainer]);
+   
+   checksew = FALSE;
+   checkfab = FALSE;
+   
+   for ( obj = ch->last_carrying; obj; obj = obj->prev_content )     
+   {
+      if (obj->item_type == ITEM_THREAD)
+         checksew = TRUE;
+      if (obj->item_type == ITEM_FABRIC && checkfab == FALSE)
+      {
+         checkfab = TRUE;
+         separate_obj( obj );
+         obj_from_char( obj );
+         material = obj;
+      }
+   }                            
+   
+   chance = IS_NPC(ch) ? ch->top_level
+               : (int) (ch->pcdata->learned[gsn_makecontainer]) ;
+               
+   if ( number_percent( ) > chance*2  || ( !checkfab ) || ( !checksew ) )
+   {
+      send_to_char( "&RYou hold up your newly created container.\n", ch);
+      send_to_char( "&RIt suddenly dawns upon you that you have created the most useless\n", ch);
+      send_to_char( "&Rcontainer you've ever seen. You quickly hide your mistake...\n", ch);
+      learn_from_failure( ch, gsn_makecontainer );
+      return;
+   }
 
-    obj = material; 
+   obj = material; 
 
-    obj->item_type = ITEM_CONTAINER;
-    BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
-    value = get_wflag( arg );
-    if ( value < 0  )
-        BV_SET_BIT( obj->wear_flags, ITEM_HOLD );                    
-    else
-        BV_SET_BIT( obj->wear_flags, value );
-    obj->level = level;
-    STRFREE( obj->name );
-    SPRINTF( buf, "%s", arg2 );
-    obj->name = STRALLOC( buf );
-    SPRINTF( buf, "%s", arg2 );
-    STRFREE( obj->short_descr );
-    obj->short_descr = STRALLOC( buf );        
-    STRFREE( obj->description );
-    STRAPP( buf, " was dropped here." );
-    obj->description = STRALLOC( buf );
-    obj->value[0] = level;
-    obj->value[1] = 0;
-    obj->value[2] = 0;      
-    obj->value[3] = 10;      
-    obj->cost *= 2;
-                                                                    
-    obj = obj_to_char( obj, ch );
-                                                            
-    send_to_char( "&GYou finish your work and hold up your newly created container.&w\n", ch);
-    act( AT_PLAIN, "$n finishes sewing a new container.", ch,
-         NULL, argument , TO_ROOM );
-    
-    {
-         long xpgain;
-         
-         xpgain = UMIN( obj->cost*100 ,( exp_level(ch->skill_level[ENGINEERING_ABILITY]+1) - exp_level(ch->skill_level[ENGINEERING_ABILITY]) ) );
-         gain_exp(ch, xpgain, ENGINEERING_ABILITY);
-         ch_printf( ch , "You gain %ld engineering experience.", xpgain );
-    }
-        learn_from_success( ch, gsn_makecontainer );
+   obj->item_type = ITEM_CONTAINER;
+   BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
+   value = get_wflag( arg );
+   if ( value < 0  )
+      BV_SET_BIT( obj->wear_flags, ITEM_HOLD );                    
+   else
+      BV_SET_BIT( obj->wear_flags, value );
+   obj->level = level;
+   STRFREE( obj->name );
+   obj->name = STRALLOC( arg2 );
+   STRFREE( obj->short_descr );
+   obj->short_descr = STRALLOC( arg2 );        
+   STRFREE( obj->description );
+   obj->description = STRALLOC( (arg2 + " was dropped here.") );
+   obj->value[0] = level;
+   obj->value[1] = 0;
+   obj->value[2] = 0;      
+   obj->value[3] = 10;      
+   obj->cost *= 2;
+                                                                  
+   obj = obj_to_char( obj, ch );
+                                                         
+   send_to_char( "&GYou finish your work and hold up your newly created container.&w\n", ch);
+   act( AT_PLAIN, "$n finishes sewing a new container.", ch,
+      NULL, argument , TO_ROOM );
+   
+   {
+      long xpgain;
+      
+      xpgain = UMIN( obj->cost*100 ,( exp_level(ch->skill_level[ENGINEERING_ABILITY]+1) - exp_level(ch->skill_level[ENGINEERING_ABILITY]) ) );
+      gain_exp(ch, xpgain, ENGINEERING_ABILITY);
+      ch_printf( ch , "You gain %ld engineering experience.", xpgain );
+   }
+   learn_from_success( ch, gsn_makecontainer );
 }
 
 void do_makemissile( CHAR_DATA *ch, char *argument )
@@ -2775,533 +2761,529 @@ void do_gemcutting( CHAR_DATA *ch, char *argument )
 
 void do_reinforcements( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    int chance, credits;
-    
-    if ( IS_NPC( ch ) || !ch->pcdata )
-     return;
-     
-    SPRINTF( arg, "%s", argument );    
-    
-    switch( ch->substate )
-    { 
-     default:
-             if ( ch->backup_wait )
-             {
-                 send_to_char( "&RYour reinforcements are already on the way.\n", ch );
-                 return;
-             }
-             
-             if ( !ch->pcdata->clan )
-             {
-                 send_to_char( "&RYou need to be a member of an organization before you can call for reinforcements.\n", ch );
-                 return;
-             }    
-             
-             if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 50 )
-             {
-                 ch_printf( ch, "&RYou dont have enough credits to send for reinforcements.\n" );
-                 return;
-             }    
-             
-             chance = (int) (ch->pcdata->learned[gsn_reinforcements]);
-                if ( number_percent( ) < chance )
-      {
-         send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
-         act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
-          NULL, argument , TO_ROOM );
-     add_timer ( ch , TIMER_DO_FUN , 1 , do_reinforcements , 1 );
-         ch->dest_buf = str_dup(arg);
-         return;
+   std::string arg;
+   int chance, credits;
+   
+   if ( IS_NPC( ch ) || !ch->pcdata )
+   return;
+   
+   arg = argument;
+   
+   switch( ch->substate )
+   { 
+      default:
+         if ( ch->backup_wait )
+         {
+            send_to_char( "&RYour reinforcements are already on the way.\n", ch );
+            return;
+         }
+         
+         if ( !ch->pcdata->clan )
+         {
+            send_to_char( "&RYou need to be a member of an organization before you can call for reinforcements.\n", ch );
+            return;
+         }    
+         
+         if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 50 )
+         {
+            ch_printf( ch, "&RYou dont have enough credits to send for reinforcements.\n" );
+            return;
+         }    
+         
+         chance = (int) (ch->pcdata->learned[gsn_reinforcements]);
+            if ( number_percent( ) < chance )
+         {
+            send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
+            act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
+            NULL, arg , TO_ROOM );
+            add_timer ( ch , TIMER_DO_FUN , 1 , do_reinforcements , 1 );
+            ch->dest_buf = str_dup(arg);
+            return;
          }
          send_to_char("&RYou call for reinforcements but nobody answers.\n",ch);
          learn_from_failure( ch, gsn_reinforcements );
          return; 
      
-     case 1:
-      if ( !ch->dest_buf )
-         return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      STR_DISPOSE( ch->dest_buf);
-      break;
+      case 1:
+         if ( !ch->dest_buf )
+            return;
+         arg = (const char*) ch->dest_buf;
+         STR_DISPOSE( ch->dest_buf);
+         break;
       
-     case SUB_TIMER_DO_ABORT:
-      STR_DISPOSE( ch->dest_buf );
-      ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted before you can finish your call.\n", ch);
-             return;
-    }
-    
-    ch->substate = SUB_NONE;
-    
-    send_to_char( "&GYour reinforcements are on the way.\n", ch);
-    credits = ch->skill_level[LEADERSHIP_ABILITY] * 50;
-    ch_printf( ch, "It cost you %d credits.\n", credits);
-    ch->gold -= UMIN( credits , ch->gold );
-             
-    learn_from_success( ch, gsn_reinforcements );
-    
-    if ( nifty_is_name( "empire" , ch->pcdata->clan->name ) )
-       ch->backup_mob = MOB_VNUM_STORMTROOPER;
-    else if ( nifty_is_name( "rebel" , ch->pcdata->clan->name ) )
-       ch->backup_mob = MOB_VNUM_NR_TROOPER;
-    else
-       ch->backup_mob = MOB_VNUM_MERCINARY;
+      case SUB_TIMER_DO_ABORT:
+         STR_DISPOSE( ch->dest_buf );
+         ch->substate = SUB_NONE;                                         
+               send_to_char("&RYou are interupted before you can finish your call.\n", ch);
+               return;
+   }
+   
+   ch->substate = SUB_NONE;
+   
+   send_to_char( "&GYour reinforcements are on the way.\n", ch);
+   credits = ch->skill_level[LEADERSHIP_ABILITY] * 50;
+   ch_printf( ch, "It cost you %d credits.\n", credits);
+   ch->gold -= UMIN( credits , ch->gold );
+            
+   learn_from_success( ch, gsn_reinforcements );
+   
+   if ( nifty_is_name( "empire" , ch->pcdata->clan->name ) )
+      ch->backup_mob = MOB_VNUM_STORMTROOPER;
+   else if ( nifty_is_name( "rebel" , ch->pcdata->clan->name ) )
+      ch->backup_mob = MOB_VNUM_NR_TROOPER;
+   else
+      ch->backup_mob = MOB_VNUM_MERCINARY;
 
-    ch->backup_wait = number_range(1,2);
+   ch->backup_wait = number_range(1,2);
     
 }
 
 void do_postguard( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    int chance, credits;
-    
-    if ( IS_NPC( ch ) || !ch->pcdata )
-     return;
-     
-    SPRINTF( arg, "%s", argument );    
+   std::string arg;
+   int chance, credits;
+   
+   if ( IS_NPC( ch ) || !ch->pcdata )
+   return;
+   
+   arg = argument;
 
-    switch( ch->substate )
-    { 
-     default:
-             if ( ch->backup_wait )
-             {
-                 send_to_char( "&RYou already have backup coming.\n", ch );
-                 return;
-             }
-             
-             if ( !ch->pcdata->clan )
-             {
-                 send_to_char( "&RYou need to be a member of an organization before you can call for a guard.\n", ch );
-                 return;
-             }    
-             
-             if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 30 )
-             {
-                 send_to_char( "&RYou dont have enough credits.\n", ch );
-                 return;
-             }    
-             
-             chance = (int) (ch->pcdata->learned[gsn_postguard]);
-                if ( number_percent( ) < chance )
-      {
-         send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
-         act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
-          NULL, argument , TO_ROOM );
-     add_timer ( ch , TIMER_DO_FUN , 1 , do_postguard , 1 );
-         ch->dest_buf = str_dup(arg);
-         return;
+   switch( ch->substate )
+   { 
+      default:
+         if ( ch->backup_wait )
+         {
+            send_to_char( "&RYou already have backup coming.\n", ch );
+            return;
+         }
+         
+         if ( !ch->pcdata->clan )
+         {
+            send_to_char( "&RYou need to be a member of an organization before you can call for a guard.\n", ch );
+            return;
+         }    
+         
+         if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 30 )
+         {
+            send_to_char( "&RYou dont have enough credits.\n", ch );
+            return;
+         }    
+         
+         chance = (int) (ch->pcdata->learned[gsn_postguard]);
+         if ( number_percent( ) < chance )
+         {
+            send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
+            act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
+            NULL, arg , TO_ROOM );
+            add_timer ( ch , TIMER_DO_FUN , 1 , do_postguard , 1 );
+            ch->dest_buf = str_dup(arg);
+            return;
          }
          send_to_char("&RYou call for a guard but nobody answers.\n",ch);
          learn_from_failure( ch, gsn_postguard );
          return; 
      
-     case 1:
-      if ( !ch->dest_buf )
-         return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      STR_DISPOSE( ch->dest_buf);
-      break;
+      case 1:
+         if ( !ch->dest_buf )
+            return;
+         arg = (const char*) ch->dest_buf;
+         STR_DISPOSE( ch->dest_buf);
+         break;
       
-     case SUB_TIMER_DO_ABORT:
-      STR_DISPOSE( ch->dest_buf );
-      ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted before you can finish your call.\n", ch);
-             return;
-    }
+      case SUB_TIMER_DO_ABORT:
+         STR_DISPOSE( ch->dest_buf );
+         ch->substate = SUB_NONE;                                         
+         send_to_char("&RYou are interupted before you can finish your call.\n", ch);
+         return;
+   }
     
-    ch->substate = SUB_NONE;
-    
-    send_to_char( "&GYour guard is on the way.\n", ch);
-    
-    credits = ch->skill_level[LEADERSHIP_ABILITY] * 30;
-    ch_printf( ch, "It cost you %d credits.\n", credits);
-    ch->gold -= UMIN( credits , ch->gold );
+   ch->substate = SUB_NONE;
+   
+   send_to_char( "&GYour guard is on the way.\n", ch);
+   
+   credits = ch->skill_level[LEADERSHIP_ABILITY] * 30;
+   ch_printf( ch, "It cost you %d credits.\n", credits);
+   ch->gold -= UMIN( credits , ch->gold );
 
-    learn_from_success( ch, gsn_postguard );
-    
-    if ( nifty_is_name( "empire" , ch->pcdata->clan->name ) )
-       ch->backup_mob = MOB_VNUM_IMP_GUARD;
-    else if ( nifty_is_name( "rebel" , ch->pcdata->clan->name ) )
-       ch->backup_mob = MOB_VNUM_NR_GUARD;
-    else
-       ch->backup_mob = MOB_VNUM_BOUNCER;
+   learn_from_success( ch, gsn_postguard );
+   
+   if ( nifty_is_name( "empire" , ch->pcdata->clan->name ) )
+      ch->backup_mob = MOB_VNUM_IMP_GUARD;
+   else if ( nifty_is_name( "rebel" , ch->pcdata->clan->name ) )
+      ch->backup_mob = MOB_VNUM_NR_GUARD;
+   else
+      ch->backup_mob = MOB_VNUM_BOUNCER;
 
-    ch->backup_wait = 1;
+   ch->backup_wait = 1;
 
 }
 
 void add_reinforcements( CHAR_DATA *ch )
 {
-     MOB_INDEX_DATA  * pMobIndex;
-     OBJ_DATA        * blaster;
-     OBJ_INDEX_DATA  * pObjIndex;
+   MOB_INDEX_DATA  * pMobIndex;
+   OBJ_DATA        * blaster;
+   OBJ_INDEX_DATA  * pObjIndex;
 //   char         buf[MAX_INPUT_LENGTH];
-     int multiplier = 1;
+   int multiplier = 1;
 
-     if ( ( pMobIndex = get_mob_index( ch->backup_mob ) ) == NULL )
-        return;
+   if ( ( pMobIndex = get_mob_index( ch->backup_mob ) ) == NULL )
+      return;
 
-     bug("%s just posted a guard on %d!", ch->name, ch->in_room ? ch->in_room->vnum : 0 );
-
-
-     if ( ch->backup_mob == MOB_VNUM_STORMTROOPER ||
-          ch->backup_mob == MOB_VNUM_NR_TROOPER   ||
-          ch->backup_mob == MOB_VNUM_MERCINARY ||
-          ch->backup_mob == MOB_VNUM_IMP_FORCES ||
-          ch->backup_mob == MOB_VNUM_NR_FORCES   ||
-          ch->backup_mob == MOB_VNUM_MERC_FORCES       )
-     {
+   bug("%s just posted a guard on %d!", ch->name, ch->in_room ? ch->in_room->vnum : 0 );
 
 
-        CHAR_DATA * mob[3];
-        int         mob_cnt;
+   if ( ch->backup_mob == MOB_VNUM_STORMTROOPER ||
+      ch->backup_mob == MOB_VNUM_NR_TROOPER   ||
+      ch->backup_mob == MOB_VNUM_MERCINARY ||
+      ch->backup_mob == MOB_VNUM_IMP_FORCES ||
+      ch->backup_mob == MOB_VNUM_NR_FORCES   ||
+      ch->backup_mob == MOB_VNUM_MERC_FORCES       )
+   {
+      CHAR_DATA * mob[3];
+      int         mob_cnt;
 
-         if ( ch->backup_mob == MOB_VNUM_IMP_FORCES ||
-           ch->backup_mob == MOB_VNUM_NR_FORCES   ||
-           ch->backup_mob == MOB_VNUM_MERC_FORCES )
-         { multiplier = 2; }
+      if ( ch->backup_mob == MOB_VNUM_IMP_FORCES ||
+         ch->backup_mob == MOB_VNUM_NR_FORCES   ||
+         ch->backup_mob == MOB_VNUM_MERC_FORCES )
+      { multiplier = 2; }
 
-        if (!ch->game)
-        {
-           send_to_char( "You must be in a game to call for reinforcements.\n", ch );            
-           return;
-        }
-         
-        send_to_char( "Your reinforcements have arrived.\n", ch );
-        for ( mob_cnt = 0 ; mob_cnt < 3 ; mob_cnt++ )
-        {
-            int ability;
-            mob[mob_cnt] = create_mobile( ch->game, pMobIndex );
-            char_to_room( mob[mob_cnt], ch->in_room );
-            act( AT_IMMORT, "$N has arrived.", ch, NULL, mob[mob_cnt], TO_ROOM );
-            mob[mob_cnt]->top_level = (int) ( multiplier / 1.4 * ch->skill_level[LEADERSHIP_ABILITY]/3 );
-            for ( ability = 0 ; ability < MAX_ABILITY ; ability++ )
-                     mob[mob_cnt]->skill_level[ability] = mob[mob_cnt]->top_level;
-            mob[mob_cnt]->hit = mob[mob_cnt]->top_level*15;
-            mob[mob_cnt]->max_hit = mob[mob_cnt]->hit;
-            mob[mob_cnt]->armor = (int) ( 100- mob[mob_cnt]->top_level*2.5 );
-            mob[mob_cnt]->damroll = mob[mob_cnt]->top_level/5;
-            mob[mob_cnt]->hitroll = mob[mob_cnt]->top_level/5;
-            if ( ( pObjIndex = get_obj_index( OBJ_VNUM_BLASTECH_E11 ) ) != NULL )
-            {
-                 blaster = create_object( pObjIndex, mob[mob_cnt]->top_level );
-                 obj_to_char( blaster, mob[mob_cnt] );
-                 equip_char( mob[mob_cnt], blaster, WEAR_WIELD );
-            } 
-            if ( mob[mob_cnt]->master )
-        stop_follower( mob[mob_cnt] );
-     add_follower( mob[mob_cnt], ch );
-            BV_SET_BIT( mob[mob_cnt]->affected_by, AFF_CHARM );
-            do_setblaster( mob[mob_cnt] , "full" );
-        }
-     }
-     else
-     {
-        CHAR_DATA *mob;
-        int ability;
-
-       if ( ch->backup_mob == MOB_VNUM_IMP_ELITE ||
-          ch->backup_mob == MOB_VNUM_NR_ELITE   ||
-          ch->backup_mob == MOB_VNUM_MERC_ELITE )
-       { multiplier = 2; }
-
-         if (!ch->game)
+      if (!ch->game)
+      {
+         send_to_char( "You must be in a game to call for reinforcements.\n", ch );            
+         return;
+      }
+      
+      send_to_char( "Your reinforcements have arrived.\n", ch );
+      for ( mob_cnt = 0 ; mob_cnt < 3 ; mob_cnt++ )
+      {
+         int ability;
+         mob[mob_cnt] = create_mobile( ch->game, pMobIndex );
+         char_to_room( mob[mob_cnt], ch->in_room );
+         act( AT_IMMORT, "$N has arrived.", ch, NULL, mob[mob_cnt], TO_ROOM );
+         mob[mob_cnt]->top_level = (int) ( multiplier / 1.4 * ch->skill_level[LEADERSHIP_ABILITY]/3 );
+         for ( ability = 0 ; ability < MAX_ABILITY ; ability++ )
+            mob[mob_cnt]->skill_level[ability] = mob[mob_cnt]->top_level;
+         mob[mob_cnt]->hit = mob[mob_cnt]->top_level*15;
+         mob[mob_cnt]->max_hit = mob[mob_cnt]->hit;
+         mob[mob_cnt]->armor = (int) ( 100- mob[mob_cnt]->top_level*2.5 );
+         mob[mob_cnt]->damroll = mob[mob_cnt]->top_level/5;
+         mob[mob_cnt]->hitroll = mob[mob_cnt]->top_level/5;
+         if ( ( pObjIndex = get_obj_index( OBJ_VNUM_BLASTECH_E11 ) ) != NULL )
          {
-            send_to_char( "You must be in a game to call for reinforcements.\n", ch );            
-            return;
-         }
+            blaster = create_object( pObjIndex, mob[mob_cnt]->top_level );
+            obj_to_char( blaster, mob[mob_cnt] );
+            equip_char( mob[mob_cnt], blaster, WEAR_WIELD );
+         } 
+         if ( mob[mob_cnt]->master )
+            stop_follower( mob[mob_cnt] );
+         add_follower( mob[mob_cnt], ch );
+         BV_SET_BIT( mob[mob_cnt]->affected_by, AFF_CHARM );
+         do_setblaster( mob[mob_cnt] , "full" );
+      }
+   }
+   else
+   {
+      CHAR_DATA *mob;
+      int ability;
 
-        mob = create_mobile( ch->game, pMobIndex );
-        char_to_room( mob, ch->in_room );
-        if ( ch->pcdata && ch->pcdata->clan )
-        {
-          char tmpbuf[MAX_STRING_LENGTH];
+      if ( ch->backup_mob == MOB_VNUM_IMP_ELITE ||
+         ch->backup_mob == MOB_VNUM_NR_ELITE   ||
+         ch->backup_mob == MOB_VNUM_MERC_ELITE )
+      { multiplier = 2; }
 
-          STRFREE( mob->name );
-          mob->name = STRALLOC( ch->pcdata->clan->name );
-          SPRINTF( tmpbuf , "(%s) %s" , ch->pcdata->clan->name  , mob->long_descr );
-          STRFREE( mob->long_descr );
-          mob->long_descr = STRALLOC( tmpbuf );
-        }
-        act( AT_IMMORT, "$N has arrived.", ch, NULL, mob, TO_ROOM );
-        send_to_char( "Your guard has arrived.\n", ch );
-        mob->top_level = multiplier * ch->skill_level[LEADERSHIP_ABILITY] / 2;
-        for ( ability = 0 ; ability < MAX_ABILITY ; ability++ )
-            mob->skill_level[ability] = mob->top_level;
-        mob->hit = mob->top_level*10;
-        mob->max_hit = mob->hit;
-        mob->armor = (int) ( 100- mob->top_level*2.5 );
-        mob->damroll = mob->top_level/5;
-        mob->hitroll = mob->top_level/5;
-        if ( ( pObjIndex = get_obj_index( OBJ_VNUM_BLASTECH_E11 ) ) != NULL )
-        {
-            blaster = create_object( pObjIndex, mob->top_level );
-            obj_to_char( blaster, mob );
-            equip_char( mob, blaster, WEAR_WIELD );
-        }
+      if (!ch->game)
+      {
+         send_to_char( "You must be in a game to call for reinforcements.\n", ch );            
+         return;
+      }
 
-        /* for making this more accurate in the future */
+      mob = create_mobile( ch->game, pMobIndex );
+      char_to_room( mob, ch->in_room );
+      if ( ch->pcdata && ch->pcdata->clan )
+      {
+         char tmpbuf[MAX_STRING_LENGTH];
 
-        if ( mob->mob_clan )
-           STRFREE ( mob->mob_clan );
-        if ( ch->pcdata && ch->pcdata->clan )
-           mob->mob_clan = STRALLOC( ch->pcdata->clan->name );
-     }                    
+         STRFREE( mob->name );
+         mob->name = STRALLOC( ch->pcdata->clan->name );
+         SPRINTF( tmpbuf , "(%s) %s" , ch->pcdata->clan->name  , mob->long_descr );
+         STRFREE( mob->long_descr );
+         mob->long_descr = STRALLOC( tmpbuf );
+      }
+      act( AT_IMMORT, "$N has arrived.", ch, NULL, mob, TO_ROOM );
+      send_to_char( "Your guard has arrived.\n", ch );
+      mob->top_level = multiplier * ch->skill_level[LEADERSHIP_ABILITY] / 2;
+      for ( ability = 0 ; ability < MAX_ABILITY ; ability++ )
+         mob->skill_level[ability] = mob->top_level;
+      mob->hit = mob->top_level*10;
+      mob->max_hit = mob->hit;
+      mob->armor = (int) ( 100- mob->top_level*2.5 );
+      mob->damroll = mob->top_level/5;
+      mob->hitroll = mob->top_level/5;
+      if ( ( pObjIndex = get_obj_index( OBJ_VNUM_BLASTECH_E11 ) ) != NULL )
+      {
+         blaster = create_object( pObjIndex, mob->top_level );
+         obj_to_char( blaster, mob );
+         equip_char( mob, blaster, WEAR_WIELD );
+      }
+
+      /* for making this more accurate in the future */
+
+      if ( mob->mob_clan )
+         STRFREE ( mob->mob_clan );
+      if ( ch->pcdata && ch->pcdata->clan )
+         mob->mob_clan = STRALLOC( ch->pcdata->clan->name );
+   }                    
 }
 
 void do_torture( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    CHAR_DATA *victim;
-    int chance, dam;
-    bool fail;
-    
-    if ( !IS_NPC(ch)
-    &&  ch->pcdata->learned[gsn_torture] <= 0  )
-    {
- send_to_char(
-     "Your mind races as you realize you have no idea how to do that.\n", ch );
- return;
-    }
+   std::string arg;
+   CHAR_DATA *victim;
+   int chance, dam;
+   bool fail;
+   
+   if ( !IS_NPC(ch)
+   &&  ch->pcdata->learned[gsn_torture] <= 0  )
+   {
+      send_to_char("Your mind races as you realize you have no idea how to do that.\n", ch );
+      return;
+   }
 
-    if ( IS_NPC(ch) && IS_AFFECTED( ch, AFF_CHARM ) )
-    {
- send_to_char( "You can't do that right now.\n", ch );
- return;
-    }
+   if ( IS_NPC(ch) && IS_AFFECTED( ch, AFF_CHARM ) )
+   {
+      send_to_char( "You can't do that right now.\n", ch );
+      return;
+   }
 
-    one_argument( argument, arg );
+   one_argument( argument, arg );
 
-    if ( ch->mount )
-    {
- send_to_char( "You can't get close enough while mounted.\n", ch );
- return;
-    }
+   if ( ch->mount )
+   {
+      send_to_char( "You can't get close enough while mounted.\n", ch );
+      return;
+   }
 
-    if ( arg[0] == '\0' )
-    {
- send_to_char( "Torture whom?\n", ch );
- return;
-    }
+   if ( arg.empty() )
+   {
+      send_to_char( "Torture whom?\n", ch );
+      return;
+   }
 
-    if ( ( victim = get_char_room( ch, arg ) ) == NULL )
-    {
- send_to_char( "They aren't here.\n", ch );
- return;
-    }
+   if ( ( victim = get_char_room( ch, arg ) ) == NULL )
+   {
+      send_to_char( "They aren't here.\n", ch );
+      return;
+   }
 
-    if ( victim == ch )
-    {
- send_to_char( "Are you masacistic or what...\n", ch );
- return;
-    }
-    
-    if ( !IS_AWAKE(victim) )
-    {
- send_to_char( "You need to wake them first.\n", ch );
- return;
-    }
+   if ( victim == ch )
+   {
+      send_to_char( "Are you masacistic or what...\n", ch );
+      return;
+   }
+   
+   if ( !IS_AWAKE(victim) )
+   {
+      send_to_char( "You need to wake them first.\n", ch );
+      return;
+   }
 
-    if ( is_safe( ch, victim ) )
+   if ( is_safe( ch, victim ) )
       return;
 
-    if ( victim->fighting )
-    {
- send_to_char( "You can't torture someone whos in combat.\n", ch );
- return;
-    }
-    
-    ch->alignment -= 100;
-    ch->alignment = URANGE( -1000, ch->alignment, 1000 );
-    gmcp_evt_char_stats(ch);    
-    WAIT_STATE( ch, skill_table[gsn_torture]->beats );
-    
-    fail = FALSE;
-    chance = ris_save( victim, (ch->skill_level[LEADERSHIP_ABILITY])/10, RIS_PARALYSIS );
-    if ( chance == 1000 )
+   if ( victim->fighting )
+   {
+      send_to_char( "You can't torture someone whos in combat.\n", ch );
+      return;
+   }
+   
+   ch->alignment -= 100;
+   ch->alignment = URANGE( -1000, ch->alignment, 1000 );
+   gmcp_evt_char_stats(ch);    
+   WAIT_STATE( ch, skill_table[gsn_torture]->beats );
+   
+   fail = FALSE;
+   chance = ris_save( victim, (ch->skill_level[LEADERSHIP_ABILITY])/10, RIS_PARALYSIS );
+   if ( chance == 1000 )
       fail = TRUE;
-    else
+   else
       fail = saves_para_petri( chance, victim );
 
-    if ( !IS_NPC(ch) && !IS_NPC(victim) )
+   if ( !IS_NPC(ch) && !IS_NPC(victim) )
       chance = ch->game->get_sysdata()->stun_plr_vs_plr;
-    else
+   else
       chance = ch->game->get_sysdata()->stun_regular;
-    if ( !fail
-    && (  IS_NPC(ch)
-    || (number_percent( ) + chance) < ch->pcdata->learned[gsn_torture] ) )
-    {
- learn_from_success( ch, gsn_torture );
- WAIT_STATE( ch,     2 * PULSE_VIOLENCE );
- WAIT_STATE( victim, PULSE_VIOLENCE );
- act( AT_SKILL, "$N slowly tortures you. The pain is excruciating.", victim, NULL, ch, TO_CHAR );
- act( AT_SKILL, "You torture $N, leaving $M screaming in pain.", ch, NULL, victim, TO_CHAR );
- act( AT_SKILL, "$n tortures $N, leaving $M screaming in agony!", ch, NULL, victim, TO_NOTVICT );
+   if ( !fail
+   && (  IS_NPC(ch)
+   || (number_percent( ) + chance) < ch->pcdata->learned[gsn_torture] ) )
+   {
+      learn_from_success( ch, gsn_torture );
+      WAIT_STATE( ch,     2 * PULSE_VIOLENCE );
+      WAIT_STATE( victim, PULSE_VIOLENCE );
+      act( AT_SKILL, "$N slowly tortures you. The pain is excruciating.", victim, NULL, ch, TO_CHAR );
+      act( AT_SKILL, "You torture $N, leaving $M screaming in pain.", ch, NULL, victim, TO_CHAR );
+      act( AT_SKILL, "$n tortures $N, leaving $M screaming in agony!", ch, NULL, victim, TO_NOTVICT );
         
-        dam = dice( ch->skill_level[LEADERSHIP_ABILITY]/80 , 4 );
-        dam = URANGE( 0, victim->max_hit-10, dam ); 
-        victim->hit -= dam;
-        victim->max_hit -= dam;
-        
-        ch_printf( victim, "You lose %d permanent hit points." ,dam);
-        ch_printf( ch, "They lose %d permanent hit points." , dam);
-         
-    }
-    else
-    {
- act( AT_SKILL, "$N tries to cut off your finger!", victim, NULL, ch, TO_CHAR );
- act( AT_SKILL, "You mess up big time.", ch, NULL, victim, TO_CHAR );
- act( AT_SKILL, "$n tries to painfully torture $N.", ch, NULL, victim, TO_NOTVICT );
- WAIT_STATE( ch,     2 * PULSE_VIOLENCE );
-        global_retcode = multi_hit( victim, ch, TYPE_UNDEFINED );
-    }
-    return;
+      dam = dice( ch->skill_level[LEADERSHIP_ABILITY]/80 , 4 );
+      dam = URANGE( 0, victim->max_hit-10, dam ); 
+      victim->hit -= dam;
+      victim->max_hit -= dam;
+      
+      ch_printf( victim, "You lose %d permanent hit points." ,dam);
+      ch_printf( ch, "They lose %d permanent hit points." , dam);
+      
+   }
+   else
+   {
+      act( AT_SKILL, "$N tries to cut off your finger!", victim, NULL, ch, TO_CHAR );
+      act( AT_SKILL, "You mess up big time.", ch, NULL, victim, TO_CHAR );
+      act( AT_SKILL, "$n tries to painfully torture $N.", ch, NULL, victim, TO_NOTVICT );
+      WAIT_STATE( ch,     2 * PULSE_VIOLENCE );
+      global_retcode = multi_hit( victim, ch, TYPE_UNDEFINED );
+   }
+   return;
     
 }
 
 void do_disguise( CHAR_DATA *ch, char *argument )
 {
-    int chance;
-    sh_int gsn;
+   std::string argstr = argument;
+   int chance;
+   sh_int gsn;
 
-    if ( IS_NPC(ch) )
+   if ( IS_NPC(ch) )
+   return;
+
+   if ( BV_IS_SET( ch->pcdata->flags, PCFLAG_NOTITLE ))
+   {
+      send_to_char( "You try but the Force resists you.\n", ch );
       return;
+   }
 
-    if ( BV_IS_SET( ch->pcdata->flags, PCFLAG_NOTITLE ))
-    {
-        send_to_char( "You try but the Force resists you.\n", ch );
-        return;
-    }
+   if(ch->pcdata->learned[gsn_disguise] <= 0)
+   gsn = gsn_cloak;
+   else
+   gsn = gsn_disguise;
 
+   if ( argstr.empty() )
+   {
+   send_to_char( "Change your title to what?\n", ch );
+   return;
+   }
 
+   chance = (int) (ch->pcdata->learned[gsn]);
 
-    if(ch->pcdata->learned[gsn_disguise] <= 0)
-      gsn = gsn_cloak;
-    else
-      gsn = gsn_disguise;
-
-    if ( argument[0] == '\0' )
-    {
-      send_to_char( "Change your title to what?\n", ch );
+   if ( number_percent( ) > chance )
+   {
+      send_to_char( "You try to disguise yourself but fail.\n", ch );
       return;
-    }
+   }
 
-    chance = (int) (ch->pcdata->learned[gsn]);
+   if ( argstr.length() > 50 )
+      argstr = argstr.substr(0, 50);
 
-    if ( number_percent( ) > chance )
-    {
-        send_to_char( "You try to disguise yourself but fail.\n", ch );
-        return;
-    }
-
-    if ( strlen(argument) > 50 )
-       argument[50] = '\0';
-
-    smash_tilde( argument );
-    set_title( ch, argument );
-    learn_from_success( ch, gsn );
-    gmcp_evt_char_status(ch);
-    send_to_char( "Ok.\n", ch );
+   smash_tilde( argstr );
+   set_title( ch, argstr );
+   learn_from_success( ch, gsn );
+   gmcp_evt_char_status(ch);
+   send_to_char( "Ok.\n", ch );
 }
 
 void do_mine( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    OBJ_DATA *obj;
-    bool shovel;
-    sh_int move;
+   std::string arg;
+   OBJ_DATA *obj;
+   bool shovel;
+   sh_int move;
 
    if ( ch->pcdata->learned[gsn_mine] <= 0 )
-    {
+   {
       ch_printf( ch, "You have no idea how to do that.\n" );
       return;
-    }
+   }
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
-    {
-        send_to_char( "And what will you mine the room with?\n", ch );
-        return;
-    }
+   if ( arg.empty() )
+   {
+      send_to_char( "And what will you mine the room with?\n", ch );
+      return;
+   }
 
-    if ( ms_find_obj(ch) )
-        return;
+   if ( ms_find_obj(ch) )
+      return;
 
-    shovel = FALSE;
-    for ( obj = ch->first_carrying; obj; obj = obj->next_content )
+   shovel = FALSE;
+   for ( obj = ch->first_carrying; obj; obj = obj->next_content )
       if ( obj->item_type == ITEM_SHOVEL )
       {
-   shovel = TRUE;
-   break;
+         shovel = TRUE;
+         break;
       }
 
-    obj = get_obj_list_rev( ch, arg, ch->in_room->last_content );
-    if ( !obj )
-    {
-        send_to_char( "You don't see on here.\n", ch );
-        return;
-    }
+   obj = get_obj_list_rev( ch, arg, ch->in_room->last_content );
+   if ( !obj )
+   {
+      send_to_char( "You don't see one here.\n", ch );
+      return;
+   }
 
-    separate_obj(obj);
-    if ( obj->item_type != ITEM_LANDMINE )
-    {
- act( AT_PLAIN, "That's not a landmine!", ch, obj, 0, TO_CHAR );
-        return;
-    }
+   separate_obj(obj);
+   if ( obj->item_type != ITEM_LANDMINE )
+   {
+      act( AT_PLAIN, "That's not a landmine!", ch, obj, 0, TO_CHAR );
+      return;
+   }
 
-    if ( !CAN_WEAR(obj, ITEM_TAKE) )
-    {
- act( AT_PLAIN, "You cannot bury $p.", ch, obj, 0, TO_CHAR );
-        return;
-    }
+   if ( !CAN_WEAR(obj, ITEM_TAKE) )
+   {
+      act( AT_PLAIN, "You cannot bury $p.", ch, obj, 0, TO_CHAR );
+      return;
+   }
 
-    switch( ch->in_room->sector_type )
-    {
- case SECT_CITY:
- case SECT_INSIDE:
-     send_to_char( "The floor is too hard to dig through.\n", ch );
-     return;
- case SECT_WATER_SWIM:
- case SECT_WATER_NOSWIM:
- case SECT_UNDERWATER:
-     send_to_char( "You cannot bury a mine in the water.\n", ch );
-     return;
- case SECT_AIR:
-     send_to_char( "What?  Bury a mine in the air?!\n", ch );
-     return;
-    }
+   switch( ch->in_room->sector_type )
+   {
+      case SECT_CITY:
+      case SECT_INSIDE:
+         send_to_char( "The floor is too hard to dig through.\n", ch );
+         return;
+      case SECT_WATER_SWIM:
+      case SECT_WATER_NOSWIM:
+      case SECT_UNDERWATER:
+         send_to_char( "You cannot bury a mine in the water.\n", ch );
+         return;
+      case SECT_AIR:
+         send_to_char( "What?  Bury a mine in the air?!\n", ch );
+         return;
+   }
 
-    if ( obj->weight > (UMAX(5, (can_carry_w(ch) / 10)))
-    &&  !shovel )
-    {
- send_to_char( "You'd need a shovel to bury something that big.\n", ch );
- return;
-    }
+   if ( obj->weight > (UMAX(5, (can_carry_w(ch) / 10)))
+   &&  !shovel )
+   {
+      send_to_char( "You'd need a shovel to bury something that big.\n", ch );
+      return;
+   }
 
-    move = (obj->weight * 50 * (shovel ? 1 : 5)) / UMAX(1, can_carry_w(ch));
-    move = URANGE( 2, move, 1000 );
-    if ( move > ch->move )
-    {
- send_to_char( "You don't have the energy to bury something of that size.\n", ch );
- return;
-    }
-    ch->move -= move;
+   move = (obj->weight * 50 * (shovel ? 1 : 5)) / UMAX(1, can_carry_w(ch));
+   move = URANGE( 2, move, 1000 );
+   if ( move > ch->move )
+   {
+      send_to_char( "You don't have the energy to bury something of that size.\n", ch );
+      return;
+   }
+   ch->move -= move;
 
-    BV_SET_BIT( obj->objflags, ITEM_BURRIED );
-    WAIT_STATE( ch, URANGE( 10, move / 2, 100 ) );
+   BV_SET_BIT( obj->objflags, ITEM_BURRIED );
+   WAIT_STATE( ch, URANGE( 10, move / 2, 100 ) );
 
-    STRFREE ( obj->armed_by );
-    obj->armed_by = STRALLOC ( ch->name );
+   STRFREE ( obj->armed_by );
+   obj->armed_by = STRALLOC ( ch->name );
    gmcp_evt_char_vitals(ch);
-    ch_printf( ch, "You arm and bury %s.\n", obj->short_descr );
-    act( AT_PLAIN, "$n arms and buries $p.", ch, obj, NULL, TO_ROOM );
+   ch_printf( ch, "You arm and bury %s.\n", obj->short_descr );
+   act( AT_PLAIN, "$n arms and buries $p.", ch, obj, NULL, TO_ROOM );
 
-    learn_from_success( ch, gsn_mine );
+   learn_from_success( ch, gsn_mine );
 
-    return;
+   return;
 }
 
 void do_first_aid( CHAR_DATA *ch, char *argument )
@@ -3309,7 +3291,7 @@ void do_first_aid( CHAR_DATA *ch, char *argument )
    OBJ_DATA   *medpac;
    CHAR_DATA  *victim;
    int         heal;
-   char        buf[MAX_STRING_LENGTH];
+   std::string buf;
 
    if ( ch->position == POS_FIGHTING )
    {
@@ -3353,16 +3335,16 @@ void do_first_aid( CHAR_DATA *ch, char *argument )
    if ( victim == ch )
    {
        ch_printf( ch, "You tend to your wounds.\n");
-       SPRINTF( buf , "$n uses %s to help heal $s wounds." , medpac->short_descr );        
+       buf = "$n uses " + std::string(medpac->short_descr) + " to help heal $s wounds.";
        act( AT_ACTION, buf, ch, NULL, victim, TO_ROOM );  
    }
    else
    {
-       SPRINTF( buf , "You tend to $N's wounds." );        
+       buf = "You tend to $N's wounds.";        
        act( AT_ACTION, buf, ch, NULL, victim, TO_CHAR );  
-       SPRINTF( buf , "$n uses %s to help heal $N's wounds." , medpac->short_descr );        
+       buf = "$n uses " + std::string(medpac->short_descr) + " to help heal $N's wounds.";        
        act( AT_ACTION, buf, ch, NULL, victim, TO_NOTVICT );  
-       SPRINTF( buf , "$n uses %s to help heal your wounds." , medpac->short_descr );        
+       buf = "$n uses " + std::string(medpac->short_descr) + " to help heal your wounds.";        
        act( AT_ACTION, buf, ch, NULL, victim, TO_VICT );  
    }
 
@@ -3375,8 +3357,9 @@ void do_first_aid( CHAR_DATA *ch, char *argument )
 void do_snipe( CHAR_DATA *ch, char *argument )
 {
    OBJ_DATA        * wield;
-   char              arg[MAX_INPUT_LENGTH];  
-   char              arg2[MAX_INPUT_LENGTH];
+   std::string       arg;  
+   std::string       arg2;
+   std::string       argstr = argument;
    sh_int            dir, dist;
    sh_int            max_dist = 1;
    EXIT_DATA       * pexit;
@@ -3384,90 +3367,90 @@ void do_snipe( CHAR_DATA *ch, char *argument )
    ROOM_INDEX_DATA * to_room;
    CHAR_DATA       * victim = NULL;
    int               chance;
-   char              buf[MAX_STRING_LENGTH];
+   std::string       buf;
    bool              pfound = FALSE;
 
    
    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
-    {
- set_char_color( AT_MAGIC, ch );
- send_to_char( "You'll have to do that elswhere.\n", ch );
- return;
-    }
+   {
+      set_char_color( AT_MAGIC, ch );
+      send_to_char( "You'll have to do that elswhere.\n", ch );
+      return;
+   }  
      
    if ( get_eq_char( ch, WEAR_DUAL_WIELD ) != NULL )
    {
-         send_to_char( "You can't do that while wielding two weapons.",ch );
-         return;
+      send_to_char( "You can't do that while wielding two weapons.",ch );
+      return;
    }
     
    wield = get_eq_char( ch, WEAR_WIELD );
    if ( !wield || wield->item_type != ITEM_WEAPON || (!BV_IS_SET(wield->objflags,WEAPON_BLASTER) && !BV_IS_SET(wield->objflags,WEAPON_BOWCASTER) ) )
    {
 
-         send_to_char( "You don't seem to be holding a blaster",ch );
-         return;
+      send_to_char( "You don't seem to be holding a blaster",ch );
+      return;
    }  
 
    if ( !IS_NPC(ch) && ch->pcdata->learned[gsn_snipe]> 100)
-     max_dist += (ch->pcdata->learned[gsn_snipe]) / 15;
+      max_dist += (ch->pcdata->learned[gsn_snipe]) / 15;
      
-   argument = one_argument( argument, arg );
-   argument = one_argument( argument, arg2 );
+   argstr = one_argument( argstr, arg );
+   argstr = one_argument( argstr, arg2 );
    
-   if ( ( dir = get_door( arg ) ) == -1 || arg2[0] == '\0' )
+   if ( ( dir = get_door( arg ) ) == -1 || arg2.empty() )
    {
-     send_to_char( "Usage: snipe <dir> <target>\n", ch );
-     return;
+      send_to_char( "Usage: snipe <dir> <target>\n", ch );
+      return;
    }
  
    if ( ( pexit = get_exit( ch->in_room, dir ) ) == NULL )
    {
-     send_to_char( "Are you expecting to fire through a wall!?\n", ch );
-     return;
+      send_to_char( "Are you expecting to fire through a wall!?\n", ch );
+      return;
    }
 
    if ( IS_SET( pexit->exit_info, EX_CLOSED ) )
    {
-     send_to_char( "Are you expecting to fire through a door!?\n", ch );
-     return;
+      send_to_char( "Are you expecting to fire through a door!?\n", ch );
+      return;
    }
 
    was_in_room = ch->in_room;
    
    for ( dist = 0; dist <= max_dist; dist++ )   
    {
-     if ( IS_SET( pexit->exit_info, EX_CLOSED ) )
-        break; 
-     
-     if ( !pexit->to_room )
-        break;
-     
-    to_room = NULL;
-    if ( pexit->distance > 1 )
-       to_room = generate_exit( ch->in_room , &pexit );
-    
-    if ( to_room == NULL )
-       to_room = pexit->to_room;
-    
-     char_from_room( ch );
-     char_to_room( ch, to_room );    
+      if ( IS_SET( pexit->exit_info, EX_CLOSED ) )
+         break; 
+      
+      if ( !pexit->to_room )
+         break;
+      
+      to_room = NULL;
+      if ( pexit->distance > 1 )
+         to_room = generate_exit( ch->in_room , &pexit );
+      
+      if ( to_room == NULL )
+         to_room = pexit->to_room;
+      
+      char_from_room( ch );
+      char_to_room( ch, to_room );    
      
 
-     if ( IS_NPC(ch) && ( victim = get_char_room_mp( ch, arg2 ) ) != NULL )
-     {
-        pfound = TRUE;
-        break;
-     }
-     else if ( !IS_NPC(ch) && ( victim = get_char_room( ch, arg2 ) ) != NULL )
-     {
-        pfound = TRUE;
-        break;
-     }
+      if ( IS_NPC(ch) && ( victim = get_char_room_mp( ch, arg2 ) ) != NULL )
+      {
+         pfound = TRUE;
+         break;
+      }
+      else if ( !IS_NPC(ch) && ( victim = get_char_room( ch, arg2 ) ) != NULL )
+      {
+         pfound = TRUE;
+         break;
+      }
 
 
-     if ( ( pexit = get_exit( ch->in_room, dir ) ) == NULL )
-        break;
+      if ( ( pexit = get_exit( ch->in_room, dir ) ) == NULL )
+         break;
             
    }
    
@@ -3476,131 +3459,131 @@ void do_snipe( CHAR_DATA *ch, char *argument )
        
    if ( !pfound )
    {
-       ch_printf( ch, "You don't see that person to the %s!\n", dir_name[dir] );
-       char_from_room( ch );
-       char_to_room( ch, was_in_room );    
-       return;
+      ch_printf( ch, "You don't see that person to the %s!\n", dir_name[dir] );
+      char_from_room( ch );
+      char_to_room( ch, was_in_room );    
+      return;
    }
    
-    if ( victim == ch )
-    {
- send_to_char( "Shoot yourself ... really?\n", ch );
- return;
-    }
+   if ( victim == ch )
+   {
+   send_to_char( "Shoot yourself ... really?\n", ch );
+   return;
+   }
     
-    if ( BV_IS_SET( victim->in_room->room_flags, ROOM_SAFE ) )
-    {
- set_char_color( AT_MAGIC, ch );
- send_to_char( "You can't shoot them there.\n", ch );
- return;
-    }
+   if ( BV_IS_SET( victim->in_room->room_flags, ROOM_SAFE ) )
+   {
+   set_char_color( AT_MAGIC, ch );
+   send_to_char( "You can't shoot them there.\n", ch );
+   return;
+   }
  
-    if ( is_safe( ch, victim ) )
- return;
+   if ( is_safe( ch, victim ) )
+   return;
     
-    if ( IS_AFFECTED(ch, AFF_CHARM) && ch->master == victim )
-    {
-        act( AT_PLAIN, "$N is your beloved master.", ch, NULL, victim, TO_CHAR );
- return;
-    }
+   if ( IS_AFFECTED(ch, AFF_CHARM) && ch->master == victim )
+   {
+         act( AT_PLAIN, "$N is your beloved master.", ch, NULL, victim, TO_CHAR );
+         return;
+   }
 
-    if ( ch->position == POS_FIGHTING )
-    {
- send_to_char( "You do the best you can!\n", ch );
- return;
-    }
+   if ( ch->position == POS_FIGHTING )
+   {
+      send_to_char( "You do the best you can!\n", ch );
+      return;
+   }
     
-    if ( !IS_NPC( victim ) && BV_IS_SET( ch->act, PLR_NICE ) )
-    {
+   if ( !IS_NPC( victim ) && BV_IS_SET( ch->act, PLR_NICE ) )
+   {
       send_to_char( "You feel too nice to do that!\n", ch );
       return;
-    }
+   }
     
-    chance = IS_NPC(ch) ? 100
-           : (int)  (ch->pcdata->learned[gsn_snipe]) ; 
+   chance = IS_NPC(ch) ? 100
+         : (int)  (ch->pcdata->learned[gsn_snipe]) ; 
+   
+   switch ( dir )
+   {
+      case 0:
+      case 1:
+         dir += 2;
+         break;
+      case 2:
+      case 3:
+         dir -= 2;
+         break;
+      case 4:
+      case 7:
+         dir += 1;
+         break;
+      case 5:
+      case 8:
+         dir -= 1;
+         break;
+      case 6:
+         dir += 3;
+         break;
+      case 9:
+         dir -=3;
+         break;
+   }
     
-    switch ( dir )
-    {
-        case 0:
-        case 1:
-           dir += 2;
-           break;
-        case 2:
-        case 3:
-           dir -= 2;
-           break;
-        case 4:
-        case 7:
-           dir += 1;
-           break;
-        case 5:
-        case 8:
-           dir -= 1;
-           break;
-        case 6:
-           dir += 3;
-           break;
-        case 9:
-           dir -=3;
-           break;
-    }
-    
-    char_from_room( ch );
-    char_to_room( ch, victim->in_room );    
-                
-      if( number_percent(  ) < chance )
-      {
-         char_from_room( ch );
-         char_to_room( ch, was_in_room );
-         SPRINTF( buf, "$n fires a blaster shot to the %s.", dir_name[get_door(arg)] );
-         act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
+   char_from_room( ch );
+   char_to_room( ch, victim->in_room );    
+               
+   if( number_percent(  ) < chance )
+   {
+      char_from_room( ch );
+      char_to_room( ch, was_in_room );
+      buf = str_printf("$n fires a blaster shot to the %s.", dir_name[get_door(arg)]);
+      act( AT_ACTION, buf.c_str(), ch, NULL, NULL, TO_ROOM );
 
-         char_from_room( ch );
-         char_to_room( ch, victim->in_room );
+      char_from_room( ch );
+      char_to_room( ch, victim->in_room );
 
-         SPRINTF( buf, "A blaster shot fires at you from the %s.", dir_name[dir] );
-         act( AT_ACTION, buf, victim, NULL, ch, TO_CHAR );
-         act( AT_ACTION, "You fire at $N.", ch, NULL, victim, TO_CHAR );
-         SPRINTF( buf, "A blaster shot fires at $N from the %s.", dir_name[dir] );
-         act( AT_ACTION, buf, ch, NULL, victim, TO_NOTVICT );
+      buf = str_printf("A blaster shot fires at you from the %s.", dir_name[dir]);
+      act( AT_ACTION, buf, victim, NULL, ch, TO_CHAR );
+      act( AT_ACTION, "You fire at $N.", ch, NULL, victim, TO_CHAR );
+      buf = str_printf("A blaster shot fires at $N from the %s.", dir_name[dir]);
+      act( AT_ACTION, buf, ch, NULL, victim, TO_NOTVICT );
 
-         one_hit( ch, victim, TYPE_UNDEFINED );
+      one_hit( ch, victim, TYPE_UNDEFINED );
 
-         if( char_died( ch ) )
-            return;
+      if( char_died( ch ) )
+         return;
 
-         stop_fighting( ch, TRUE );
+      stop_fighting( ch, TRUE );
 
-         learn_from_success( ch, gsn_snipe );
-      }
-      else
-      {
-         char_from_room( ch );
-         char_to_room( ch, was_in_room );
-         SPRINTF( buf, "$n fires a blaster shot to the %s.", dir_name[get_door(arg)] );
-         act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
+      learn_from_success( ch, gsn_snipe );
+   }
+   else
+   {
+      char_from_room( ch );
+      char_to_room( ch, was_in_room );
+      buf = str_printf("$n fires a blaster shot to the %s.", dir_name[get_door(arg)]);
+      act( AT_ACTION, buf.c_str(), ch, NULL, NULL, TO_ROOM );
 
-         char_from_room( ch );
-         char_to_room( ch, victim->in_room );
+      char_from_room( ch );
+      char_to_room( ch, victim->in_room );
 
-         act( AT_ACTION, "You fire at $N but don't even come close.", ch, NULL, victim, TO_CHAR );
-         SPRINTF( buf, "A blaster shot fired from the %s barely misses you.", dir_name[dir] );
-         act( AT_ACTION, buf, ch, NULL, victim, TO_ROOM );
-         learn_from_failure( ch, gsn_snipe );
-      }
-    char_from_room( ch );
-    char_to_room( ch, was_in_room );    
+      act( AT_ACTION, "You fire at $N but don't even come close.", ch, NULL, victim, TO_CHAR );
+      buf = str_printf("A blaster shot fired from the %s barely misses you.", dir_name[dir]);
+      act( AT_ACTION, buf, ch, NULL, victim, TO_ROOM );
+      learn_from_failure( ch, gsn_snipe );
+   }
+   char_from_room( ch );
+   char_to_room( ch, was_in_room );    
      
    if ( IS_NPC(ch) )                               
       WAIT_STATE( ch, 1 * PULSE_VIOLENCE );
    else
    {
-    if ( number_percent() < ch->pcdata->learned[gsn_third_attack] )
-         WAIT_STATE( ch, 1 * PULSE_PER_SECOND );
-    else if ( number_percent() < ch->pcdata->learned[gsn_second_attack] )
-         WAIT_STATE( ch, 2 * PULSE_PER_SECOND );
-    else 
-         WAIT_STATE( ch, 3 * PULSE_PER_SECOND );
+      if ( number_percent() < ch->pcdata->learned[gsn_third_attack] )
+            WAIT_STATE( ch, 1 * PULSE_PER_SECOND );
+      else if ( number_percent() < ch->pcdata->learned[gsn_second_attack] )
+            WAIT_STATE( ch, 2 * PULSE_PER_SECOND );
+      else 
+            WAIT_STATE( ch, 3 * PULSE_PER_SECOND );
    }
    if ( IS_NPC( victim ) && !char_died(victim) )
    {
@@ -3623,9 +3606,10 @@ void do_throw( CHAR_DATA *ch, char *argument )
 {
    OBJ_DATA        * obj;
    OBJ_DATA        * tmpobj;
-   char              arg[MAX_INPUT_LENGTH];  
-   char              arg2[MAX_INPUT_LENGTH];
-   char              arg3[MAX_INPUT_LENGTH];
+   std::string  arg;  
+   std::string  arg2;
+   std::string  arg3;
+   std::string argstr = argument;
    sh_int            dir;
    EXIT_DATA       * pexit;
    ROOM_INDEX_DATA * was_in_room;
@@ -3634,13 +3618,13 @@ void do_throw( CHAR_DATA *ch, char *argument )
    char              buf[MAX_STRING_LENGTH];
 
 
-   argument = one_argument( argument, arg );
-   argument = one_argument( argument, arg2 );
-   argument = one_argument( argument, arg3 );
+   argstr = one_argument( argstr, arg );
+   argstr = one_argument( argstr, arg2 );
+   argstr = one_argument( argstr, arg3 );
    
    was_in_room = ch->in_room;
       
-   if ( arg[0] == '\0' )
+   if ( arg.empty() )
    {
      send_to_char( "Usage: throw <object> [direction] [target]\n", ch );
      return;
@@ -3664,32 +3648,32 @@ void do_throw( CHAR_DATA *ch, char *argument )
       obj = get_eq_char( ch, WEAR_DUAL_WIELD );
    if ( !obj || !nifty_is_name_prefix( arg, obj->name ) )
    {
-         ch_printf( ch, "You don't seem to be holding or wielding %s.\n", arg );
+         ch_printf( ch, "You don't seem to be holding or wielding %s.\n", arg.c_str() );
          return;
    }  
 
-    if ( IS_OBJ_STAT(obj, ITEM_NOREMOVE) )
-    {
- act( AT_PLAIN, "You can't throw $p.", ch, obj, NULL, TO_CHAR );
- return;
-    }
+   if ( IS_OBJ_STAT(obj, ITEM_NOREMOVE) )
+   {
+      act( AT_PLAIN, "You can't throw $p.", ch, obj, NULL, TO_CHAR );
+      return;
+   }
 
    if ( ch->position == POS_FIGHTING )
    {
-       victim = who_fighting( ch );
-       if ( char_died ( victim ) )
-           return;
-       act( AT_ACTION, "You throw $p at $N.", ch, obj, victim, TO_CHAR );
-       act( AT_ACTION, "$n throws $p at $N.", ch, obj, victim, TO_NOTVICT );
-       act( AT_ACTION, "$n throw $p at you.", ch, obj, victim, TO_VICT );        
+      victim = who_fighting( ch );
+      if ( char_died ( victim ) )
+         return;
+      act( AT_ACTION, "You throw $p at $N.", ch, obj, victim, TO_CHAR );
+      act( AT_ACTION, "$n throws $p at $N.", ch, obj, victim, TO_NOTVICT );
+      act( AT_ACTION, "$n throw $p at you.", ch, obj, victim, TO_VICT );        
    }
-   else if ( arg2[0] == '\0' )
+   else if ( arg2.empty() )
    {
-       SPRINTF( buf, "$n throws %s at the floor." , obj->short_descr );
-       act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );  
-       ch_printf( ch, "You throw %s at the floor.\n", obj->short_descr );
-       
-       victim = NULL;
+      SPRINTF( buf, "$n throws %s at the floor." , obj->short_descr );
+      act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );  
+      ch_printf( ch, "You throw %s at the floor.\n", obj->short_descr );
+      
+      victim = NULL;
    }
    else  if ( ( dir = get_door( arg2 ) ) != -1 )
    {
@@ -3735,10 +3719,10 @@ void do_throw( CHAR_DATA *ch, char *argument )
 
       to_room = NULL;
       if ( pexit->distance > 1 )
-       to_room = generate_exit( ch->in_room , &pexit );
+         to_room = generate_exit( ch->in_room , &pexit );
     
       if ( to_room == NULL )
-       to_room = pexit->to_room;
+         to_room = pexit->to_room;
     
 
       char_from_room( ch );
@@ -3748,39 +3732,39 @@ void do_throw( CHAR_DATA *ch, char *argument )
 
       if ( victim )
       { 
-        if ( is_safe( ch, victim ) )
- return;
-    
-        if ( IS_AFFECTED(ch, AFF_CHARM) && ch->master == victim )
-        {
-        act( AT_PLAIN, "$N is your beloved master.", ch, NULL, victim, TO_CHAR );
- return;
-        }
-    
-        if ( !IS_NPC( victim ) && BV_IS_SET( ch->act, PLR_NICE ) )
-        {
-        send_to_char( "You feel too nice to do that!\n", ch );
-        return;
-        }
-    
-        char_from_room( ch );
-        char_to_room( ch, was_in_room );    
-
-      
-        if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
-        {
-            set_char_color( AT_MAGIC, ch );
-            send_to_char( "You'll have to do that elswhere.\n", ch );
+         if ( is_safe( ch, victim ) )
             return;
-        }
-       
-        to_room = NULL;
-        if ( pexit->distance > 1 )
-           to_room = generate_exit( ch->in_room , &pexit );
     
-        if ( to_room == NULL )
-           to_room = pexit->to_room;
-    
+         if ( IS_AFFECTED(ch, AFF_CHARM) && ch->master == victim )
+         {
+            act( AT_PLAIN, "$N is your beloved master.", ch, NULL, victim, TO_CHAR );
+            return;
+         }
+      
+         if ( !IS_NPC( victim ) && BV_IS_SET( ch->act, PLR_NICE ) )
+         {
+            send_to_char( "You feel too nice to do that!\n", ch );
+            return;
+         }
+      
+         char_from_room( ch );
+         char_to_room( ch, was_in_room );    
+
+         
+         if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+         {
+               set_char_color( AT_MAGIC, ch );
+               send_to_char( "You'll have to do that elswhere.\n", ch );
+               return;
+         }
+         
+         to_room = NULL;
+         if ( pexit->distance > 1 )
+            to_room = generate_exit( ch->in_room , &pexit );
+      
+         if ( to_room == NULL )
+            to_room = pexit->to_room;
+      
        
          char_from_room( ch );
          char_to_room( ch, to_room );
@@ -3812,20 +3796,20 @@ void do_throw( CHAR_DATA *ch, char *argument )
    }
    else if ( ( victim = get_char_room( ch, arg2 ) ) != NULL )
    {
-        if ( is_safe( ch, victim ) )
- return;
-    
-        if ( IS_AFFECTED(ch, AFF_CHARM) && ch->master == victim )
-        {
-        act( AT_PLAIN, "$N is your beloved master.", ch, NULL, victim, TO_CHAR );
- return;
-        }
-    
-        if ( !IS_NPC( victim ) && BV_IS_SET( ch->act, PLR_NICE ) )
-        {
-        send_to_char( "You feel too nice to do that!\n", ch );
-        return;
-        }
+      if ( is_safe( ch, victim ) )
+         return;
+   
+      if ( IS_AFFECTED(ch, AFF_CHARM) && ch->master == victim )
+      {
+         act( AT_PLAIN, "$N is your beloved master.", ch, NULL, victim, TO_CHAR );
+         return;
+      }
+   
+      if ( !IS_NPC( victim ) && BV_IS_SET( ch->act, PLR_NICE ) )
+      {
+         send_to_char( "You feel too nice to do that!\n", ch );
+         return;
+      }
 
    }
    else
@@ -3854,39 +3838,39 @@ void do_throw( CHAR_DATA *ch, char *argument )
 */
    if ( ch->in_room !=  was_in_room )
    {
-     char_from_room( ch );
-     char_to_room( ch, was_in_room );    
+      char_from_room( ch );
+      char_to_room( ch, was_in_room );    
    }
    
    if ( !victim || char_died( victim ) )
-       learn_from_failure( ch, gsn_throw );
+      learn_from_failure( ch, gsn_throw );
    else
    {
 
-       WAIT_STATE( ch, skill_table[gsn_throw]->beats );
-       if ( IS_NPC(ch) || number_percent( ) < ch->pcdata->learned[gsn_throw] )
-       {
-  learn_from_success( ch, gsn_throw );
-  global_retcode = damage( ch, victim, number_range( obj->weight*2 , (obj->weight*2 + ch->perm_str) ), TYPE_HIT );
-       }
-       else
-       {
-  learn_from_failure( ch, gsn_throw );
-  global_retcode = damage( ch, victim, 0, TYPE_HIT );
-       }
-    
-       if ( IS_NPC( victim ) && !char_died ( victim) )
-       {
-          if ( BV_IS_SET( victim->act , ACT_SENTINEL ) )
-          {
-             victim->was_sentinel = victim->in_room;
-             BV_REMOVE_BIT( victim->act, ACT_SENTINEL );
-          }
-      
-          start_hating( victim , ch );
-          start_hunting( victim, ch );
-     
-       } 
+      WAIT_STATE( ch, skill_table[gsn_throw]->beats );
+      if ( IS_NPC(ch) || number_percent( ) < ch->pcdata->learned[gsn_throw] )
+      {
+         learn_from_success( ch, gsn_throw );
+         global_retcode = damage( ch, victim, number_range( obj->weight*2 , (obj->weight*2 + ch->perm_str) ), TYPE_HIT );
+      }
+      else
+      {
+         learn_from_failure( ch, gsn_throw );
+         global_retcode = damage( ch, victim, 0, TYPE_HIT );
+      }
+   
+      if ( IS_NPC( victim ) && !char_died ( victim) )
+      {
+         if ( BV_IS_SET( victim->act , ACT_SENTINEL ) )
+         {
+            victim->was_sentinel = victim->in_room;
+            BV_REMOVE_BIT( victim->act, ACT_SENTINEL );
+         }
+   
+         start_hating( victim , ch );
+         start_hunting( victim, ch );
+   
+      } 
 
    }
    
@@ -3896,131 +3880,131 @@ void do_throw( CHAR_DATA *ch, char *argument )
 
 void do_beg( CHAR_DATA *ch, char *argument )
 {
-    char buf  [MAX_STRING_LENGTH];
-    char arg1 [MAX_INPUT_LENGTH];
-    CHAR_DATA *victim;
-    int percent, xp;
-    int amount;
+   std::string buf;
+   std::string arg1;
+   CHAR_DATA *victim;
+   int percent, xp;
+   int amount;
 
-    if ( IS_NPC (ch) ) return;
-    
-    argument = one_argument( argument, arg1 );
+   if ( IS_NPC (ch) ) return;
+   
+   one_argument( argument, arg1 );
 
-    if ( ch->mount )
-    {
- send_to_char( "You can't do that while mounted.\n", ch );
- return;
-    }
+   if ( ch->mount )
+   {
+   send_to_char( "You can't do that while mounted.\n", ch );
+   return;
+   }
 
-    if ( arg1[0] == '\0' )
-    {
- send_to_char( "Beg fo money from whom?\n", ch );
- return;
-    }
+   if ( arg1.empty() )
+   {
+   send_to_char( "Beg fo money from whom?\n", ch );
+   return;
+   }
 
-    if ( ms_find_obj(ch) )
- return;
+   if ( ms_find_obj(ch) )
+      return;
 
-    if ( ( victim = get_char_room( ch, arg1 ) ) == NULL )
-    {
- send_to_char( "They aren't here.\n", ch );
- return;
-    }
+   if ( ( victim = get_char_room( ch, arg1 ) ) == NULL )
+   {
+      send_to_char( "They aren't here.\n", ch );
+      return;
+   }
 
-    if ( victim == ch )
-    {
- send_to_char( "That's pointless.\n", ch );
- return;
-    }
+   if ( victim == ch )
+   {
+      send_to_char( "That's pointless.\n", ch );
+      return;
+   }
 
-    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
-    {
- set_char_color( AT_MAGIC, ch );
- send_to_char( "This isn't a good place to do that.\n", ch );
- return;
-    }
+   if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+   {
+      set_char_color( AT_MAGIC, ch );
+      send_to_char( "This isn't a good place to do that.\n", ch );
+      return;
+   }
 
-    if ( ch->position == POS_FIGHTING )
-    {
-        send_to_char( "Interesting combat technique.\n" , ch );
-        return;
-    }
-    
-    if ( victim->position == POS_FIGHTING )
-    {
-        send_to_char( "They're a little busy right now.\n" , ch );
-        return;
-    }
-    
-    if ( ch->position <= POS_SLEEPING )
-    {
-        send_to_char( "In your dreams or what?\n" , ch );
-        return;
-    }
-    
-    if ( victim->position <= POS_SLEEPING )
-    {
-        send_to_char( "You might want to wake them first...\n" , ch );
-        return;
-    }
+   if ( ch->position == POS_FIGHTING )
+   {
+      send_to_char( "Interesting combat technique.\n" , ch );
+      return;
+   }
+   
+   if ( victim->position == POS_FIGHTING )
+   {
+      send_to_char( "They're a little busy right now.\n" , ch );
+      return;
+   }
+   
+   if ( ch->position <= POS_SLEEPING )
+   {
+      send_to_char( "In your dreams or what?\n" , ch );
+      return;
+   }
+   
+   if ( victim->position <= POS_SLEEPING )
+   {
+      send_to_char( "You might want to wake them first...\n" , ch );
+      return;
+   }
 
-    if ( !IS_NPC( victim ) )
-    {
- send_to_char( "You beg them for money.\n", ch );
- act( AT_ACTION, "$n begs you to give $s some change.\n", ch, NULL, victim, TO_VICT    );
- act( AT_ACTION, "$n begs $N for change.\n",  ch, NULL, victim, TO_NOTVICT );
- return;
-    }
-    
-    WAIT_STATE( ch, skill_table[gsn_beg]->beats );
-    percent  = number_percent( ) + ch->skill_level[SMUGGLING_ABILITY] + victim->top_level;
+   if ( !IS_NPC( victim ) )
+   {
+      send_to_char( "You beg them for money.\n", ch );
+      act( AT_ACTION, "$n begs you to give $s some change.\n", ch, NULL, victim, TO_VICT    );
+      act( AT_ACTION, "$n begs $N for change.\n",  ch, NULL, victim, TO_NOTVICT );
+      return;
+   }
+   
+   WAIT_STATE( ch, skill_table[gsn_beg]->beats );
+   percent  = number_percent( ) + ch->skill_level[SMUGGLING_ABILITY] + victim->top_level;
 
-    if ( percent > ch->pcdata->learned[gsn_beg]  ) 
-    {
- /*
-  * Failure.
-  */
- send_to_char( "You beg them for money but don't get any!\n", ch );
- act( AT_ACTION, "$n is really getting on your nerves with all this begging!\n", ch, NULL, victim, TO_VICT    );
- act( AT_ACTION, "$n begs $N for money.\n",  ch, NULL, victim, TO_NOTVICT );
+   if ( percent > ch->pcdata->learned[gsn_beg]  ) 
+   {
+      /*
+      * Failure.
+      */
+      send_to_char( "You beg them for money but don't get any!\n", ch );
+      act( AT_ACTION, "$n is really getting on your nerves with all this begging!\n", ch, NULL, victim, TO_VICT    );
+      act( AT_ACTION, "$n begs $N for money.\n",  ch, NULL, victim, TO_NOTVICT );
 
-        if ( victim->alignment < 0 && victim->top_level >= ch->top_level+5 )
- {
-   SPRINTF( buf, "%s is an annoying beggar and needs to be taught a lesson!", ch->name );
-   do_yell( victim, buf );
-          global_retcode = multi_hit( victim, ch, TYPE_UNDEFINED );
- }
- 
- learn_from_failure( ch, gsn_beg );
+            if ( victim->alignment < 0 && victim->top_level >= ch->top_level+5 )
+      {
+      buf = str_printf("%s is an annoying beggar and needs to be taught a lesson!", ch->name);
+      do_yell( victim, (char*)buf.c_str() );
+               global_retcode = multi_hit( victim, ch, TYPE_UNDEFINED );
+      }
 
- return;
-    }
+      learn_from_failure( ch, gsn_beg );
 
-    
-    act( AT_ACTION, "$n begs $N for money.\n",  ch, NULL, victim, TO_NOTVICT );
-    act( AT_ACTION, "$n begs you for money!\n", ch, NULL, victim, TO_VICT    );
+      return;
+   }
 
-    amount = UMIN( victim->gold , number_range(1, 10) );
-    if ( amount <= 0 )
-    {
-        do_look( victim , ch->name );
- do_say( victim , "Sorry I have nothing to spare.\n" );
- learn_from_failure( ch, gsn_beg );
- return;
-    }
+   
+   act( AT_ACTION, "$n begs $N for money.\n",  ch, NULL, victim, TO_NOTVICT );
+   act( AT_ACTION, "$n begs you for money!\n", ch, NULL, victim, TO_VICT    );
 
- ch->gold     += amount;
- victim->gold -= amount;
- ch_printf( ch, "%s gives you %d credits.\n", victim->short_descr , amount );
- learn_from_success( ch, gsn_beg );
- xp = UMIN( amount*10 , ( exp_level( ch->skill_level[SMUGGLING_ABILITY]+1) - exp_level( ch->skill_level[SMUGGLING_ABILITY])  )  );    
-        xp = UMIN( xp , xp_compute( ch, victim ) );
-        gain_exp( ch, xp, SMUGGLING_ABILITY );  
-        ch_printf( ch, "&WYou gain %d smuggling experience points!\n", xp );
-        act( AT_ACTION, "$N gives $n some money.\n",  ch, NULL, victim, TO_NOTVICT );
-        act( AT_ACTION, "You give $n some money.\n", ch, NULL, victim, TO_VICT    );
+   amount = UMIN( victim->gold , number_range(1, 10) );
+   if ( amount <= 0 )
+   {
+      do_look( victim , ch->name );
+      do_say( victim , "Sorry I have nothing to spare.\n" );
+      learn_from_failure( ch, gsn_beg );
+      return;
+   }
 
- return;
+   ch->gold     += amount;
+   victim->gold -= amount;
+   ch_printf( ch, "%s gives you %d credits.\n", victim->short_descr , amount );
+   learn_from_success( ch, gsn_beg );
+   xp = UMIN( amount*10 , ( exp_level( ch->skill_level[SMUGGLING_ABILITY]+1) - exp_level( ch->skill_level[SMUGGLING_ABILITY])  )  );    
+   xp = UMIN( xp , xp_compute( ch, victim ) );
+   gain_exp( ch, xp, SMUGGLING_ABILITY );  
+   ch_printf( ch, "&WYou gain %d smuggling experience points!\n", xp );
+   act( AT_ACTION, "$N gives $n some money.\n",  ch, NULL, victim, TO_NOTVICT );
+   act( AT_ACTION, "You give $n some money.\n", ch, NULL, victim, TO_VICT    );
+
+   return;
 
 }
 
@@ -4031,309 +4015,305 @@ void do_pickshiplock( CHAR_DATA *ch, char *argument )
 
 void do_hijack( CHAR_DATA *ch, char *argument )
 {
-    int chance; 
-    SHIP_DATA *ship;
-    char buf[MAX_STRING_LENGTH];
-    char buf2[MAX_STRING_LENGTH];
-    CHAR_DATA *p, *p_prev, *victim;
+   int chance; 
+   SHIP_DATA *ship;
+   std::string buf2;
+   CHAR_DATA *p, *p_prev, *victim;
 
 
-             if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
-             {
-                 send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
-                 return;
-             }
+   if ( (ship = ship_from_cockpit(ch->game, ch->in_room->vnum)) == NULL )
+   {
+      send_to_char("&RYou must be in the cockpit of a ship to do that!\n",ch);
+      return;
+   }
 
-             if ( ship->shipclass > SHIP_PLATFORM )
-             {
-                 send_to_char("&RThis isn't a spacecraft!\n",ch);
-                 return;
-             }
-             
-             if ( (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum)) == NULL )  
-             {
-                 send_to_char("&RYou don't seem to be in the pilot seat!\n",ch);
-                 return;
-             }
-             
-             if ( check_pilot( ch , ship ) )
-             {
-                 send_to_char("&RWhat would be the point of that!\n",ch);
-                 return;
-             }
+   if ( ship->shipclass > SHIP_PLATFORM )
+   {
+      send_to_char("&RThis isn't a spacecraft!\n",ch);
+      return;
+   }
+   
+   if ( (ship = ship_from_pilotseat(ch->game, ch->in_room->vnum)) == NULL )  
+   {
+      send_to_char("&RYou don't seem to be in the pilot seat!\n",ch);
+      return;
+   }
+   
+   if ( check_pilot( ch , ship ) )
+   {
+      send_to_char("&RWhat would be the point of that!\n",ch);
+      return;
+   }
 
-             if ( ship->type == MOB_SHIP && get_trust(ch) < 102 )
-             {
-                 send_to_char("&RThis ship isn't pilotable by mortals at this point in time...\n",ch);
-                 return;
-             }
-             
-                if  ( ship->shipclass == SHIP_PLATFORM )
-                {
-                   send_to_char( "You can't do that here.\n" , ch );
-                   return;
-                }
-    
-             if ( ship->lastdoc != ship->location )
-                {
-                     send_to_char("&rYou don't seem to be docked right now.\n",ch);
-                     return;
-                }
-    
-             if ( ship->shipstate != SHIP_LANDED && ship->shipstate != SHIP_DISABLED )
-             {
-                 send_to_char("The ship is not docked right now.\n",ch);
-                 return;
-             }
+   if ( ship->type == MOB_SHIP && get_trust(ch) < 102 )
+   {
+      send_to_char("&RThis ship isn't pilotable by mortals at this point in time...\n",ch);
+      return;
+   }
+   
+   if  ( ship->shipclass == SHIP_PLATFORM )
+   {
+      send_to_char( "You can't do that here.\n" , ch );
+      return;
+   }
+
+   if ( ship->lastdoc != ship->location )
+   {
+      send_to_char("&rYou don't seem to be docked right now.\n",ch);
+      return;
+   }
+
+   if ( ship->shipstate != SHIP_LANDED && ship->shipstate != SHIP_DISABLED )
+   {
+      send_to_char("The ship is not docked right now.\n",ch);
+      return;
+   }
+      
+      if ( ship->shipstate == SHIP_DISABLED )
+   {
+      send_to_char("The ships drive is disabled .\n",ch);
+      return;
+   }
+      
+   chance = IS_NPC(ch) ? ch->top_level
+   : (int)  (ch->pcdata->learned[gsn_hijack]) ;
+   if ( number_percent( ) > chance )
+   {  
+      send_to_char("You fail to figure out the correct launch code.\n",ch);
+      learn_from_failure( ch, gsn_hijack );
+      return;
+   }
                 
-                if ( ship->shipstate == SHIP_DISABLED )
-             {
-                 send_to_char("The ships drive is disabled .\n",ch);
-                 return;
-             }
-                
-                chance = IS_NPC(ch) ? ch->top_level
-                  : (int)  (ch->pcdata->learned[gsn_hijack]) ;
-                if ( number_percent( ) > chance )
-      {  
-          send_to_char("You fail to figure out the correct launch code.\n",ch);
-                   learn_from_failure( ch, gsn_hijack );
-                 return;
-                }
-                
-             if ( ship->shipclass == FIGHTER_SHIP )
-                    chance = IS_NPC(ch) ? ch->top_level
-                  : (int)  (ch->pcdata->learned[gsn_starfighters]) ;
-                if ( ship->shipclass == MIDSIZE_SHIP )
-                    chance = IS_NPC(ch) ? ch->top_level
-                  : (int)  (ch->pcdata->learned[gsn_midships]) ;
-                if ( ship->shipclass == CAPITAL_SHIP )
-                    chance = IS_NPC(ch) ? ch->top_level
-                  : (int) (ch->pcdata->learned[gsn_capitalships]);
-                if ( number_percent( ) < chance )
-      {  
-                
-         if (ship->hatchopen)
+   if ( ship->shipclass == FIGHTER_SHIP )
+         chance = IS_NPC(ch) ? ch->top_level
+      : (int)  (ch->pcdata->learned[gsn_starfighters]) ;
+   if ( ship->shipclass == MIDSIZE_SHIP )
+      chance = IS_NPC(ch) ? ch->top_level
+   : (int)  (ch->pcdata->learned[gsn_midships]) ;
+   if ( ship->shipclass == CAPITAL_SHIP )
+      chance = IS_NPC(ch) ? ch->top_level
+   : (int) (ch->pcdata->learned[gsn_capitalships]);
+   if ( number_percent( ) < chance )
+   {  
+               
+      if (ship->hatchopen)
+      {
+         ship->hatchopen = FALSE;
+         echo_to_room( AT_YELLOW , get_room_index(ship->location) , str_printf("The hatch on %s closes." , ship->name) );
+         echo_to_room( AT_YELLOW , get_room_index(ship->entrance) , "The hatch slides shut." );
+      }
+      set_char_color( AT_GREEN, ch );
+      send_to_char( "Launch sequence initiated.\n", ch);
+      act( AT_PLAIN, "$n starts up the ship and begins the launch sequence.", ch,
+         NULL, argument , TO_ROOM );
+      echo_to_ship( AT_YELLOW , ship , "The ship hums as it lifts off the ground.");
+      echo_to_room( AT_YELLOW , get_room_index(ship->location) , str_printf("%s begins to launch.", ship->name) );
+      ship->shipstate = SHIP_LAUNCH;
+      ship->currspeed = ship->realspeed;
+      if ( ship->shipclass == FIGHTER_SHIP )
+         learn_from_success( ch, gsn_starfighters );
+      if ( ship->shipclass == MIDSIZE_SHIP )
+         learn_from_success( ch, gsn_midships );
+      if ( ship->shipclass == CAPITAL_SHIP )
+         learn_from_success( ch, gsn_capitalships );
+
+      learn_from_success( ch, gsn_hijack );
+
+      for (p = last_char; p ; p = p_prev )
+      {
+         p_prev = p->prev;  /* TRI */
+         if (!IS_NPC(p) && get_trust(p) >= LEVEL_GOD)
          {
-           ship->hatchopen = FALSE;
-           SPRINTF( buf , "The hatch on %s closes." , ship->name);
-                     echo_to_room( AT_YELLOW , get_room_index(ship->location) , buf );
-                     echo_to_room( AT_YELLOW , get_room_index(ship->entrance) , "The hatch slides shut." );
-                   }
-         set_char_color( AT_GREEN, ch );
-         send_to_char( "Launch sequence initiated.\n", ch);
-         act( AT_PLAIN, "$n starts up the ship and begins the launch sequence.", ch,
-          NULL, argument , TO_ROOM );
-     echo_to_ship( AT_YELLOW , ship , "The ship hums as it lifts off the ground.");
-         SPRINTF( buf, "%s begins to launch.", ship->name );
-         echo_to_room( AT_YELLOW , get_room_index(ship->location) , buf );
-         ship->shipstate = SHIP_LAUNCH;
-         ship->currspeed = ship->realspeed;
-         if ( ship->shipclass == FIGHTER_SHIP )
-                      learn_from_success( ch, gsn_starfighters );
-                   if ( ship->shipclass == MIDSIZE_SHIP )
-                      learn_from_success( ch, gsn_midships );
-                   if ( ship->shipclass == CAPITAL_SHIP )
-                      learn_from_success( ch, gsn_capitalships );
+            buf2 = str_printf("%s(%s)", ship->name, ship->personalname );
+            ch_printf(p, "&R[alarm] %s has been hijacked by %s!\n", buf2.c_str(), ch->name);
+         }
+      }
 
-                   learn_from_success( ch, gsn_hijack );
+      if ( ship->alarm == 0 )
+            return;
+      if ( !str_cmp("Public",ship->owner) )
+         return;
+      for ( victim = first_char; victim; victim = victim->next )
+      {
+         bool victim_comlink;
+         OBJ_DATA *obj;
 
-         for (p = last_char; p ; p = p_prev )
+         if ( !check_pilot(victim,ship) )
+            continue;
 
-  {
-   p_prev = p->prev;  /* TRI */
-   if (!IS_NPC(p) && get_trust(p) >= LEVEL_GOD)
-                        {
-                          SPRINTF( buf2, "%s(%s)", ship->name, ship->personalname );
-                          ch_printf(p, "&R[alarm] %s has been hijacked by %s!\n", buf2, ch->name);
-                        }
-        }
+         victim_comlink = FALSE;
+         if ( IS_IMMORTAL(victim) )
+            victim_comlink = TRUE;
+         for ( obj = victim->last_carrying; obj; obj = obj->prev_content )
+         {
+            if ( obj->pIndexData->item_type == ITEM_COMLINK )
+               victim_comlink = TRUE;
+         }
+         if ( !victim_comlink )
+            continue;
 
-            if ( ship->alarm == 0 )
-                return;
-            if ( !str_cmp("Public",ship->owner) )
-               return;
-            for ( victim = first_char; victim; victim = victim->next )
-            {
-                bool victim_comlink;
-                OBJ_DATA *obj;
+         if ( !IS_NPC( victim ) && victim->switched )
+            continue;
 
-                if ( !check_pilot(victim,ship) )
-                    continue;
+         if ( !IS_AWAKE(victim) || BV_IS_SET(victim->in_room->room_flags,ROOM_SILENCE) )
+            continue;
 
-                victim_comlink = FALSE;
-                if ( IS_IMMORTAL(victim) )
-                    victim_comlink = TRUE;
-                for ( obj = victim->last_carrying; obj; obj = obj->prev_content )
-                {
-                    if ( obj->pIndexData->item_type == ITEM_COMLINK )
-                        victim_comlink = TRUE;
-                }
-                if ( !victim_comlink )
-                    continue;
+         ch_printf(victim,"&R[alarm] %s has been hijacked!\n",ship->name);
 
-                if ( !IS_NPC( victim ) && victim->switched )
-                    continue;
+      }
 
-                if ( !IS_AWAKE(victim) || BV_IS_SET(victim->in_room->room_flags,ROOM_SILENCE) )
-                    continue;
-
-                ch_printf(victim,"&R[alarm] %s has been hijacked!\n",ship->name);
-
-            }
-
-                   return;
-                }
-                set_char_color( AT_RED, ch );
-         send_to_char("You fail to work the controls properly!\n",ch);
-         if ( ship->shipclass == FIGHTER_SHIP )
-                    learn_from_failure( ch, gsn_starfighters );
-                if ( ship->shipclass == MIDSIZE_SHIP )
-                 learn_from_failure( ch, gsn_midships );
-                if ( ship->shipclass == CAPITAL_SHIP )
-                    learn_from_failure( ch, gsn_capitalships );
-         return; 
+      return;
+   }
+   set_char_color( AT_RED, ch );
+   send_to_char("You fail to work the controls properly!\n",ch);
+   if ( ship->shipclass == FIGHTER_SHIP )
+      learn_from_failure( ch, gsn_starfighters );
+   if ( ship->shipclass == MIDSIZE_SHIP )
+   learn_from_failure( ch, gsn_midships );
+   if ( ship->shipclass == CAPITAL_SHIP )
+      learn_from_failure( ch, gsn_capitalships );
+   return; 
      
 }
 
 void do_add_patrol ( CHAR_DATA *ch , char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    int chance, credits;
-    
-    if ( IS_NPC( ch ) || !ch->pcdata )
-     return;
+   std::string arg;
+   int chance, credits;
+   
+   if ( IS_NPC( ch ) || !ch->pcdata )
+   return;
 
-    SPRINTF( arg, "%s", argument );    
-    
-    switch( ch->substate )
-    { 
-     default:
-             if ( ch->backup_wait )
-             {
-                 send_to_char( "&RYou already have backup coming.\n", ch );
-                 return;
-             }
-             
-             if ( !ch->pcdata->clan )
-             {
-                 send_to_char( "&RYou need to be a member of an organization before you can call for a guard.\n", ch );
-                 return;
-             }    
-             
-             if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 30 )
-             {
-                 ch_printf( ch, "&RYou dont have enough credits.\n", ch );
-                 return;
-             }    
-             
-             chance = (int) (ch->pcdata->learned[gsn_addpatrol]);
-                if ( number_percent( ) < chance )
-      {
-         send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
-         act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
-          NULL, argument , TO_ROOM );
-     add_timer ( ch , TIMER_DO_FUN , 1 , do_add_patrol , 1 );
-         ch->dest_buf = str_dup(arg);
-         return;
+   arg = argument;    
+   
+   switch( ch->substate )
+   { 
+      default:
+         if ( ch->backup_wait )
+         {
+            send_to_char( "&RYou already have backup coming.\n", ch );
+            return;
+         }
+         
+         if ( !ch->pcdata->clan )
+         {
+            send_to_char( "&RYou need to be a member of an organization before you can call for a guard.\n", ch );
+            return;
+         }    
+         
+         if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 30 )
+         {
+            ch_printf( ch, "&RYou dont have enough credits.\n", ch );
+            return;
+         }    
+         
+         chance = (int) (ch->pcdata->learned[gsn_addpatrol]);
+         if ( number_percent( ) < chance )
+         {
+            send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
+            act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
+            NULL, arg , TO_ROOM );
+            add_timer ( ch , TIMER_DO_FUN , 1 , do_add_patrol , 1 );
+            ch->dest_buf = str_dup(arg);
+            return;
          }
          send_to_char("&RYou call for a guard but nobody answers.\n",ch);
          learn_from_failure( ch, gsn_addpatrol );
          return;
      
-     case 1:
-      if ( !ch->dest_buf )
-         return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      STR_DISPOSE( ch->dest_buf);
-      break;
+      case 1:
+         if ( !ch->dest_buf )
+            return;
+         arg = (const char*) ch->dest_buf;
+         STR_DISPOSE( ch->dest_buf);
+         break;
       
-     case SUB_TIMER_DO_ABORT:
-      STR_DISPOSE( ch->dest_buf );
-      ch->substate = SUB_NONE;                                         
-             send_to_char("&RYou are interupted before you can finish your call.\n", ch);
-             return;
-    }
+      case SUB_TIMER_DO_ABORT:
+         STR_DISPOSE( ch->dest_buf );
+         ch->substate = SUB_NONE;                                         
+               send_to_char("&RYou are interupted before you can finish your call.\n", ch);
+               return;
+   }
     
-    ch->substate = SUB_NONE;
-    
-    send_to_char( "&GYour guard is on the way.\n", ch);
-    
-    credits = ch->skill_level[LEADERSHIP_ABILITY] * 30;
-    ch_printf( ch, "It cost you %d credits.\n", credits);
-    ch->gold -= UMIN( credits , ch->gold );
+   ch->substate = SUB_NONE;
+   
+   send_to_char( "&GYour guard is on the way.\n", ch);
+   
+   credits = ch->skill_level[LEADERSHIP_ABILITY] * 30;
+   ch_printf( ch, "It cost you %d credits.\n", credits);
+   ch->gold -= UMIN( credits , ch->gold );
 
-    learn_from_success( ch, gsn_addpatrol );
-    
-    if ( nifty_is_name( "empire" , ch->pcdata->clan->name ) )
-       ch->backup_mob = MOB_VNUM_IMP_PATROL;
-    else if ( nifty_is_name( "rebel" , ch->pcdata->clan->name ) )
-       ch->backup_mob = MOB_VNUM_NR_PATROL;
-    else
-       ch->backup_mob = MOB_VNUM_MERC_PATROL;
+   learn_from_success( ch, gsn_addpatrol );
+   
+   if ( nifty_is_name( "empire" , ch->pcdata->clan->name ) )
+      ch->backup_mob = MOB_VNUM_IMP_PATROL;
+   else if ( nifty_is_name( "rebel" , ch->pcdata->clan->name ) )
+      ch->backup_mob = MOB_VNUM_NR_PATROL;
+   else
+      ch->backup_mob = MOB_VNUM_MERC_PATROL;
 
-    ch->backup_wait = 1;
+   ch->backup_wait = 1;
 
 }
 
 
 void do_special_forces ( CHAR_DATA *ch , char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    int chance, credits;
-    
-    if ( IS_NPC( ch ) || !ch->pcdata )
-     return;
-     
-    SPRINTF( arg, "%s", argument );    
-    
-    switch( ch->substate )
-    { 
-     default:
-             if ( ch->backup_wait )
-             {
-                 send_to_char( "&RYour reinforcements are already on the way.\n", ch );
-                 return;
-             }
+   std::string arg;
+   int chance, credits;
+   
+   if ( IS_NPC( ch ) || !ch->pcdata )
+   return;
+   
+   arg = argument;    
+   
+   switch( ch->substate )
+   { 
+      default:
+         if ( ch->backup_wait )
+         {
+            send_to_char( "&RYour reinforcements are already on the way.\n", ch );
+            return;
+         }
 
-             if ( !ch->pcdata->clan )
-             {
-                 send_to_char( "&RYou need to be a member of an organization before you can call for reinforcements.\n", ch );
-                 return;
-             }
+         if ( !ch->pcdata->clan )
+         {
+            send_to_char( "&RYou need to be a member of an organization before you can call for reinforcements.\n", ch );
+            return;
+         }
 
-             if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 350 )
-             {
-                 ch_printf( ch, "&RYou dont have enough credits to send for reinforcements.\n" );
-                 return;
-             }
+         if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 350 )
+         {
+            ch_printf( ch, "&RYou dont have enough credits to send for reinforcements.\n" );
+            return;
+         }
 
-             chance = (int) (ch->pcdata->learned[gsn_specialforces]);
-                if ( number_percent( ) < chance )
-      {
-         send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
-         act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
-          NULL, argument , TO_ROOM );
-     add_timer ( ch , TIMER_DO_FUN , 1 , do_special_forces , 1 );
-         ch->dest_buf = str_dup(arg);
-         return;
+         chance = (int) (ch->pcdata->learned[gsn_specialforces]);
+         if ( number_percent( ) < chance )
+         {
+            send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
+            act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
+            NULL, arg , TO_ROOM );
+            add_timer ( ch , TIMER_DO_FUN , 1 , do_special_forces , 1 );
+            ch->dest_buf = str_dup(arg);
+            return;
          }
          send_to_char("&RYou call for reinforcements but nobody answers.\n",ch);
          learn_from_failure( ch, gsn_specialforces );
          return;
 
-     case 1:
-      if ( !ch->dest_buf )
-         return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      STR_DISPOSE( ch->dest_buf);
-      break;
+      case 1:
+         if ( !ch->dest_buf )
+            return;
+         arg = (const char*) ch->dest_buf;
+         STR_DISPOSE( ch->dest_buf);
+         break;
 
-     case SUB_TIMER_DO_ABORT:
-      STR_DISPOSE( ch->dest_buf );
-      ch->substate = SUB_NONE;
-             send_to_char("&RYou are interupted before you can finish your call.\n", ch);
-             return;
+      case SUB_TIMER_DO_ABORT:
+         STR_DISPOSE( ch->dest_buf );
+         ch->substate = SUB_NONE;
+               send_to_char("&RYou are interupted before you can finish your call.\n", ch);
+               return;
     }
 
     ch->substate = SUB_NONE;
@@ -4359,61 +4339,61 @@ void do_special_forces ( CHAR_DATA *ch , char *argument )
 
 void do_elite_guard ( CHAR_DATA *ch , char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    int chance, credits;
-    
-    if ( IS_NPC( ch ) || !ch->pcdata )
-     return;
+   std::string arg;
+   int chance, credits;
 
-    SPRINTF( arg, "%s", argument );
+   if ( IS_NPC( ch ) || !ch->pcdata )
+   return;
 
-    switch( ch->substate )
-    {
-     default:
-             if ( ch->backup_wait )
-             {
-                 send_to_char( "&RYou already have backup coming.\n", ch );
-                 return;
-             }
+   arg = argument;
 
-             if ( !ch->pcdata->clan )
-             {
-                 send_to_char( "&RYou need to be a member of an organization before you can call for a guard.\n", ch );
-                 return;
-             }
+   switch( ch->substate )
+   {
+      default:
+         if ( ch->backup_wait )
+         {
+            send_to_char( "&RYou already have backup coming.\n", ch );
+            return;
+         }
 
-             if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 200 )
-             {
-                 ch_printf( ch, "&RYou dont have enough credits.\n", ch );
-                 return;
-             }
+         if ( !ch->pcdata->clan )
+         {
+            send_to_char( "&RYou need to be a member of an organization before you can call for a guard.\n", ch );
+            return;
+         }
 
-             chance = (int) (ch->pcdata->learned[gsn_eliteguard]);
-                if ( number_percent( ) < chance )
-      {
-         send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
-         act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
-          NULL, argument , TO_ROOM );
-     add_timer ( ch , TIMER_DO_FUN , 1 , do_elite_guard , 1 );
-         ch->dest_buf = str_dup(arg);
-         return;
+         if ( ch->gold < ch->skill_level[LEADERSHIP_ABILITY] * 200 )
+         {
+            ch_printf( ch, "&RYou dont have enough credits.\n", ch );
+            return;
+         }
+
+         chance = (int) (ch->pcdata->learned[gsn_eliteguard]);
+         if ( number_percent( ) < chance )
+         {
+            send_to_char( "&GYou begin making the call for reinforcements.\n", ch);
+            act( AT_PLAIN, "$n begins issuing orders int $s comlink.", ch,
+            NULL, arg , TO_ROOM );
+            add_timer ( ch , TIMER_DO_FUN , 1 , do_elite_guard , 1 );
+            ch->dest_buf = str_dup(arg);
+            return;
          }
          send_to_char("&RYou call for a guard but nobody answers.\n",ch);
          learn_from_failure( ch, gsn_eliteguard );
          return;
 
-     case 1:
-      if ( !ch->dest_buf )
-         return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
-      STR_DISPOSE( ch->dest_buf);
-      break;
+      case 1:
+         if ( !ch->dest_buf )
+            return;
+         arg = (const char*) ch->dest_buf;
+         STR_DISPOSE( ch->dest_buf);
+         break;
 
-     case SUB_TIMER_DO_ABORT:
-      STR_DISPOSE( ch->dest_buf );
-      ch->substate = SUB_NONE;
-             send_to_char("&RYou are interupted before you can finish your call.\n", ch);
-             return;
+      case SUB_TIMER_DO_ABORT:
+         STR_DISPOSE( ch->dest_buf );
+         ch->substate = SUB_NONE;
+               send_to_char("&RYou are interupted before you can finish your call.\n", ch);
+               return;
     }
 
     ch->substate = SUB_NONE;
@@ -4440,342 +4420,343 @@ void do_elite_guard ( CHAR_DATA *ch , char *argument )
 
 void do_unjail ( CHAR_DATA *ch , char *argument )
 {
-    CHAR_DATA *victim =NULL;
-    char arg[MAX_INPUT_LENGTH];
+   CHAR_DATA *victim =NULL;
+   std::string arg;
 
-    argument = one_argument(argument, arg);
+   one_argument(argument, arg);
+   
+   if ( ( victim = get_char_room( ch, arg ) ) == NULL )
+   {
+      send_to_char( "They aren't here.\n", ch );
+      return;
+   }
     
-    if ( ( victim = get_char_room( ch, arg ) ) == NULL )
-    {
- send_to_char( "They aren't here.\n", ch );
- return;
-    }
-    
-    if ( victim == ch )
-    {
- send_to_char( "That's pointless.\n", ch );
- return;
-    }
+   if ( victim == ch )
+   {
+      send_to_char( "That's pointless.\n", ch );
+      return;
+   }
 
-    if ( IS_NPC(victim) )
-    {
- send_to_char( "That would be a waste of time.\n", ch );
- return;
-    }
+   if ( IS_NPC(victim) )
+   {
+      send_to_char( "That would be a waste of time.\n", ch );
+      return;
+   }
 
-    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
-    {
- set_char_color( AT_MAGIC, ch );
- send_to_char( "This isn't a good place to do that.\n", ch );
- return;
-    }
+   if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+   {
+      set_char_color( AT_MAGIC, ch );
+      send_to_char( "This isn't a good place to do that.\n", ch );
+      return;
+   }
 
-    if ( ch->position == POS_FIGHTING )
-    {
-        send_to_char( "Interesting combat technique.\n" , ch );
-        return;
-    }
-    
-    if ( ch->position <= POS_SLEEPING )
-    {
-        send_to_char( "In your dreams or what?\n" , ch );
-        return;
-    }
+   if ( ch->position == POS_FIGHTING )
+   {
+      send_to_char( "Interesting combat technique.\n" , ch );
+      return;
+   }
+   
+   if ( ch->position <= POS_SLEEPING )
+   {
+      send_to_char( "In your dreams or what?\n" , ch );
+      return;
+   }
 
-    if ( victim->in_room->vnum == 6)
-    {
+   if ( victim->in_room->vnum == 6)
+   {
       send_to_char( "Only an immortal can unhell someone.\n", ch );
       return;
-    }   
-    send_to_char( "Jail restrictions released.\n", ch );
-    victim->pcdata->jail_vnum = 0;
-    victim->pcdata->release_date = 0;
-    return;
+   }   
+   send_to_char( "Jail restrictions released.\n", ch );
+   victim->pcdata->jail_vnum = 0;
+   victim->pcdata->release_date = 0;
+   return;
 }
 void do_jail ( CHAR_DATA *ch , char *argument )
 {
-    CHAR_DATA *victim =NULL;
-    CLAN_DATA   *clan =NULL;
-    ROOM_INDEX_DATA *jail =NULL;
-    char arg[MAX_INPUT_LENGTH];
-    sh_int time;
-    bool h_d = FALSE;
-    struct tm *tms;
+   CHAR_DATA *victim =NULL;
+   CLAN_DATA   *clan =NULL;
+   ROOM_INDEX_DATA *jail =NULL;
+   std::string arg;
+   std::string argstr = argument;
+   sh_int time;
+   bool h_d = FALSE;
+   struct tm *tms;
 
-  argument = one_argument(argument, arg);
-    
-    if ( IS_NPC (ch) ) return;
-    
-    if ( !ch->pcdata || ( clan = ch->pcdata->clan ) == NULL )
-    {
- send_to_char( "Only members of organizations can jail their enemies.\n", ch );
- return;
-    }
+   argstr = one_argument(argstr, arg);
+   
+   if ( IS_NPC (ch) ) return;
+   
+   if ( !ch->pcdata || ( clan = ch->pcdata->clan ) == NULL )
+   {
+      send_to_char( "Only members of organizations can jail their enemies.\n", ch );
+      return;
+   }
 
-    jail = get_room_index( clan->jail );
-    if ( !jail && clan->mainclan )
-       jail = get_room_index( clan->mainclan->jail );
-    
-    if ( !jail )
-    {
- send_to_char( "Your orginization does not have a suitable prison.\n", ch );
- return;
-    }
+   jail = get_room_index( clan->jail );
+   if ( !jail && clan->mainclan )
+      jail = get_room_index( clan->mainclan->jail );
+   
+   if ( !jail )
+   {
+      send_to_char( "Your orginization does not have a suitable prison.\n", ch );
+      return;
+   }
 
-    if ( jail->area && ch->in_room->area 
-    && jail->area != ch->in_room->area &&
-    ( !jail->area->planet || jail->area->planet != ch->in_room->area->planet ) )
-    {
-         send_to_char( "Your organizations prison is to far away.\n", ch );
-  return;
-    }
-        
-    if ( ch->mount )
-    {
- send_to_char( "You can't do that while mounted.\n", ch );
- return;
-    }
+   if ( jail->area && ch->in_room->area 
+   && jail->area != ch->in_room->area &&
+   ( !jail->area->planet || jail->area->planet != ch->in_room->area->planet ) )
+   {
+      send_to_char( "Your organizations prison is to far away.\n", ch );
+      return;
+   }
+      
+   if ( ch->mount )
+   {
+      send_to_char( "You can't do that while mounted.\n", ch );
+      return;
+   }
 
-    if ( arg[0] == '\0' )
-    {
- send_to_char( "Jail who?\n", ch );
- return;
-    }
+   if ( arg.empty() )
+   {
+      send_to_char( "Jail who?\n", ch );
+      return;
+   }
 
-    if ( ( victim = get_char_room( ch, arg ) ) == NULL )
-    {
- send_to_char( "They aren't here.\n", ch );
- return;
-    }
+   if ( ( victim = get_char_room( ch, arg ) ) == NULL )
+   {
+      send_to_char( "They aren't here.\n", ch );
+      return;
+   }
 
-    if ( victim == ch )
-    {
- send_to_char( "That's pointless.\n", ch );
- return;
-    }
+   if ( victim == ch )
+   {
+      send_to_char( "That's pointless.\n", ch );
+      return;
+   }
 
-    if ( IS_NPC(victim) )
-    {
- send_to_char( "That would be a waste of time.\n", ch );
- return;
-    }
+   if ( IS_NPC(victim) )
+   {
+      send_to_char( "That would be a waste of time.\n", ch );
+      return;
+   }
 
-    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
-    {
- set_char_color( AT_MAGIC, ch );
- send_to_char( "This isn't a good place to do that.\n", ch );
- return;
-    }
+   if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+   {
+      set_char_color( AT_MAGIC, ch );
+      send_to_char( "This isn't a good place to do that.\n", ch );
+      return;
+   }
 
-    if ( ch->position == POS_FIGHTING )
-    {
-        send_to_char( "Interesting combat technique.\n" , ch );
-        return;
-    }
-    
-    if ( ch->position <= POS_SLEEPING )
-    {
-        send_to_char( "In your dreams or what?\n" , ch );
-        return;
-    }
-    
-  argument = one_argument(argument, arg);
-  if ( !*arg || !is_number(arg) )
-  {
-    send_to_char( "Jail them for how long?\n", ch );
-    return;
-  }
+   if ( ch->position == POS_FIGHTING )
+   {
+      send_to_char( "Interesting combat technique.\n" , ch );
+      return;
+   }
+   
+   if ( ch->position <= POS_SLEEPING )
+   {
+      send_to_char( "In your dreams or what?\n" , ch );
+      return;
+   }
+   
+   argstr = one_argument(argstr, arg);
+   if ( arg.empty() || !is_number(arg) )
+   {
+      send_to_char( "Jail them for how long?\n", ch );
+      return;
+   }
 
-  time = atoi(arg);
-  if ( time < 0 )
-  {
-    send_to_char( "You cannot hell for negative time.\n", ch );
-    return;
-  }
-  time = atoi(arg);
-  if ( time == 0 && victim->in_room->vnum != 6)
-  {
-    send_to_char( "Jail restrictions released.\n", ch );
-    victim->pcdata->jail_vnum = 0;
-    victim->pcdata->release_date = 0;
-    return;
-  }
+   time = strtoi(arg);
+   if ( time < 0 )
+   {
+      send_to_char( "You cannot hell for negative time.\n", ch );
+      return;
+   }
+   time = strtoi(arg);
+   if ( time == 0 && victim->in_room->vnum != 6)
+   {
+      send_to_char( "Jail restrictions released.\n", ch );
+      victim->pcdata->jail_vnum = 0;
+      victim->pcdata->release_date = 0;
+      return;
+   }
 
-  if ( victim->position >= POS_SLEEPING )
-  {
+   if ( victim->position >= POS_SLEEPING )
+   {
       send_to_char( "You will have to stun them first.\n" , ch );
       return;
-  }
+   }
 
 
-  argument = one_argument(argument, arg);
-  if ( !*arg || !str_prefix(arg, "hours") )
-    h_d = TRUE;
-  else if ( str_prefix(arg, "days") )
-  {
-    send_to_char( "Is that value in hours or days?\n", ch );
-    return;
-  }
-  else if ( time > 30 )
-  {
-    send_to_char( "You may not hell a person for more than 30 days at a time.\n", ch );
-    return;
-  }
-  tms = localtime(&current_time);
-  if ( h_d )
-    tms->tm_hour += time;
-  else
-    tms->tm_mday += time;
-  victim->pcdata->release_date = mktime(tms);
-  victim->pcdata->helled_by = STRALLOC(ch->name);
-  victim->pcdata->jail_vnum = jail->vnum;
-  ch_printf(ch, "%s will be released from jail at %24.24s.\n", victim->name,
-          ctime(&victim->pcdata->release_date));
-  act(AT_MAGIC, "$n is dragged away.", victim, NULL, ch, TO_NOTVICT);
-  char_from_room(victim);
-    char_to_room ( victim , jail );
-  act(AT_MAGIC, "$n is dragged in.", victim, NULL, ch, TO_NOTVICT);
-  do_look(victim, "auto");
-  ch_printf(victim, "Whoops. You broke too many laws.\n"
-          "You shall remain in jail for %d %s%s.\n", time,
-          (h_d ? "hour" : "day"), (time == 1 ? "" : "s"));
-  save_char_obj(victim); /* used to save ch, fixed by Thoric 09/17/96 */
+   argstr = one_argument(argstr, arg);
+   if ( arg.empty() || !str_prefix(arg, "hours") )
+      h_d = TRUE;
+   else if ( str_prefix(arg, "days") )
+   {
+      send_to_char( "Is that value in hours or days?\n", ch );
+      return;
+   }
+   else if ( time > 30 )
+   {
+      send_to_char( "You may not hell a person for more than 30 days at a time.\n", ch );
+      return;
+   }
+   tms = localtime(&current_time);
+   if ( h_d )
+      tms->tm_hour += time;
+   else
+      tms->tm_mday += time;
+   victim->pcdata->release_date = mktime(tms);
+   victim->pcdata->helled_by = STRALLOC(ch->name);
+   victim->pcdata->jail_vnum = jail->vnum;
+   ch_printf(ch, "%s will be released from jail at %24.24s.\n", victim->name,
+            ctime(&victim->pcdata->release_date));
+   act(AT_MAGIC, "$n is dragged away.", victim, NULL, ch, TO_NOTVICT);
+   char_from_room(victim);
+      char_to_room ( victim , jail );
+   act(AT_MAGIC, "$n is dragged in.", victim, NULL, ch, TO_NOTVICT);
+   do_look(victim, "auto");
+   ch_printf(victim, "Whoops. You broke too many laws.\n"
+            "You shall remain in jail for %d %s%s.\n", time,
+            (h_d ? "hour" : "day"), (time == 1 ? "" : "s"));
+   save_char_obj(victim); /* used to save ch, fixed by Thoric 09/17/96 */
 
-  learn_from_success( ch , gsn_jail );
+   learn_from_success( ch , gsn_jail );
 
-  return;
+   return;
 }
 
 void do_smalltalk ( CHAR_DATA *ch , char *argument )
 {
-    char buf  [MAX_STRING_LENGTH];
-    char arg1 [MAX_INPUT_LENGTH];
-    CHAR_DATA *victim = NULL;
-    PLANET_DATA *planet = NULL;
-    CLAN_DATA   *clan = NULL;
-    int percent = 0;
-    
+   std::string buf;
+   std::string arg1;
+   CHAR_DATA *victim = NULL;
+   PLANET_DATA *planet = NULL;
+   CLAN_DATA   *clan = NULL;
+   int percent = 0;
+   
    if ( IS_NPC(ch) || !ch->pcdata )
    {
-       send_to_char( "What would be the point of that.\n", ch );
+      send_to_char( "What would be the point of that.\n", ch );
    }
-    
-    argument = one_argument( argument, arg1 );
+   
+   one_argument( argument, arg1 );
 
-    if ( ch->mount )
-    {
- send_to_char( "You can't do that while mounted.\n", ch );
- return;
-    }
+   if ( ch->mount )
+   {
+      send_to_char( "You can't do that while mounted.\n", ch );
+      return;
+   }
 
-    if ( arg1[0] == '\0' )
-    {
- send_to_char( "Create smalltalk with whom?\n", ch );
- return;
-    }
+   if ( arg1.empty() )
+   {
+      send_to_char( "Create smalltalk with whom?\n", ch );
+      return;
+   }
 
-    if ( ( victim = get_char_room( ch, arg1 ) ) == NULL )
-    {
- send_to_char( "They aren't here.\n", ch );
- return;
-    }
+   if ( ( victim = get_char_room( ch, arg1 ) ) == NULL )
+   {
+      send_to_char( "They aren't here.\n", ch );
+      return;
+   }
 
-    if ( victim == ch )
-    {
- send_to_char( "That's pointless.\n", ch );
- return;
-    }
+   if ( victim == ch )
+   {
+      send_to_char( "That's pointless.\n", ch );
+      return;
+   }
 
-    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
-    {
- set_char_color( AT_MAGIC, ch );
- send_to_char( "This isn't a good place to do that.\n", ch );
- return;
-    }
+   if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SAFE ) )
+   {
+      set_char_color( AT_MAGIC, ch );
+      send_to_char( "This isn't a good place to do that.\n", ch );
+      return;
+   }
 
-    if ( ch->position == POS_FIGHTING )
-    {
-        send_to_char( "Interesting combat technique.\n" , ch );
-        return;
-    }
-    
-    if ( victim->position == POS_FIGHTING )
-    {
-        send_to_char( "They're a little busy right now.\n" , ch );
-        return;
-    }
-    
+   if ( ch->position == POS_FIGHTING )
+   {
+      send_to_char( "Interesting combat technique.\n" , ch );
+      return;
+   }
+   
+   if ( victim->position == POS_FIGHTING )
+   {
+      send_to_char( "They're a little busy right now.\n" , ch );
+      return;
+   }
+   
 
-    if ( !IS_NPC(victim) || !victim->vip_flags.any() )
-    {
-        send_to_char( "Diplomacy would be wasted on them.\n" , ch );
-        return;
-    }
-    
-    if ( ch->position <= POS_SLEEPING )
-    {
-        send_to_char( "In your dreams or what?\n" , ch );
-        return;
-    }
-    
-    if ( victim->position <= POS_SLEEPING )
-    {
-        send_to_char( "You might want to wake them first...\n" , ch );
-        return;
-    }
+   if ( !IS_NPC(victim) || !victim->vip_flags.any() )
+   {
+      send_to_char( "Diplomacy would be wasted on them.\n" , ch );
+      return;
+   }
+   
+   if ( ch->position <= POS_SLEEPING )
+   {
+      send_to_char( "In your dreams or what?\n" , ch );
+      return;
+   }
+   
+   if ( victim->position <= POS_SLEEPING )
+   {
+      send_to_char( "You might want to wake them first...\n" , ch );
+      return;
+   }
 
-    WAIT_STATE( ch, skill_table[gsn_smalltalk]->beats );
+   WAIT_STATE( ch, skill_table[gsn_smalltalk]->beats );
 
-    if ( percent - ch->skill_level[DIPLOMACY_ABILITY] + victim->top_level > ch->pcdata->learned[gsn_smalltalk]  ) 
-    {
- /*
-  * Failure.
-  */
- send_to_char( "You attempt to make smalltalk with them.. but are ignored.\n", ch );
- act( AT_ACTION, "$n is really getting on your nerves with all this chatter!\n", ch, NULL, victim, TO_VICT    );
- act( AT_ACTION, "$n asks $N about the weather but is ignored.\n",  ch, NULL, victim, TO_NOTVICT );
+   if ( percent - ch->skill_level[DIPLOMACY_ABILITY] + victim->top_level > ch->pcdata->learned[gsn_smalltalk]  ) 
+   {
+      /*
+      * Failure.
+      */
+      send_to_char( "You attempt to make smalltalk with them.. but are ignored.\n", ch );
+      act( AT_ACTION, "$n is really getting on your nerves with all this chatter!\n", ch, NULL, victim, TO_VICT    );
+      act( AT_ACTION, "$n asks $N about the weather but is ignored.\n",  ch, NULL, victim, TO_NOTVICT );
 
-        if ( victim->alignment < -500 && victim->top_level >= ch->top_level+5 )
- {
-   SPRINTF( buf, "SHUT UP %s!", ch->name );
-   do_yell( victim, buf );
-          global_retcode = multi_hit( victim, ch, TYPE_UNDEFINED );
- }
- 
- return;
-    }
-    
-    send_to_char( "You strike up a short conversation with them.\n", ch );
-    act( AT_ACTION, "$n smiles at you and says, 'hello'.\n", ch, NULL, victim, TO_VICT    );
-    act( AT_ACTION, "$n chats briefly with $N.\n",  ch, NULL, victim, TO_NOTVICT );
-    
-    if ( IS_NPC(ch) || !ch->pcdata || !ch->pcdata->clan || !ch->in_room->area || !ch->in_room->area->planet )
+      if ( victim->alignment < -500 && victim->top_level >= ch->top_level+5 )
+      {
+         buf = str_printf("SHUT UP %s!", ch->name );
+         do_yell( victim, (char*)buf.c_str() );
+               global_retcode = multi_hit( victim, ch, TYPE_UNDEFINED );
+      }
+
+      return;
+   }
+   
+   send_to_char( "You strike up a short conversation with them.\n", ch );
+   act( AT_ACTION, "$n smiles at you and says, 'hello'.\n", ch, NULL, victim, TO_VICT    );
+   act( AT_ACTION, "$n chats briefly with $N.\n",  ch, NULL, victim, TO_NOTVICT );
+   
+   if ( IS_NPC(ch) || !ch->pcdata || !ch->pcdata->clan || !ch->in_room->area || !ch->in_room->area->planet )
       return;
 
-    if ( ( clan = ch->pcdata->clan->mainclan ) == NULL )
-       clan = ch->pcdata->clan;
+   if ( ( clan = ch->pcdata->clan->mainclan ) == NULL )
+      clan = ch->pcdata->clan;
 
-    planet = ch->in_room->area->planet;
+   planet = ch->in_room->area->planet;
 
-    if ( clan != planet->governed_by )
-       return;
+   if ( clan != planet->governed_by )
+      return;
 
-    planet->pop_support += 0.2;
-    send_to_char( "Popular support for your organization increases slightly.\n", ch );
+   planet->pop_support += 0.2;
+   send_to_char( "Popular support for your organization increases slightly.\n", ch );
 
-    gain_exp(ch, victim->top_level*10, DIPLOMACY_ABILITY);
-    ch_printf( ch , "You gain %d diplomacy experience.\n", victim->top_level*10 );
+   gain_exp(ch, victim->top_level*10, DIPLOMACY_ABILITY);
+   ch_printf( ch , "You gain %d diplomacy experience.\n", victim->top_level*10 );
 
-    learn_from_success( ch, gsn_smalltalk );
-        
-    if ( planet->pop_support > 100 )
-        planet->pop_support = 100;
+   learn_from_success( ch, gsn_smalltalk );
+      
+   if ( planet->pop_support > 100 )
+      planet->pop_support = 100;
 }
 
 void do_propeganda ( CHAR_DATA *ch , char *argument )
 {
-    char buf  [MAX_STRING_LENGTH];
-    char arg1 [MAX_INPUT_LENGTH];
+    std::string buf;
+    std::string arg1;
     CHAR_DATA *victim;
     PLANET_DATA *planet;
     CLAN_DATA   *clan;
@@ -4786,7 +4767,7 @@ void do_propeganda ( CHAR_DATA *ch , char *argument )
        return;
    }
 
-    argument = one_argument( argument, arg1 );
+    one_argument( argument, arg1 );
 
     if ( ch->mount )
     {
@@ -4794,7 +4775,7 @@ void do_propeganda ( CHAR_DATA *ch , char *argument )
  return;
     }
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
  send_to_char( "Spread propeganda to who?\n", ch );
  return;
@@ -4854,8 +4835,8 @@ void do_propeganda ( CHAR_DATA *ch , char *argument )
 
     if ( !ch->pcdata->clan )
     {
-    SPRINTF( buf, "You speak to them about the evils of %s" , planet->governed_by ? planet->governed_by->name : "their current leaders" );
-    ch_printf( ch, buf );
+    buf = str_printf("You speak to them about the evils of %s" , planet->governed_by ? planet->governed_by->name : "their current leaders" );
+    ch_printf( ch, "%s", buf.c_str() );
     act( AT_ACTION, "$n speaks about the planets organization.\n", ch, NULL, victim, TO_VICT    );
     act( AT_ACTION, "$n tells $N about the evils of their organization.\n",  ch, NULL, victim, TO_NOTVICT );
     }
@@ -4866,9 +4847,9 @@ void do_propeganda ( CHAR_DATA *ch , char *argument )
 
 
 
-    SPRINTF( buf, ", and the evils of %s" , planet->governed_by ? planet->governed_by->name : "their current leaders" );
+    buf = str_printf(", and the evils of %s" , planet->governed_by ? planet->governed_by->name : "their current leaders" );
     ch_printf( ch, "You speak to them about the benifits of the %s%s.\n", ch->pcdata->clan->name,
-        planet->governed_by == clan ? "" : buf );
+        planet->governed_by == clan ? "" : buf.c_str() );
     act( AT_ACTION, "$n speaks about his organization.\n", ch, NULL, victim, TO_VICT    );
     act( AT_ACTION, "$n tells $N about their organization.\n",  ch, NULL, victim, TO_NOTVICT );
    }
@@ -4878,13 +4859,13 @@ void do_propeganda ( CHAR_DATA *ch , char *argument )
     {
 
         if ( (ch->pcdata->clan) ? planet->governed_by != clan : TRUE)
- {
-   SPRINTF( buf, "%s is a traitor!" , ch->name);
-   do_yell( victim, buf );
-          global_retcode = multi_hit( victim, ch, TYPE_UNDEFINED );
- }
+         {
+            buf = str_printf("%s is a traitor!" , ch->name);
+            do_yell( victim, (char*)buf.c_str() );
+                  global_retcode = multi_hit( victim, ch, TYPE_UNDEFINED );
+         }
 
- return;
+         return;
     }
 
     if ( planet->governed_by == clan )
@@ -4912,7 +4893,8 @@ void do_propeganda ( CHAR_DATA *ch , char *argument )
 
 void do_bribe ( CHAR_DATA *ch , char *argument )
 {
-    char arg1 [MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     PLANET_DATA *planet;
     CLAN_DATA   *clan;
@@ -4925,7 +4907,7 @@ void do_bribe ( CHAR_DATA *ch , char *argument )
       return;
     }
     
-    argument = one_argument( argument, arg1 );
+    argstr = one_argument( argstr, arg1 );
 
     if ( ch->mount )
     {
@@ -4933,13 +4915,13 @@ void do_bribe ( CHAR_DATA *ch , char *argument )
       return;
     }
 
-    if ( argument[0] == '\0' )
+    if ( argstr[0] == '\0' )
     {
       send_to_char( "Bribe who how much?\n", ch );
       return;
     }
 
-    amount = atoi( argument );
+    amount = strtoi( argstr );
 
     if ( ( victim = get_char_room( ch, arg1 ) ) == NULL )
     {
@@ -5042,13 +5024,13 @@ void do_bribe ( CHAR_DATA *ch , char *argument )
 
 void do_seduce ( CHAR_DATA *ch , char *argument )
 {
-  char arg[MAX_INPUT_LENGTH];
-  char buf[MAX_INPUT_LENGTH];
+  std::string arg;
+  std::string buf;
   CHAR_DATA *victim;
 
   one_argument( argument, arg );
 
-  if ( arg[0] == '\0' )
+  if ( arg.empty() )
   {
   send_to_char( "Seduce whom?\n", ch );
   return;
@@ -5079,7 +5061,7 @@ void do_seduce ( CHAR_DATA *ch , char *argument )
     if ( victim->top_level - get_curr_cha(ch) > ch->pcdata->learned[gsn_seduce] )
     {
       send_to_char("You failed.\n", ch);
-      SPRINTF(buf, "%s failed to seduce you.", ch->name);
+      buf = str_printf("%s failed to seduce you.", ch->name);
       send_to_char(buf, victim);
       global_retcode = multi_hit( victim, ch, TYPE_UNDEFINED );
       return;
@@ -5098,7 +5080,7 @@ void do_seduce ( CHAR_DATA *ch , char *argument )
 
 void do_mass_propeganda ( CHAR_DATA *ch , char *argument )
 {
-    char buf  [MAX_STRING_LENGTH];
+    std::string buf;
     CHAR_DATA *rch;
     PLANET_DATA *planet;
     CLAN_DATA   *clan;
@@ -5140,9 +5122,9 @@ void do_mass_propeganda ( CHAR_DATA *ch , char *argument )
        
     planet = ch->in_room->area->planet;
         
-    SPRINTF( buf, ", and the evils of %s" , planet->governed_by ? planet->governed_by->name : "their current leaders" );
+    buf = str_printf(", and the evils of %s" , planet->governed_by ? planet->governed_by->name : "their current leaders" );
     ch_printf( ch, "You speak to the people about the benifits of the %s%s.\n", ch->pcdata->clan->name,
-        planet->governed_by == clan ? "" : buf );
+        planet->governed_by == clan ? "" : buf.c_str() );
     act( AT_ACTION, "$n speaks about his organization.\n", ch, NULL, NULL, TO_ROOM    );
 
     WAIT_STATE( ch, skill_table[gsn_masspropeganda]->beats );
@@ -5201,14 +5183,12 @@ void do_gather_intelligence ( CHAR_DATA *ch , char *argument )
 {
   CHAR_DATA *victim;
 
-  char buf[MAX_STRING_LENGTH];
+  std::string buf;
 
   int percent, chance;
 
   PLANET_DATA *planet;
 
-
-  buf[0] = '\0';
 
   if(argument[0] == '\0')
 
@@ -5220,9 +5200,9 @@ void do_gather_intelligence ( CHAR_DATA *ch , char *argument )
 
   }
 
-    STRAPP(buf, "0.");
+    buf = "0.";
 
-  STRAPP(buf, "%s", argument);
+    buf += argument;
 
 
   WAIT_STATE( ch, skill_table[gsn_gather_intelligence]->beats );
@@ -5266,13 +5246,13 @@ void do_gather_intelligence ( CHAR_DATA *ch , char *argument )
     {
       if ( ( planet = victim->in_room->area->planet ) == NULL )
       {
-      SPRINTF( buf, "Information has been recieved that %s is travelling.", victim->name );
+      buf = str_printf("Information has been recieved that %s is travelling.", victim->name);
         send_to_char(buf, ch);
         return;
       }
       else
       {
-        SPRINTF( buf, "Information has been recieved that %s is on %s.", victim->name, planet->name );
+        buf = str_printf("Information has been recieved that %s is on %s.", victim->name, planet->name);
         send_to_char(buf, ch);
         return;
       }
@@ -5282,13 +5262,13 @@ void do_gather_intelligence ( CHAR_DATA *ch , char *argument )
     {
       if ( victim->pcdata->clan )
       {
-        SPRINTF( buf, "%s seems to be involved with %s.", victim->name, victim->pcdata->clan->name );
+        buf = str_printf("%s seems to be involved with %s.", victim->name, victim->pcdata->clan->name);
         send_to_char( buf, ch );
         return;
       }
       else
       {
-        SPRINTF( buf, "%s does not seem to be involved with any organization.", victim->name );
+        buf = str_printf("%s does not seem to be involved with any organization.", victim->name);
         send_to_char( buf, ch );
         return;
       }
@@ -5299,25 +5279,25 @@ void do_gather_intelligence ( CHAR_DATA *ch , char *argument )
     {
       if ( victim->hit < ((victim->max_hit)/4) )
       {
-        SPRINTF( buf, "Hospital records show that %s has had a very serious injury and has not fully recovered.", victim->name );
+        buf = str_printf("Hospital records show that %s has had a very serious injury and has not fully recovered.", victim->name);
         send_to_char( buf, ch);
         return;
       }
       if ( victim->hit < ((victim->max_hit)/2) )
       {
-        SPRINTF( buf, "Hospital records show that %s has had a serious injury and has begun to recover.", victim->name );
+        buf = str_printf("Hospital records show that %s has had a serious injury and has begun to recover.", victim->name);
         send_to_char( buf, ch);
         return;
       }
       if ( victim->hit < ((victim->max_hit)) )
       {
-        SPRINTF( buf, "Hospital records show that %s has had a minor injury recently.", victim->name );
+        buf = str_printf("Hospital records show that %s has had a minor injury recently.", victim->name);
         send_to_char( buf, ch);
         return;
       }
       if ( victim->hit == victim->max_hit )
       {
-        SPRINTF( buf, "There has been no recently medical history for %s", victim->name );
+        buf = str_printf("There has been no recently medical history for %s", victim->name);
         send_to_char( buf, ch);
         return;
       }
@@ -5329,31 +5309,31 @@ void do_gather_intelligence ( CHAR_DATA *ch , char *argument )
       switch(victim->main_ability)
       {
       case 0:
-      SPRINTF( buf, "%s appears to have centered training on combat.", victim->name );
+      buf = str_printf("%s appears to have centered training on combat.", victim->name);
       break;
       case 1:
-      SPRINTF( buf, "%s appears to have centered training on piloting ships.", victim->name );
+      buf = str_printf("%s appears to have centered training on piloting ships.", victim->name);
       break;
       case 2:
-      SPRINTF( buf, "%s appears to have centered training on engineering.", victim->name );
+      buf = str_printf("%s appears to have centered training on engineering.", victim->name);
       break;
       case 3:
-      SPRINTF( buf, "%s appears to have centered training on bounty hunting.", victim->name );
+      buf = str_printf("%s appears to have centered training on bounty hunting.", victim->name);
       break;
       case 4:
-      SPRINTF( buf, "%s appears to have centered training on smuggling.",  victim->name );
+      buf = str_printf("%s appears to have centered training on smuggling.",  victim->name);
       break;
       case 5:
-      SPRINTF( buf, "%s appears to have centered training on diplomacy.", victim->name );
+      buf = str_printf("%s appears to have centered training on diplomacy.", victim->name);
       break;
       case 6:
-      SPRINTF( buf, "%s appears to have centered training on leadership.", victim->name );
+      buf = str_printf("%s appears to have centered training on leadership.", victim->name);
       break;
       case 7:
-      SPRINTF( buf, "%s appears to have centered attention on studying the force.", victim->name );
+      buf = str_printf("%s appears to have centered attention on studying the force.", victim->name);
       break;
       case 8:
-      SPRINTF( buf, "%s has not centered training on anything, but seems to mix smuggling with piloting abilities.", victim->name );
+      buf = str_printf("%s has not centered training on anything, but seems to mix smuggling with piloting abilities.", victim->name);
       break;
       default:
       break;
@@ -5367,14 +5347,14 @@ void do_gather_intelligence ( CHAR_DATA *ch , char *argument )
       if ( victim->skill_level[7] > 1 )
       {
         if ( victim->mana > 1000 )
-          SPRINTF( buf, "%s appears to have centered his attention on studying the force, and is rumored to excell at its use.", victim->name );
+          buf = str_printf("%s appears to have centered his attention on studying the force, and is rumored to excell at its use.", victim->name);
         else if ( victim->mana > 200 )
-          SPRINTF( buf, "%s appears to have centered his attention on studying the force, and is rumored to have some skill.", victim->name );
+          buf = str_printf("%s appears to have centered his attention on studying the force, and is rumored to have some skill.", victim->name);
         else
-          SPRINTF( buf, "%s appears to have centered his attention on studying the force, and is rumored to have found some minor ability in it.", victim->name );
+          buf = str_printf("%s appears to have centered his attention on studying the force, and is rumored to have found some minor ability in it.", victim->name);
       }
         else
-          SPRINTF( buf, "%s appears to have centered his attention on the mundane", victim->name );
+          buf = str_printf("%s appears to have centered his attention on the mundane", victim->name);
         send_to_char( buf, ch );
         return;
     }
@@ -5484,7 +5464,7 @@ void do_cutdoor( CHAR_DATA *ch, char *argument )
 {
  CHAR_DATA *gch;
  EXIT_DATA *pexit;
- char       arg [ MAX_INPUT_LENGTH ];
+ std::string arg;
   OBJ_DATA *wield;
  int whichweap; 
  int SABER = 1;
@@ -5510,7 +5490,7 @@ void do_cutdoor( CHAR_DATA *ch, char *argument )
 
  one_argument( argument, arg );
 
- if ( arg[0] == '\0' )
+ if ( arg.empty() )
  {
      send_to_char( "Cut what?\n", ch );
      return;
@@ -5614,8 +5594,8 @@ void do_cutdoor( CHAR_DATA *ch, char *argument )
 
 void do_makebowcaster( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
+    std::string arg;
+    std::string buf;
     int level, chance;
     bool checktool, checkoven, checkdura, checkbow, checktinder, checkoil, checkammo;
     OBJ_DATA *obj;
@@ -5624,7 +5604,7 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
     AFFECT_DATA *paf;
     AFFECT_DATA *paf2;
     
-    SPRINTF( arg , "%s", argument );
+    arg = std::string(argument);
     
     switch( ch->substate )
     { 
@@ -5635,7 +5615,7 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
                   return;   
                 }
       
-             if ( arg[0] == '\0' )
+             if ( arg.empty() )
                 {
                   send_to_char( "&RUsage: Makebowcaster <name>\n&w", ch);
                   return;   
@@ -5724,7 +5704,7 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
      case 1: 
       if ( !ch->dest_buf )
            return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
+      arg = std::string((const char*) ch->dest_buf);
       STR_DISPOSE( ch->dest_buf);
       break;
       
@@ -5829,15 +5809,11 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
     obj->level = level;
     obj->weight = 2+level/7;
     STRFREE( obj->name );
-    SPRINTF( buf , "%s", arg );
-    STRAPP( buf , " bowcaster");
-    obj->name = STRALLOC( buf );
-    SPRINTF( buf, "%s", arg );
+    obj->name = STRALLOC( (arg + " bowcaster") );
     STRFREE( obj->short_descr );
-    obj->short_descr = STRALLOC( buf );        
+    obj->short_descr = STRALLOC( arg );        
     STRFREE( obj->description );
-    STRAPP( buf, " was carefully placed here." );
-    obj->description = STRALLOC( buf );
+    obj->description = STRALLOC( (arg + " was carefully placed here.") );
     CREATE( paf, AFFECT_DATA, 1 );
     paf->type               = -1;
     paf->duration           = -1;
@@ -5882,11 +5858,12 @@ void do_makebowcaster( CHAR_DATA *ch, char *argument )
 
 void do_makedisguise( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char sexrace[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
+    std::string arg;
+    std::string arg1;
+    std::string arg2;
+    std::string sexrace;
+    std::string argstr = argument;
+    std::string buf;
     int level, chance;
     bool checkneedle, checkfabric, checkhair;
     OBJ_DATA *obj;
@@ -5894,16 +5871,16 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
     int vnum, sex, race;
 //  AFFECT_DATA *paf;
 
-    SPRINTF( arg, "%s", argument );
+    arg = std::string(argument);
 
     switch( ch->substate )
     { 
      default:
 
-      argument = one_argument( argument, arg1 );
-  argument = one_argument( argument, arg2 );
+      argstr = one_argument( argstr, arg1 );
+  argstr = one_argument( argstr, arg2 );
 
-             if ( !argument || argument[0] == '\0' || arg2[0] == '\0' || arg1[0] == '\0' )
+             if ( argstr.empty() || arg2.empty() || arg1.empty() )
                 {
                   send_to_char( "&RUsage: Makedisguise <sex> <race> <name>\n&w", ch);
                   return;   
@@ -5929,12 +5906,12 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
                     checkhair = TRUE;
                 }
                 
-                if( (sex = atoi(arg1)) > 2 || sex < 0 )
+                if( (sex = strtoi(arg1)) > 2 || sex < 0 )
                 {
                    send_to_char( "&RSex choices: 0 neutral, 1 male, 2 female.\n", ch);
                    return;
                 }
-                if( (race = atoi(arg2)) > 33 || sex < 0 )
+                if( (race = strtoi(arg2)) > 33 || sex < 0 )
                 {
                    send_to_char( "&RIncorrect race: Help race for options, from 0 to 33.\n", ch);
                    return;
@@ -5958,17 +5935,17 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
 //                   return;
 //                }
                 
-  SPRINTF( sexrace, "%d", (sex*1000) + race ); 
+            sexrace = str_printf("%d", (sex*1000) + race ); 
              chance = IS_NPC(ch) ? ch->top_level
                   : (int) (ch->pcdata->learned[gsn_disguise]);
                 if ( number_percent( ) < chance )
       {
          send_to_char( "&GYou begin the long process of making a disguise.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and a small oven and begins to work on something.", ch,
-          NULL, argument , TO_ROOM );
+          NULL, argstr , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 25 , do_makedisguise , 1 );
          ch->dest_buf   = str_dup(sexrace);
-         ch->dest_buf_2   = str_dup(argument);
+         ch->dest_buf_2   = str_dup(argstr);
          return;
          }
          send_to_char("&RYou can't figure out how to fit the parts together.\n",ch);
@@ -5978,9 +5955,9 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
      case 1: 
       if ( !ch->dest_buf )
            return;
-      SPRINTF(arg1, "%s", (const char*) ch->dest_buf);
+      arg1 = (const char*) ch->dest_buf;
       STR_DISPOSE( ch->dest_buf);
-      SPRINTF(arg2, "%s", (const char*) ch->dest_buf_2);
+      arg2 = (const char*) ch->dest_buf_2;
       STR_DISPOSE( ch->dest_buf_2);
       break;
       
@@ -5994,8 +5971,8 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
     ch->substate = SUB_NONE;
 
 
-    race = atoi(arg1)%1000;
-    sex = atoi(arg1)/1000;
+    race = strtoi(arg1)%1000;
+    sex = strtoi(arg1)/1000;
     
     level = IS_NPC(ch) ? ch->top_level : (int) (ch->pcdata->learned[gsn_disguise]);
     vnum = 10420;
@@ -6050,15 +6027,11 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
     BV_SET_BIT( obj->wear_flags, ITEM_TAKE );
     obj->level = level;
     STRFREE( obj->name );
-    SPRINTF( buf , "%s", arg2 );
-    STRAPP( buf , " disguise");
-    obj->name = STRALLOC( buf );
-    SPRINTF( buf, "%s", arg2 );
+    obj->name = STRALLOC( arg2 + " disguise" );
     STRFREE( obj->short_descr );
-    obj->short_descr = STRALLOC( buf );        
+    obj->short_descr = STRALLOC( arg2 );        
     STRFREE( obj->description );
-    STRAPP( buf, "%s", argument );
-    obj->description = STRALLOC( buf );
+    obj->description = STRALLOC( argstr );
 
     obj->value[0] = INIT_WEAPON_CONDITION;  /* beginning condition  */
     obj->value[1] = INIT_WEAPON_CONDITION;      /* condition */
@@ -6085,7 +6058,7 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
 /* makemedpac - Terin */
 void do_makemedpac( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
+    std::string arg, buf;
     OBJ_DATA *obj, *obj_next, *cont;
     bool checkcont = FALSE, checkchem = FALSE, checktool = FALSE;
     int chance, level, wearbit = get_wflag("hold");
@@ -6158,7 +6131,7 @@ void do_makemedpac( CHAR_DATA *ch, char *argument )
 
     case 1:
  if( !ch->dest_buf ) return;
- SPRINTF( arg, "%s", (const char*) ch->dest_buf );
+ arg = (const char*) ch->dest_buf;
  STR_DISPOSE( ch->dest_buf );
  break;
 
@@ -6203,14 +6176,12 @@ void do_makemedpac( CHAR_DATA *ch, char *argument )
 
     cont->item_type = ITEM_MEDPAC;
     cont->value[0] = level/10;
-    SPRINTF( buf, "%s medkit medpac", arg );
     STRFREE( cont->name );
-    cont->name = STRALLOC( buf );
+    cont->name = STRALLOC( str_printf("%s medkit medpac", arg.c_str()) );
     STRFREE( cont->short_descr );
     cont->short_descr = STRALLOC( arg );
-    SPRINTF( buf, " was left here.");
     STRFREE( cont->description );
-    cont->description = STRALLOC( buf );
+    cont->description = STRALLOC( arg + " was left here." );
     if( !CAN_WEAR( cont, wearbit ) )
       BV_SET_BIT( cont->wear_flags, wearbit );
 
@@ -6250,7 +6221,7 @@ static struct quick_furn_table {
 
 void do_makefurniture( CHAR_DATA *ch, char *argument )
 {
-	char arg[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH], buf[MAX_STRING_LENGTH];
+	std::string arg, arg2, buf, argstr = argument;
 	OBJ_DATA *obj;//, *obj_next;
 	bool checkkat = FALSE, checkscrap = FALSE, checkmesh = FALSE, checksyn = FALSE,
 		checkcupa = FALSE, checkbantha = FALSE, checkplast = FALSE, checksteel = FALSE,
@@ -6267,16 +6238,16 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 	switch( ch->substate )
 	{
 	case 0:
-		if( argument[0] == '\0' )
+		if( argstr.empty() )
 		{
 			send_to_char("Syntax: makefurntiure <type> <name>\n",ch);
 			send_to_char("Available types are: chair, couch\n",ch);
 			return;
 		}
 
-		argument = one_argument( argument, arg );
+		argstr = one_argument( argstr, arg );
 
-		if( argument[0] == '\0' )
+		if( argstr.empty() )
 		{
 			do_makefurniture( ch, "" );
 			return;
@@ -6434,13 +6405,13 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 		act( AT_PLAIN, "$n begins assembling their furniture piece.", ch, NULL, NULL, TO_ROOM );
 		add_timer( ch, TIMER_DO_FUN, 25, do_makefurniture, 1 );
 		ch->dest_buf = str_dup( arg );
-		ch->dest_buf_2 = str_dup( argument );
+		ch->dest_buf_2 = str_dup( argstr );
 		return;
 	case 1:
 		if( !ch->dest_buf || !ch->dest_buf_2 )
 			return;
-		SPRINTF( arg,  "%s",(const char*) ch->dest_buf );
-		SPRINTF( arg2,  "%s",(const char*) ch->dest_buf_2 );
+		arg = (const char*) ch->dest_buf;
+		arg2 = (const char*) ch->dest_buf_2;
 		STR_DISPOSE( ch->dest_buf );
 		STR_DISPOSE( ch->dest_buf_2 );
 		break;
@@ -6592,9 +6563,8 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 		obj->value[0] = furn_table[i].people;
 		obj->value[2] = SIT_ON;
 		obj->weight = furn_table[i].weight;
-		SPRINTF( buf, "%s %s", arg2, furn_table[i].name );
 		STRFREE( obj->name );
-		obj->name = STRALLOC( buf );
+		obj->name = STRALLOC( str_printf("%s %s", arg2.c_str(), furn_table[i].name) );
 		/*SPRINTF( buf, "A %s is sitting here.",
 furn_table[i].name );*/
 		STRFREE( obj->short_descr );

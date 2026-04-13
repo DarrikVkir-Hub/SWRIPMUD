@@ -99,7 +99,7 @@ ch_printf(ch, "\n%s\n", buf);
 		send_to_char("&C----------------------------------------------------------------------------\n", ch);
 
 		ch_printf(ch,   "&cRace: %-17.10s                &cLog In:  &C%s\n",
-		capitalize(get_race(ch)), ( IS_NPC(ch) ? "(null)" : ctime(&(ch->pcdata->logon)) ) );
+		capitalize(get_race(ch)).c_str(), ( IS_NPC(ch) ? "(null)" : ctime(&(ch->pcdata->logon)) ) );
 
 		ch_printf(ch,   "&cHitroll: &C%-2.2d  &cDamroll: &C%-2.2d   &cArmor: &C%-4d        &cSaved:  &C%s\n",
 			GET_HITROLL(ch), GET_DAMROLL(ch), GET_AC(ch),
@@ -117,7 +117,7 @@ ch_printf(ch, "\n%s\n", buf);
     send_to_char("&C----------------------------------------------------------------------------\n", ch);
 
     ch_printf(ch,   "&cRace: %-17.10s                &cLog In:  &C%s\n",
-	capitalize(get_race(ch)), ( IS_NPC(ch) ? "(null)" : ctime(&(ch->pcdata->logon)) ) );
+	capitalize(get_race(ch)).c_str(), ( IS_NPC(ch) ? "(null)" : ctime(&(ch->pcdata->logon)) ) );
 
     ch_printf(ch,   "&cHitroll: &C%-2.2d  &cDamroll: &C%-2.2d   &cArmor: &C%-4d        &cSaved:  &C%s\n",
 		GET_HITROLL(ch), GET_DAMROLL(ch), GET_AC(ch),
@@ -270,7 +270,7 @@ ch_printf(ch, "\n%s\n", buf);
 										ch->pcdata->drug_level[drug],
 										ch->pcdata->addiction[drug] );
 		}
-	SPRINTF(buf, "&cLanguages: &c");
+	SPRINTF(buf, "\n&cLanguages: &c");
 	int race_lang = race_table[ch->race].language;
 	for (iLang = 0; iLang < LANG_MAX; ++iLang)
 	{
@@ -645,7 +645,7 @@ void do_oldscore( CHAR_DATA *ch, char *argument )
 	    if ( ch->top_level >= 20 )
 		ch_printf( ch,
 		    " modifies %s by %d for %d rounds",
-		    affect_loc_name( paf->location ),
+		    affect_loc_name( paf->location ).c_str(),
 		    paf->modifier,
 		    paf->duration );
 
@@ -692,14 +692,14 @@ void do_level( CHAR_DATA *ch, char *argument )
 
 void do_affected ( CHAR_DATA *ch, char *argument )
 {
-    char arg [MAX_INPUT_LENGTH];
+    std::string arg;
     AFFECT_DATA *paf;
     SKILLTYPE *skill;
  
     if ( IS_NPC(ch) )
         return;
 
-    argument = one_argument( argument, arg );
+    one_argument( argument, arg );
 
     if ( !str_cmp( arg, "by" ) )
     {
@@ -860,27 +860,29 @@ void do_equipment( CHAR_DATA *ch, char *argument )
 
 
 
-void set_title( CHAR_DATA *ch, char *title )
+void set_title(CHAR_DATA *ch, const std::string& title)
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
 
-    if ( IS_NPC(ch) )
+    if (IS_NPC(ch))
     {
-	bug( "Set_title: NPC.", 0 );
-	return;
+        bug("Set_title: NPC.", 0);
+        return;
     }
 
-    if ( isalpha(title[0]) || isdigit(title[0]) )
+    if (!title.empty() && (isalpha(static_cast<unsigned char>(title[0]))
+        || isdigit(static_cast<unsigned char>(title[0]))))
     {
-		buf[0] = ' ';
-		snprintf(buf + 1, sizeof(buf) - 1, "%s", title ? title : "");
+        buf = " " + title;
     }
     else
-		SPRINTF( buf, "%s", title );
+    {
+        buf = title;
+    }
 
-    STRFREE( ch->pcdata->title );
-    ch->pcdata->title = STRALLOC( buf );
-	gmcp_evt_char_status(ch);
+    STRFREE(ch->pcdata->title);
+    ch->pcdata->title = STRALLOC(buf);
+    gmcp_evt_char_status(ch);
     return;
 }
 
@@ -888,7 +890,7 @@ void set_title( CHAR_DATA *ch, char *title )
 
 void do_title( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];	
+    std::string buf;	
     if ( IS_NPC(ch) )
 	return;
 
@@ -916,8 +918,7 @@ void do_title( CHAR_DATA *ch, char *argument )
 	return;
 	}
     smash_tilde( argument );
-    snprintf(buf, sizeof(buf), "%s &R&W^x", argument);
-    
+	buf = str_printf("%s &R&W^x", argument);
     set_title( ch, buf );
     send_to_char( "Ok.\n", ch );
 }
@@ -1074,45 +1075,43 @@ void do_report( CHAR_DATA *ch, char *argument )
 
 void do_prompt( CHAR_DATA *ch, char *argument )
 {
-  char arg[MAX_INPUT_LENGTH];
+  std::string arg;
+  std::string argstr = argument;
   
   if ( IS_NPC(ch) )
   {
     send_to_char( "NPC's can't change their prompt..\n", ch );
     return;
   }
-  smash_tilde( argument );
-  one_argument( argument, arg );
-  if ( !*arg )
+  smash_tilde( argstr );
+  one_argument( argstr, arg );
+  if ( arg.empty() )
   {
-    send_to_char( "Set prompt to what? (try help prompt)\n", ch );
+	send_to_char( "Set your prompt to what?\n", ch );
+
     return;
   }
   if (ch->pcdata->prompt)
     STRFREE(ch->pcdata->prompt);
 
-  if ( strlen(argument) > 128 )
-    argument[128] = '\0';
+  if ( argstr.length() > 128 )
+    argstr = argstr.substr(0, 128);
 
   /* Can add a list of pre-set prompts here if wanted.. perhaps
      'prompt 1' brings up a different, pre-set prompt */
   if ( !str_cmp(arg, "default") )
     ch->pcdata->prompt = STRALLOC("");
   else
-    ch->pcdata->prompt = STRALLOC(argument);
+    ch->pcdata->prompt = STRALLOC(argstr);
   send_to_char( "Ok.\n", ch );
   return;
 }
 
-void set_target( CHAR_DATA *ch, char *target )
+void set_target( CHAR_DATA *ch, const std::string& target )
 {
-    char buf[MAX_STRING_LENGTH];
-
-    SPRINTF( buf, "%s", target );
-
     if (ch->pcdata->target && ch->pcdata->target[0] != '\0')
      	STRFREE( ch->pcdata->target ); 
-    ch->pcdata->target = STRALLOC( buf );
+    ch->pcdata->target = STRALLOC( target );
     return;
 }
 
@@ -1120,10 +1119,11 @@ void set_target( CHAR_DATA *ch, char *target )
 
 void do_focusalias( CHAR_DATA *ch, char *argument)
 {
-  char arg[MAX_INPUT_LENGTH], buf[MAX_STRING_LENGTH];
+  std::string arg, buf;
+  std::string argstr = argument;
   
-  smash_tilde(argument);
-  one_argument( argument, arg );
+  smash_tilde(argstr);
+  one_argument( argstr, arg );
   
   if ( IS_NPC(ch) )
   {
@@ -1136,8 +1136,7 @@ void do_focusalias( CHAR_DATA *ch, char *argument)
   	
   	if ( ch->pcdata->target && ch->pcdata->target[0] != '\0' ) 
   	{
-  		SPRINTF( buf, "Your current alias focus is : %s\n", ch->pcdata->target);
-  		send_to_char(buf,ch);
+  		send_to_char(str_printf("Your current alias focus is : %s\n", ch->pcdata->target),ch);
   		return;
   	}
  
@@ -1148,8 +1147,7 @@ void do_focusalias( CHAR_DATA *ch, char *argument)
   else
   {
   	set_target( ch, arg );
-  	SPRINTF( buf, "Your new alias focus is : %s\n", ch->pcdata->target);
-  	send_to_char( buf, ch );
+  	send_to_char( str_printf("Your new alias focus is : %s\n", ch->pcdata->target), ch );
   	return;
   }
 }

@@ -152,48 +152,46 @@ bool	read_from_descriptor	args( ( DESCRIPTOR_DATA *d ) );
 void send_mssp(DESCRIPTOR_DATA *d);
 ssize_t net_write(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len);
 void send_telnet(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len);
-void output_to_descriptor(DESCRIPTOR_DATA *d, const char *txt);
+void output_to_descriptor(DESCRIPTOR_DATA *d, const std::string& txt);
+void output_to_descriptor_char(DESCRIPTOR_DATA *d, const char *txt);
 void write_to_buffer_str(DESCRIPTOR_DATA *d, const char *txt);
-static void append_str(char **buf, size_t *len, size_t *cap, const char *src);
-char *wrap_text_smart(const char *txt, int width);
-bool is_structured_line(const char *line);
-bool looks_preformatted(const char *txt);
+void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length );
+std::string wrap_text_smart( const std::string& txt, int width );
 size_t visible_length(const char *txt);
-size_t visible_length_ex(const char *txt, int flags);
-char *wrap_text_ex(const char *txt, int width, int flags, int indent);
+size_t visible_length(const std::string&txt);
+std::string wrap_text_ex( const std::string& txt, int width, int flags, int indent );
 bool process_compressed(DESCRIPTOR_DATA *d);
-bool	check_parse_name	args( ( char *name ) );
-short	check_reconnect		args( ( DESCRIPTOR_DATA *d, char *name,
+bool	check_parse_name	args( ( const std::string& name ) );
+short	check_reconnect		args( ( DESCRIPTOR_DATA *d, const std::string& name,
 				    bool fConn ) );
-short	check_playing		args( ( DESCRIPTOR_DATA *d, char *name, bool kick ) );
-bool	check_multi		args( ( DESCRIPTOR_DATA *d, char *name ) );
+short	check_playing		args( ( DESCRIPTOR_DATA *d, const std::string& name, bool kick ) );
+bool	check_multi		args( ( DESCRIPTOR_DATA *d, const std::string& name ) );
 int	main			args( ( int argc, char **argv ) );
-void	nanny			args( ( DESCRIPTOR_DATA *d, char *argument ) );
+void	nanny			args( ( DESCRIPTOR_DATA *d, const std::string& argument ) );
 bool	flush_buffer		args( ( DESCRIPTOR_DATA *d, bool fPrompt ) );
 void	read_from_buffer	args( ( DESCRIPTOR_DATA *d ) );
 void	stop_idling		args( ( CHAR_DATA *ch ) );
 void	free_desc		args( ( DESCRIPTOR_DATA *d ) );
 void	display_prompt		args( ( DESCRIPTOR_DATA *d ) );
 int make_color_sequence(const char *col, char *buf, DESCRIPTOR_DATA *d,  int *consumed);
-void	set_pager_input		args( ( DESCRIPTOR_DATA *d,
-					char *argument ) );
+void	set_pager_input		args( ( DESCRIPTOR_DATA *d, const std::string& argument ) );
 bool	pager_output		args( ( DESCRIPTOR_DATA *d ) );
 
 /* Nanny forward declarations */
-static void nanny_get_name( DESCRIPTOR_DATA *d, char *argument );
-static void nanny_get_old_password( DESCRIPTOR_DATA *d, char *argument );
-static void nanny_confirm_new_name( DESCRIPTOR_DATA *d, char *argument );
-static void nanny_get_new_password( DESCRIPTOR_DATA *d, char *argument );
-static void nanny_confirm_new_password( DESCRIPTOR_DATA *d, char *argument );
-static void nanny_get_new_sex( DESCRIPTOR_DATA *d, char *argument );
-static void nanny_get_new_race( DESCRIPTOR_DATA *d, char *argument );
-static void nanny_get_new_class( DESCRIPTOR_DATA *d, char *argument );
+static void nanny_get_name( DESCRIPTOR_DATA *d, const std::string& argumentin );
+static void nanny_get_old_password( DESCRIPTOR_DATA *d, const std::string& argument );
+static void nanny_confirm_new_name( DESCRIPTOR_DATA *d, const std::string& argument );
+static void nanny_get_new_password( DESCRIPTOR_DATA *d, const std::string& argument );
+static void nanny_confirm_new_password( DESCRIPTOR_DATA *d, const std::string& argument );
+static void nanny_get_new_sex( DESCRIPTOR_DATA *d, const std::string& argument );
+static void nanny_get_new_race( DESCRIPTOR_DATA *d, const std::string& argumentin );
+static void nanny_get_new_class( DESCRIPTOR_DATA *d, const std::string& argumentin );
 static void nanny_roll_stats( DESCRIPTOR_DATA *d );
-static void nanny_stats_ok( DESCRIPTOR_DATA *d, char *argument );
-static void nanny_get_want_ripansi( DESCRIPTOR_DATA *d, char *argument );
-static void nanny_get_msp( DESCRIPTOR_DATA *d, char *argument );
-static void nanny_press_enter( DESCRIPTOR_DATA *d, char *argument );
-static void nanny_read_motd( DESCRIPTOR_DATA *d, char *argument );
+static void nanny_stats_ok( DESCRIPTOR_DATA *d, const std::string& argument );
+static void nanny_get_want_ripansi( DESCRIPTOR_DATA *d, const std::string& argument );
+static void nanny_get_msp( DESCRIPTOR_DATA *d, const std::string& argument );
+static void nanny_press_enter( DESCRIPTOR_DATA *d, const std::string& argument );
+static void nanny_read_motd( DESCRIPTOR_DATA *d, const std::string& argument );
 
 void	mail_count		args( ( CHAR_DATA *ch ) );
 void    cron();
@@ -447,7 +445,7 @@ static void handle_alarm_recovery(GameContext *game)
 
     bug("ALARM CLOCK!");
     SPRINTF(buf, "Alas, the hideous mandalorian entity known only as 'Lag' rises once more!\n");
-    echo_to_all(AT_IMMORT, buf, ECHOTAR_ALL);
+    echo_to_all(AT_IMMORT, ("Alas, the hideous mandalorian entity known only as 'Lag' rises once more!\n"), ECHOTAR_ALL);
 
     log_string("alarm recovery complete");
     g_alarm_fired = 0;
@@ -539,7 +537,7 @@ void accept_new( GameContext *game, int ctrl )
 void game_loop(GameContext *game)
 {
     struct timeval	  last_time;
-    char cmdline[MAX_INPUT_LENGTH];
+    std::string cmdline;
     DESCRIPTOR_DATA *d;
 //  AREA_DATA *pArea;
 
@@ -697,23 +695,23 @@ void game_loop(GameContext *game)
             */
             int cmd_count = 0;
 
-            while ( d->inbuf_len > 0 || d->intext_len > 0 )
+            while ( d->inbuf_len > 0 || !d->intext_str.empty() )
             {
                 /* Stop if a command is already pending */
-                if ( d->incomm[0] != '\0' )
+                if ( !d->incomm_str.empty() )
                     break;
 
                 read_from_buffer( d );
 
                 /* No full command ready */
-                if ( d->incomm[0] == '\0' )
+                if ( d->incomm_str.empty() )
                     break;
 
                 d->fcommand = TRUE;
                 stop_idling( d->character );
 
-                SPRINTF( cmdline, "%s", d->incomm );
-                d->incomm[0] = '\0';
+                cmdline = d->incomm_str;
+                d->incomm_str.clear();
 
                 if ( d->character )
                     set_cur_char( d->character );
@@ -1203,8 +1201,6 @@ void free_desc( DESCRIPTOR_DATA *d )
     }
 #endif
 
-    if ( d->pagebuf )
-	    DISPOSE_ARRAY( d->pagebuf );
     --num_descriptors;
     return;
 }
@@ -2068,8 +2064,8 @@ bool read_from_descriptor( DESCRIPTOR_DATA *d )
     unsigned int iStart;
 
     /* Hold horses if pending command already. */
-    if ( d->incomm[0] != '\0' )
-	return TRUE;
+    if ( !d->incomm_str.empty() )
+        return TRUE;
 
     /* Check for overflow. */
     iStart = d->inbuf_len;
@@ -2197,9 +2193,9 @@ void dump_bytes(const char *label, const unsigned char *buf, int len)
  */
 void read_from_buffer( DESCRIPTOR_DATA *d )
 {
-    int i, k;
+    int i;
 
-    if ( d->incomm[0] != '\0' )
+    if ( !d->incomm_str.empty() )
         return;
 
     unsigned char clean[MAX_INBUF_SIZE];
@@ -2229,17 +2225,15 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
          * APPEND CLEAN DATA INTO INTEXT BUFFER
          * ============================================================
          */
-    if ( clean_len > 0 )
-    {
-        int space = sizeof(d->intext) - d->intext_len - 1;
+        if ( clean_len > 0 )
+        {
+            size_t space = MAX_INBUF_SIZE - d->intext_str.size() - 1;
 
-        if ( clean_len > space )
-            clean_len = space;
+            if ( (size_t)clean_len > space )
+                clean_len = (int)space;
 
-        memcpy(d->intext + d->intext_len, clean, clean_len);
-        d->intext_len += clean_len;
-        d->intext[d->intext_len] = '\0';
-    }
+            d->intext_str.append(reinterpret_cast<const char*>(clean), clean_len);
+        }
 
      /*
      * ============================================================
@@ -2254,18 +2248,9 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
      * FIND NEWLINE IN INTEXT
      * ============================================================
      */
-    int line_end = -1;
+    size_t line_end = d->intext_str.find('\n');
 
-    for ( i = 0; i < d->intext_len; i++ )
-    {
-        if ( d->intext[i] == '\n' )
-        {
-            line_end = i;
-            break;
-        }
-    }
-
-    if ( line_end == -1 )
+    if ( line_end == std::string::npos )
         return;
 
     /*
@@ -2273,55 +2258,52 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
      * BUILD COMMAND FROM INTEXT
      * ============================================================
      */
-    for ( i = 0, k = 0; i < line_end; i++ )
+    d->incomm_str.clear();
+
+    for ( i = 0; i < (int)line_end; i++ )
     {
-        unsigned char c = d->intext[i];
+        unsigned char c = (unsigned char)d->intext_str[i];
 
         if ( c == '\r' )
             continue;
 
-        if ( k >= 254 )
+        if ( d->incomm_str.size() >= 254 )
         {
             output_to_descriptor( d, "Line too long.\n" );
             break;
         }
 
-        if ( (c == '\b' || c == 127) && k > 0 )
+        if ( (c == '\b' || c == 127) && !d->incomm_str.empty() )
         {
-            k -= utf8_prev_len(d->incomm, d->incomm + k);
-            if (k < 0)
-                k = 0;
+            size_t k = d->incomm_str.size();
+            int back = utf8_prev_len(d->incomm_str.c_str(), d->incomm_str.c_str() + k);
+            if (back > 0 && back <= (int)k)
+                d->incomm_str.erase(k - back);
         }
-//        else if (c >= 32 && c <= 126)  /* STRICT ASCII ONLY */
-//            d->incomm[k++] = (char)c;
-        else if (c >= 32 || (c & 0x80))  /* allow UTF-8 bytes */
+        else if (c >= 32 || (c & 0x80))
         {
-            int char_len = utf8_char_len_safe(&d->intext[i]);
+            int char_len = utf8_char_len_safe(&d->intext_str[i]);
 
-            /* prevent overflow */
-            if (k + char_len >= 254)
+            if ( d->incomm_str.size() + char_len >= 254 )
             {
                 output_to_descriptor( d, "Line too long.\n" );
                 break;
             }
 
-            /* copy full UTF-8 character safely */
             for (int j = 0; j < char_len; j++)
             {
-                if (i + j >= line_end)
+                if ((size_t)(i + j) >= line_end)
                     break;
 
-                d->incomm[k++] = d->intext[i + j];
+                d->incomm_str.push_back(d->intext_str[i + j]);
             }
 
             i += char_len - 1;
-        }            
+        }
     }
 
-    if ( k == 0 )
-        d->incomm[k++] = ' ';
-
-    d->incomm[k] = '\0';
+    if ( d->incomm_str.empty() )
+        d->incomm_str = " ";
 
     /*
      * ============================================================
@@ -2342,34 +2324,26 @@ void read_from_buffer( DESCRIPTOR_DATA *d )
      * HISTORY
      * ============================================================
      */
-    if ( k > 1 || d->incomm[0] == '!' )
+    if ( !d->incomm_str.empty() && ( d->incomm_str.size() > 1 || d->incomm_str[0] == '!' ) )
     {
-        if ( d->incomm[0] != '!' && strcmp( d->incomm, d->inlast ) )
+        if ( d->incomm_str[0] != '!' && d->incomm_str != d->inlast_str )
             d->repeat = 0;
         else if ( ++d->repeat >= 100 )
             output_to_descriptor( d,
                 "\n*** PUT A LID ON IT!!! ***\n" );
     }
 
-    if ( d->incomm[0] == '!' )
-        SPRINTF( d->incomm, "%s", d->inlast );
+    if ( !d->incomm_str.empty() && d->incomm_str[0] == '!' )
+        d->incomm_str = d->inlast_str;
     else
-        SPRINTF( d->inlast, "%s", d->incomm );
+        d->inlast_str = d->incomm_str;
 
     /*
      * ============================================================
      * REMOVE ONLY ONE LINE FROM INTEXT
      * ============================================================
      */
-    int shift = line_end + 1;  // include newline
-
-    int remaining = d->intext_len - shift;
-
-    if ( remaining > 0 )
-        memmove( d->intext, d->intext + shift, remaining );
-
-    d->intext_len = remaining;
-    d->intext[d->intext_len] = '\0';
+    d->intext_str.erase(0, line_end + 1);
 
     return;
 }
@@ -2621,26 +2595,29 @@ static size_t utf8_safe_len(const char *buf, size_t len)
     return i;
 }
 
-void output_to_descriptor(DESCRIPTOR_DATA *d, const char *txt)
-{
-    char *wrapped;
 
-    if (!d || !txt)
+void write_to_buffer_str(DESCRIPTOR_DATA *d,  const std::string& txt)
+{
+    write_to_buffer(d, txt.data(), (int)txt.size());
+}
+
+// Output_to_descriptor with smart wrapping and UTF-8 safety
+void output_to_descriptor(DESCRIPTOR_DATA *d, const std::string& txt)
+{
+    std::string wrapped;
+
+    if (!d || txt.empty())
         return;
 
-    wrapped = wrap_text_smart(txt, d->term_width);
+    wrapped = wrap_text_smart((txt), d->term_width);
 
-    if (!wrapped)
+    if (wrapped.empty())
         return;
 
     write_to_buffer_str(d, wrapped);
 
-    /* 🔹 CRITICAL: free heap memory */
-    free(wrapped);
-
     return;
 }
-
 
 void write_to_buffer_str(DESCRIPTOR_DATA *d, const char *txt)
 {
@@ -2653,6 +2630,7 @@ void write_to_buffer_str(DESCRIPTOR_DATA *d, const char *txt)
 
     write_to_buffer(d, txt, len);
 }
+
 
 void write_to_buffer_raw(DESCRIPTOR_DATA *d, const unsigned char *data, int length)
 {
@@ -2725,88 +2703,79 @@ void write_to_buffer_raw(DESCRIPTOR_DATA *d, const unsigned char *data, int leng
     return;
 }
 
-int build_ansi_from_state(unsigned char prev, unsigned char cl, char *buf)
+void write_to_buffer_raw(DESCRIPTOR_DATA *d, const std::string& txt)
 {
-    char *p = buf;
+    write_to_buffer_raw(d, reinterpret_cast<const unsigned char*>(txt.data()), static_cast<int>(txt.size()));
+}
+
+int build_ansi_from_state( unsigned char prev, unsigned char cl, std::string &buf )
+{
+    buf.clear();
 
     /* =========================
      * Detect if anything changed
      * ========================= */
     int changed = 0;
 
-    if ((cl & 0x88) != (prev & 0x88)) /* intensity + blink */
+    if ( ( cl & 0x88 ) != ( prev & 0x88 ) ) /* intensity + blink */
         changed = 1;
 
-    if ((cl & 0x07) != (prev & 0x07)) /* foreground */
+    if ( ( cl & 0x07 ) != ( prev & 0x07 ) ) /* foreground */
         changed = 1;
 
-    if ((cl & 0x70) != (prev & 0x70)) /* background */
+    if ( ( cl & 0x70 ) != ( prev & 0x70 ) ) /* background */
         changed = 1;
 
-    if (!changed)
+    if ( !changed )
         return 0;
 
     /* =========================
      * Build ANSI sequence
      * ========================= */
 
-    *p++ = '\033';
-    *p++ = '[';
+    buf += '\033';
+    buf += '[';
 
     int added = 0;
 
     /* intensity (bold/normal) */
-    if ((cl & 0x08) != (prev & 0x08))
+    if ( ( cl & 0x08 ) != ( prev & 0x08 ) )
     {
-        if (cl & 0x08)
-        {
-            /* 🔁 CHANGED: p += sprintf(p, "1;"); */
-            *p++ = '1'; *p++ = ';';
-        }
+        if ( cl & 0x08 )
+            buf += "1;";
         else
-        {
-            /* 🔁 CHANGED: p += sprintf(p, "22;"); */
-            *p++ = '2'; *p++ = '2'; *p++ = ';';
-        }
+            buf += "22;";
 
         added = 1;
     }
 
     /* blink */
-    if ((cl & 0x80) != (prev & 0x80))
+    if ( ( cl & 0x80 ) != ( prev & 0x80 ) )
     {
-        if (cl & 0x80)
-        {
-            /* 🔁 CHANGED: p += sprintf(p, "5;"); */
-            *p++ = '5'; *p++ = ';';
-        }
+        if ( cl & 0x80 )
+            buf += "5;";
         else
-        {
-            /* 🔁 CHANGED: p += sprintf(p, "25;"); */
-            *p++ = '2'; *p++ = '5'; *p++ = ';';
-        }
+            buf += "25;";
 
         added = 1;
     }
 
     /* foreground */
-    if ((cl & 0x07) != (prev & 0x07))
+    if ( ( cl & 0x07 ) != ( prev & 0x07 ) )
     {
-        /* 🔁 CHANGED: p += sprintf(p, "3%d;", cl & 0x07); */
-        *p++ = '3';
-        *p++ = '0' + (cl & 0x07);
-        *p++ = ';';
+        buf += '3';
+        buf += static_cast<char>( '0' + ( cl & 0x07 ) );
+        buf += ';';
 
         added = 1;
     }
 
     /* background */
-    if ((cl & 0x70) != (prev & 0x70))
+    if ( ( cl & 0x70 ) != ( prev & 0x70 ) )
     {
-        /* 🔁 CHANGED: p += sprintf(p, "4%d;", (cl & 0x70) >> 4); */
-        *p++ = '4';
-        *p++ = '0' + ((cl & 0x70) >> 4);
-        *p++ = ';';
+        buf += '4';
+        buf += static_cast<char>( '0' + ( ( cl & 0x70 ) >> 4 ) );
+        buf += ';';
 
         added = 1;
     }
@@ -2815,54 +2784,56 @@ int build_ansi_from_state(unsigned char prev, unsigned char cl, char *buf)
      * Finalize or discard
      * ========================= */
 
-    if (!added)
+    if ( !added )
+    {
+        buf.clear();
         return 0;
+    }
 
-    /* replace trailing ';' with 'm' */
-    if (*(p - 1) == ';')
-        *(p - 1) = 'm';
+    if ( !buf.empty() && buf.back() == ';' )
+        buf.back() = 'm';
     else
-        *p++ = 'm';
+        buf += 'm';
 
-    return (int)(p - buf);
+    return static_cast<int>( buf.size() );
 }
 
-static void flush_color(DESCRIPTOR_DATA *d)
+static void flush_color( DESCRIPTOR_DATA *d )
 {
-    if (!d->has_rendercolor)
+    if ( !d->has_rendercolor )
         return;
 
     unsigned char prev   = d->last_sent_color;
     unsigned char target = d->rendercolor;
 
-    if (prev > 0x8F)
+    if ( prev > 0x8F )
         prev = 0x07;
-    if (target > 0x8F)
+    if ( target > 0x8F )
         target = 0x07;
 
-    if (target != prev)
+    if ( target != prev )
     {
-        char colbuf[64];
-        int ln = build_ansi_from_state(prev, target, colbuf);
+        std::string colbuf;
+        int ln = build_ansi_from_state( prev, target, colbuf );
 
-        if (ln > 0)
+        if ( ln > 0 )
         {
-            while (d->outtop + (size_t)ln >= d->outsize)
+            while ( d->outtop + static_cast<size_t>( ln ) >= d->outsize )
             {
                 d->outsize *= 2;
                 char *newbuf = new char[d->outsize];
 
-                if (d->outbuf)
+                if ( d->outbuf )
                 {
-                    memcpy(newbuf, d->outbuf, d->outtop); // copy valid data
+                    memcpy( newbuf, d->outbuf, d->outtop ); // copy valid data
                     delete[] d->outbuf;
                 }
 
                 d->outbuf = newbuf;
             }
 
-            memcpy(d->outbuf + d->outtop, colbuf, (size_t)ln);
-            d->outtop += (size_t)ln;
+            memcpy( d->outbuf + d->outtop, colbuf.data(), static_cast<size_t>( ln ) );
+            d->outtop += static_cast<size_t>( ln );
         }
 
         d->last_sent_color = target;
@@ -2948,67 +2919,68 @@ unsigned char parse_color_code(unsigned char current, char type, char code)
     return current;
 }
 
-int make_color_sequence(const char *col, char *buf, DESCRIPTOR_DATA *d, int *consumed)
+int make_color_sequence( const std::string &col, std::string &buf,
+                         DESCRIPTOR_DATA *d, int *consumed )
 {
     int ln = 0;
-    const char *ctype = col;
-    unsigned char current;
-    unsigned char target;
     CHAR_DATA *och;
     bool ansi;
 
-    if (consumed) *consumed = 2;
+    buf.clear();
 
-    och = (d->original ? d->original : d->character);
-    ansi = (!IS_NPC(och) && BV_IS_SET(och->act, PLR_ANSI));
+    if ( consumed )
+        *consumed = 2;
 
-    col++;
-
-    if (!*col)
-        return -1;
-
-    if (*ctype != '&' && *ctype != '^')
+    if ( col.empty() )
     {
-        bug("Make_color_sequence: command '%c' not '&' or '^'.", *ctype);
-        if (consumed) *consumed = 1;
+        if ( consumed )
+            *consumed = 0;
         return -1;
     }
 
-    /* literal && or ^^ */
-    if (*col == *ctype)
+    char ctype = col[0];
+
+    och = ( d->original ? d->original : d->character );
+    ansi = ( !IS_NPC( och ) && BV_IS_SET( och->act, PLR_ANSI ) );
+
+    if ( col.size() < 2 )
+        return -1;
+
+    if ( ctype != '&' && ctype != '^' )
     {
-        buf[0] = *col;
-        buf[1] = '\0';
-        if (consumed) *consumed = 2;
+        bug( "Make_color_sequence: command '%c' not '&' or '^'.", ctype );
+        if ( consumed )
+            *consumed = 1;
+        return -1;
+    }
+
+    char code = col[1];
+
+    /* literal && or ^^ */
+    if ( code == ctype )
+    {
+        buf += code;
+        if ( consumed )
+            *consumed = 2;
         return 1;
     }
 
-    if (!ansi)
-    {
-        *buf = '\0';
+    if ( !ansi )
         return 0;
-    }
 
-    /* 🔹 Use rendercolor as source of truth */
-    current = d->rendercolor;
+    /* Use rendercolor as source of truth */
+    unsigned char current = d->rendercolor;
+    unsigned char target  = parse_color_code( current, ctype, code );
 
-    target = parse_color_code(current, *ctype, *col);
-
-    if (target == current)
-    {
-        if (buf) *buf = '\0';
+    if ( target == current )
         return 0;
-    }
 
-    if (target > 0x8F)
+    if ( target > 0x8F )
         target = 0x07;
 
-    /* 🔹 Update deferred state ONLY */
+    /* Update deferred state ONLY */
     d->rendercolor = target;
     d->has_rendercolor = true;
-
-    if (ln <= 0 && buf)
-        *buf = '\0';
 
     return ln;
 }
@@ -3083,43 +3055,47 @@ static void copy_with_newlines(DESCRIPTOR_DATA *d,
     }
 }
 
+static void copy_with_newlines( DESCRIPTOR_DATA *d, const std::string &src )
+{
+    copy_with_newlines( d, src.data(), src.size() );
+}
+
 /*
  * Append onto an output buffer.
  */
 void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
 {
     static int count = 0;
+
     if ( !d )
     {
         bug( "Write_to_buffer: NULL descriptor" );
         return;
     }
-    if (d->has_rendercolor)
-        flush_color(d);
+
+    if ( d->has_rendercolor )
+        flush_color( d );
 
     if ( !d->outbuf )
-    	return;
-    // Find length in case caller didn't.
+        return;
+
+    /* Find length in case caller didn't. */
     if ( length <= 0 )
     {
         if ( !txt )
             return;
-        length = strlen(txt);  /* fallback only */
+        length = strlen( txt );  /* fallback only */
     }
 
     if ( length <= 0 )
         return;
-//    fprintf(stderr, "COLDB: INIT COLOR: %02x\n", d->last_sent_color);
-//    fprintf(stderr, "COLDB: WTB INPUT: [%.*s]\r\n", length, txt);
-//    fprintf(stderr, "COLDB: WTB: d=%p color=%02x\n", d, d->last_sent_color);    
 
-
-    // Initial \n\r if needed.
+    /* Initial \n\r if needed. */
     if ( d->outtop == 0 && !d->fcommand )
     {
-        d->outbuf[0]	= '\r';
-        d->outbuf[1]	= '\n';
-        d->outtop	= 2;
+        d->outbuf[0] = '\r';
+        d->outbuf[1] = '\n';
+        d->outtop = 2;
     }
 
     /*
@@ -3128,117 +3104,119 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
      * - Prevent infinite growth if client isn't reading
      * - Protects server from output flooding
      */
-    if ( d->outtop + length + 4> 50000 )  /* tune this */
+    if ( d->outtop + length + 4 > 50000 )
     {
         if ( count == 0 )
         {
-            bug("write_to_buffer: overflow (%s) [%d bytes queued]",
+            bug( "write_to_buffer: overflow (%s) [%d bytes queued]",
                 d->character ? d->character->name : d->host,
-                d->outtop);
+                d->outtop );
             count++;
-            close_socket(d, TRUE);
+            close_socket( d, TRUE );
         }
         count = 0;
         return;
     }
 
-    // Expand the buffer as needed.
-    while ( d->outtop + (unsigned long ) length + 4 >= d->outsize )
+    /* Expand the buffer as needed. */
+    while ( d->outtop + (unsigned long)length + 4 >= d->outsize )
     {
-        if (d->outsize > 65536)
+        if ( d->outsize > 65536 )
         {
             /* empty buffer */
             d->outtop = 0;
-            bug("write_to_buffer: max buffer exceeded (%s)", d->character ? d->character->name : "???" );
-            close_socket(d, TRUE);
+            bug( "write_to_buffer: max buffer exceeded (%s)",
+                d->character ? d->character->name : "???" );
+            close_socket( d, TRUE );
             return;
         }
+
         d->outsize *= 2;
         char *newbuf = new char[d->outsize];
 
-        if (d->outbuf)
+        if ( d->outbuf )
         {
-            memcpy(newbuf, d->outbuf, d->outtop); // copy valid data
+            memcpy( newbuf, d->outbuf, d->outtop ); /* copy valid data */
             delete[] d->outbuf;
         }
 
         d->outbuf = newbuf;
     }
 
-    // COLOR-AWARE COPY
     /* COLOR-AWARE COPY */
     const char *ptr = txt;
     const char *end = txt + length;
-    char colbuf[64];
+    std::string colbuf;
 
-    while (ptr < end)
+    while ( ptr < end )
     {
         const char *colstr = NULL;
 
         /* find next color code */
-        for (const char *p = ptr; p < end; ++p)
+        for ( const char *p = ptr; p < end; ++p )
         {
-            if (*p == '&' || *p == '^')
+            if ( *p == '&' || *p == '^' )
             {
                 colstr = p;
                 break;
             }
         }
 
-        if (!colstr)
+        if ( !colstr )
             break;
 
         /* copy text before color */
-        size_t seglen = (size_t)(colstr - ptr);
+        size_t seglen = (size_t)( colstr - ptr );
 
-        if (seglen > 0)
+        if ( seglen > 0 )
         {
-            flush_color(d);
-            size_t safe = utf8_safe_len(ptr, seglen);
-            copy_with_newlines(d, ptr, safe);
+            flush_color( d );
+            size_t safe = utf8_safe_len( ptr, seglen );
+            copy_with_newlines( d, ptr, safe );
         }
 
-        if (colstr + 1 >= end)
+        if ( colstr + 1 >= end )
         {
             ptr = end;
             break;
         }
 
         /* ========================= */
-        /* track consumed   */
+        /* track consumed            */
         /* ========================= */
         int consumed = 0;
 
-        int ln = make_color_sequence(colstr, colbuf, d, &consumed); 
+        colbuf.clear();
+        int ln = make_color_sequence( std::string( colstr, 2 ), colbuf, d, &consumed );
 
-        if (ln > 0)
+        if ( ln > 0 )
         {
-            flush_color(d);
-            copy_with_newlines(d, colbuf, ln);
+            flush_color( d );
+            copy_with_newlines( d, colbuf );
         }
 
         /* advance past color code */
-        if (consumed <= 0)
+        if ( consumed <= 0 )
             consumed = 2;
 
         ptr = colstr + consumed;
 
         /* ========================================= */
-        /* IMMEDIATELY copy following text  */
+        /* IMMEDIATELY copy following text           */
         /* until next color code                     */
         /* ========================================= */
         const char *next = ptr;
 
-        while (next < end && *next != '&' && *next != '^')
+        while ( next < end && *next != '&' && *next != '^' )
             next++;
 
-        size_t textlen = (size_t)(next - ptr);
+        size_t textlen = (size_t)( next - ptr );
 
-        if (textlen > 0)
+        if ( textlen > 0 )
         {
-            flush_color(d);            
-            size_t safe = utf8_safe_len(ptr, textlen);
-            copy_with_newlines(d, ptr, safe);
+            flush_color( d );
+            size_t safe = utf8_safe_len( ptr, textlen );
+            copy_with_newlines( d, ptr, safe );
         }
 
         ptr = next;
@@ -3249,29 +3227,14 @@ void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length )
      * ========================= */
     if ( ptr < end )
     {
-        size_t rem = (size_t)(end - ptr);
-//        fprintf(stderr, "COLDB: COPY REMAINDER: [%.*s]\r\n", (int)rem, ptr);
-        flush_color(d);
-        size_t safe = utf8_safe_len(ptr, rem);
-        copy_with_newlines(d, ptr, safe);
+        size_t rem = (size_t)( end - ptr );
+        flush_color( d );
+        size_t safe = utf8_safe_len( ptr, rem );
+        copy_with_newlines( d, ptr, safe );
     }
-    flush_color(d);
+
+    flush_color( d );
     d->outbuf[d->outtop] = '\0';
-
-//fprintf(stderr, "COLDB: OUTBUF RAW:\n");
-/*
-for (unsigned int i = 0; i < d->outtop; i++)
-{
-    unsigned char c = d->outbuf[i];
-
-    if (c == 27) fprintf(stderr, "<ESC>");
-    else if (c == '\r') fprintf(stderr, "<CR>");
-    else if (c == '\n') fprintf(stderr, "<LF>");
-    else fprintf(stderr, "%c", c);
-}
-fprintf(stderr, "\n\n");
-*/
-    return;
 }
 
 
@@ -3305,13 +3268,17 @@ void show_title( DESCRIPTOR_DATA *d )
 /*
  * Deal with sockets that haven't logged in yet.
  */
-void nanny( DESCRIPTOR_DATA *d, char *argument )
+void nanny( DESCRIPTOR_DATA *d, const std::string& argumentin )
 {
     if ( !d )
         return;
+    std::string argument = argumentin.empty() ? "" : argumentin;
 
-    while ( *argument && isspace_utf8( argument ) )
-        UTF8_NEXT( argument );
+    const char *p = argument.c_str();
+
+    while (*p && isspace_utf8(p))
+        UTF8_NEXT(p);
+    argument = p;
 
     switch ( d->connected )
     {
@@ -3378,20 +3345,20 @@ void nanny( DESCRIPTOR_DATA *d, char *argument )
     }
 }
 
-static void nanny_get_name( DESCRIPTOR_DATA *d, char *argument )
+static void nanny_get_name( DESCRIPTOR_DATA *d, const std::string& argumentin )
 {
-    char buf[MAX_STRING_LENGTH];
     CHAR_DATA *ch;
     BAN_DATA *pban;
     bool fOld;
     short chk;
 
-    if ( argument[0] == '\0' )
+    if ( argumentin.empty() )
     {
         /* close_socket( d, FALSE ); */
         return;
     }
 
+    std::string argument = argumentin;
     argument[0] = UPPER( argument[0] );
     if ( !check_parse_name( argument ) )
     {
@@ -3407,23 +3374,19 @@ static void nanny_get_name( DESCRIPTOR_DATA *d, char *argument )
             /* Don't allow new players if DENY_NEW_PLAYERS is true */
             if ( d->game->get_sysdata()->deny_new_players == TRUE )
             {
-                SPRINTF( buf, "The mud is currently preparing for a reboot.\n" );
-                output_to_descriptor( d, buf );
-                SPRINTF( buf, "New players are not accepted during this time.\n" );
-                output_to_descriptor( d, buf );
-                SPRINTF( buf, "Please try again in a few minutes.\n" );
-                output_to_descriptor( d, buf );
+                output_to_descriptor( d, "The mud is currently preparing for a reboot.\n" );
+                output_to_descriptor( d, "New players are not accepted during this time.\n" );
+                output_to_descriptor( d, "Please try again in a few minutes.\n" );
                 close_socket( d, FALSE );
                 return;
             }
-
-            SPRINTF( buf,
+                
+            output_to_descriptor( d,
                 "\nChoosing a name is one of the most important parts of this game...\n"
                 "Make sure to pick a name appropriate to the character you are going\n"
                 "to role play, and be sure that it suits our Star Wars theme.\n"
                 "If the name you select is not acceptable, you will be asked to choose\n"
                 "another one.\n\nPlease choose a name for your character: " );
-            output_to_descriptor( d, buf );
             d->newstate++;
             d->connected = CON_GET_NAME;
             return;
@@ -3444,7 +3407,7 @@ static void nanny_get_name( DESCRIPTOR_DATA *d, char *argument )
     fOld = load_char_obj( d, argument, TRUE );
     if ( !d->character )
     {
-        log_printf( "Bad player file %s@%s.", argument, d->host );
+        log_printf( "Bad player file %s@%s.", argument.c_str(), d->host );
         output_to_descriptor( d, "Your playerfile is corrupt...Please notify the admins.\n" );
         close_socket( d, FALSE );
         return;
@@ -3466,7 +3429,7 @@ static void nanny_get_name( DESCRIPTOR_DATA *d, char *argument )
     if ( BV_IS_SET( ch->act, PLR_DENY ) )
     {
         log_printf_plus( LOG_COMM, d->game->get_sysdata()->log_level,
-            "Denying access to %s@%s.", argument, d->host );
+            "Denying access to %s@%s.", argument.c_str(), d->host );
         if ( d->newstate != 0 )
         {
             output_to_descriptor( d, "That name is already taken.  Please choose another: " );
@@ -3523,17 +3486,17 @@ static void nanny_get_name( DESCRIPTOR_DATA *d, char *argument )
         }
 
         output_to_descriptor( d, "\nI don't recognize your name, you must be new here.\n\n" );
-        SPRINTF( buf, "Did I get that right, %s (Y/N)? ", argument );
-        output_to_descriptor( d, buf );
+        output_to_descriptor( d,
+            str_printf("Did I get that right, %s (Y/N)? ", argument.c_str()) );
         d->connected = CON_CONFIRM_NEW_NAME;
         return;
     }
 }
 
-static void nanny_get_old_password( DESCRIPTOR_DATA *d, char *argument )
+static void nanny_get_old_password( DESCRIPTOR_DATA *d, const std::string& argument )
 {
-    char buf[MAX_STRING_LENGTH];
     CHAR_DATA *ch;
+    std::string name;
     bool fOld;
     short chk;
     char pwdhash[65];
@@ -3543,7 +3506,7 @@ static void nanny_get_old_password( DESCRIPTOR_DATA *d, char *argument )
     output_to_descriptor( d, "\n" );
 
     /* New SHA-256 password checking - AI/DV 3-12-26 */
-    sha256_hash( argument, pwdhash );
+    sha256_hash( argument.c_str(), pwdhash );
 
     if ( strcmp( pwdhash, ch->pcdata->pwd ) )
     {
@@ -3576,11 +3539,12 @@ static void nanny_get_old_password( DESCRIPTOR_DATA *d, char *argument )
         return;
     }
 
-    SPRINTF( buf, "%s", ch->name );
+    name = ch->name;
     d->character->desc = NULL;
     free_char( d->character );
-    fOld = load_char_obj( d, buf, FALSE );
-    (void)fOld; /* preserve original behavior; value not otherwise used */
+    fOld = load_char_obj( d, str_printf("%s", name.c_str()), FALSE );
+   if( !fOld )
+      bug( "%s: failed to load_char_obj for %s.", __func__, name.c_str() );
 
     ch = d->character;
 
@@ -3596,22 +3560,20 @@ static void nanny_get_old_password( DESCRIPTOR_DATA *d, char *argument )
         do_loadarea( ch, "" );
 }
 
-static void nanny_confirm_new_name( DESCRIPTOR_DATA *d, char *argument )
+static void nanny_confirm_new_name( DESCRIPTOR_DATA *d, const std::string& argument )
 {
-    char buf[MAX_STRING_LENGTH];
     CHAR_DATA *ch;
 
     ch = d->character;
 
-    switch ( *argument )
+    switch ( argument[0] )
     {
         case 'y':
         case 'Y':
-            SPRINTF( buf,
-                "\nMake sure to use a password that won't be easily guessed by someone else."
-                "\nPick a good password for %s: %s",
-                ch->name, echo_off_str );
-            output_to_descriptor( d, buf );
+            output_to_descriptor( d, 
+                    str_printf( "\nMake sure to use a password that won't be easily guessed by someone else."          
+                        "\nPick a good password for %s: %s",
+                        ch->name, echo_off_str ));
             d->connected = CON_GET_NEW_PASSWORD;
             break;
 
@@ -3631,7 +3593,7 @@ static void nanny_confirm_new_name( DESCRIPTOR_DATA *d, char *argument )
     }
 }
 
-static void nanny_get_new_password( DESCRIPTOR_DATA *d, char *argument )
+static void nanny_get_new_password( DESCRIPTOR_DATA *d, const std::string& argument )
 {
     CHAR_DATA *ch;
     char *pwdnew;
@@ -3650,7 +3612,7 @@ static void nanny_get_new_password( DESCRIPTOR_DATA *d, char *argument )
     }
 
     /* New SHA-256 password hashing - AI/DV 3-12-26 */
-    sha256_hash( argument, pwdnewhash );
+    sha256_hash( argument.c_str(), pwdnewhash );
     pwdnew = pwdnewhash;
 
     for ( p = pwdnew; *p != '\0'; p++ )
@@ -3669,7 +3631,7 @@ static void nanny_get_new_password( DESCRIPTOR_DATA *d, char *argument )
     d->connected = CON_CONFIRM_NEW_PASSWORD;
 }
 
-static void nanny_confirm_new_password( DESCRIPTOR_DATA *d, char *argument )
+static void nanny_confirm_new_password( DESCRIPTOR_DATA *d, const std::string& argument )
 {
     CHAR_DATA *ch;
     char *p;
@@ -3679,7 +3641,7 @@ static void nanny_confirm_new_password( DESCRIPTOR_DATA *d, char *argument )
 
     output_to_descriptor( d, "\n" );
 
-    sha256_hash( argument, pwdnewhash );
+    sha256_hash( argument.c_str(), pwdnewhash );
 
     for ( p = pwdnewhash; *p != '\0'; p++ )
     {
@@ -3705,10 +3667,8 @@ static void nanny_confirm_new_password( DESCRIPTOR_DATA *d, char *argument )
     d->connected = CON_GET_NEW_SEX;
 }
 
-static void nanny_get_new_sex( DESCRIPTOR_DATA *d, char *argument )
+static void nanny_get_new_sex( DESCRIPTOR_DATA *d, const std::string& argument )
 {
-    char buf[MAX_STRING_LENGTH];
-    char buf2[MAX_STRING_LENGTH];
     CHAR_DATA *ch;
     int iRace, halfmax;
 
@@ -3738,8 +3698,7 @@ static void nanny_get_new_sex( DESCRIPTOR_DATA *d, char *argument )
 
     output_to_descriptor( d,
         "\nYou may choose from the following races, or type showstat [race] to learn more:\n" );
-    buf[0] = '\0';
-    buf2[0] = '\0';
+
     halfmax = ( MAX_RACE / 3 ) + 1;
 
     for ( iRace = 0; iRace < halfmax; iRace++ )
@@ -3749,50 +3708,45 @@ static void nanny_get_new_sex( DESCRIPTOR_DATA *d, char *argument )
 
         if ( race_table[iRace].race_name[0] != '\0' )
         {
-            SPRINTF( buf2, "%-20s", race_table[iRace].race_name );
-            STRAPP( buf, "%s", buf2 );
+            std::string line;
 
-            SPRINTF( buf2, "%-20s", race_table[iRace + halfmax].race_name );
-            STRAPP( buf, "%s", buf2 );
+            line += str_printf( "%-20s", race_table[iRace].race_name );
+            line += str_printf( "%-20s", race_table[iRace + halfmax].race_name );
 
             if ( iRace + ( halfmax * 2 ) < MAX_RACE )
-            {
-                SPRINTF( buf2, "%s", race_table[iRace + ( halfmax * 2 )].race_name );
-                STRAPP( buf, "%s", buf2 );
-            }
+                line += str_printf( "%s", race_table[iRace + ( halfmax * 2 )].race_name );
 
-            STRAPP( buf, "\n" );
-            output_to_descriptor( d, buf );
-            buf[0] = '\0';
+            line += "\n";
+            output_to_descriptor( d, line );
         }
     }
 
-    STRAPP( buf, ": " );
-    output_to_descriptor( d, buf );
+    output_to_descriptor( d, ": " );
     d->connected = CON_GET_NEW_RACE;
 }
 
-static void nanny_get_new_race( DESCRIPTOR_DATA *d, char *argument )
+static void nanny_get_new_race( DESCRIPTOR_DATA *d, const std::string& argumentin )
 {
-    char arg[MAX_STRING_LENGTH];
+    std::string arg;
     CHAR_DATA *ch;
     int iRace;
     int iClass, halfmax;
-    char buf[MAX_STRING_LENGTH];
-    char buf2[MAX_STRING_LENGTH];
 
     ch = d->character;
 
+    std::string argument = argumentin;
     argument = one_argument( argument, arg );
     if ( !str_cmp( arg, "help" ) )
     {
-        do_help( ch, argument );
+        if (argument.empty())
+            do_help( ch, "race" );
+        do_help( ch, (char*)argument.c_str() );
         output_to_descriptor( d, "Please choose a race: " );
         return;
     }
     if ( !str_cmp( arg, "showstat" ) )
     {
-        do_showstatistic( ch, argument );
+        do_showstatistic( ch, (char*)argument.c_str() );
         output_to_descriptor( d, "Please choose a race: " );
         return;
     }
@@ -3823,46 +3777,47 @@ static void nanny_get_new_race( DESCRIPTOR_DATA *d, char *argument )
 
     output_to_descriptor( d,
         "\nPlease choose a main ability from the folowing classes:\n" );
-    buf[0] = '\0';
-    buf2[0] = '\0';
     halfmax = ( MAX_ABILITY / 2 ) + 1;
 
     for ( iClass = 0; iClass < halfmax; iClass++ )
     {
         if ( ability_name[iClass] && ability_name[iClass][0] != '\0' )
         {
-            SPRINTF( buf2, "%-20s", ability_name[iClass] );
-            STRAPP( buf, "%s", buf2 );
+            std::string line;
 
-            if ( iClass + halfmax < MAX_ABILITY )
+            line += str_printf( "%-20s", ability_name[iClass] );
+
+            if ( iClass + halfmax < MAX_ABILITY
+            && ability_name[iClass + halfmax]
+            && ability_name[iClass + halfmax][0] != '\0' )
             {
-                SPRINTF( buf2, "%s", ability_name[iClass + halfmax] );
-                STRAPP( buf, "%s", buf2 );
+                line += str_printf( "%s", ability_name[iClass + halfmax] );
             }
 
-            STRAPP( buf, "\n" );
-            output_to_descriptor( d, buf );
-            buf[0] = '\0';
+            line += "\n";
+            output_to_descriptor( d, line );
         }
     }
 
-    STRAPP( buf, ": " );
-    output_to_descriptor( d, buf );
+    output_to_descriptor( d, ": " );
     d->connected = CON_GET_NEW_CLASS;
 }
 
-static void nanny_get_new_class( DESCRIPTOR_DATA *d, char *argument )
+static void nanny_get_new_class( DESCRIPTOR_DATA *d, const std::string& argumentin )
 {
-    char arg[MAX_STRING_LENGTH];
+    std::string arg;
     CHAR_DATA *ch;
     int iClass;
 
     ch = d->character;
 
+    std::string argument = argumentin;
     argument = one_argument( argument, arg );
     if ( !str_cmp( arg, "help" ) )
     {
-        do_help( ch, argument );
+        if ( argument.empty())
+            do_help( ch, "classes" );
+        do_help( ch, (char*)argument.c_str() );
         output_to_descriptor( d, "Please choose an ability class: " );
         return;
     }
@@ -3908,15 +3863,15 @@ static void roll_new_character_stats( CHAR_DATA *ch )
     ch->perm_cha += race_table[ch->race].cha_plus;
 }
 
-static void show_new_character_stats( DESCRIPTOR_DATA *d, CHAR_DATA *ch, const char *prompt )
+static void show_new_character_stats( DESCRIPTOR_DATA *d, CHAR_DATA *ch, const std::string& prompt )
 {
-    char buf[MAX_STRING_LENGTH];
+    output_to_descriptor( d,
+        str_printf(
+            "\nSTR: %d  INT: %d  WIS: %d  DEX: %d  CON: %d  CHA: %d\n",
+            ch->perm_str, ch->perm_int, ch->perm_wis,
+            ch->perm_dex, ch->perm_con, ch->perm_cha
+        ) );
 
-    SPRINTF( buf, "\nSTR: %d  INT: %d  WIS: %d  DEX: %d  CON: %d  CHA: %d\n",
-        ch->perm_str, ch->perm_int, ch->perm_wis,
-        ch->perm_dex, ch->perm_con, ch->perm_cha );
-
-    output_to_descriptor( d, buf );
     output_to_descriptor( d, prompt );
 }
 
@@ -3929,7 +3884,7 @@ static void nanny_roll_stats( DESCRIPTOR_DATA *d )
     d->connected = CON_STATS_OK;
 }
 
-static void nanny_stats_ok( DESCRIPTOR_DATA *d, char *argument )
+static void nanny_stats_ok( DESCRIPTOR_DATA *d, const std::string& argument )
 {
     CHAR_DATA *ch = d->character;
 
@@ -3955,7 +3910,7 @@ static void nanny_stats_ok( DESCRIPTOR_DATA *d, char *argument )
     d->connected = CON_GET_WANT_RIPANSI;
 }
 
-static void nanny_get_want_ripansi( DESCRIPTOR_DATA *d, char *argument )
+static void nanny_get_want_ripansi( DESCRIPTOR_DATA *d, const std::string& argument )
 {
     CHAR_DATA *ch;
 
@@ -3982,9 +3937,9 @@ static void nanny_get_want_ripansi( DESCRIPTOR_DATA *d, char *argument )
     nanny_get_msp( d, "n" ); /* default to no MSP, because who uses it? DV 4-8-26*/
 }
 
-static void nanny_get_msp( DESCRIPTOR_DATA *d, char *argument )
+static void nanny_get_msp( DESCRIPTOR_DATA *d, const std::string& argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     CHAR_DATA *ch;
     int ability;
 
@@ -4006,9 +3961,9 @@ static void nanny_get_msp( DESCRIPTOR_DATA *d, char *argument )
             return;
     }
 
-    SPRINTF( buf, "%s@%s new %s.", ch->name, d->host,
+    buf = str_printf( "%s@%s new %s.", ch->name, d->host,
         race_table[ch->race].race_name );
-    log_string_plus( buf, LOG_COMM, d->game->get_sysdata()->log_level );
+    log_string_plus( buf.c_str(), LOG_COMM, d->game->get_sysdata()->log_level );
     to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
     output_to_descriptor( d, "Press [ENTER] " );
     show_title( d );
@@ -4022,7 +3977,7 @@ static void nanny_get_msp( DESCRIPTOR_DATA *d, char *argument )
     return;
 }
 
-static void nanny_press_enter( DESCRIPTOR_DATA *d, char *argument )
+static void nanny_press_enter( DESCRIPTOR_DATA *d, const std::string& argument )
 {
     CHAR_DATA *ch;
 
@@ -4196,12 +4151,12 @@ static void nanny_give_new_character_equipment( CHAR_DATA *ch )
 
 static void nanny_initialize_new_character( CHAR_DATA *ch )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
 
     nanny_initialize_new_character_language( ch );
     nanny_initialize_new_character_stats( ch );
 
-    SPRINTF( buf, "%s the %s", ch->name, race_table[ch->race].race_name );
+    buf = str_printf("%s the %s", ch->name, race_table[ch->race].race_name );
     set_title( ch, buf );
 
     nanny_give_new_character_equipment( ch );
@@ -4313,7 +4268,7 @@ static void nanny_load_player_home_storage( DESCRIPTOR_DATA *d, CHAR_DATA *ch )
     }
 
     SPRINTF( filename, "%s%c/%s.home", PLAYER_DIR, tolower( ch->name[0] ),
-        capitalize( ch->name ) );
+        capitalize( ch->name ).c_str() );
 
     if ( ( fph = fopen( filename, "r" ) ) == NULL )
         return;
@@ -4390,7 +4345,7 @@ static void nanny_finish_login( CHAR_DATA *ch )
     gmcp_force_resync( ch );
 }
 
-static void nanny_read_motd( DESCRIPTOR_DATA *d, char *argument )
+static void nanny_read_motd( DESCRIPTOR_DATA *d, const std::string& argument )
 {
     CHAR_DATA *ch;
 
@@ -4409,7 +4364,7 @@ static void nanny_read_motd( DESCRIPTOR_DATA *d, char *argument )
 /*
  * Parse a name for acceptability.
  */
-bool check_parse_name( char *name )
+bool check_parse_name( const std::string& name )
 {
 //    log_printf("Check_parse_name: %s",name);  
     /*
@@ -4432,11 +4387,11 @@ bool check_parse_name( char *name )
      * Lock out IllIll twits.
      */
     {
-	char *pc;
+	const char *pc;
 	bool fIll;
 
 	fIll = TRUE;
-	for ( pc = name; *pc != '\0'; pc++ )
+	for ( pc = name.c_str(); *pc != '\0'; pc++ )
 	{
 	    if ( !isalpha(*pc) )
 		    return FALSE;
@@ -4462,7 +4417,7 @@ bool check_parse_name( char *name )
 /*
  * Look for link-dead player to reconnect.
  */
-short check_reconnect( DESCRIPTOR_DATA *d, char *name, bool fConn )
+short check_reconnect( DESCRIPTOR_DATA *d, const std::string& name, bool fConn )
 {
     CHAR_DATA *ch;
 
@@ -4518,7 +4473,7 @@ short check_reconnect( DESCRIPTOR_DATA *d, char *name, bool fConn )
  * Check if already playing.
  */
  
-bool check_multi( DESCRIPTOR_DATA *d , char *name )
+bool check_multi( DESCRIPTOR_DATA *d , const std::string& name )
 {
         DESCRIPTOR_DATA *dold;
         
@@ -4566,7 +4521,7 @@ bool check_multi( DESCRIPTOR_DATA *d , char *name )
 
 }                
 
-short check_playing( DESCRIPTOR_DATA *d, char *name, bool kick )
+short check_playing( DESCRIPTOR_DATA *d, const std::string& name, bool kick )
 {
     CHAR_DATA *ch;
 
@@ -4635,144 +4590,56 @@ void stop_idling( CHAR_DATA *ch )
     return;
 }
 
-
-
-void send_to_char( const char *txt, CHAR_DATA *ch )
+void send_to_char( const std::string& txt, CHAR_DATA *ch )
 {
     if ( !ch )
     {
       bug( "Send_to_char: NULL *ch" );
       return;
     }
-    if ( txt && ch->desc )
+    if ( !txt.empty() && ch->desc )
 	    output_to_descriptor( ch->desc, txt );
     return;
 }
 
-
-/*
- * Same as above, but converts &color codes to ANSI sequences..
- * No longer needed as color is handled in write_to_buffer
-//void send_to_char_color( const char *txt, CHAR_DATA *ch )
+inline void write_to_pager( DESCRIPTOR_DATA *d, const std::string& txt )
 {
-    DESCRIPTOR_DATA *d;
-    const char *colstr;
-    const char *prevstr;
-    char colbuf[20];
-    int ln;
-
-    if ( !ch )
-    {
-        bug( "Send_to_char_color: NULL *ch" );
-        return;
-    }
-
-    if ( !txt || !(d = ch->desc) )
-        return;
-
-    prevstr = txt;
-
-    size_t outsize = strlen(txt) * 8 + 32;
-    char *out;
-    CREATE(out, char, outsize);
-    int outpos = 0;
-
-    while ( (colstr = strpbrk(prevstr, "&^")) != NULL )
-    {
-        // copy text before color code *
-        int seglen = colstr - prevstr;
-        if (seglen > 0)
-        {
-            memcpy(out + outpos, prevstr, seglen);
-            outpos += seglen;
-        }
-
-        // convert color code *
-        ln = make_color_sequence(colstr, colbuf, d);
-
-        if ( ln < 0 )
-        {
-            prevstr = colstr + 1;
-            continue;
-        }
-
-        if ( ln > 0 )
-        {
-            memcpy(out + outpos, colbuf, ln);
-            outpos += ln;
-        }
-
-        if (*(colstr + 1) != '\0')
-            prevstr = colstr + 2;
-        else
-            prevstr = colstr + 1;
-    }
-
-    // copy remaining text *
-    if ( *prevstr )
-    {
-        int len = strlen(prevstr);
-        memcpy(out + outpos, prevstr, len);
-        outpos += len;
-    }
-
-    out[outpos] = '\0';
-
-    output_to_descriptor(d, out);
-
-    DISPOSE(out);
+    write_to_pager( d, txt.data(), static_cast<int>( txt.size() ) );
 }
-*/
+
 void write_to_pager( DESCRIPTOR_DATA *d, const char *txt, int length )
 {
-  if ( length <= 0 )
-    length = strlen(txt);
-  if ( length == 0 )
-    return;
-  if ( !d->pagebuf )
-  {
-    d->pagesize = MAX_STRING_LENGTH;
-    CREATE( d->pagebuf, char, d->pagesize );
-    d->pagelen = 0;
-  }
-  if ( d->pagepoint == PAGEPOINT_NULL)
-  {
-    d->pagepoint = 0;
-    d->pagelen = 0;
-    d->pagecmd = '\0';
-  }
-  if ( d->pagelen == 0 && !d->fcommand )
-  {
-    d->pagebuf[0] = '\n';
-    d->pagelen = 1;
-  }
-  while ( d->pagelen + (size_t)length + 1 >= d->pagesize )
-  {
-    if ( d->pagesize > 32000 )
-    {
-      bug( "Pager overflow.  Ignoring.\n" );
-      d->pagelen = 0;
-      d->pagepoint = PAGEPOINT_NULL;
-      DISPOSE_ARRAY(d->pagebuf);
-      d->pagesize = MAX_STRING_LENGTH;
-      return;
-    }
-    d->pagesize *= 2;
-    char *newbuf = new char[d->pagesize];
+    if ( !d || !txt )
+        return;
 
-    if (d->pagebuf)
+    if ( length <= 0 )
+        length = static_cast<int>( strlen( txt ) );
+
+    if ( length <= 0 )
+        return;
+
+    if ( d->pagepoint == PAGEPOINT_NULL )
     {
-        memcpy(newbuf, d->pagebuf, d->pagelen);
-        delete[] d->pagebuf;
+        d->pagepoint = 0;
+        d->pagecmd = '\0';
+        d->pagebuf.clear();
     }
 
-    d->pagebuf = newbuf;
-  }
-    memcpy(d->pagebuf + d->pagelen, txt, length);  
+    if ( d->pagebuf.empty() && !d->fcommand )
+        d->pagebuf.push_back( '\n' );
 
-    d->pagelen += length;                          
-    d->pagebuf[d->pagelen] = '\0';   
-  return;
+    /*
+     * HARD CAP
+     */
+    if ( d->pagebuf.size() + static_cast<size_t>( length ) + 1 >= 32000 )
+    {
+        bug( "Pager overflow. Ignoring.\n" );
+        d->pagebuf.clear();
+        d->pagepoint = PAGEPOINT_NULL;
+        return;
+    }
+
+    d->pagebuf.append( txt, static_cast<size_t>( length ) );
 }
 
 int build_ansi_from_atype(sh_int AType, char *buf)
@@ -4799,7 +4666,7 @@ void send_to_pager( const char *txt, CHAR_DATA *ch )
     ch = d->original ? d->original : d->character;
     if ( IS_NPC(ch) || !BV_IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
     {
-	    send_to_char(txt, d->character);
+	    send_to_char(std::string(txt), d->character);
 	    return;
     }
     if ( d->pagecolor_dirty )
@@ -4819,61 +4686,39 @@ void send_to_pager( const char *txt, CHAR_DATA *ch )
   return;
 }
 
-/* Commented out as color is now handled in write_to_buffer 
-
-void send_to_pager_color( const char *txt, CHAR_DATA *ch )
+void send_to_pager( const std::string& txt, CHAR_DATA *ch )
 {
-  DESCRIPTOR_DATA *d;
-  const char *colstr;
-  const char *prevstr = txt;
-  char colbuf[MAX_INPUT_LENGTH];
-  int ln;
-  
   if ( !ch )
   {
-    bug( "Send_to_pager_color: NULL *ch" );
+    bug( "Send_to_pager: NULL *ch" );
     return;
   }
-  if ( !txt || !ch->desc )
-    return;
-
-      d = ch->desc;
-     ch = d->original ? d->original : d->character;
-
+  if ( !txt.empty() && ch->desc )
+  {
+    DESCRIPTOR_DATA *d = ch->desc;
+    
+    ch = d->original ? d->original : d->character;
     if ( IS_NPC(ch) || !BV_IS_SET(ch->pcdata->flags, PCFLAG_PAGERON) )
     {
-        send_to_char_color(txt, d->character);
-        return;
+	    send_to_char(std::string(txt), d->character);
+	    return;
     }
-
-    prevstr = txt;
-
-    while ( (colstr = strpbrk(prevstr, "&^")) != NULL )
+    if ( d->pagecolor_dirty )
     {
-        if ( colstr > prevstr )
-            write_to_pager(d, prevstr, (colstr - prevstr));
+        char buf[64];
+        int len;
 
-        ln = make_color_sequence(colstr, colbuf, d);
+        len = build_ansi_from_atype(d->pagecolor, buf);
 
-        if ( ln < 0 )
-        {
-            prevstr = colstr + 1;
-            break;
-        }
-        else if ( ln > 0 )
-        {
-            write_to_pager(d, colbuf, ln);
-        }
+        write_to_pager(d, buf, len);
 
-        prevstr = colstr + 2;
-    }
-
-    if ( *prevstr )
-        write_to_pager(d, prevstr, 0);
-
-    return;
+        d->pagecolor_dirty = FALSE;
+        d->pagecolor_pending = d->pagecolor;
+    }    
+    write_to_pager(d, txt);
+  }
+  return;
 }
-*/
 
 void set_char_color(sh_int AType, CHAR_DATA *ch)
 {
@@ -4933,16 +4778,16 @@ void set_pager_color( sh_int AType, CHAR_DATA *ch )
 
 
 /* source: EOD, by John Booth <???> */
-void ch_printf(CHAR_DATA *ch, const char *fmt, ...)
+void ch_printf_( CHAR_DATA *ch, const char *fmt, ... )
 {
-    char buf[MAX_STRING_LENGTH * 2];
     va_list args;
+    va_start( args, fmt );
 
-    va_start(args, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, args);
-    va_end(args);
+    std::string out = vstr_printf( fmt, args );
 
-    send_to_char(buf, ch);
+    va_end( args );
+
+    send_to_char( out, ch );
 }
 
 void pager_printf(CHAR_DATA *ch, const char *fmt, ...)
@@ -4973,12 +4818,37 @@ char *obj_short( OBJ_DATA *obj )
     }
     return obj->short_descr;
 }
+//Added stripping the 'a' and 'an' from object short descriptions for act() DV 4-12-26
+std::string strip_aoran( const std::string &input )
+{
+    if ( input.size() >= 2 )
+    {
+        // Check for "a "
+        if ( (input[0] == 'a' || input[0] == 'A') &&
+             input[1] == ' ' )
+        {
+            return input.substr( 2 );
+        }
+    }
+
+    if ( input.size() >= 3 )
+    {
+        // Check for "an "
+        if ( (input[0] == 'a' || input[0] == 'A') &&
+             (input[1] == 'n' || input[1] == 'N') &&
+             input[2] == ' ' )
+        {
+            return input.substr( 3 );
+        }
+    }
+
+    return input;
+}
 
 /*
  * The primary output interface for formatted output.
  */
-/* Major overhaul. -- Alty */
-#define NAME(ch)	(IS_NPC(ch) ? ch->short_descr : ch->name)
+#define NAME(ch) (IS_NPC(ch) ? ch->short_descr : ch->name)
 
 /*
  * act_string()
@@ -5003,45 +4873,37 @@ char *obj_short( OBJ_DATA *obj )
  *
  * Returns:
  *
- *   pointer to static buffer containing formatted message
+ *   std::string containing the formatted message
  *
  * Safety improvements:
  *
- *   • Prevents buffer overflow
+ *   • Eliminates static buffer usage
+ *   • Prevents buffer overflow via std::string growth
  *   • Protects against NULL pointers
  *   • Handles missing arg1/arg2 safely
- *   • Limits writes to MAX_STRING_LENGTH
+ *   • Preserves original behavior and formatting
  */
 
 static const char *he_she[]  = { "it",  "he",  "she" };
 static const char *him_her[] = { "it",  "him", "her" };
 static const char *his_her[] = { "its", "his", "her" };
 
-char *act_string(const char *format, CHAR_DATA *to, CHAR_DATA *ch,
-                 const void *arg1, const void *arg2)
+std::string act_string( const char *format, CHAR_DATA *to, CHAR_DATA *ch,
+                        const void *arg1, const void *arg2 )
 {
-    /* Output buffer for the final formatted string */
-    thread_local static char buf[MAX_STRING_LENGTH];
-
     /* Temporary buffer used by some tokens (ex: $d) */
-    char fname[MAX_INPUT_LENGTH];
-
-    /* Write pointer into buf */
-    char *point = buf;
-
-    /*
-     * Pointer to the last safe write position.
-     * We reserve 3 bytes for:
-     *
-     *   "\n\0"
-     */
-    char *end = buf + sizeof(buf) - 3;
+    std::string fname;
 
     /* Pointer to current position in format string */
     const char *str = format;
 
     /* Pointer to the string we will append */
-    const char *i = NULL;
+    const char *i = nullptr;
+
+    /* Output string (replaces static buffer) */
+    std::string out;
+
+    /* Temporary string for language token */
     std::string lang_buf;
 
     /*
@@ -5051,37 +4913,39 @@ char *act_string(const char *format, CHAR_DATA *to, CHAR_DATA *ch,
      * arg2 -> often character
      */
     CHAR_DATA *vch = (CHAR_DATA *)arg2;
-    OBJ_DATA *obj1 = (OBJ_DATA *)arg1;
-    OBJ_DATA *obj2 = (OBJ_DATA *)arg2;
+    OBJ_DATA  *obj1 = (OBJ_DATA *)arg1;
+    OBJ_DATA  *obj2 = (OBJ_DATA *)arg2;
 
     /* Defensive checks */
-    if (!format || !ch)
-        return "";
+    if ( !format || !ch )
+        return std::string();
 
     /*
      * Walk through the format string one character at a time
      */
-    while (*str && point < end)
+    while ( *str )
     {
-        //If this is not a '$' token, just copy it directly
-        if (*str != '$')
+        /* If this is not a '$' token, just copy it directly */
+        if ( *str != '$' )
         {
-            *point++ = *str++;
+            out.push_back( *str++ );
             continue;
         }
 
-         //Skip the '$'
-        str++;
+        /* Skip the '$' */
+        ++str;
 
-         //If format string ended after '$', stop safely
-        if (!*str)
+        /* If format string ended after '$', stop safely */
+        if ( !*str )
             break;
 
-         /* If a token requires arg2 but it was not provided,
-         *  log a bug and insert a placeholder. */
-        if (!arg2 && *str >= 'A' && *str <= 'Z')
+        /*
+         * If a token requires arg2 but it was not provided,
+         * log a bug and insert a placeholder.
+         */
+        if ( !arg2 && *str >= 'A' && *str <= 'Z' )
         {
-            bug("act_string: missing arg2 for code %c", *str);
+            bug( "act_string: missing arg2 for code %c", *str );
             i = "<@@@>";
         }
         else
@@ -5089,154 +4953,153 @@ char *act_string(const char *format, CHAR_DATA *to, CHAR_DATA *ch,
             /*
              * Interpret token following '$'
              */
-            switch (*str)
+            switch ( *str )
             {
-            default:
-                bug("act_string: bad code %c", *str);
-                i = "<@@@>";
-                break;
+                default:
+                    bug( "act_string: bad code %c", *str );
+                    i = "<@@@>";
+                    break;
 
-             //$t = string from arg1
-            case 't':
-                i = arg1 ? (char *)arg1 : "";
-                break;
+                /* $t = string from arg1 */
+                case 't':
+                    i = arg1 ? (const char *)arg1 : "";
+                    break;
 
-            // $T = string from arg2
-            case 'T':
-                i = arg2 ? (char *)arg2 : "";
-                break;
+                /* $T = string from arg2 */
+                case 'T':
+                    i = arg2 ? (const char *)arg2 : "";
+                    break;
 
-            // $n = actor name (seen by 'to')
-            case 'n':
-                i = (to ? PERS(ch,to) : NAME(ch));
-                break;
+                /* $n = actor name (seen by 'to') */
+                case 'n':
+                    i = ( to ? PERS( ch, to ) : NAME( ch ) );
+                    break;
 
-            // $N = victim name
-            case 'N':
-                i = vch ? (to ? PERS(vch,to) : NAME(vch)) : "someone";
-                break;
+                /* $N = victim name */
+                case 'N':
+                    i = vch ? ( to ? PERS( vch, to ) : NAME( vch ) ) : "someone";
+                    break;
 
-            // $e / $E = he/she/it - CHAR
-            case 'e':
-                i = he_she[URANGE(0, ch->sex, 2)];
-                break;
-            // $e / $E = he/she/it - VICT
-            case 'E':
-                i = vch ? he_she[URANGE(0, vch->sex, 2)] : "it";
-                break;
+                /* $e / $E = he/she/it - CHAR */
+                case 'e':
+                    i = he_she[URANGE( 0, ch->sex, 2 )];
+                    break;
 
-            // $m / $M = him/her/it - CHAR
-            case 'm':
-                i = him_her[URANGE(0, ch->sex, 2)];
-                break;
-            // $m / $M = him/her/it - VICT
-            case 'M':
-                i = vch ? him_her[URANGE(0, vch->sex, 2)] : "it";
-                break;
+                /* $E = he/she/it - VICT */
+                case 'E':
+                    i = vch ? he_she[URANGE( 0, vch->sex, 2 )] : "it";
+                    break;
 
-            // $s / $S = his/her/its - CHAR
-            case 's':
-                i = his_her[URANGE(0, ch->sex, 2)];
-                break;
-            // $s / $S = his/her/its - VICT
-            case 'S':
-                i = vch ? his_her[URANGE(0, vch->sex, 2)] : "its";
-                break;
+                /* $m / $M = him/her/it - CHAR */
+                case 'm':
+                    i = him_her[URANGE( 0, ch->sex, 2 )];
+                    break;
 
-            /*
-             * $q = plural suffix
-             * Used for messages like:
-             *   "$n drop$q $p."
-             * Which becomes:
-             *   "Bob drops sword."
-             *   "You drop sword."
-             */
-            case 'q':
-                i = (to == ch) ? "" : "s";
-                break;
+                /* $M = him/her/it - VICT */
+                case 'M':
+                    i = vch ? him_her[URANGE( 0, vch->sex, 2 )] : "it";
+                    break;
 
-            // $Q = possessive pronoun
-            case 'Q':
-                i = (to == ch) ? "your"
-                               : his_her[URANGE(0, ch->sex, 2)];
-                break;
+                /* $s / $S = his/her/its - CHAR */
+                case 's':
+                    i = his_her[URANGE( 0, ch->sex, 2 )];
+                    break;
 
-            // $p = object short description
-            case 'p':
-                i = (!obj1 ? "something" :
-                     (!to || can_see_obj(to,obj1)
-                      ? obj_short(obj1) : "something"));
-                break;
+                /* $S = his/her/its - VICT */
+                case 'S':
+                    i = vch ? his_her[URANGE( 0, vch->sex, 2 )] : "its";
+                    break;
 
-            // $P = second object
-            case 'P':
-                i = (!obj2 ? "something" :
-                     (!to || can_see_obj(to,obj2)
-                      ? obj_short(obj2) : "something"));
-                break;
+                /*
+                 * $q = plural suffix
+                 */
+                case 'q':
+                    i = ( to == ch ) ? "" : "s";
+                    break;
 
-            /*
-             * $d = door direction
-             * Extracts first word from arg2.
-             */
-            case 'd':
-                if (!arg2 || ((char *)arg2)[0] == '\0')
-                    i = "door";
-                else
-                {
-                    one_argument((char *)arg2, fname);
-                    i = fname;
-                }
-                break;
+                /*
+                 * $Q = possessive pronoun
+                 */
+                case 'Q':
+                    i = ( to == ch ) ? "your"
+                                     : his_her[URANGE( 0, ch->sex, 2 )];
+                    break;
 
-            // $l = language string
-            case 'l':
-                lang_buf = lang_string(ch, to);
-                i = lang_buf.c_str();
-                break;
+                /* $p = object short description */
+                case 'p':
+                    i = ( !obj1 ? "something"
+                         : ( !to || can_see_obj( to, obj1 )
+                             ? obj_short( obj1 )
+                             : "something" ) );
+                    break;
+
+                /* $P = second object */
+                case 'P':
+                    i = ( !obj2 ? "something"
+                         : ( !to || can_see_obj( to, obj2 )
+                             ? obj_short( obj2 )
+                             : "something" ) );
+                    break;
+
+                /*
+                 * $d = door direction
+                 * Extracts first word from arg2.
+                 */
+                case 'd':
+                    if ( !arg2 || ((const char *)arg2)[0] == '\0' )
+                        i = "door";
+                    else
+                    {
+                        one_argument( std::string((char *)arg2), fname );
+                        i = fname.c_str();
+                    }
+                    break;
+
+                /* $l = language string */
+                case 'l':
+                    lang_buf = lang_string( ch, to );
+                    i = lang_buf.c_str();
+                    break;
             }
         }
 
         /* Move past token */
-        str++;
+        ++str;
 
-        if (!i)
+        if ( !i )
             i = "";
 
-        /*
-         * Safely append i into the output buffer.
-         * This prevents writing past MAX_STRING_LENGTH.
-         */
-        while (*i && point < end)
-            *point++ = *i++;
+        /* Append token result safely */
+        out += i;
     }
 
-    // Terminate message with newline/carriage return
-    *point++ = '\n';
-    *point   = '\0';
+    /* Terminate message with newline */
+    out += '\n';
 
-    // Capitalize the first character
-    char *p = buf;
+    /*
+     * Capitalize first visible character
+     * (skip leading color codes)
+     */
+    size_t p = 0;
 
-    /* skip leading color codes */
-    while (*p == '&' || *p == '^')
-    {
-        if (*(p + 1))
-            p += 2;
-        else
-            break;
-    }
+    while ( p + 1 < out.size() && ( out[p] == '&' || out[p] == '^' ) )
+        p += 2;
 
-    /* capitalize first visible char */
-    if (*p)
-        *p = UPPER(*p);
+    if ( p < out.size() )
+        out[p] = UPPER( out[p] );
 
-    return buf;
+    return out;
 }
 #undef NAME
-  
+
+std::string act_string( const std::string &format, CHAR_DATA *to, CHAR_DATA *ch,
+                        const void *arg1, const void *arg2 )
+{
+    return act_string( format.c_str(), to, ch, arg1, arg2 );
+}
+
 /*
- * act() - Cleaned up Act - AI/DV 3-15-26
+ * act() - Cleaned up Act - DV 3-15-26
  *
  * Sends formatted action messages to characters depending on the
  * message target type (TO_CHAR, TO_ROOM, TO_VICT, etc).
@@ -5257,17 +5120,17 @@ char *act_string(const char *format, CHAR_DATA *to, CHAR_DATA *ch,
  *   arg2   - optional victim character
  *   type   - target audience (TO_CHAR, TO_ROOM, etc)
  */
-void act( sh_int AType, const char *format, CHAR_DATA *ch,
+void act_dir( sh_int AType, const std::string &format, CHAR_DATA *ch,
           const void *arg1, const void *arg2, int type )
 {
-    char *txt;                     /* Final expanded message string */
-    CHAR_DATA *to;                 /* Character receiving the message */
+    std::string txt;              /* Final expanded message string */
+    CHAR_DATA *to;                /* Character receiving the message */
     CHAR_DATA *vch = (CHAR_DATA *)arg2; /* Victim character (if applicable) */
 
     /*
      * Ignore null or empty messages.
      */
-    if ( !format || format[0] == '\0' )
+    if ( format.empty() )
         return;
 
     /*
@@ -5275,15 +5138,12 @@ void act( sh_int AType, const char *format, CHAR_DATA *ch,
      */
     if ( !ch )
     {
-        bug( "Act: null ch. (%s)", format );
+        bug( "Act: null ch. (%s)", format.c_str() );
         return;
     }
 
     /*
      * Determine who the initial recipient should be.
-     *
-     * TO_CHAR  -> message only to the acting character
-     * otherwise -> start iterating through room occupants
      */
     if ( !ch->in_room )
         to = NULL;
@@ -5294,104 +5154,76 @@ void act( sh_int AType, const char *format, CHAR_DATA *ch,
 
     /*
      * ACT_SECRETIVE mobs do not broadcast actions to the room.
-     * Only the mob itself should see the message.
      */
     if ( IS_NPC(ch) && BV_IS_SET(ch->act, ACT_SECRETIVE) && type != TO_CHAR )
         return;
 
     /*
      * Handle victim-targeted messages.
-     *
-     * Example:
-     *   "$n hits you!"  (TO_VICT)
      */
     if ( type == TO_VICT )
     {
         if ( !vch )
         {
             bug( "Act: null vch with TO_VICT." );
-            bug( "%s (%s)", ch->name, format );
+            bug( "%s (%s)", ch->name, format.c_str() );
             return;
         }
 
         if ( !vch->in_room )
         {
             bug( "Act: vch in NULL room!" );
-            bug( "%s -> %s (%s)", ch->name, vch->name, format );
+            bug( "%s -> %s (%s)", ch->name, vch->name, format.c_str() );
             return;
         }
 
-        /* Send message directly to the victim */
         to = vch;
     }
 
     /*
      * Trigger room and object ACT_PROG scripts if applicable.
-     *
-     * These triggers allow rooms and objects to react to
-     * player actions described by act() messages.
      */
     if ( MOBtrigger && type != TO_CHAR && type != TO_VICT && to )
     {
         OBJ_DATA *to_obj;
 
-        /* Generate the message text without ANSI colors */
-        txt = act_string(format, NULL, ch, arg1, arg2);
+        /* Generate message once (no recipient-specific context) */
+        txt = act_string( format, NULL, ch, arg1, arg2 );
 
-        /*
-         * Room ACT trigger
-         */
         if ( IS_SET(to->in_room->progtypes, ACT_PROG) )
-            rprog_act_trigger(txt, to->in_room, ch,
-                              (OBJ_DATA *)arg1, (void *)arg2);
+            rprog_act_trigger( txt, to->in_room, ch,
+                               (OBJ_DATA *)arg1, (void *)arg2 );
 
-        /*
-         * Object ACT triggers for all objects in the room
-         */
         for ( to_obj = to->in_room->first_content;
               to_obj;
               to_obj = to_obj->next_content )
         {
             if ( IS_SET(to_obj->pIndexData->progtypes, ACT_PROG) )
-                oprog_act_trigger(txt, to_obj, ch,
-                                  (OBJ_DATA *)arg1, (void *)arg2);
+                oprog_act_trigger( txt, to_obj, ch,
+                                   (OBJ_DATA *)arg1, (void *)arg2 );
         }
     }
 
     /*
      * Send the message to appropriate characters.
-     *
-     * If TO_CHAR or TO_VICT, the loop runs once.
-     * Otherwise we iterate through everyone in the room.
      */
     for ( ; to; to = (type == TO_CHAR || type == TO_VICT)
                      ? NULL : to->next_in_room )
     {
+        if ( !to )
+            continue;
 
-        if (!to)
-            continue;      
         /*
-         * Skip characters that should not receive the message.
-         *
-         * Conditions:
-         *  - no descriptor (player not connected)
-         *  - sleeping
-         *  - NPC without relevant programs
+         * Skip invalid recipients
          */
-        if (((!to || !to->desc)
+        if ( ((!to->desc)
              && (IS_NPC(to) && !IS_SET(to->pIndexData->progtypes, ACT_PROG)))
-            || !IS_AWAKE(to))
+            || !IS_AWAKE(to) )
             continue;
 
-        /*
-         * Skip characters who cannot see the acting character.
-         */
-        if (!can_see(to, ch) && type != TO_VICT)
+        if ( !can_see(to, ch) && type != TO_VICT )
             continue;
 
-        /*
-         * Filter recipients based on target type.
-         */
         if ( type == TO_CHAR && to != ch )
             continue;
 
@@ -5401,33 +5233,31 @@ void act( sh_int AType, const char *format, CHAR_DATA *ch,
         if ( type == TO_ROOM && to == ch )
             continue;
 
-        if ( type == TO_NOTVICT && (to == ch || to == vch) )
+        if ( type == TO_NOTVICT && ( to == ch || to == vch ) )
             continue;
 
         /*
-         * Expand the format string into the final message.
+         * Expand message per recipient
          */
-        txt = act_string(format, to, ch, arg1, arg2);
+        txt = act_string( format, to, ch, arg1, arg2 );
 
         /*
-         * Send message to player with color.
+         * Send message to player
          */
-        if (to && to->desc)
+        if ( to->desc )
         {
-            set_char_color(AType, to);
-            flush_color(to->desc);
-            send_to_char(txt, to);
+            set_char_color( AType, to );
+            flush_color( to->desc );
+            send_to_char( txt, to );
         }
 
         /*
-         * Mob ACT trigger.
-         *
-         * Allows mobs to respond to actions happening nearby.
+         * Mob ACT trigger
          */
-        if (MOBtrigger)
+        if ( MOBtrigger )
         {
-            mprog_act_trigger(txt, to, ch,
-                              (OBJ_DATA *)arg1, (void *)arg2);
+            mprog_act_trigger( txt, to, ch,
+                               (OBJ_DATA *)arg1, (void *)arg2 );
         }
     }
 
@@ -5437,12 +5267,66 @@ void act( sh_int AType, const char *format, CHAR_DATA *ch,
     MOBtrigger = TRUE;
 }
 
+void act( sh_int AType, const std::string &format, CHAR_DATA *ch,
+          const void *arg1, const void *arg2, int type )
+{
+    act_dir( AType, format, ch, arg1, arg2, type );
+}
+void act( sh_int AType, const char *format, CHAR_DATA *ch,
+          const void *arg1, const void *arg2, int type )
+{
+    act_dir( AType, std::string( format ? format : "" ), ch, arg1, arg2, type );
+}
+
+
+
+//Added lots of overloads, because I know I or someone will screw this up eventually.  So $T and $t can be std::string or const char*.
+void act( sh_int AType, const std::string &format, CHAR_DATA *ch,
+          const std::string *arg1, const void *arg2, int type )
+{
+    act_dir( AType, format.c_str(), ch, arg1 ? arg1->c_str() : nullptr, arg2, type );
+}
+
+void act( sh_int AType, const std::string &format, CHAR_DATA *ch,
+          const void *arg1, const std::string *arg2, int type )
+{
+    act_dir( AType, format.c_str(), ch, arg1, arg2 ? arg2->c_str() : nullptr, type );
+}
+
+void act( sh_int AType, const char *format, CHAR_DATA *ch,
+          const std::string &arg1, const void *arg2, int type )
+{
+    act_dir( AType, std::string( format ? format : "" ), ch, arg1.c_str(), arg2, type );
+}
+
+void act( sh_int AType, const std::string &format, CHAR_DATA *ch,
+          const void *arg1, const std::string &arg2, int type )
+{
+    act( AType, format.c_str(), ch, arg1, arg2.c_str(), type );
+}
+
+void act( sh_int AType, const std::string &format, CHAR_DATA *ch,
+          const std::string &arg1, const void *arg2, int type )
+{
+    act_dir( AType, format, ch, arg1.c_str(), arg2, type );
+}
+
+void act( sh_int AType, const std::string &format, CHAR_DATA *ch,
+          const std::string *arg1, const std::string *arg2, int type )
+{
+    act_dir( AType, format.c_str(), ch,
+         arg1 ? arg1->c_str() : nullptr,
+         arg2 ? arg2->c_str() : nullptr,
+         type );
+}
+
+
 void do_name( CHAR_DATA *ch, char *argument )
 {
   char fname[1024];
   struct stat fst;
   CHAR_DATA *tmp;
-  char buf[MAX_STRING_LENGTH];
+  std::string buf;
 
   if ( !NOT_AUTHED(ch) || ch->pcdata->auth_state != 2)
   {
@@ -5477,7 +5361,7 @@ void do_name( CHAR_DATA *ch, char *argument )
   }
 
   SPRINTF( fname, "%s%c/%s", PLAYER_DIR, tolower(argument[0]),
-                        capitalize( argument ) );
+                        capitalize( argument ).c_str() );
   if ( stat( fname, &fst ) != -1 )
   {
     send_to_char("That name is already taken.  Please choose another.\n", ch);
@@ -5486,7 +5370,7 @@ void do_name( CHAR_DATA *ch, char *argument )
 
   STRFREE( ch->name );
   ch->name = STRALLOC( argument );
-  SPRINTF( buf, "%s the %s",ch->name,
+  buf = str_printf("%s the %s",ch->name,
     race_table[ch->race].race_name );
   set_title( ch, buf );
   
@@ -5528,175 +5412,192 @@ void send_eor(DESCRIPTOR_DATA *d)
 
 void display_prompt( DESCRIPTOR_DATA *d )
 {
-  CHAR_DATA *ch = d->character;
-  CHAR_DATA *och = (d->original ? d->original : d->character);
-  bool ansi = (!IS_NPC(och) && BV_IS_SET(och->act, PLR_ANSI));
-  const char *prompt;
-  char buf[MAX_STRING_LENGTH];
-  char *pbuf = buf;
-  int stat;
+    CHAR_DATA *ch = d->character;
+    CHAR_DATA *och = ( d->original ? d->original : d->character );
+    bool ansi = ( !IS_NPC( och ) && BV_IS_SET( och->act, PLR_ANSI ) );
+    const char *prompt;
+    int stat;
 
-  if ( !ch )
-  {
-    bug( "display_prompt: NULL ch" );
-    return;
-  }
+    if ( !ch )
+    {
+        bug( "display_prompt: NULL ch" );
+        return;
+    }
 
-  if ( !IS_NPC(ch) && ch->substate != SUB_NONE && ch->pcdata->subprompt
-  &&   ch->pcdata->subprompt[0] != '\0' )
-    prompt = ch->pcdata->subprompt;
-  else
-  if ( IS_NPC(ch) || !ch->pcdata->prompt || !*ch->pcdata->prompt )
-     prompt = default_prompt(ch);
-  else
-     prompt = ch->pcdata->prompt;
+    if ( !IS_NPC( ch ) && ch->substate != SUB_NONE
+    &&   ch->pcdata->subprompt
+    &&   ch->pcdata->subprompt[0] != '\0' )
+        prompt = ch->pcdata->subprompt;
+    else if ( IS_NPC( ch ) || !ch->pcdata->prompt || !*ch->pcdata->prompt )
+        prompt = default_prompt( ch );
+    else
+        prompt = ch->pcdata->prompt;
 
-    if (ansi)
+    if ( ansi )
+        set_char_color( 7, ch );  /* reset to default */
+
+    std::string out;
+
+    for ( ; *prompt; ++prompt )
     {
-        set_char_color(7, ch);  /* reset to default */
-    }
-  /* Clear out old color stuff */
-/*  make_color_sequence(NULL, NULL, NULL);*/
-  for ( ; *prompt; prompt++ )
-  {
-    /*
-     * '&' = foreground color/intensity bit
-     * '^' = background color/blink bit
-     * '%' = prompt commands
-     * Note: foreground changes will revert background to 0 (black)
-     */
-//    if ( *prompt != '&' && *prompt != '^' && *prompt != '%' )
-//  Removed color handling as it's handled in write_to_buffer now
-    if ( *prompt != '%' )
-    {
-      *(pbuf++) = *prompt;
-      continue;
-    }
-    ++prompt;
-    if ( !*prompt )
-      break;
-    if ( *prompt == *(prompt-1) )
-    {
-      *(pbuf++) = *prompt;
-      continue;
-    }
-    switch(*(prompt-1))
-    {
-        default:
-        bug( "Display_prompt: bad command char '%c'.", *(prompt-1) );
-        break;
-        case '&':
-        case '^':
-        break;
-        case '%':
-        *pbuf = '\0';
-        stat = 0x80000000;
-        switch(*prompt)
+        /*
+         * '&' = foreground color/intensity bit
+         * '^' = background color/blink bit
+         * '%' = prompt commands
+         * Note: foreground changes will revert background to 0 (black)
+         */
+        if ( *prompt != '%' )
         {
+            out.push_back( *prompt );
+            continue;
+        }
+
+        ++prompt;
+        if ( !*prompt )
+            break;
+
+        if ( *prompt == *( prompt - 1 ) )
+        {
+            out.push_back( *prompt );
+            continue;
+        }
+
+        switch ( *( prompt - 1 ) )
+        {
+            default:
+                bug( "Display_prompt: bad command char '%c'.", *( prompt - 1 ) );
+                break;
+
+            case '&':
+            case '^':
+                break;
+
             case '%':
-            *pbuf++ = '%';
-            *pbuf = '\0';
-            break;
-            case 'a':
-            if ( ch->top_level >= 10 )
-            stat = ch->alignment;
-            else if ( IS_GOOD(ch) )
-            memmove(pbuf, "good", sizeof("good"));
-            else if ( IS_EVIL(ch) )
-            memmove(pbuf, "evil", sizeof("evil"));
-            else
-            memmove(pbuf, "neutral", sizeof("neutral"));
-            break;
-            case 'h':
-            stat = ch->hit;
-            break;
-            case 'H':
-            stat = ch->max_hit;
-            break;
-            case 'm':
-            if ( IS_IMMORTAL(ch) || ch->skill_level[FORCE_ABILITY] > 1 )
-            stat = ch->mana;
-            else
-            stat = 0;
-            break;
-            case 'M':
-            if ( IS_IMMORTAL(ch) || ch->skill_level[FORCE_ABILITY] > 1 )
-            stat = ch->max_mana;
-            else
-            stat = 0;
-            break;
-            case 'p':
-                if ( ch->position == POS_RESTING )
-                memmove(pbuf, "resting", sizeof("resting"));
-                else if ( ch->position == POS_SLEEPING )
-                memmove(pbuf, "sleeping", sizeof("sleeping"));
-                else if ( ch->position == POS_SITTING )
-                memmove(pbuf, "sitting", sizeof("sitting"));
-                break;
-            case 'u':
-                stat = num_descriptors;
-                break;
-            case 'U':
-                stat = d->game->get_sysdata()->maxplayers;
-                break;
-            case 'v':
-                stat = ch->move;
-                break;
-            case 'V':
-                stat = ch->max_move;
-                break;
-            case 'g':
-                stat = ch->gold;
-                break;
-            case 'r':
-                if ( IS_IMMORTAL(och) )
-                stat = ch->in_room->vnum;
-                break;
-            case 'R':
-                if ( BV_IS_SET(och->act, PLR_ROOMVNUM) )
-                    snprintf( pbuf, MAX_STRING_LENGTH, "<#%d> ", ch->in_room->vnum );
-                break;
-            case 'i':
-                if ( (!IS_NPC(ch) && BV_IS_SET(ch->act, PLR_WIZINVIS)) ||
-                    (IS_NPC(ch) && BV_IS_SET(ch->act, ACT_MOBINVIS)) )
-                snprintf( pbuf, MAX_STRING_LENGTH, "(Invis %d) ", ( IS_NPC( ch ) ? ch->mobinvis : ch->pcdata->wizinvis ) );
-                else
-                if ( IS_AFFECTED(ch, AFF_INVISIBLE) )
-                    snprintf( pbuf, MAX_STRING_LENGTH, "(Invis) ");
-                break;
-            case 'I':
-                stat = (IS_NPC(ch) ? (BV_IS_SET(ch->act, ACT_MOBINVIS) ? ch->mobinvis : 0)
-                    : (BV_IS_SET(ch->act, PLR_WIZINVIS) ? ch->pcdata->wizinvis : 0));
+                stat = 0x80000000;
+
+                switch ( *prompt )
+                {
+                    case '%':
+                        out.push_back( '%' );
+                        break;
+
+                    case 'a':
+                        if ( ch->top_level >= 10 )
+                            stat = ch->alignment;
+                        else if ( IS_GOOD( ch ) )
+                            out += "good";
+                        else if ( IS_EVIL( ch ) )
+                            out += "evil";
+                        else
+                            out += "neutral";
+                        break;
+
+                    case 'h':
+                        stat = ch->hit;
+                        break;
+
+                    case 'H':
+                        stat = ch->max_hit;
+                        break;
+
+                    case 'm':
+                        if ( IS_IMMORTAL( ch ) || ch->skill_level[FORCE_ABILITY] > 1 )
+                            stat = ch->mana;
+                        else
+                            stat = 0;
+                        break;
+
+                    case 'M':
+                        if ( IS_IMMORTAL( ch ) || ch->skill_level[FORCE_ABILITY] > 1 )
+                            stat = ch->max_mana;
+                        else
+                            stat = 0;
+                        break;
+                    case 'n':
+                        out.push_back('\n');
+                        break;
+                    case 'p':
+                        if ( ch->position == POS_RESTING )
+                            out += "resting";
+                        else if ( ch->position == POS_SLEEPING )
+                            out += "sleeping";
+                        else if ( ch->position == POS_SITTING )
+                            out += "sitting";
+                        break;
+
+                    case 'u':
+                        stat = num_descriptors;
+                        break;
+
+                    case 'U':
+                        stat = d->game->get_sysdata()->maxplayers;
+                        break;
+
+                    case 'v':
+                        stat = ch->move;
+                        break;
+
+                    case 'V':
+                        stat = ch->max_move;
+                        break;
+
+                    case 'g':
+                        stat = ch->gold;
+                        break;
+
+                    case 'r':
+                        if ( IS_IMMORTAL( och ) && ch->in_room )
+                            stat = ch->in_room->vnum;
+                        break;
+
+                    case 'R':
+                        if ( BV_IS_SET( och->act, PLR_ROOMVNUM ) && ch->in_room )
+                            out += str_printf( "<#%d> ", ch->in_room->vnum );
+                        break;
+
+                    case 'i':
+                        if ( ( !IS_NPC( ch ) && BV_IS_SET( ch->act, PLR_WIZINVIS ) )
+                        ||   ( IS_NPC( ch ) && BV_IS_SET( ch->act, ACT_MOBINVIS ) ) )
+                        {
+                            out += str_printf(
+                                "(Invis %d) ",
+                                ( IS_NPC( ch ) ? ch->mobinvis : ch->pcdata->wizinvis ) );
+                        }
+                        else if ( IS_AFFECTED( ch, AFF_INVISIBLE ) )
+                            out += "(Invis) ";
+                        break;
+
+                    case 'I':
+                        stat = ( IS_NPC( ch )
+                            ? ( BV_IS_SET( ch->act, ACT_MOBINVIS ) ? ch->mobinvis : 0 )
+                            : ( BV_IS_SET( ch->act, PLR_WIZINVIS ) ? ch->pcdata->wizinvis : 0 ) );
+                        break;
+                }
+
+                if ( stat != (int)0x80000000 )
+                    out += str_printf( "%d", stat );
                 break;
         }
-        if ( stat != (int) 0x80000000 )
-            snprintf( pbuf, MAX_STRING_LENGTH, "%d", stat );
-        pbuf += strlen(pbuf);
-        break;
     }
-  }
-  *pbuf = '\0';
-  gmcp_flush(d);
-  output_to_descriptor(d, buf);
-//send_eor(d);
-  return;
+
+    gmcp_flush( d );
+    output_to_descriptor( d, out );
 }
 
-void set_pager_input( DESCRIPTOR_DATA *d, char *argument )
+void set_pager_input( DESCRIPTOR_DATA *d, const std::string &argument )
 {
-    while (*argument && isspace_utf8(argument))
-        UTF8_NEXT(argument);
-  d->pagecmd = *argument;
-  return;
+    const char *p = argument.c_str();
+    while ( *p && isspace_utf8( p ) )
+        UTF8_NEXT( p );
+    d->pagecmd = *p;
 }
 
 bool pager_output( DESCRIPTOR_DATA *d )
 {
-    size_t last; 
+    size_t last;
     CHAR_DATA *ch;
     int pclines;
     int lines;
-//  bool ret;
 
     if ( !d || d->pagepoint == PAGEPOINT_NULL || d->pagecmd == -1 )
         return TRUE;
@@ -5705,38 +5606,40 @@ bool pager_output( DESCRIPTOR_DATA *d )
 
     int term_lines = 0;
 
-    if (d->term_height > 0)
-        term_lines = d->term_height - 2;  // leave room for prompt
+    if ( d->term_height > 0 )
+        term_lines = d->term_height - 2;  /* leave room for prompt */
     else
-        term_lines = 24;                 // sane fallback
+        term_lines = 24;                  /* sane fallback */
 
-    pclines = UMAX(ch->pcdata->pagerlen, 5);
+    pclines = UMAX( ch->pcdata->pagerlen, 5 );
 
     /* Use the smaller of user setting vs terminal size */
-    if (term_lines > 0)
-        pclines = UMIN(pclines, term_lines);
+    if ( term_lines > 0 )
+        pclines = UMIN( pclines, term_lines );
 
-    pclines = UMAX(pclines - 1, 3);
-    
-    switch(LOWER(d->pagecmd))
+    pclines = UMAX( pclines - 1, 3 );
+
+    switch ( LOWER( d->pagecmd ) )
     {
-    default:
-        lines = 0;
-        break;
-    case 'b':
-        lines = -1-(pclines*2);
-        break;
-    case 'r':
-        lines = -1-pclines;
-        break;
-    case 'q':
-        d->pagelen = 0;
-        d->pagepoint = PAGEPOINT_NULL;
-        flush_buffer(d, TRUE);
-        DISPOSE_ARRAY(d->pagebuf);
-        d->pagesize = MAX_STRING_LENGTH;
-        return TRUE;
+        default:
+            lines = 0;
+            break;
+
+        case 'b':
+            lines = -1 - ( pclines * 2 );
+            break;
+
+        case 'r':
+            lines = -1 - pclines;
+            break;
+
+        case 'q':
+            d->pagebuf.clear();
+            d->pagepoint = PAGEPOINT_NULL;
+            flush_buffer( d, TRUE );
+            return TRUE;
     }
+
     /* =========================
      * BACKWARD SCAN
      * ========================= */
@@ -5744,87 +5647,80 @@ bool pager_output( DESCRIPTOR_DATA *d )
     {
         d->pagepoint--;
 
-        if ( d->pagebuf[d->pagepoint] == '\n' ) 
+        if ( d->pagebuf[d->pagepoint] == '\n' )
             ++lines;
     }
 
     /* =========================
      * HANDLE \n\r
      * ========================= */
-    while ( d->pagepoint < d->pagelen &&
-        (d->pagebuf[d->pagepoint] == '\n' ||
-            d->pagebuf[d->pagepoint] == '\r') )
+    while ( d->pagepoint < d->pagebuf.size()
+        && ( d->pagebuf[d->pagepoint] == '\n'
+          || d->pagebuf[d->pagepoint] == '\r' ) )
     {
         d->pagepoint++;
     }
 
     /* =========================
-    * FORWARD SCAN (FIXED)
-    * ========================= */
+     * FORWARD SCAN
+     * ========================= */
     size_t line_end = d->pagepoint;
 
     for ( lines = 0, last = d->pagepoint;
-        last < d->pagelen && lines < pclines;
-        ++last )
+          last < d->pagebuf.size() && lines < pclines;
+          ++last )
     {
         if ( d->pagebuf[last] == '\n' )
         {
-            line_end = last + 1;  /* ✅ track safe boundary */
+            line_end = last + 1;
             ++lines;
         }
     }
-    
-//    if ( last < d->pagelen && d->pagebuf[last] == '\r' )
-//        ++last;
 
     /* =========================
-    * OUTPUT CHUNK (FIXED)
-    * ========================= */
+     * OUTPUT CHUNK
+     * ========================= */
     if ( line_end == d->pagepoint )
         line_end = last;  /* fallback if no newline found */
 
     if ( line_end != d->pagepoint )
     {
-        char save = d->pagebuf[line_end];
-        d->pagebuf[line_end] = '\0';
+        output_to_descriptor(
+            d,
+            d->pagebuf.substr( d->pagepoint, line_end - d->pagepoint ) );
 
-        output_to_descriptor(d, d->pagebuf + d->pagepoint);
-
-        d->pagebuf[line_end] = save;
-
-        d->pagepoint = line_end;  /* ✅ advance ONLY what was shown */
+        d->pagepoint = line_end;
     }
 
     /* =========================
-     * SKIP WHITESPACE
+     * END OF BUFFER
      * ========================= */
-    last = d->pagepoint; 
+    last = d->pagepoint;
 
-    if ( last >= d->pagelen )
+    if ( last >= d->pagebuf.size() )
     {
-        d->pagelen = 0;
+        d->pagebuf.clear();
         d->pagepoint = PAGEPOINT_NULL;
-        flush_buffer(d, TRUE);
-        DISPOSE_ARRAY(d->pagebuf);
-        d->pagesize = MAX_STRING_LENGTH;
+        flush_buffer( d, TRUE );
         return TRUE;
     }
 
     d->pagecmd = -1;
     d->pagecolor = d->rendercolor;
+
     if ( BV_IS_SET( ch->act, PLR_ANSI ) )
-    {
         set_char_color( AT_LBLUE, ch );
-    }
-    send_to_char("(C)ontinue, (R)efresh, (B)ack, (Q)uit: [C] ", ch);
+
+    send_to_char( "(C)ontinue, (R)efresh, (B)ack, (Q)uit: [C] ", ch );
 
     if ( BV_IS_SET( ch->act, PLR_ANSI ) )
     {
         d->rendercolor = d->pagecolor;
         d->has_rendercolor = true;
-    }    
-    flush_color(d);
-    flush_buffer(d, FALSE);    
+    }
+
+    flush_color( d );
+    flush_buffer( d, FALSE );
     return TRUE;
 }
 
@@ -6143,77 +6039,56 @@ static bool is_divider_line(const char *s)
     return count >= 10; /* long enough to be a divider */
 }
 
-static char *format_divider_line(const char *src, int width)
+static std::string format_divider_line( const std::string& src, int width )
 {
     char fill = '-';
 
     /* detect fill character */
-    for (const char *p = src; *p; p++)
+    for ( char c : src )
     {
-        if (*p == '-' || *p == '=' || *p == '_')
+        if ( c == '-' || c == '=' || c == '_' )
         {
-            fill = *p;
+            fill = c;
             break;
         }
     }
 
     /* preserve leading color codes like &C */
-    char prefix[32] = "";
-    int pi = 0;
+    std::string prefix;
+    size_t p = 0;
 
-    const char *p = src;
-    while (*p == '&' && *(p+1))
+    while ( p + 1 < src.size() && src[p] == '&' )
     {
-        if (pi < (int)sizeof(prefix) - 2)
-        {
-            prefix[pi++] = *p++;
-            prefix[pi++] = *p++;
-        }
-        else break;
+        prefix.push_back( src[p++] );
+        prefix.push_back( src[p++] );
     }
-    prefix[pi] = '\0';
 
-    int prefix_len = strlen(prefix);
-
-    /* allocate output */
-    int total = width + prefix_len + 3;
-    char *out = (char *)malloc(total);
-
-    int o = 0;
-
-    /* copy prefix */
-    for (int i = 0; i < prefix_len; i++)
-        out[o++] = prefix[i];
-
-    /* fill line */
-    for (int i = 0; i < width; i++)
-        out[o++] = fill;
-
-    out[o++] = '\n';
-    out[o] = '\0';
+    std::string out;
+    out.reserve( prefix.size() + width + 1 );
+    out += prefix;
+    out.append( width, fill );
+    out.push_back( '\n' );
 
     return out;
 }
 
-char *wrap_text_ex(const char *txt, int width, int flags, int indent)
+std::string wrap_text_ex( const std::string& txt, int width, int flags, int indent )
 {
-    if (!txt)
-        return str_dup("");
+    if ( txt.empty() )
+        return std::string();
 
-    if (width <= 0 || (flags & WRAP_NO_WRAP))
-        return str_dup(txt);
+    if ( width <= 0 || ( flags & WRAP_NO_WRAP ) )
+        return txt;
 
-    if (indent >= width)
-        indent = (width > 0) ? width - 1 : 0;
+    if ( indent >= width )
+        indent = ( width > 0 ) ? width - 1 : 0;
 
-    int len = strlen(txt);
+    const int len = static_cast<int>( txt.size() );
 
-    int outsize = len * 4 + 1;
-    char *out = (char *)malloc(outsize);
+    std::string out;
+    out.reserve( txt.size() * 4 + 1 );
 
-    int o = 0;
     int col = 0;
-
     int line = 0;
     int wrapped_line = 0;
 
@@ -6224,76 +6099,89 @@ char *wrap_text_ex(const char *txt, int width, int flags, int indent)
     int wlen = 0;
     int wcol = 0; /* visible width */
     int vis_to_raw[VIS_MAX];
+    memset( vis_to_raw, 0, sizeof( vis_to_raw ) );
 
-    /* helpers*/
+    auto append_char = [&]( char c )
+    {
+        out.push_back( c );
+    };
 
-#define ENSURE_SPACE(n) \
-    do { \
-        if (o + (n) >= outsize) { \
-            outsize = outsize * 2 + n; \
-            char *tmp = (char *)realloc(out, outsize); \
-            if (!tmp) { free(out); return str_dup(""); } \
-            out = tmp; \
-        } \
-    } while (0)
+    auto append_bytes = [&]( const char *src, int n )
+    {
+        if ( n > 0 )
+            out.append( src, static_cast<size_t>( n ) );
+    };
 
-#define APPLY_INDENT() \
-    if ((flags & WRAP_INDENT) || \
-       ((flags & WRAP_HANGING_INDENT) && wrapped_line)) \
-    { \
-        for (int k = 0; k < indent; k++) { \
-            ENSURE_SPACE(1); \
-            out[o++] = ' '; \
-            col++; \
-        } \
-    }
+    auto apply_indent = [&]()
+    {
+        if ( ( flags & WRAP_INDENT )
+        || ( ( flags & WRAP_HANGING_INDENT ) && wrapped_line ) )
+        {
+            for ( int k = 0; k < indent; ++k )
+            {
+                out.push_back( ' ' );
+                col++;
+            }
+        }
+    };
 
-    APPLY_INDENT();
+    auto flush_word = [&]()
+    {
+        if ( wlen > 0 )
+        {
+            append_bytes( word, wlen );
+            col += wcol;
 
-    for (int i = 0; i < len; i++)  
+            wlen = 0;
+            wcol = 0;
+            memset( vis_to_raw, 0, sizeof( vis_to_raw ) );
+        }
+    };
+
+    apply_indent();
+
+    for ( int i = 0; i < len; i++ )
     {
         char c = txt[i];
 
-        /* =========== PRESERVE LINES (forward ============ */
-        if (flags & WRAP_PRESERVE_LINES)
+        /* =========== PRESERVE LINES =========== */
+        if ( flags & WRAP_PRESERVE_LINES )
         {
-            /* preserve newlines but STILL wrap long lines */
-
-            if (c == '\r')
+            if ( c == '\r' )
                 continue;
 
-            if (c == '\n')
+            if ( c == '\n' )
             {
-                ENSURE_SPACE(1);
-                out[o++] = '\n';
+                append_char( '\n' );
                 col = 0;
                 line++;
-                wrapped_line = 0; 
-                APPLY_INDENT();
+                wrapped_line = 0;
+                apply_indent();
                 continue;
             }
 
-            /* treat like normal char (allow wrapping) */
-        }    
+            /* otherwise fall through and allow wrapping */
+        }
 
         /* ================= ANSI ================= */
-        if (!(flags & WRAP_NO_COLOR) && c == '\x1b')
+        if ( !( flags & WRAP_NO_COLOR ) && c == '\x1b' )
         {
-            if (wlen >= WORD_MAX - 2)
-                goto flush_word;
+            if ( wlen >= WORD_MAX - 2 )
+                goto flush_word_label;
 
             word[wlen++] = c;
             i++;
 
-            int ansi_len = 0;            
-            while (i < len && ansi_len < 32)
+            int ansi_len = 0;
+            while ( i < len && ansi_len < 32 )
             {
-                if (wlen < WORD_MAX - 1)
+                if ( wlen < WORD_MAX - 1 )
                     word[wlen++] = txt[i];
 
-                if (txt[i++] == 'm')
+                if ( txt[i++] == 'm' )
                     break;
-                ansi_len++;                    
+
+                ansi_len++;
             }
 
             i--;
@@ -6301,11 +6189,11 @@ char *wrap_text_ex(const char *txt, int width, int flags, int indent)
         }
 
         /* ================= SMAUG COLOR ================= */
-        if (!(flags & WRAP_NO_COLOR) && c == '&' && i + 1 < len)
+        if ( !( flags & WRAP_NO_COLOR ) && c == '&' && i + 1 < len )
         {
-            if (txt[i+1] == '&')
+            if ( txt[i + 1] == '&' )
             {
-                if (wlen < WORD_MAX - 2 && wcol < VIS_MAX)
+                if ( wlen < WORD_MAX - 2 && wcol < VIS_MAX )
                 {
                     /* store BOTH characters */
                     word[wlen++] = '&';
@@ -6316,13 +6204,13 @@ char *wrap_text_ex(const char *txt, int width, int flags, int indent)
                     wcol++;
                 }
                 else
-                    goto flush_word;
+                    goto flush_word_label;
 
                 i++; /* skip second '&' */
                 continue;
             }
 
-            if (wlen < WORD_MAX - 2)
+            if ( wlen < WORD_MAX - 2 )
             {
                 word[wlen++] = txt[i++];
                 word[wlen++] = txt[i];
@@ -6331,94 +6219,71 @@ char *wrap_text_ex(const char *txt, int width, int flags, int indent)
         }
 
         /* ================= NEWLINE ================= */
-        if (c == '\n' || c == '\r')
+        if ( c == '\n' || c == '\r' )
         {
-flush_word:
-            if (wlen > 0)
-            {
-                ENSURE_SPACE(wlen);
-                memcpy(out + o, word, wlen);
-                o += wlen;
-                col += wcol;
+flush_word_label:
+            flush_word();
 
-                wlen = 0;
-                wcol = 0;
-                memset(vis_to_raw, 0, sizeof(vis_to_raw));                
-            }
-
-            if (c == '\n')
+            if ( c == '\n' )
             {
-                ENSURE_SPACE(1);
-                out[o++] = '\n';
+                append_char( '\n' );
                 col = 0;
                 line++;
-                wrapped_line = 0; 
-                APPLY_INDENT();
+                wrapped_line = 0;
+                apply_indent();
             }
             continue;
         }
 
         /* ================= TAB ================= */
-        if (c == '\t')
+        if ( c == '\t' )
         {
-            int spaces = 4 - (col % 4);
+            int spaces = 4 - ( col % 4 );
 
-            for (int s = 0; s < spaces; s++)
+            for ( int s = 0; s < spaces; s++ )
             {
-                if (wlen < WORD_MAX - 1 && wcol < VIS_MAX) 
+                if ( wlen < WORD_MAX - 1 && wcol < VIS_MAX )
                 {
                     word[wlen++] = ' ';
                     vis_to_raw[wcol] = wlen - 1;
                     wcol++;
                 }
                 else
-                    goto flush_word;
+                    goto flush_word_label;
             }
             continue;
         }
 
-
         /* ================= SPACE ================= */
-        if (c == ' ')
+        if ( c == ' ' )
         {
             /* flush word first */
-            if (wlen > 0)
+            if ( wlen > 0 )
             {
-                /* 🔹 wrap BEFORE writing word */
-                if (col + wcol > width)
+                if ( col + wcol > width )
                 {
-                    ENSURE_SPACE(1);
-                    out[o++] = '\n';
+                    append_char( '\n' );
                     col = 0;
                     line++;
-                    wrapped_line = 1;                    
-                    APPLY_INDENT();
+                    wrapped_line = 1;
+                    apply_indent();
                 }
 
-                ENSURE_SPACE(wlen);
-                memcpy(out + o, word, wlen);
-                o += wlen;
-                col += wcol;
-
-                wlen = 0;
-                wcol = 0;
-                memset(vis_to_raw, 0, sizeof(vis_to_raw));                
+                flush_word();
             }
 
             /* then add space */
-            if (col + 1 > width)
+            if ( col + 1 > width )
             {
-                ENSURE_SPACE(1);
-                out[o++] = '\n';
+                append_char( '\n' );
                 col = 0;
                 line++;
-                wrapped_line = 1;                
-                APPLY_INDENT();
+                wrapped_line = 1;
+                apply_indent();
             }
             else
             {
-                ENSURE_SPACE(1);
-                out[o++] = ' ';
+                append_char( ' ' );
                 col++;
             }
 
@@ -6426,44 +6291,40 @@ flush_word:
         }
 
         /* ================= NORMAL CHAR ================= */
-        if (wlen >= WORD_MAX - 4 || wcol >= VIS_MAX)
-            goto flush_word;
+        if ( wlen >= WORD_MAX - 4 || wcol >= VIS_MAX )
+            goto flush_word_label;
 
-        /* 🔹 NEW: UTF-8 aware handling */
         unsigned char uc = (unsigned char)c;
-        int char_len = utf8_char_len(uc);
+        int char_len = utf8_char_len( uc );
 
-        if (i + char_len > len)
+        if ( i + char_len > len )
             char_len = 1;
 
-        for (int j = 0; j < char_len; j++)
+        for ( int j = 0; j < char_len; j++ )
             word[wlen++] = txt[i + j];
 
         vis_to_raw[wcol] = wlen - 1;   /* map visible → last byte */
         wcol++;
 
-        i += char_len - 1; /* 🔹 critical adjustment */
+        i += char_len - 1;
 
         /* ============= LONG WORD HANDLING ============== */
-        while (wcol > width)
+        while ( wcol > width )
         {
-            int split_vis = (col == 0) ? width : (width - col);
+            int split_vis = ( col == 0 ) ? width : ( width - col );
 
-            if (split_vis <= 0)
+            if ( split_vis <= 0 )
             {
-                ENSURE_SPACE(1);
-                out[o++] = '\n';
+                append_char( '\n' );
                 col = 0;
                 line++;
-                wrapped_line = 1; 
-                APPLY_INDENT();
+                wrapped_line = 1;
+                apply_indent();
                 split_vis = width;
             }
 
-            /* convert visible split → raw split */
-            /* guard against empty/invalid mapping */
             int split_raw;
-            if (wcol == 0 || split_vis - 1 < 0)
+            if ( wcol == 0 || split_vis - 1 < 0 )
             {
                 split_raw = wlen;
             }
@@ -6471,26 +6332,24 @@ flush_word:
             {
                 split_raw = vis_to_raw[split_vis - 1] + 1;
 
-                /* 🔹 NEW: prevent splitting inside ANSI */
+                /* prevent splitting inside ANSI */
                 int check = split_raw - 1;
 
-                /* scan backward to see if we're inside an ANSI sequence */
-                while (check >= 0)
+                while ( check >= 0 )
                 {
-                    if (word[check] == 'm')
-                        break; /* safe: we're after a completed ANSI */
+                    if ( word[check] == 'm' )
+                        break;
 
-                    if (word[check] == '\x1b')
+                    if ( word[check] == '\x1b' )
                     {
-                        /* we are inside ANSI → move split forward */
                         int fwd = split_raw;
-                        while (fwd < wlen && word[fwd] != 'm')
+                        while ( fwd < wlen && word[fwd] != 'm' )
                             fwd++;
 
-                        if (fwd < wlen)
-                            split_raw = fwd + 1; /* include 'm' */
+                        if ( fwd < wlen )
+                            split_raw = fwd + 1;
                         else
-                            split_raw = wlen; /* malformed, flush whole */
+                            split_raw = wlen;
 
                         break;
                     }
@@ -6499,19 +6358,14 @@ flush_word:
                 }
             }
 
+            append_bytes( word, split_raw );
 
+            memmove( word, word + split_raw, static_cast<size_t>( wlen - split_raw ) );
 
-            ENSURE_SPACE(split_raw);
-            memcpy(out + o, word, split_raw);
-            o += split_raw;
-
-            memmove(word, word + split_raw, wlen - split_raw);
-
-            /* rebuild mapping */
             int new_wlen = wlen - split_raw;
             int new_wcol = wcol - split_vis;
 
-            for (int k = 0; k < new_wcol; k++)
+            for ( int k = 0; k < new_wcol; k++ )
                 vis_to_raw[k] = vis_to_raw[k + split_vis] - split_raw;
 
             wlen = new_wlen;
@@ -6519,42 +6373,43 @@ flush_word:
 
             col += split_vis;
 
-            if (col >= width)
+            if ( col >= width )
             {
-                ENSURE_SPACE(1);
-                out[o++] = '\n';
+                append_char( '\n' );
                 col = 0;
                 line++;
-                wrapped_line = 1; 
-                APPLY_INDENT();
+                wrapped_line = 1;
+                apply_indent();
             }
         }
     }
-    /* 🔹 flush final word */
-    if (wlen > 0)
+
+    /* final word flush */
+    if ( wlen > 0 )
     {
-        if (col + wcol > width)
+        if ( col + wcol > width )
         {
-            ENSURE_SPACE(1);
-            out[o++] = '\n';
+            append_char( '\n' );
             col = 0;
             line++;
-            wrapped_line = 1;            
-            APPLY_INDENT();
+            wrapped_line = 1;
+            apply_indent();
         }
 
-        ENSURE_SPACE(wlen);
-        memcpy(out + o, word, wlen);
-        o += wlen;
+        append_bytes( word, wlen );
     }
 
-    out[o] = '\0';
     return out;
 }
 
 static inline bool is_smaug_color(char c)
 {
     return isalnum((unsigned char)c);
+}
+
+size_t visible_length(const std::string&txt)
+{
+    return visible_length(txt.c_str());
 }
 
 size_t visible_length(const char *txt)
@@ -6676,12 +6531,12 @@ size_t visible_length_range(const char *start, const char *end, int flags)
     return len;
 }
 
-bool looks_preformatted(const char *txt)
+bool looks_preformatted( const std::string& txt )
 {
-    if (!txt || !*txt)
+    if ( txt.empty() )
         return FALSE;
 
-    if (visible_length(txt) == 0)
+    if ( visible_length( txt ) == 0 )
         return TRUE;
 
     int lines = 0;
@@ -6689,56 +6544,59 @@ bool looks_preformatted(const char *txt)
     int long_lines = 0;
     int indented_lines = 0;
 
-    while (*txt == '\n')
-        txt++;
+    const char *start = txt.c_str();
 
-    const char *p = txt;
+    while ( *start == '\n' )
+        ++start;
+
+    const char *p = start;
     const char *line_start = p;
 
-    while (*p)
+    while ( *p )
     {
-        if (*p == '\n')
+        if ( *p == '\n' )
         {
-            size_t len = visible_length_range(line_start, p, 0);
+            size_t len = visible_length_range( line_start, p, 0 );
 
             /* Skip empty lines entirely */
-            if (len == 0)
+            if ( len == 0 )
             {
                 line_start = p + 1;
-                p++;
+                ++p;
                 continue;
             }
+
             lines++;
 
-            if (len < 60)
+            if ( len < 60 )
                 short_lines++;
 
-            if (len > 90)
+            if ( len > 90 )
                 long_lines++;
 
             /* Detect indentation (spaces at start) */
-            if (*line_start == ' ' || *line_start == '\t')
+            if ( *line_start == ' ' || *line_start == '\t' )
                 indented_lines++;
 
             line_start = p + 1;
         }
 
-        p++;
+        ++p;
     }
 
     /* Handle last line (no trailing newline) */
-    if (line_start != p)
+    if ( line_start != p )
     {
-        size_t len = visible_length_range(line_start, p, 0);
+        size_t len = visible_length_range( line_start, p, 0 );
         lines++;
 
-        if (len < 60)
+        if ( len < 60 )
             short_lines++;
 
-        if (len > 90)
+        if ( len > 90 )
             long_lines++;
 
-        if (*line_start == ' ' || *line_start == '\t')
+        if ( *line_start == ' ' || *line_start == '\t' )
             indented_lines++;
     }
 
@@ -6748,107 +6606,105 @@ bool looks_preformatted(const char *txt)
      * ============================================================
      */
 
-    if (lines <= 1)
+    if ( lines <= 1 )
         return FALSE;
 
     /*
      * Strong signal: lots of short lines
      */
-    if (lines > 3 && short_lines > lines / 2)
+    if ( lines > 3 && short_lines > lines / 2 )
         return TRUE;
 
     /*
      * Strong signal: indentation present (helps, lists)
      */
-    if (indented_lines > 0 && lines > 3)
+    if ( indented_lines > 0 && lines > 3 )
         return TRUE;
 
     /*
      * Mixed lengths (manual formatting)
      */
-    if (short_lines > 0 && long_lines > 0)
+    if ( short_lines > 0 && long_lines > 0 )
         return TRUE;
 
     return FALSE;
 }
 
-bool is_structured_line(const char *line)
+bool is_structured_line( const std::string& line )
 {
-    if (!line || !*line)
+    if ( line.empty() )
         return FALSE;
 
     /* Indentation */
-    if (*line == ' ' || *line == '\t')
+    if ( line[0] == ' ' || line[0] == '\t' )
         return TRUE;
 
     /* Bullets */
-    if (*line == '-' || *line == '*' || *line == '+')
+    if ( line[0] == '-' || line[0] == '*' || line[0] == '+' )
         return TRUE;
 
     /* Table-ish */
-    if (strchr(line, '|'))
+    if ( line.find( '|' ) != std::string::npos )
         return TRUE;
 
     return FALSE;
 }
 
-char *wrap_text_smart(const char *txt, int width)
+std::string wrap_text_smart( const std::string& txt, int width )
 {
-    if (!txt)
-        return strdup("");
+    if ( txt.empty() )
+        return std::string();
 
+    if ( visible_length( txt ) == 0 )
+        return txt;
 
-    if (visible_length(txt) == 0)
-        return strdup(txt);
+    std::string out;
+    out.reserve( txt.size() * 2 + 32 );
 
-    size_t cap = strlen(txt) * 2 + 32;
-    size_t len = 0;
-    char *out = (char *)malloc(cap);
-    out[0] = '\0';
+    const char *p = txt.c_str();
+    const char *txt_end = p + txt.size();
 
-    const char *p = txt;
-
-while (*p)
+    while ( *p )
     {
         /*
          * ============================================
          * STEP 1: Find paragraph boundary safely
          * Supports:
          *   "\n\n"
-         *   "\r\n\n"
+         *   "\n\r\n\r"
          * ============================================
          */
         const char *start = p;
-        const char *end = NULL;
+        const char *end = nullptr;
 
         const char *scan = p;
-        while (*scan)
+        while ( *scan )
         {
-            if (scan[0] == '\n' && scan[1] == '\n')
+            if ( scan[0] == '\n' && scan[1] == '\n' )
             {
                 end = scan;
                 break;
             }
-            if (scan[0] == '\n' && scan[1] == '\r' &&
-                scan[2] == '\n' && scan[3] == '\r')
+            if ( scan[0] == '\n' && scan[1] == '\r'
+              && scan[2] == '\n' && scan[3] == '\r' )
             {
                 end = scan;
                 break;
             }
-            scan++;
+            ++scan;
         }
 
-        if (!end)
-            end = p + strlen(p);
+        if ( !end )
+            end = txt_end;
 
-        size_t plen = (size_t)(end - start);
+        size_t plen = static_cast<size_t>( end - start );
 
         /*
          * Skip empty paragraphs cleanly
          */
-        if (plen == 0)
+        if ( plen == 0 )
         {
-            if (end[0] == '\n' && end[1] == '\n')
+            if ( end[0] == '\n' && end[1] == '\n' )
                 p = end + 2;
             else
                 p = end;  /* fallback safety */
@@ -6858,34 +6714,28 @@ while (*p)
 
         /*
          * ============================================
-         * STEP 2: Copy paragraph into temp buffer
-         * (Still string-based for compatibility)
+         * STEP 2: Copy paragraph into std::string
          * ============================================
          */
-        char *para = (char *)malloc(plen + 1);
-        memcpy(para, start, plen);
-        para[plen] = '\0';
+        std::string para( start, plen );
 
         /*
          * ============================================
          * STEP 3: Decide formatting strategy
          * ============================================
          */
-        char *processed = NULL;
-        bool processed_owned = FALSE;
+        std::string processed;
 
-        if (is_divider_line(para))
+        if ( is_divider_line( para.c_str() ) )
         {
-            processed = format_divider_line(para, width);
-            processed_owned = TRUE;
+            processed = format_divider_line( para, width );
         }
-        else if (is_structured_line(para))// || looks_preformatted(para)) // Took performatted out because it just doesn't work right, lots of false positives.
+        else if ( is_structured_line( para ) ) // || looks_preformatted(para)
         {
             /*
              * Pass through unchanged
              */
             processed = para;
-            processed_owned = FALSE;
         }
         else
         {
@@ -6898,49 +6748,28 @@ while (*p)
              *   - do NOT count them toward width
              *   - do NOT split them
              */
-            processed = wrap_text_ex(para, width, WRAP_NONE, 0);
-
-            if (processed != para)
-            {
-                processed_owned = TRUE;
-            }
-            else
-            {
-                processed_owned = FALSE;
-            }
+            std::string wrapped = wrap_text_ex( para, width, WRAP_NONE, 0 );
+            processed = wrapped;
         }
 
         /*
          * ============================================
          * STEP 4: Append to output buffer
-         * append_str() must:
-         *   - grow buffer if needed
-         *   - maintain null termination
          * ============================================
          */
-        append_str(&out, &len, &cap, processed);
+        out += processed;
 
         /*
          * ============================================
-         * STEP 5: Cleanup memory safely
+         * STEP 5: Preserve paragraph spacing
          * ============================================
          */
-        if (processed_owned)
-            free(processed);
-
-        free(para);
-
-        /*
-         * ============================================
-         * STEP 6: Preserve paragraph spacing
-         * ============================================
-         */
-        if (*end)
+        if ( *end )
         {
-            append_str(&out, &len, &cap, "\n\n");
+            out += "\n\n";
 
             /* Advance pointer past delimiter */
-            if (end[0] == '\r')
+            if ( end[0] == '\r' )
                 p = end + 4;  // \r\n\r\n
             else
                 p = end + 2;  // \n\n
@@ -6952,35 +6781,6 @@ while (*p)
     }
 
     return out;
-}
-
-static void append_str(char **buf, size_t *len, size_t *cap, const char *src)
-{
-    if (!src)
-        return;
-
-    size_t slen = strlen(src);
-
-    if (*len + slen + 1 > *cap)
-    {
-        size_t newcap = (*cap) * 2;
-        while (*len + slen + 1 > newcap)
-            newcap *= 2;
-
-        char *tmp = (char *)realloc(*buf, newcap);
-        if (!tmp)
-        {
-            bug("append_str: realloc failed");
-            return;
-        }
-
-        *buf = tmp;
-        *cap = newcap;
-    }
-
-    memcpy(*buf + *len, src, slen);
-    *len += slen;
-    (*buf)[*len] = '\0';
 }
 
 void send_telnet(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len)
@@ -7117,7 +6917,7 @@ void send_gmcp(DESCRIPTOR_DATA *d, const char *msg)
             buf[len++] = c;
         }
     }
-    len += msg_len;
+//    len += msg_len;
 
     buf[len++] = IAC;
     buf[len++] = SE;

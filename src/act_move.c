@@ -26,6 +26,10 @@
 #include <time.h>
 #include "mud.h"
 
+void do_closehatch(CHAR_DATA *ch, const std::string& argument );
+void do_openhatch(CHAR_DATA *ch, const std::string& argument );
+
+
 
 const	sh_int	movement_loss	[SECT_MAX]	=
 {
@@ -248,86 +252,6 @@ int wherehome( CHAR_DATA *ch)
     return ROOM_VNUM_TEMPLE;   
 }
 
-char *grab_word( char *argument, char *arg_first )
-{
-    char cEnd;
-    sh_int count;
-
-    count = 0;
-
-    while (*argument && isspace_utf8(argument))
-        UTF8_NEXT(argument);
-
-    cEnd = ' ';
-    if ( *argument == '\'' || *argument == '"' )
-	cEnd = *argument++;
-
-    while ( *argument != '\0' || ++count >= 255 )
-    {
-	if ( *argument == cEnd )
-	{
-	    argument++;
-	    break;
-	}
-	*arg_first++ = *argument++;
-    }
-    *arg_first = '\0';
-
-    while (*argument && isspace_utf8(argument))
-        UTF8_NEXT(argument);
-
-    return argument;
-}
-/* This function is no longer necessary now that wrapping is done in send_to_char and the pager
-char *wordwrap( char *txt, sh_int wrap )
-{
-    static char buf[MAX_STRING_LENGTH];
-    char *bufp;
-
-    buf[0] = '\0';
-    bufp = buf;
-    if ( txt != NULL )
-    {
-        char line[MAX_STRING_LENGTH];
-        char temp[MAX_STRING_LENGTH];
-        char *ptr, *p;
-        int ln, x;
-
-		++bufp;
-        line[0] = '\0';
-        ptr = txt;
-        while ( *ptr )
-        {
-			ptr = grab_word( ptr, temp );
-			ln = strlen( line );  x = strlen( temp );
-			if ( (ln + x + 1) < wrap )
-			{
-				if ( ln > 0 && line[ln-1] == '.' )
-					STRAPP( line, "  " );
-				else
-					STRAPP( line, " " );
-					
-				STRAPP( line, "%s", temp );
-				p = strchr( line, '\n' );
-				if ( p )
-				{
-					STRAPP( buf, "%s", line );
-					line[0] = '\0';
-				}
-			}
-			else
-			{
-				STRAPP( line, "\n" );
-				STRAPP( buf, "%s", line );
-				STRLCPY( line, temp );
-			}
-        }
-        if ( line[0] != '\0' )
-            STRAPP( buf, "%s", line );
-    }
-    return bufp;
-}
-*/
 void decorate_room( ROOM_INDEX_DATA *room )
 {
     char buf[MAX_STRING_LENGTH];
@@ -641,8 +565,8 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
     ROOM_INDEX_DATA *to_room;
     ROOM_INDEX_DATA *from_room;
     char buf[MAX_STRING_LENGTH];
-    char *txt;
-    char *dtxt;
+    std::string txt;
+    std::string dtxt;
     ch_ret retcode;
     sh_int door, distance;
     bool drunk = FALSE;
@@ -668,7 +592,6 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
 #endif
 
     retcode = rNONE;
-    txt = NULL;
 
     if ( IS_NPC(ch) && BV_IS_SET( ch->act, ACT_MOUNTED ) )
       return retcode;
@@ -1026,7 +949,7 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
       if ( fall )
         txt = "falls";
       else
-      if ( !txt )
+      if ( txt.empty() )
 
       {
         if ( ch->mount )
@@ -1073,12 +996,12 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
       }
       if ( ch->mount )
       {
-	SPRINTF( buf, "$n %s %s upon $N.", txt, dir_name[door] );
+	SPRINTF( buf, "$n %s %s upon $N.", txt.c_str(), dir_name[door] );
 	act( AT_ACTION, buf, ch, NULL, ch->mount, TO_NOTVICT );
       }
       else
       {
-	SPRINTF( buf, "$n %s $T.", txt );
+	SPRINTF( buf, "$n %s $T.", txt.c_str() );
 	act( AT_ACTION, buf, ch, NULL, dir_name[door], TO_ROOM );
       }
     }
@@ -1167,12 +1090,12 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
 			}
 			if ( ch->mount )
 			{
-				SPRINTF( buf, "$n %s from %s upon $N.", txt, dtxt );
+				SPRINTF( buf, "$n %s from %s upon $N.", txt.c_str(), dtxt.c_str() );
 				act( AT_ACTION, buf, ch, NULL, ch->mount, TO_ROOM );
 			}
 			else
 			{
-				SPRINTF( buf, "$n %s from %s.", txt, dtxt );
+				SPRINTF( buf, "$n %s from %s.", txt.c_str(), dtxt.c_str() );
 				act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
 			}
 		}
@@ -1348,12 +1271,12 @@ void do_southwest( CHAR_DATA *ch, char *argument )
 
 
 
-EXIT_DATA *find_door( CHAR_DATA *ch, char *arg, bool quiet )
+EXIT_DATA *find_door( CHAR_DATA *ch, const std::string& arg, bool quiet )
 {
     EXIT_DATA *pexit;
     int door;
 
-    if (arg == NULL || !str_cmp(arg,""))
+    if (arg.empty() || !str_cmp(arg,""))
       return NULL;
 
     pexit = NULL;
@@ -1439,12 +1362,13 @@ void remove_bexit_flag( EXIT_DATA *pexit, int flag )
 
 void do_open( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+	std::string argstr;
     OBJ_DATA *obj;
     EXIT_DATA *pexit;
     int door;
 
-    one_argument( argument, arg );
+    argstr = one_argument( argument, arg );
 
     if ( arg[0] == '\0' )
     {
@@ -1502,22 +1426,22 @@ void do_open( CHAR_DATA *ch, char *argument )
 		return;
 	  	
 	  }
-          ch_printf( ch, "%s isn't a container.\n", capitalize( obj->short_descr ) ); 
+          ch_printf( ch, "%s isn't a container.\n", capitalize( obj->short_descr ).c_str() ); 
           return;
         } 
 	if ( !IS_SET(obj->value[1], CONT_CLOSED) )
 	{ 
-          ch_printf( ch, "%s is already open.\n", capitalize( obj->short_descr ) ); 
+          ch_printf( ch, "%s is already open.\n", capitalize( obj->short_descr ).c_str() ); 
           return;
         } 
 	if ( !IS_SET(obj->value[1], CONT_CLOSEABLE) )
 	{ 
-          ch_printf( ch, "%s cannot be opened or closed.\n", capitalize( obj->short_descr ) ); 
+          ch_printf( ch, "%s cannot be opened or closed.\n", capitalize( obj->short_descr ).c_str() ); 
           return;
         } 
 	if ( IS_SET(obj->value[1], CONT_LOCKED) )
 	{ 
-          ch_printf( ch, "%s is locked.\n", capitalize( obj->short_descr ) ); 
+          ch_printf( ch, "%s is locked.\n", capitalize( obj->short_descr ).c_str() ); 
           return;
         } 
 
@@ -1530,7 +1454,7 @@ void do_open( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp(arg , "hatch") )
     {
-      do_openhatch( ch , argument );
+      do_openhatch( ch , argstr );
       return;
     }
 
@@ -1542,14 +1466,15 @@ void do_open( CHAR_DATA *ch, char *argument )
 
 void do_close( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+	std::string argstr;
     OBJ_DATA *obj;
     EXIT_DATA *pexit;
     int door;
 
-    one_argument( argument, arg );
+    argstr = one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	do_closehatch(  ch , "" );
 	return;
@@ -1598,17 +1523,17 @@ void do_close( CHAR_DATA *ch, char *argument )
 		return;
 	  	
 	  }
-          ch_printf( ch, "%s isn't a container.\n", capitalize( obj->short_descr ) ); 
+          ch_printf( ch, "%s isn't a container.\n", capitalize( obj->short_descr ).c_str() ); 
           return;
         } 
 	if ( IS_SET(obj->value[1], CONT_CLOSED) )
 	{ 
-          ch_printf( ch, "%s is already closed.\n", capitalize( obj->short_descr ) ); 
+          ch_printf( ch, "%s is already closed.\n", capitalize( obj->short_descr ).c_str() ); 
           return;
         } 
 	if ( !IS_SET(obj->value[1], CONT_CLOSEABLE) )
         { 
-          ch_printf( ch, "%s cannot be opened or closed.\n", capitalize( obj->short_descr ) ); 
+          ch_printf( ch, "%s cannot be opened or closed.\n", capitalize( obj->short_descr ).c_str() ); 
           return;
         } 
 
@@ -1621,7 +1546,7 @@ void do_close( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg , "hatch" ) )
     {
-    	do_closehatch( ch , argument );
+    	do_closehatch( ch , argstr );
     	return;
     }
 
@@ -1644,13 +1569,13 @@ bool has_key( CHAR_DATA *ch, int key )
 
 void do_lock( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
     EXIT_DATA *pexit;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Lock what?\n", ch );
 	return;
@@ -1701,7 +1626,7 @@ void do_lock( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    ch_printf( ch, "You see no %s here.\n", arg );
+    ch_printf( ch, "You see no %s here.\n", arg.c_str() );
     return;
 }
 
@@ -1709,13 +1634,13 @@ void do_lock( CHAR_DATA *ch, char *argument )
 
 void do_unlock( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
     OBJ_DATA *obj;
     EXIT_DATA *pexit;
+    std::string arg;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Unlock what?\n", ch );
 	return;
@@ -1766,7 +1691,7 @@ void do_unlock( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    ch_printf( ch, "You see no %s here.\n", arg );
+    ch_printf( ch, "You see no %s here.\n", arg.c_str() );
     return;
 }
 
@@ -1774,7 +1699,7 @@ void do_bashdoor( CHAR_DATA *ch, char *argument )
 {
 //	CHAR_DATA *gch;
 	EXIT_DATA *pexit;
-	char       arg [ MAX_INPUT_LENGTH ];
+	std::string arg;
 
 	if ( !IS_NPC( ch )
 	&&  ch->pcdata->learned[gsn_bashdoor] <= 0  )
@@ -1785,7 +1710,7 @@ void do_bashdoor( CHAR_DATA *ch, char *argument )
 
 	one_argument( argument, arg );
 
-	if ( arg[0] == '\0' )
+	if ( arg.empty() )
 	{
 	    send_to_char( "Bash what?\n", ch );
 	    return;
@@ -2257,11 +2182,11 @@ void do_sleep( CHAR_DATA *ch, char *argument )
 
 void do_wake( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
 	{ do_stand( ch, argument ); return; }
 
     if ( !IS_AWAKE(ch) )

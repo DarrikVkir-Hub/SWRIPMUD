@@ -3,10 +3,11 @@
 
 void do_trivia(CHAR_DATA *ch, char *argument)
  {
-   char arg0[MAX_INPUT_LENGTH];
-   char arg1[MAX_INPUT_LENGTH];
-   char buf[MAX_STRING_LENGTH];
-   char buf2[32];
+   std::string arg0;
+   std::string arg1;
+   std::string argstr = argument;
+   std::string buf;
+   std::string buf2;
    int i;
 
    /*   struct winner_struct *win1;
@@ -19,8 +20,8 @@ void do_trivia(CHAR_DATA *ch, char *argument)
 
    OBJ_DATA *obj;
 
-   argument = one_argument(argument,arg0);
-   argument = one_argument(argument,arg1);
+   argstr = one_argument(argstr,arg0);
+   argstr = one_argument(argstr,arg1);
 
    if (IS_NPC(ch))
      {
@@ -33,13 +34,13 @@ void do_trivia(CHAR_DATA *ch, char *argument)
        send_to_char("You must be immortal to run a trivia game.\n",ch);
      }
 
-   if(arg0[0]=='\0')
+   if(arg0.empty())
    {
       send_to_char("Usage: trivia <start | end> [reward]\n",ch);
       return;
    }
 
-   if (!strcmp(arg0,"start")) 
+   if (!str_cmp(arg0,"start")) 
      {
        if (g_trivia != NULL) 
 	 {
@@ -52,9 +53,9 @@ void do_trivia(CHAR_DATA *ch, char *argument)
        g_trivia->asker = ch;
        g_trivia->winners = NULL;
        g_trivia->players = NULL;
-       if (arg1[0] != '\0' && is_number(arg1)) 
+       if (!arg1.empty() && is_number(arg1)) 
 	 {
-	   g_trivia->prize = atoi(arg1); 
+	   g_trivia->prize = strtoi(arg1); 
 	   if (get_obj_index( g_trivia->prize ) == NULL)
 	     {
 	       send_to_char("That object does not exist.\n",ch);
@@ -72,9 +73,8 @@ void do_trivia(CHAR_DATA *ch, char *argument)
 	     }
 	   send_to_char("Use tquestion to ask a question\nUse twinner to announce the winner\nUse trivia end to end the game\n",ch);
 	   echo_to_all(AT_WHITE, "A new trivia game has begun!\nType &Ctjoin&W to play!\n", ECHOTAR_ALL); 
-	   SPRINTF(buf,"Todays prize is %s!\n",obj->short_descr);
 	   extract_obj(obj);
-	   echo_to_all(AT_WHITE, buf, ECHOTAR_ALL);
+	   echo_to_all(AT_WHITE, str_printf("Todays prize is %s!\n",obj->short_descr), ECHOTAR_ALL);
 	 }
        else
 	 {
@@ -85,7 +85,7 @@ void do_trivia(CHAR_DATA *ch, char *argument)
      } 
    else
      {
-       if (!strcmp(arg0,"end"))
+       if (!str_cmp(arg0,"end"))
 	 {
 	   send_to_trivia("The Trivia game has ended!\n");
 	   /*	   win1 = win2 = win3 = NULL;
@@ -120,18 +120,18 @@ void do_trivia(CHAR_DATA *ch, char *argument)
 		   win3!=NULL?win3->ch->name:"",win3!=NULL?win3->correct:0);
 		   send_to_trivia(buf);*/
 
-	   SPRINTF(buf,"Trivia Standings\n");
+	   buf = "Trivia Standings\n";
 	   
 	   i = 0;
 	   for(ws=g_trivia->winners; ws; ws = ws->next)
 	     {
 	       i++;
-	       SPRINTF(buf2,"%2d. %-15s ",i,ws->ch->name);
-	       STRAPP(buf, "%s", buf2);
+	       buf2 = str_printf("%2d. %-15s ",i,ws->ch->name);
+	       buf += buf2;
 	       if(i % 3 == 0)
-		 STRAPP(buf,"\n");
+		 buf += "\n";
 	     }
-	   STRAPP(buf,"\n");
+	   buf += "\n";
 	   send_to_trivia(buf);
 	   ws = g_trivia->winners;
 	   while(ws) 
@@ -153,7 +153,7 @@ void do_trivia(CHAR_DATA *ch, char *argument)
      }
  }
 
-void send_to_trivia(char *string)
+void send_to_trivia(const std::string &string)
 {
   struct player_struct *ch;
   if (g_trivia == NULL) 
@@ -185,8 +185,8 @@ bool is_trivia_player(CHAR_DATA *ch)
 void do_trivia_score(CHAR_DATA *ch, char *argument)
 {
   struct winner_struct *ws;
-  char buf[MAX_STRING_LENGTH];
-  char buf2[32];
+  std::string buf;
+  std::string buf2;
   int i;
 
   if (g_trivia == NULL)
@@ -205,24 +205,24 @@ void do_trivia_score(CHAR_DATA *ch, char *argument)
       return;
     }
 
-  SPRINTF(buf,"Trivia Standings\n");
+  buf = "Trivia Standings\n";
   
   i = 0;
   for(ws=g_trivia->winners; ws; ws = ws->next)
     {
       i++;
-      SPRINTF(buf2,"%2d. %-15s ",i, ws->ch->name);
-      STRAPP(buf, "%s", buf2);
+      buf2 = str_printf("%2d. %-15s ",i, ws->ch->name);
+      buf += buf2;
       if(i % 3 == 0)
-	STRAPP(buf,"\n");
+	buf += "\n";
     }
-  STRAPP(buf,"\n");
+  buf += "\n";
   send_to_char(buf,ch);
 }
 
 void do_trivia_chat(CHAR_DATA *ch, char *argument)
 {
-  char buf[MAX_INPUT_LENGTH];
+  std::string buf;
   if (g_trivia == NULL)
     {
       send_to_char("No trivia game in progress.\n",ch);
@@ -238,13 +238,13 @@ void do_trivia_chat(CHAR_DATA *ch, char *argument)
       send_to_char("You are not in the trivia game.\n",ch);
       return;
     }
-  SPRINTF(buf,"&C<<&wTChat&C>> &w%s: %s\n",ch->name,argument);
+  buf = str_printf("&C<<&wTChat&C>> &w%s: %s\n",ch->name,argument);
   send_to_trivia(buf);
 }
 
 void do_trivia_join(CHAR_DATA *ch, char *argument)
 {
-  char buf[MAX_INPUT_LENGTH];
+  std::string buf;
   struct player_struct *p;
   if (g_trivia == NULL)
     {
@@ -262,7 +262,7 @@ void do_trivia_join(CHAR_DATA *ch, char *argument)
       return;
     }
   send_to_char("You have joined the trivia game.\nType &Ctanswer&W to answer\nType &Ctchat&W to use Trivia chat\nType &Ctscore&w to see the scores\n",ch);
-  SPRINTF(buf,"%s has joined the trivia game.\n",ch->name);
+  buf = str_printf("%s has joined the trivia game.\n",ch->name);
   send_to_trivia(buf);
   CREATE(p, struct player_struct, 1);
   p->ch = ch;
@@ -271,7 +271,7 @@ void do_trivia_join(CHAR_DATA *ch, char *argument)
 }
 void do_trivia_answer(CHAR_DATA *ch, char *argument)
 {
-  char buf[MAX_INPUT_LENGTH];
+  std::string buf;
   
   if (IS_NPC(ch))
     {
@@ -289,13 +289,13 @@ void do_trivia_answer(CHAR_DATA *ch, char *argument)
       send_to_char("You aren't playing trivia.\n",ch);
       return;
     }
-  SPRINTF(buf,"&C<<&WAnswer&C>> &W%s: %s\n",ch->name,argument);
+  buf = str_printf("&C<<&WAnswer&C>> &W%s: %s\n",ch->name,argument);
   send_to_trivia(buf);
 }
 
 void do_trivia_question(CHAR_DATA *ch, char *argument)
 {
-  char buf[MAX_INPUT_LENGTH];
+  std::string buf;
 
   if (IS_NPC(ch))
     {
@@ -318,7 +318,7 @@ void do_trivia_question(CHAR_DATA *ch, char *argument)
       return;
     }
   g_trivia->current_question++;
-  SPRINTF(buf,"&C<<&WQuestion %d&C>> &W%s\n",g_trivia->current_question,argument);
+  buf = str_printf("&C<<&WQuestion %d&C>> &W%s\n",g_trivia->current_question,argument);
   send_to_trivia(buf);
 }
 
@@ -329,7 +329,7 @@ void do_trivia_winner(CHAR_DATA *ch, char *argument)
   struct winner_struct *prev = NULL;
   struct winner_struct *ws = NULL;
   OBJ_DATA *obj;
-  char buf[MAX_INPUT_LENGTH];
+  std::string buf;
 
   if (IS_NPC(ch))
     {
@@ -414,7 +414,7 @@ void do_trivia_winner(CHAR_DATA *ch, char *argument)
       send_to_char("There is no one with that name playing\n",ch);
       return;
     }
-  SPRINTF(buf,"&C<<&wWinner&C>> &w%s has won question %d!\n",argument,g_trivia->current_question);
+  buf = str_printf("&C<<&wWinner&C>> &w%s has won question %d!\n",argument,g_trivia->current_question);
   send_to_trivia(buf);
 //GIVE PRIZE!
   if (g_trivia->prize != -1) 

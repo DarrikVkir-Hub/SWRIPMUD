@@ -37,11 +37,11 @@ void send_control_page_to_char(CHAR_DATA * ch, char page);
 /*
  * Local functions.
  */
-void	talk_channel	args( ( CHAR_DATA *ch, char *argument,
-			    int channel, const char *verb ) );
+void	talk_channel	args( ( CHAR_DATA *ch, const std::string& argument,
+			    int channel, const std::string& verb ) );
 
-char *  scramble        args( ( const char *argument, int modifier ) );			    
-char *  drunk_speech    args( ( const char *argument, CHAR_DATA *ch ) ); 
+std::string scramble(const std::string& argument, int modifier);
+std::string drunk_speech(const std::string& argument, CHAR_DATA *ch);
 
 int lang_sn[LANG_MAX];
 
@@ -260,7 +260,7 @@ FLAG_SET make_all_languages(void)
 }
 
 
-void sound_to_room( ROOM_INDEX_DATA *room , char *argument )
+void sound_to_room( ROOM_INDEX_DATA *room , const std::string& argument )
 {
    CHAR_DATA *vic;
 
@@ -298,11 +298,12 @@ std::string lang_string(CHAR_DATA *ch,  CHAR_DATA *vch)
 void do_beep( CHAR_DATA *ch, char *argument )
 {
     CHAR_DATA *victim;
-    char arg[MAX_STRING_LENGTH];
+    std::string arg;
+    std::string argumentstr;
     OBJ_DATA *obj;
     bool ch_comlink, victim_comlink;
     
-    argument = one_argument( argument, arg );
+    argumentstr = one_argument( argument, arg );
     
     BV_SET_BIT( ch->channels, CHANNEL_TELLS );
     if (!ch || !ch->in_room) return;
@@ -320,7 +321,7 @@ void do_beep( CHAR_DATA *ch, char *argument )
          return;
     }
                                     
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
          send_to_char( "Beep who?\n", ch );
          return;
@@ -418,37 +419,34 @@ void do_beep( CHAR_DATA *ch, char *argument )
         return;
     }
 
-    ch_printf(ch , "&WYou beep %s: %s\n\a" , victim->name, argument );
+    ch_printf(ch , "&WYou beep %s: %s\n\a" , victim->name, argumentstr.c_str() );
     send_to_char("\a",victim);    
 
     if ( knows_language( victim, ch->speaking, ch )
     ||  (IS_NPC(ch) && !ch->speaking) )
-	act( AT_WHITE, "$n beeps: '$t'", ch, argument, victim, TO_VICT );
+	act( AT_WHITE, std::string("$n beeps: '$t'"), ch, argumentstr, victim, TO_VICT );
     else
-	act( AT_WHITE, "$n beeps: '$t'", ch, scramble(argument, ch->speaking), victim, TO_VICT );
+	act( AT_WHITE, "$n beeps: '$t'", ch, scramble(argumentstr, ch->speaking), victim, TO_VICT );
 }
 
 /* Text scrambler -- Altrag */
-char *scramble(const char *argument, int modifier)
+std::string scramble(const std::string& argument, int modifier)
 {
-    static char arg[MAX_INPUT_LENGTH];
-    int outpos = 0;
+    std::string result;
+    result.reserve(argument.size());
+
     int conversion = 0;
 
     modifier %= number_range(80, 300);
 
-    for (int i = 0; argument[i] != '\0' && outpos < MAX_INPUT_LENGTH - 1; )
+    for (size_t i = 0; i < argument.size(); )
     {
         size_t len = utf8_char_len_safe(&argument[i]);
 
-        /* Preserve UTF-8 */
+        /* Preserve UTF-8 multibyte characters */
         if (len > 1)
         {
-            if (outpos + len >= MAX_INPUT_LENGTH - 1)
-                break;
-
-            memcpy(&arg[outpos], &argument[i], len);
-            outpos += len;
+            result.append(argument, i, len);
             i += len;
             continue;
         }
@@ -457,106 +455,92 @@ char *scramble(const char *argument, int modifier)
 
         if (c >= 'A' && c <= 'Z')
         {
-            conversion = -conversion + i - modifier + c - 'A';
+            conversion = -conversion + static_cast<int>(i) - modifier + c - 'A';
             conversion = number_range(conversion - 5, conversion + 5);
 
             while (conversion > 25) conversion -= 26;
             while (conversion < 0)  conversion += 26;
 
-            arg[outpos++] = conversion + 'A';
+            result.push_back(static_cast<char>(conversion + 'A'));
         }
         else if (c >= 'a' && c <= 'z')
         {
-            conversion = -conversion + i - modifier + c - 'a';
+            conversion = -conversion + static_cast<int>(i) - modifier + c - 'a';
             conversion = number_range(conversion - 5, conversion + 5);
 
             while (conversion > 25) conversion -= 26;
             while (conversion < 0)  conversion += 26;
 
-            arg[outpos++] = conversion + 'a';
+            result.push_back(static_cast<char>(conversion + 'a'));
         }
         else if (c >= '0' && c <= '9')
         {
-            conversion = -conversion + i - modifier + c - '0';
+            conversion = -conversion + static_cast<int>(i) - modifier + c - '0';
             conversion = number_range(conversion - 2, conversion + 2);
 
             while (conversion > 9) conversion -= 10;
             while (conversion < 0) conversion += 10;
 
-            arg[outpos++] = conversion + '0';
+            result.push_back(static_cast<char>(conversion + '0'));
         }
         else
         {
-            arg[outpos++] = c;
+            result.push_back(c);
         }
 
         i += 1;  // ASCII advance
     }
 
-    arg[outpos] = '\0';
-    return arg;
+    return result;
 }
 
-/* I'll rewrite this later if its still needed.. -- Altrag */
-char *translate( CHAR_DATA *ch, CHAR_DATA *victim, const char *argument )
+std::string drunk_speech(const std::string& argument, CHAR_DATA *ch)
 {
-	return "";
-}
+    if (argument.empty())
+        return "";
 
-char *drunk_speech(const char *argument, CHAR_DATA *ch)
-{
-    static char buf[MAX_INPUT_LENGTH * 4];
-    char *out = buf;
-    const char *in = argument;
-    char *end = buf + sizeof(buf) - 1;
-
-    if (!argument)
-    {
-        bug("%s: NULL argument", __func__);
-        return (char *)"";
-    }
-
-    if (IS_NPC(ch) || !ch->pcdata)
-        return (char *)argument;
+    if (!ch || IS_NPC(ch) || !ch->pcdata)
+        return argument;
 
     int drunk = ch->pcdata->condition[COND_DRUNK];
 
     if (drunk <= 0)
-        return (char *)argument;
+        return argument;
 
-    while (*in && out < end)
+    std::string result;
+    result.reserve(argument.size() * 2); // rough guess for expansion
+
+    const char *in = argument.c_str();
+
+    while (*in)
     {
         size_t len = utf8_char_len_safe(in);
 
         /* Preserve UTF-8 multibyte chars untouched */
         if (len > 1)
         {
-            if (out + len >= end)
-                break;
-
-            memcpy(out, in, len);
-            out += len;
+            result.append(in, len);
             in += len;
             continue;
         }
 
         /* ASCII path (original logic) */
-        char c = *in++;                                   // same as before
+        char c = *in++;
 
         /* slur S */
         if (toupper((unsigned char)c) == 'S' && number_percent() < drunk * 2)
         {
-            if (out < end) *out++ = c;
-            if (out < end) *out++ = 'h';
+            result.push_back(c);
+            result.push_back('h');
             continue;
         }
 
         /* slur X -> csh */
         if (toupper((unsigned char)c) == 'X' && number_percent() < drunk)
         {
-            if (out < end) *out++ = 'c';
-            if (out < end) *out++ = 's';
-            if (out < end) *out++ = 'h';
+            result.push_back('c');
+            result.push_back('s');
+            result.push_back('h');
             continue;
         }
 
@@ -564,8 +548,8 @@ char *drunk_speech(const char *argument, CHAR_DATA *ch)
         if (number_percent() < drunk / 2)
         {
             int repeat = number_range(1, 2);
-            while (repeat-- && out < end)
-                *out++ = c;
+            while (repeat--)
+                result.push_back(c);
             continue;
         }
 
@@ -578,34 +562,27 @@ char *drunk_speech(const char *argument, CHAR_DATA *ch)
                 c = tolower((unsigned char)c);
         }
 
-        *out++ = c;
+        result.push_back(c);
 
         /* stutter at spaces */
-        if (c == ' ' && number_percent() < drunk / 2 && out < end)
+        if (c == ' ' && number_percent() < drunk / 2)
         {
             const char *peek = in;
             int count = number_range(1, 3);
 
-            while (*peek && *peek != ' ' && count-- && out < end)
+            while (*peek && *peek != ' ' && count--)
             {
                 size_t plen = utf8_char_len_safe(peek);
 
-                if (out + plen + 1 >= end)
-                    break;
-
-                memcpy(out, peek, plen);
-                out += plen;
-
-                if (out < end)
-                    *out++ = '-';
+                result.append(peek, plen);
+                result.push_back('-');
 
                 peek += plen;
             }
         }
     }
 
-    *out = '\0';
-    return buf;
+    return result;
 }
 
 static bool has_comlink(CHAR_DATA *ch)
@@ -685,200 +662,192 @@ static bool can_receive_channel(
 static void format_channel_message(
     CHAR_DATA *ch,
     int channel,
-    const char *verb,
-    const char *argument,
-    char *buf, size_t bufsize
-)
+    const std::string &verb,
+    const std::string &argument,
+    std::string &buf )
 {
-    const CHANNEL_INFO *info = get_channel_info(channel);
-    if (!info)
+    buf.clear();
+
+    const CHANNEL_INFO *info = get_channel_info( channel );
+    if ( !info )
         return;
 
-    std::string lang_str = lang_string(ch, ch);
-    const char *lang = lang_str.c_str();
+    std::string lang = lang_string( ch, ch );
 
-    set_char_color(info->color, ch);
+    set_char_color( info->color, ch );
 
     /* --- SELF --- */
-    if (info->self_fmt)
+    if ( info->self_fmt )
     {
-        if (info->uses_verb)
-            ch_printf(ch, info->self_fmt, verb, lang, argument);
+        if ( info->uses_verb )
+            ch_printf( ch, info->self_fmt, verb.c_str(), lang.c_str(), argument.c_str() );
         else
-            ch_printf(ch, info->self_fmt, lang, argument);
+            ch_printf( ch, info->self_fmt, lang.c_str(), argument.c_str() );
     }
 
     /* --- OTHER --- */
-    if (info->other_fmt)
+    if ( info->other_fmt )
     {
-        char tmp[MAX_STRING_LENGTH];
+        std::string tmp = info->uses_verb
+            ? str_printf( info->other_fmt, verb.c_str() )
+            : std::string( info->other_fmt );
 
-        if (info->uses_verb)
-            snprintf(tmp, sizeof(tmp), info->other_fmt, verb);
-        else
-            snprintf(tmp, sizeof(tmp), "%s", info->other_fmt);
-
-        /* Apply prefix if present */
-        if (info->prefix_fmt)
-            snprintf(buf, bufsize, "%s %s", info->prefix_fmt, tmp);
-        else
-            snprintf(buf, bufsize, "%s", tmp);
+        buf = info->prefix_fmt
+            ? str_printf( "%s %s", info->prefix_fmt, tmp.c_str() )
+            : tmp;
     }
 
     /* --- act() override --- */
-    if (info->use_act_to_char && info->other_fmt)
+    if ( info->use_act_to_char && !buf.empty() )
     {
         int position = ch->position;
         ch->position = POS_STANDING;
 
-        act(info->color, buf, ch, argument, NULL, TO_CHAR);
+        act( info->color, buf, ch, argument, NULL, TO_CHAR );
 
         ch->position = position;
     }
 }
 
-void talk_channel(CHAR_DATA *ch, char *argument, int channel, const char *verb)
+void talk_channel( CHAR_DATA *ch, const std::string &argument_in, int channel, const std::string &verb )
 {
-    char buf[MAX_STRING_LENGTH];
-    char buf2[MAX_STRING_LENGTH];
+    std::string argument = argument_in;
+    std::string buf;
+    std::string buf2;
     DESCRIPTOR_DATA *d;
 
-    const CHANNEL_INFO *info = get_channel_info(channel);
-    if (!info)
+    const CHANNEL_INFO *info = get_channel_info( channel );
+    if ( !info )
         return;
 
     CLAN_DATA *clan = NULL;
 
-    if (!ch || !ch->in_room)
+    if ( !ch || !ch->in_room )
         return;
 
-    if (BV_IS_SET(ch->in_room->room_flags, ROOM_SILENCE))
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_SILENCE ) )
     {
-        send_to_char("You can't do that here.\n", ch);
+        send_to_char( "You can't do that here.\n", ch );
         return;
     }
 
-    if (IS_NPC(ch) && IS_AFFECTED(ch, AFF_CHARM))
+    if ( IS_NPC( ch ) && IS_AFFECTED( ch, AFF_CHARM ) )
     {
-        if (ch->master)
-            send_to_char("I don't think so...\n", ch->master);
+        if ( ch->master )
+            send_to_char( "I don't think so...\n", ch->master );
         return;
     }
 
-    if (argument[0] == '\0')
+    if ( argument.empty() )
     {
-        char tmp[MAX_STRING_LENGTH];
-        SPRINTF(tmp, "%s what?\n", verb);
-        tmp[0] = UPPER(tmp[0]);
-        send_to_char(tmp, ch);
+        std::string tmp = str_printf( "%s what?\n", verb.c_str() );
+        if ( !tmp.empty() )
+            tmp[0] = UPPER( tmp[0] );
+        send_to_char( tmp, ch );
         return;
     }
 
-    if (!IS_NPC(ch) && BV_IS_SET(ch->act, PLR_SILENCE))
+    if ( !IS_NPC( ch ) && BV_IS_SET( ch->act, PLR_SILENCE ) )
     {
-        ch_printf(ch, "You can't %s.\n", verb);
+        ch_printf( ch, "You can't %s.\n", verb.c_str() );
         return;
     }
 
-    if (info->requires_comlink && !has_comlink(ch))
+    if ( info->requires_comlink && !has_comlink( ch ) )
     {
-        send_to_char("You need a comlink to do that!\n", ch);
+        send_to_char( "You need a comlink to do that!\n", ch );
         return;
     }
 
-    if (info->clan_only && !IS_NPC(ch) && ch->pcdata)
+    if ( info->clan_only && !IS_NPC( ch ) && ch->pcdata )
         clan = ch->pcdata->clan;
 
     /* Apply drunk speech if needed */
-    if (info->use_drunk)
-        argument = drunk_speech(argument, ch);
+    if ( info->use_drunk )
+        argument = drunk_speech( argument, ch );
 
-    BV_SET_BIT(ch->channels, channel);
+    BV_SET_BIT( ch->channels, channel );
 
-    format_channel_message(ch, channel, verb, argument, buf, sizeof(buf));
+    format_channel_message( ch, channel, verb, argument, buf );
 
-    if (BV_IS_SET(ch->in_room->room_flags, ROOM_LOGSPEECH))
+    if ( BV_IS_SET( ch->in_room->room_flags, ROOM_LOGSPEECH ) )
     {
-        SPRINTF(buf2, "%s: %s (%s)",
-            IS_NPC(ch) ? ch->short_descr : ch->name,
-            argument, verb);
-        append_to_file(LOG_FILE, buf2);
+        buf2 = str_printf( "%s: %s (%s)",
+            IS_NPC( ch ) ? ch->short_descr : ch->name,
+            argument.c_str(),
+            verb.c_str() );
+        append_to_file( LOG_FILE, buf2.c_str() );
     }
 
-    for (d = first_descriptor; d; d = d->next)
+    for ( d = first_descriptor; d; d = d->next )
     {
         CHAR_DATA *och = d->original ? d->original : d->character;
         CHAR_DATA *vch = d->character;
 
-        if (d->connected != CON_PLAYING)
+        if ( d->connected != CON_PLAYING )
             continue;
 
-        if (!vch || vch == ch)
+        if ( !vch || vch == ch )
             continue;
 
-        if (!BV_IS_SET(och->channels, channel))
+        if ( !BV_IS_SET( och->channels, channel ) )
             continue;
 
-        if (!can_receive_channel(ch, vch, och, info, clan))
+        if ( !can_receive_channel( ch, vch, och, info, clan ) )
             continue;
 
-        const char *sbuf = argument;
+        std::string sbuf = argument;
 
-        if (!info->no_scramble &&
-            !knows_language(vch, ch->speaking, ch) &&
-            (!IS_NPC(ch) || ch->speaking != 0))
+        if ( !info->no_scramble &&
+            !knows_language( vch, ch->speaking, ch ) &&
+            ( !IS_NPC( ch ) || ch->speaking != 0 ) )
         {
-            sbuf = scramble(argument, ch->speaking);
+            sbuf = scramble( argument, ch->speaking );
         }
 
         int position = vch->position;
-        if (!info->room_only)
+        if ( !info->room_only )
             vch->position = POS_STANDING;
 
         MOBtrigger = FALSE;
 
-        act(info->color, buf, ch, sbuf, vch, TO_VICT);
+        act( info->color, buf, ch, sbuf, vch, TO_VICT );
 
         vch->position = position;
     }
 }
 
-void to_channel( const char *argument, int channel, const char *verb, sh_int level )
+void to_channel( const std::string &argument, int channel, const std::string &verb, sh_int level )
 {
-    char buf[MAX_STRING_LENGTH];
     DESCRIPTOR_DATA *d;
 
-    if ( !first_descriptor || argument[0] == '\0' )
-      return;
+    if ( !first_descriptor || argument.empty() )
+        return;
 
-    SPRINTF(buf, "%s: %s\n", verb, argument );
+    std::string buf = str_printf( "%s: %s\n", verb.c_str(), argument.c_str() );
 
     for ( d = first_descriptor; d; d = d->next )
     {
-	CHAR_DATA *och;
-	CHAR_DATA *vch;
+        CHAR_DATA *och = d->original ? d->original : d->character;
+        CHAR_DATA *vch = d->character;
 
-	och = d->original ? d->original : d->character;
-	vch = d->character;
+        if ( !och || !vch )
+            continue;
 
-	if ( !och || !vch )
-	  continue;
-	if ( ( !IS_IMMORTAL(vch) && channel != CHANNEL_ARENA )
-	|| ( vch->top_level < d->game->get_sysdata()->build_level && channel == CHANNEL_BUILD )
-	|| ( vch->top_level < d->game->get_sysdata()->log_level
-	&& ( channel == CHANNEL_LOG || channel == CHANNEL_COMM) ) )
-	  continue;
+        if ( ( !IS_IMMORTAL(vch) && channel != CHANNEL_ARENA )
+        ||   ( vch->top_level < d->game->get_sysdata()->build_level && channel == CHANNEL_BUILD )
+        ||   ( vch->top_level < d->game->get_sysdata()->log_level
+        &&     ( channel == CHANNEL_LOG || channel == CHANNEL_COMM ) ) )
+            continue;
 
-	if ( d->connected == CON_PLAYING
-	&&  BV_IS_SET(och->channels, channel)
-	&&   vch->top_level >= level )
-	{
-	  set_char_color( AT_LOG, vch );
-	  send_to_char( buf, vch );
-	}
+        if ( d->connected == CON_PLAYING
+        &&   BV_IS_SET( och->channels, channel )
+        &&   vch->top_level >= level )
+        {
+            set_char_color( AT_LOG, vch );
+            send_to_char( buf, vch );  // or send_to_char(buf, vch) if you have overload
+        }
     }
-
-    return;
 }
 
 
@@ -1179,8 +1148,8 @@ void do_say(CHAR_DATA *ch, char *argument)
 
     for (vch = ch->in_room->first_person; vch; vch = vch->next_in_room)
     {
-        char *sbuf = argument;
-        char sbuflang[MAX_STRING_LENGTH];
+        std::string sbuf = argument;
+        std::string sbuflang;
 
         if (vch == ch)
             continue;
@@ -1199,8 +1168,8 @@ void do_say(CHAR_DATA *ch, char *argument)
             knows_language(vch, ch->speaking, ch) &&
             (!IS_NPC(ch) || ch->speaking != LANG_UNKNOWN))
         {
-            SPRINTF(sbuflang, "$n says in %s, '$t'",
-                    capitalize(get_flag_name(lang_names, lang, LANG_MAX)));
+            sbuflang = str_printf("$n says in %s, '$t'",
+                    capitalize(get_flag_name(lang_names, lang, LANG_MAX)).c_str());
             act(AT_SAY, sbuflang, ch, sbuf, vch, TO_VICT);
         }
         else
@@ -1242,10 +1211,10 @@ void do_say(CHAR_DATA *ch, char *argument)
 
 void do_tell( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     char buf[MAX_INPUT_LENGTH];
-    char *sbuf = argument;
-    char sbuflang[MAX_INPUT_LENGTH];
+    std::string sbuf = argument;
+    std::string sbuflang;
     CHAR_DATA *victim;
     int position;
     CHAR_DATA *switched_victim;
@@ -1279,9 +1248,9 @@ void do_tell( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg );
+    std::string argumentstr = one_argument( argument, arg );
 
-    if ( arg[0] == '\0' || argument[0] == '\0' )
+    if ( arg.empty() || argumentstr.empty() )
     {
 	send_to_char( "Tell whom what?\n", ch );
 	return;
@@ -1401,17 +1370,17 @@ void do_tell( CHAR_DATA *ch, char *argument )
     if(switched_victim)
       victim = switched_victim;
    
-    act( AT_TELL, "(&COutgoing Message&B) ($l) $N: '$t'", ch, argument, victim, TO_CHAR );
+    act( AT_TELL, "(&COutgoing Message&B) ($l) $N: '$t'", ch, argumentstr, victim, TO_CHAR );
     position		= victim->position;
     victim->position	= POS_STANDING;
 
-    sbuf = argument;
+    sbuf = argumentstr;
     if ( !knows_language(victim, ch->speaking, ch) &&
        (!IS_NPC(ch) || ch->speaking != 0) )
-      sbuf = scramble(argument, ch->speaking);
+      sbuf = scramble(argumentstr, ch->speaking);
     sbuf = drunk_speech( sbuf, ch );
     
-      	SPRINTF( sbuflang, "(&CIncoming Message&B)(&C%s&B) $n: '$t'", lang_string(ch, victim ).c_str() );
+    sbuflang = str_printf("((&CIncoming Message&B)(&C%s&B) $n: '$t'", lang_string(ch, victim ).c_str() );
 	act( AT_TELL, sbuflang, ch, sbuf, victim, TO_VICT );
 
 
@@ -1440,16 +1409,16 @@ void do_tell( CHAR_DATA *ch, char *argument )
     {
 	if ( vch == ch )
 	  continue;
-	sbuf = argument;
+	sbuf = argumentstr;
 	if ( !knows_language(vch, ch->speaking, ch) &&
 		 (!IS_NPC(ch) || ch->speaking != 0) )
-	 sbuf = scramble(argument, ch->speaking);
+	 sbuf = scramble(argumentstr, ch->speaking);
 	sbuf = drunk_speech( sbuf, ch );
 
 	MOBtrigger = FALSE;
     if ( ( !IS_NPC(vch) && knows_language(vch, ch->speaking, ch ) ) && ( (!IS_NPC(ch) ) || ch->speaking != 0 ) )
     {
-      SPRINTF( sbuflang, "$n says quietly into $s comlink in %s '$t'", lang_string(ch, vch ).c_str() );
+      sbuflang = str_printf( "$n says quietly into $s comlink in %s '$t'", lang_string(ch, vch ).c_str() );
       act( AT_TELL, sbuflang, ch, sbuf, vch, TO_VICT );
     }
     else
@@ -1471,8 +1440,8 @@ void do_tell( CHAR_DATA *ch, char *argument )
 void do_reply( CHAR_DATA *ch, char *argument )
 {
     char buf[MAX_STRING_LENGTH];
-    char *sbuf;
-    char sbuflang[MAX_STRING_LENGTH];
+    std::string sbuf;
+    std::string sbuflang;
     CHAR_DATA *victim;
     int position;
     CHAR_DATA *vch;
@@ -1542,7 +1511,7 @@ void do_reply( CHAR_DATA *ch, char *argument )
       sbuf = scramble(argument, ch->speaking);
     sbuf = drunk_speech( sbuf, ch );
 
-    SPRINTF( sbuflang, "(&CIncoming Message&B)(&C%s&B) $n: '$t'", lang_string(ch, victim ).c_str() );
+    sbuflang = str_printf("(&CIncoming Message&B)(&C%s&B) $n: '$t'", lang_string(ch, victim ).c_str() );
     act( AT_TELL, sbuflang, ch, sbuf, victim, TO_VICT );
 
     victim->position	= position;
@@ -1574,7 +1543,7 @@ void do_reply( CHAR_DATA *ch, char *argument )
 
     if ( ( !IS_NPC(vch) && knows_language(vch, ch->speaking, ch ) ) && ( (!IS_NPC(ch) ) || ch->speaking != 0 ) )
     {
-      SPRINTF( sbuflang, "$n says quietly into $s comlink in %s '$t'", lang_string(ch, vch ).c_str() );
+      sbuflang = str_printf( "$n says quietly into $s comlink in %s '$t'", lang_string(ch, vch ).c_str() );
       act( AT_TELL, sbuflang, ch, sbuf, vch, TO_VICT );
     }
     else
@@ -1598,8 +1567,8 @@ void do_retell( CHAR_DATA *ch, char *argument )
 	int position;	
 	bool sameroom = FALSE;	
 	char buf[MAX_STRING_LENGTH];
-	char *sbuf;
-	char sbuflang[MAX_STRING_LENGTH];
+	std::string sbuf;
+	std::string sbuflang;
 	if( argument[0] == '\0' ) {
 		send_to_char("Retell what?\n",ch );		
 		return;	
@@ -1645,7 +1614,7 @@ void do_retell( CHAR_DATA *ch, char *argument )
           sbuf = scramble(argument, ch->speaking);
         sbuf = drunk_speech( sbuf, ch );
 
-        SPRINTF( sbuflang, "(&CIncoming Message&B)(&C%s&B) $n: '$t'", lang_string(ch, victim ).c_str() );
+        sbuflang = str_printf("(&CIncoming Message&B)(&C%s&B) $n: '$t'", lang_string(ch, victim ).c_str() );
         act( AT_TELL, sbuflang, ch, sbuf, victim, TO_VICT );
 
 	victim->position = position;	
@@ -1668,7 +1637,7 @@ void do_retell( CHAR_DATA *ch, char *argument )
 
 		    if ( ( !IS_NPC(vch) && knows_language(vch, ch->speaking, ch ) ) && ( (!IS_NPC(ch) ) || ch->speaking != 0 ) )
 		    {
-		      SPRINTF( sbuflang, "$n says quietly into $s comlink in %s '$t'", lang_string(ch, vch ).c_str() );
+		      sbuflang = str_printf("$n says quietly into $s comlink in %s '$t'", lang_string(ch, vch ).c_str() );
 		      act( AT_TELL, sbuflang, ch, sbuf, vch, TO_VICT );
 		    }
 		    else
@@ -1905,138 +1874,123 @@ void do_quit( CHAR_DATA *ch, char *argument )
 }
 
 
+static void send_file_to_descriptor( DESCRIPTOR_DATA *d, const std::string& filename )
+{
+    FILE *fp;
+    int c;
+    std::string buff;
+
+    if ( !d || filename.empty() )
+        return;
+
+    if ( ( fp = fopen( filename.c_str(), "r" ) ) == NULL )
+        return;
+
+    buff.reserve( MAX_STRING_LENGTH * 2 );
+
+    while ( ( c = fgetc( fp ) ) != EOF )
+        buff.push_back( (char)c );
+
+    FCLOSE( fp );
+    output_to_descriptor( d, buff );
+}
+
 void send_rip_screen( CHAR_DATA *ch )
 {
-    FILE *rpfile;
-    int num=0, c = 0;
-    char BUFF[MAX_STRING_LENGTH*2];
-
-    if ((rpfile = fopen(RIPSCREEN_FILE,"r")) !=NULL) {
-      while( ( c = fgetc( rpfile ) ) != EOF && ( num < ( MAX_STRING_LENGTH * 2 - 1 ) ) )  // stop at BUFF size - 1
-         BUFF[num++] = c;
-      FCLOSE(rpfile);
-      BUFF[num] = '\0';
-      write_to_buffer(ch->desc,BUFF,num);
-    }
+    if ( ch && ch->desc )
+        send_file_to_descriptor( ch->desc, RIPSCREEN_FILE );
 }
 
 void send_rip_title( CHAR_DATA *ch )
 {
-    FILE *rpfile;
-    int num=0, c = 0;
-    char BUFF[MAX_STRING_LENGTH*2];
-
-    if ((rpfile = fopen(RIPTITLE_FILE,"r")) !=NULL) {
-      while( ( c = fgetc( rpfile ) ) != EOF && ( num < ( MAX_STRING_LENGTH * 2 - 1 ) ) )  // stop at BUFF size - 1
-         BUFF[num++] = c;
-      FCLOSE(rpfile);
-      BUFF[num] = '\0';
-      write_to_buffer(ch->desc,BUFF,num);
-    }
+    if ( ch && ch->desc )
+        send_file_to_descriptor( ch->desc, RIPTITLE_FILE );
 }
 
 void send_ansi_title( CHAR_DATA *ch )
 {
-    FILE *rpfile;
-    int num=0, c = 0;
-    char BUFF[MAX_STRING_LENGTH*2];
-
-    if ((rpfile = fopen(ANSITITLE_FILE,"r")) !=NULL) {
-      while( ( c = fgetc( rpfile ) ) != EOF && ( num < ( MAX_STRING_LENGTH * 2 - 1 ) ) )  // stop at BUFF size - 1
-         BUFF[num++] = c;
-      FCLOSE(rpfile);
-      BUFF[num] = '\0';
-      write_to_buffer(ch->desc,BUFF,num);
-    }
+    if ( ch && ch->desc )
+        send_file_to_descriptor( ch->desc, ANSITITLE_FILE );
 }
 
 void send_ascii_title( CHAR_DATA *ch )
 {
-    FILE *rpfile;
-    int num=0, c = 0;
-    char BUFF[MAX_STRING_LENGTH];
-
-    if ((rpfile = fopen(ASCTITLE_FILE,"r")) !=NULL) {
-      while( ( c = fgetc( rpfile ) ) != EOF && ( num < ( MAX_STRING_LENGTH * 2 - 1 ) ) )  // stop at BUFF size - 1
-         BUFF[num++] = c;
-      FCLOSE(rpfile);
-      BUFF[num] = '\0';
-      write_to_buffer(ch->desc,BUFF,num);
-    }
+    if ( ch && ch->desc )
+        send_file_to_descriptor( ch->desc, ASCTITLE_FILE );
 }
 
 
 void do_rip( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
-	send_to_char( "Rip ON or OFF?\n", ch );
-	return;
+        send_to_char( "Rip ON or OFF?\n", ch );
+        return;
     }
-    if ( (strcmp(arg,"on")==0) || (strcmp(arg,"ON") == 0) ) {
-	send_rip_screen(ch);
-	BV_SET_BIT(ch->act,PLR_ANSI);
-	return;
+        if ( (!str_cmp(arg,"on")) || (!str_cmp(arg,"ON")) ) {
+        send_rip_screen(ch);
+        BV_SET_BIT(ch->act,PLR_ANSI);
+        return;
     }
 
-    if ( (strcmp(arg,"off")==0) || (strcmp(arg,"OFF") == 0) ) {
-	send_to_char( "!|*\nRIP now off...\n", ch );
-	return;
+    if ( (!str_cmp(arg,"off")) || (!str_cmp(arg,"OFF")) ) {
+        send_to_char( "!|*\nRIP now off...\n", ch );
+        return;
     }
 }
 
 void do_ansi( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "ANSI ON or OFF?\n", ch );
 	return;
     }
-    if ( (strcmp(arg,"on")==0) || (strcmp(arg,"ON") == 0) ) {
-	BV_SET_BIT(ch->act,PLR_ANSI);
-	set_char_color( AT_WHITE + AT_BLINK, ch);
-	send_to_char( "ANSI ON!!!\n", ch);
-	return;
+        if ( (!str_cmp(arg,"on")) || (!str_cmp(arg,"ON")) ) {
+        BV_SET_BIT(ch->act,PLR_ANSI);
+        set_char_color( AT_WHITE + AT_BLINK, ch);
+        send_to_char( "ANSI ON!!!\n", ch);
+        return;
     }
 
-    if ( (strcmp(arg,"off")==0) || (strcmp(arg,"OFF") == 0) ) {
-	BV_REMOVE_BIT(ch->act,PLR_ANSI);
-	send_to_char( "Okay... ANSI support is now off\n", ch );
-	return;
+    if ( (!str_cmp(arg,"off")) || (!str_cmp(arg,"OFF")) ) {
+        BV_REMOVE_BIT(ch->act,PLR_ANSI);
+        send_to_char( "Okay... ANSI support is now off\n", ch );
+        return;
     }
 }
 
 void do_sound( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
-	send_to_char( "SOUND ON or OFF?\n", ch );
-	return;
+        send_to_char( "SOUND ON or OFF?\n", ch );
+        return;
     }
-    if ( (strcmp(arg,"on")==0) || (strcmp(arg,"ON") == 0) ) {
-	BV_SET_BIT(ch->act,PLR_SOUND);
-	set_char_color( AT_WHITE + AT_BLINK, ch);
-	send_to_char( "SOUND ON!!!\n", ch);
-	send_to_char( "!!SOUND(hopeknow)", ch);
-	return;
+    if ( (!str_cmp(arg,"on")) || (!str_cmp(arg,"ON")) ) {
+        BV_SET_BIT(ch->act,PLR_SOUND);
+        set_char_color( AT_WHITE + AT_BLINK, ch);
+        send_to_char( "SOUND ON!!!\n", ch);
+        send_to_char( "!!SOUND(hopeknow)", ch);
+        return;
     }
 
-    if ( (strcmp(arg,"off")==0) || (strcmp(arg,"OFF") == 0) ) {
-	BV_REMOVE_BIT(ch->act,PLR_SOUND);
-	send_to_char( "Okay... SOUND support is now off\n", ch );
-	return;
+    if ( (!str_cmp(arg,"off")) || (!str_cmp(arg,"OFF")) ) {
+        BV_REMOVE_BIT(ch->act,PLR_SOUND);
+        send_to_char( "Okay... SOUND support is now off\n", ch );
+        return;
     }
 }
 
@@ -2092,12 +2046,12 @@ bool circle_follow( CHAR_DATA *ch, CHAR_DATA *victim )
 }
 void do_dismiss( CHAR_DATA *ch, char *argument )
 {
-   char arg[MAX_INPUT_LENGTH];
+   std::string arg;
    CHAR_DATA *victim;
 
     one_argument( argument, arg );     
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Dismiss whom?\n", ch );
 	return;
@@ -2130,7 +2084,7 @@ void do_dismiss( CHAR_DATA *ch, char *argument )
 
 void do_follow( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
 
     one_argument( argument, arg );
@@ -2254,18 +2208,17 @@ void die_follower( CHAR_DATA *ch )
 
 void do_order( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char argbuf[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string argumentstr = argument;
     CHAR_DATA *victim;
     CHAR_DATA *och;
     CHAR_DATA *och_next;
     bool found;
     bool fAll;
 
-    STRLCPY( argbuf, argument );
-    argument = one_argument( argument, arg );
+    argumentstr = one_argument( argumentstr, arg );
 
-    if ( arg[0] == '\0' || argument[0] == '\0' )
+    if ( arg.empty() || argumentstr.empty() )
     {
 	send_to_char( "Order whom to do what?\n", ch );
 	return;
@@ -2304,7 +2257,7 @@ void do_order( CHAR_DATA *ch, char *argument )
 	}
     }
 
-    if ( !str_prefix("mp",argument) )
+    if ( !str_prefix("mp",argumentstr) )
     {
         send_to_char( "But that's cheating!\n", ch );
         return;
@@ -2319,15 +2272,15 @@ void do_order( CHAR_DATA *ch, char *argument )
       if( IS_AFFECTED( och, AFF_CHARM ) && och->master == ch && ( fAll || och == victim ) && !IS_IMMORTAL( och ) )
 	{
 	    found = TRUE;
-	    act( AT_ACTION, "$n orders you to '$t'.", ch, argument, och, TO_VICT );
-	    interpret( och, argument );
+	    act( AT_ACTION, "$n orders you to '$t'.", ch, argumentstr, och, TO_VICT );
+        interpret(och, argumentstr);
 	}
     }
 
     if ( found )
     {
         log_printf_plus( LOG_NORMAL, ch->top_level,
-                "%s: order %s.", ch->name, argbuf );
+                "%s: order %s.", ch->name, argumentstr.data() );
  	    send_to_char( "Ok.\n", ch );
         WAIT_STATE( ch, 12 );
     }
@@ -2349,12 +2302,12 @@ char *itoa(int foo)
 
 void do_group( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim = NULL;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	CHAR_DATA *gch;
 
@@ -2375,7 +2328,7 @@ void do_group( CHAR_DATA *ch, char *argument )
 		    "[%2d %s] %-16s %4s/%4s hp %4s/%4s mv %5s xp\n",
 		    gch->top_level,
 		    IS_NPC(gch) ? "Mob" : race_table[gch->race].race_name,
-		    capitalize( PERS(gch, ch) ),
+		    capitalize( PERS(gch, ch) ).c_str(),
 		    "????",   
 		    "????",
 		    "????",
@@ -2387,7 +2340,7 @@ void do_group( CHAR_DATA *ch, char *argument )
 		    "[%2d %s] %-16s %4d/%4d hp %4d/%4d mv\n",
 		    gch->top_level,
 		    IS_NPC(gch) ? "Mob" : race_table[gch->race].race_name,
-		    capitalize( PERS(gch, ch) ),
+		    capitalize( PERS(gch, ch) ).c_str(),
 		    gch->hit,
 		    gch->max_hit,
 		    gch->move,  
@@ -2397,7 +2350,7 @@ void do_group( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( !strcmp( arg, "disband" ))
+    if ( !str_cmp( arg, "disband" ))
     {
 	CHAR_DATA *gch;
 	int count = 0;
@@ -2428,7 +2381,7 @@ void do_group( CHAR_DATA *ch, char *argument )
     return;
     }
 
-    if ( !strcmp( arg, "all" ) )
+    if ( !str_cmp( arg, "all" ) )
     {
         CHAR_DATA *rch;
         int count = 0;
@@ -2500,7 +2453,7 @@ void do_group( CHAR_DATA *ch, char *argument )
 void do_split( CHAR_DATA *ch, char *argument )
 {
     char buf[MAX_STRING_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *gch;
     int members;
     int amount;
@@ -2509,13 +2462,13 @@ void do_split( CHAR_DATA *ch, char *argument )
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Split how much?\n", ch );
 	return;
     }
 
-    amount = atoi( arg );
+    amount = strtoi( arg );
 
     if ( amount < 0 )
     {
@@ -2641,20 +2594,18 @@ bool is_same_group( CHAR_DATA *ach, CHAR_DATA *bch )
  * I am not too sure if this method is right..
  */
 
-void talk_auction (char *argument)
+void talk_auction (const std::string& argument)
 {
     DESCRIPTOR_DATA *d;
-    char buf[MAX_STRING_LENGTH];
     CHAR_DATA *original;
-
-    SPRINTF (buf,"Auction: %s", argument); /* last %s to reset color */
+    std::string buf = argument;
 
     for (d = first_descriptor; d; d = d->next)
     {
         original = d->original ? d->original : d->character; /* if switched */
         if ((d->connected == CON_PLAYING) && BV_IS_SET(original->channels,CHANNEL_AUCTION) 
         && !BV_IS_SET(original->in_room->room_flags, ROOM_SILENCE) && !NOT_AUTHED(original))
-            act( AT_GOSSIP, buf, original, NULL, NULL, TO_CHAR );
+            act( AT_GOSSIP, buf, original, "", NULL, TO_CHAR );
     }
 }
 
@@ -2888,8 +2839,8 @@ const struct flag_name channel_names[] =
 
 void do_speak(CHAR_DATA *ch, char *argument)
 {
-    char arg[MAX_INPUT_LENGTH];
-    argument = one_argument(argument, arg);
+    std::string arg;
+    one_argument(argument, arg);
 
     // Immortal: speak all (keep behavior, though questionable now)
     if (!str_cmp(arg, "all") && IS_IMMORTAL(ch))
@@ -2982,8 +2933,8 @@ void do_speak(CHAR_DATA *ch, char *argument)
     // --- New language selection logic ---
     for (int lang = 0; lang < LANG_MAX; ++lang)
     {
-        const char *name = get_flag_name(lang_names, lang, LANG_MAX);
-        if (!name)
+        const std::string name = get_flag_name(lang_names, lang, LANG_MAX);
+        if (name.empty())
             continue;
 
         if (!str_prefix(arg, name))
@@ -3004,7 +2955,7 @@ void do_speak(CHAR_DATA *ch, char *argument)
             ch->speaking = lang;
 
             set_char_color(AT_SAY, ch);
-            ch_printf(ch, "You now speak %s.\n", name);
+            ch_printf(ch, "You now speak %s.\n", name.c_str());
             return;
         }
     }
@@ -3015,22 +2966,22 @@ void do_speak(CHAR_DATA *ch, char *argument)
 
 void do_languages(CHAR_DATA *ch, char *argument)
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     int lang;
     int sn;
 
-    argument = one_argument(argument, arg);
+    std::string argumentstr = one_argument(argument, arg);
 
-    if (arg[0] != '\0' && !str_prefix(arg, "learn") &&
+    if (!arg.empty() && !str_prefix(arg, "learn") &&
         !IS_IMMORTAL(ch) && !IS_NPC(ch))
     {
         CHAR_DATA *sch;
-        char arg2[MAX_INPUT_LENGTH];
+        std::string arg2;
         int prct;
 
-        argument = one_argument(argument, arg2);
+        argumentstr = one_argument(argumentstr, arg2);
 
-        if (arg2[0] == '\0')
+        if (arg2.empty())
         {
             send_to_char("Learn which language?\n", ch);
             return;

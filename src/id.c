@@ -48,6 +48,7 @@ void  start_auth   args( ( struct descriptor_data *d ) );
 void  read_auth    args( ( struct descriptor_data *d ) );
 void  send_auth    args( ( struct descriptor_data *d ) );
 bool flush_buffer( DESCRIPTOR_DATA *d, bool fPrompt );
+void write_to_buffer( DESCRIPTOR_DATA *d, const char *txt, int length );;
 /*
  * Initiate an IDENT commention
  */

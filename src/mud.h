@@ -18,7 +18,7 @@
 *			    Main mud header file			   *
 ****************************************************************************/
 #include <openssl/sha.h> // New SHA-256 password hashing - AI/DV 3-12-26
-#include <stdlib.h>
+#include <cstdlib>
 #include <limits.h>
 #include <sys/cdefs.h>
 #include <sys/time.h>
@@ -35,6 +35,8 @@
 #include <sstream>
 #include <functional>
 #include <typeindex>
+#include <utility>
+#include <cstring>
 
 
 #define MCCP
@@ -864,6 +866,8 @@ struct system_data
     void set_time_of_max(const char* time) { time_of_max = time; };
     void set_guild_overseer(const char* name) { guild_overseer = name; };
     void set_guild_advisor(const char* name) { guild_advisor = name; };
+    void set_guild_overseer(const std::string& name) { guild_overseer = name; };
+    void set_guild_advisor(const std::string& name) { guild_advisor = name; };
     const char *get_guild_overseer() { return guild_overseer.c_str(); };
     const char *get_guild_advisor() { return guild_advisor.c_str(); };
     const char *get_time_of_max() { return time_of_max.c_str(); };
@@ -1054,15 +1058,18 @@ struct	descriptor_data
     sh_int		scrlen;
     bool		fcommand;
     char		inbuf		[MAX_INBUF_SIZE];
-    char		incomm		[MAX_INPUT_LENGTH];
-    char		inlast		[MAX_INPUT_LENGTH];
+    //char		incomm		[MAX_INPUT_LENGTH];
+    //char		inlast		[MAX_INPUT_LENGTH];
+    std::string incomm_str;
+    std::string inlast_str;
+    std::string intext_str;
     int			repeat;
     char *		outbuf;
     unsigned long	outsize;
     size_t			outtop;
-    char *		pagebuf;
-    unsigned long	pagesize;
-    size_t      pagelen;     
+    std::string	pagebuf;
+//    unsigned long	pagesize;
+//    size_t      pagelen;     
     int			pagetop;
     size_t		pagepoint;
     char		pagecmd;
@@ -4137,6 +4144,11 @@ static inline float urange_float(float  mincheck, float check, float maxcheck)
 
 
 /* Safe string helpers */
+inline int strtoi(const std::string &s)
+{
+    return std::atoi(s.c_str());
+}
+
 #define SAFE_APPEND(dst, src, end) \
 do { \
     const char *__s = (src); \
@@ -4226,6 +4238,136 @@ do {                                                                        \
             (dst)[__size - 1] = '\0';                                       \
     }                                                                       \
 } while (0)
+
+template <typename... Args>
+std::string str_printf_(const char* fmt, Args... args)
+{
+    int needed = std::snprintf(nullptr, 0, fmt, args...);
+    if (needed <= 0)
+        return std::string();
+
+    std::string result;
+    result.resize(static_cast<size_t>(needed));
+
+    std::snprintf(result.data(), static_cast<size_t>(needed) + 1, fmt, args...);
+    return result;
+}
+
+inline std::string vstr_printf( const char *fmt, va_list args )
+{
+    va_list args_copy;
+    va_copy( args_copy, args );
+
+    int needed = std::vsnprintf( nullptr, 0, fmt, args_copy );
+    va_end( args_copy );
+
+    if ( needed <= 0 )
+        return std::string();
+
+    std::string result;
+    result.resize( static_cast<size_t>( needed ) );
+
+    std::vsnprintf( result.data(), result.size() + 1, fmt, args );
+    return result;
+}
+
+struct PrintfArgHolder
+{
+    std::string storage;
+
+    PrintfArgHolder(const std::string& s) : storage(s) {}
+    PrintfArgHolder(std::string&& s) : storage(std::move(s)) {}
+    PrintfArgHolder(std::string_view sv) : storage(sv) {}
+
+    const char *c_str() const
+    {
+        return storage.c_str();
+    }
+};
+
+/* Stage 1: normalize incoming arguments into storable values */
+
+inline const char *printf_store(const char *s)
+{
+    return s ? s : "";
+}
+
+inline char *printf_store(char *s)
+{
+    return s ? s : const_cast<char *>("");
+}
+
+inline PrintfArgHolder printf_store(const std::string& s)
+{
+    return PrintfArgHolder(s);
+}
+
+inline PrintfArgHolder printf_store(std::string&& s)
+{
+    return PrintfArgHolder(std::move(s));
+}
+
+inline PrintfArgHolder printf_store(std::string_view sv)
+{
+    return PrintfArgHolder(sv);
+}
+
+template <typename T>
+inline T printf_store(T v)
+{
+    return v;
+}
+
+/* Stage 2: convert stored values into actual varargs-compatible values */
+
+inline const char *printf_value(const char *s)
+{
+    return s;
+}
+
+inline char *printf_value(char *s)
+{
+    return s;
+}
+
+inline const char *printf_value(const PrintfArgHolder& h)
+{
+    return h.c_str();
+}
+
+template <typename T>
+inline T printf_value(T v)
+{
+    return v;
+}
+
+/* Wrapper helpers */
+
+template <typename Tuple, std::size_t... I>
+void ch_printf_from_tuple(CHAR_DATA *ch, const char *fmt, Tuple& tup, std::index_sequence<I...>)
+{
+    ch_printf_(ch, fmt, printf_value(std::get<I>(tup))...);
+}
+
+template <typename... Args>
+void ch_printf(CHAR_DATA *ch, const char *fmt, Args&&... args)
+{
+    auto stored = std::make_tuple(printf_store(std::forward<Args>(args))...);
+    ch_printf_from_tuple(ch, fmt, stored, std::index_sequence_for<Args...>{});
+}
+
+template <typename Tuple, std::size_t... I>
+std::string str_printf_from_tuple(const char *fmt, Tuple& tup, std::index_sequence<I...>)
+{
+    return str_printf_(fmt, printf_value(std::get<I>(tup))...);
+}
+
+template <typename... Args>
+std::string str_printf(const char *fmt, Args&&... args)
+{
+    auto stored = std::make_tuple(printf_store(std::forward<Args>(args))...);
+    return str_printf_from_tuple(fmt, stored, std::index_sequence_for<Args...>{});
+}
 
 /*
  * Memory allocation macros.
@@ -5656,7 +5798,7 @@ int     closed          args( ( int d ) );
 int readd               args( ( int handle, char *buffer, int length ) );
 bool	write_to_descriptor_depreciated	args( ( int desc, char *txt, int length ) );
 std::string lang_string(CHAR_DATA *ch,  CHAR_DATA *vch);
-void    sound_to_room( ROOM_INDEX_DATA *room , char *argument );
+void    sound_to_room( ROOM_INDEX_DATA *room , const std::string&argument );
 bool	circle_follow	args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );
 void	add_follower	args( ( CHAR_DATA *ch, CHAR_DATA *master ) );
 void	stop_follower	args( ( CHAR_DATA *ch ) );
@@ -5666,21 +5808,19 @@ void	send_rip_screen args( ( CHAR_DATA *ch ) );
 void	send_rip_title	args( ( CHAR_DATA *ch ) );
 void	send_ansi_title args( ( CHAR_DATA *ch ) );
 void	send_ascii_title args( ( CHAR_DATA *ch ) );
-void	to_channel	args( ( const char *argument, int channel,
-				const char *verb, sh_int level ) );
-void  	talk_auction    args( ( char *argument ) );
+void	to_channel	args( ( const std::string& argument, int channel,
+				const std::string& verb, sh_int level ) );
+void  	talk_auction    args( ( const std::string& argument ) );
 bool    knows_language  args( ( CHAR_DATA *ch, int language,
 				CHAR_DATA *cch ) );
 bool    can_learn_lang  args( ( CHAR_DATA *ch, int language ) );
 int     countlangs      args( ( int languages ) );
-char *  translate       args( ( CHAR_DATA *ch, CHAR_DATA *victim,
-				const char *argument ) );
 char *	obj_short	args( ( OBJ_DATA *obj ) );
 
 /* act_info.c */
 void sha256_hash(const char *password, char out[65]);
-int	get_door	args( ( char *arg ) );
-char *	format_obj_to_char	args( ( OBJ_DATA *obj, CHAR_DATA *ch,
+int	get_door	args( ( const std::string& arg ) );
+const std::string	format_obj_to_char	args( ( OBJ_DATA *obj, CHAR_DATA *ch,
 				    bool fShort ) );
 void	show_list_to_char	args( ( OBJ_DATA *list, CHAR_DATA *ch,
 				    bool fShort, bool fShowNothing ) );
@@ -5688,7 +5828,7 @@ void do_showstatistic_web( CHAR_DATA *ch, char *argument );
 
 /* act_move.c */
 void	clear_vrooms	args( ( GameContext *game ) );
-ED *	find_door	args( ( CHAR_DATA *ch, char *arg, bool quiet ) );
+EXIT_DATA *find_door( CHAR_DATA *ch, const std::string& arg, bool quiet );
 ED *	get_exit	args( ( ROOM_INDEX_DATA *room, sh_int dir ) );
 ED *	get_exit_to	args( ( ROOM_INDEX_DATA *room, sh_int dir, int vnum ) );
 ED *	get_exit_num	args( ( ROOM_INDEX_DATA *room, sh_int count ) );
@@ -5707,9 +5847,9 @@ void    obj_fall  	args( ( OBJ_DATA *obj, bool through ) );
 
 /* act_wiz.c */
 void              close_area    args( ( AREA_DATA *pArea ) );
-RID *	find_location	args( ( CHAR_DATA *ch, char *arg ) );
-void    echo_to_room    args( ( sh_int AT_COLOR, ROOM_INDEX_DATA *room, char *argument ) );
-void	echo_to_all	args( ( sh_int AT_COLOR, char *argument,
+RID *	find_location	args( ( CHAR_DATA *ch, const std::string& arg ) );
+void    echo_to_room    args( ( sh_int AT_COLOR, ROOM_INDEX_DATA *room, const std::string& argument ) );
+void	echo_to_all	args( ( sh_int AT_COLOR, const std::string& argument,
 				sh_int tar ) );
 void   	get_reboot_string args( ( GameContext *game ) );
 struct tm *update_time  args( ( struct tm *old_time ) );
@@ -5726,29 +5866,31 @@ void	free_note	args( ( NOTE_DATA *pnote ) );
 
 /* build.c */
 const char *flag_bit_name(size_t bit, const flag_name *table);
-size_t get_attackflag( char *flag );
+size_t get_attackflag( const std::string& flag );
 char *flag_string(const FLAG_SET &bv, char * const flagarray[], size_t max_flags);
 char *	flag_string	args( ( int bitvector, char * const flagarray[] ) );
-int	get_mpflag	args( ( char *flag ) );
-int	get_dir		args( ( char *txt  ) );
+int	get_mpflag	args( ( const std::string& flag ) );
+int	get_dir		args( ( const std::string& txt  ) );
+std::string strip_cr( const std::string &str );
 char *	strip_cr	args( ( char *str  ) );
-int     get_vip_flag    args( ( char *flag ) );
-int     get_wanted_flag args( ( char *flag ) );
+int     get_vip_flag    args( ( const std::string& flag ) );
+int     get_wanted_flag args( ( const std::string& flag ) );
 
 extern const flag_name           wear_locs [];
 extern const char *  const           ex_flags[];
 
 /* clans.c */
-CL *	get_clan		args( ( char *name ) );
+//CL *	get_clan		args( ( char *name ) );
+CL *	get_clan		args( ( const std::string& name ) );
 void	load_clans		args( ( GameContext *game ) );
 void	save_clan		args( ( CLAN_DATA *clan ) );
 void	load_senate		args( ( GameContext *game ) );
 void	save_senate		args( ( GameContext *game ) );
-PLANET_DATA *	get_planet	args( ( char *name ) );
+PLANET_DATA *	get_planet	args( ( const std::string& name ) );
 void	load_planets		args( ( GameContext *game ) );
 void	save_planet		args( ( PLANET_DATA *planet ) );
 float   get_taxes               args( ( PLANET_DATA *planet ) );
-bool 	load_member_list	args( ( GameContext *game, char *filename ) );
+bool 	load_member_list	args( ( GameContext *game, const std::string& filename ) );
 void	update_member		args( ( CHAR_DATA *ch ) );
 void	remove_member		args( ( CHAR_DATA *ch ) );
 
@@ -5762,13 +5904,13 @@ void	    claim_disintigration    args( ( CHAR_DATA *ch , CHAR_DATA *victim ) );
 bool        is_disintigration args( ( CHAR_DATA *victim ) );
 
 /* space.c */
-SH        *  get_ship          	    args( ( GameContext *game, char *name ) );
-SH        *  get_ship_from_filename args( ( GameContext *game, char *name ) );
+SH        *  get_ship          	    args( ( GameContext *game, const std::string& name ) );
+SH        *  get_ship_from_filename args( ( GameContext *game, const std::string& name ) );
 void         load_ships        	    args( ( GameContext *game ) );
 void         save_ship      	    args( ( SHIP_DATA *ship ) );
 void         load_space             args( ( GameContext *game ) );
 void         save_spaceobject        args( ( SPACE_DATA *spaceobject ) );
-SPACE_DATA * spaceobject_from_name   args( ( GameContext *game, char *name ) );
+SPACE_DATA * spaceobject_from_name   args( ( GameContext *game, const std::string& name ) );
 SPACE_DATA * spaceobject_from_vnum   args( ( GameContext *game, int vnum ) );
 SHIP_DATA  * ship_from_obj          args( ( GameContext *game, int vnum ) );
 SHIP_DATA  * ship_from_entrance     args( ( GameContext *game, int vnum ) );
@@ -5781,8 +5923,8 @@ SHIP_DATA  * ship_from_gunseat      args( ( GameContext *game, int vnum ) );
 SHIP_DATA  * ship_from_turret       args( ( GameContext *game, int vnum ) );
 SHIP_DATA  * ship_from_engine       args( ( GameContext *game, int vnum ) );
 SHIP_DATA  * ship_from_room         args( ( GameContext *game, int vnum ) );
-SHIP_DATA  * ship_from_pilot        args( ( GameContext *game, char *name ) );
-SHIP_DATA  * get_ship_here          args( ( GameContext *game, char *name , SHIP_DATA *eShip) );
+SHIP_DATA  * ship_from_pilot        args( ( GameContext *game, const std::string& name ) );
+SHIP_DATA  * get_ship_here          args( ( GameContext *game, const std::string& name , SHIP_DATA *eShip) );
 void         showspaceobject         args( ( CHAR_DATA *ch , SPACE_DATA *spaceobject ) );
 void         update_space           args( ( GameContext *game ) );
 void         quest_update           args( ( GameContext *game ) );
@@ -5792,9 +5934,9 @@ void         update_bus             args( ( GameContext *game ) );
 void         update_traffic         args( ( GameContext *game ) );
 bool         check_pilot            args( ( CHAR_DATA *ch , SHIP_DATA *ship ) );
 bool         is_rental              args( ( CHAR_DATA *ch , SHIP_DATA *ship ) );
-void         echo_to_ship           args( ( int color , SHIP_DATA *ship , char *argument ) );
-void         echo_to_cockpit        args( ( int color , SHIP_DATA *ship , char *argument ) );
-void         echo_to_system         args( ( int color , SHIP_DATA *ship , char *argument , SHIP_DATA *ignore ) );
+void         echo_to_ship           args( ( int color , SHIP_DATA *ship , const std::string& argument ) );
+void         echo_to_cockpit        args( ( int color , SHIP_DATA *ship , const std::string& argument ) );
+void         echo_to_system         args( ( int color , SHIP_DATA *ship , const std::string& argument , SHIP_DATA *ignore ) );
 bool         extract_ship           args( ( SHIP_DATA *ship ) );
 bool         ship_to_room           args( ( SHIP_DATA *ship , int vnum ) );
 long         get_ship_value         args( ( SHIP_DATA *ship ) );
@@ -5806,7 +5948,7 @@ void         ship_to_spaceobject     args( ( SHIP_DATA *ship , SPACE_DATA *space
 void         ship_from_spaceobject   args( ( SHIP_DATA *ship , SPACE_DATA *spaceobject ) );
 void         new_missile            args( ( SHIP_DATA *ship , SHIP_DATA *target , CHAR_DATA *ch , int missiletype ) );
 void         extract_missile        args( ( MISSILE_DATA *missile ) );
-SHIP_DATA * ship_in_room            args( ( ROOM_INDEX_DATA *room, char *name ) );
+SHIP_DATA * ship_in_room            args( ( ROOM_INDEX_DATA *room, const std::string& name ) );
 void         transship              args( ( SHIP_DATA *ship , int destination ) );
 bool ship_in_range( SHIP_DATA *ship, SHIP_DATA *target );
 bool ship_in_range_c( SHIP_DATA *ship, SHIP_DATA *target );
@@ -5856,17 +5998,39 @@ void gmcp_flush(DESCRIPTOR_DATA *d);
 /* comm.c */
 int telnet_process      args( ( DESCRIPTOR_DATA *d, const unsigned char *in, int in_len, unsigned char *out, int out_max) );
 void	close_socket	args( ( DESCRIPTOR_DATA *dclose, bool force ) );
-void	write_to_buffer	args( ( DESCRIPTOR_DATA *d, const char *txt, int length ) );
+//void	write_to_buffer	args( ( DESCRIPTOR_DATA *d, const char *txt, int length ) );
+void    write_to_buffer_str(DESCRIPTOR_DATA *d,  const std::string& txt);
+void output_to_descriptor(DESCRIPTOR_DATA *d, const std::string& txt);
 void	write_to_pager	args( ( DESCRIPTOR_DATA *d, const char *txt, int length ) );
-void	send_to_char	args( ( const char *txt, CHAR_DATA *ch ) );
+inline void write_to_pager( DESCRIPTOR_DATA *d, const std::string& txt );
+//void	send_to_char	args( ( const char *txt, CHAR_DATA *ch ) );
+void    send_to_char( const std::string& txt, CHAR_DATA *ch );
 //void  send_to_desc_color  args( ( const char *txt, DESCRIPTOR_DATA *d ) );
+void	send_to_pager	args( ( const std::string& txt, CHAR_DATA *ch ) );
 void	send_to_pager	args( ( const char *txt, CHAR_DATA *ch ) );
 void	send_to_pager_color	args( ( const char *txt, CHAR_DATA *ch ) );
 void	set_char_color  args( ( sh_int AType, CHAR_DATA *ch ) );
 void	set_pager_color	args( ( sh_int AType, CHAR_DATA *ch ) );
-void	ch_printf	args( ( CHAR_DATA *ch, const char *fmt, ... ) );
+void	ch_printf_	args( ( CHAR_DATA *ch, const char *fmt, ... ) );
 void	pager_printf	args( (CHAR_DATA *ch, const char *fmt, ...) );
+void act( sh_int AType, const std::string &format, CHAR_DATA *ch,
+          const std::string *arg1, const void *arg2, int type );
+void act( sh_int AType, const std::string &format, CHAR_DATA *ch,
+          const void *arg1, const std::string *arg2, int type );
+void act( sh_int AType, const std::string &format, CHAR_DATA *ch,
+          const std::string *arg1, const std::string *arg2, int type );
+void act( sh_int AType, const std::string &format, CHAR_DATA *ch,
+          const std::string &arg1, const void *arg2, int type );
+void act( sh_int AType, const char *format, CHAR_DATA *ch,
+          const std::string &arg1, const void *arg2, int type );
+void act( sh_int AType, const std::string &format, CHAR_DATA *ch,
+          const void *arg1, const std::string &arg2, int type );          
 void	act		args( ( sh_int AType, const char *format, CHAR_DATA *ch, const void *arg1, const void *arg2, int type ) );
+
+inline void ch_printf( CHAR_DATA *ch, const std::string& txt )
+{
+    send_to_char( txt, ch );
+}
 
 /* reset.c */
 RD  *	make_reset	args( ( char letter, int extra, int arg1, int arg2, int arg3 ) );
@@ -5883,7 +6047,8 @@ void log_printf args( (const char *fmt, ...) );
 void log_printf_plus args ( (int log_type, int level, const char *fmt, ...) );
 void log_channelf args ( (int channel, const char *channel_name, int level, const char *fmt, ...) );
 void	show_file	args( ( CHAR_DATA *ch, char *filename ) );
-bool  is_valid_filename args( ( CHAR_DATA *ch, const char *direct, const char *filename ) );
+bool  is_valid_filename args( ( CHAR_DATA *ch, const std::string& direct, const std::string& filename ) );
+char *str_dup( const std::string &str );
 char *	str_dup		args( ( char const *str ) );
 void	boot_db		args( ( GameContext *game ) );
 void	area_update	args( ( GameContext *game ) );
@@ -5892,7 +6057,7 @@ CD *	create_mobile	args( ( GameContext *game, MOB_INDEX_DATA *pMobIndex ) );
 OD *	create_object	args( ( OBJ_INDEX_DATA *pObjIndex, int level ) );
 void	clear_char	args( ( CHAR_DATA *ch ) );
 void	free_char	args( ( CHAR_DATA *ch ) );
-char *	get_extra_descr	args( ( const char *name, EXTRA_DESCR_DATA *ed ) );
+char *	get_extra_descr	args( ( const std::string& name, EXTRA_DESCR_DATA *ed ) );
 MID *	get_mob_index	args( ( sh_int vnum ) );
 OID *	get_obj_index	args( ( int vnum ) );
 RID *	get_room_index	args( ( int vnum ) );
@@ -5913,23 +6078,28 @@ int	number_mm	args( ( void ) );
 int	dice		args( ( int number, int size ) );
 int	interpolate	args( ( int level, int value_00, int value_32 ) );
 void	smash_tilde	args( ( char *str ) );
+void smash_tilde(std::string& str);
 void	hide_tilde	args( ( char *str ) );
 char *	show_tilde	args( ( char *str ) );
 bool	str_cmp		args( ( const char *astr, const char *bstr ) );
 bool	str_prefix	args( ( const char *astr, const char *bstr ) );
 bool	str_infix	args( ( const char *astr, const char *bstr ) );
 bool	str_suffix	args( ( const char *astr, const char *bstr ) );
-char *	capitalize	args( ( const char *str ) );
-char *	strlower	args( ( const char *str ) );
-char *	strupper	args( ( const char *str ) );
-char *  aoran		args( ( const char *str ) );
-void	append_file	args( ( CHAR_DATA *ch, char *file, char *str ) );
-void	append_to_file	args( ( char *file, char *str ) );
+bool str_suffix_utf8(const std::string& astr, const std::string& bstr);
+bool str_infix_utf8(const std::string& astr, const std::string& bstr);
+bool str_prefix_utf8(const std::string& astr, const std::string& bstr);
+bool str_cmp_utf8(const std::string& astr, const std::string& bstr);
+std::string capitalize(const std::string& str);
+std::string strlower(const std::string& str);
+std::string strupper(const std::string& str);
+std::string  aoran		args( ( const std::string& str ) );
+void	append_file	args( ( CHAR_DATA *ch, const std::string& file, const std::string& str ) );
+void	append_to_file	args( ( const std::string& file, const std::string& str ) );
 void	bug		args( ( const char *str, ... ) );
 void	log_string_plus	args( ( const char *str, sh_int log_type, sh_int level ) );
 RID *	make_room	args( ( GameContext *game, int vnum ) );
-OID *	make_object	args( ( GameContext *game, int vnum, int cvnum, char *name ) );
-MID *	make_mobile	args( ( GameContext *game, sh_int vnum, sh_int cvnum, char *name ) );
+OID *	make_object	args( ( GameContext *game, int vnum, int cvnum, const std::string& name ) );
+MID *	make_mobile	args( ( GameContext *game, sh_int vnum, sh_int cvnum, const std::string& name ) );
 ED  *	make_exit	args( ( ROOM_INDEX_DATA *pRoomIndex, ROOM_INDEX_DATA *to_room, sh_int door ) );
 void	add_help	args( ( HELP_DATA *pHelp ) );
 void	fix_area_exits	args( ( AREA_DATA *tarea ) );
@@ -5952,9 +6122,10 @@ bool string_to_bitset(const char *str, FLAG_SET &bv, const flag_name *table, boo
 std::string bitset_to_string(const FLAG_SET &bv, const flag_name *table,
                              size_t min_bit = 0,
                              size_t max_bit = SIZE_MAX);
+void    start_editing( CHAR_DATA *ch, const std::string &data );
 void	start_editing	args( ( CHAR_DATA *ch, char *data ) );
 void	stop_editing	args( ( CHAR_DATA *ch ) );
-void	edit_buffer	args( ( CHAR_DATA *ch, char *argument ) );
+void	edit_buffer	args( ( CHAR_DATA *ch, const std::string& argument ) );
 char *	copy_buffer	args( ( CHAR_DATA *ch ) );
 bool	can_rmodify	args( ( CHAR_DATA *ch, ROOM_INDEX_DATA *room ) );
 bool	can_omodify	args( ( CHAR_DATA *ch, OBJ_DATA *obj  ) );
@@ -5963,18 +6134,18 @@ bool	can_medit	args( ( CHAR_DATA *ch, MOB_INDEX_DATA *mob ) );
 void	free_reset	args( ( AREA_DATA *are, RESET_DATA *res ) );
 void	free_area	args( ( AREA_DATA *are ) );
 void	assign_area	args( ( CHAR_DATA *ch ) );
-EDD *	SetRExtra	args( ( ROOM_INDEX_DATA *room, char *keywords ) );
-bool	DelRExtra	args( ( ROOM_INDEX_DATA *room, char *keywords ) );
-EDD *	SetOExtra	args( ( OBJ_DATA *obj, char *keywords ) );
-bool	DelOExtra	args( ( OBJ_DATA *obj, char *keywords ) );
-EDD *	SetOExtraProto	args( ( OBJ_INDEX_DATA *obj, char *keywords ) );
-bool	DelOExtraProto	args( ( OBJ_INDEX_DATA *obj, char *keywords ) );
-void	fold_area	args( ( AREA_DATA *tarea, char *filename, bool install ) );
-int	get_otype	args( ( char *type ) );
-int	get_atype	args( ( char *type ) );
-int	get_aflag	args( ( char *flag ) );
-int	get_oflag	args( ( char *flag ) );
-int	get_wflag	args( ( char *flag ) );
+EDD *	SetRExtra	args( ( ROOM_INDEX_DATA *room, const std::string&keywords ) );
+bool	DelRExtra	args( ( ROOM_INDEX_DATA *room, const std::string&keywords ) );
+EDD *	SetOExtra	args( ( OBJ_DATA *obj, const std::string&keywords ) );
+bool	DelOExtra	args( ( OBJ_DATA *obj, const std::string&keywords ) );
+EDD *	SetOExtraProto	args( ( OBJ_INDEX_DATA *obj, const std::string&keywords ) );
+bool	DelOExtraProto	args( ( OBJ_INDEX_DATA *obj, const std::string&keywords ) );
+void	fold_area	args( ( AREA_DATA *tarea, const std::string& filename, bool install ) );
+int	get_otype	args( ( const std::string& type ) );
+int	get_atype	args( ( const std::string& type ) );
+int	get_aflag	args( ( const std::string& flag ) );
+int	get_oflag	args( ( const std::string& flag ) );
+int	get_wflag	args( ( const std::string& flag ) );
 
 /* fight.c */
 int	max_fight	args( ( CHAR_DATA *ch ) );
@@ -6032,13 +6203,13 @@ char *	mprog_type_to_name	args( ( int type ) );
 
 /* mud_prog.c */
 
-void	mprog_wordlist_check    args ( ( char * arg, CHAR_DATA *mob,
+void	mprog_wordlist_check    args ( ( const std::string& arg, CHAR_DATA *mob,
                 			CHAR_DATA* actor, OBJ_DATA* object,
 					void* vo, int type ) );
 void	mprog_percent_check     args ( ( CHAR_DATA *mob, CHAR_DATA* actor,
 					OBJ_DATA* object, void* vo,
 					int type ) );
-void	mprog_act_trigger       args ( ( char* buf, CHAR_DATA* mob,
+void	mprog_act_trigger       args ( ( const std::string& buf, CHAR_DATA* mob,
 		                        CHAR_DATA* ch, OBJ_DATA* obj,
 					void* vo ) );
 void	mprog_bribe_trigger     args ( ( CHAR_DATA* mob, CHAR_DATA* ch,
@@ -6051,20 +6222,20 @@ void    mprog_fight_trigger     args ( ( CHAR_DATA* mob, CHAR_DATA* ch ) );
 void    mprog_hitprcnt_trigger  args ( ( CHAR_DATA* mob, CHAR_DATA* ch ) );
 void    mprog_death_trigger     args ( ( CHAR_DATA *killer, CHAR_DATA* mob ) );
 void    mprog_random_trigger    args ( ( CHAR_DATA* mob ) );
-void    mprog_speech_trigger    args ( ( char* txt, CHAR_DATA* mob ) );
+void    mprog_speech_trigger    args ( ( const std::string& txt, CHAR_DATA* mob ) );
 void    mprog_script_trigger    args ( ( CHAR_DATA *mob ) );
 void    mprog_hour_trigger      args ( ( CHAR_DATA *mob ) );
 void    mprog_time_trigger      args ( ( CHAR_DATA *mob ) );
-void    progbug                 args( ( char *str, CHAR_DATA *mob ) );
+void    progbug                 args( ( const std::string& str, CHAR_DATA *mob ) );
 void progbugf                   args( ( CHAR_DATA *mob, const char *fmt, ... ) );
 void	rset_supermob		args( ( ROOM_INDEX_DATA *room) );
 void	release_supermob	args( ( GameContext *game ) );
 
 /* player.c */
-void	set_title	args( ( CHAR_DATA *ch, char *title ) );
+void set_title(CHAR_DATA *ch, const std::string& title);
 
 /* skills.c */
-bool	check_skill		args( ( CHAR_DATA *ch, char *command, char *argument ) );
+bool	check_skill		args( ( CHAR_DATA *ch, const std::string& command, const std::string& argument ) );
 void	learn_from_success	args( ( CHAR_DATA *ch, int sn ) );
 void	learn_from_failure	args( ( CHAR_DATA *ch, int sn ) );
 bool	check_parry		args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );
@@ -6076,6 +6247,12 @@ bool permsneak( CHAR_DATA *ch );
 
 
 /* handler.c */
+bool is_name2(const std::string& str, const std::string& namelist);
+bool is_name2_prefix(const std::string& str, const std::string& namelist);
+bool is_name(const std::string& str, const std::string& namelist);
+bool is_name_prefix(const std::string& str, const std::string& namelist);
+bool nifty_is_name(const std::string& str, const std::string& namelist);
+bool nifty_is_name_prefix(const std::string& str, const std::string& namelist);
 void free_obj args( ( OBJ_DATA * obj ) );
 void    explode         args( ( OBJ_DATA *obj ) );
 int	get_exp		args( ( CHAR_DATA *ch , int ability ) );
@@ -6094,10 +6271,10 @@ sh_int  get_curr_frc	args( ( CHAR_DATA *ch ) );
 bool	can_take_proto	args( ( CHAR_DATA *ch ) );
 int	can_carry_n	args( ( CHAR_DATA *ch ) );
 int	can_carry_w	args( ( CHAR_DATA *ch ) );
-bool	is_name		args( ( const char *str, char *namelist ) );
-bool	is_name_prefix	args( ( const char *str, char *namelist ) );
-bool	nifty_is_name	args( ( char *str, char *namelist ) );
-bool	nifty_is_name_prefix args( ( char *str, char *namelist ) );
+bool	is_name		args( ( const char *str, const char *namelist ) );
+bool	is_name_prefix	args( ( const char *str, const char *namelist ) );
+bool	nifty_is_name	args( ( const char *str, const char *namelist ) );
+bool	nifty_is_name_prefix args( ( const char *str, const char *namelist ) );
 void	affect_modify	args( ( CHAR_DATA *ch, AFFECT_DATA *paf, bool fAdd ) );
 void	affect_to_char	args( ( CHAR_DATA *ch, AFFECT_DATA *paf ) );
 void	affect_remove	args( ( CHAR_DATA *ch, AFFECT_DATA *paf ) );
@@ -6125,17 +6302,17 @@ void	clean_obj	args( ( OBJ_INDEX_DATA *obj ) );
 void	clean_mob	args( ( MOB_INDEX_DATA *mob ) );
 void	clean_resets	args( ( AREA_DATA *tarea ) );
 void	extract_char	args( ( CHAR_DATA *ch, bool fPull ) );
-CD *	get_char_room	args( ( CHAR_DATA *ch, char *argument ) );
-CD *	get_char_world	args( ( CHAR_DATA *ch, char *argument ) );
+CD *	get_char_room	args( ( CHAR_DATA *ch, const std::string& argument ) );
+CD *	get_char_world	args( ( CHAR_DATA *ch, const std::string& argument ) );
 OD *	get_obj_type	args( ( OBJ_INDEX_DATA *pObjIndexData ) );
-OD *	get_obj_list	args( ( CHAR_DATA *ch, char *argument,
+OD *	get_obj_list	args( ( CHAR_DATA *ch, const std::string& argument,
 			    OBJ_DATA *list ) );
-OD *	get_obj_list_rev args( ( CHAR_DATA *ch, char *argument,
+OD *	get_obj_list_rev args( ( CHAR_DATA *ch, const std::string& argument,
 			    OBJ_DATA *list ) );
-OD *	get_obj_carry	args( ( CHAR_DATA *ch, char *argument ) );
-OD *	get_obj_wear	args( ( CHAR_DATA *ch, char *argument ) );
-OD *	get_obj_here	args( ( CHAR_DATA *ch, char *argument ) );
-OD *	get_obj_world	args( ( CHAR_DATA *ch, char *argument ) );
+OD *	get_obj_carry	args( ( CHAR_DATA *ch, const std::string& argument ) );
+OD *	get_obj_wear	args( ( CHAR_DATA *ch, const std::string& argument ) );
+OD *	get_obj_here	args( ( CHAR_DATA *ch, const std::string& argument ) );
+OD *	get_obj_world	args( ( CHAR_DATA *ch, const std::string& argument ) );
 int	get_obj_number	args( ( OBJ_DATA *obj ) );
 int	get_obj_weight	args( ( OBJ_DATA *obj ) );
 bool	room_is_dark	args( ( ROOM_INDEX_DATA *pRoomIndex ) );
@@ -6143,11 +6320,11 @@ bool	room_is_private	args( ( CHAR_DATA *ch, ROOM_INDEX_DATA *pRoomIndex ) );
 bool	can_see		args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );
 bool	can_see_obj	args( ( CHAR_DATA *ch, OBJ_DATA *obj ) );
 bool	can_drop_obj	args( ( CHAR_DATA *ch, OBJ_DATA *obj ) );
-char *	item_type_name	args( ( OBJ_DATA *obj ) );
-char *	affect_loc_name	args( ( int location ) );
-char *	affect_bit_name	args( ( int vector ) );
-const char *	extra_bit_name	args( ( FLAG_SET extra_flags ) );
-const char *	magic_bit_name	args( ( FLAG_SET magic_flags ) );
+const std::string	item_type_name	args( ( OBJ_DATA *obj ) );
+const std::string	affect_loc_name	args( ( int location ) );
+const std::string	affect_bit_name	args( ( int vector ) );
+const std::string	extra_bit_name	args( ( FLAG_SET extra_flags ) );
+const std::string	magic_bit_name	args( ( FLAG_SET magic_flags ) );
 ch_ret	check_for_trap	args( ( CHAR_DATA *ch, OBJ_DATA *obj, int flag ) );
 ch_ret	check_room_for_traps args( ( CHAR_DATA *ch, int flag ) );
 bool	is_trapped	args( ( OBJ_DATA *obj ) );
@@ -6180,6 +6357,7 @@ bool	empty_obj	args( ( OBJ_DATA *obj, OBJ_DATA *destobj,
 				ROOM_INDEX_DATA *destroom ) );
 OD *	find_obj	args( ( CHAR_DATA *ch, char *argument,
 				bool carryonly ) );
+OD *find_obj( CHAR_DATA *ch, const std::string& argument, bool carryonly );                
 bool	ms_find_obj	args( ( CHAR_DATA *ch ) );
 void	worsen_mental_state args( ( CHAR_DATA *ch, int mod ) );
 void	better_mental_state args( ( CHAR_DATA *ch, int mod ) );
@@ -6197,12 +6375,17 @@ int count_users(OBJ_DATA *obj);
 /* interp.c */
 bool	check_pos	args( ( CHAR_DATA *ch, sh_int position ) );
 void	interpret	args( ( CHAR_DATA *ch, char *argument ) );
+void interpret(CHAR_DATA *ch, const std::string& argument);
 bool	is_number	args( ( char *arg ) );
-int	number_argument	args( ( char *argument, char *arg ) );
-char *	one_argument	args( ( char *argument, char *arg_first ) );
-char *	one_argument2	args( ( char *argument, char *arg_first ) );
-ST *	find_social	args( ( const char *command ) );
-CMDTYPE *find_command	args( ( char *command ) );
+bool is_number(const std::string& arg);
+int number_argument(const std::string& argument, std::string& arg);
+//char *	one_argument	args( ( char *argument, char *arg_first ) );
+//char *	one_argument2	args( ( char *argument, char *arg_first ) );
+//int number_argument(char *argument, char *arg);
+std::string one_argument2(const std::string& input, std::string& arg_first);
+std::string one_argument(const std::string& input, std::string& arg_first);
+ST *	find_social	args( ( const std::string&command ) );
+CMDTYPE *find_command	args( ( const std::string& command ) );
 void	hash_commands	args( ( ) );
 void	start_timer	args( ( struct timeval *stime ) );
 time_t	end_timer	args( ( struct timeval *stime ) );
@@ -6212,17 +6395,17 @@ void	update_userec	args( ( struct timeval *time_used,
 
 /* magic.c */
 bool	process_spell_components args( ( CHAR_DATA *ch, int sn ) );
-int	ch_slookup	args( ( CHAR_DATA *ch, const char *name ) );
-int	find_spell	args( ( CHAR_DATA *ch, const char *name, bool know ) );
-int	find_skill	args( ( CHAR_DATA *ch, const char *name, bool know ) );
-int	find_weapon	args( ( CHAR_DATA *ch, const char *name, bool know ) );
-int	find_tongue	args( ( CHAR_DATA *ch, const char *name, bool know ) );
-int	skill_lookup	args( ( const char *name ) );
-int	herb_lookup	args( ( const char *name ) );
-int	personal_lookup	args( ( CHAR_DATA *ch, const char *name ) );
+int	ch_slookup	args( ( CHAR_DATA *ch, const std::string& name ) );
+int	find_spell	args( ( CHAR_DATA *ch, const std::string& name, bool know ) );
+int	find_skill	args( ( CHAR_DATA *ch, const std::string& name, bool know ) );
+int	find_weapon	args( ( CHAR_DATA *ch, const std::string& name, bool know ) );
+int	find_tongue	args( ( CHAR_DATA *ch, const std::string& name, bool know ) );
+int	skill_lookup	args( ( const std::string& name ) );
+int	herb_lookup	args( ( const std::string& name ) );
+int	personal_lookup	args( ( CHAR_DATA *ch, const std::string& name ) );
 int	slot_lookup	args( ( int slot ) );
-int	bsearch_skill	args( ( const char *name, int first, int top ) );
-int	bsearch_skill_exact args( ( const char *name, int first, int top ) );
+int	bsearch_skill	args( ( const std::string& name, int first, int top ) );
+int	bsearch_skill_exact args( ( const std::string& name, int first, int top ) );
 bool	saves_poison_death	args( ( int level, CHAR_DATA *victim ) );
 bool	saves_wand		args( ( int level, CHAR_DATA *victim ) );
 bool	saves_para_petri	args( ( int level, CHAR_DATA *victim ) );
@@ -6246,8 +6429,8 @@ void    fwrite_bitset(FILE *fp, const char *name, const FLAG_SET &bv);
 void    fread_bitset(FILE *fp, FLAG_SET &bv);
 void	save_char_obj	args( ( CHAR_DATA *ch ) );
 void	save_clone	args( ( CHAR_DATA *ch ) );
-bool	load_char_obj	args( ( DESCRIPTOR_DATA *d, char *name, bool preload ) );
-bool 	load_char_obj_v2 args( (DESCRIPTOR_DATA *d, char *name, bool preload , int undead) );
+bool	load_char_obj	args( ( DESCRIPTOR_DATA *d, const std::string& name, bool preload ) );
+bool 	load_char_obj_v2 args( (DESCRIPTOR_DATA *d, const std::string& name, bool preload , int undead) );
 void	set_alarm	args( ( long seconds ) );
 void	requip_char	args( ( CHAR_DATA *ch ) );
 void    fwrite_obj      args( ( CHAR_DATA *ch,  OBJ_DATA  *obj, FILE *fp, 
@@ -6263,11 +6446,11 @@ void load_storerooms( GameContext *game );
 int get_cost_quit( CHAR_DATA *ch );
 
 /* special.c */
-SF *	spec_lookup	args( ( const char *name ) );
+SF *	spec_lookup	args( ( const std::string& name ) );
 char *	lookup_spec	args( ( SPEC_FUN *special ) );
 
 /* tables.c */
-int	get_skill	args( ( char *skilltype ) );
+int	get_skill	args( ( const std::string& skilltype ) );
 char *	spell_name	args( ( SPELL_FUN *spell ) );
 char *	skill_name	args( ( DO_FUN *skill ) );
 void	load_skill_table args( ( GameContext *game ) );
@@ -6277,8 +6460,8 @@ void	load_socials	args( ( GameContext *game ) );
 void	save_socials	args( ( GameContext *game ) );
 void	load_commands	args( ( GameContext *game ) );
 void	save_commands	args( ( GameContext *game ) );
-SPELL_FUN *spell_function args( ( char *name ) );
-DO_FUN *skill_function  args( ( char *name ) );
+SPELL_FUN *spell_function args( ( const std::string& name ) );
+DO_FUN *skill_function  args( ( const std::string& name ) );
 void	load_herb_table	args( ( GameContext *game ) );
 void	save_herb_table	args( ( GameContext *game ) );
 
@@ -6301,15 +6484,17 @@ int max_level( CHAR_DATA *ch, int ability);
 bool    is_droid	args( ( CHAR_DATA *ch ) );
 
 /* hashstr.c */
-char *	str_alloc	args( ( char *str ) );
+void hash_unique( int count);
+char *	str_alloc	args( ( const char *str ) );
+char *	str_alloc	args( ( const std::string& str ) );
 char *	quick_link	args( ( char *str ) );
 int	str_free	args( ( char *str ) );
 void	show_hash	args( ( int count ) );
 char *	hash_stats	args( ( ) );
-char *	check_hash	args( ( char *str ) );
+char *	check_hash	args( ( const char *str ) );
 void	hash_dump	args( ( int hash ) );
 void	show_high_hash	args( ( int top ) );
-bool in_hash_table  args( ( char *str ) );
+bool in_hash_table  args( ( const char *str ) );
 
 /* krearena.c */
 void remove_from_arena(CHAR_DATA *ch);
@@ -6319,12 +6504,12 @@ void remove_from_arena(CHAR_DATA *ch);
 char *  get_race 	args( (CHAR_DATA *ch) );
 
 /* badname functions */
-bool	check_bad_name		args( ( char *name ) );
-int	add_bad_name		args( ( char *name ) );
+bool	check_bad_name		args( ( const std::string& name ) );
+int	add_bad_name		args( ( const std::string& name ) );
 
 /* dontresolve functions */
-bool	check_dont_resolve		args( ( char *ip ) );
-int	add_dont_resolve		args( ( char *ipmatch ) );
+bool	check_dont_resolve		args( ( const std::string& ip ) );
+int	add_dont_resolve		args( ( const std::string& ipmatch ) );
 
 /* vendor.c*/
 void fwrite_vendor args( ( FILE *fp, CHAR_DATA *mob ) );
@@ -6348,7 +6533,7 @@ bool olc_room_in_edit_mode(CHAR_DATA* ch);
 void olc_room_edit_enter(CHAR_DATA* ch);
 void olc_room_edit_leave(CHAR_DATA* ch, bool save);
 bool olc_room_edit_revert(CHAR_DATA* ch);
-bool olc_room_edit_interpret(CHAR_DATA* ch, char* command, char* argument);
+bool olc_room_edit_interpret(CHAR_DATA* ch, const std::string& command, const std::string& argument);
 bool olc_room_commit_current(CHAR_DATA* ch);
 void olc_room_discard_current_room_working_copy(CHAR_DATA* ch);
 void olc_room_edit_switch_to_room(CHAR_DATA* ch, ROOM_INDEX_DATA* room);
@@ -6539,25 +6724,17 @@ void            init_maps();
 extern	CHAR_DATA *supermob;
 extern OBJ_DATA *supermob_obj;
 
-void oprog_speech_trigger( char *txt, CHAR_DATA *ch );
-void oprog_random_trigger( OBJ_DATA *obj );
-void oprog_wear_trigger( CHAR_DATA *ch, OBJ_DATA *obj );
-bool oprog_use_trigger( CHAR_DATA *ch, OBJ_DATA *obj, 
-                        CHAR_DATA *vict, OBJ_DATA *targ, void *vo );
-void oprog_remove_trigger( CHAR_DATA *ch, OBJ_DATA *obj );
-void oprog_sac_trigger( CHAR_DATA *ch, OBJ_DATA *obj );
-void oprog_damage_trigger( CHAR_DATA *ch, OBJ_DATA *obj );
-void oprog_repair_trigger( CHAR_DATA *ch, OBJ_DATA *obj );
-void oprog_drop_trigger( CHAR_DATA *ch, OBJ_DATA *obj );
-void oprog_zap_trigger( CHAR_DATA *ch, OBJ_DATA *obj );
-char *oprog_type_to_name( int type );
 
 /*
  * MUD_PROGS START HERE
  * (object stuff)
  */
+void oprog_wear_trigger( CHAR_DATA *ch, OBJ_DATA *obj );
+bool oprog_use_trigger( CHAR_DATA *ch, OBJ_DATA *obj, 
+                        CHAR_DATA *vict, OBJ_DATA *targ, void *vo );
+char *oprog_type_to_name( int type );
 void oprog_greet_trigger( CHAR_DATA *ch );
-void oprog_speech_trigger( char *txt, CHAR_DATA *ch );
+void oprog_speech_trigger( const std::string& txt, CHAR_DATA *ch );
 void oprog_random_trigger( OBJ_DATA *obj );
 void oprog_random_trigger( OBJ_DATA *obj );
 void oprog_remove_trigger( CHAR_DATA *ch, OBJ_DATA *obj );
@@ -6620,7 +6797,7 @@ void rprog_sleep_trigger( CHAR_DATA *ch );
 void rprog_rest_trigger( CHAR_DATA *ch );
 void rprog_rfight_trigger( CHAR_DATA *ch );
 void rprog_death_trigger( CHAR_DATA *killer, CHAR_DATA *ch );
-void rprog_speech_trigger( char *txt, CHAR_DATA *ch );
+void rprog_speech_trigger( const std::string& txt, CHAR_DATA *ch );
 void rprog_random_trigger( CHAR_DATA *ch );
 void rprog_time_trigger( CHAR_DATA *ch );
 void rprog_hour_trigger( CHAR_DATA *ch );
@@ -6628,12 +6805,12 @@ char *rprog_type_to_name(int type );
 
 #define OPROG_ACT_TRIGGER
 #ifdef OPROG_ACT_TRIGGER
-void oprog_act_trigger( char *buf, OBJ_DATA *mobj, CHAR_DATA *ch,
+void oprog_act_trigger( const std::string& buf, OBJ_DATA *mobj, CHAR_DATA *ch,
 			OBJ_DATA *obj, void *vo );
 #endif
 #define RPROG_ACT_TRIGGER
 #ifdef RPROG_ACT_TRIGGER
-void rprog_act_trigger( char *buf, ROOM_INDEX_DATA *room, CHAR_DATA *ch,
+void rprog_act_trigger( const std::string& buf, ROOM_INDEX_DATA *room, CHAR_DATA *ch,
 			OBJ_DATA *obj, void *vo );
 #endif
 

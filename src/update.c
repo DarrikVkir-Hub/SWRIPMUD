@@ -1691,23 +1691,24 @@ void obj_update( GameContext *game )
           if ( obj->item_type == ITEM_CORPSE_PC )
 	    timerfrac = (int)(obj->timer / 8 + 1);
 
-	  if ( obj->timer > 0 && obj->value[2] > timerfrac )
-	  {
+	  	if ( obj->timer > 0 && obj->value[2] > timerfrac )
+	  	{
             char buf[MAX_STRING_LENGTH];
-            char name[MAX_STRING_LENGTH];
-            char *bufptr;
-            bufptr = one_argument( obj->short_descr, name ); 
-            bufptr = one_argument( bufptr, name ); 
-            bufptr = one_argument( bufptr, name ); 
+			std::string rest;
+			std::string name;
+
+			rest = one_argument( obj->short_descr, name );
+			rest = one_argument( rest, name );
+			rest = one_argument( rest, name );
 
 	    separate_obj(obj);
             obj->value[2] = timerfrac;
             if ( obj->item_type == ITEM_DROID_CORPSE )
               SPRINTF_RUNTIME( buf, d_corpse_descs[ UMIN( timerfrac - 1, 4 ) ], 
-                          bufptr ); 
+                          rest.c_str() ); 
             else 
               SPRINTF_RUNTIME( buf, corpse_descs[ UMIN( timerfrac - 1, 4 ) ], 
-                          capitalize( bufptr ) ); 
+                          capitalize( rest ).c_str() ); 
 
             STRFREE( obj->description );
             obj->description = STRALLOC( buf ); 
@@ -2164,7 +2165,7 @@ void aggr_update( GameContext *game )
 }
 
 /* From interp.c */
-bool check_social  args( ( CHAR_DATA *ch, char *command, char *argument ) );
+bool check_social  args( ( CHAR_DATA *ch, const std::string& command, const std::string& argument ) );
 
 /*
  * drunk randoms	- Tricops
@@ -2208,7 +2209,7 @@ void drunk_randoms( CHAR_DATA *ch )
 	for ( vch = ch->in_room->first_person; vch; vch = vch->next_in_room )
 	    if ( number_percent() < 10 )
 		rvch = vch;
-	check_social( ch, (char*)"puke", (rvch ? rvch->name : (char*)"") );
+	check_social( ch, "puke", (rvch ? rvch->name : "") );
     }
 
     ch->position = position;
@@ -2626,10 +2627,8 @@ if ((current_time % 1800) == 0)
         }
        }      
 
-       SPRINTF( buf, "You are forced from these realms by a strong magical presence" ); 
-       echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
-       SPRINTF( buf, "as life here is reconstructed." );
-       echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
+       echo_to_all( AT_YELLOW, "You are forced from these realms by a strong magical presence", ECHOTAR_ALL );
+       echo_to_all( AT_YELLOW, "as life here is reconstructed.", ECHOTAR_ALL );
 
        /* Save all characters before booting. */
        for ( vch = first_char; vch; vch = vch->next )
@@ -2651,8 +2650,7 @@ if ((current_time % 1800) == 0)
   {
     if ( one == FALSE )
     {
-	SPRINTF( buf, "You feel the ground shake as the end comes near!" );
-	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
+	echo_to_all( AT_YELLOW, "You feel the ground shake as the end comes near!", ECHOTAR_ALL );
 	one = TRUE;
 	game->get_sysdata()->DENY_NEW_PLAYERS = TRUE;
     }
@@ -2664,8 +2662,7 @@ if ((current_time % 1800) == 0)
   {
     if ( two == FALSE )
     {
-	SPRINTF( buf, "Lightning crackles in the sky above!" );
-	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
+	echo_to_all( AT_YELLOW, "Lightning crackles in the sky above!", ECHOTAR_ALL );
 	two = TRUE;
 	game->get_sysdata()->DENY_NEW_PLAYERS = TRUE;
     }
@@ -2677,8 +2674,7 @@ if ((current_time % 1800) == 0)
   {
     if ( three == FALSE )
     {
-	SPRINTF( buf, "Crashes of thunder sound across the land!" );
-	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
+	echo_to_all( AT_YELLOW, "Crashes of thunder sound across the land!", ECHOTAR_ALL );
 	three = TRUE;
 	game->get_sysdata()->DENY_NEW_PLAYERS = TRUE;
     }
@@ -2690,8 +2686,7 @@ if ((current_time % 1800) == 0)
   {
     if ( four == FALSE )
     {
-	SPRINTF( buf, "The sky has suddenly turned midnight black." );
-	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
+	echo_to_all( AT_YELLOW, "The sky has suddenly turned midnight black.", ECHOTAR_ALL );
 	four = TRUE;
 	game->get_sysdata()->DENY_NEW_PLAYERS = TRUE;
     }
@@ -2703,8 +2698,7 @@ if ((current_time % 1800) == 0)
   {
     if ( five == FALSE )
     {
-	SPRINTF( buf, "You notice the life forms around you slowly dwindling away." );
-	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
+	echo_to_all( AT_YELLOW, "You notice the life forms around you slowly dwindling away.", ECHOTAR_ALL );
 	five = TRUE;
 	game->get_sysdata()->DENY_NEW_PLAYERS = TRUE;
     }
@@ -2716,8 +2710,7 @@ if ((current_time % 1800) == 0)
   {
     if ( ten == FALSE )
     {
-	SPRINTF( buf, "The seas across the realm have turned frigid." );
-	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
+	echo_to_all( AT_YELLOW, "The seas across the realm have turned frigid.", ECHOTAR_ALL );
 	ten = TRUE;
     }
     return;   
@@ -2728,8 +2721,7 @@ if ((current_time % 1800) == 0)
   {
     if ( fifteen == FALSE )
     {
-	SPRINTF( buf, "The aura of magic which once surrounded the realms seems slightly unstable." );
-	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
+	echo_to_all( AT_YELLOW, "The aura of magic which once surrounded the realms seems slightly unstable.", ECHOTAR_ALL );
 	fifteen = TRUE;
     }
     return;   
@@ -2740,8 +2732,7 @@ if ((current_time % 1800) == 0)
   { 
     if ( thirty == FALSE )
     {
-	SPRINTF( buf, "You sense a change in the magical forces surrounding you." );
-	echo_to_all( AT_YELLOW, buf, ECHOTAR_ALL );
+	echo_to_all( AT_YELLOW, "You sense a change in the magical forces surrounding you.", ECHOTAR_ALL );
 	thirty = TRUE;
     }
     return;   

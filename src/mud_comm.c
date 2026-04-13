@@ -29,7 +29,7 @@ bool	MOBtrigger;
 void transfer_char( CHAR_DATA *ch, CHAR_DATA *victim, ROOM_INDEX_DATA *location );
 char *	mprog_type_to_name	args( ( int type ) );
 ch_ret	simple_damage( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt );
-CHAR_DATA * get_char_room_mp  args( ( CHAR_DATA *ch, char *argument ) );
+CHAR_DATA * get_char_room_mp  args( ( CHAR_DATA *ch, const std::string& argument ) );
 
 char *mprog_type_to_name( int type )
 {
@@ -76,13 +76,13 @@ char *mprog_type_to_name( int type )
  */
 void do_mpstat( CHAR_DATA *ch, char *argument )
 {
-    char        arg[MAX_INPUT_LENGTH];
+    std::string        arg;
     MPROG_DATA *mprg;
     CHAR_DATA  *victim;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "MProg stat whom?\n", ch );
 	return;
@@ -136,13 +136,13 @@ void do_mpstat( CHAR_DATA *ch, char *argument )
 /* Opstat - Scryn 8/12*/
 void do_opstat( CHAR_DATA *ch, char *argument )
 {
-    char        arg[MAX_INPUT_LENGTH];
+    std::string        arg;
     MPROG_DATA *mprg;
     OBJ_DATA   *obj;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "OProg stat what?\n", ch );
 	return;
@@ -248,7 +248,7 @@ void do_mpasound( CHAR_DATA *ch, char *argument )
 
 void do_mpkill( CHAR_DATA *ch, char *argument )
 {
-    char      arg[ MAX_INPUT_LENGTH ];
+    std::string        arg;
     CHAR_DATA *victim;
 
     if (!ch )
@@ -268,7 +268,7 @@ void do_mpkill( CHAR_DATA *ch, char *argument )
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	progbug( "MpKill - no argument", ch );
 	return;
@@ -309,7 +309,7 @@ void do_mpkill( CHAR_DATA *ch, char *argument )
 
 void do_mpjunk( CHAR_DATA *ch, char *argument )
 {
-    char      arg[ MAX_INPUT_LENGTH ];
+    std::string        arg;
     OBJ_DATA *obj;
     OBJ_DATA *obj_next;
 
@@ -324,7 +324,7 @@ void do_mpjunk( CHAR_DATA *ch, char *argument )
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0')
+    if ( arg.empty() )
     {
 	progbug( "Mpjunk - No argument", ch );
 	return;
@@ -362,30 +362,36 @@ void do_mpjunk( CHAR_DATA *ch, char *argument )
  * This function examines a text string to see if the first "word" is a
  * color indicator (e.g. _red, _whi_, _blu).  -  Gorog
  */
-int get_color(char *argument)    /* get color code from command string */ 
-{ 
-   char color[MAX_INPUT_LENGTH]; 
-   const char *cptr; 
-   static char const * color_list= 
-         "_bla_red_dgr_bro_dbl_pur_cya_cha_dch_ora_gre_yel_blu_pin_lbl_whi"; 
-   static char const * blink_list= 
-         "*bla*red*dgr*bro*dbl*pur*cya*cha*dch*ora*gre*yel*blu*pin*lbl*whi"; 
-        
-   one_argument (argument, color); 
-   if (color[0]!='_' && color[0]!='*') return 0;
-   if ( (cptr = strstr(color_list, color)) ) 
-     return (cptr - color_list) / 4; 
-   if ( (cptr = strstr(blink_list, color)) ) 
-     return (cptr - blink_list) / 4 + AT_BLINK; 
-   return 0; 
-} 
+int get_color(const std::string& argument)    /* get color code from command string */
+{
+    std::string color;
+    const char *cptr;
+    static const char *color_list =
+        "_bla_red_dgr_bro_dbl_pur_cya_cha_dch_ora_gre_yel_blu_pin_lbl_whi";
+    static const char *blink_list =
+        "*bla*red*dgr*bro*dbl*pur*cya*cha*dch*ora*gre*yel*blu*pin*lbl*whi";
+
+    one_argument(argument, color);
+
+    if (color.empty() || (color[0] != '_' && color[0] != '*'))
+        return 0;
+
+    if ((cptr = strstr(color_list, color.c_str())))
+        return (cptr - color_list) / 4;
+
+    if ((cptr = strstr(blink_list, color.c_str())))
+        return (cptr - blink_list) / 4 + AT_BLINK;
+
+    return 0;
+}
 
  
 /* prints the message to everyone in the room other than the mob and victim */
 
 void do_mpechoaround( CHAR_DATA *ch, char *argument )
 {
-    char       arg[ MAX_INPUT_LENGTH ];
+    std::string        arg;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     FLAG_SET   actflags;
     sh_int     color;
@@ -399,9 +405,9 @@ void do_mpechoaround( CHAR_DATA *ch, char *argument )
 	return;
     }
  
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
     
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	progbug( "Mpechoaround - No argument", ch );
 	return;
@@ -418,11 +424,11 @@ void do_mpechoaround( CHAR_DATA *ch, char *argument )
 
     if ( (color = get_color(argument)) )
     {
-	argument = one_argument( argument, arg );
-	act( color, argument, ch, NULL, victim, TO_NOTVICT );
+	argstr = one_argument( argstr, arg );
+	act( color, argstr, ch, NULL, victim, TO_NOTVICT );
     }
     else
-	act( AT_ACTION, argument, ch, NULL, victim, TO_NOTVICT );
+	act( AT_ACTION, argstr, ch, NULL, victim, TO_NOTVICT );
 
     ch->act = actflags;
 }
@@ -432,7 +438,8 @@ void do_mpechoaround( CHAR_DATA *ch, char *argument )
  
 void do_mpechoat( CHAR_DATA *ch, char *argument )
 {
-    char       arg[ MAX_INPUT_LENGTH ];
+    std::string        arg;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     FLAG_SET   actflags;
     sh_int     color;
@@ -446,9 +453,9 @@ void do_mpechoat( CHAR_DATA *ch, char *argument )
 	return;
     }
  
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
  
-    if ( arg[0] == '\0' || argument[0] == '\0' )
+    if ( arg.empty() || argstr.empty() )
     {
 	progbug( "Mpechoat - No argument", ch );
 	return;
@@ -465,11 +472,11 @@ void do_mpechoat( CHAR_DATA *ch, char *argument )
 
     if ( (color = get_color(argument)) )
     {
-	argument = one_argument( argument, arg );
-	act( color, argument, ch, NULL, victim, TO_VICT );
+	argstr = one_argument( argstr, arg );
+	act( color, argstr, ch, NULL, victim, TO_VICT );
     }
     else
-	act( AT_ACTION, argument, ch, NULL, victim, TO_VICT );
+	act( AT_ACTION, argstr, ch, NULL, victim, TO_VICT );
 
     ch->act = actflags;
 }
@@ -479,7 +486,8 @@ void do_mpechoat( CHAR_DATA *ch, char *argument )
 
 void do_mpecho( CHAR_DATA *ch, char *argument )
 {
-    char       arg1 [MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string argstr = argument;
     sh_int     color;
     FLAG_SET   actflags;
  
@@ -492,7 +500,7 @@ void do_mpecho( CHAR_DATA *ch, char *argument )
 	return;
     }
  
-    if ( argument[0] == '\0' )
+    if ( argstr.empty() )
     {
 	progbug( "Mpecho - called w/o argument", ch );
 	return;
@@ -501,13 +509,13 @@ void do_mpecho( CHAR_DATA *ch, char *argument )
     actflags = ch->act;
     BV_REMOVE_BIT(ch->act, ACT_SECRETIVE);
 
-    if ( (color = get_color(argument)) )
+    if ( (color = get_color(argstr)) )
     {
-	argument = one_argument ( argument, arg1 );
-	act( color, argument, ch, NULL, NULL, TO_ROOM );
+	argstr = one_argument ( argstr, arg1 );
+	act( color, argstr.c_str(), ch, NULL, NULL, TO_ROOM );
     }
     else
-	act( AT_ACTION, argument, ch, NULL, NULL, TO_ROOM );
+	act( AT_ACTION, argstr.c_str(), ch, NULL, NULL, TO_ROOM );
 
     ch->act = actflags;
 }
@@ -519,7 +527,8 @@ the load object portion as well. */
 
 void do_mpmload( CHAR_DATA *ch, char *argument )
 {
-    char            arg[ MAX_INPUT_LENGTH ];
+    std::string        arg;
+    std::string argstr = argument;
     MOB_INDEX_DATA *pMobIndex;
     CHAR_DATA      *victim;
 
@@ -532,15 +541,15 @@ void do_mpmload( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
 
-    if ( arg[0] == '\0' || !is_number(arg) )
+    if ( arg.empty() || !is_number(arg) )
     {
 	progbug( "Mpmload - Bad vnum as arg", ch );
 	return;
     }
 
-    if ( ( pMobIndex = get_mob_index( atoi( arg ) ) ) == NULL )
+    if ( ( pMobIndex = get_mob_index( strtoi( arg ) ) ) == NULL )
     {
 	progbug( "Mpmload - Bad mob vnum", ch );
 	return;
@@ -559,8 +568,9 @@ void do_mpmload( CHAR_DATA *ch, char *argument )
 
 void do_mpoload( CHAR_DATA *ch, char *argument )
 {
-    char arg1[ MAX_INPUT_LENGTH ];
-    char arg2[ MAX_INPUT_LENGTH ];
+    std::string        arg1;
+    std::string        arg2;
+    std::string argstr = argument;
     OBJ_INDEX_DATA *pObjIndex;
     OBJ_DATA       *obj;
     int             level;
@@ -575,16 +585,16 @@ void do_mpoload( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' || !is_number( arg1 ) )
+    if ( arg1.empty() || !is_number( arg1 ) )
     {
 	progbug( "Mpoload - Bad syntax", ch );
 	return;
     }
 
-    if ( arg2[0] == '\0' )
+    if ( arg2.empty() )
 	level = get_trust( ch );
     else
     {
@@ -596,7 +606,7 @@ void do_mpoload( CHAR_DATA *ch, char *argument )
 	    progbug( "Mpoload - Bad level syntax", ch );
 	    return;
 	}
-	level = atoi( arg2 );
+	level = strtoi( arg2 );
 	if ( level < 0 || level > get_trust( ch ) )
 	{
 	    progbug( "Mpoload - Bad level", ch );
@@ -606,7 +616,7 @@ void do_mpoload( CHAR_DATA *ch, char *argument )
 	/*
 	 * New feature from Thoric.
 	 */
-	timer = atoi( argument );
+	timer = strtoi( argstr );
 	if ( timer < 0 )
 	{
 	   progbug( "Mpoload - Bad timer", ch );
@@ -614,7 +624,7 @@ void do_mpoload( CHAR_DATA *ch, char *argument )
 	}
     }
 
-    if ( ( pObjIndex = get_obj_index( atoi( arg1 ) ) ) == NULL )
+    if ( ( pObjIndex = get_obj_index( strtoi( arg1 ) ) ) == NULL )
 
     {
 	progbug( "Mpoload - Bad vnum arg", ch );
@@ -640,7 +650,7 @@ void do_mpoload( CHAR_DATA *ch, char *argument )
 
 void do_mppurge( CHAR_DATA *ch, char *argument )
 {
-    char       arg[ MAX_INPUT_LENGTH ];
+    std::string arg;
     CHAR_DATA *victim;
     OBJ_DATA  *obj;
 
@@ -655,7 +665,7 @@ void do_mppurge( CHAR_DATA *ch, char *argument )
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	/* 'purge' */
 	CHAR_DATA *vnext;
@@ -708,7 +718,7 @@ void do_mppurge( CHAR_DATA *ch, char *argument )
  
 void do_mpinvis( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     sh_int level;
  
     if ( !IS_NPC(ch))
@@ -717,15 +727,15 @@ void do_mpinvis( CHAR_DATA *ch, char *argument )
 	return;
     }
  
-    argument = one_argument( argument, arg );
-    if ( arg[0] != '\0' )
+    one_argument( argument, arg );
+    if ( !arg.empty() )
     {
         if ( !is_number( arg ) )
         {
            progbug( "Mpinvis - Non numeric argument ", ch );
            return;
         }       
-        level = atoi( arg );
+        level = strtoi( arg );
         if ( level < 2 || level > LEVEL_SUPREME )
         {
             progbug( "MPinvis - Invalid level ", ch );
@@ -759,7 +769,7 @@ void do_mpinvis( CHAR_DATA *ch, char *argument )
 
 void do_mpgoto( CHAR_DATA *ch, char *argument )
 {
-    char             arg[ MAX_INPUT_LENGTH ];
+    std::string arg;
     ROOM_INDEX_DATA *location;
 
     if ( IS_AFFECTED( ch, AFF_CHARM ) )
@@ -772,7 +782,7 @@ void do_mpgoto( CHAR_DATA *ch, char *argument )
     }
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	progbug( "Mpgoto - No argument", ch );
 	return;
@@ -797,7 +807,8 @@ void do_mpgoto( CHAR_DATA *ch, char *argument )
 
 void do_mpat( CHAR_DATA *ch, char *argument )
 {
-    char             arg[ MAX_INPUT_LENGTH ];
+    std::string arg;
+    std::string argstr = argument;
     ROOM_INDEX_DATA *location;
     ROOM_INDEX_DATA *original;
     CHAR_DATA       *wch;
@@ -811,9 +822,9 @@ void do_mpat( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
 
-    if ( arg[0] == '\0' || argument[0] == '\0' )
+    if ( arg.empty() || argstr.empty() )
     {
 	progbug( "Mpat - Bad argument", ch );
 	return;
@@ -858,8 +869,9 @@ void do_mpadvance( CHAR_DATA *ch, char *argument )
 
 void do_mptransfer( CHAR_DATA *ch, char *argument )
 {
-    char             arg1[ MAX_INPUT_LENGTH ];
-    char             arg2[ MAX_INPUT_LENGTH ];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     ROOM_INDEX_DATA *location;
     CHAR_DATA       *victim;
     CHAR_DATA       *nextinroom;
@@ -875,10 +887,10 @@ void do_mptransfer( CHAR_DATA *ch, char *argument )
 	    send_to_char( "Huh?\n", ch );
 	    return;
     }
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
 	progbug( "Mptransfer - Bad syntax", ch );
 	return;
@@ -887,7 +899,7 @@ void do_mptransfer( CHAR_DATA *ch, char *argument )
     /*
      * Thanks to Grodyn for the optional location parameter.
      */
-    if ( arg2[0] == '\0' )
+    if ( arg2.empty() )
     {
     	location = ch->in_room;
     }
@@ -957,7 +969,8 @@ void do_mptransfer( CHAR_DATA *ch, char *argument )
 
 void do_mpforce( CHAR_DATA *ch, char *argument )
 {
-    char arg[ MAX_INPUT_LENGTH ];
+    std::string arg;
+    std::string argstr = argument;
 
     if ( IS_AFFECTED( ch, AFF_CHARM ) )
       return;
@@ -968,9 +981,9 @@ void do_mpforce( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
 
-    if ( arg[0] == '\0' || argument[0] == '\0' )
+    if ( arg.empty() || argstr.empty() )
     {
 	progbug( "Mpforce - Bad syntax", ch );
 	return;
@@ -1046,8 +1059,9 @@ void do_mp_slay( CHAR_DATA *ch, char *argument )
  */
 void do_mp_damage( CHAR_DATA *ch, char *argument )
 {
-    char arg1[ MAX_INPUT_LENGTH ];
-    char arg2[ MAX_INPUT_LENGTH ];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     int dam;
 
@@ -1059,17 +1073,17 @@ void do_mp_damage( CHAR_DATA *ch, char *argument )
 	send_to_char( "Huh?\n", ch );
 	return;
     }
-    argument = one_argument( argument, arg1 );  
-    argument = one_argument( argument, arg2 );  
+    argstr = one_argument( argstr, arg1 );  
+    argstr = one_argument( argstr, arg2 );  
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
        send_to_char( "mpdamage whom?\n", ch );
        progbug( "Mpdamage: invalid argument1", ch );
        return;
     }
 
-    if ( arg2[0] == '\0' )
+    if ( arg2.empty() )
     {
        send_to_char( "mpdamage inflict how many hps?\n", ch );
        progbug( "Mpdamage: invalid argument2", ch );
@@ -1090,7 +1104,7 @@ void do_mp_damage( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    dam = atoi(arg2);
+    dam = strtoi(arg2);
 
     if( (dam<0) || (dam>32000) )
     {
@@ -1122,8 +1136,9 @@ void do_mp_damage( CHAR_DATA *ch, char *argument )
  */
 void do_mp_restore( CHAR_DATA *ch, char *argument )
 {
-    char arg1[ MAX_INPUT_LENGTH ];
-    char arg2[ MAX_INPUT_LENGTH ];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     int hp;
 
@@ -1135,17 +1150,17 @@ void do_mp_restore( CHAR_DATA *ch, char *argument )
 	send_to_char( "Huh?\n", ch );
 	return;
     }
-    argument = one_argument( argument, arg1 );  
-    argument = one_argument( argument, arg2 );  
+    argstr = one_argument( argstr, arg1 );  
+    argstr = one_argument( argstr, arg2 );  
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
        send_to_char( "mprestore whom?\n", ch );
        progbug( "Mprestore: invalid argument1", ch );
        return;
     }
 
-    if ( arg2[0] == '\0' )
+    if ( arg2.empty() )
     {
        send_to_char( "mprestore how many hps?\n", ch );
        progbug( "Mprestore: invalid argument2", ch );
@@ -1159,7 +1174,7 @@ void do_mp_restore( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    hp = atoi(arg2);
+    hp = strtoi(arg2);
 
     if( (hp<0) || (hp>32000) )
     {
@@ -1174,9 +1189,10 @@ void do_mp_restore( CHAR_DATA *ch, char *argument )
 
 void  do_mpgain( CHAR_DATA *ch, char *argument )
 { 
-    char arg1[ MAX_INPUT_LENGTH ];
-    char arg2[ MAX_INPUT_LENGTH ];
-    char arg3[ MAX_INPUT_LENGTH ];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     long exp;
     int  ability;
@@ -1189,25 +1205,25 @@ void  do_mpgain( CHAR_DATA *ch, char *argument )
 	send_to_char( "Huh?\n", ch );
 	return;
     }
-    argument = one_argument( argument, arg1 );  
-    argument = one_argument( argument, arg2 );  
-    argument = one_argument( argument, arg3 );  
+    argstr = one_argument( argstr, arg1 );  
+    argstr = one_argument( argstr, arg2 );  
+    argstr = one_argument( argstr, arg3 );  
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
        send_to_char( "mpgain whom?\n", ch );
        progbug( "Mpgain: invalid argument1", ch );
        return;
     }
 
-    if ( arg2[0] == '\0' )
+    if ( arg2.empty() )
     {
        send_to_char( "mpgain in what ability?\n", ch );
        progbug( "Mpgain: invalid argument2", ch );
        return;
     }
 
-    if ( arg3[0] == '\0' )
+    if ( arg3.empty() )
     {
        send_to_char( "mpgain how much exp?\n", ch );
        progbug( "Mpgain: invalid argument3", ch );
@@ -1221,8 +1237,8 @@ void  do_mpgain( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    ability = atoi(arg2);
-    exp = atoi(arg3);
+    ability = strtoi(arg2);
+    exp = strtoi(arg3);
 
     if( ability < 0 || ability >= MAX_ABILITY )
     {
@@ -1254,9 +1270,10 @@ void  do_mpgain( CHAR_DATA *ch, char *argument )
  */
 void do_mp_open_passage( CHAR_DATA *ch, char *argument )
 {
-    char arg1[ MAX_INPUT_LENGTH ];
-    char arg2[ MAX_INPUT_LENGTH ];
-    char arg3[ MAX_INPUT_LENGTH ];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string argstr = argument;
     ROOM_INDEX_DATA *targetRoom, *fromRoom;
     int targetRoomVnum, fromRoomVnum, exit_num;
     EXIT_DATA *pexit;
@@ -1270,11 +1287,11 @@ void do_mp_open_passage( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg1 );  
-    argument = one_argument( argument, arg2 );  
-    argument = one_argument( argument, arg3 );  
+    argstr = one_argument( argstr, arg1 );  
+    argstr = one_argument( argstr, arg2 );  
+    argstr = one_argument( argstr, arg3 );  
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' || arg3[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() || arg3.empty() )
     {
 	progbug( "MpOpenPassage - Bad syntax", ch );
 	return;
@@ -1287,7 +1304,7 @@ void do_mp_open_passage( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    fromRoomVnum = atoi(arg1);
+    fromRoomVnum = strtoi(arg1);
     if(  (fromRoom = get_room_index( fromRoomVnum ) )  ==NULL)
     {
 	progbug( "MpOpenPassage - Bad syntax", ch );
@@ -1300,7 +1317,7 @@ void do_mp_open_passage( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    targetRoomVnum = atoi(arg2);
+    targetRoomVnum = strtoi(arg2);
     if(  (targetRoom = get_room_index( targetRoomVnum ) )  ==NULL)
     {
 	progbug( "MpOpenPassage - Bad syntax", ch );
@@ -1313,7 +1330,7 @@ void do_mp_open_passage( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    exit_num = atoi(arg3);
+    exit_num = strtoi(arg3);
     if( (exit_num < 0) || (exit_num > MAX_DIR) )
     {
 	progbug( "MpOpenPassage - Bad syntax", ch );
@@ -1349,9 +1366,10 @@ void do_mp_open_passage( CHAR_DATA *ch, char *argument )
  */
 void do_mp_close_passage( CHAR_DATA *ch, char *argument )
 {
-    char arg1[ MAX_INPUT_LENGTH ];
-    char arg2[ MAX_INPUT_LENGTH ];
-    char arg3[ MAX_INPUT_LENGTH ];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string argstr = argument;
     ROOM_INDEX_DATA *fromRoom;
     int fromRoomVnum, exit_num;
     EXIT_DATA *pexit;
@@ -1365,11 +1383,11 @@ void do_mp_close_passage( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg1 );  
-    argument = one_argument( argument, arg2 );  
-    argument = one_argument( argument, arg3 );  
+    argstr = one_argument( argstr, arg1 );  
+    argstr = one_argument( argstr, arg2 );  
+    argstr = one_argument( argstr, arg3 );  
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' || arg2[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() )
     {
 	progbug( "MpClosePassage - Bad syntax", ch );
 	return;
@@ -1381,7 +1399,7 @@ void do_mp_close_passage( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    fromRoomVnum = atoi(arg1);
+    fromRoomVnum = strtoi(arg1);
     if(  (fromRoom = get_room_index( fromRoomVnum ) )  ==NULL)
     {
 	progbug( "MpClosePassage - Bad syntax", ch );
@@ -1394,7 +1412,7 @@ void do_mp_close_passage( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    exit_num = atoi(arg2);
+    exit_num = strtoi(arg2);
     if( (exit_num < 0) || (exit_num > MAX_DIR) )
     {
 	progbug( "MpClosePassage - Bad syntax", ch );
@@ -1447,7 +1465,8 @@ void do_mpnothing( CHAR_DATA *ch, char *argument )
  */
 void do_mpdream( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_STRING_LENGTH];
+    std::string arg1;
+    std::string argstr = argument;
     CHAR_DATA *vict;
 
     if ( IS_AFFECTED( ch, AFF_CHARM ) )
@@ -1459,7 +1478,7 @@ void do_mpdream( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg1 );  
+    argstr = one_argument( argstr, arg1 );  
 
     if (  (vict =get_char_world(ch, arg1)) == NULL )
     {
@@ -1469,7 +1488,7 @@ void do_mpdream( CHAR_DATA *ch, char *argument )
     
     if( vict->position <= POS_SLEEPING)
     {
-      send_to_char(argument, vict);
+      send_to_char(argstr, vict);
       send_to_char("\n",   vict);
     } 
     return;
@@ -1589,7 +1608,7 @@ void do_mpapplyb( CHAR_DATA *ch, char *argument )
  */
 void do_mp_deposit( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_STRING_LENGTH];
+    std::string arg;
     int gold;
 
     if ( !IS_NPC(ch) )
@@ -1600,12 +1619,12 @@ void do_mp_deposit( CHAR_DATA *ch, char *argument )
 
     one_argument(argument, arg);
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	progbug("Mpdeposit - bad syntax", ch );
 	return;
     }
-    gold = atoi( arg );
+    gold = strtoi( arg );
     if ( gold <= ch->gold && ch->in_room )
     {
 	ch->gold -= gold;
@@ -1619,7 +1638,7 @@ void do_mp_deposit( CHAR_DATA *ch, char *argument )
  */
 void do_mp_withdraw( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_STRING_LENGTH];
+    std::string arg;
     int gold;
 
     if ( !IS_NPC(ch) )
@@ -1630,12 +1649,12 @@ void do_mp_withdraw( CHAR_DATA *ch, char *argument )
 
     one_argument(argument, arg);
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	progbug("Mpwithdraw - bad syntax", ch );
 	return;
     }
-    gold = atoi( arg );
+    gold = strtoi( arg );
     if ( ch->gold < 1000000000 && gold < 1000000000 && ch->in_room
     &&   economy_has( ch->in_room->area, gold ) )
     {
@@ -1875,9 +1894,9 @@ ch_ret simple_damage( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
     return rNONE;
 }
 
-CHAR_DATA *get_char_room_mp( CHAR_DATA *ch, char *argument )
+CHAR_DATA *get_char_room_mp( CHAR_DATA *ch, const std::string& argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *rch;
     int number, count, vnum;
 
@@ -1886,7 +1905,7 @@ CHAR_DATA *get_char_room_mp( CHAR_DATA *ch, char *argument )
 	return ch;
 
     if ( get_trust(ch) >= LEVEL_SAVIOR && is_number( arg ) )
-	vnum = atoi( arg );
+	vnum = strtoi( arg );
     else
 	vnum = -1;
 

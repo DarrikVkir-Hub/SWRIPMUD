@@ -67,14 +67,14 @@ ROOM_INDEX_DATA *generate_exit( ROOM_INDEX_DATA *in_room, EXIT_DATA **pexit );
 /*
  * Dummy function
  */
-void skill_notfound( CHAR_DATA *ch, char *argument )
+void skill_notfound( CHAR_DATA *ch, char* argument )
 {
     send_to_char( "Huh?\n", ch );
     return;
 }
 
 
-int get_ssave( char *name )
+int get_ssave( const std::string& name )
 {
     int x;
 
@@ -84,7 +84,7 @@ int get_ssave( char *name )
     return -1;
 }
 
-int get_starget( char *name )
+int get_starget( const std::string& name )
 {
     int x;
 
@@ -94,7 +94,7 @@ int get_starget( char *name )
     return -1;
 }
 
-int get_sflag( char *name )
+int get_sflag( const std::string& name )
 {
     int x;
 
@@ -104,7 +104,7 @@ int get_sflag( char *name )
     return -1;
 }
 
-int get_sdamage( char *name )
+int get_sdamage( const std::string& name )
 {
     int x;
 
@@ -114,7 +114,7 @@ int get_sdamage( char *name )
     return -1;
 }
 
-int get_saction( char *name )
+int get_saction( const std::string& name )
 {
     int x;
 
@@ -124,7 +124,7 @@ int get_saction( char *name )
     return -1;
 }
 
-int get_spower( char *name )
+int get_spower( const std::string& name )
 {
     int x;
 
@@ -134,7 +134,7 @@ int get_spower( char *name )
     return -1;
 }
 
-int get_sclass( char *name )
+int get_sclass( const std::string& name )
 {
     int x;
 
@@ -154,21 +154,24 @@ bool is_legal_kill(CHAR_DATA *ch, CHAR_DATA *vch)
 }
 
 
-extern char *target_name;	/* from magic.c */
+extern std::string& target_name;	/* from magic.c */
 
 /*
  * Perform a binary search on a section of the skill table
  * Each different section of the skill table is sorted alphabetically
  * Only match skills player knows				-Thoric
  */
-bool check_skill( CHAR_DATA *ch, char *command, char *argument )
+bool check_skill( CHAR_DATA *ch, const std::string& command, const std::string& argument )
 {
     int sn;
     int first = gsn_first_skill;
     int top   = gsn_first_weapon-1;
     struct timeval time_used;
     int mana;
+	std::string arg;
     
+	arg = argument;
+
     /* bsearch for the skill */
     for (;;)
     {
@@ -182,7 +185,7 @@ bool check_skill( CHAR_DATA *ch, char *command, char *argument )
 		break;
 	if (first >= top)
 	    return FALSE;
-    	if (strcmp( command, skill_table[sn]->name) < 1)
+    	if (strcmp( command.c_str(), skill_table[sn]->name) < 1)
 	    top = sn - 1;
     	else
 	    first = sn + 1;
@@ -236,25 +239,25 @@ bool check_skill( CHAR_DATA *ch, char *command, char *argument )
 
 	case TAR_IGNORE:
 	    vo = NULL;
-	    if ( argument[0] == '\0' )
+	    if ( argument.empty() )
 	    {
 		if ( (victim=who_fighting(ch)) != NULL )
 		    target_name = victim->name;
 	    }
 	    else
-		target_name = argument;
+		target_name = arg;
 	    break;
 
 	case TAR_CHAR_OFFENSIVE:
 	case TAR_CHAR_SEMIOFFENSIVE:
-	    if ( argument[0] == '\0'
+	    if ( argument.empty() 
 	    &&  (victim=who_fighting(ch)) == NULL )
 	    {
-		ch_printf( ch, "%s who?\n", capitalize( skill_table[sn]->name ) );
+		ch_printf( ch, "%s who?\n", capitalize( skill_table[sn]->name ).c_str() );
 		return TRUE;
 	    }
 	    else
-	    if ( argument[0] != '\0'
+	    if ( !argument.empty()
 	    &&  (victim=get_char_room(ch, argument)) == NULL )
 	    {
 		send_to_char( "They aren't here.\n", ch );
@@ -266,7 +269,7 @@ bool check_skill( CHAR_DATA *ch, char *command, char *argument )
 	    break;
 
 	case TAR_CHAR_DEFENSIVE:
-	    if ( argument[0] != '\0'
+	    if ( !argument.empty()
 	    &&  (victim=get_char_room(ch, argument)) == NULL )
 	    {
 		send_to_char( "They aren't here.\n", ch );
@@ -357,7 +360,7 @@ IS_NPC(victim)))
     ch->prev_cmd = ch->last_cmd;    /* haus, for automapping */
     ch->last_cmd = skill_table[sn]->skill_fun;
     start_timer(&time_used);
-    (*skill_table[sn]->skill_fun) ( ch, argument );
+    (*skill_table[sn]->skill_fun) ( ch, arg.data() );
     end_timer(&time_used);
     update_userec(&time_used, &skill_table[sn]->userec);
 
@@ -371,13 +374,13 @@ IS_NPC(victim)))
  */
 void do_slookup( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
+    std::string buf;
+    std::string arg;
     int sn;
     SKILLTYPE *skill = NULL;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Slookup what?\n", ch );
 	return;
@@ -401,9 +404,9 @@ void do_slookup( CHAR_DATA *ch, char *argument )
 	SMAUG_AFF *aff;
 	int cnt = 0;
 
-	if ( arg[0] == 'h' && is_number(arg+1) )
+	if ( arg[0] == 'h' && is_number(arg.substr(1)) )
 	{
-	    sn = atoi(arg+1);
+	    sn = strtoi(arg.substr(1));
 	    if ( !IS_VALID_HERB(sn) )
 	    {
 		send_to_char( "Invalid herb.\n", ch );
@@ -414,7 +417,7 @@ void do_slookup( CHAR_DATA *ch, char *argument )
 	else
 	if ( is_number(arg) )
 	{
-	    sn = atoi(arg);
+	    sn = strtoi(arg);
 	    if ( (skill=get_skilltype(sn)) == NULL )
 	    {
 		send_to_char( "Invalid sn.\n", ch );
@@ -450,14 +453,14 @@ void do_slookup( CHAR_DATA *ch, char *argument )
 		spell_action[SPELL_ACTION( skill )],
 		spell_class[SPELL_CLASS( skill )],
 		spell_power[SPELL_POWER( skill )] );
-	    SPRINTF( buf, "Flags:" );
+	    buf = "Flags:";
 	    for ( x = 11; x < 32; x++ )
 	      if ( SPELL_FLAG( skill, 1 << x ) )
 	      {
-		STRAPP( buf, " " );
-		STRAPP( buf, "%s", spell_flag[x-11] );
+		buf += " ";
+		buf += spell_flag[x-11];
 	      }
-	    STRAPP( buf, "\n" );
+	    buf += "\n";
 	    send_to_char( buf, ch );
 	}
 	ch_printf( ch, "Saves: %s\n", spell_saves[(int) skill->saves] );
@@ -493,39 +496,39 @@ void do_slookup( CHAR_DATA *ch, char *argument )
 	{
 	    if ( aff == skill->affects )
 	      send_to_char( "\n", ch );
-	    SPRINTF( buf, "Affect %d", ++cnt );
+	    buf = "Affect " + std::to_string(++cnt);
 	    if ( aff->location )
 	    {
-		STRAPP( buf, " modifies " );
-		STRAPP( buf, "%s", get_flag_name(a_types, aff->location % REVERSE_APPLY, MAX_APPLY_TYPE) );
-		STRAPP( buf, " by '" );
-		STRAPP( buf, "%s", aff->modifier );
+		buf += " modifies ";
+		buf += get_flag_name(a_types, aff->location % REVERSE_APPLY, MAX_APPLY_TYPE);
+		buf += " by '";
+		buf += aff->modifier;
 		if ( aff->bitvector )
-		  STRAPP( buf, "' and" );
+		  buf += "' and";
 		else
-		  STRAPP( buf, "'" );
+		  buf += "'";
 	    }
 	    if ( aff->bitvector )
 	    {
 		int x;
 
-		STRAPP( buf, " applies" );
+		buf += " applies";
 		for ( x = 0; x < 32; x++ )
 			if ( aff->bitvector == x)
 			{
-				STRAPP( buf, " " );
-				STRAPP( buf, "%s", get_flag_name(aff_flags, x, AFF_MAX) );
+				buf += " ";
+				buf += get_flag_name(aff_flags, x, AFF_MAX);
 			}
 	    }
 	    if ( aff->duration[0] != '\0' && aff->duration[0] != '0' )
 	    {
-		STRAPP( buf, " for '" );
-		STRAPP( buf, "%s", aff->duration );
-		STRAPP( buf, "' rounds" );
+		buf += " for '";
+		buf += aff->duration;
+		buf += "' rounds";
 	    }
 	    if ( aff->location >= REVERSE_APPLY )
-		STRAPP( buf, " (affects caster only)" );
-	    STRAPP( buf, "\n" );
+		buf += " (affects caster only)";
+	    buf += "\n";
 	    send_to_char( buf, ch );
 	    if ( !aff->next )
 	      send_to_char( "\n", ch );
@@ -556,7 +559,7 @@ void do_slookup( CHAR_DATA *ch, char *argument )
 	    ch_printf( ch, "Immroom   : %s\n", skill->imm_room );
 	if ( skill->type != SKILL_HERB && skill->guild >= 0 && skill->guild < MAX_ABILITY)
 	{
-		SPRINTF(buf, "guild: %s   Align: %4d   lvl: %3d\n",
+		buf = str_printf("guild: %s   Align: %4d   lvl: %3d\n",
 				ability_name[skill->guild], skill->alignment,    skill->min_level );
             send_to_char( buf, ch );
 	}
@@ -572,17 +575,18 @@ void do_slookup( CHAR_DATA *ch, char *argument )
  */
 void do_sset( CHAR_DATA *ch, char *argument )
 {
-    char arg1 [MAX_INPUT_LENGTH];
-    char arg2 [MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+	std::string argstr = argument;
     CHAR_DATA *victim;
     int value;
     int sn;
     bool fAll;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' || argument[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() || argstr.empty() )
     {
 	send_to_char( "Syntax: sset <victim> <skill> <value>\n",	ch );
 	send_to_char( "or:     sset <victim> all     <value>\n",	ch );
@@ -610,7 +614,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 
     if ( get_trust(ch) > LEVEL_SUB_IMPLEM
     &&  !str_cmp( arg1, "save" )
-    &&	!str_cmp( argument, "table" ) )
+    &&	!str_cmp( argstr, "table" ) )
     {
 	if ( !str_cmp( arg2, "skill" ) )
 	{
@@ -666,7 +670,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	}
 	else
 	    skill_table[top_sn++] = skill;
-	skill->name = str_dup( argument );
+	skill->name = str_dup( argstr );
 	skill->noun_damage = str_dup( "" );
 	skill->msg_off = str_dup( "" );
 	skill->spell_fun = spell_smaug;
@@ -676,12 +680,12 @@ void do_sset( CHAR_DATA *ch, char *argument )
     }
 
     if ( arg1[0] == 'h' )
-	sn = atoi( arg1+1 );
+	sn = strtoi( arg1.substr(1) );
     else
-	sn = atoi( arg1 );
+	sn = strtoi( arg1 );
     if ( get_trust(ch) > LEVEL_GREATER
-    && ((arg1[0] == 'h' && is_number(arg1+1) && (sn=atoi(arg1+1))>=0)
-    ||  (is_number(arg1) && (sn=atoi(arg1)) >= 0)) )
+    && ((arg1[0] == 'h' && is_number(arg1.substr(1)) && (sn=strtoi(arg1.substr(1)))>=0)
+    ||  (is_number(arg1) && (sn=strtoi(arg1)) >= 0)) )
     {
 	struct skill_type *skill;
 
@@ -706,25 +710,25 @@ void do_sset( CHAR_DATA *ch, char *argument )
 
 	if ( !str_cmp( arg2, "difficulty" ) )
 	{
-	    skill->difficulty = atoi( argument );
+	    skill->difficulty = strtoi( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
 	if ( !str_cmp( arg2, "participants" ) )
 	{
-	    skill->participants = atoi( argument );
+	    skill->participants = strtoi( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
 	if ( !str_cmp( arg2, "alignment" ) )
 	{
-	    skill->alignment = atoi( argument );
+	    skill->alignment = strtoi( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
 	if ( !str_cmp( arg2, "damtype" ) )
 	{
-	    int x = get_sdamage( argument );
+	    int x = get_sdamage( argstr );
 
 	    if ( x == -1 )
 		send_to_char( "Not a spell damage type.\n", ch );
@@ -737,7 +741,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !str_cmp( arg2, "acttype" ) )
 	{
-	    int x = get_saction( argument );
+	    int x = get_saction( argstr );
 
 	    if ( x == -1 )
 		send_to_char( "Not a spell action type.\n", ch );
@@ -750,7 +754,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !str_cmp( arg2, "classtype" ) )
 	{
-	    int x = get_sclass( argument );
+	    int x = get_sclass( argstr );
 
 	    if ( x == -1 )
 		send_to_char( "Not a spell class type.\n", ch );
@@ -763,7 +767,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !str_cmp( arg2, "powertype" ) )
 	{
-	    int x = get_spower( argument );
+	    int x = get_spower( argstr );
 
 	    if ( x == -1 )
 		send_to_char( "Not a spell power type.\n", ch );
@@ -776,7 +780,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !str_cmp( arg2, "flag" ) )
 	{
-	    int x = get_sflag( argument );
+	    int x = get_sflag( argstr );
 
 	    if ( x == -1 )
 		send_to_char( "Not a spell flag.\n", ch );
@@ -789,7 +793,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !str_cmp( arg2, "saves" ) )
 	{
-	    int x = get_ssave( argument );
+	    int x = get_ssave( argstr );
 
 	    if ( x == -1 )
 		send_to_char( "Not a saving type.\n", ch );
@@ -806,13 +810,13 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	    SPELL_FUN *spellfun;
 	    DO_FUN    *dofun;
 		
-	    if ( (spellfun=spell_function(argument)) != spell_notfound )
+	    if ( (spellfun=spell_function(argstr)) != spell_notfound )
 	    {
 		skill->spell_fun = spellfun;
 		skill->skill_fun = NULL;
 	    }
 	    else
-	    if ( (dofun=skill_function(argument)) != skill_notfound )
+	    if ( (dofun=skill_function(argstr.data())) != skill_notfound )
 	    {
 		skill->skill_fun = dofun;
 		skill->spell_fun = NULL;
@@ -828,7 +832,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 
 	if ( !str_cmp( arg2, "target" ) )
 	{
-	    int x = get_starget( argument );
+	    int x = get_starget( argstr );
 
 	    if ( x == -1 )
 		send_to_char( "Not a valid target type.\n", ch );
@@ -841,49 +845,49 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !str_cmp( arg2, "minpos" ) )
 	{
-	    skill->minimum_position = URANGE( POS_DEAD, atoi( argument ), POS_DRAG );
+	    skill->minimum_position = URANGE( POS_DEAD, strtoi( argstr ), POS_DRAG );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
 	if ( !str_cmp( arg2, "minlevel" ) )
 	{
-	    skill->min_level = URANGE( 1, atoi( argument ), MAX_SKILL_LEVEL );
+	    skill->min_level = URANGE( 1, strtoi( argstr ), MAX_SKILL_LEVEL );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
 	if ( !str_cmp( arg2, "slot" ) )
 	{
-	    skill->slot = URANGE( 0, atoi( argument ), 30000 );
+	    skill->slot = URANGE( 0, strtoi( argstr ), 30000 );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
 	if ( !str_cmp( arg2, "mana" ) )
 	{
-	    skill->min_mana = URANGE( 0, atoi( argument ), 2000 );
+	    skill->min_mana = URANGE( 0, strtoi( argstr ), 2000 );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
 	if ( !str_cmp( arg2, "beats" ) )
 	{
-	    skill->beats = URANGE( 0, atoi( argument ), 120 );
+	    skill->beats = URANGE( 0, strtoi( argstr ), 120 );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
 	if ( !str_cmp( arg2, "guild" ) )
 	{
-	    skill->guild = atoi( argument );
+	    skill->guild = strtoi( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
 	if ( !str_cmp( arg2, "value" ) )
 	{
-	    skill->value = atoi( argument );
+	    skill->value = strtoi( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
 	if ( !str_cmp( arg2, "type" ) )
 	{
-	    skill->type = get_skill( argument );
+	    skill->type = get_skill( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -891,7 +895,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    SMAUG_AFF *aff = skill->affects;
 	    SMAUG_AFF *aff_next;
-	    int num = atoi( argument );
+	    int num = strtoi( argstr );
 	    int cnt = 1;
 
 	    if ( !aff )
@@ -928,19 +932,19 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	 */
 	if ( !str_cmp( arg2, "affect" ) )
 	{
-	    char location[MAX_INPUT_LENGTH];
-	    char modifier[MAX_INPUT_LENGTH];
-	    char duration[MAX_INPUT_LENGTH];
-	    char bitvector[MAX_INPUT_LENGTH];
+	    std::string location;
+	    std::string modifier;
+	    std::string duration;
+	    std::string bitvector;
 	    int loc, bit, tmpbit;
 	    SMAUG_AFF *aff;
 
-	    argument = one_argument( argument, location );
-	    argument = one_argument( argument, modifier );
-	    argument = one_argument( argument, duration );
+	    argstr = one_argument( argstr, location );
+	    argstr = one_argument( argstr, modifier );
+	    argstr = one_argument( argstr, duration );
 	    
 	    if ( location[0] == '!' )
-		loc = get_atype( location+1 ) + REVERSE_APPLY;
+		loc = get_atype( location.substr(1) ) + REVERSE_APPLY;
 	    else
 		loc = get_atype( location );
 	    if ( (loc % REVERSE_APPLY) < 0
@@ -950,9 +954,9 @@ void do_sset( CHAR_DATA *ch, char *argument )
 		return;
 	    }
 	    bit = 0;
-	    while ( argument[0] != 0 )
+	    while ( !argstr.empty() )
 	    {
-		argument = one_argument( argument, bitvector );
+		argstr = one_argument( argstr, bitvector );
 		if ( (tmpbit=get_aflag( bitvector )) == -1 )
 		  ch_printf( ch, "Unknown bitvector: %s.  See AFFECTED_BY\n", bitvector );
 		else
@@ -960,9 +964,9 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	    }
 	    CREATE( aff, SMAUG_AFF, 1 );
 	    if ( !str_cmp( duration, "0" ) )
-	      duration[0] = '\0';
+	      duration.clear();
 	    if ( !str_cmp( modifier, "0" ) )
-	      modifier[0] = '\0';
+	      modifier.clear();
 	    aff->duration = str_dup( duration );
 	    aff->location = loc;
 		if( loc == APPLY_AFFECT || loc == APPLY_RESISTANT || loc == APPLY_IMMUNE || loc == APPLY_SUSCEPTIBLE )
@@ -972,7 +976,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 		/* Sanitize the flag input for the modifier if needed -- Samson */
 			if( modval < 0 )
 				modval = 0;
-			snprintf( modifier, MAX_INPUT_LENGTH, "%d", modval );
+			modifier = str_printf("%d", modval);
 		}
 		aff->modifier = str_dup( modifier );
 	    aff->bitvector = bit;
@@ -983,7 +987,7 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !str_cmp( arg2, "level" ) )
 	{
-	    skill->min_level = URANGE( 1, atoi( argument ), MAX_SKILL_LEVEL );
+	    skill->min_level = URANGE( 1, strtoi( argstr ), MAX_SKILL_LEVEL );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -994,25 +998,25 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "name" ) )
 	{
 	    STR_DISPOSE(skill->name);
-	    skill->name = str_dup( argument );
+	    skill->name = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
 	if ( !str_cmp( arg2, "dammsg" ) )
 	{
 	    STR_DISPOSE(skill->noun_damage);
-	    if ( !str_cmp( argument, "clear" ) )
+	    if ( !str_cmp( argstr, "clear" ) )
 	      skill->noun_damage = str_dup( "" );
 	    else
-	      skill->noun_damage = str_dup( argument );
+	      skill->noun_damage = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
 	if ( !str_cmp( arg2, "wearoff" ) )
 	{
 	    STR_DISPOSE(skill->msg_off);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->msg_off = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->msg_off = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1020,8 +1024,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->hit_char )
 	      STR_DISPOSE(skill->hit_char);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->hit_char = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->hit_char = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1029,8 +1033,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->hit_vict )
 	      STR_DISPOSE(skill->hit_vict);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->hit_vict = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->hit_vict = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1038,8 +1042,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->hit_room )
 	      STR_DISPOSE(skill->hit_room);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->hit_room = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->hit_room = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1047,8 +1051,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->miss_char )
 	      STR_DISPOSE(skill->miss_char);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->miss_char = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->miss_char = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1056,8 +1060,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->miss_vict )
 	      STR_DISPOSE(skill->miss_vict);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->miss_vict = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->miss_vict = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1065,8 +1069,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->miss_room )
 	      STR_DISPOSE(skill->miss_room);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->miss_room = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->miss_room = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1074,8 +1078,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->die_char )
 	      STR_DISPOSE(skill->die_char);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->die_char = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->die_char = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1083,8 +1087,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->die_vict )
 	      STR_DISPOSE(skill->die_vict);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->die_vict = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->die_vict = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1092,8 +1096,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->die_room )
 	      STR_DISPOSE(skill->die_room);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->die_room = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->die_room = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1101,8 +1105,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->imm_char )
 	      STR_DISPOSE(skill->imm_char);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->imm_char = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->imm_char = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1110,8 +1114,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->imm_vict )
 	      STR_DISPOSE(skill->imm_vict);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->imm_vict = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->imm_vict = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1119,8 +1123,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->imm_room )
 	      STR_DISPOSE(skill->imm_room);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->imm_room = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->imm_room = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1128,8 +1132,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->dice )
 	      STR_DISPOSE(skill->dice);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->dice = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->dice = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1137,8 +1141,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->components )
 	      STR_DISPOSE(skill->components);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->components = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->components = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1146,8 +1150,8 @@ void do_sset( CHAR_DATA *ch, char *argument )
 	{
 	    if ( skill->teachers )
 	      STR_DISPOSE(skill->teachers);
-	    if ( str_cmp( argument, "clear" ) )
-	      skill->teachers = str_dup( argument );
+	    if ( str_cmp( argstr, "clear" ) )
+	      skill->teachers = str_dup( argstr );
 	    send_to_char( "Ok.\n", ch );
 	    return;
 	}
@@ -1159,16 +1163,13 @@ void do_sset( CHAR_DATA *ch, char *argument )
     {
 	if ( (sn = skill_lookup(arg1)) >= 0 )
 	{
-	    int n = snprintf(arg1, sizeof(arg1),"%d %s %s", sn, arg2, argument);
-		if (n < 0 || n >= (int)sizeof(arg1))
-			arg1[sizeof(arg1) - 1] = '\0';
-	    do_sset(ch, arg1);
+		arg1 = str_printf("%d %s %s", sn, arg2.c_str(), argstr.c_str());
+		if ( arg1.length() > MAX_INPUT_LENGTH - 4 )
+			arg1 = arg1.substr(0, MAX_INPUT_LENGTH - 4);
+	    do_sset(ch, (char*)arg1.c_str());
 	}
 	else
 	    send_to_char( "They aren't here.\n", ch );
-	return;
-    
-	send_to_char( "Only on NPC's.\n", ch );
 	return;
     }
 
@@ -1195,13 +1196,13 @@ void do_sset( CHAR_DATA *ch, char *argument )
     /*
      * Snarf the value.
      */
-    if ( !is_number( argument ) )
+    if ( !is_number( argstr ) )
     {
 	send_to_char( "Value must be numeric.\n", ch );
 	return;
     }
 
-    value = atoi( argument );
+    value = strtoi( argstr );
     if ( value < 0 || value > 100 )
     {
 	send_to_char( "Value range is 0 to 100.\n", ch );
@@ -1366,7 +1367,7 @@ void do_gouge( CHAR_DATA *ch, char *argument )
 
 void do_detrap( CHAR_DATA *ch, char *argument )
 {
-    char arg  [MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
     OBJ_DATA *trap;
     int percent;
@@ -1380,13 +1381,13 @@ void do_detrap( CHAR_DATA *ch, char *argument )
 		send_to_char( "You can't concentrate enough for that.\n", ch );
 		return;
 	    }
-	    argument = one_argument( argument, arg );
+	    one_argument( argument, arg );
 	    if ( !IS_NPC(ch) && !ch->pcdata->learned[gsn_detrap] )
 	    {
 		send_to_char("You do not yet know of this skill.\n", ch );
 		return;
 	    }
-	    if ( arg[0] == '\0' )
+	    if ( arg.empty() )
 	    {
 		send_to_char( "Detrap what?\n", ch );
 		return;
@@ -1430,9 +1431,8 @@ void do_detrap( CHAR_DATA *ch, char *argument )
 		bug( "do_detrap: ch->dest_buf NULL!", 0 );
 		return;
 	    }
-	    SPRINTF( arg, "%s", (const char * )ch->dest_buf );
+	    arg = (const char *)ch->dest_buf;
 	    STR_DISPOSE( ch->dest_buf );
-	    STR_DISPOSE(ch->dest_buf);
 	    ch->substate = SUB_NONE;
 	    break;
 	case SUB_TIMER_DO_ABORT:
@@ -1470,7 +1470,7 @@ void do_detrap( CHAR_DATA *ch, char *argument )
                - (get_curr_lck(ch) - 16);
 
     separate_obj(obj);
-    if ( !IS_NPC(ch) || percent > ch->pcdata->learned[gsn_detrap] )
+    if ( !IS_NPC(ch) && percent > ch->pcdata->learned[gsn_detrap] )
     {
        send_to_char( "Ooops!\n", ch );
        spring_trap( ch, trap );
@@ -1487,7 +1487,7 @@ void do_detrap( CHAR_DATA *ch, char *argument )
 
 void do_dig( CHAR_DATA *ch, char *argument )
 {
-    char arg [MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
     OBJ_DATA *startobj;
     bool found, shovel;
@@ -1507,7 +1507,7 @@ void do_dig( CHAR_DATA *ch, char *argument )
 	    return;
 	  }
 	  one_argument( argument, arg );
-	  if ( arg[0] != '\0' )
+	  if ( arg.empty() )
 	  {
 	      if ( ( pexit = find_door( ch, arg, TRUE ) ) == NULL
 	      &&     get_dir(arg) == -1 )
@@ -1558,7 +1558,7 @@ void do_dig( CHAR_DATA *ch, char *argument )
 	      bug( "do_dig: dest_buf NULL", 0 );
 	      return;
 	  }
-	  SPRINTF( arg, "%s", (const char* ) ch->dest_buf );  
+	  arg = (const char *) ch->dest_buf;
 	  STR_DISPOSE( ch->dest_buf );	
 	  break;
 
@@ -1582,7 +1582,7 @@ void do_dig( CHAR_DATA *ch, char *argument )
       }
 
     /* dig out an EX_DIG exit... */
-    if ( arg[0] != '\0' )
+    if ( !arg.empty() )
     {
 	if ( ( pexit = find_door( ch, arg, TRUE ) ) != NULL
 	&&     IS_SET( pexit->exit_info, EX_DIG )
@@ -1640,7 +1640,7 @@ void do_dig( CHAR_DATA *ch, char *argument )
     
 void do_search( CHAR_DATA *ch, char *argument )
 {
-    char arg  [MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
     OBJ_DATA *container;
     OBJ_DATA *startobj;
@@ -1661,8 +1661,8 @@ void do_search( CHAR_DATA *ch, char *argument )
 		send_to_char( "You can't do that while mounted.\n", ch );
 		return;
 	    }
-	    argument = one_argument( argument, arg );
-	    if ( arg[0] != '\0' && (door = get_door( arg )) == -1 )
+	    one_argument( argument, arg );
+	    if ( !arg.empty() && (door = get_door( arg )) == -1 )
 	    {
 		container = get_obj_here( ch, arg );
 		if ( !container )
@@ -1694,7 +1694,7 @@ void do_search( CHAR_DATA *ch, char *argument )
 		bug( "do_search: dest_buf NULL", 0 );
 		return;
 	    }
-	    SPRINTF( arg, "%s", (const char * ) ch->dest_buf );
+		arg = (const char *) ch->dest_buf;
 	    STR_DISPOSE( ch->dest_buf );
 	    break;
 	case SUB_TIMER_DO_ABORT:
@@ -1704,7 +1704,7 @@ void do_search( CHAR_DATA *ch, char *argument )
 	    return;
     }
     ch->substate = SUB_NONE;
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 //	room = TRUE;
 	startobj = ch->in_room->first_content;
@@ -1782,14 +1782,15 @@ void do_search( CHAR_DATA *ch, char *argument )
 void do_steal( CHAR_DATA *ch, char *argument )
 {
     char buf  [MAX_STRING_LENGTH];
-    char arg1 [MAX_INPUT_LENGTH];
-    char arg2 [MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+	std::string argstr = argument;
     CHAR_DATA *victim, *mst;
     OBJ_DATA *obj , *obj_next;
     int percent, xp;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
     if ( ch->mount )
     {
@@ -1797,7 +1798,7 @@ void do_steal( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() )
     {
 	send_to_char( "Steal what from whom?\n", ch );
 	return;
@@ -1979,7 +1980,7 @@ void do_steal( CHAR_DATA *ch, char *argument )
 
 void do_backstab( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
     OBJ_DATA *obj;
     int percent;
@@ -1998,7 +1999,7 @@ void do_backstab( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Backstab whom?\n", ch );
 	return;
@@ -2066,7 +2067,7 @@ void do_backstab( CHAR_DATA *ch, char *argument )
 
 void do_rescue( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
     CHAR_DATA *fch;
     int percent;
@@ -2078,7 +2079,7 @@ void do_rescue( CHAR_DATA *ch, char *argument )
     }
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Rescue whom?\n", ch );
 	return;
@@ -2166,7 +2167,7 @@ void do_rescue( CHAR_DATA *ch, char *argument )
 void do_kick( CHAR_DATA *ch, char *argument )
 {
     CHAR_DATA *victim;
-
+    std::string arg;
     if ( IS_NPC(ch) && IS_AFFECTED( ch, AFF_CHARM ) )
     {
 	send_to_char( "You can't concentrate enough for that.\n", ch );
@@ -2202,7 +2203,7 @@ void do_kick( CHAR_DATA *ch, char *argument )
 void do_punch( CHAR_DATA *ch, char *argument )
 {
     CHAR_DATA *victim;
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
 
     if ( IS_NPC(ch) && IS_AFFECTED( ch, AFF_CHARM ) )
     {
@@ -2223,7 +2224,7 @@ void do_punch( CHAR_DATA *ch, char *argument )
 
       one_argument( argument, arg );
 
-      if ( arg[0] == '\0' )
+      if ( arg.empty() )
       {
 	send_to_char( "Punch whom?\n", ch );
 	return;
@@ -2734,7 +2735,7 @@ void trip( CHAR_DATA *ch, CHAR_DATA *victim )
 
 void do_pick( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *gch;
     OBJ_DATA *obj;
     EXIT_DATA *pexit;
@@ -2748,7 +2749,7 @@ void do_pick( CHAR_DATA *ch, char *argument )
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Pick what?\n", ch );
 	return;
@@ -3179,7 +3180,7 @@ void do_recall( CHAR_DATA *ch, char *argument )
 
 void do_aid( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
     int percent;
 
@@ -3190,7 +3191,7 @@ void do_aid( CHAR_DATA *ch, char *argument )
     }
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Aid whom?\n", ch );
 	return;
@@ -3460,7 +3461,7 @@ void do_poison_weapon( CHAR_DATA *ch, char *argument )
   OBJ_DATA *obj;
   OBJ_DATA *pobj;
   OBJ_DATA *wobj;
-  char      arg [ MAX_INPUT_LENGTH ];
+  std::string arg;
   int       percent;
 
   if ( !IS_NPC( ch )
@@ -3472,7 +3473,7 @@ void do_poison_weapon( CHAR_DATA *ch, char *argument )
 
   one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "What are you trying to poison?\n",    ch );
 	return;
@@ -3600,11 +3601,11 @@ void do_scribe( CHAR_DATA *ch, char *argument )
 
     int sn;
 
-    char buf1[MAX_STRING_LENGTH];
+    std::string buf1;
 
-    char buf2[MAX_STRING_LENGTH];
+    std::string buf2;
 
-    char buf3[MAX_STRING_LENGTH];
+    std::string buf3;
 
     int mana;
 
@@ -3770,19 +3771,19 @@ void do_scribe( CHAR_DATA *ch, char *argument )
 
      scroll->value[0] = ch->top_level;
 
-     SPRINTF(buf1, "scribed book" );
+     buf1 = "scribed book";
 
      STRFREE(scroll->short_descr);
 
      scroll->short_descr = STRALLOC( aoran(buf1) );
 
-     SPRINTF(buf2, "A scribed book lies in the dust." );
+     buf2 = "A scribed book lies in the dust.";
 
      STRFREE(scroll->description);
 
      scroll->description = STRALLOC(buf2);
 
-     SPRINTF(buf3, "scroll scribing scribed book %s", skill_table[sn]->name);
+     buf3 = "scroll scribing scribed book " + std::string(skill_table[sn]->name);
 
      STRFREE(scroll->name);
 
@@ -3938,7 +3939,7 @@ bool check_grip( CHAR_DATA *ch, CHAR_DATA *victim )
 
 void do_circle( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
     OBJ_DATA *obj;
     int percent;
@@ -3957,7 +3958,7 @@ void do_circle( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Circle around whom?\n", ch );
 	return;
@@ -4271,8 +4272,8 @@ void do_scan( CHAR_DATA *ch, char *argument )
      OBJ_DATA *obj;
      OBJ_DATA *skin;
 //     bool found;
-     char *name;
-     char buf[MAX_STRING_LENGTH];
+     std::string name;
+     char buf[MAX_STRING_LENGTH]; // Need this for SPRINTF_RUNTIME for token replacement in the skin's short_descr and description.
 //     found = FALSE;
   
      if ( argument[0] == '\0' )
@@ -4325,20 +4326,20 @@ void do_scan( CHAR_DATA *ch, char *argument )
  //  korps               = create_object( get_obj_index(OBJ_VNUM_CORPSE_PC), 0 );
      skin                = create_object( get_obj_index(OBJ_VNUM_SKIN), 0 );
      name                = IS_NPC(ch) ? korps->short_descr : corpse->short_descr;
-     SPRINTF_RUNTIME( buf, skin->short_descr, name );
+     SPRINTF_RUNTIME( buf, skin->short_descr, name.c_str() );
      STRFREE( skin->short_descr );
      skin->short_descr = STRALLOC( buf );
-     SPRINTF_RUNTIME( buf, skin->description, name );
+     SPRINTF_RUNTIME( buf, skin->description, name.c_str()	 );
      STRFREE( skin->description );
      skin->description = STRALLOC( buf );
  
-     SPRINTF( buf, "The skinned bones of %s", name );
+     SPRINTF( buf, "The skinned bones of %s", name.c_str() );
      STRFREE( corpse->name );
      corpse->name = STRALLOC( buf );
-     SPRINTF( buf, "The skinned bones of %s", name );
+     SPRINTF( buf, "The skinned bones of %s", name.c_str() );
      STRFREE( corpse->description );
      corpse->description = STRALLOC( buf );
-     SPRINTF( buf, "The skinned bones of %s", name );
+     SPRINTF( buf, "The skinned bones of %s", name.c_str() );
      STRFREE( corpse->short_descr );
      corpse->short_descr = STRALLOC( buf );
      corpse->value[1] = 1;
@@ -4356,19 +4357,19 @@ void do_slice( CHAR_DATA *ch, char *argument )
 /* Allows PCs to learn spells embedded in object. Should prove interesting. - Samson 8-9-98 */
 void do_study( CHAR_DATA *ch, char *argument ) /* study by Absalom */
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     OBJ_DATA *obj;
     int sn = 0, bookskills = 0, book;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Study what?\n", ch );
 	return;
     }
 
-    if ( ( obj = get_obj_carry( ch, arg ) ) == NULL )
+    if ( ( obj = get_obj_carry( ch, arg ) ) == NULL && ( obj = get_obj_wear(ch, argument)) == NULL )
     {
 	send_to_char( "You do not have that item.\n", ch );
 	return;

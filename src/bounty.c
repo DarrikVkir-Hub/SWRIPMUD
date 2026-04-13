@@ -209,19 +209,20 @@ void disintigration ( CHAR_DATA *ch , CHAR_DATA *victim , long amount )
 
 void do_addbounty( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_STRING_LENGTH];
+    std::string arg;
+    std::string argstr = argument;
     long int amount;
     CHAR_DATA *victim;
              
-    if ( !argument || argument[0] == '\0' )
+    if ( argstr.empty() )
     {
          do_bounties( ch , argument );
          return;
     }
 
-    argument = one_argument(argument, arg);
+    argstr = one_argument(argstr, arg);
     
-    if (argument[0] == '\0' )
+    if (argstr.empty() )
     {
     	send_to_char( "Usage: Addbounty <target> <amount>\n", ch );
     	return;
@@ -240,10 +241,10 @@ void do_addbounty( CHAR_DATA *ch, char *argument )
     	return;
     }
     */
-    if (argument[0] == '\0' )
+    if (argstr.empty() )
         amount = 0;
     else
-    	amount = atoi (argument); 
+    	amount = strtoi (argstr); 
 
      if ( amount < 5000 )
      {
@@ -333,9 +334,7 @@ void claim_disintigration( CHAR_DATA *ch , CHAR_DATA *victim )
 	        BV_SET_BIT(ch->act, PLR_KILLER );
 	        ch_printf( ch, "You are now wanted for the murder of %s.\n", victim->name );
 	     }
-/*	     SPRINTF( buf, "%s is Dead!", victim->name );
-             echo_to_all ( AT_RED , buf, 0 );
-*/
+
 	     return;
 	     
 	}
@@ -349,10 +348,8 @@ void claim_disintigration( CHAR_DATA *ch , CHAR_DATA *victim )
 	ch_printf( ch, "You receive %ld experience and %ld credits,\n from the bounty on %s\n", exp, bounty->amount, bounty->target );
 	
 	SPRINTF( buf, "The disintigration bounty on %s has been claimed!",victim->name );
-	echo_to_all ( AT_RED , buf, 0 );
-/*	SPRINTF( buf, "%s is Dead!", victim->name );
-	echo_to_all ( AT_RED , buf, 0 ); 
-*/
+	echo_to_all ( AT_RED , str_printf("The disintigration bounty on %s has been claimed!",victim->name ), 0 );
+
 	
 	if ( !BV_IS_SET(victim->act , PLR_KILLER ) )
 	       BV_SET_BIT(ch->act, PLR_KILLER );

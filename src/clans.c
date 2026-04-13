@@ -45,19 +45,19 @@ GUARD_DATA * last_guard;
 
 /* local routines */
 void	fread_clan	args( ( CLAN_DATA *clan, FILE *fp ) );
-bool	load_clan_file	args( ( GameContext *game, char *clanfile ) );
+bool	load_clan_file	args( ( GameContext *game, const std::string& clanfile ) );
 void	write_clan_list	args( ( void ) );
 void	fread_planet	args( ( PLANET_DATA *planet, FILE *fp ) );
-bool	load_planet_file	args( ( GameContext *game, char *planetfile ) );
+bool	load_planet_file	args( ( GameContext *game, const std::string& planetfile ) );
 void	write_planet_list	args( ( void ) );
 void	save_member_list	args( ( MEMBER_LIST *members_list ) );
-void	show_members		args( ( CHAR_DATA *ch, char *argument, char *format ) );
+void	show_members		args( ( CHAR_DATA *ch, const std::string& argument, const std::string& format ) );
 
 
 /*
  * Get pointer to clan structure from clan name.
  */
-CLAN_DATA *get_clan( char *name )
+CLAN_DATA *get_clan( const std::string& name )
 {
     CLAN_DATA *clan;
     
@@ -67,7 +67,7 @@ CLAN_DATA *get_clan( char *name )
     return NULL;
 }
 
-PLANET_DATA *get_planet( char *name )
+PLANET_DATA *get_planet( const std::string&name )
 {
     PLANET_DATA *planet;
     
@@ -122,7 +122,6 @@ void save_clan( CLAN_DATA *clan )
 {
     FILE *fp;
     char filename[256];
-    char buf[MAX_STRING_LENGTH];
 
     if ( !clan )
     {
@@ -132,8 +131,7 @@ void save_clan( CLAN_DATA *clan )
         
     if ( !clan->filename || clan->filename[0] == '\0' )
     {
-	SPRINTF( buf, "save_clan: %s has no filename", clan->name );
-	bug( buf, 0 );
+	bug( str_printf("save_clan: %s has no filename", clan->name).c_str(), 0 );
 	return;
     }
  
@@ -186,7 +184,6 @@ void save_planet( PLANET_DATA *planet )
 {
     FILE *fp;
     char filename[256];
-    char buf[MAX_STRING_LENGTH];
 
     if ( !planet )
     {
@@ -196,8 +193,7 @@ void save_planet( PLANET_DATA *planet )
         
     if ( !planet->filename || planet->filename[0] == '\0' )
     {
-	SPRINTF( buf, "save_planet: %s has no filename", planet->name );
-	bug( buf, 0 );
+	bug( str_printf("save_planet: %s has no filename", planet->name).c_str(), 0 );
 	return;
     }
  
@@ -253,7 +249,6 @@ void save_planet( PLANET_DATA *planet )
 
 void fread_clan( CLAN_DATA *clan, FILE *fp )
 {
-    char buf[MAX_STRING_LENGTH];
     const char *word;
     bool fMatch;
 
@@ -349,8 +344,7 @@ void fread_clan( CLAN_DATA *clan, FILE *fp )
 	
 	if ( !fMatch )
 	{
-	    SPRINTF( buf, "Fread_clan: no match: %s", word );
-	    bug( buf, 0 );
+	    bug( str_printf("Fread_clan: no match: %s", word).c_str(), 0 );
 	}
 	
     }
@@ -358,7 +352,6 @@ void fread_clan( CLAN_DATA *clan, FILE *fp )
 
 void fread_planet( PLANET_DATA *planet, FILE *fp )
 {
-    char buf[MAX_STRING_LENGTH];
     const char *word;
     bool fMatch;
 
@@ -413,7 +406,7 @@ void fread_planet( PLANET_DATA *planet, FILE *fp )
 	    if ( !str_cmp( word, "GovernedBy" ) )
 	    {
             char *clan_name = fread_string( fp );
-            planet->governed_by = get_clan( clan_name );
+            planet->governed_by = get_clan( std::string(clan_name) );
             fMatch = TRUE;
             STRFREE( clan_name );
 	    }
@@ -430,7 +423,9 @@ void fread_planet( PLANET_DATA *planet, FILE *fp )
 	case 'S':
 	    if ( !str_cmp( word, "spaceobject" ) )
 	    {
-	     	planet->spaceobject = spaceobject_from_name ( planet->game,fread_string(fp) );
+            char *spaceobject_name = fread_string( fp );
+	     	planet->spaceobject = spaceobject_from_name ( planet->game, std::string(spaceobject_name) );
+            STRFREE( spaceobject_name );
             if (planet->spaceobject)
             {
                     SPACE_DATA *spaceobject = planet->spaceobject;
@@ -449,8 +444,7 @@ void fread_planet( PLANET_DATA *planet, FILE *fp )
 	
 	if ( !fMatch )
 	{
-	    SPRINTF( buf, "Fread_planet: no match: %s", word );
-	    bug( buf, 0 );
+	    bug( str_printf("Fread_planet: no match: %s", word).c_str(), 0 );
 	}
 	
     }
@@ -461,7 +455,7 @@ void fread_planet( PLANET_DATA *planet, FILE *fp )
  * Load a clan file
  */
 
-bool load_clan_file( GameContext *game, char *clanfile )
+bool load_clan_file( GameContext *game, const std::string& clanfile )
 {
     char filename[256];
     CLAN_DATA *clan;
@@ -477,7 +471,7 @@ bool load_clan_file( GameContext *game, char *clanfile )
     clan->mainclan     = NULL;
     
     found = FALSE;
-    SPRINTF( filename, "%s%s", CLAN_DIR, clanfile );
+    SPRINTF( filename, "%s%s", CLAN_DIR, clanfile.c_str() );
 
     if ( ( fp = fopen( filename, "r" ) ) != NULL )
     {
@@ -512,10 +506,7 @@ bool load_clan_file( GameContext *game, char *clanfile )
 	        break;
 	    else
 	    {
-		char buf[MAX_STRING_LENGTH];
-
-		SPRINTF( buf, "Load_clan_file: bad section: %s.", word );
-		bug( buf, 0 );
+		bug( str_printf("Load_clan_file: bad section: %s.", word).c_str(), 0 );
 		break;
 	    }
 	}
@@ -607,7 +598,7 @@ bool load_clan_file( GameContext *game, char *clanfile )
     return found;
 }
 
-bool load_planet_file( GameContext *game, char *planetfile )
+bool load_planet_file( GameContext *game, const std::string& planetfile )
 {
     char filename[256];
     PLANET_DATA *planet;
@@ -627,7 +618,7 @@ bool load_planet_file( GameContext *game, char *planetfile )
     planet->last_guard = NULL;
     
     found = FALSE;
-    SPRINTF( filename, "%s%s", PLANET_DIR, planetfile );
+    SPRINTF( filename, "%s%s", PLANET_DIR, planetfile.c_str() );
 
     if ( ( fp = fopen( filename, "r" ) ) != NULL )
     {
@@ -662,10 +653,7 @@ bool load_planet_file( GameContext *game, char *planetfile )
 	        break;
 	    else
 	    {
-		char buf[MAX_STRING_LENGTH];
-
-		SPRINTF( buf, "Load_planet_file: bad section: %s.", word );
-		bug( buf, 0 );
+		bug( str_printf("Load_planet_file: bad section: %s.", word).c_str(), 0 );
 		break;
 	    }
 	}
@@ -689,7 +677,6 @@ void load_clans( GameContext *game )
     FILE *fpList;
     const char *filename;
     char clanlist[256];
-    char buf[MAX_STRING_LENGTH];
     CLAN_DATA *clan;
     CLAN_DATA *bosclan;
     
@@ -713,10 +700,9 @@ void load_clans( GameContext *game )
 	if ( filename[0] == '$' )
 	  break;
 
-	if ( !load_clan_file( game, (char* ) filename ) )
+	if ( !load_clan_file( game, std::string( filename ) ) )
 	{
-	  SPRINTF( buf, "Cannot load clan file: %s", filename );
-	  bug( buf, 0 );
+	  bug( str_printf("Cannot load clan file: %s", filename).c_str(), 0 );
 	}
     }
     FCLOSE( fpList );
@@ -728,7 +714,7 @@ void load_clans( GameContext *game )
        if ( !clan->tmpstr || clan->tmpstr[0] == '\0' )
          continue;
          
-       bosclan = get_clan ( clan->tmpstr );
+       bosclan = get_clan ( std::string(clan->tmpstr) );
        if ( !bosclan ) 
          continue;
          
@@ -745,7 +731,6 @@ void load_planets( GameContext *game )
     FILE *fpList;
     const char *filename;
     char planetlist[256];
-    char buf[MAX_STRING_LENGTH];
     
     first_planet	= NULL;
     last_planet	= NULL;
@@ -769,8 +754,7 @@ void load_planets( GameContext *game )
 
 	if ( !load_planet_file( game, (char * ) filename ) )
 	{
-	  SPRINTF( buf, "Cannot load planet file: %s", filename );
-	  bug( buf, 0 );
+	  bug( str_printf("Cannot load planet file: %s", filename).c_str(), 0 );
 	}
     }
     FCLOSE( fpList );
@@ -787,7 +771,7 @@ void do_make( CHAR_DATA *ch, char *argument )
 
 void do_induct( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
     CLAN_DATA *clan;
 
@@ -811,9 +795,9 @@ void do_induct( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg );
+    one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Induct whom?\n", ch );
 	return;
@@ -895,7 +879,7 @@ bool can_outcast( CLAN_DATA *clan, CHAR_DATA *ch, CHAR_DATA *victim )
 
 void do_outcast( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     CHAR_DATA *victim;
     CLAN_DATA *clan;
 
@@ -920,9 +904,9 @@ void do_outcast( CHAR_DATA *ch, char *argument )
     }
 
 
-    argument = one_argument( argument, arg );
+    one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Outcast whom?\n", ch );
 	return;
@@ -990,8 +974,9 @@ void do_outcast( CHAR_DATA *ch, char *argument )
 
 void do_setclan( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     CLAN_DATA *clan;
 
     if ( IS_NPC( ch ) )
@@ -1000,10 +985,10 @@ void do_setclan( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
 	send_to_char( "Usage: setclan <clan> <field> <leader|number1|number2> <player>\n", ch );
 	send_to_char( "\nField being one of:\n", ch );
@@ -1025,33 +1010,33 @@ void do_setclan( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-	if ( !strcmp( arg2, "enlistroom1" ) )
+	if ( !str_cmp( arg2, "enlistroom1" ) )
 	{
-		clan->enlistroom1 = atoi( argument );
+		clan->enlistroom1 = strtoi( argstr );
 		send_to_char( "Done.\n", ch );
 		save_clan( clan );
 		return;
 	}
-	if ( !strcmp( arg2, "enlistroom2" ) )
+	if ( !str_cmp( arg2, "enlistroom2" ) )
 	{
-		clan->enlistroom2 = atoi( argument );
+		clan->enlistroom2 = strtoi( argstr );
 		send_to_char( "Done.\n", ch );
 		save_clan( clan );
 		return;
 	}
-    if ( !strcmp( arg2, "leader" ) )
+    if ( !str_cmp( arg2, "leader" ) )
     {
 	STRFREE( clan->leader );
-	clan->leader = STRALLOC( argument );
+	clan->leader = STRALLOC( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
     }
 
-    if ( !strcmp( arg2, "subclan" ) )
+    if ( !str_cmp( arg2, "subclan" ) )
     {
         CLAN_DATA *subclan;
-        subclan = get_clan( argument );
+        subclan = get_clan( argstr );
         if ( !subclan )
         {
             send_to_char( "Subclan is not a clan.\n", ch );
@@ -1075,106 +1060,106 @@ void do_setclan( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( !strcmp( arg2, "number1" ) )
+    if ( !str_cmp( arg2, "number1" ) )
     {
 	STRFREE( clan->number1 );
-	clan->number1 = STRALLOC( argument );
+	clan->number1 = STRALLOC( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
     }
 
-    if ( !strcmp( arg2, "number2" ) )
+    if ( !str_cmp( arg2, "number2" ) )
     {
 	STRFREE( clan->number2 );
-	clan->number2 = STRALLOC( argument );
+	clan->number2 = STRALLOC( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
     }
 
-    if ( !strcmp( arg2, "board" ) )
+    if ( !str_cmp( arg2, "board" ) )
     {
-	clan->board = atoi( argument );
+	clan->board = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
     }
 
-    if ( !strcmp( arg2, "members" ) )
+    if ( !str_cmp( arg2, "members" ) )
     {
-	clan->members = atoi( argument );
+	clan->members = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
     }
 
-    if ( !strcmp( arg2, "funds" ) )
+    if ( !str_cmp( arg2, "funds" ) )
     {
-	clan->funds = atoi( argument );
+	clan->funds = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
     }
 
-    if ( !strcmp( arg2, "storage" ) )
+    if ( !str_cmp( arg2, "storage" ) )
     {
-	clan->storeroom = atoi( argument );
+	clan->storeroom = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
     }
 
-    if ( !strcmp( arg2, "guard1" ) )
+    if ( !str_cmp( arg2, "guard1" ) )
     {
-	clan->guard1 = atoi( argument );
+	clan->guard1 = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
     }
 
-    if ( !strcmp( arg2, "jail" ) )
+    if ( !str_cmp( arg2, "jail" ) )
     {
-	clan->jail = atoi( argument );
+	clan->jail = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
     }
 
-    if ( !strcmp( arg2, "guard2" ) )
+    if ( !str_cmp( arg2, "guard2" ) )
     {
-	clan->guard2 = atoi( argument );
+	clan->guard2 = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
     }
 
-    if ( !strcmp( arg2, "trooper1" ) )
+    if ( !str_cmp( arg2, "trooper1" ) )
     {
-	clan->trooper1 = atoi( argument );
+	clan->trooper1 = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
     }
 
-    if ( !strcmp( arg2, "trooper2" ) )
+    if ( !str_cmp( arg2, "trooper2" ) )
     {
-	clan->trooper2 = atoi( argument );
+	clan->trooper2 = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
     }
-    if ( !strcmp( arg2, "patrol1" ) )
+    if ( !str_cmp( arg2, "patrol1" ) )
     {
-	clan->patrol1 = atoi( argument );
+	clan->patrol1 = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
     }
 
-    if ( !strcmp( arg2, "patrol2" ) )
+    if ( !str_cmp( arg2, "patrol2" ) )
     {
-	clan->patrol2 = atoi( argument );
+	clan->patrol2 = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
@@ -1186,20 +1171,20 @@ void do_setclan( CHAR_DATA *ch, char *argument )
 	return;
     }
     
-    if ( !strcmp( arg2, "type" ) )
+    if ( !str_cmp( arg2, "type" ) )
     {
         if ( clan->mainclan )
         {
             UNLINK ( clan , clan->mainclan->first_subclan, clan->mainclan->last_subclan, next_subclan, prev_subclan );
             clan->mainclan = NULL;
 	}
-	if ( !str_cmp( argument, "crime" ) )
+	if ( !str_cmp( argstr, "crime" ) )
 	  clan->clan_type = CLAN_CRIME;
 	else
-	if ( !str_cmp( argument, "crime family" ) )
+	if ( !str_cmp( argstr, "crime family" ) )
 	  clan->clan_type = CLAN_CRIME;
 	else
-	if ( !str_cmp( argument, "guild" ) )
+	if ( !str_cmp( argstr, "guild" ) )
 	  clan->clan_type = CLAN_GUILD;
 	else
 	  clan->clan_type = 0;
@@ -1212,18 +1197,18 @@ void do_setclan( CHAR_DATA *ch, char *argument )
    {
       CLAN_DATA *uclan = NULL;
 
-      if( !argument || argument[0] == '\0' )
+      if( argstr.empty() )
       {
          send_to_char( "You can't name a clan nothing.\n", ch );
          return;
       }
-      if( ( uclan = get_clan( argument ) ) )
+      if( ( uclan = get_clan( argstr ) ) )
       {
          send_to_char( "There is already another clan with that name.\n", ch );
          return;
       }
       STRFREE( clan->name );
-      clan->name = STRALLOC( argument );
+      clan->name = STRALLOC( argstr );
       send_to_char( "Done.\n", ch );
       save_clan( clan );
       return;
@@ -1233,7 +1218,7 @@ void do_setclan( CHAR_DATA *ch, char *argument )
    {
       char filename[256];
 
-      if( !is_valid_filename( ch, CLAN_DIR, argument ) )
+      if( !is_valid_filename( ch, CLAN_DIR, argstr ) )
          return;
 
       snprintf( filename, sizeof( filename ), "%s%s", CLAN_DIR, clan->filename );
@@ -1241,17 +1226,17 @@ void do_setclan( CHAR_DATA *ch, char *argument )
          send_to_char( "Old clan file deleted.\n", ch );
 
       STR_DISPOSE( clan->filename );
-      clan->filename = str_dup( argument );
+      clan->filename = str_dup( argstr );
       send_to_char( "Done.\n", ch );
       save_clan( clan );
       write_clan_list(  );
       return;
    }
 
-    if ( !strcmp( arg2, "desc" ) )
+    if ( !str_cmp( arg2, "desc" ) )
     {
 	STRFREE( clan->description );
-	clan->description = STRALLOC( argument );
+	clan->description = STRALLOC( argstr );
 	send_to_char( "Done.\n", ch );
 	save_clan( clan );
 	return;
@@ -1263,8 +1248,9 @@ void do_setclan( CHAR_DATA *ch, char *argument )
 
 void do_setplanet( CHAR_DATA *ch, char *argument )
 {
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     PLANET_DATA *planet;
 
     if ( IS_NPC( ch ) )
@@ -1273,10 +1259,10 @@ void do_setplanet( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
 	send_to_char( "Usage: setplanet <planet> <field> [value]\n", ch );
 	send_to_char( "\nField being one of:\n", ch );
@@ -1293,31 +1279,31 @@ void do_setplanet( CHAR_DATA *ch, char *argument )
     }
 
 
-    if( !strcmp( arg2, "name" ) )
+    if( !str_cmp( arg2, "name" ) )
     {
         PLANET_DATA *tplanet;
-        if( !argument || argument[0] == '\0' )
+        if( argstr.empty() )
         {
             send_to_char( "You must choose a name.\n", ch );
             return;
         }
-        if( ( tplanet = get_planet( argument ) ) != NULL )
+        if( ( tplanet = get_planet( argstr ) ) != NULL )
         {
             send_to_char( "A planet with that name already Exists!\n", ch );
             return;
         }
 
         STRFREE( planet->name );
-        planet->name = STRALLOC( argument );
+        planet->name = STRALLOC( argstr );
         send_to_char( "Done.\n", ch );
         save_planet( planet );
         return;
     }
 
-    if ( !strcmp( arg2, "governed_by" ) )
+    if ( !str_cmp( arg2, "governed_by" ) )
     {
         CLAN_DATA *clan;
-        clan = get_clan( argument );
+        clan = get_clan( argstr );
         if ( clan )
         { 
            planet->governed_by = clan;
@@ -1329,11 +1315,11 @@ void do_setplanet( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( !strcmp( arg2, "spaceobject" ) )
+    if ( !str_cmp( arg2, "spaceobject" ) )
     {
         SPACE_DATA *spaceobject;
         
-	if ( (planet->spaceobject = spaceobject_from_name(planet->game, argument)) )
+	if ( (planet->spaceobject = spaceobject_from_name(planet->game, argstr)) )
 	{
          if ((spaceobject=planet->spaceobject) != NULL)
          {
@@ -1349,18 +1335,18 @@ void do_setplanet( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if( !strcmp( arg2, "filename" ) )
+    if( !str_cmp( arg2, "filename" ) )
     {
         PLANET_DATA *tplanet;
 
-        if( !argument || argument[0] == '\0' )
+        if( argstr.empty() )
         {
             send_to_char( "You must choose a file name.\n", ch );
             return;
         }
         for( tplanet = first_planet; tplanet; tplanet = tplanet->next )
         {
-            if( !str_cmp( tplanet->filename, argument ) )
+            if( !str_cmp( tplanet->filename, argstr ) )
             {
                 send_to_char( "A planet with that filename already exists!\n", ch );
                 return;
@@ -1368,34 +1354,34 @@ void do_setplanet( CHAR_DATA *ch, char *argument )
         }
 
         STR_DISPOSE( planet->filename );
-        planet->filename = str_dup( argument );
+        planet->filename = str_dup( argstr );
         send_to_char( "Done.\n", ch );
         save_planet( planet );
         write_planet_list(  );
         return;
     }
 
-    if ( !strcmp( arg2, "base_value" ) )
+    if ( !str_cmp( arg2, "base_value" ) )
     {
-	planet->base_value = atoi( argument );
+	planet->base_value = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	save_planet( planet );
 	return;
     }
 
-    if ( !strcmp( arg2, "flags" ) )
+    if ( !str_cmp( arg2, "flags" ) )
     {
-        char farg[MAX_INPUT_LENGTH];
+        std::string farg;
         
-        argument = one_argument( argument, farg); 
+        argstr = one_argument( argstr, farg); 
         
-        if ( farg[0] == '\0' )
+        if ( farg.empty() )
         {
            send_to_char( "Possible flags: nocapture\n", ch );
            return;
         }
         
-        for ( ; farg[0] != '\0' ; argument = one_argument( argument, farg) )
+        for ( ; !farg.empty() ; argstr = one_argument( argstr, farg) )
         {
             if ( !str_cmp( farg, "nocapture" ) )
                TOGGLE_BIT( planet->flags, PLANET_NOCAPTURE );
@@ -1515,7 +1501,7 @@ void do_makeclan( CHAR_DATA *ch, char *argument )
     }
 
 //    found = FALSE;
-    SPRINTF( filename, "%s%s", CLAN_DIR, strlower(argument) );
+    SPRINTF( filename, "%s%s", CLAN_DIR, strlower(argument).c_str() );
 
     CREATE( clan, CLAN_DATA, 1 );
     clan->game = ch->game;
@@ -1546,7 +1532,7 @@ void do_makeplanet( CHAR_DATA *ch, char *argument )
     }
 
 //    found = FALSE;
-    SPRINTF( filename, "%s%s", PLANET_DIR, strlower(argument) );
+    SPRINTF( filename, "%s%s", PLANET_DIR, strlower(argument).c_str() );
 
     CREATE( planet, PLANET_DATA, 1 );
     planet->game = ch->game;
@@ -1694,8 +1680,9 @@ void do_guilds( CHAR_DATA *ch, char *argument)
 
 void do_shove( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string arg2;
+    std::string argstr = argument;
     int exit_dir;
     EXIT_DATA *pexit;
     CHAR_DATA *victim;
@@ -1705,11 +1692,11 @@ void do_shove( CHAR_DATA *ch, char *argument )
     SHIP_DATA *ship;    
     int chance;  
 
-    argument = one_argument( argument, arg );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg );
+    argstr = one_argument( argstr, arg2 );
 
     
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Shove whom?\n", ch);
 	return;
@@ -1733,7 +1720,7 @@ void do_shove( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ( arg2[0] == '\0' )
+    if ( arg2.empty() )
     {
 	send_to_char( "Shove them in which direction?\n", ch);
 	return;
@@ -1750,23 +1737,23 @@ void do_shove( CHAR_DATA *ch, char *argument )
     nogo = FALSE;
     if ((pexit = get_exit(ch->in_room, exit_dir)) == NULL )
     {
-      if (!strcmp( arg2, "in" ))
+      if (!str_cmp( arg2, "in" ))
       {
-        if ( !argument || argument[0] == '\0')
+        if ( argstr.empty() )
         {
           send_to_char( "Drag him into what?\n", ch );
           return;
         }
 
-        if ( ( ship = ship_in_room( ch->in_room , argument ) ) == NULL )
+        if ( ( ship = ship_in_room( ch->in_room , argstr ) ) == NULL )
         {
-          act( AT_PLAIN, "I see no $T here.", ch, NULL, argument, TO_CHAR );
+          act( AT_PLAIN, "I see no $T here.", ch, NULL, argstr, TO_CHAR );
           return;
         }
         
 	if ( BV_IS_SET( ch->act, ACT_MOUNTED ) )
    	{
-          act( AT_PLAIN, "You can't go in there riding THAT.", ch, NULL, argument, TO_CHAR );
+          act( AT_PLAIN, "You can't go in there riding THAT.", ch, NULL, argstr, TO_CHAR );
           return;
    	} 
 
@@ -1805,7 +1792,7 @@ void do_shove( CHAR_DATA *ch, char *argument )
    	    char_from_room( ch );
    	    char_to_room( ch , to_room );
    	    act( AT_PLAIN, "$n enters the ship.", ch,
-		NULL, argument , TO_ROOM );
+		NULL, argstr , TO_ROOM );
             do_look( ch , "auto" );
 
             act( AT_PLAIN, "$n enters $T.", victim,
@@ -1815,7 +1802,7 @@ void do_shove( CHAR_DATA *ch, char *argument )
    	    char_from_room( victim );
    	    char_to_room( victim , to_room );
    	    act( AT_PLAIN, "$n enters the ship.", victim,
-		NULL, argument , TO_ROOM );
+		NULL, argstr , TO_ROOM );
             do_look( victim , "auto" );
             victim->position = POS_STANDING;            
 	    return;
@@ -1826,7 +1813,7 @@ void do_shove( CHAR_DATA *ch, char *argument )
           return;
         }
       }  
-      if (!strcmp( arg2, "out" ))
+      if (!str_cmp( arg2, "out" ))
       {
     	fromroom = ch->in_room;
     
@@ -1838,7 +1825,7 @@ void do_shove( CHAR_DATA *ch, char *argument )
         
 	if ( BV_IS_SET( ch->act, ACT_MOUNTED ) )
    	{
-          act( AT_PLAIN, "You can't go out there riding THAT.", ch, NULL, argument, TO_CHAR );
+          act( AT_PLAIN, "You can't go out there riding THAT.", ch, NULL, argstr, TO_CHAR );
           return;
    	} 
 
@@ -1947,12 +1934,6 @@ chance += ((get_curr_str(ch) - 15) * 3);
 
 chance += (ch->top_level - victim->top_level);
  
-/* Debugging purposes - show percentage for testing */
-
-/* SPRINTF(buf, "Shove percentage of %s = %d", ch->name, chance);
-act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
-*/
-
 if (chance < number_percent( ))
 {
   send_to_char("You failed.\n", ch);
@@ -1973,8 +1954,9 @@ if (chance < number_percent( ))
 
 void do_drag( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string arg2;
+    std::string argstr = argument;
     int exit_dir;
     CHAR_DATA *victim;
     EXIT_DATA *pexit;
@@ -1984,10 +1966,10 @@ void do_drag( CHAR_DATA *ch, char *argument )
    ROOM_INDEX_DATA *fromroom;
    SHIP_DATA *ship;
 
-    argument = one_argument( argument, arg );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Drag whom?\n", ch);
 	return;
@@ -2017,7 +1999,7 @@ void do_drag( CHAR_DATA *ch, char *argument )
         return;
     }
           
-    if ( arg2[0] == '\0' )
+    if ( arg2.empty() )
     {
 	send_to_char( "Drag them in which direction?\n", ch);
 	return;
@@ -2035,23 +2017,23 @@ void do_drag( CHAR_DATA *ch, char *argument )
     nogo = FALSE;
     if ((pexit = get_exit(ch->in_room, exit_dir)) == NULL )
     {
-      if (!strcmp( arg2, "in" ))
+      if (!str_cmp( arg2, "in" ))
       {
-        if ( !argument || argument[0] == '\0')
+        if ( argstr.empty() )
         {
           send_to_char( "Drag him into what?\n", ch );
           return;
         }
 
-        if ( ( ship = ship_in_room( ch->in_room , argument ) ) == NULL )
+        if ( ( ship = ship_in_room( ch->in_room , argstr ) ) == NULL )
         {
-          act( AT_PLAIN, "I see no $T here.", ch, NULL, argument, TO_CHAR );
+          act( AT_PLAIN, "I see no $T here.", ch, NULL, argstr, TO_CHAR );
           return;
         }
         
 	if ( BV_IS_SET( ch->act, ACT_MOUNTED ) )
    	{
-          act( AT_PLAIN, "You can't go in there riding THAT.", ch, NULL, argument, TO_CHAR );
+          act( AT_PLAIN, "You can't go in there riding THAT.", ch, NULL, argstr, TO_CHAR );
           return;
    	} 
 
@@ -2090,7 +2072,7 @@ void do_drag( CHAR_DATA *ch, char *argument )
    	    char_from_room( ch );
    	    char_to_room( ch , to_room );
    	    act( AT_PLAIN, "$n enters the ship.", ch,
-		NULL, argument , TO_ROOM );
+		NULL, argstr , TO_ROOM );
             do_look( ch , "auto" );
 
             act( AT_PLAIN, "$n enters $T.", victim,
@@ -2100,7 +2082,7 @@ void do_drag( CHAR_DATA *ch, char *argument )
    	    char_from_room( victim );
    	    char_to_room( victim , to_room );
    	    act( AT_PLAIN, "$n enters the ship.", victim,
-		NULL, argument , TO_ROOM );
+		NULL, argstr , TO_ROOM );
             do_look( victim , "auto" );
 	    return;
         }
@@ -2110,7 +2092,7 @@ void do_drag( CHAR_DATA *ch, char *argument )
           return;
         }
       }  
-      if (!strcmp( arg2, "out" ))
+      if (!str_cmp( arg2, "out" ))
       {
     	fromroom = ch->in_room;
     
@@ -2122,7 +2104,7 @@ void do_drag( CHAR_DATA *ch, char *argument )
         
 	if ( BV_IS_SET( ch->act, ACT_MOUNTED ) )
    	{
-          act( AT_PLAIN, "You can't go out there riding THAT.", ch, NULL, argument, TO_CHAR );
+          act( AT_PLAIN, "You can't go out there riding THAT.", ch, NULL, argstr, TO_CHAR );
           return;
    	} 
 
@@ -2217,10 +2199,6 @@ void do_drag( CHAR_DATA *ch, char *argument )
     chance = 50;
     
 
-/*
-SPRINTF(buf, "Drag percentage of %s = %d", ch->name, chance);
-act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
-*/
 if (chance < number_percent( ))
 {
   send_to_char("You failed.\n", ch);
@@ -2498,9 +2476,10 @@ void do_newclan ( CHAR_DATA *ch , char *argument )
 
 void do_appoint ( CHAR_DATA *ch , char *argument )
 {
-    char arg[MAX_STRING_LENGTH];
+    std::string arg;
+    std::string argstr = argument;
     
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
     
     if ( IS_NPC( ch ) || !ch->pcdata )
       return;
@@ -2517,13 +2496,13 @@ void do_appoint ( CHAR_DATA *ch , char *argument )
 	return;
     }
 
-    if ( argument[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Useage: appoint <name> < first | second >\n", ch );
 	return;
     }
     
-    if ( !str_cmp( argument , "first" )  )
+    if ( !str_cmp( argstr , "first" )  )
     {
          if ( ch->pcdata->clan->number1 && str_cmp( ch->pcdata->clan->number1 , "" ) )
          {
@@ -2534,7 +2513,7 @@ void do_appoint ( CHAR_DATA *ch , char *argument )
          STRFREE( ch->pcdata->clan->number1 );
          ch->pcdata->clan->number1 = STRALLOC( arg );
     }        
-    else if ( !str_cmp( argument , "second" )  )
+    else if ( !str_cmp( argstr , "second" )  )
     {
          if ( ch->pcdata->clan->number2 && str_cmp( ch->pcdata->clan->number2 , "" ))
          {
@@ -2604,7 +2583,6 @@ void do_capture ( CHAR_DATA *ch , char *argument )
    PLANET_DATA *cPlanet;
    float support = 0.0;
 // int pCount = 0;   
-   char buf[MAX_STRING_LENGTH];
    
    if ( !ch->in_room || !ch->in_room->area)
       return;   
@@ -2704,8 +2682,7 @@ void do_capture ( CHAR_DATA *ch , char *argument )
    planet->governed_by = clan;
    planet->pop_support = 50;
    
-   SPRINTF( buf , "%s has claimed the planet %s!", clan->name, planet->name );   
-   echo_to_all( AT_RED , buf , 0 );
+   echo_to_all( AT_RED , str_printf("%s has claimed the planet %s!", clan->name, planet->name ) , 0 );
    
    save_planet( planet );
       
@@ -2714,11 +2691,11 @@ void do_capture ( CHAR_DATA *ch , char *argument )
 
 void do_empower ( CHAR_DATA *ch , char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string arg2;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     CLAN_DATA *clan;
-    char buf[MAX_STRING_LENGTH];
 
     if ( IS_NPC( ch ) || !ch->pcdata->clan )
     {
@@ -2738,10 +2715,10 @@ void do_empower ( CHAR_DATA *ch , char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Empower whom to do what?\n", ch );
 	return;
@@ -2774,7 +2751,7 @@ void do_empower ( CHAR_DATA *ch , char *argument )
     if (!victim->pcdata->bestowments)
       victim->pcdata->bestowments = str_dup("");
 
-    if ( arg2[0] == '\0' || !str_cmp( arg2, "list" ) )
+    if ( arg2.empty() || !str_cmp( arg2, "list" ) )
     {
         ch_printf( ch, "Current bestowed commands on %s: %s.\n",
                       victim->name, victim->pcdata->bestowments );
@@ -2811,63 +2788,56 @@ void do_empower ( CHAR_DATA *ch , char *argument )
     }
     else if ( !str_cmp( arg2, "pilot" ) )
     {
-      SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
       STR_DISPOSE( victim->pcdata->bestowments );
-      victim->pcdata->bestowments = str_dup( buf );
+      victim->pcdata->bestowments = str_dup( str_printf("%s %s", victim->pcdata->bestowments, arg2.c_str()) );
       ch_printf( victim, "%s has given you permission to fly clan ships.\n", 
              ch->name );
       send_to_char( "Ok, they now have the ability to fly clan ships.\n", ch );
     }
     else if ( !str_cmp( arg2, "withdraw" ) )
     {
-      SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
       STR_DISPOSE( victim->pcdata->bestowments );
-      victim->pcdata->bestowments = str_dup( buf );
+      victim->pcdata->bestowments = str_dup( str_printf("%s %s", victim->pcdata->bestowments, arg2.c_str()) );
       ch_printf( victim, "%s has given you permission to withdraw clan funds.\n", 
              ch->name );
       send_to_char( "Ok, they now have the ablitity to withdraw clan funds.\n", ch );
     }
     else if ( !str_cmp( arg2, "clanbuyship" ) )
     {
-      SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
       STR_DISPOSE( victim->pcdata->bestowments );
-      victim->pcdata->bestowments = str_dup( buf );
+      victim->pcdata->bestowments = str_dup( str_printf("%s %s", victim->pcdata->bestowments, arg2.c_str()) );
       ch_printf( victim, "%s has given you permission to buy clan ships.\n", 
              ch->name );
       send_to_char( "Ok, they now have the ablitity to use clanbuyship.\n", ch );
     }
     else if ( !str_cmp( arg2, "induct" ) )
     {
-      SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
       STR_DISPOSE( victim->pcdata->bestowments );
-      victim->pcdata->bestowments = str_dup( buf );
+      victim->pcdata->bestowments = str_dup( str_printf("%s %s", victim->pcdata->bestowments, arg2.c_str()) );
       ch_printf( victim, "%s has given you permission to induct new members.\n", 
              ch->name );
       send_to_char( "Ok, they now have the ablitity to induct new members.\n", ch );
     }
     else if ( !str_cmp( arg2, "empower" ) )
     {
-      SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
       STR_DISPOSE( victim->pcdata->bestowments );
-      victim->pcdata->bestowments = str_dup( buf );
+      victim->pcdata->bestowments = str_dup( str_printf("%s %s", victim->pcdata->bestowments, arg2.c_str()) );
       ch_printf( victim, "%s has given you permission to empower members.\n", 
              ch->name );
       send_to_char( "Ok, they now have the ablitity to empower members.\n", ch );
     }
     else if ( !str_cmp( arg2, "salary" ) )
     {
-      SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
       STR_DISPOSE( victim->pcdata->bestowments );
-      victim->pcdata->bestowments = str_dup( buf );
+      victim->pcdata->bestowments = str_dup( str_printf("%s %s", victim->pcdata->bestowments, arg2.c_str()) );
       ch_printf( victim, "%s has given you permission to assign salaries.\n", 
              ch->name );
       send_to_char( "Ok, they now have the ablitity to assign salaries.\n", ch );
     }
     else if ( !str_cmp( arg2, "roster" ) )
     {
-      SPRINTF( buf, "%s %s", victim->pcdata->bestowments, arg2 );
       STR_DISPOSE( victim->pcdata->bestowments );
-      victim->pcdata->bestowments = str_dup( buf );
+      victim->pcdata->bestowments = str_dup( str_printf("%s %s", victim->pcdata->bestowments, arg2.c_str()) );
       ch_printf( victim, "%s has given you permission to access the roster.\n", 
              ch->name );
       send_to_char( "Ok, they now have the ablitity to access the roster.\n", ch );
@@ -3040,8 +3010,9 @@ float get_taxes( PLANET_DATA *planet )
 
 void do_addsalary ( CHAR_DATA *ch , char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string arg2;
+    std::string argstr = argument;
     CHAR_DATA *victim;
     CLAN_DATA *clan;
     int salary;
@@ -3065,15 +3036,15 @@ void do_addsalary ( CHAR_DATA *ch , char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg );
-    argument = one_argument( argument, arg2 );
-//    if ( arg2[0] == '\0' )
+    argstr = one_argument( argstr, arg );
+    argstr = one_argument( argstr, arg2 );
+//    if ( arg2.empty() )
 //      info = TRUE;
     
     
-    salary = atoi(arg2);
+    salary = strtoi(arg2);
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Assign a salary to whom?\n", ch );
 	return;
@@ -3116,7 +3087,7 @@ void do_addsalary ( CHAR_DATA *ch , char *argument )
 
 }    
 
-void show_members( CHAR_DATA *ch, char *argument, char *format )
+void show_members( CHAR_DATA *ch, const std::string& argument, const std::string& format )
 {
      MEMBER_LIST	*members_list;
      MEMBER_DATA	*member;
@@ -3147,7 +3118,7 @@ void show_members( CHAR_DATA *ch, char *argument, char *format )
 "------------------------------------------------------------\n" );
     pager_printf( ch, "  Lvl         Name           Class Kills Deaths       Joined      Last On\n\n" );
 
-     if( format && format[0] != '\0' )
+     if( !format.empty() )
      {
          if( !str_cmp( format, "kills" )
              || !str_cmp( format, "deaths" )
@@ -3215,7 +3186,7 @@ void show_members( CHAR_DATA *ch, char *argument, char *format )
                      members++;
                      pager_printf( ch, "[%3d] %12s %15s %5d %6d %10s %10s\n",
                                    sort->member->level,
-                                   capitalize(sort->member->name ),
+                                   capitalize(sort->member->name ).c_str(),
                                    ability_name[sort->member->plrclass],
                                    sort->member->kills,
                                    sort->member->deaths,
@@ -3231,7 +3202,7 @@ void show_members( CHAR_DATA *ch, char *argument, char *format )
              	 members++;
                  pager_printf( ch, "[%3d] %12s %15s %5d %6d %10s %10s\n",
                                member->level,
-                               capitalize(member->name ),
+                               capitalize(member->name ).c_str(),
                                ability_name[member->plrclass],
                                member->kills,
                                member->deaths,
@@ -3250,7 +3221,7 @@ void show_members( CHAR_DATA *ch, char *argument, char *format )
              	 members++;
                  pager_printf( ch, "[%3d] %12s %15s %5d %6d %10s %10s\n", 
                  	       member->level,
-                               capitalize(member->name), 
+                               capitalize(member->name).c_str(), 
                                ability_name[member->plrclass],
                                member->kills, 
                                member->deaths, 
@@ -3313,11 +3284,11 @@ void do_roster( CHAR_DATA *ch, char *argument )
 }
 void do_members( CHAR_DATA *ch, char *argument )
 {
+     std::string arg1;
+     std::string argstr = argument;
+     argstr = one_argument( argstr, arg1 );
 
-     char arg1[MAX_STRING_LENGTH];
-     argument = one_argument( argument, arg1 );
-
-     if( argument[0] == '\0' || arg1[0] == '\0' )
+     if( argstr.empty() || arg1.empty() )
      {
          send_to_char( "Do what?\n", ch );
          return;
@@ -3333,7 +3304,7 @@ void do_members( CHAR_DATA *ch, char *argument )
              return;
          }
 
-         show_members( ch, argument, NULL );
+         show_members( ch, argstr, NULL );
          return;
      }
 
@@ -3343,10 +3314,10 @@ void do_members( CHAR_DATA *ch, char *argument )
 
          CREATE( members_list, MEMBER_LIST, 1 );
          members_list->game = ch->game;
-         members_list->name = STRALLOC( argument );
+         members_list->name = STRALLOC( argstr );
          LINK( members_list, first_member_list, last_member_list, next, prev );
          save_member_list( members_list );
-         ch_printf( ch, "Member lists \"%s\" created.\n", argument );
+         ch_printf( ch, "Member lists \"%s\" created.\n", argstr.c_str() );
          return;
      }
 
@@ -3356,7 +3327,7 @@ void do_members( CHAR_DATA *ch, char *argument )
          MEMBER_DATA *member;
 
          for( members_list = first_member_list; members_list; members_list = members_list->next )
-             if( !str_cmp( argument, members_list->name ) )
+             if( !str_cmp( argstr, members_list->name ) )
              {
                  while( members_list->first_member )
                  {
@@ -3370,7 +3341,7 @@ void do_members( CHAR_DATA *ch, char *argument )
                  STRFREE( members_list->name );
                  UNLINK( members_list, first_member_list, last_member_list, next, prev );
                  DISPOSE( members_list );
-                 ch_printf( ch, "Member list \"%s\" destroyed.\n", argument );
+                 ch_printf( ch, "Member list \"%s\" destroyed.\n", argstr.c_str() );
                  return;
              }
          send_to_char( "No such list.\n", ch );
@@ -3383,7 +3354,7 @@ void save_member_list( MEMBER_LIST *members_list )
      MEMBER_DATA	*member;
      FILE		*fp;
      CLAN_DATA    *clan;
-     char         buf[MAX_STRING_LENGTH];
+     std::string         buf;
 
      if( !members_list )
      {
@@ -3397,12 +3368,12 @@ void save_member_list( MEMBER_LIST *members_list )
          return;
      }
 
-     SPRINTF( buf, "%s%s.mem", CLAN_DIR, clan->filename );
+     buf = str_printf("%s%s.mem", CLAN_DIR, clan->filename);
 
-     if( ( fp = fopen( buf, "w" ) ) == NULL )
+     if( ( fp = fopen( buf.c_str(), "w" ) ) == NULL )
      {
          bug( "Cannot open clan.mem file for writing", 0 );
-         perror( buf );
+         perror( buf.c_str() );
          return;
      }
 
@@ -3416,17 +3387,17 @@ void save_member_list( MEMBER_LIST *members_list )
 
 }
 
-bool load_member_list( GameContext *game, char *filename )
+bool load_member_list( GameContext *game, const std::string& filename )
 {
      FILE *fp;
-     char buf[MAX_STRING_LENGTH];
+     std::string buf;
      MEMBER_LIST *members_list;
      MEMBER_DATA *member;
      int version;
 
-     SPRINTF( buf, "%s%s.mem", CLAN_DIR, filename );
+     buf = str_printf("%s%s.mem", CLAN_DIR, filename.c_str());
 
-     if( ( fp = fopen( buf, "r" ) ) == NULL )
+     if( ( fp = fopen( buf.c_str(), "r" ) ) == NULL )
      {
          bug( "Cannot open member list for reading", 0 );
          return FALSE;
@@ -3490,7 +3461,6 @@ void update_member( CHAR_DATA *ch )
      MEMBER_LIST *members_list;
      MEMBER_DATA *member;
      struct tm *t = localtime(&current_time);
-     char buf[MAX_STRING_LENGTH];
 
      if( IS_NPC( ch ) || IS_IMMORTAL(ch) || !ch->pcdata->clan )
          return;
@@ -3513,8 +3483,7 @@ void update_member( CHAR_DATA *ch )
                      }
 		             member->plrclass = ch->main_ability;
                      member->level = ch->top_level;
-                     SPRINTF( buf, "[%02d|%02d|%04d]", t->tm_mon+1, t->tm_mday, t->tm_year+1900 );
-                     member->laston = STRALLOC( buf );
+                     member->laston = STRALLOC( str_printf("[%02d|%02d|%04d]", t->tm_mon+1, t->tm_mday, t->tm_year+1900) );
                      gmcp_evt_char_status(ch);
                      save_member_list( members_list );
                      return;
@@ -3526,10 +3495,8 @@ void update_member( CHAR_DATA *ch )
                  member->name = STRALLOC( ch->name );
                  member->level = ch->top_level;
 		 member->plrclass = ch->main_ability;
-                 SPRINTF( buf, "[%02d|%02d|%04d]", t->tm_mon+1, t->tm_mday, t->tm_year+1900 );
-                 member->since = STRALLOC( buf );
-                 SPRINTF( buf, "[%02d|%02d|%04d]", t->tm_mon+1, t->tm_mday, t->tm_year+1900 );
-                 member->laston = STRALLOC( buf );
+                 member->since = STRALLOC( str_printf("[%02d|%02d|%04d]", t->tm_mon+1, t->tm_mday, t->tm_year+1900) );
+                 member->laston = STRALLOC( str_printf("[%02d|%02d|%04d]", t->tm_mon+1, t->tm_mday, t->tm_year+1900) );
                  if( ch->pcdata->clan->clan_type == CLAN_PLAIN )
                  {
                      member->kills = ch->pcdata->pkills;

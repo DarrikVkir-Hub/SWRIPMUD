@@ -63,12 +63,8 @@
 #include "olc.h"
 
 // External functions
-extern size_t visible_length(const char *txt);
-extern char *wrap_text_ex(const char *txt, int width, int flags, int indent);
-extern int get_exflag( char *flag );
-extern int get_risflag( char *flag );
-extern int get_npc_race( char *type );
-extern size_t get_langflag(char *flag);
+extern size_t visible_length(const std::string&txt);
+std::string wrap_text_ex( const std::string& txt, int width, int flags, int indent );
 extern bool command_is_authorized_for_char(CHAR_DATA* ch, CMDTYPE* cmd);
 
 // Internal functions
@@ -116,7 +112,7 @@ void olc_replace_string(char*& dst, const char* src)
     if (dst)
         STRFREE(dst);
 
-    dst = (src && src[0] != '\0') ? STRALLOC((char*)src) : nullptr;
+    dst = (src && src[0] != '\0') ? STRALLOC((char*)src) : STRALLOC("");
 }
 
 void olc_replace_string_idx(char*& dst, const char* src)
@@ -124,19 +120,19 @@ void olc_replace_string_idx(char*& dst, const char* src)
     if (dst)
         STRFREE(dst);
 
-    dst = (src && src[0] != '\0') ? STRALLOC((char*)src) : nullptr;
+    dst = (src && src[0] != '\0') ? STRALLOC((char*)src) : STRALLOC("");
 }
 
-bool olc_command_matches(const char* input, const char* word)
+bool olc_command_matches(const std::string& input, const std::string& word)
 {
-    return input && word && !str_prefix(input, word);
+    return !input.empty() && !word.empty() && !str_prefix(input, word);
 }
 
 bool enum_from_string_legacy(const std::string& input, int& out, const char* const* table)
 {
     for (int i = 0; table[i] != nullptr; ++i)
     {
-        if (!str_cmp_utf8(input.c_str(), table[i]))
+        if (!str_cmp_utf8(input, table[i]))
         {
             out = i;
             return true;
@@ -210,7 +206,7 @@ bool bitset_apply_from_string(BitSet& bs, const std::string& input, const flag_n
 
         for (size_t i = 0; table[i].name != nullptr; ++i)
         {
-            if (!str_cmp_utf8(token.c_str(), table[i].name))
+            if (!str_cmp_utf8(token, table[i].name))
             {
                 flag = &table[i];
                 break;
@@ -289,13 +285,13 @@ MatchResult match_keywords(const std::string& keyword_list, const std::string& i
     for (const auto& word : words)
     {
         // Exact match
-        if (!str_cmp(word.c_str(), input.c_str()))
+        if (!str_cmp(word, input))
         {
             return { MatchType::EXACT, word.length() };
         }
 
         // Prefix match
-        if (!str_prefix(input.c_str(), word.c_str()))
+        if (!str_prefix(input, word))
         {
             if (word.length() > result.match_length)
             {
@@ -357,7 +353,7 @@ int dir_lookup(const std::string& dir)
     /* Fallback to existing full-name matching (if any) */
     for (int i = 0; i <= MAX_DIR+1; ++i)
     {
-        if (!str_cmp(d.c_str(), dir_name[i]))
+        if (!str_cmp(d, dir_name[i]))
             return i;
     }
 
@@ -430,16 +426,16 @@ EXIT_DATA* find_exit_by_keyword(ROOM_INDEX_DATA* room, const std::string& keywor
         if (!ex->keyword || ex->keyword[0] == '\0')
             continue;
 
-        if (is_name(keyword.c_str(), ex->keyword))
+        if (is_name(keyword, ex->keyword))
             return ex;
     }
 
     return nullptr;
 }
 
-bool olc_is_direction_alias(const char* cmd)
+bool olc_is_direction_alias(const std::string& cmd)
 {
-    if (!cmd || cmd[0] == '\0')
+    if (cmd.empty())
         return false;
 
     std::string input = cmd;
@@ -481,7 +477,7 @@ std::vector<std::string> olc_wrap_value_pairs(
 
     for (const auto& pair : pairs)
     {
-        int pair_len = visible_length(pair.c_str());
+        int pair_len = visible_length(pair);
         int sep_len = current.empty() ? 0 : 2; /* "  " */
 
         if (!current.empty() && current_len + sep_len + pair_len > width)
@@ -529,24 +525,23 @@ std::vector<std::string> olc_format_wrap_text(
     if (indent > 0)
         flags |= WRAP_HANGING_INDENT;
 
-    char* wrapped = wrap_text_ex(text.c_str(), width, flags, indent);
+    std::string wrapped = wrap_text_ex(text, width, flags, indent);
 
-    if (!wrapped)
+    if (wrapped.empty())
         return lines;
 
-    // Split into lines
-    char* p = wrapped;
-    char* start = p;
+    size_t start = 0;
+    size_t p = 0;
 
-    while (*p)
+    while (p < wrapped.size())
     {
-        if (*p == '\n' || *p == '\r')
+        if (wrapped[p] == '\n' || wrapped[p] == '\r')
         {
             if (p > start)
-                lines.emplace_back(start, p - start);
+                lines.emplace_back(wrapped.substr(start, p - start));
 
-            // skip CRLF combos
-            while (*p == '\n' || *p == '\r')
+            /* skip CR/LF combos */
+            while (p < wrapped.size() && (wrapped[p] == '\n' || wrapped[p] == '\r'))
                 ++p;
 
             start = p;
@@ -557,11 +552,9 @@ std::vector<std::string> olc_format_wrap_text(
         }
     }
 
-    // last line
+    /* last line */
     if (p > start)
-        lines.emplace_back(start, p - start);
-
-    STR_DISPOSE(wrapped); // or free(), depending on your allocator
+        lines.emplace_back(wrapped.substr(start, p - start));
 
     return lines;
 }
@@ -629,7 +622,7 @@ std::string olc_format_columns(
     // Compute max visible width of items
     size_t max_len = 0;
     for (const auto& s : items)
-        max_len = std::max(max_len, (size_t)visible_length(s.c_str()));
+        max_len = std::max(max_len, (size_t)visible_length(s));
 
     max_len += 2; // spacing between columns
 
@@ -654,7 +647,7 @@ std::string olc_format_columns(
         const std::string& item = items[i];
         out += item;
 
-        int vis_len = visible_length(item.c_str());
+        int vis_len = visible_length(item);
         int spacing = max_len - vis_len;
 
         // Pad unless last column
@@ -1044,7 +1037,7 @@ void olc_show_affect_location_choices(CHAR_DATA* ch)
             values,
             ch->desc && ch->desc->term_width > 20 ? ch->desc->term_width : 75,
             4);
-        send_to_char(col.c_str(), ch);
+        send_to_char(col, ch);
     }
 }
 
@@ -1110,7 +1103,7 @@ void olc_show_affect_modifier_choices(CHAR_DATA* ch, int loc)
                     values,
                     ch->desc && ch->desc->term_width > 20 ? ch->desc->term_width : 75,
                     4);
-                send_to_char(col.c_str(), ch);
+                send_to_char(col, ch);
             }
             return;
         }
@@ -1129,7 +1122,7 @@ void olc_show_affect_modifier_choices(CHAR_DATA* ch, int loc)
                     values,
                     ch->desc && ch->desc->term_width > 20 ? ch->desc->term_width : 75,
                     4);
-                send_to_char(col.c_str(), ch);
+                send_to_char(col, ch);
             }
             return;
         }
@@ -1169,7 +1162,7 @@ bool olc_edit_affect_field_generic(
     AFFECT_DATA*& first_affect = first_affect_ref(target);
     AFFECT_DATA*& last_affect  = last_affect_ref(target);
 
-    if (!str_cmp(first.c_str(), "add"))
+    if (!str_cmp(first, "add"))
     {
         std::string field_name;
         std::string value_text;
@@ -1187,7 +1180,7 @@ bool olc_edit_affect_field_generic(
             return false;
         }
 
-        loc = get_atype(const_cast<char*>(field_name.c_str()));
+        loc = get_atype(field_name);
         if (loc < 1)
         {
             ch_printf(ch, "Unknown affect field: %s\n", field_name.c_str());
@@ -1252,7 +1245,7 @@ bool olc_edit_affect_field_generic(
         return false;
     }
 
-    if (!str_cmp(cmd.c_str(), "delete"))
+    if (!str_cmp(cmd, "delete"))
     {
         if (af->prev)
             af->prev->next = af->next;
@@ -1270,7 +1263,7 @@ bool olc_edit_affect_field_generic(
         return true;
     }
 
-    if (!str_cmp(cmd.c_str(), "location"))
+    if (!str_cmp(cmd, "location"))
     {
         std::string field_name;
         iss >> field_name;
@@ -1282,7 +1275,7 @@ bool olc_edit_affect_field_generic(
             return false;
         }
 
-        int loc = get_atype(const_cast<char*>(field_name.c_str()));
+        int loc = get_atype(field_name);
         if (loc < 1)
         {
             ch_printf(ch, "Unknown affect field: %s\n", field_name.c_str());
@@ -1296,7 +1289,7 @@ bool olc_edit_affect_field_generic(
         return true;
     }
 
-    if (!str_cmp(cmd.c_str(), "modifier"))
+    if (!str_cmp(cmd, "modifier"))
     {
         std::string value_text;
         std::getline(iss, value_text);
@@ -1322,7 +1315,7 @@ bool olc_edit_affect_field_generic(
         return true;
     }
 
-    if (!str_cmp(cmd.c_str(), "duration"))
+    if (!str_cmp(cmd, "duration"))
     {
         int value = 0;
         if (!(iss >> value))
@@ -1338,7 +1331,7 @@ bool olc_edit_affect_field_generic(
         return true;
     }
 
-    if (!str_cmp(cmd.c_str(), "type"))
+    if (!str_cmp(cmd, "type"))
     {
         int value = 0;
         if (!(iss >> value))
@@ -1353,7 +1346,7 @@ bool olc_edit_affect_field_generic(
         return true;
     }
 
-    if (!str_cmp(cmd.c_str(), "bitvector"))
+    if (!str_cmp(cmd, "bitvector"))
     {
         int value = -1;
         const flag_name* flag;
@@ -1380,7 +1373,7 @@ bool olc_edit_affect_field_generic(
                     values,
                     ch->desc && ch->desc->term_width > 20 ? ch->desc->term_width : 75,
                     4);
-                send_to_char(col.c_str(), ch);
+                send_to_char(col, ch);
             }
 
             return false;
@@ -1449,7 +1442,7 @@ void olc_apply_flag_delta(BitSet& dst, const BitSet& edited, const BitSet& basel
     }
 }
 
-bool olc_try_inline_interpret(CHAR_DATA* ch, char* command, char* argument, OlcInterpretStage stage)
+bool olc_try_inline_interpret(CHAR_DATA* ch, const std::string& command, const std::string& argument, OlcInterpretStage stage)
 {
     if (!ch || !ch->desc || !ch->desc->olc)
         return false;
@@ -1661,7 +1654,7 @@ bool olc_has_active_session(CHAR_DATA* ch)
 
 bool olc_matches_word(const std::string& input, const char* word)
 {
-    return !str_prefix(input.c_str(), word);
+    return !str_prefix(input, word);
 }
 
 bool olc_dispatch_entry_command(CHAR_DATA* ch, const std::string& type, const std::string& rest)
@@ -1773,21 +1766,17 @@ bool olc_dispatch_session_command(CHAR_DATA* ch, const std::string& cmd, const s
 
     if (olc_matches_word(cmd, "show"))
     {
-        char arg1[MIL];
-        char arg2[MIL];
-        char restbuf[MSL];
+        std::string arg1;
+        std::string arg2;
+        std::string restbuf;
 
-        arg1[0] = '\0';
-        arg2[0] = '\0';
-        restbuf[0] = '\0';
-
-        snprintf(restbuf, sizeof(restbuf), "%s", rest.c_str());
-        char* p = restbuf;
+        restbuf = rest;
+        std::string p = restbuf;
         p = one_argument(p, arg1);
         p = one_argument(p, arg2);
 
-        std::string field = arg1[0] != '\0' ? arg1 : "";
-        std::string value = p && p[0] != '\0' ? p : "";
+        std::string field = arg1;
+        std::string value = p;
 
         if (!value.empty())
             value.erase(0, value.find_first_not_of(' '));
@@ -2110,7 +2099,7 @@ void olc_set(CHAR_DATA* ch, const std::string& field, const std::string& value)
 // --------------------------------------------
 void do_olcset(CHAR_DATA* ch, char* argument)
 {
-
+    std::string argstr = argument;
     if (!ch || !ch->desc || !ch->desc->olc)
     {
         send_to_char("You are not editing anything.\n", ch);
@@ -2123,10 +2112,10 @@ void do_olcset(CHAR_DATA* ch, char* argument)
             return;
     }
 
-    char field_buf[MIL] = {0};
-    argument = one_argument(argument, field_buf);
+    std::string field_buf;
+    argstr = one_argument(argstr, field_buf);
 
-    if (field_buf[0] == '\0')
+    if (field_buf.empty())
     {
         send_to_char("Set what?\n", ch);
         olc_show(ch, "help", "");
@@ -2134,12 +2123,12 @@ void do_olcset(CHAR_DATA* ch, char* argument)
     }
 
     std::string field(field_buf);
-    std::string value(argument ? argument : "");
+    std::string value(argstr);
 
     // Trim leading spaces
     value.erase(0, value.find_first_not_of(' '));
 
-    if (!str_cmp(field.c_str(), "bexit"))
+    if (!str_cmp(field, "bexit"))
     {
         olc_set(ch, "bexit", value);
         return;
@@ -2150,11 +2139,12 @@ void do_olcset(CHAR_DATA* ch, char* argument)
 
 void do_olcshow(CHAR_DATA* ch, char* argument)
 {
-    char field_buf[MIL] = {0};
-    argument = one_argument(argument, field_buf);
+    std::string field_buf;
+    std::string argstr = argument;
+    argstr = one_argument(argstr, field_buf);
 
     std::string field(field_buf);
-    std::string value(argument ? argument : "");
+    std::string value(argstr);
 
     value.erase(0, value.find_first_not_of(' '));
 
@@ -2163,15 +2153,16 @@ void do_olcshow(CHAR_DATA* ch, char* argument)
 
 void do_olc(CHAR_DATA* ch, char* argument)
 {
-    char arg1[MIL];
+    std::string arg1;
+    std::string argstr = argument;
 
     if (!ch || !ch->desc)
         return;
 
-    argument = one_argument(argument, arg1);
+    argstr = one_argument(argstr, arg1);
 
     std::string cmd = arg1[0] != '\0' ? arg1 : "";
-    std::string rest = argument && argument[0] != '\0' ? argument : "";
+    std::string rest = argstr;
 
     if (!rest.empty())
         rest.erase(0, rest.find_first_not_of(' '));

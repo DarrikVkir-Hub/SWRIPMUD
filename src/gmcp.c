@@ -546,7 +546,7 @@ void gmcp_evt_char_status(CHAR_DATA *ch)
     changed |= gmcp_cache_set(d, "Char.Status.name", ch->name);
     changed |= gmcp_cache_set(d, "Char.Status.fullname", ch->pcdata->title);
     changed |= gmcp_cache_set(d, "Char.Status.class", ability_name[ch->main_ability]);
-    changed |= gmcp_cache_set(d, "Char.Status.race", capitalize(get_race(ch)));
+    changed |= gmcp_cache_set(d, "Char.Status.race", capitalize(get_race(ch)).c_str());
     changed |= gmcp_cache_set_int(d, "Char.Status.wimpy", ch->wimpy);
     changed |= gmcp_cache_set(d, "Char.Status.wanted", bitset_to_string(ch->pcdata->wanted_flags, planet_flags).c_str());
 

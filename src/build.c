@@ -713,9 +713,9 @@ std::string bitset_to_string(const FLAG_SET &bv, const flag_name *table,
     return result;
 }
 
-bool string_to_bitset(const char *str, FLAG_SET &bv, const flag_name *table, bool clear_first)
+bool string_to_bitset(const std::string& str, FLAG_SET &bv, const flag_name *table, bool clear_first)
 {
-    if (!str || *str == '\0')
+    if (str.empty())
         return false;
 
     if (clear_first)
@@ -729,7 +729,7 @@ bool string_to_bitset(const char *str, FLAG_SET &bv, const flag_name *table, boo
     {
         for (size_t i = 0; table[i].name != nullptr; ++i)
         {
-            if (!str_cmp_utf8(token.c_str(), table[i].name))
+            if (!str_cmp_utf8(token, table[i].name))
             {
                 bv.set(table[i].bit);
                 found_any = true;
@@ -751,12 +751,12 @@ const char *flag_bit_name(size_t bit, const flag_name *table)
     return nullptr;
 }
 
-size_t get_flag_partial(const char *input,
+size_t get_flag_partial(const std::string&input,
                         const flag_name *table,
                         size_t start = 0,
                         size_t end = (size_t)-1)
 {
-    if (!input || *input == '\0')
+    if (input.empty())
         return BIT_NOTFOUND;
 
     // 1. Exact match first
@@ -787,7 +787,7 @@ size_t get_flag_partial(const char *input,
         if (end != BIT_NOTFOUND && bit >= end)
             continue;
 
-        if (!strncasecmp(input, table[i].name, strlen(input)))
+        if (!strncasecmp(input.c_str(), table[i].name, input.length()))
         {
             match = bit;
         }
@@ -941,7 +941,7 @@ bool can_medit( CHAR_DATA *ch, MOB_INDEX_DATA *mob )
 	return FALSE;
 }
 
-int get_otype( char *type )
+int get_otype( const std::string& type )
 {
 	const flag_name* x;
 	x = find_flag(o_types, type);
@@ -950,7 +950,7 @@ int get_otype( char *type )
 	return x->bit;
 }
 
-int get_aflag( char *flag )
+int get_aflag( const std::string& flag )
 {
 	const flag_name* x;
 	x = find_flag(aff_flags, flag);
@@ -959,7 +959,7 @@ int get_aflag( char *flag )
 	return x->bit;		
 }
 
-int get_spice_flag( char *flag )
+int get_spice_flag( const std::string& flag )
 {
 	const flag_name* x;
 	x = find_flag(spice_table, flag);
@@ -967,7 +967,7 @@ int get_spice_flag( char *flag )
 		return -1;
 	return x->bit;		
 }
-int get_trapflag( char *flag )
+int get_trapflag( const std::string& flag )
 {
     int x;
 
@@ -977,7 +977,7 @@ int get_trapflag( char *flag )
     return -1;
 }
 
-int get_atype( char *type )
+int get_atype( const std::string& type )
 {
 	const flag_name* x;
 	x = find_flag(a_types, type);
@@ -986,7 +986,7 @@ int get_atype( char *type )
 	return x->bit;
 }
 
-int get_npc_race( char *type )
+int get_npc_race( const std::string& type )
 {
 	const flag_name* x;
 	x = find_flag(npc_race, type);
@@ -995,7 +995,7 @@ int get_npc_race( char *type )
 	return x->bit;	
 }
 
-int get_wearloc( char *type )
+int get_wearloc( const std::string& type )
 {
     int x;
     
@@ -1005,7 +1005,7 @@ int get_wearloc( char *type )
     return -1;
 }
 
-int get_exflag( char *flag )
+int get_exflag( const std::string& flag )
 {
     int x;
     
@@ -1015,7 +1015,7 @@ int get_exflag( char *flag )
     return -1;
 }
 
-size_t get_rflag( char *flag )
+size_t get_rflag( const std::string& flag )
 {
 	const flag_name* x;
 	x = find_flag(r_flags, flag);
@@ -1024,7 +1024,7 @@ size_t get_rflag( char *flag )
 	return x->bit;			
 }
 
-int get_mpflag( char *flag )
+int get_mpflag( const std::string& flag )
 {
     int x;
     
@@ -1035,14 +1035,14 @@ int get_mpflag( char *flag )
 }
 
 
-int get_oflag( char *flag )
+int get_oflag( const std::string& flag )
 {
 	return get_flag_partial(flag, obj_flag_table, ITEM_FIRST, ITEM_MAX);
 }
 
-size_t get_flag(const char *flag, const flag_name *table)
+size_t get_flag(const std::string& flag, const flag_name *table)
 {
-    if (!flag || *flag == '\0')
+    if (flag.empty())
         return (size_t)-1;
 
     for (size_t i = 0; table[i].name != nullptr; ++i)
@@ -1054,12 +1054,12 @@ size_t get_flag(const char *flag, const flag_name *table)
     return (size_t)-1;
 }
 
-size_t get_objflag( char *flag )
+size_t get_objflag( const std::string& flag )
 {
 	return get_flag(flag, obj_flag_table);
 }
 
-int get_areaflag( char *flag )
+int get_areaflag( const std::string& flag )
 {
     int x;
 
@@ -1069,7 +1069,7 @@ int get_areaflag( char *flag )
     return -1;
 }
 
-int get_wflag( char *flag )
+int get_wflag( const std::string& flag )
 {
 	const flag_name* x;
 	x = find_flag(w_flags, flag);
@@ -1078,7 +1078,7 @@ int get_wflag( char *flag )
 	return x->bit;
 }
 
-int get_actflag( char *flag )
+int get_actflag( const std::string& flag )
 {
 	size_t ret;
 	ret = get_flag_partial(flag,act_flags);
@@ -1088,7 +1088,7 @@ int get_actflag( char *flag )
 		return ret;
 }
 
-int get_vip_flag( char *flag )
+int get_vip_flag(const  std::string& flag )
 {
 	size_t ret;
 	ret = get_flag_partial(flag,planet_flags);
@@ -1098,7 +1098,7 @@ int get_vip_flag( char *flag )
 		return ret;	
 }
 
-int get_wanted_flag( char *flag )
+int get_wanted_flag(const  std::string& flag )
 {
 	size_t ret;
 	ret = get_flag_partial(flag,planet_flags);
@@ -1108,7 +1108,7 @@ int get_wanted_flag( char *flag )
 		return ret;	
 }
 
-int get_pcflag( char *flag )
+int get_pcflag( const std::string& flag )
 {
 	const flag_name* x;
 	x = find_flag(pc_flags, flag);
@@ -1116,7 +1116,7 @@ int get_pcflag( char *flag )
 		return -1;
 	return x->bit;	
 }
-int get_plrflag( char *flag )
+int get_plrflag( const std::string& flag )
 {
 	size_t ret;
 	ret = get_flag_partial(flag,plr_flags);
@@ -1126,7 +1126,7 @@ int get_plrflag( char *flag )
 		return ret;
 }
 
-int get_risflag( char *flag )
+int get_risflag( const std::string& flag )
 {
 	const flag_name* x;
 	x = find_flag(ris_flags, flag);
@@ -1135,7 +1135,7 @@ int get_risflag( char *flag )
 	return x->bit;		
 }
 
-int get_trigflag( char *flag )
+int get_trigflag( const std::string& flag )
 {
 	const flag_name* x;
 	x = find_flag(trig_flags, flag);
@@ -1144,7 +1144,7 @@ int get_trigflag( char *flag )
 	return x->bit;		
 }
 
-int get_partflag( char *flag )
+int get_partflag( const std::string& flag )
 {
     int x;
 
@@ -1154,12 +1154,12 @@ int get_partflag( char *flag )
     return -1;
 }
 
-size_t get_attackflag( char *flag )
+size_t get_attackflag( const std::string& flag )
 {
 	return get_flag(flag, obj_attack_table);
 }
 
-int get_defenseflag( char *flag )
+int get_defenseflag( const std::string& flag )
 {
     int x;
 
@@ -1169,7 +1169,7 @@ int get_defenseflag( char *flag )
     return -1;
 }
 
-size_t get_langflag(char *flag)
+size_t get_langflag(const std::string& flag)
 {
     size_t x;
 
@@ -1182,26 +1182,46 @@ size_t get_langflag(char *flag)
 /*
  * Remove carriage returns from a line - Replaced with same function from SWRFUSS - DV 3-13-26
  */
+std::string strip_cr( const std::string &str )
+{
+    std::string result;
+    result.reserve( str.size() );
+
+    for ( char c : str )
+    {
+        if ( c != '\r' )
+            result += c;
+    }
+
+    return result;
+}
+
+void smush_tilde( std::string &str )
+{
+    if ( str.empty() )
+        return;
+
+    char last = str.back();
+
+    for ( char &c : str )
+    {
+        if ( c == '~' )
+            c = '-';
+    }
+
+    str.back() = last;
+}
+
 char *strip_cr( char *str )
 {
-   static char newstr[MAX_STRING_LENGTH];
-   int i, j;
+    static char newstr[MAX_STRING_LENGTH];
 
-   if( !str || str[0] == '\0' )
-   {
-      newstr[0] = '\0';
-      return newstr;
-   }
+    std::string result = strip_cr( std::string( str ? str : "" ) );
 
-   for( i = j = 0; str[i] != '\0'; i++ )
-   {
-      if( str[i] != '\r' )
-      {
-		newstr[j++] = str[i];
-      }
-   }
-   newstr[j] = '\0';
-   return newstr;
+    strncpy( newstr, result.c_str(), MAX_STRING_LENGTH - 1 );
+    newstr[MAX_STRING_LENGTH - 1] = '\0';
+
+    return newstr;
 }
 
 
@@ -1210,31 +1230,22 @@ char *strip_cr( char *str )
  */
 void smush_tilde( char *str )
 {
-    int len;
-    char last;
-    char *strptr;
-    
-    strptr = str;
-    
-    len  = strlen( str );
-    if ( len )
-      last = strptr[len-1];
-    else
-      last = '\0';
+    if ( !str )
+        return;
 
-    for ( ; *str != '\0'; str++ )
-    {
-	if ( *str == '~' )
-	    *str = '-';
-    }
-    if ( len )
-      strptr[len-1] = last;
+    std::string tmp = str;
+    smush_tilde( tmp );
 
-    return;
+    strncpy( str, tmp.c_str(), MAX_STRING_LENGTH - 1 );
+    str[MAX_STRING_LENGTH - 1] = '\0';
 }
 
-
 void start_editing( CHAR_DATA *ch, char *data )
+{
+    start_editing( ch, std::string( data ? data : "" ) );
+}
+
+void start_editing( CHAR_DATA *ch, const std::string &data )
 {
     EDITOR_DATA *edit;
     sh_int lines, size, lpos;
@@ -1265,25 +1276,12 @@ void start_editing( CHAR_DATA *ch, char *data )
     lpos = 0;
     lines = 0;
 
-    if ( !data )
-        bug("editor: data is NULL!\n", 0);
-    else
-    for ( ;; )
+    for ( size_t pos = 0; pos < data.size(); ++pos )
     {
-        c = data[size++];
+        c = data[pos];
+        ++size;
 
-        if ( c == '\0' )
-        {
-            edit->line[lines][lpos] = '\0';
-
-            /* Count final unterminated line if it has content,
-               or count the first blank line for empty text. */
-            if ( lpos > 0 || lines == 0 )
-                lines++;
-
-            break;
-        }
-        else if ( c == '\r' )
+        if ( c == '\r' )
         {
             ;
         }
@@ -1314,6 +1312,13 @@ void start_editing( CHAR_DATA *ch, char *data )
 
             break;
         }
+    }
+
+    if ( lpos > 0 || lines == 0 )
+    {
+        edit->line[lines][lpos] = '\0';
+        if ( lines < 50 )
+            lines++;
     }
 
     edit->numlines = lines;
@@ -1375,7 +1380,7 @@ void stop_editing( CHAR_DATA *ch )
 
 void do_goto( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     ROOM_INDEX_DATA *location;
     CHAR_DATA *fch;
     CHAR_DATA *fch_next;
@@ -1384,7 +1389,7 @@ void do_goto( CHAR_DATA *ch, char *argument )
     sh_int vnum;
 
     one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Goto where?\n", ch );
 	return;
@@ -1392,7 +1397,7 @@ void do_goto( CHAR_DATA *ch, char *argument )
 
     if ( ( location = find_location( ch, arg ) ) == NULL )
     {
-	vnum = atoi( arg );
+	vnum = strtoi( arg );
 	if ( vnum < 0 || get_room_index( vnum ) )
 	{
 		send_to_char( "You cannot find that...\n", ch );
@@ -1453,7 +1458,7 @@ void do_goto( CHAR_DATA *ch, char *argument )
     if ( get_trust( ch ) < LEVEL_GOD && 
     !( ch->pcdata->bestowments && is_name( "intergoto", ch->pcdata->bestowments) ))
     {
-        vnum = atoi( arg );
+        vnum = strtoi( arg );
     
         if ( !ch->pcdata || !(pArea=ch->pcdata->area) )
         {
@@ -1527,11 +1532,10 @@ void do_goto( CHAR_DATA *ch, char *argument )
 
 void do_mset( CHAR_DATA *ch, char *argument )
 {
-    char arg1 [MAX_INPUT_LENGTH];
-    char arg2 [MAX_INPUT_LENGTH];
-    char arg3 [MAX_INPUT_LENGTH];
-    char buf  [MAX_STRING_LENGTH];
-    char outbuf[MAX_STRING_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+	std::string argstr = argument;
     int  num,size,plus;
     char char1,char2;
     CHAR_DATA *victim;
@@ -1539,7 +1543,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	int i;
     int minattr, maxattr;
     bool lockvictim;
-    char *origarg = argument;
+    std::string origarg = argument;
 
     if ( IS_NPC( ch ) )
     {
@@ -1586,7 +1590,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 
     victim = NULL;
     lockvictim = FALSE;
-    smash_tilde( argument );
+    smash_tilde( argstr );
 
     if ( ch->substate == SUB_REPEATCMD )
     {
@@ -1595,10 +1599,10 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	{
 	    send_to_char( "Your victim died!\n", ch );
 	    victim = NULL;
-	    argument = "done";
+	    argstr = "done";
 	}
-	if ( argument[0] == '\0' || !str_cmp( argument, " " )
-	||   !str_cmp( argument, "stat" ) )
+	if ( argstr.empty() || !str_cmp( argstr, " " )
+	||   !str_cmp( argstr, "stat" ) )
 	{
 	    if ( victim )
 		do_mstat( ch, victim->name );
@@ -1606,7 +1610,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	        send_to_char( "No victim selected.  Type '?' for help.\n", ch );
 	    return;
 	}
-	if ( !str_cmp( argument, "done" ) || !str_cmp( argument, "off" ) )
+	if ( !str_cmp( argstr, "done" ) || !str_cmp( argstr, "off" ) )
 	{
 	    send_to_char( "Mset mode off.\n", ch );
 	    ch->substate = SUB_NONE;
@@ -1619,16 +1623,16 @@ void do_mset( CHAR_DATA *ch, char *argument )
     if ( victim )
     {
 	lockvictim = TRUE;
-	SPRINTF( arg1, "%s", victim->name );
-	argument = one_argument( argument, arg2 );
-	SPRINTF( arg3, "%s", argument );
+	arg1 = victim->name;
+	argstr = one_argument( argstr, arg2 );
+	arg3 = argstr;
     }
     else
     {
 	lockvictim = FALSE;
-	argument = one_argument( argument, arg1 );
-	argument = one_argument( argument, arg2 );
-	SPRINTF( arg3, "%s", argument );
+	argstr = one_argument( argstr, arg1 );
+	argstr = one_argument( argstr, arg2 );
+	arg3 = argstr;
     }
 /*
     if ( !str_cmp( arg1, "on" ) )
@@ -1637,7 +1641,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	return;
     }
 */
-    if ( arg1[0] == '\0' || (arg2[0] == '\0' && ch->substate != SUB_REPEATCMD)
+    if ( arg1.empty() || (arg2.empty() && ch->substate != SUB_REPEATCMD)
     ||   !str_cmp( arg1, "?" ) )
     {
 	if ( ch->substate == SUB_REPEATCMD )
@@ -1735,10 +1739,10 @@ void do_mset( CHAR_DATA *ch, char *argument )
     }
  */
  
-    value = is_number( arg3 ) ? atoi( arg3 ) : -1;
+    value = is_number( arg3 ) ? strtoi( arg3 ) : -1;
 
-    if ( atoi(arg3) < -1 && value == -1 )
-      value = atoi(arg3);
+    if ( strtoi(arg3) < -1 && value == -1 )
+      value = strtoi(arg3);
 
     if ( !str_cmp( arg2, "str" ) )
     {
@@ -1956,7 +1960,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	  return;
 	value = get_npc_race( arg3 );
 	if ( value < 0 )
-	  value = atoi( arg3 );
+	  value = strtoi( arg3 );
 	if ( !IS_NPC(victim) && (value < 0 || value >= MAX_RACE) )
 	{
 	    ch_printf( ch, "Race range is 0 to %d.\n", MAX_RACE-1 );
@@ -2019,18 +2023,12 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	  victim->pIndexData->hitroll = victim->hitroll;
 	  victim->pIndexData->damroll = victim->damroll;
 	}
-	SPRINTF(outbuf,"%s damnumdie %d",arg1, value/10);
-        do_mset( ch, outbuf );
-	SPRINTF(outbuf,"%s damsizedie %d",arg1, 4);
-        do_mset( ch, outbuf );
-	SPRINTF(outbuf,"%s damplus %d",arg1, 2);
-        do_mset( ch, outbuf );
-	SPRINTF(outbuf,"%s hitnumdie %d",arg1, value/5);
-        do_mset( ch, outbuf );
-	SPRINTF(outbuf,"%s hitsizedie %d",arg1, 10);
-        do_mset( ch, outbuf );
-        SPRINTF(outbuf,"%s hitplus %d",arg1, value*10 );
-        do_mset( ch, outbuf );
+    do_mset( ch, (char*)str_printf("%s damnumdie %d",arg1.c_str(), value/10).c_str() );
+	do_mset( ch, (char*)str_printf("%s damsizedie %d",arg1.c_str(), 4).c_str() );
+	do_mset( ch, (char*)str_printf("%s damplus %d",arg1.c_str(), 2).c_str() );
+	do_mset( ch, (char*)str_printf("%s hitnumdie %d",arg1.c_str(), value/5).c_str() );
+    do_mset( ch, (char*)str_printf("%s hitsizedie %d",arg1.c_str(), 10).c_str() );
+    do_mset( ch, (char*)str_printf("%s hitplus %d",arg1.c_str(), value*10 ).c_str() );
 	
 	return;
     }
@@ -2050,8 +2048,8 @@ void do_mset( CHAR_DATA *ch, char *argument )
         {
           send_to_char("Command Groups: \n",ch);
           for (i = 0; i <  MAX_COMMAND_GROUP; i++) {
-            SPRINTF(buf,"%d) %s\n",i, get_flag_name(command_groups, i, MAX_COMMAND_GROUP)); 
-            send_to_char(buf,ch);
+//            SPRINTF(buf,"%d) %s\n",i, get_flag_name(command_groups, i, MAX_COMMAND_GROUP)); 
+            send_to_char(str_printf("%d) %s\n",i, get_flag_name(command_groups, i, MAX_COMMAND_GROUP)),ch);
           }
           return;
         }
@@ -2235,7 +2233,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	return;
       }
 
-      if ( strlen(arg3) < 5 )
+      if ( arg3.length() < 5 )
       {
 	send_to_char(
 	    "New password must be at least five characters long.\n", ch );
@@ -2245,10 +2243,10 @@ void do_mset( CHAR_DATA *ch, char *argument )
       /*
        * No tilde allowed because of player file format.
        */
-// New SHA256 password hashing - AI/DV 3-12-26
+// New SHA256 password hashing - DV 3-12-26
     char pwdhash[65];
 
-	sha256_hash(arg3, pwdhash);
+	sha256_hash(arg3.c_str(), pwdhash);
 	pwdnew = pwdhash;
 
 //      pwdnew = crypt( arg3, ch->name );
@@ -2467,7 +2465,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 
-	if( arg3[0] == '\0' )
+	if( arg3.empty() )
 	{
 		/*
 		* Crash bug fix, oops guess I should have caught this one :)
@@ -2491,7 +2489,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 		victim->pcdata->clan = NULL;
 		return;
 	}
-	clan = get_clan( arg3 );
+	clan = get_clan( (arg3) );
 	if ( !clan )
 	{
 	   send_to_char( "No such clan.\n", ch );
@@ -2532,9 +2530,9 @@ void do_mset( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg2, "long" ) )
     {
 	STRFREE( victim->long_descr );
-	SPRINTF( buf, "%s", arg3 );
-	STRAPP( buf, "\n" );
-	victim->long_descr = STRALLOC( buf );
+//	SPRINTF( buf, "%s", arg3 );
+//	STRAPP( buf, "\n" );
+	victim->long_descr = STRALLOC( str_printf("%s\n", arg3.c_str()) );
 	if ( IS_NPC(victim) && BV_IS_SET( victim->act, ACT_PROTOTYPE ) )
 	{
 	   STRFREE( victim->pIndexData->long_descr );
@@ -2545,7 +2543,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "description" ) )
     {
-	if ( arg3[0] )
+	if ( !arg3.empty() )
 	{
 	   STRFREE( victim->description );
 	   victim->description = STRALLOC( arg3 );
@@ -2671,17 +2669,17 @@ void do_mset( CHAR_DATA *ch, char *argument )
 
 	if ( !can_mmodify( ch, victim ) )
 	  return;
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Usage: mset <victim> flags <flag> [flag]...\n", ch );
 	   send_to_char( "sentinal, scavenger, aggressive, stayarea, wimpy, practice, immortal,\n", ch );
 	   send_to_char( "deadly, mountable, guardian, nokill, scholar, noassist, droid, nocorpse,\n", ch );
 	   return;
 	}
-	while ( argument[0] != '\0' )
+	while ( !argstr.empty() )
 	{
         pcflag = FALSE;
-	   	argument = one_argument( argument, arg3 );
+	   	argstr = one_argument( argstr, arg3 );
 	   	value = IS_NPC( victim) ? get_actflag( arg3 ) : get_plrflag( arg3 );
 
 	   if ( !IS_NPC( victim ) && ( value < 0 ) )
@@ -2690,7 +2688,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	    	 	value = get_pcflag( arg3 );
            }
 	   if ( value < 0 )
-	     ch_printf( ch, "Unknown flag: %s\n", arg3 );
+	     ch_printf( ch, "Unknown flag: %s\n", arg3.c_str() );
 	   else
 	   {
 	     if ( IS_NPC(victim) && value == ACT_IS_NPC )
@@ -2733,16 +2731,16 @@ void do_mset( CHAR_DATA *ch, char *argument )
        
 	if ( !can_mmodify( ch, victim ) )
 	  return;
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Usage: mset <victim> wanted <planet> [planet]...\n", ch );
 	   return;
 	}
         
-        while ( argument[0] != '\0' )
+        while ( !argstr.empty() )
 	{
-	   argument = one_argument( argument, arg3 );
-	   value = get_wanted_flag( arg3 );
+	   argstr = one_argument( argstr, arg3 );
+	   value = get_wanted_flag( (arg3) );
 	     BV_TOGGLE_BIT( victim->pcdata->wanted_flags, value );
         }
         return;
@@ -2759,16 +2757,16 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	if ( !can_mmodify( ch, victim ) )
 	  return;
 	
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Usage: mset <victim> vip <planet> [planet]...\n", ch );
 	   return;
 	}
         
-        while ( argument[0] != '\0' )
+        while ( !argstr.empty() )
 	{
-	   argument = one_argument( argument, arg3 );
-	   value = get_vip_flag( arg3 );
+	   argstr = one_argument( argstr, arg3 );
+	   value = get_vip_flag( (arg3) );
 //           if ( value < 0 || value > 31 )
 //	     ch_printf( ch, "Unknown flag: %s\n", arg3 );
 //	   else
@@ -2790,17 +2788,17 @@ void do_mset( CHAR_DATA *ch, char *argument )
 
 	if ( !can_mmodify( ch, victim ) )
 	  return;
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Usage: mset <victim> affected <flag> [flag]...\n", ch);
 	   return;
 	}
-	while ( argument[0] != '\0' )
+	while ( !argstr.empty() )
 	{
-	   argument = one_argument( argument, arg3 );
+	   argstr = one_argument( argstr, arg3 );
 	   value = get_aflag( arg3 );
 	   if ( value < 0 )
-	     ch_printf( ch, "Unknown flag: %s\n", arg3 );
+	     ch_printf( ch, "Unknown flag: %s\n", arg3.c_str() );
 	   else
 	     BV_TOGGLE_BIT( victim->affected_by, value );
 	}
@@ -2822,8 +2820,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 		if ( !can_mmodify( ch, victim ) )
 			return;
 
-		SPRINTF(outbuf,"%s resistant %s",arg1, arg3);
-		do_mset( ch, outbuf );
+		do_mset( ch, (char*)str_printf("%s resistant %s",arg1.c_str(), arg3.c_str()).c_str() );
 		return;
     }
     if ( !str_cmp( arg2, "i" ) )
@@ -2836,9 +2833,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 		if ( !can_mmodify( ch, victim ) )
 			return;
 
-
-		SPRINTF(outbuf,"%s immune %s",arg1, arg3);
-			do_mset( ch, outbuf );
+		do_mset( ch, (char*)str_printf("%s immune %s",arg1.c_str(), arg3.c_str()).c_str() );
 			return;
     }
     if ( !str_cmp( arg2, "s" ) )
@@ -2851,8 +2846,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 		if ( !can_mmodify( ch, victim ) )
 			return;
 
-		SPRINTF(outbuf,"%s susceptible %s",arg1, arg3);
-			do_mset( ch, outbuf );
+		do_mset( ch, (char*)str_printf("%s susceptible %s",arg1.c_str(), arg3.c_str()).c_str() );
 			return;
     }
     if ( !str_cmp( arg2, "ri" ) )
@@ -2865,10 +2859,8 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	if ( !can_mmodify( ch, victim ) )
 	    return;
 
-	SPRINTF(outbuf,"%s resistant %s",arg1, arg3);
-        do_mset( ch, outbuf );
-	SPRINTF(outbuf,"%s immune %s",arg1, arg3);
-        do_mset( ch, outbuf );
+	do_mset( ch, (char*)str_printf("%s resistant %s",arg1.c_str(), arg3.c_str()).c_str() );
+	do_mset( ch, (char*)str_printf("%s immune %s",arg1.c_str(), arg3.c_str()).c_str() );
         return;
     }
 
@@ -2882,10 +2874,8 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	if ( !can_mmodify( ch, victim ) )
 	    return;
 
-	SPRINTF(outbuf,"%s resistant %s",arg1, arg3);
-        do_mset( ch, outbuf );
-	SPRINTF(outbuf,"%s susceptible %s",arg1, arg3);
-        do_mset( ch, outbuf );
+	do_mset( ch, (char*)str_printf("%s resistant %s",arg1.c_str(), arg3.c_str()).c_str() );
+        do_mset( ch, (char*)str_printf("%s susceptible %s",arg1.c_str(), arg3.c_str()).c_str() );
         return;
     }
     if ( !str_cmp( arg2, "is" ) )
@@ -2898,10 +2888,8 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	if ( !can_mmodify( ch, victim ) )
 	    return;
 
-	SPRINTF(outbuf,"%s immune %s",arg1, arg3);
-        do_mset( ch, outbuf );
-	SPRINTF(outbuf,"%s susceptible %s",arg1, arg3);
-        do_mset( ch, outbuf );
+	do_mset( ch, (char*)str_printf("%s immune %s",arg1.c_str(), arg3.c_str()).c_str() );
+	do_mset( ch, (char*)str_printf("%s susceptible %s",arg1.c_str(), arg3.c_str()).c_str() );
         return;
     }
     if ( !str_cmp( arg2, "ris" ) )
@@ -2914,12 +2902,9 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	if ( !can_mmodify( ch, victim ) )
 	    return;
 
-	SPRINTF(outbuf,"%s resistant %s",arg1, arg3);
-        do_mset( ch, outbuf );
-	SPRINTF(outbuf,"%s immune %s",arg1, arg3);
-        do_mset( ch, outbuf );
-	SPRINTF(outbuf,"%s susceptible %s",arg1, arg3);
-        do_mset( ch, outbuf );
+	do_mset( ch, (char*)str_printf("%s resistant %s",arg1.c_str(), arg3.c_str()).c_str() );
+	do_mset( ch, (char*)str_printf("%s immune %s",arg1.c_str(), arg3.c_str()).c_str() );
+	do_mset( ch, (char*)str_printf("%s susceptible %s",arg1.c_str(), arg3.c_str()).c_str() );
         return;
     }
 
@@ -2932,17 +2917,17 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !can_mmodify( ch, victim ) )
 	    return;
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Usage: mset <victim> resistant <flag> [flag]...\n", ch );
 	   return;
 	}
-	while ( argument[0] != '\0' )
+	while ( !argstr.empty() )
 	{
-	   argument = one_argument( argument, arg3 );
+	   argstr = one_argument( argstr, arg3 );
 	   value = get_risflag( arg3 );
 	   if ( value < 0 )
-		ch_printf( ch, "Unknown flag: %s\n", arg3 );
+		ch_printf( ch, "Unknown flag: %s\n", arg3.c_str() );
 	   else
 		BV_TOGGLE_BIT( victim->resistant, value );
 	}
@@ -2960,17 +2945,17 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !can_mmodify( ch, victim ) )
 	    return;
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	    send_to_char( "Usage: mset <victim> immune <flag> [flag]...\n", ch );
 	    return;
 	}
-	while ( argument[0] != '\0' )
+	while ( !argstr.empty() )
 	{
-	    argument = one_argument( argument, arg3 );
+	    argstr = one_argument( argstr, arg3 );
 	    value = get_risflag( arg3 );
 	    if ( value < 0 )
-		ch_printf( ch, "Unknown flag: %s\n", arg3 );
+		ch_printf( ch, "Unknown flag: %s\n", arg3.c_str() );
 	    else
 		BV_TOGGLE_BIT( victim->immune, value );
 	}
@@ -2988,17 +2973,17 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !can_mmodify( ch, victim ) )
 	    return;
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	    send_to_char( "Usage: mset <victim> susceptible <flag> [flag]...\n", ch );
 	    return;
 	}
-	while ( argument[0] != '\0' )
+	while ( !argstr.empty() )
 	{
-	    argument = one_argument( argument, arg3 );
+	    argstr = one_argument( argstr, arg3 );
 	    value = get_risflag( arg3 );
 	    if ( value < 0 )
-		ch_printf( ch, "Unknown flag: %s\n", arg3 );
+		ch_printf( ch, "Unknown flag: %s\n", arg3.c_str() );
 	    else
 		BV_TOGGLE_BIT( victim->susceptible, value );
 	}
@@ -3016,17 +3001,17 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !can_mmodify( ch, victim ) )
 	    return;
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	    send_to_char( "Usage: mset <victim> part <flag> [flag]...\n", ch );
 	    return;
 	}
-	while ( argument[0] != '\0' )
+	while ( !argstr.empty() )
 	{
-	    argument = one_argument( argument, arg3 );
+	    argstr = one_argument( argstr, arg3 );
 	    value = get_partflag( arg3 );
 	    if ( value < 0 || value > 31 )
-		ch_printf( ch, "Unknown flag: %s\n", arg3 );
+		ch_printf( ch, "Unknown flag: %s\n", arg3.c_str() );
 	    else
 		TOGGLE_BIT( victim->xflags, 1 << value );
 	}
@@ -3044,19 +3029,19 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !can_mmodify( ch, victim ) )
 	    return;
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	    send_to_char( "Usage: mset <victim> attack <flag> [flag]...\n", ch );
 	    send_to_char( "bite          claws        tail        sting      punch        kick\n", ch );
 	    send_to_char( "trip          bash         stun        gouge      backstab\n", ch );
 	    return;
 	}
-	while ( argument[0] != '\0' )
+	while ( !argstr.empty() )
 	{
-	    argument = one_argument( argument, arg3 );
-	    value = get_attackflag( arg3 );
+	    argstr = one_argument( argstr, arg3 );
+	    value = get_attackflag( (arg3) );
 	    if ( value < 0 || value > 31 )
-		ch_printf( ch, "Unknown flag: %s\n", arg3 );
+		ch_printf( ch, "Unknown flag: %s\n", arg3.c_str() );
 	    else
 		TOGGLE_BIT( victim->attacks, 1 << value );
 	}
@@ -3074,18 +3059,18 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	}
 	if ( !can_mmodify( ch, victim ) )
 	    return;
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	    send_to_char( "Usage: mset <victim> defense <flag> [flag]...\n", ch );
 	    send_to_char( "parry        dodge\n",ch );
 	    return;
 	}
-	while ( argument[0] != '\0' )
+	while ( !argstr.empty() )
 	{
-	    argument = one_argument( argument, arg3 );
+	    argstr = one_argument( argstr, arg3 );
 	    value = get_defenseflag( arg3 );
 	    if ( value < 0 || value > 31 )
-		ch_printf( ch, "Unknown flag: %s\n", arg3 );
+		ch_printf( ch, "Unknown flag: %s\n", arg3.c_str() );
 	    else
 		TOGGLE_BIT( victim->defenses, 1 << value );
 	}
@@ -3149,15 +3134,10 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	if ( !can_mmodify( ch, victim ) )
 	  return;
 
-        sscanf(arg3,"%d %c %d %c %d",&num,&char1,&size,&char2,&plus);
-	SPRINTF(outbuf,"%s hitnumdie %d",arg1, num);
-        do_mset( ch, outbuf );
-
-	SPRINTF(outbuf,"%s hitsizedie %d",arg1, size);
-        do_mset( ch, outbuf );
-
-	SPRINTF(outbuf,"%s hitplus %d",arg1, plus);
-        do_mset( ch, outbuf );
+        sscanf(arg3.c_str(),"%d %c %d %c %d",&num,&char1,&size,&char2,&plus);
+        do_mset( ch, (char*)str_printf("%s hitnumdie %d",arg1.c_str(), num).c_str() );
+        do_mset( ch, (char*)str_printf("%s hitsizedie %d",arg1.c_str(), size).c_str() );
+        do_mset( ch, (char*)str_printf("%s hitplus %d",arg1.c_str(), plus).c_str() );
         return;
     }
     /*
@@ -3173,13 +3153,10 @@ void do_mset( CHAR_DATA *ch, char *argument )
 	if ( !can_mmodify( ch, victim ) )
 	  return;
 
-        sscanf(arg3,"%d %c %d %c %d",&num,&char1,&size,&char2,&plus);
-	SPRINTF(outbuf,"%s damnumdie %d",arg1, num);
-        do_mset( ch, outbuf );
-	SPRINTF(outbuf,"%s damsizedie %d",arg1, size);
-        do_mset( ch, outbuf );
-	SPRINTF(outbuf,"%s damplus %d",arg1, plus);
-        do_mset( ch, outbuf );
+        sscanf(arg3.c_str(),"%d %c %d %c %d",&num,&char1,&size,&char2,&plus);
+        do_mset( ch, (char*)str_printf("%s damnumdie %d",arg1.c_str(), num).c_str() );
+        do_mset( ch, (char*)str_printf("%s damsizedie %d",arg1.c_str(), size).c_str() );
+        do_mset( ch, (char*)str_printf("%s damplus %d",arg1.c_str(), plus).c_str() );
         return;
     }
 
@@ -3340,18 +3317,18 @@ void do_mset( CHAR_DATA *ch, char *argument )
     {
     	if ( !can_mmodify( ch, victim ) )
     	    return;
-    	if ( !argument || argument[0] == '\0' )
+    	if ( argstr.empty() )
     	{
     	    send_to_char( "Usage: mset <victim> speaks <language> [language] ...\n", ch );
     	    return;
     	}
-    	while ( argument[0] != '\0' )
+    	while ( !argstr.empty() )
     	{
-			argument = one_argument( argument, arg3 );
+			argstr = one_argument( argstr, arg3 );
 			value = get_langflag( arg3 );
 			if ( value == LANG_UNKNOWN )
 			{
-				ch_printf( ch, "Unknown language: %s\n", arg3 );
+				ch_printf( ch, "Unknown language: %s\n", arg3.c_str() );
 				continue;
 			}
 			else
@@ -3359,7 +3336,7 @@ void do_mset( CHAR_DATA *ch, char *argument )
 				{
 					if ( !(VALID_LANG(value)) )
 					{
-							ch_printf( ch, "Players may not know %s.\n", arg3 );
+							ch_printf( ch, "Players may not know %s.\n", arg3.c_str() );
 						continue;
 					}    		
 	    		}
@@ -3387,17 +3364,17 @@ void do_mset( CHAR_DATA *ch, char *argument )
 		}
 		if ( !can_mmodify( ch, victim ) )
 			return;
-		if ( !argument || argument[0] == '\0' )
+		if ( argstr.empty() )
 		{
 			send_to_char( "Usage: mset <victim> speaking <language> [language]...\n", ch );
 			return;
 		}
 
-		argument = one_argument( argument, arg3 );
+		argstr = one_argument( argstr, arg3 );
 		value = get_langflag( arg3 );
 		if ( value == LANG_UNKNOWN )
 		{
-			ch_printf( ch, "Unknown language: %s\n", arg3 );
+			ch_printf( ch, "Unknown language: %s\n", arg3.c_str() );
 			return;
 		}
 		else
@@ -3427,15 +3404,12 @@ void do_mset( CHAR_DATA *ch, char *argument )
 
 void do_oset( CHAR_DATA *ch, char *argument )
 {
-    char arg1 [MAX_INPUT_LENGTH];
-    char arg2 [MAX_INPUT_LENGTH];
-    char arg3 [MAX_INPUT_LENGTH];
-    char buf  [MAX_STRING_LENGTH];
-    char outbuf  [MAX_STRING_LENGTH];
+    std::string arg1, arg2, arg3;
+	std::string argstr = argument;
     OBJ_DATA *obj, *tmpobj;
     EXTRA_DESCR_DATA *ed;
     bool lockobj;
-    char *origarg = argument;
+    std::string origarg = argument;
 
     int value, tmp;
 
@@ -3509,7 +3483,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
     }
 
     obj = NULL;
-    smash_tilde( argument );
+    smash_tilde( argstr );
 
     if ( ch->substate == SUB_REPEATCMD )
     {
@@ -3518,10 +3492,10 @@ void do_oset( CHAR_DATA *ch, char *argument )
 	{
 	    send_to_char( "Your object was extracted!\n", ch );
 	    obj = NULL;
-	    argument = "done";
+	    argstr = "done";
 	}
-	if ( argument[0] == '\0' || !str_cmp( argument, " " )
-	||   !str_cmp( argument, "stat" ) )
+	if ( argstr.empty() || !str_cmp( argstr, " " )
+	||   !str_cmp( argstr, "stat" ) )
 	{
 	    if ( obj )
 		do_ostat( ch, obj->name );
@@ -3529,7 +3503,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
 	        send_to_char( "No object selected.  Type '?' for help.\n", ch );
 	    return;
 	}
-	if ( !str_cmp( argument, "done" ) || !str_cmp( argument, "off" ) )
+	if ( !str_cmp( argstr, "done" ) || !str_cmp( argstr, "off" ) )
 	{
 	    send_to_char( "Oset mode off.\n", ch );
 	    ch->substate = SUB_NONE;
@@ -3542,16 +3516,16 @@ void do_oset( CHAR_DATA *ch, char *argument )
     if ( obj )
     {
 	lockobj = TRUE;
-	SPRINTF( arg1, "%s", obj->name );
-	argument = one_argument( argument, arg2 );
-	SPRINTF( arg3, "%s", argument );
+	arg1 = obj->name;
+	argstr = one_argument( argstr, arg2 );
+	arg3 = argstr;
     }
     else
     {
 	lockobj = FALSE;
-	argument = one_argument( argument, arg1 );
-	argument = one_argument( argument, arg2 );
-	SPRINTF( arg3, "%s", argument );
+	argstr = one_argument( argstr, arg1 );
+	argstr = one_argument( argstr, arg2 );
+	arg3 = argstr;
     }
 
 /*
@@ -3562,7 +3536,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
     }
 */
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' || !str_cmp( arg1, "?" ) )
+    if ( arg1.empty() || arg2.empty() || !str_cmp( arg1, "?" ) )
     {
 	if ( ch->substate == SUB_REPEATCMD )
 	{
@@ -3622,7 +3596,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
 
     separate_obj( obj );
 	
-    value = atoi( arg3 );
+    value = strtoi( arg3 );
 
 /*
     if ( !str_cmp( arg2, "on" ) )
@@ -3710,7 +3684,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
     {
 	if ( !can_omodify( ch, obj ) )
 	  return;
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Usage: oset <object> type <type>\n", ch );
 	   send_to_char( "Possible Types:\n", ch );
@@ -3729,10 +3703,10 @@ void do_oset( CHAR_DATA *ch, char *argument )
            send_to_char( "Bolt        Chemical\n", ch );	   
            return;
 	}
-	value = get_otype( argument );
+	value = get_otype( argstr );
 	if ( value < 1 )
 	{
-	     ch_printf( ch, "Unknown type: %s\n", arg3 );
+	     ch_printf( ch, "Unknown type: %s\n", arg3.c_str() );
 	     return;	
 	}
 	obj->item_type = (sh_int) value;
@@ -3745,7 +3719,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
     {
 		if ( !can_omodify( ch, obj ) )
 		return;
-		if ( !argument || argument[0] == '\0' )
+		if ( argstr.empty() )
 		{
 		send_to_char( "Usage: oset <object> flags <flag> [flag]...\n", ch );
 		send_to_char( "glow, dark, magic, bless, antievil, noremove, antisith, antisoldier,\n", ch );
@@ -3754,12 +3728,12 @@ void do_oset( CHAR_DATA *ch, char *argument )
 		send_to_char( "small_size, human_size, large_size, hutt_size, contraband\n", ch );
 		return;
 		}
-		while ( argument[0] != '\0' )
+		while ( !argstr.empty() )
 		{
-		argument = one_argument( argument, arg3 );
+		argstr = one_argument( argstr, arg3 );
 		value = get_oflag( arg3 );
 		if ( value < 0 )
-			ch_printf( ch, "Unknown flag: %s\n", arg3 );
+			ch_printf( ch, "Unknown flag: %s\n", arg3.c_str() );
 		else
 		{
 			BV_TOGGLE_BIT(obj->objflags, value);
@@ -3777,7 +3751,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
 			if ( !can_omodify( ch, obj ) )
 				return;
 
-			if ( !argument || argument[0] == '\0' )
+			if ( argstr.empty() )
 			{
 				send_to_char( "Usage: oset <object> objflags <flag(s)>...\n", ch );
 				std::string result;
@@ -3791,9 +3765,9 @@ void do_oset( CHAR_DATA *ch, char *argument )
 				return;
 			}			
 
-			while ( argument[0] != '\0' )
+			while ( !argstr.empty() )
 			{
-				argument = one_argument( argument, arg3 );
+				argstr = one_argument( argstr, arg3 );
 				value = get_objflag( arg3 );
 				{
 					BV_TOGGLE_BIT(obj->objflags, value);
@@ -3812,7 +3786,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
 			if ( !can_omodify( ch, obj ) )
 				return;
 
-			if ( !argument || argument[0] == '\0' )
+			if ( argstr.empty() )
 			{
 				send_to_char( "Usage: oset <object> trigflags <flag(s)>...\n", ch );
 				std::string result;
@@ -3826,14 +3800,14 @@ void do_oset( CHAR_DATA *ch, char *argument )
 				return;
 			}			
 
-			while ( argument[0] != '\0' )
+			while ( !argstr.empty() )
 			{
-				argument = one_argument( argument, arg3 );
+				argstr = one_argument( argstr, arg3 );
 				value = get_trigflag( arg3 );
 				if ( value >= 0)
 					BV_TOGGLE_BIT(obj->trig_flags, value);
 				else
-					ch_printf( ch, "Unknown flag: %s\n", arg3 );
+					ch_printf( ch, "Unknown flag: %s\n", arg3.c_str() );
 			}
 			if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
 				obj->pIndexData->trig_flags = obj->trig_flags; 
@@ -3845,7 +3819,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
     {
 	if ( !can_omodify( ch, obj ) )
 	  return;
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Usage: oset <object> wear <flag> [flag]...\n", ch );
            send_to_char( "Possible locations:\n", ch );
@@ -3855,12 +3829,12 @@ void do_oset( CHAR_DATA *ch, char *argument )
            send_to_char( "over\n", ch );
 	   return;
 	}
-	while ( argument[0] != '\0' )
+	while ( !argstr.empty() )
 	{
-	   argument = one_argument( argument, arg3 );
+	   argstr = one_argument( argstr, arg3 );
 	   value = get_wflag( arg3 );
 	   if ( value < 0 )
-	     ch_printf( ch, "Unknown flag: %s\n", arg3 );
+	     ch_printf( ch, "Unknown flag: %s\n", arg3.c_str() );
 	   else
 	     BV_TOGGLE_BIT( obj->wear_flags, value );
 	}
@@ -3932,7 +3906,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
     {
 		if ( !can_omodify( ch, obj ) )
 			return;
-		if( arg3[0] == '\0' )
+		if( arg3.empty() )
 		{
 			send_to_char( "&WYou &RMUST choose a new name\n", ch );
 			return;
@@ -3964,9 +3938,9 @@ void do_oset( CHAR_DATA *ch, char *argument )
         {
           if ( str_infix( "rename", obj->name ) )
           {
-            SPRINTF( buf, "%s %s", obj->name, "rename" );
+//            SPRINTF( buf, "%s %s", obj->name, "rename" );
 	    STRFREE( obj->name );
-	    obj->name = STRALLOC( buf );
+	    obj->name = STRALLOC( str_printf("%s %s", obj->name, "rename") );
           }
         }
 	return;
@@ -3974,13 +3948,14 @@ void do_oset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "actiondesc" ) )
     {
-	if ( strstr( arg3, "%n" )
-	||   strstr( arg3, "%d" )
-	||   strstr( arg3, "%l" ) )
+	if (arg3.find("%n") != std::string::npos ||
+		arg3.find("%d") != std::string::npos ||
+		arg3.find("%l") != std::string::npos)
 	{
 	   send_to_char( "Illegal characters!\n", ch );
 	   return;
 	}
+
 	STRFREE( obj->action_desc );
 	obj->action_desc = STRALLOC( arg3 );
 	if ( IS_OBJ_STAT( obj, ITEM_PROTOTYPE ) )
@@ -3993,7 +3968,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "long" ) )
     {
-	if ( arg3[0] )
+	if ( !arg3.empty() )
 	{
 	   STRFREE( obj->description );
 	   obj->description = STRALLOC( arg3 );
@@ -4024,8 +3999,8 @@ void do_oset( CHAR_DATA *ch, char *argument )
 		AFFECT_DATA *paf;
 		sh_int loc;
 
-		argument = one_argument( argument, arg2 );
-		if ( arg2[0] == '\0' || !argument || argument[0] == 0 )
+		argstr = one_argument( argstr, arg2 );
+		if ( arg2.empty() || argstr.empty() )
 		{
 			send_to_char( "Usage: oset <object> affect <field> <value>\n", ch );
 			send_to_char( "Affect Fields:\n", ch );
@@ -4043,39 +4018,39 @@ void do_oset( CHAR_DATA *ch, char *argument )
 		loc = get_atype( arg2 );
 		if ( loc < 1 )
 		{
-			ch_printf( ch, "Unknown field: %s\n", arg2 );
+			ch_printf( ch, "Unknown field: %s\n", arg2.c_str() );
 			return;	
 		}
 		if ( loc == APPLY_AFFECT )
 		{
-			argument = one_argument( argument, arg3 );
-			if (argument[0] != '\0')
+			argstr = one_argument( argstr, arg3 );
+			if (!argstr.empty())
 				send_to_char("Only one affect flag allowed per affect, ignoring any more.\n", ch);
 			value = get_aflag( arg3 );
 			if (value < 0)
 			{
-				ch_printf(ch, "Unknown flag: %s\n", arg3);
+				ch_printf(ch, "Unknown flag: %s\n", arg3.c_str());
 				return;
 			}
 		}
 		else if ( loc > APPLY_AFFECT && loc < APPLY_WEAPONSPELL )
 		{
-			argument = one_argument(argument, arg3);
+			argstr = one_argument(argstr, arg3);
 
 			value = get_risflag(arg3);
 			if (value < 0)
 			{
-				ch_printf(ch, "Unknown flag: %s\n", arg3);
+				ch_printf(ch, "Unknown flag: %s\n", arg3.c_str());
 				return;
 			}
 
-			if (argument[0] != '\0')
+			if (!argstr.empty())
 				send_to_char("Only one resistance flag allowed per affect, ignoring any more.\n", ch);
 		}
 		else
 		{
-			argument = one_argument( argument, arg3 );
-			value = atoi( arg3 );
+			argstr = one_argument( argstr, arg3 );
+			value = strtoi( arg3 );
 		}
 		CREATE( paf, AFFECT_DATA, 1 );
 		paf->type		= -1;
@@ -4114,12 +4089,12 @@ void do_oset( CHAR_DATA *ch, char *argument )
 	AFFECT_DATA *paf;
 	sh_int loc, count;
 	
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Usage: oset <object> rmaffect <affect#>\n", ch );
 	   return;
 	}
-	loc = atoi( argument );
+	loc = strtoi( argstr );
 	if ( loc < 1 )
 	{
 	     send_to_char( "Invalid number.\n", ch );
@@ -4180,7 +4155,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "ed" ) )
     {
-	if ( arg3[0] == '\0' )
+	if ( arg3.empty() )
 	{
 	    send_to_char( "Syntax: oset <object> ed <keywords>\n",
 		ch );
@@ -4250,7 +4225,7 @@ void do_oset( CHAR_DATA *ch, char *argument )
     
     if ( !str_cmp( arg2, "rmed" ) )
     {
-	if ( arg3[0] == '\0' )
+	if ( arg3.empty() )
 	{
 	   send_to_char( "Syntax: oset <object> rmed <keywords>\n", ch );
 	   return;
@@ -4274,59 +4249,47 @@ void do_oset( CHAR_DATA *ch, char *argument )
      */
     if ( !str_cmp( arg2, "ris" ) )
     {
-	SPRINTF(outbuf, "%s affect resistant %s", arg1, arg3);
-        do_oset( ch, outbuf );
-	SPRINTF(outbuf, "%s affect immune %s", arg1, arg3);
-        do_oset( ch, outbuf );
-	SPRINTF(outbuf, "%s affect susceptible %s", arg1, arg3);
-        do_oset( ch, outbuf );
+        do_oset( ch, (char*)str_printf("%s affect resistant %s", arg1.c_str(), arg3.c_str()).c_str() );
+        do_oset( ch, (char*)str_printf("%s affect immune %s", arg1.c_str(), arg3.c_str()).c_str() );
+        do_oset( ch, (char*)str_printf("%s affect susceptible %s", arg1.c_str(), arg3.c_str()).c_str() );
         return;
     }
 
     if ( !str_cmp( arg2, "r" ) )
     {
-	SPRINTF(outbuf, "%s affect resistant %s", arg1, arg3);
-        do_oset( ch, outbuf );
+        do_oset( ch, (char*)str_printf("%s affect resistant %s", arg1.c_str(), arg3.c_str()).c_str() );
         return;
     }
 
     if ( !str_cmp( arg2, "i" ) )
     {
-	SPRINTF(outbuf, "%s affect immune %s", arg1, arg3);
-        do_oset( ch, outbuf );
+        do_oset( ch, (char*)str_printf("%s affect immune %s", arg1.c_str(), arg3.c_str()).c_str() );
         return;
     }
     if ( !str_cmp( arg2, "s" ) )
     {
-	SPRINTF(outbuf, "%s affect susceptible %s", arg1, arg3);
-        do_oset( ch, outbuf );
+        do_oset( ch, (char*)str_printf("%s affect susceptible %s", arg1.c_str(), arg3.c_str()).c_str() );
         return;
     }
 
     if ( !str_cmp( arg2, "ri" ) )
     {
-	SPRINTF(outbuf, "%s affect resistant %s", arg1, arg3);
-        do_oset( ch, outbuf );
-	SPRINTF(outbuf, "%s affect immune %s", arg1, arg3);
-        do_oset( ch, outbuf );
+        do_oset( ch, (char*)str_printf("%s affect resistant %s", arg1.c_str(), arg3.c_str()).c_str() );
+        do_oset( ch, (char*)str_printf("%s affect immune %s", arg1.c_str(), arg3.c_str()).c_str() );
         return;
     }
 
     if ( !str_cmp( arg2, "rs" ) )
     {
-	SPRINTF(outbuf, "%s affect resistant %s", arg1, arg3);
-        do_oset( ch, outbuf );
-	SPRINTF(outbuf, "%s affect susceptible %s", arg1, arg3);
-        do_oset( ch, outbuf );
+        do_oset( ch, (char*)str_printf("%s affect resistant %s", arg1.c_str(), arg3.c_str()).c_str() );
+        do_oset( ch, (char*)str_printf("%s affect susceptible %s", arg1.c_str(), arg3.c_str()).c_str() );
         return;
     }
 
     if ( !str_cmp( arg2, "is" ) )
     {
-	SPRINTF(outbuf, "%s affect immune %s", arg1, arg3);
-        do_oset( ch, outbuf );
-	SPRINTF(outbuf, "%s affect susceptible %s", arg1, arg3);
-        do_oset( ch, outbuf );
+        do_oset( ch, (char*)str_printf("%s affect immune %s", arg1.c_str(), arg3.c_str()).c_str() );
+        do_oset( ch, (char*)str_printf("%s affect susceptible %s", arg1.c_str(), arg3.c_str()).c_str() );
         return;
     }
 
@@ -4490,19 +4453,18 @@ void do_oset( CHAR_DATA *ch, char *argument )
  */
 void do_rset( CHAR_DATA *ch, char *argument )
 {
-    char arg1 [MAX_INPUT_LENGTH];
-    char arg2 [MAX_INPUT_LENGTH];
-    char arg3 [MAX_INPUT_LENGTH];
-    ROOM_INDEX_DATA *location;
+    std::string arg1, arg2, arg3;
+	std::string argstr = argument;
+	ROOM_INDEX_DATA *location;
     int value;
     bool proto;
 
-    smash_tilde( argument );
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
-    SPRINTF( arg3, "%s", argument );
+    smash_tilde( argstr );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
+    arg3 = argstr;
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' || arg3[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() || arg3.empty() )
     {
 	send_to_char( "Syntax: rset <location> <field> value\n",	ch );
 	send_to_char( "\n",						ch );
@@ -4525,7 +4487,7 @@ void do_rset( CHAR_DATA *ch, char *argument )
 	send_to_char( "Value must be numeric.\n", ch );
 	return;
     }
-    value = atoi( arg3 );
+    value = atoi( arg3.c_str() );
 
     /*
      * Set something.
@@ -4568,7 +4530,7 @@ void do_rset( CHAR_DATA *ch, char *argument )
 /*
  * Returns value 0 - 9 based on directional text.
  */
-int get_dir( char *txt )
+int get_dir( const std::string &txt )
 {
     int edir;
     char c1,c2;
@@ -4835,9 +4797,10 @@ char *sprint_reset( CHAR_DATA *ch, RESET_DATA *pReset, sh_int num, bool rlist )
 
 void do_redit( CHAR_DATA *ch, char *argument )
 {
-    char arg [MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char arg3[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string arg2;
+    std::string arg3;
+	std::string argstr = argument;
     char buf [MAX_STRING_LENGTH];
     ROOM_INDEX_DATA	*location, *tmp;
     EXTRA_DESCR_DATA	*ed;
@@ -4845,7 +4808,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
     EXIT_DATA		*xit, *texit;
     size_t		value;
     int			edir, ekey, evnum;
-    char		*origarg = argument;
+    std::string origarg = argument;
 
     if ( !ch->desc )
     {
@@ -4887,11 +4850,11 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     location = ch->in_room;
 
-    smash_tilde( argument );
-    argument = one_argument( argument, arg );
+    smash_tilde( argstr );
+    argstr = one_argument( argstr, arg );
     if ( ch->substate == SUB_REPEATCMD )
     {
-	if ( arg[0] == '\0' )
+	if ( arg.empty() )
 	{
 	    do_rstat( ch, "" );
 	    return;
@@ -4905,7 +4868,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	    return;
 	}
     }
-    if ( arg[0] == '\0' || !str_cmp( arg, "?" ) )
+    if ( arg.empty() || !str_cmp( arg, "?" ) )
     {
 	if ( ch->substate == SUB_REPEATCMD )
 	  send_to_char( "Syntax: <field> value\n",			ch );
@@ -4940,7 +4903,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "substate" ) )
     {
-	  argument = one_argument( argument, arg2);
+	  argstr = one_argument( argstr, arg2);
           if( !str_cmp( arg2, "north" )  )
 	  {
                ch->inter_substate = SUB_NORTH; 
@@ -4978,14 +4941,14 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "name" ) )
     {
-	if ( argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Set the room name.  A very brief single line room description.\n", ch );
 	   send_to_char( "Usage: redit name <Room summary>\n", ch );
 	   return;
 	}
 	STRFREE( location->name );
-	location->name = STRALLOC( argument );
+	location->name = STRALLOC( argstr );
 	return;
     }
 
@@ -5003,27 +4966,27 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "tunnel" ) )
     {
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Set the maximum characters allowed in the room at one time. (0 = unlimited).\n", ch );
 	   send_to_char( "Usage: redit tunnel <value>\n", ch );
 	   return;
 	}
-	location->tunnel = URANGE( 0, atoi(argument), 1000 );
+	location->tunnel = URANGE( 0, strtoi(argstr), 1000 );
 	send_to_char( "Done.\n", ch );
 	return;
     }
 
     if ( !str_cmp( arg, "ed" ) )
     {
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Create an extra description.\n", ch );
 	   send_to_char( "You must supply keyword(s).\n", ch );
 	   return;
 	}
 	CHECK_SUBRESTRICTED( ch );
-	ed = SetRExtra( location, argument );
+	ed = SetRExtra( location, argstr );
 	if ( ch->substate == SUB_REPEATCMD )
 	  ch->tempnum = SUB_REPEATCMD;
 	else
@@ -5036,13 +4999,13 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "rmed" ) )
     {
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Remove an extra description.\n", ch );
 	   send_to_char( "You must supply keyword(s).\n", ch );
 	   return;
 	}
-	if ( DelRExtra( location, argument ) )
+	if ( DelRExtra( location, argstr ) )
 	  send_to_char( "Deleted.\n", ch );
 	else
 	  send_to_char( "Not found.\n", ch );
@@ -5075,7 +5038,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "flags" ) )
     {
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Toggle the room flags.\n", ch );
 	   send_to_char( "Usage: redit flags <flag> [flag]...\n", ch );
@@ -5087,12 +5050,12 @@ void do_redit( CHAR_DATA *ch, char *argument )
            send_to_char( "spacecraft, auction, no_drive, can_land, can_fly, hotel\n", ch );                                               
            return;
 	}
-	while ( argument[0] != '\0' )
+	while ( !argstr.empty() )
 	{
-	   argument = one_argument( argument, arg2 );
+	   argstr = one_argument( argstr, arg2 );
 	   value = get_rflag( arg2 );
 	   if ( value < 0 || value == BIT_NOTFOUND )
-	     ch_printf( ch, "Unknown flag: %s\n", arg2 );
+	     ch_printf( ch, "Unknown flag: %s\n", arg2.c_str() );
 	   else if ( value == ROOM_PLR_HOME && get_trust(ch) < LEVEL_SUPREME )
 	       send_to_char( "If you want to build a player home use the 'empty_home' flag instead.\n", ch );
 	   else
@@ -5105,33 +5068,33 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "teledelay" ) )
     {
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Set the delay of the teleport. (0 = off).\n", ch );
 	   send_to_char( "Usage: redit teledelay <value>\n", ch );
 	   return;
 	}
-	location->tele_delay = atoi( argument );
+	location->tele_delay = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	return;
     }
 
     if ( !str_cmp( arg, "televnum" ) )
     {
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Set the vnum of the room to teleport to.\n", ch );
 	   send_to_char( "Usage: redit televnum <vnum>\n", ch );
 	   return;
 	}
-	location->tele_vnum = atoi( argument );
+	location->tele_vnum = strtoi( argstr );
 	send_to_char( "Done.\n", ch );
 	return;
     }
 
     if ( !str_cmp( arg, "sector" ) )
     {
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Set the sector type.\n", ch );
 	   send_to_char( "Usage: redit sector <value>\n", ch );
@@ -5141,7 +5104,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
                                  
 	   return;
 	}
-	location->sector_type = atoi( argument );
+	location->sector_type = strtoi( argstr );
 	if ( location->sector_type < 0 || location->sector_type >= SECT_MAX )
 	{
 	  location->sector_type = 1;
@@ -5154,8 +5117,8 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "exkey" ) )
     {
-	argument = one_argument( argument, arg2 );
-	argument = one_argument( argument, arg3 );
+	argstr = one_argument( argstr, arg2 );
+	argstr = one_argument( argstr, arg3 );
 	if ( arg2[0] == '\0' || arg3[0] == '\0' )
 	{
 	   send_to_char( "Usage: redit exkey <dir> <key vnum>\n", ch );
@@ -5163,7 +5126,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	}
 	if ( arg2[0] == '#' )
 	{
-	   edir = atoi( arg2+1 );
+	   edir = std::atoi(arg2.c_str() + 1);
 	   xit = get_exit_num( location, edir );
 	}
 	else
@@ -5171,7 +5134,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	   edir = get_dir( arg2 );
 	   xit = get_exit( location, edir );
 	}
-	value = atoi( arg3 );
+	value = strtoi( arg3 );
 	if ( !xit )
 	{
 	   send_to_char( "No exit in that direction.  Use 'redit exit ...' first.\n", ch );
@@ -5184,8 +5147,8 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "exname" ) )
     {
-	argument = one_argument( argument, arg2 );
-	if ( arg2[0] == '\0' )
+	argstr = one_argument( argstr, arg2 );
+	if ( arg2.empty() )
 	{
 	   send_to_char( "Change or clear exit keywords.\n", ch );
 	   send_to_char( "Usage: redit exname <dir> [keywords]\n", ch );
@@ -5193,7 +5156,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	}
 	if ( arg2[0] == '#' )
 	{
-	   edir = atoi( arg2+1 );
+	   edir = std::atoi( arg2.c_str() + 1 );
 	   xit = get_exit_num( location, edir );
 	}
 	else
@@ -5207,14 +5170,14 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	   return;
 	}
 	STRFREE( xit->keyword );
-	xit->keyword = STRALLOC( argument );
+	xit->keyword = STRALLOC( argstr );
 	send_to_char( "Done.\n", ch );
 	return;
     }
 
     if ( !str_cmp( arg, "exflags" ) )
     {
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Toggle or display exit flags.\n", ch );
 	   send_to_char( "Usage: redit exflags <dir> <flag> [flag]...\n", ch );
@@ -5225,10 +5188,10 @@ void do_redit( CHAR_DATA *ch, char *argument )
                                             
 	   return;
 	}
-	argument = one_argument( argument, arg2 );
+	argstr = one_argument( argstr, arg2 );
 	if ( arg2[0] == '#' )
 	{
-	   edir = atoi( arg2+1 );
+	   edir = std::atoi( arg2.c_str() + 1 );
 	   xit = get_exit_num( location, edir );
 	}
 	else
@@ -5241,7 +5204,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	   send_to_char( "No exit in that direction.  Use 'redit exit ...' first.\n", ch );
 	   return;
 	}
-	if ( argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   SPRINTF( buf, "Flags for exit direction: %d  Keywords: %s  Key: %d\n[ ",
 	   	xit->vdir, xit->keyword, xit->key );
@@ -5257,12 +5220,12 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	   send_to_char( buf, ch );
 	   return;
 	}
-	while ( argument[0] != '\0' )
+	while ( !argstr.empty() )
 	{
-	   argument = one_argument( argument, arg2 );
+	   argstr = one_argument( argstr, arg2 );
 	   value = get_exflag( arg2 );
 	   if ( value < 0 || value > MAX_EXFLAG )
-	     ch_printf( ch, "Unknown flag: %s\n", arg2 );
+	     ch_printf( ch, "Unknown flag: %s\n", arg2.c_str() );
 	   else
 	     TOGGLE_BIT( xit->exit_info, 1 << value );
 	}
@@ -5273,7 +5236,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "ex_flags" ) )
     {
-	argument = one_argument( argument, arg2 );
+	argstr = one_argument( argstr, arg2 );
         switch(ch->inter_substate)
 	{
            case SUB_EAST : dir = 'e'; edir = 1; break;
@@ -5304,7 +5267,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "ex_to_room" ) )
     {
-	argument = one_argument( argument, arg2 );
+	argstr = one_argument( argstr, arg2 );
         switch(ch->inter_substate)
 	{
            case SUB_EAST : dir = 'e'; edir = 1; break;
@@ -5315,7 +5278,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	   default:
            case SUB_NORTH: dir = 'n'; edir = 0; break;
 	}
-	evnum = atoi(arg2);
+	evnum = strtoi(arg2);
 	if ( evnum < 1 || evnum > 32766 )
 	{
 	    send_to_char( "Invalid room number.\n", ch );
@@ -5338,7 +5301,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "ex_key" ) )
     {
-	argument = one_argument( argument, arg2 );
+	argstr = one_argument( argstr, arg2 );
         switch(ch->inter_substate)
 	{
            case SUB_EAST : dir = 'e'; edir = 1; break;
@@ -5355,7 +5318,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	   do_redit(ch,buf);
 	   xit = get_exit(location,edir);
 	}     
-	xit->key = atoi( arg2 );
+	xit->key = strtoi( arg2 );
 	return;
     }
 
@@ -5373,11 +5336,9 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	}
 	if ( (xit = get_exit(location, edir)) == NULL )
 	{ 
-	   SPRINTF(buf,"exit %c 1",dir);
-	   do_redit(ch,buf);
+	   do_redit(ch,(char*)str_printf("exit %c 1",dir).c_str());
 	}     
-	SPRINTF(buf,"exdesc %c %s",dir,argument);
-	do_redit(ch,buf);
+	do_redit(ch,(char*)str_printf("exdesc %c %s",dir,argstr.c_str()).c_str());
 	return;
     }
 
@@ -5395,14 +5356,12 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	}
 	if ( (xit = get_exit(location, edir)) == NULL )
 	{ 
-	   SPRINTF(buf, "exit %c 1", dir);
-	   do_redit(ch,buf);
+	   do_redit(ch,(char*)str_printf("exit %c 1",dir).c_str());
 	   if ( (xit = get_exit(location, edir)) == NULL )
 	     return;
 	}     
-	SPRINTF( buf, "%s %s", xit->keyword, argument );
 	STRFREE( xit->keyword );
-	xit->keyword = STRALLOC( buf );
+	xit->keyword = STRALLOC( str_printf("%s %s", xit->keyword, argstr.c_str()) );
 	return;
     }
 
@@ -5410,9 +5369,9 @@ void do_redit( CHAR_DATA *ch, char *argument )
     {
 	bool addexit, numnotdir;
 
-	argument = one_argument( argument, arg2 );
-	argument = one_argument( argument, arg3 );
-	if ( arg2[0] == '\0' )
+	argstr = one_argument( argstr, arg2 );
+	argstr = one_argument( argstr, arg3 );
+	if ( arg2.empty() )
 	{
 	    send_to_char( "Create, change or remove an exit.\n", ch );
 	    send_to_char( "Usage: redit exit <dir> [room] [flags] [key] [keywords]\n", ch );
@@ -5422,13 +5381,13 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	switch( arg2[0] )
 	{
 	    default:	edir = get_dir(arg2);			  break;
-	    case '+':	edir = get_dir(arg2+1);	addexit = TRUE;	  break;
-	    case '#':	edir = atoi(arg2+1);	numnotdir = TRUE; break;  
+	    case '+':	edir = get_dir(arg2.substr(1));	addexit = TRUE;	  break;
+	    case '#':	edir = std::atoi(arg2.c_str() + 1);	numnotdir = TRUE; break;  
 	}
-	if ( arg3[0] == '\0' )
+	if ( arg3.empty() )
 	    evnum = 0;
 	else
-	    evnum = atoi( arg3 );
+	    evnum = strtoi( arg3 );
 	if ( numnotdir )
 	{
 	    if ( (xit = get_exit_num(location, edir)) != NULL )
@@ -5494,22 +5453,22 @@ void do_redit( CHAR_DATA *ch, char *argument )
 		xit->rexit = texit;
 	    }
 	}
-	argument = one_argument( argument, arg3 );
-	if ( *arg3 && arg3[0] != '\0' )
-	    xit->exit_info = atoi( arg3 );
-	if ( argument && argument[0] != '\0' )
+	argstr = one_argument( argstr, arg3 );
+	if ( !arg3.empty() )
+	    xit->exit_info = strtoi( arg3 );
+	if ( !argstr.empty() )
 	{
-	    one_argument( argument, arg3 );
-	    ekey = atoi( arg3 );
+	    one_argument( argstr, arg3 );
+	    ekey = strtoi( arg3 );
 	    if ( ekey != 0 || arg3[0] == '0' )
 	    {
-		argument = one_argument( argument, arg3 );
+		argstr = one_argument( argstr, arg3 );
 		xit->key = ekey;
 	    }
-	    if ( argument && argument[0] != '\0' )
+	    if ( !argstr.empty() )
 	    {
 		STRFREE( xit->keyword );
-		xit->keyword = STRALLOC( argument );
+		xit->keyword = STRALLOC( argstr );
 	    }
 	}
 	send_to_char( "Done.\n", ch );
@@ -5529,9 +5488,9 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	char rvnum[MAX_INPUT_LENGTH];
 	bool numnotdir;
 
-	argument = one_argument( argument, arg2 );
-	argument = one_argument( argument, arg3 );
-	if ( arg2[0] == '\0' )
+	argstr = one_argument( argument, arg2 );
+	argstr = one_argument( argstr, arg3 );
+	if ( arg2.empty() )
 	{
 	    send_to_char( "Create, change or remove a two-way exit.\n", ch );
 	    send_to_char( "Usage: redit bexit <dir> [room] [flags] [key] [keywords]\n", ch );
@@ -5545,10 +5504,10 @@ void do_redit( CHAR_DATA *ch, char *argument )
 		break;
 	    case '#':
 		numnotdir = TRUE;
-		edir = atoi( arg2+1 );
+		edir = strtoi(arg2.substr(1));
 		break;
 	    case '+':
-		edir = get_dir( arg2+1 );
+		edir = get_dir( arg2.substr(1) );
 		break;
 	}
 	tmploc = location;
@@ -5566,14 +5525,14 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	if ( xit )
 	{
 	    vnum = xit->vnum;
-	    if ( arg3[0] != '\0' )
+	    if ( !arg3.empty() )
 	      SPRINTF( rvnum, "%d", tmploc->vnum );
 	    if ( xit->to_room )
 	      rxit = get_exit(xit->to_room, rev_dir[edir]);
 	    else
 	      rxit = NULL;
 	}
-	int n = snprintf( tmpcmd, MAX_INPUT_LENGTH, "exit %s %s %s", arg2, arg3, argument );
+	int n = snprintf( tmpcmd, MAX_INPUT_LENGTH, "exit %s %s %s", arg2.c_str(), arg3.c_str(), argstr.c_str() );
 	if ( n < 0 || n >= MAX_STRING_LENGTH )
 	    tmpcmd[MAX_INPUT_LENGTH-1] = '\0';
 	do_redit( ch, tmpcmd );
@@ -5584,7 +5543,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	if ( !rxit && xit )
 	{
 	    vnum = xit->vnum;
-	    if ( arg3[0] != '\0' )
+	    if ( !arg3.empty() )
 	      SPRINTF( rvnum, "%d", tmploc->vnum );
 	    if ( xit->to_room )
 	      rxit = get_exit(xit->to_room, rev_dir[edir]);
@@ -5597,7 +5556,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 				vnum,
 				rev_dir[edir],
 				rvnum,
-				argument );
+				argstr.c_str() );
 	    if ( n < 0 || n >= MAX_STRING_LENGTH )
 		tmpcmd[MAX_INPUT_LENGTH-1] = '\0';
 	    do_at( ch, tmpcmd );
@@ -5607,8 +5566,8 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "exdistance" ) )
     {
-	argument = one_argument( argument, arg2 );
-	if ( arg2[0] == '\0' )
+	argstr = one_argument( argstr, arg2 );
+	if ( arg2.empty() )
 	{
 	   send_to_char( "Set the distance (in rooms) between this room, and the destination room.\n", ch );
 	   send_to_char( "Usage: redit exdistance <dir> [distance]\n", ch );
@@ -5616,7 +5575,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	}
 	if ( arg2[0] == '#' )
 	{
-	   edir = atoi( arg2+1 );
+	   edir = std::atoi(arg2.c_str() + 1);
 	   xit = get_exit_num( location, edir );
 	}
 	else
@@ -5626,7 +5585,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	}
 	if ( xit )
 	{
-	   xit->distance = URANGE( 1, atoi(argument), 50 );
+	   xit->distance = URANGE( 1, strtoi(argstr), 50 );
 	   send_to_char( "Done.\n", ch );
 	   return;
 	}
@@ -5636,8 +5595,8 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg, "exdesc" ) )
     {
-	argument = one_argument( argument, arg2 );
-	if ( arg2[0] == '\0' )
+	argstr = one_argument( argstr, arg2 );
+	if ( arg2.empty() )
 	{
 	   send_to_char( "Create or clear a description for an exit.\n", ch );
 	   send_to_char( "Usage: redit exdesc <dir> [description]\n", ch );
@@ -5645,7 +5604,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	}
 	if ( arg2[0] == '#' )
 	{
-	   edir = atoi( arg2+1 );
+	   edir = std::atoi(arg2.c_str() + 1);
 	   xit = get_exit_num( location, edir );
 	}
 	else
@@ -5656,12 +5615,11 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	if ( xit )
 	{
 	   STRFREE( xit->description );
-	   if ( !argument || argument[0] == '\0' )
+	   if ( argstr.empty() )
 	     xit->description = STRALLOC( "" );
 	   else
 	   {
-	     SPRINTF( buf, "%s\n", argument );
-	     xit->description = STRALLOC( buf );
+	     xit->description = STRALLOC( str_printf("%s\n", argstr.c_str()) );
 	   }
 	   send_to_char( "Done.\n", ch );
 	   return;
@@ -5687,8 +5645,9 @@ void do_redit( CHAR_DATA *ch, char *argument )
 
 void do_ocreate( CHAR_DATA *ch, char *argument )
 {
-    char arg [MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string arg2;
+	std::string argstr = argument;
     OBJ_INDEX_DATA	*pObjIndex;
     OBJ_DATA		*obj;
     int			 vnum, cvnum;
@@ -5699,11 +5658,11 @@ void do_ocreate( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
 
-    vnum = is_number( arg ) ? atoi( arg ) : -1;
+    vnum = is_number( arg ) ? strtoi( arg ) : -1;
 
-    if ( vnum == -1 || !argument || argument[0] == '\0' )
+    if ( vnum == -1 || argstr.empty() )
     {
 	send_to_char( "Usage: ocreate <vnum> [copy vnum] <item name>\n", ch );
 	return;
@@ -5715,10 +5674,10 @@ void do_ocreate( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    one_argument( argument, arg2 );
-    cvnum = atoi( arg2 );
+    one_argument( argstr, arg2 );
+    cvnum = strtoi( arg2 );
     if ( cvnum != 0 )
-      argument = one_argument( argument, arg2 );
+      argstr = one_argument( argstr, arg2 );
     if ( cvnum < 1 )
       cvnum = 0;
 
@@ -5756,7 +5715,7 @@ void do_ocreate( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
-    pObjIndex = make_object( ch->game, vnum, cvnum, argument );
+    pObjIndex = make_object( ch->game, vnum, cvnum, argstr );
     if ( !pObjIndex )
     {
 	send_to_char( "Error.\n", ch );
@@ -5771,8 +5730,9 @@ void do_ocreate( CHAR_DATA *ch, char *argument )
 
 void do_mcreate( CHAR_DATA *ch, char *argument )
 {
-    char arg [MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg;
+    std::string arg2;
+	std::string argstr = argument;
     MOB_INDEX_DATA	*pMobIndex;
     CHAR_DATA		*mob;
     int			 vnum, cvnum;
@@ -5783,11 +5743,11 @@ void do_mcreate( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
     
-    vnum = is_number( arg ) ? atoi( arg ) : -1;
+    vnum = is_number( arg ) ? strtoi( arg ) : -1;
 
-    if ( vnum == -1 || !argument || argument[0] == '\0' )
+    if ( vnum == -1 || argstr.empty() )
     {
 	send_to_char( "Usage: mcreate <vnum> [cvnum] <mobile name>\n", ch );
 	return;
@@ -5799,10 +5759,10 @@ void do_mcreate( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    one_argument( argument, arg2 );
-    cvnum = atoi( arg2 );
+    one_argument( argstr, arg2 );
+    cvnum = strtoi( arg2 );
     if ( cvnum != 0 )
-      argument = one_argument( argument, arg2 );
+      argstr = one_argument( argstr, arg2 );
     if ( cvnum < 1 )
       cvnum = 0;
 
@@ -5837,7 +5797,7 @@ void do_mcreate( CHAR_DATA *ch, char *argument )
 		return;
 	}
 
-    pMobIndex = make_mobile( ch->game,vnum, cvnum, argument );
+    pMobIndex = make_mobile( ch->game,vnum, cvnum, argstr );
     if ( !pMobIndex )
     {
 	send_to_char( "Error.\n", ch );
@@ -5856,654 +5816,671 @@ void do_mcreate( CHAR_DATA *ch, char *argument )
 }
 
 #define MAX_BUFFER_LINES 48
+
+static inline std::string editor_line_to_string(const char *s)
+{
+    return s ? std::string(s) : std::string();
+}
+
+static inline void editor_store_line(char *dest, const std::string& src)
+{
+    constexpr size_t EDIT_LINE_SIZE = 81; /* matches editor_data::line[][81] */
+
+    if (!dest)
+        return;
+
+    size_t len = src.size();
+    if (len > EDIT_LINE_SIZE - 1)
+        len = EDIT_LINE_SIZE - 1;
+
+    std::memcpy(dest, src.c_str(), len);
+    dest[len] = '\0';
+}
+
+//Needed a one_argument equivalent that doesn't lowercase everything - DV 4-11-26
+static std::string parse_quoted_token(std::string& s)
+{
+    while (!s.empty() && s[0] == ' ')
+        s.erase(0, 1);
+
+    if (s.empty())
+        return "";
+
+    if (s[0] == '"' || s[0] == '\'')
+    {
+        char quote = s[0];
+        size_t end = s.find(quote, 1);
+        if (end == std::string::npos)
+        {
+            std::string out = s.substr(1);
+            s.clear();
+            return out;
+        }
+
+        std::string out = s.substr(1, end - 1);
+        s = s.substr(end + 1);
+        while (!s.empty() && s[0] == ' ')
+            s.erase(0, 1);
+        return out;
+    }
+
+    std::string out;
+    s = one_argument(s, out);
+    return out;
+}
+
 /*
- * Simple but nice and handle line editor.			-Thoric
+ * Simple but nice and handle line editor.            -Thoric
  */
-void edit_buffer( CHAR_DATA *ch, char *argument )
+void edit_buffer(CHAR_DATA *ch, const std::string& argument_in)
 {
     DESCRIPTOR_DATA *d;
     EDITOR_DATA *edit;
-    char cmd[MAX_INPUT_LENGTH];
-    char buf[MAX_INPUT_LENGTH];
+    std::string argument = argument_in;
+    std::string cmd;
     sh_int x, line, max_buf_lines;
     bool save;
 
-    if ( (d = ch->desc) == NULL )
+    if ((d = ch->desc) == NULL)
     {
-	send_to_char( "You have no descriptor.\n", ch );
-	return;
+        send_to_char("You have no descriptor.\n", ch);
+        return;
     }
 
-   if ( d->connected != CON_EDITING )
-   {
-	send_to_char( "You can't do that!\n", ch );
-	bug( "Edit_buffer: d->connected != CON_EDITING", 0 );
-	return;
-   }
-    
-   if ( ch->substate <= SUB_PAUSE )
-   {
-	send_to_char( "You can't do that!\n", ch );
-	bug( "Edit_buffer: illegal ch->substate (%d)", ch->substate );
-	d->connected = CON_PLAYING;
-	return;
-   }
-   
-   if ( !ch->editor )
-   {
-	send_to_char( "You can't do that!\n", ch );
-	bug( "Edit_buffer: null editor", 0 );
-	d->connected = CON_PLAYING;
-	return;
-   }
-   
-   edit = ch->editor;
-   save = FALSE;
-   max_buf_lines = 24;
+    if (d->connected != CON_EDITING)
+    {
+        send_to_char("You can't do that!\n", ch);
+        bug("Edit_buffer: d->connected != CON_EDITING", 0);
+        return;
+    }
 
-   if ( ch->substate == SUB_MPROG_EDIT || ch->substate == SUB_HELP_EDIT )
-     max_buf_lines = 48;
+    if (ch->substate <= SUB_PAUSE)
+    {
+        send_to_char("You can't do that!\n", ch);
+        bug("Edit_buffer: illegal ch->substate (%d)", ch->substate);
+        d->connected = CON_PLAYING;
+        return;
+    }
 
-   if ( argument[0] == '/' || argument[0] == '\\' )
-   {
-	one_argument( argument, cmd );
-	if ( !str_cmp( cmd+1, "?" ) )
-	{
-	    send_to_char( "Editing commands\n---------------------------------\n", ch );
-	    send_to_char( "/l              list buffer\n",	ch );
-	    send_to_char( "/c              clear buffer\n",	ch );
-	    send_to_char( "/d [line]       delete line\n",	ch );
-	    send_to_char( "/g <line>       goto line\n",	ch );
-	    send_to_char( "/i <line>       insert line\n",	ch );
-	    send_to_char( "/r <old> <new>  global replace\n",	ch );
-	    send_to_char( "/a              abort editing\n",	ch );
-	    send_to_char( "/f              format text ( to fit screen )\n",  ch );
-	    if ( get_trust(ch) > LEVEL_IMMORTAL )
-	      send_to_char( "/! <command>    execute command (do not use another editing command)\n",  ch );
-	    send_to_char( "/s              save buffer\n\n> ",ch );
-	    return;
-	}
-	
-	if ( !str_cmp( cmd+1, "c" ) )
-	{
-	    
-	    memset( edit, '\0', sizeof(EDITOR_DATA) );
-	    edit->numlines = 0;
-	    edit->on_line   = 0;
-	    send_to_char( "Buffer cleared.\n> ", ch );
-	    return;
-	}
-	if ( !str_cmp( cmd+1, "r" ) )
-	{
-         char word1[MAX_INPUT_LENGTH];
-         char word2[MAX_INPUT_LENGTH];
-         char *sptr;
-         char *wptr, *lwptr;
-         int count, wordln, word2ln, lineln;
+    if (!ch->editor)
+    {
+        send_to_char("You can't do that!\n", ch);
+        bug("Edit_buffer: null editor", 0);
+        d->connected = CON_PLAYING;
+        return;
+    }
 
-         sptr = one_argument( argument, word1 );
-         sptr = one_argument( sptr, word1 );
-         sptr = one_argument( sptr, word2 );
-         if( word1[0] == '\0' || word2[0] == '\0' )
-         {
-            send_to_char( "Need word to replace, and replacement.\n> ", ch );
+    edit = ch->editor;
+    save = FALSE;
+    max_buf_lines = 24;
+
+    if (ch->substate == SUB_MPROG_EDIT || ch->substate == SUB_HELP_EDIT)
+        max_buf_lines = 48;
+
+    if (!argument.empty() && (argument[0] == '/' || argument[0] == '\\'))
+    {
+        argument = one_argument(argument, cmd);
+
+        if (cmd.size() > 1 && !str_cmp(cmd.c_str() + 1, "?"))
+        {
+            send_to_char("Editing commands\n---------------------------------\n", ch);
+            send_to_char("/l              list buffer\n", ch);
+            send_to_char("/c              clear buffer\n", ch);
+            send_to_char("/d [line]       delete line\n", ch);
+            send_to_char("/g <line>       goto line\n", ch);
+            send_to_char("/i <line>       insert line\n", ch);
+            send_to_char("/r <old> <new>  global replace\n", ch);
+            send_to_char("/a              abort editing\n", ch);
+            send_to_char("/f              format text ( to fit screen )\n", ch);
+            if (get_trust(ch) > LEVEL_IMMORTAL)
+                send_to_char("/! <command>    execute command (do not use another editing command)\n", ch);
+            send_to_char("/s              save buffer\n\n> ", ch);
             return;
-         }
-         if( strcmp( word1, word2 ) == 0 )
-         {
-            send_to_char( "Done.\n> ", ch );
+        }
+
+        if (cmd.size() > 1 && !str_cmp(cmd.c_str() + 1, "c"))
+        {
+            memset(edit, '\0', sizeof(EDITOR_DATA));
+            edit->numlines = 0;
+            edit->on_line = 0;
+            send_to_char("Buffer cleared.\n> ", ch);
             return;
-         }
-         count = 0;
-         wordln = strlen( word1 );
-         word2ln = strlen( word2 );
-         ch_printf( ch, "Replacing all occurrences of %s with %s...\n", word1, word2 );
-         for( x = 0; x < edit->numlines; x++ )
-         {
-            lwptr = edit->line[x];
-            while( ( wptr = strstr( lwptr, word1 ) ) != NULL )
+        }
+
+        if (cmd.size() > 1 && !str_cmp(cmd.c_str() + 1, "r"))
+        {
+            std::string rest = argument;
+			std::string word1 = parse_quoted_token(rest);
+			std::string word2 = parse_quoted_token(rest);
+            int count = 0;
+
+            if (word1.empty() || word2.empty())
             {
-               ++count;
-               lineln = snprintf( buf, MAX_INPUT_LENGTH, "%s%s", word2, wptr + wordln );
-               if( lineln + wptr - edit->line[x] > 79 )
-                  buf[lineln] = '\0';
-			   memmove(wptr, buf, lineln + 1);
-               lwptr = wptr + word2ln;
+                send_to_char("Need word to replace, and replacement.\n> ", ch);
+                return;
             }
-         }
-         ch_printf( ch, "Found and replaced %d occurrence(s).\n> ", count );
-         return;
-    }
-        
-	if ( !str_cmp( cmd+1, "f" ) )
-	{
-		const int wrap_width = 75;
-		char new_lines[MAX_BUFFER_LINES][MAX_INPUT_LENGTH];
-		bool buffer_full = false;
-		int new_numlines = 0;
-		int old_numlines = edit->numlines;
 
-		auto store_raw_line = [&](const char *text)
-		{
-			size_t len = 0;
+            if (word1 == word2)
+            {
+                send_to_char("Done.\n> ", ch);
+                return;
+            }
 
-			if (new_numlines >= max_buf_lines)
-			{
-				buffer_full = true;
-				return;
-			}
+            ch_printf(ch, "Replacing all occurrences of %s with %s...\n",
+                      word1.c_str(), word2.c_str());
 
-			if (!text)
-				text = "";
 
-			len = strlen(text);
+            for (x = 0; x < edit->numlines; x++)
+            {
+                std::string linebuf = editor_line_to_string(edit->line[x]);
 
-			/* strip trailing CR/LF */
-			while (len > 0 && (text[len - 1] == '\r' || text[len - 1] == '\n'))
-				len--;
+				std::string::size_type pos = 0;
 
-			if (len > MAX_INPUT_LENGTH - 2)
-				len = MAX_INPUT_LENGTH - 2;
+                while ((pos = linebuf.find(word1, pos)) != std::string::npos)
+                {
+                    ++count;
+                    linebuf.replace(pos, word1.size(), word2);
+                    pos += word2.size();
+                }
 
-			memcpy(new_lines[new_numlines], text, len);
-//			new_lines[new_numlines][len++] = '\n';
-			new_lines[new_numlines][len] = '\0';
+                if (linebuf.size() > 79)
+                    linebuf.resize(79);
 
-			new_numlines++;
-		};
 
-		auto is_blank_line = [](const char *s) -> bool
-		{
-			if (!s)
-				return true;
 
-			while (*s)
-			{
-				if (*s != ' ' && *s != '\t' && *s != '\r' && *s != '\n')
-					return false;
-				++s;
-			}
-			return true;
-		};
+                editor_store_line(edit->line[x], linebuf);
+            }
 
-		auto ends_with_colon = [](const char *s) -> bool
-		{
-			int len;
+            ch_printf(ch, "Found and replaced %d occurrence(s).\n> ", count);
+            return;
+        }
 
-			if (!s)
-				return false;
+		
 
-			len = strlen(s);
-			while (len > 0 && (s[len - 1] == ' ' || s[len - 1] == '\t' ||
-							s[len - 1] == '\r' || s[len - 1] == '\n'))
-				len--;
+        if (cmd.size() > 1 && !str_cmp(cmd.c_str() + 1, "f"))
+        {
+            const int wrap_width = 75;
+            std::string new_lines[MAX_BUFFER_LINES];
+            bool buffer_full = false;
+            int new_numlines = 0;
+            int old_numlines = edit->numlines;
 
-			return (len > 0 && s[len - 1] == ':');
-		};
+            auto store_raw_line = [&](const std::string& text_in)
+            {
+                std::string text = text_in;
 
-		auto is_indented_line = [](const char *s) -> bool
-		{
-			return (s && (s[0] == ' ' || s[0] == '\t'));
-		};
+                if (new_numlines >= max_buf_lines)
+                {
+                    buffer_full = true;
+                    return;
+                }
 
-		auto is_bullet_or_special_line = [](const char *s) -> bool
-		{
-			if (!s || !*s)
-				return false;
+                while (!text.empty() &&
+                       (text.back() == '\r' || text.back() == '\n'))
+                {
+                    text.pop_back();
+                }
 
-			if (s[0] == '-' || s[0] == '*' || s[0] == '>')
-				return true;
+                if (text.size() > 81 - 2)
+                    text.resize(81 - 2);
 
-			if (isdigit((unsigned char)s[0]))
-			{
-				int i = 0;
-				while (isdigit((unsigned char)s[i]))
-					i++;
+                new_lines[new_numlines++] = text;
+            };
 
-				if (s[i] == '.' || s[i] == ')' || s[i] == ':')
-					return true;
-			}
+            auto is_blank_line = [](const std::string& s) -> bool
+            {
+                for (char c : s)
+                {
+                    if (c != ' ' && c != '\t' && c != '\r' && c != '\n')
+                        return false;
+                }
+                return true;
+            };
 
-			return false;
-		};
+            auto ends_with_colon = [](const std::string& s) -> bool
+            {
+                size_t len = s.size();
+                while (len > 0 &&
+                       (s[len - 1] == ' ' || s[len - 1] == '\t' ||
+                        s[len - 1] == '\r' || s[len - 1] == '\n'))
+                {
+                    --len;
+                }
 
-		auto wrap_and_store_line = [&](const char *text)
-		{
-			int old_p, end_mark, p;
+                return (len > 0 && s[len - 1] == ':');
+            };
 
-			if (!text || !*text)
-			{
-				store_raw_line("");
-				return;
-			}
+            auto is_indented_line = [](const std::string& s) -> bool
+            {
+                return (!s.empty() && (s[0] == ' ' || s[0] == '\t'));
+            };
 
-			end_mark = strlen(text);
-			old_p = 0;
+            auto is_bullet_or_special_line = [](const std::string& s) -> bool
+            {
+                if (s.empty())
+                    return false;
 
-			while (old_p < end_mark)
-			{
-				int break_p;
-				char wrapped[MAX_INPUT_LENGTH];
-				int ep = 0;
+                if (s[0] == '-' || s[0] == '*' || s[0] == '>')
+                    return true;
 
-				if (new_numlines >= max_buf_lines)
+                if (isdigit(static_cast<unsigned char>(s[0])))
+                {
+                    size_t i = 0;
+                    while (i < s.size() && isdigit(static_cast<unsigned char>(s[i])))
+                        ++i;
+
+                    if (i < s.size() && (s[i] == '.' || s[i] == ')' || s[i] == ':'))
+                        return true;
+                }
+
+                return false;
+            };
+
+            auto wrap_and_store_line = [&](const std::string& text)
+            {
+                if (text.empty())
+                {
+                    store_raw_line("");
+                    return;
+                }
+
+                size_t old_p = 0;
+                size_t end_mark = text.size();
+
+                while (old_p < end_mark)
+                {
+                    if (new_numlines >= max_buf_lines)
+                    {
+                        buffer_full = true;
+                        return;
+                    }
+
+                    size_t p = old_p + wrap_width;
+                    if (p > end_mark)
+                        p = end_mark;
+
+                    size_t break_p = p;
+
+                    while (break_p > old_p &&
+                           text[break_p] != ' ' &&
+                           text[break_p] != '\0')
+                    {
+                        --break_p;
+                    }
+
+                    if (break_p == old_p)
+                        break_p = p;
+
+                    if (break_p > end_mark)
+                        break_p = end_mark;
+
+                    std::string wrapped = text.substr(old_p, break_p - old_p);
+
+                    while (!wrapped.empty() && wrapped.back() == ' ')
+                        wrapped.pop_back();
+
+                    store_raw_line(wrapped);
+
+                    old_p = break_p;
+                    while (old_p < end_mark && text[old_p] == ' ')
+                        ++old_p;
+                }
+            };
+
+            for (x = 0; x < old_numlines && !buffer_full; x++)
+            {
+                std::string clean = editor_line_to_string(edit->line[x]);
+
+                clean.erase(std::remove(clean.begin(), clean.end(), '\r'), clean.end());
+                clean.erase(std::remove(clean.begin(), clean.end(), '\n'), clean.end());
+
+                int visible_len = static_cast<int>(clean.size());
+
+                if (is_blank_line(clean))
+                {
+                    store_raw_line("");
+                    continue;
+                }
+
+                if (is_indented_line(clean) ||
+                    ends_with_colon(clean) ||
+                    is_bullet_or_special_line(clean) ||
+                    visible_len < wrap_width)
+                {
+                    store_raw_line(clean);
+                    continue;
+                }
+
+                wrap_and_store_line(clean);
+            }
+
+            edit->on_line = 0;
+            edit->numlines = 0;
+
+            for (x = 0; x < new_numlines; x++)
+            {
+                editor_store_line(edit->line[x], new_lines[x]);
+                edit->on_line++;
+                edit->numlines++;
+            }
+
+            if (buffer_full)
+                send_to_char("Buffer full.\n", ch);
+
+            send_to_char("OK.\n> ", ch);
+            return;
+        }
+
+        if (cmd.size() > 1 && !str_cmp(cmd.c_str() + 1, "i"))
+        {
+            if (edit->numlines >= max_buf_lines)
+                send_to_char("Buffer is full.\n> ", ch);
+            else
+            {
+				if (!argument.empty())
+                    line = std::atoi(argument.c_str() + 2) - 1;
+                else
+                    line = edit->on_line;
+
+                if (line < 0)
+                    line = edit->on_line;
+
+                if (line < 0 || line > edit->numlines)
+                    send_to_char("Out of range.\n> ", ch);
+                else
+                {
+                    for (x = ++edit->numlines; x > line; x--)
+                        memmove(edit->line[x], edit->line[x - 1], strlen(edit->line[x - 1]) + 1);
+
+                    edit->line[line][0] = '\0';
+                    send_to_char("Line inserted.\n> ", ch);
+                }
+            }
+            return;
+        }
+
+        if (cmd.size() > 1 && !str_cmp(cmd.c_str() + 1, "d"))
+        {
+            if (edit->numlines == 0)
+                send_to_char("Buffer is empty.\n> ", ch);
+            else
+            {
+				if (!argument.empty())
+                    line = std::atoi(argument.c_str() + 2) - 1;
+                else
+                    line = edit->on_line;
+
+                if (line < 0)
+                    line = edit->on_line;
+
+                if (line < 0 || line > edit->numlines)
+                    send_to_char("Out of range.\n> ", ch);
+                else
+                {
+                    if (line == 0 && edit->numlines == 1)
+                    {
+                        memset(edit, '\0', sizeof(EDITOR_DATA));
+                        edit->numlines = 0;
+                        edit->on_line = 0;
+                        send_to_char("Line deleted.\n> ", ch);
+                        return;
+                    }
+
+                    for (x = line; x < (edit->numlines - 1); x++)
+                        memmove(edit->line[x], edit->line[x + 1],
+                                strlen(edit->line[x + 1]) + 1);
+
+                    edit->numlines--;
+                    edit->line[edit->numlines][0] = '\0';
+
+                    if (edit->on_line > edit->numlines)
+                        edit->on_line = edit->numlines;
+
+                    send_to_char("Line deleted.\n> ", ch);
+                }
+            }
+            return;
+        }
+
+        if (cmd.size() > 1 && !str_cmp(cmd.c_str() + 1, "g"))
+        {
+            if (edit->numlines == 0)
+                send_to_char("Buffer is empty.\n> ", ch);
+            else
+            {
+				if (!argument.empty())
+					line = std::atoi(argument.c_str()) - 1;
+				else
 				{
-					buffer_full = true;
+					send_to_char("Goto what line?\n> ", ch);
 					return;
 				}
 
-				p = old_p + wrap_width;
-				if (p > end_mark)
-					p = end_mark;
+                if (line < 0)
+                    line = edit->on_line;
 
-				break_p = p;
+                if (line < 0 || line > edit->numlines)
+                    send_to_char("Out of range.\n> ", ch);
+                else
+                {
+                    edit->on_line = line;
+                    ch_printf(ch, "(On line %d)\n> ", line + 1);
+                }
+            }
+            return;
+        }
 
-				while (break_p > old_p &&
-					text[break_p] != ' ' &&
-					text[break_p] != '\0')
-				{
-					break_p--;
-				}
+        if (cmd.size() > 1 && !str_cmp(cmd.c_str() + 1, "l"))
+        {
+            if (edit->numlines == 0)
+                send_to_char("Buffer is empty.\n> ", ch);
+            else
+            {
+                send_to_char("------------------\n", ch);
+                for (x = 0; x < edit->numlines; x++)
+                    ch_printf(ch, "%2d> %s len=%d\n", x + 1, edit->line[x], (int)strlen(edit->line[x]));
+                send_to_char("------------------\n> ", ch);
+            }
+            return;
+        }
 
-				if (break_p == old_p)
-					break_p = p;
+        if (cmd.size() > 1 && !str_cmp(cmd.c_str() + 1, "a"))
+        {
+            send_to_char("\nAborting... ", ch);
+            stop_editing(ch);
+            return;
+        }
 
-				if (break_p > end_mark)
-					break_p = end_mark;
+        if (get_trust(ch) > LEVEL_IMMORTAL &&
+            cmd.size() > 1 && !str_cmp(cmd.c_str() + 1, "!"))
+        {
+            DO_FUN *last_cmd;
+            int substate = ch->substate;
 
-				for (x = old_p; x < break_p && ep < MAX_INPUT_LENGTH - 2; x++)
-					wrapped[ep++] = text[x];
+            last_cmd = ch->last_cmd;
+            ch->substate = SUB_RESTRICTED;
+            interpret(ch, !argument.empty() ? argument : std::string());
+            ch->substate = substate;
+            ch->last_cmd = last_cmd;
+            set_char_color(AT_GREEN, ch);
+            send_to_char("\n> ", ch);
+            return;
+        }
 
-				while (ep > 0 && wrapped[ep - 1] == ' ')
-					ep--;
+        if (cmd.size() > 1 && !str_cmp(cmd.c_str() + 1, "s"))
+        {
+            d->connected = CON_PLAYING;
+            if (!ch->last_cmd)
+                return;
+            (*ch->last_cmd)(ch, "");
+            return;
+        }
+    }
 
-				wrapped[ep] = '\0';
-				store_raw_line(wrapped);
+    if (edit->size + argument.size() + 1 >= MAX_STRING_LENGTH - 1)
+    {
+        send_to_char("You buffer is full.\n", ch);
+    }
+    else
+    {
+        std::string clean;
+        int insert_at;
+        int lines_needed = 0;
 
-				old_p = break_p;
-				while (old_p < end_mark && text[old_p] == ' ')
-					old_p++;
-			}
-		};
+        clean.reserve(argument.size());
 
-		for (x = 0; x < old_numlines && !buffer_full; x++)
-		{
-			char clean[MAX_INPUT_LENGTH];
-			int src = 0;
-			int dst = 0;
-			int visible_len;
+        for (size_t i = 0; i < argument.size(); ++i)
+        {
+            unsigned char c = static_cast<unsigned char>(argument[i]);
 
-			while (edit->line[x][src] != '\0' && dst < MAX_INPUT_LENGTH - 1)
-			{
-				if (edit->line[x][src] != '\r' && edit->line[x][src] != '\n')
-					clean[dst++] = edit->line[x][src];
-				src++;
-			}
-			clean[dst] = '\0';
+            if (c == '\r' || c == '\n' || c == '\t')
+                c = ' ';
 
-			visible_len = dst;
+            clean.push_back(static_cast<char>(c));
+        }
 
-			if (is_blank_line(clean))
-			{
-				store_raw_line("");
-				continue;
-			}
+        while (!clean.empty() && clean.back() == ' ')
+            clean.pop_back();
 
-			/* preserve deliberate/manual structure */
-			if (is_indented_line(clean) ||
-				ends_with_colon(clean) ||
-				is_bullet_or_special_line(clean) ||
-				visible_len < wrap_width)
-			{
-				store_raw_line(clean);
-				continue;
-			}
+        insert_at = edit->on_line;
+        if (insert_at < 0)
+            insert_at = 0;
+        if (insert_at > edit->numlines)
+            insert_at = edit->numlines;
 
-			/* only long unstructured lines get wrapped */
-			wrap_and_store_line(clean);
-		}
+        if (clean.empty())
+        {
+            lines_needed = 1;
+        }
+        else
+        {
+            size_t pos = 0;
+            while (pos < clean.size())
+            {
+                if ((clean.size() - pos) <= 75)
+                {
+                    lines_needed++;
+                    break;
+                }
 
-		/* copy rebuilt buffer back */
-		edit->on_line = 0;
-		edit->numlines = 0;
+                size_t breakp = pos + 75;
+                while (breakp > pos && clean[breakp] != ' ')
+                    --breakp;
 
-		for (x = 0; x < new_numlines; x++)
-		{
-			size_t len = strlen(new_lines[x]);
-			if (len > MAX_INPUT_LENGTH - 1)
-				len = MAX_INPUT_LENGTH - 1;
+                if (breakp == pos)
+                    breakp = pos + 75;
 
-			memcpy(edit->line[x], new_lines[x], len);
-			edit->line[x][len] = '\0';
+                lines_needed++;
+                pos = breakp;
+                while (pos < clean.size() && clean[pos] == ' ')
+                    ++pos;
+            }
+        }
 
-			edit->on_line++;
-			edit->numlines++;
-		}
+        if (lines_needed > 1 && insert_at < edit->numlines)
+        {
+            int shift = lines_needed - 1;
 
-		if (buffer_full)
-			send_to_char( "Buffer full.\n", ch );
+            if (edit->numlines + shift > max_buf_lines)
+                shift = max_buf_lines - edit->numlines;
 
-		send_to_char( "OK.\n> ", ch );
-		return;
-	}	
-	if ( !str_cmp( cmd+1, "i" ) )
-	{
-	    if ( edit->numlines >= max_buf_lines )
-		send_to_char( "Buffer is full.\n> ", ch );
-	    else
-	    {
-			if ( argument[2] == ' ' )
-			line = atoi( argument + 2 ) - 1;
-			else
-			line = edit->on_line;
-			if ( line < 0 )
-			line = edit->on_line;
-			if ( line < 0 || line > edit->numlines )
-			send_to_char( "Out of range.\n> ", ch );
-			else
-			{
-				for ( x = ++edit->numlines; x > line; x-- )
-					memmove( edit->line[x], edit->line[x - 1], strlen(edit->line[x - 1]) + 1 );
-				edit->line[line][0] = '\0';
-				send_to_char( "Line inserted.\n> ", ch );
-			}
- 	    }
-	    return;
-	}
-	if ( !str_cmp( cmd+1, "d" ) )
-	{
-	    if ( edit->numlines == 0 )
-		send_to_char( "Buffer is empty.\n> ", ch );
-	    else
-	    {
-		if ( argument[2] == ' ' )
-		  line = atoi( argument + 2 ) - 1;
-		else
-		  line = edit->on_line;
-		if ( line < 0 )
-		  line = edit->on_line;
-		if ( line < 0 || line > edit->numlines )
-		  send_to_char( "Out of range.\n> ", ch );
-		else
-		{
-		  if ( line == 0 && edit->numlines == 1 )
-		  {
-			memset( edit, '\0', sizeof(EDITOR_DATA) );
-			edit->numlines = 0;
-			edit->on_line   = 0;
-			send_to_char( "Line deleted.\n> ", ch );
-			return;
-		  }
-		  for ( x = line; x < (edit->numlines - 1); x++ )
-			memmove(edit->line[x], edit->line[x+1], strlen(edit->line[x+1]) + 1);
-	  	  edit->numlines--;
-		  edit->line[edit->numlines][0] = '\0';
-		  if ( edit->on_line > edit->numlines )
-		    edit->on_line = edit->numlines;
-		  send_to_char( "Line deleted.\n> ", ch );
-		}
- 	    }
-	    return;
-	}
-	if ( !str_cmp( cmd+1, "g" ) )
-	{
-	    if ( edit->numlines == 0 )
-		send_to_char( "Buffer is empty.\n> ", ch );
-	    else
-	    {
-		if ( argument[2] == ' ' )
-		  line = atoi( argument + 2 ) - 1;
-		else
-		{
-		    send_to_char( "Goto what line?\n> ", ch );
-		    return;
-		}
-		if ( line < 0 )
-		  line = edit->on_line;
-		if ( line < 0 || line > edit->numlines )
-		  send_to_char( "Out of range.\n> ", ch );
-		else
-		{
-		  edit->on_line = line;
-		  ch_printf( ch, "(On line %d)\n> ", line+1 );
-		}
- 	    }
-	    return;
-	}
-	if ( !str_cmp( cmd+1, "l" ) )
-	{
-	    if ( edit->numlines == 0 )
-	      send_to_char( "Buffer is empty.\n> ", ch );
-	    else
-	    {
-	      send_to_char( "------------------\n", ch );
-	      for ( x = 0; x < edit->numlines; x++ )
-		 ch_printf( ch, "%2d> %s\n", x+1, edit->line[x] );
-	      send_to_char( "------------------\n> ", ch );
-	    }
-	    return;
-	}
-	if ( !str_cmp( cmd+1, "a" ) )
-	{
-	    send_to_char( "\nAborting... ", ch );
-	    stop_editing( ch );
-	    return;
-	}
-	if ( get_trust(ch) > LEVEL_IMMORTAL && !str_cmp( cmd+1, "!" ) )
-	{
-	    DO_FUN *last_cmd;
-	    int substate = ch->substate;
+            if (shift < lines_needed - 1)
+            {
+                send_to_char("Buffer full.\n", ch);
+                save = TRUE;
+            }
 
-	    last_cmd = ch->last_cmd;
-	    ch->substate = SUB_RESTRICTED;
-	    interpret(ch, argument+3);
-	    ch->substate = substate;
-	    ch->last_cmd = last_cmd;
-	    set_char_color( AT_GREEN, ch );
-	    send_to_char( "\n> ", ch );
-	    return;
-	}
-	if ( !str_cmp( cmd+1, "s" ) )
-	{
-	    d->connected = CON_PLAYING;
-	    if ( !ch->last_cmd )
-	      return;
-	    (*ch->last_cmd) ( ch, "" );
-	    return;
-	}
-   }
+            for (x = edit->numlines - 1; x > insert_at; x--)
+            {
+                if (x + shift >= max_buf_lines)
+                    continue;
 
-	if ( edit->size + strlen(argument) + 1 >= MAX_STRING_LENGTH - 1 )
-		send_to_char( "You buffer is full.\n", ch );
-	else
-	{
-		char clean[MAX_STRING_LENGTH];
-		char *src;
-		int insert_at;
-		int lines_needed = 0;
+                memmove(edit->line[x + shift],
+                        edit->line[x],
+                        strlen(edit->line[x]) + 1);
+            }
 
-		/* Normalize input:
-		   - convert CR/LF/TAB to spaces
-		   - collapse repeated spaces caused by paste wrapping
-		*/
-		{
-			size_t s = 0;
-			size_t dpos = 0;
+            edit->numlines += shift;
+            if (edit->numlines > max_buf_lines)
+                edit->numlines = max_buf_lines;
+        }
 
-			while (argument[s] != '\0' && dpos < sizeof(clean) - 1)
-			{
-				unsigned char c = (unsigned char)argument[s++];
+        if (clean.empty())
+        {
+            edit->line[insert_at][0] = '\0';
+            insert_at++;
+        }
+        else
+        {
+            size_t pos = 0;
 
-				if (c == '\r' || c == '\n' || c == '\t')
-					c = ' ';
-/*
-				if (c == ' ')
-				{
-					if (last_was_space)
-						continue;
-					last_was_space = true;
-				}
-				else
-				{
-					last_was_space = false;
-				}
-*/
-				clean[dpos++] = (char)c;
-			}
+            while (pos < clean.size() && insert_at < max_buf_lines)
+            {
+                if ((clean.size() - pos) <= 75)
+                {
+                    std::string tail = clean.substr(pos);
+                    if (tail.size() > 81 - 1)
+                        tail.resize(81 - 1);
 
-			/* trim trailing space */
-			while (dpos > 0 && clean[dpos - 1] == ' ')
-				dpos--;
+                    editor_store_line(edit->line[insert_at], tail);
+                    insert_at++;
+                    break;
+                }
+                else
+                {
+                    size_t breakp = pos + 75;
 
-			clean[dpos] = '\0';
-		}
+                    while (breakp > pos && clean[breakp] != ' ')
+                        --breakp;
 
-		insert_at = edit->on_line;
-		if (insert_at < 0)
-			insert_at = 0;
-		if (insert_at > edit->numlines)
-			insert_at = edit->numlines;
+                    if (breakp == pos)
+                        breakp = pos + 75;
 
-		/* First pass: determine how many wrapped lines will be needed */
-		src = clean;
-		if (*src == '\0')
-		{
-			lines_needed = 1;
-		}
-		else
-		{
-			while (*src)
-			{
-				int count = 75;
-				char *breakp;
+                    std::string out = clean.substr(pos, breakp - pos);
 
-				if ((int)strlen(src) <= count)
-				{
-					lines_needed++;
-					break;
-				}
+                    while (!out.empty() && out.back() == ' ')
+                        out.pop_back();
 
-				breakp = src + count;
-				while (breakp > src && *breakp != ' ')
-					breakp--;
+                    editor_store_line(edit->line[insert_at], out);
+                    insert_at++;
 
-				if (breakp == src)
-					breakp = src + count;
+                    pos = breakp;
+                    while (pos < clean.size() && clean[pos] == ' ')
+                        ++pos;
+                }
+            }
+        }
 
-				lines_needed++;
-				src = breakp;
-				while (*src == ' ')
-					src++;
-			}
-		}
+        edit->on_line = insert_at;
 
-		/* Make room if inserting in the middle and more than one line is needed */
-		if (lines_needed > 1 && insert_at < edit->numlines)
-		{
-			int shift = lines_needed - 1;
+        if (edit->on_line > edit->numlines)
+            edit->numlines = edit->on_line;
 
-			if (edit->numlines + shift > max_buf_lines)
-				shift = max_buf_lines - edit->numlines;
+        if (edit->numlines > max_buf_lines)
+        {
+            edit->numlines = max_buf_lines;
+            send_to_char("Buffer full.\n", ch);
+            save = TRUE;
+        }
+    }
 
-			if (shift < lines_needed - 1)
-			{
-				send_to_char("Buffer full.\n", ch);
-				save = TRUE;
-			}
-
-			for (x = edit->numlines - 1; x > insert_at; x--)
-			{
-				if (x + shift >= max_buf_lines)
-					continue;
-
-				memmove(edit->line[x + shift],
-						edit->line[x],
-						strlen(edit->line[x]) + 1);
-			}
-
-			edit->numlines += shift;
-			if (edit->numlines > max_buf_lines)
-				edit->numlines = max_buf_lines;
-		}
-
-		/* Second pass: write wrapped lines into buffer */
-		src = clean;
-
-		if (*src == '\0')
-		{
-			edit->line[insert_at][0] = '\0';
-			insert_at++;
-		}
-		else
-		{
-			while (*src && insert_at < max_buf_lines)
-			{
-				char out[MAX_INPUT_LENGTH];
-				int ep = 0;
-
-				if ((int)strlen(src) <= 75)
-				{
-					size_t len = strlen(src);
-					if (len > MAX_INPUT_LENGTH - 1)
-						len = MAX_INPUT_LENGTH - 1;
-
-					memcpy(edit->line[insert_at], src, len);
-					edit->line[insert_at][len] = '\0';
-					insert_at++;
-					break;
-				}
-				else
-				{
-					char *breakp = src + 75;
-
-					while (breakp > src && *breakp != ' ')
-						breakp--;
-
-					if (breakp == src)
-						breakp = src + 75;
-
-					while (src < breakp && ep < MAX_INPUT_LENGTH - 1)
-						out[ep++] = *src++;
-
-					while (ep > 0 && out[ep - 1] == ' ')
-						ep--;
-
-					out[ep] = '\0';
-
-					memcpy(edit->line[insert_at], out, ep + 1);
-					insert_at++;
-
-					while (*src == ' ')
-						src++;
-				}
-			}
-		}
-
-		edit->on_line = insert_at;
-
-		/* If we appended beyond previous end, grow numlines */
-		if (edit->on_line > edit->numlines)
-			edit->numlines = edit->on_line;
-
-		if (edit->numlines > max_buf_lines)
-		{
-			edit->numlines = max_buf_lines;
-			send_to_char( "Buffer full.\n", ch );
-			save = TRUE;
-		}
-	}
-
-   if ( save )
-   {
-      d->connected = CON_PLAYING;
-      if ( !ch->last_cmd )
+    if (save)
+    {
+        d->connected = CON_PLAYING;
+        if (!ch->last_cmd)
+            return;
+        (*ch->last_cmd)(ch, "");
         return;
-      (*ch->last_cmd) ( ch, "" );
-      return;
-   }
-   send_to_char( "> ", ch );
-}
+    }
 
+    send_to_char("> ", ch);
+}
+/*
+void edit_buffer(CHAR_DATA *ch, char *argument)
+{
+    edit_buffer(ch, argument ? std::string(argument) : std::string());
+}
+*/
 void free_reset( AREA_DATA *are, RESET_DATA *res )
 {
     UNLINK( res, are->first_reset, are->last_reset, next, prev );
@@ -6522,8 +6499,6 @@ void free_area( AREA_DATA *are )
 
 void assign_area( CHAR_DATA *ch )
 {
-	char buf[MAX_STRING_LENGTH];
-	char buf2[MAX_STRING_LENGTH];
 	char taf[1024];
 	AREA_DATA *tarea, *tmp;
 	bool created = FALSE;
@@ -6535,7 +6510,7 @@ void assign_area( CHAR_DATA *ch )
 	&&   ch->pcdata->r_range_hi )
 	{
 	  tarea = ch->pcdata->area;
-	  SPRINTF( taf, "%s.are", capitalize( ch->name ) );
+	  SPRINTF( taf, "%s.are", capitalize( ch->name ).c_str() );
 	  if ( !tarea )
 	  {
 		for ( tmp = first_build; tmp; tmp = tmp->next )
@@ -6554,11 +6529,9 @@ void assign_area( CHAR_DATA *ch )
 	    LINK( tarea, first_build, last_build, next, prev );
 	    tarea->first_reset	= NULL;
 	    tarea->last_reset	= NULL;
-	    SPRINTF( buf, "{PROTO} %s's area in progress", ch->name );
-	    tarea->name		= str_dup( buf );
+	    tarea->name		= str_dup( str_printf( "{W%s{w's area in progress", ch->name ) );
 	    tarea->filename	= str_dup( taf );
-	    SPRINTF( buf2, "%s", ch->name );
-	    tarea->author 	= STRALLOC( buf2 );
+	    tarea->author 	= STRALLOC( std::string(ch->name) );
 	    tarea->age		= 0;
 	    tarea->nplayer	= 0;
 	         SET_BIT( tarea->flags, AFLAG_NOQUEST );
@@ -6584,7 +6557,7 @@ void assign_area( CHAR_DATA *ch )
 
 void do_aassign( CHAR_DATA *ch, char *argument )
 {
-	char buf[MAX_STRING_LENGTH];
+	std::string buf;
 	AREA_DATA *tarea, *tmp;
 
 	if ( IS_NPC( ch ) )
@@ -6609,7 +6582,7 @@ void do_aassign( CHAR_DATA *ch, char *argument )
 	    return;
 	} 
 
-	SPRINTF( buf, "%s", argument );
+	buf = argument;
         tarea = NULL;
 
 /*	if ( get_trust(ch) >= ch->game->get_sysdata()->level_modify_proto )   */
@@ -6656,7 +6629,7 @@ void do_aassign( CHAR_DATA *ch, char *argument )
 }
 
 
-EXTRA_DESCR_DATA *SetRExtra( ROOM_INDEX_DATA *room, char *keywords )
+EXTRA_DESCR_DATA *SetRExtra( ROOM_INDEX_DATA *room, const std::string& keywords )
 {
     EXTRA_DESCR_DATA *ed;
     
@@ -6676,7 +6649,7 @@ EXTRA_DESCR_DATA *SetRExtra( ROOM_INDEX_DATA *room, char *keywords )
     return ed;
 }
 
-bool DelRExtra( ROOM_INDEX_DATA *room, char *keywords )
+bool DelRExtra( ROOM_INDEX_DATA *room, const std::string& keywords )
 {
     EXTRA_DESCR_DATA *rmed;
     
@@ -6695,7 +6668,7 @@ bool DelRExtra( ROOM_INDEX_DATA *room, char *keywords )
     return TRUE;
 }
 
-EXTRA_DESCR_DATA *SetOExtra( OBJ_DATA *obj, char *keywords )
+EXTRA_DESCR_DATA *SetOExtra( OBJ_DATA *obj, const std::string& keywords )
 {
     EXTRA_DESCR_DATA *ed;
     
@@ -6715,7 +6688,7 @@ EXTRA_DESCR_DATA *SetOExtra( OBJ_DATA *obj, char *keywords )
     return ed;
 }
 
-bool DelOExtra( OBJ_DATA *obj, char *keywords )
+bool DelOExtra( OBJ_DATA *obj, const std::string& keywords )
 {
     EXTRA_DESCR_DATA *rmed;
     
@@ -6734,7 +6707,7 @@ bool DelOExtra( OBJ_DATA *obj, char *keywords )
     return TRUE;
 }
 
-EXTRA_DESCR_DATA *SetOExtraProto( OBJ_INDEX_DATA *obj, char *keywords )
+EXTRA_DESCR_DATA *SetOExtraProto( OBJ_INDEX_DATA *obj, const std::string& keywords )
 {
     EXTRA_DESCR_DATA *ed;
     
@@ -6754,7 +6727,7 @@ EXTRA_DESCR_DATA *SetOExtraProto( OBJ_INDEX_DATA *obj, char *keywords )
     return ed;
 }
 
-bool DelOExtraProto( OBJ_INDEX_DATA *obj, char *keywords )
+bool DelOExtraProto( OBJ_INDEX_DATA *obj, const std::string& keywords )
 {
     EXTRA_DESCR_DATA *rmed;
     
@@ -6773,7 +6746,7 @@ bool DelOExtraProto( OBJ_INDEX_DATA *obj, char *keywords )
     return TRUE;
 }
 
-void fold_area( AREA_DATA *tarea, char *filename, bool install )
+void fold_area( AREA_DATA *tarea, const std::string& filename, bool install )
 {
     RESET_DATA		*treset;
     ROOM_INDEX_DATA	*room;
@@ -6785,7 +6758,7 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
     AFFECT_DATA		*paf;
     SHOP_DATA		*pShop;
     REPAIR_DATA		*pRepair;
-    char		 buf[MAX_STRING_LENGTH];
+//    char		 buf[MAX_STRING_LENGTH];
     FILE		*fpout;
     int			 vnum;
     int			 val0, val1, val2, val3, val4, val5;
@@ -6793,14 +6766,14 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 
     log_printf_plus( LOG_ALL, LEVEL_GREATER, "Saving %s...", tarea->filename );
 
-    SPRINTF( buf, "%s.bak", filename );
-    rename( filename, buf );
+    std::string buf = filename + ".bak";
+    rename( filename.c_str(), buf.c_str() );
     FCLOSE( fpReserve );
-    SPRINTF( buf, "%s.tmp", filename );
-    if ( ( fpout = fopen( buf, "w" ) ) == NULL )
+    buf = filename + ".tmp";
+    if ( ( fpout = fopen( buf.c_str(), "w" ) ) == NULL )
     {
 	bug( "fold_area: fopen", 0 );
-	perror( buf );
+	perror( buf.c_str() );
 	fpReserve = fopen( NULL_FILE, "r" );
 	return;
     }
@@ -7197,7 +7170,7 @@ void fold_area( AREA_DATA *tarea, char *filename, bool install )
 
 //Code to write to .tmp file before replacing area file... 
 //        prevents corruption on crash - DV 4-22-04
-    rename( buf, filename );
+    rename( buf.c_str(), filename.c_str() );
     
     FCLOSE( fpout );
     fpReserve = fopen( NULL_FILE, "r" );
@@ -7360,10 +7333,11 @@ void do_unfoldarea( CHAR_DATA *ch, char *argument )
 void do_foldarea( CHAR_DATA *ch, char *argument )
 {
     AREA_DATA	*tarea;
-    char         arg[MAX_INPUT_LENGTH];
+    std::string arg;
+	std::string argstr = argument;
        
-    argument = one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    argstr = one_argument( argstr, arg );
+    if ( arg.empty() )
     {
 	send_to_char( "Usage: foldarea <filename> [remproto]\n", ch );
 	return;
@@ -7374,7 +7348,7 @@ void do_foldarea( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( tarea->filename, arg ) )
 	{
 	  send_to_char( "Folding...\n", ch );
-	  if (!strcmp( argument, "remproto") )
+	  if (!str_cmp( argstr, "remproto") )
 	     fold_area( tarea, tarea->filename, TRUE );
 	  else
 	     fold_area( tarea, tarea->filename, FALSE );
@@ -7388,7 +7362,7 @@ void do_foldarea( CHAR_DATA *ch, char *argument )
 
 extern int top_area;
 
-void write_area_list( )
+void write_area_list( GameContext *game)
 {
     AREA_DATA *tarea;
     FILE *fpout;
@@ -7413,13 +7387,14 @@ void write_area_list( )
 void do_installarea( CHAR_DATA *ch, char *argument )
 {
     AREA_DATA	*tarea;
-    char	arg[MAX_INPUT_LENGTH];
-    char	buf[MAX_STRING_LENGTH];
+    std::string arg;
+    std::string buf;
+	std::string argstr = argument;
     int		num;
     DESCRIPTOR_DATA *d;
 
-    argument = one_argument( argument, arg );
-    if ( arg[0] == '\0' )
+    argstr = one_argument( argstr, arg );
+    if ( arg.empty() )
     {
 	send_to_char( "Syntax: installarea <filename> [Area title]\n", ch );
 	return;
@@ -7435,10 +7410,10 @@ void do_installarea( CHAR_DATA *ch, char *argument )
     {
 	if ( !str_cmp( tarea->filename, arg ) )
 	{
-	  if ( argument && argument[0] != '\0' )
+	  if ( !argstr.empty() )
 	  {
 		STR_DISPOSE( tarea->name );
-		tarea->name = str_dup( argument );
+		tarea->name = str_dup( argstr );
 	  }
 
 	  /* Fold area with install flag -- auto-removes prototype flags */
@@ -7470,16 +7445,16 @@ void do_installarea( CHAR_DATA *ch, char *argument )
 
 	  top_area++;
 	  send_to_char( "Writing area.lst...\n", ch );
-	  write_area_list( );
+	  write_area_list( ch->game );
 	  send_to_char( "Resetting new area.\n", ch );
 	  num = tarea->nplayer;
 	  tarea->nplayer = 0;
 	  reset_area( ch->game, tarea );
 	  tarea->nplayer = num;
 	  send_to_char( "Renaming author's building file.\n", ch );
-	  SPRINTF( buf, "%s%s.installed", BUILD_DIR, tarea->filename );
-	  SPRINTF( arg, "%s%s", BUILD_DIR, tarea->filename );
-	  rename( arg, buf );
+	  buf = std::string(BUILD_DIR) + tarea->filename + ".installed";
+	  arg = std::string(BUILD_DIR) + tarea->filename;
+	  rename( arg.c_str(), buf.c_str() );
 	  send_to_char( "Done.\n", ch );
 	  return;
 	}
@@ -7508,27 +7483,28 @@ void add_reset_nested( AREA_DATA *tarea, OBJ_DATA *obj )
 /*
  * Parse a reset command string into a reset_data structure
  */
-RESET_DATA *parse_reset( AREA_DATA *tarea, char *argument, CHAR_DATA *ch )
+RESET_DATA *parse_reset( AREA_DATA *tarea, const std::string& argument, CHAR_DATA *ch )
 {
-	char arg1[MAX_INPUT_LENGTH];
-	char arg2[MAX_INPUT_LENGTH];
-	char arg3[MAX_INPUT_LENGTH];
-	char arg4[MAX_INPUT_LENGTH];
+	std::string arg1;
+	std::string arg2;
+	std::string arg3;
+	std::string arg4;
+	std::string argstr = argument;
 	char letter;
 	int extra, val1, val2, val3;
 	int value;
 	ROOM_INDEX_DATA *room;
 	EXIT_DATA	*pexit;
 
-	argument = one_argument( argument, arg1 );
-	argument = one_argument( argument, arg2 );
-	argument = one_argument( argument, arg3 );
-	argument = one_argument( argument, arg4 );
+	argstr = one_argument( argstr, arg1 );
+	argstr = one_argument( argstr, arg2 );
+	argstr = one_argument( argstr, arg3 );
+	argstr = one_argument( argstr, arg4 );
 	extra = 0; letter = '*';
-	val1 = atoi( arg2 );
-	val2 = atoi( arg3 );
-	val3 = atoi( arg4 );
-	if ( arg1[0] == '\0' )
+	val1 = strtoi( arg2 );
+	val2 = strtoi( arg3 );
+	val3 = strtoi( arg4 );
+	if ( arg1.empty() )
 	{
 	   send_to_char( "Reset commands: mob obj give equip door rand trap hide.\n", ch );
 	   return NULL;
@@ -7536,7 +7512,7 @@ RESET_DATA *parse_reset( AREA_DATA *tarea, char *argument, CHAR_DATA *ch )
 
 	if ( !str_cmp( arg1, "hide" ) )
 	{
-	    if ( arg2[0] != '\0' && !get_obj_index(val1) )
+	    if ( !arg2.empty() && !get_obj_index(val1) )
 	    {
 		send_to_char( "Reset: HIDE: no such object\n", ch );
 		return NULL;
@@ -7549,7 +7525,7 @@ RESET_DATA *parse_reset( AREA_DATA *tarea, char *argument, CHAR_DATA *ch )
 	    letter = 'H';
 	}
 	else
-	if ( arg2[0] == '\0' )
+	if ( arg2.empty() )
 	{
 	    send_to_char( "Reset: not enough arguments.\n", ch );
 	    return NULL;
@@ -7643,8 +7619,8 @@ RESET_DATA *parse_reset( AREA_DATA *tarea, char *argument, CHAR_DATA *ch )
 		return NULL;
 	    }
 	    extra = UMAX(val3, 0);
-	    argument = one_argument(argument, arg4);
-	    val3 = (is_number(argument) ? atoi(arg4) : 0);
+	    argstr = one_argument(argstr, arg4);
+	    val3 = (is_number(arg4) ? strtoi(arg4) : 0);
 	    if ( val3 < 0 )
 		val3 = 0;
 	    letter = 'P';
@@ -7708,9 +7684,9 @@ RESET_DATA *parse_reset( AREA_DATA *tarea, char *argument, CHAR_DATA *ch )
 		send_to_char( "Reset: TRAP: invalid trap charges\n", ch );
 		return NULL;
 	    }
-	    while ( argument[0] != '\0' )
+	    while ( !argstr.empty() )
 	    {
-		argument = one_argument( argument, arg4 );
+		argstr = one_argument( argstr, arg4 );
 		value = get_trapflag( arg4 );
 		if ( value >= 0 && value < 32 )
 		    SET_BIT( extra, 1 << value );
@@ -7859,17 +7835,18 @@ void do_astat( CHAR_DATA *ch, char *argument )
 void do_aset( CHAR_DATA *ch, char *argument )
 {
     AREA_DATA *tarea;
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
-    char arg3[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+	std::string argstr = argument;
     bool found, proto;
     int vnum, value, type;
     
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
-    vnum = atoi( argument );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
+    vnum = strtoi( argstr );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() )
     {
 	send_to_char( "Usage: aset <area filename> <field> <value>\n", ch );
 	send_to_char( "\nField being one of:\n", ch );
@@ -7906,7 +7883,7 @@ void do_aset( CHAR_DATA *ch, char *argument )
    {
       AREA_DATA *uarea;
 
-      if( !argument || argument[0] == '\0' )
+      if( argstr.empty() )
       {
          send_to_char( "You can't set an area's name to nothing.\n", ch );
          return;
@@ -7914,7 +7891,7 @@ void do_aset( CHAR_DATA *ch, char *argument )
 
       for( uarea = first_area; uarea; uarea = uarea->next )
       {
-         if( !str_cmp( uarea->name, argument ) )
+         if( !str_cmp( uarea->name, argstr ) )
          {
             send_to_char( "There is already an installed area with that name.\n", ch );
             return;
@@ -7923,14 +7900,14 @@ void do_aset( CHAR_DATA *ch, char *argument )
 
       for( uarea = first_build; uarea; uarea = uarea->next )
       {
-         if( !str_cmp( uarea->name, argument ) )
+         if( !str_cmp( uarea->name, argstr ) )
          {
             send_to_char( "There is already a prototype area with that name.\n", ch );
             return;
          }
       }
       STR_DISPOSE( tarea->name );
-      tarea->name = str_dup( argument );
+      tarea->name = str_dup( argstr );
       send_to_char( "Done.\n", ch );
       return;
    }
@@ -7938,7 +7915,7 @@ void do_aset( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg2, "planet" ) )
     {
         PLANET_DATA *planet;
-        planet = get_planet(argument);
+        planet = get_planet(argstr);
         if (planet)
         {
            if (tarea->planet)
@@ -7965,14 +7942,14 @@ void do_aset( CHAR_DATA *ch, char *argument )
          return;
       }
 
-      if( !is_valid_filename( ch, "", argument ) )
+      if( !is_valid_filename( ch, "", argstr ) )
          return;
 
       strncpy( filename, tarea->filename, 256 );
       STR_DISPOSE( tarea->filename );
-      tarea->filename = str_dup( argument );
+      tarea->filename = str_dup( argstr );
       rename( filename, tarea->filename );
-      write_area_list(  );
+      write_area_list( ch->game );
       send_to_char( "Done.\n", ch );
       return;
    }
@@ -8088,7 +8065,7 @@ void do_aset( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg2, "author" ) )
     {
 	STRFREE( tarea->author );
-	tarea->author = STRALLOC( argument );
+	tarea->author = STRALLOC( argstr );
 	send_to_char( "Done.\n", ch );
 	return;
     }
@@ -8097,8 +8074,8 @@ void do_aset( CHAR_DATA *ch, char *argument )
     {
         if ( tarea->resetmsg )
           STR_DISPOSE( tarea->resetmsg );
-        if ( str_cmp( argument, "clear" ) )
-          tarea->resetmsg = str_dup( argument );
+        if ( str_cmp( argstr, "clear" ) )
+          tarea->resetmsg = str_dup( argstr );
         send_to_char( "Done.\n", ch );
         return;
     } /* Rennard */
@@ -8112,10 +8089,10 @@ void do_aset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "supply" ) )
     {
-        if ( argument[0] != '\0' )
-          argument = one_argument( argument, arg3 );
-        type = atoi(arg3);
-        vnum = atoi(argument);
+        if ( !argstr.empty() )
+          argstr = one_argument( argstr, arg3 );
+        type = strtoi(arg3);
+        vnum = strtoi(argstr);
 	if ( type > 0 && type <= 8 )
 	{
 	  tarea->supply[type-1] = vnum;
@@ -8128,10 +8105,10 @@ void do_aset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "depletion" ) )
     {
-        if ( argument[0] != '\0' )
-          argument = one_argument( argument, arg3 );
-        type = atoi(arg3);
-        vnum = atoi(argument);
+        if ( !argstr.empty() )
+          argstr = one_argument( argstr, arg3 );
+        type = strtoi(arg3);
+        vnum = strtoi(argstr);
 	if ( type > 0 && type <= 8 )
 	{
 	  tarea->depletion[type-1] = vnum;
@@ -8144,10 +8121,10 @@ void do_aset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "production" ) )
     {
-        if ( argument[0] != '\0' )
-          argument = one_argument( argument, arg3 );
-        type = atoi(arg3);
-        vnum = atoi(argument);
+        if ( !argstr.empty() )
+		   argstr = one_argument( argstr, arg3 );
+        type = strtoi(arg3);
+        vnum = strtoi(argstr);
 	if ( type > 0 && type <= 8 )
 	{
 	  tarea->production[type-1] = vnum;
@@ -8160,17 +8137,17 @@ void do_aset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "flags" ) )
     {
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	   send_to_char( "Usage: aset <filename> flags <flag> [flag]...\n", ch );
 	   return;
 	}
-	while ( argument[0] != '\0' )
+	while ( !argstr.empty() )
 	{
-	   argument = one_argument( argument, arg3 );
+	   argstr = one_argument( argstr, arg3 );
 	   value = get_areaflag( arg3 );
 	   if ( value < 0 || value > 31 )
-	     ch_printf( ch, "Unknown flag: %s\n", arg3 );
+	     ch_printf( ch, "Unknown flag: %s\n", arg3.c_str() );
 	   else
 	   {
            if ( IS_SET( tarea->flags, 1 << value ) )
@@ -8191,8 +8168,9 @@ void do_rlist( CHAR_DATA *ch, char *argument )
 {
     ROOM_INDEX_DATA	*room;
     int			 vnum;
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+	std::string argstr = argument;
     AREA_DATA		*tarea;
     int lrange;
     int trange;
@@ -8205,19 +8183,19 @@ void do_rlist( CHAR_DATA *ch, char *argument )
     }
 
     tarea = ch->pcdata->area;
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
     if ( tarea )
     {
-      if ( arg1[0] == '\0' )		/* cleaned a big scary mess */
+      if ( arg1.empty() )		/* cleaned a big scary mess */
         lrange = tarea->low_r_vnum;	/* here.	    -Thoric */
       else
-        lrange = atoi( arg1 );
-      if ( arg2[0] == '\0' )
+        lrange = strtoi( arg1 );
+      if ( arg2.empty() )
         trange = tarea->hi_r_vnum;
       else
-        trange = atoi(arg2);
+        trange = strtoi(arg2);
 
       if ( ( lrange < tarea->low_r_vnum || trange > tarea->hi_r_vnum )
   	&& get_trust( ch ) < LEVEL_GREATER )
@@ -8228,8 +8206,8 @@ void do_rlist( CHAR_DATA *ch, char *argument )
     }
    else
     {
-      lrange = ( is_number( arg1 ) ? atoi( arg1 ) : 1 );
-      trange = ( is_number( arg2 ) ? atoi( arg2 ) : 1 );
+      lrange = ( is_number( arg1 ) ? strtoi( arg1 ) : 1 );
+      trange = ( is_number( arg2 ) ? strtoi( arg2 ) : 1 );
     }
 
     for ( vnum = lrange; vnum <= trange; vnum++ )
@@ -8246,8 +8224,9 @@ void do_olist( CHAR_DATA *ch, char *argument )
     OBJ_INDEX_DATA	*obj;
     int			 vnum;
     AREA_DATA		*tarea;
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     int lrange;
     int trange;
 
@@ -8261,19 +8240,19 @@ void do_olist( CHAR_DATA *ch, char *argument )
 	return;
     }
     tarea = ch->pcdata->area;
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
     if ( tarea )
     {
-      if ( arg1[0] == '\0' )		/* cleaned a big scary mess */
+      if ( arg1.empty() )		/* cleaned a big scary mess */
         lrange = tarea->low_o_vnum;	/* here.	    -Thoric */
       else
-        lrange = atoi( arg1 );
-      if ( arg2[0] == '\0' )
+        lrange = strtoi( arg1 );
+      if ( arg2.empty() )
         trange = tarea->hi_o_vnum;
       else
-        trange = atoi(arg2);
+        trange = strtoi(arg2);
 
       if ((lrange < tarea->low_o_vnum || trange > tarea->hi_o_vnum)
       &&   get_trust( ch ) < LEVEL_GREATER )
@@ -8284,8 +8263,8 @@ void do_olist( CHAR_DATA *ch, char *argument )
     }
    else
     {
-      lrange = ( is_number( arg1 ) ? atoi( arg1 ) : 1 );
-      trange = ( is_number( arg2 ) ? atoi( arg2 ) : 3 );
+      lrange = ( is_number( arg1 ) ? strtoi( arg1 ) : 1 );
+      trange = ( is_number( arg2 ) ? strtoi( arg2 ) : 3 );
     }
 
     for ( vnum = lrange; vnum <= trange; vnum++ )
@@ -8304,8 +8283,9 @@ void do_mlist( CHAR_DATA *ch, char *argument )
     MOB_INDEX_DATA	*mob;
     int			 vnum;
     AREA_DATA		*tarea;
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
     int lrange;
     int trange;
 
@@ -8317,19 +8297,19 @@ void do_mlist( CHAR_DATA *ch, char *argument )
     }
 
     tarea = ch->pcdata->area;
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
     if ( tarea )
     {
-      if ( arg1[0] == '\0' )		/* cleaned a big scary mess */
+      if ( arg1.empty() )		/* cleaned a big scary mess */
         lrange = tarea->low_m_vnum;	/* here.	    -Thoric */
       else
-        lrange = atoi( arg1 );
-      if ( arg2[0] == '\0' )
+        lrange = strtoi( arg1 );
+      if ( arg2.empty() )
         trange = tarea->hi_m_vnum;
       else
-        trange = atoi( arg2 );
+        trange = strtoi( arg2 );
 
       if ( ( lrange < tarea->low_m_vnum || trange > tarea->hi_m_vnum )
 	&& get_trust( ch ) < LEVEL_GREATER )
@@ -8340,8 +8320,8 @@ void do_mlist( CHAR_DATA *ch, char *argument )
     }
     else
     {
-      lrange = ( is_number( arg1 ) ? atoi( arg1 ) : 1 );
-      trange = ( is_number( arg2 ) ? atoi( arg2 ) : 1 );
+      lrange = ( is_number( arg1 ) ? strtoi( arg1 ) : 1 );
+      trange = ( is_number( arg2 ) ? strtoi( arg2 ) : 1 );
     }
     
     for ( vnum = lrange; vnum <= trange; vnum++ )
@@ -8354,7 +8334,7 @@ void do_mlist( CHAR_DATA *ch, char *argument )
     }
 }
 
-void mpedit( CHAR_DATA *ch, MPROG_DATA *mprg, int mptype, char *argument )
+void mpedit( CHAR_DATA *ch, MPROG_DATA *mprg, int mptype, std::string& argument )
 {
 	if ( mptype != -1 )
 	{
@@ -8376,10 +8356,11 @@ void mpedit( CHAR_DATA *ch, MPROG_DATA *mprg, int mptype, char *argument )
  */
 void do_mpedit( CHAR_DATA *ch, char *argument )
 {
-    char arg1 [MAX_INPUT_LENGTH];
-    char arg2 [MAX_INPUT_LENGTH];
-    char arg3 [MAX_INPUT_LENGTH];
-    char arg4 [MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string arg4;
+	std::string argstr = argument;
     CHAR_DATA  *victim;
     MPROG_DATA *mprog, *mprg, *mprg_next;
     int value, mptype, cnt;
@@ -8419,13 +8400,13 @@ void do_mpedit( CHAR_DATA *ch, char *argument )
 	  return;
     }
 
-    smash_tilde( argument );
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
-    argument = one_argument( argument, arg3 );
-    value = atoi( arg3 );
+    smash_tilde( argstr );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
+    argstr = one_argument( argstr, arg3 );
+    value = strtoi( arg3 );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() )
     {
 	send_to_char( "Syntax: mpedit <victim> <command> [number] <program> <value>\n", ch );
 	send_to_char( "\n",						ch );
@@ -8497,8 +8478,8 @@ void do_mpedit( CHAR_DATA *ch, char *argument )
 	   send_to_char( "That mobile has no mob programs.\n", ch );
 	   return;
 	}
-	argument = one_argument( argument, arg4 );
-	if ( arg4[0] != '\0' )
+	argstr = one_argument( argstr, arg4 );
+	if ( !arg4.empty() )
 	{
 	  mptype = get_mpflag( arg4 );
 	  if ( mptype == -1 )
@@ -8519,7 +8500,7 @@ void do_mpedit( CHAR_DATA *ch, char *argument )
 	{
 	   if ( ++cnt == value )
 	   {
-		mpedit( ch, mprg, mptype, argument );
+		mpedit( ch, mprg, mptype, argstr );
 		victim->pIndexData->progtypes = 0;
 		for ( mprg = mprog; mprg; mprg = mprg->next )
 		   victim->pIndexData->progtypes |= mprg->type;
@@ -8540,7 +8521,7 @@ void do_mpedit( CHAR_DATA *ch, char *argument )
 	   send_to_char( "That mobile has no mob programs.\n", ch );
 	   return;
 	}
-	argument = one_argument( argument, arg4 );
+	argstr = one_argument( argstr, arg4 );
 	if ( value < 1 )
 	{
 	   send_to_char( "Program not found.\n", ch );
@@ -8596,7 +8577,7 @@ void do_mpedit( CHAR_DATA *ch, char *argument )
 	   send_to_char( "That mobile has no mob programs.\n", ch );
 	   return;
 	}
-	argument = one_argument( argument, arg4 );
+	argstr = one_argument( argstr, arg4 );
 	mptype = get_mpflag( arg4 );
 	if ( mptype == -1 )
 	{
@@ -8612,7 +8593,7 @@ void do_mpedit( CHAR_DATA *ch, char *argument )
 	{
 	   CREATE( mprg, MPROG_DATA, 1 );
 	   victim->pIndexData->progtypes |= ( 1 << mptype );
-	   mpedit( ch, mprg, mptype, argument );
+	   mpedit( ch, mprg, mptype, argstr );
 	   mprg->next = mprog;
 	   victim->pIndexData->mudprogs = mprg;
 	   return;
@@ -8624,7 +8605,7 @@ void do_mpedit( CHAR_DATA *ch, char *argument )
 	   {
 		CREATE( mprg_next, MPROG_DATA, 1 );
 		victim->pIndexData->progtypes |= ( 1 << mptype );
-		mpedit( ch, mprg_next, mptype, argument );
+		mpedit( ch, mprg_next, mptype, argstr );
 		mprg_next->next = mprg->next;
 		mprg->next	= mprg_next;
 		return;
@@ -8650,7 +8631,7 @@ void do_mpedit( CHAR_DATA *ch, char *argument )
 	else
 	  victim->pIndexData->mudprogs	= mprg;
 	victim->pIndexData->progtypes	|= ( 1 << mptype );
-	mpedit( ch, mprg, mptype, argument );
+	mpedit( ch, mprg, mptype, argstr );
 	mprg->next = NULL;
 	return;
     }
@@ -8660,10 +8641,11 @@ void do_mpedit( CHAR_DATA *ch, char *argument )
 
 void do_opedit( CHAR_DATA *ch, char *argument )
 {
-    char arg1 [MAX_INPUT_LENGTH];
-    char arg2 [MAX_INPUT_LENGTH];
-    char arg3 [MAX_INPUT_LENGTH];
-    char arg4 [MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string arg4;
+	std::string argstr = argument;
     OBJ_DATA   *obj;
     MPROG_DATA *mprog, *mprg, *mprg_next;
     int value, mptype, cnt;
@@ -8703,13 +8685,13 @@ void do_opedit( CHAR_DATA *ch, char *argument )
 	  return;
     }
 
-    smash_tilde( argument );
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
-    argument = one_argument( argument, arg3 );
-    value = atoi( arg3 );
+    smash_tilde( argstr );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
+    argstr = one_argument( argstr, arg3 );
+    value = strtoi( arg3 );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() )
     {
 	send_to_char( "Syntax: opedit <object> <command> [number] <program> <value>\n", ch );
 	send_to_char( "\n",						ch );
@@ -8778,8 +8760,8 @@ void do_opedit( CHAR_DATA *ch, char *argument )
 	   send_to_char( "That object has no obj programs.\n", ch );
 	   return;
 	}
-	argument = one_argument( argument, arg4 );
-	if ( arg4[0] != '\0' )
+	argstr = one_argument( argstr, arg4 );
+	if ( !arg4.empty() )
 	{
 	  mptype = get_mpflag( arg4 );    
 	  if ( mptype == -1 )
@@ -8800,7 +8782,7 @@ void do_opedit( CHAR_DATA *ch, char *argument )
 	{
 	   if ( ++cnt == value )
 	   {
-		mpedit( ch, mprg, mptype, argument );
+		mpedit( ch, mprg, mptype, argstr );
 		obj->pIndexData->progtypes = 0;
 		for ( mprg = mprog; mprg; mprg = mprg->next )
 		   obj->pIndexData->progtypes |= mprg->type;
@@ -8821,7 +8803,7 @@ void do_opedit( CHAR_DATA *ch, char *argument )
 	   send_to_char( "That object has no obj programs.\n", ch );
 	   return;
 	}
-	argument = one_argument( argument, arg4 );
+	argstr = one_argument( argstr, arg4 );
 	if ( value < 1 )
 	{
 	   send_to_char( "Program not found.\n", ch );
@@ -8877,7 +8859,7 @@ void do_opedit( CHAR_DATA *ch, char *argument )
 	   send_to_char( "That object has no obj programs.\n", ch );
 	   return;
 	}
-	argument = one_argument( argument, arg4 );
+	argstr = one_argument( argstr, arg4 );
 	mptype = get_mpflag( arg4 );
 	if ( mptype == -1 )
 	{
@@ -8893,7 +8875,7 @@ void do_opedit( CHAR_DATA *ch, char *argument )
 	{
 	   CREATE( mprg, MPROG_DATA, 1 );
 	   obj->pIndexData->progtypes	|= ( 1 << mptype );
-	   mpedit( ch, mprg, mptype, argument );
+	   mpedit( ch, mprg, mptype, argstr );
 	   mprg->next = mprog;
 	   obj->pIndexData->mudprogs = mprg;
 	   return;
@@ -8905,7 +8887,7 @@ void do_opedit( CHAR_DATA *ch, char *argument )
 	   {
 		CREATE( mprg_next, MPROG_DATA, 1 );
 		obj->pIndexData->progtypes |= ( 1 << mptype );
-		mpedit( ch, mprg_next, mptype, argument );
+		mpedit( ch, mprg_next, mptype, argstr );
 		mprg_next->next = mprg->next;
 		mprg->next	= mprg_next;
 		return;
@@ -8931,7 +8913,7 @@ void do_opedit( CHAR_DATA *ch, char *argument )
 	else
 	  obj->pIndexData->mudprogs	 = mprg;
 	obj->pIndexData->progtypes	|= ( 1 << mptype );
-	mpedit( ch, mprg, mptype, argument );
+	mpedit( ch, mprg, mptype, argstr );
 	mprg->next = NULL;
 	return;
     }
@@ -8944,7 +8926,7 @@ void do_opedit( CHAR_DATA *ch, char *argument )
 /*
  * RoomProg Support
  */
-void rpedit( CHAR_DATA *ch, MPROG_DATA *mprg, int mptype, char *argument )
+void rpedit( CHAR_DATA *ch, MPROG_DATA *mprg, int mptype, std::string& argument )
 {
 	if ( mptype != -1 )
 	{
@@ -8963,9 +8945,10 @@ void rpedit( CHAR_DATA *ch, MPROG_DATA *mprg, int mptype, char *argument )
 
 void do_rpedit( CHAR_DATA *ch, char *argument )
 {
-    char arg1 [MAX_INPUT_LENGTH];
-    char arg2 [MAX_INPUT_LENGTH];
-    char arg3 [MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+	std::string argstr = argument;
     MPROG_DATA *mprog, *mprg, *mprg_next;
     int value, mptype, cnt;
 
@@ -9004,13 +8987,13 @@ void do_rpedit( CHAR_DATA *ch, char *argument )
 	  return;
     }
 
-    smash_tilde( argument );
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
-    value = atoi( arg2 );
-    /* argument = one_argument( argument, arg3 ); */
+    smash_tilde( argstr );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
+    value = strtoi( arg2 );
+    /* argstr = one_argument( argstr, arg3 ); */
 
-    if ( arg1[0] == '\0' )
+    if ( arg1.empty() )
     {
 	send_to_char( "Syntax: rpedit <command> [number] <program> <value>\n", ch );
 	send_to_char( "\n",						ch );
@@ -9055,7 +9038,7 @@ void do_rpedit( CHAR_DATA *ch, char *argument )
 	   send_to_char( "This room has no room programs.\n", ch );
 	   return;
 	}
-	argument = one_argument( argument, arg3 );
+	argstr = one_argument( argstr, arg3 );
 	if ( arg3[0] != '\0' )
 	{
 	  mptype = get_mpflag( arg3 );    
@@ -9077,7 +9060,7 @@ void do_rpedit( CHAR_DATA *ch, char *argument )
 	{
 	   if ( ++cnt == value )
 	   {
-		mpedit( ch, mprg, mptype, argument );
+		mpedit( ch, mprg, mptype, argstr );
 		ch->in_room->progtypes = 0;
 		for ( mprg = mprog; mprg; mprg = mprg->next )
 		   ch->in_room->progtypes |= mprg->type;
@@ -9098,7 +9081,7 @@ void do_rpedit( CHAR_DATA *ch, char *argument )
 	   send_to_char( "That room has no room programs.\n", ch );
 	   return;
 	}
-	argument = one_argument( argument, arg3 );
+	argstr = one_argument( argstr, arg3 );
 	if ( value < 1 )
 	{
 	   send_to_char( "Program not found.\n", ch );
@@ -9154,7 +9137,7 @@ void do_rpedit( CHAR_DATA *ch, char *argument )
 	   send_to_char( "That room has no room programs.\n", ch );
 	   return;
 	}
-	argument = one_argument( argument, arg3 );
+	argstr = one_argument( argstr, arg3 );
 	mptype = get_mpflag( arg2 );
 	if ( mptype == -1 )
 	{
@@ -9170,7 +9153,7 @@ void do_rpedit( CHAR_DATA *ch, char *argument )
 	{
 	   CREATE( mprg, MPROG_DATA, 1 );
 	   ch->in_room->progtypes |= ( 1 << mptype );
-	   mpedit( ch, mprg, mptype, argument );
+	   mpedit( ch, mprg, mptype, argstr );
 	   mprg->next = mprog;
 	   ch->in_room->mudprogs = mprg;
 	   return;
@@ -9182,7 +9165,7 @@ void do_rpedit( CHAR_DATA *ch, char *argument )
 	   {
 		CREATE( mprg_next, MPROG_DATA, 1 );
 		ch->in_room->progtypes |= ( 1 << mptype );
-		mpedit( ch, mprg_next, mptype, argument );
+		mpedit( ch, mprg_next, mptype, argstr );
 		mprg_next->next = mprg->next;
 		mprg->next	= mprg_next;
 		return;
@@ -9208,7 +9191,7 @@ void do_rpedit( CHAR_DATA *ch, char *argument )
 	else
 	  ch->in_room->mudprogs	= mprg;
 	ch->in_room->progtypes |= ( 1 << mptype );
-	mpedit( ch, mprg, mptype, argument );
+	mpedit( ch, mprg, mptype, argstr );
 	mprg->next = NULL;
 	return;
     }
@@ -9218,15 +9201,15 @@ void do_rpedit( CHAR_DATA *ch, char *argument )
 
 void do_rdelete( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     ROOM_INDEX_DATA *location;
 
-    argument = one_argument( argument, arg );
+    one_argument( argument, arg );
 
     /* Temporarily disable this command. */
     //return;
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Delete which room?\n", ch );
 	return;
@@ -9343,7 +9326,8 @@ bool is_valid_vnum( int vnum, short type )
 void do_alinks( CHAR_DATA* ch,  char* argument )
 {
    static const char *dirs[] = { "n", "e", "s", "w", "u", "d", "ne", "nw", "se", "sw", "--" };
-   char buf[MAX_INPUT_LENGTH];
+   std::string buf;
+   std::string argstr = argument;
    AREA_DATA *area;
    AREA_DATA *target;
    ROOM_INDEX_DATA *room;
@@ -9355,8 +9339,8 @@ void do_alinks( CHAR_DATA* ch,  char* argument )
    bool ex_found;
    bool rm_found;
 
-   argument = one_argument( argument, buf );
-   if( !buf[0] )
+   argstr = one_argument( argstr, buf );
+   if( buf.empty() )
    {
       send_to_char( "&wPlease see the related helpfile.\r\n", ch );
       return;
@@ -9380,13 +9364,13 @@ void do_alinks( CHAR_DATA* ch,  char* argument )
    }
 
    count = detail = 0;
-   if( *argument != '\0' )
+   if( !argstr.empty() )
    {
-      if( !str_prefix( argument, "detailed" ) )
+      if( !str_prefix( argstr, "detailed" ) )
          detail = 1;
-      else if( !str_prefix( argument, "names" ) )
+      else if( !str_prefix( argstr, "names" ) )
          detail = 2;
-      else if( !str_prefix( argument, "reverse" ) )
+      else if( !str_prefix( argstr, "reverse" ) )
          rev = TRUE, detail = 1;
    }
    ch_printf( ch, "&wListing all links from &W%s &wto &W%s&w...\r\n\r\n",

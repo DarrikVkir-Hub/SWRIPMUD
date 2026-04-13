@@ -107,15 +107,16 @@ send_to_char( "   e.g. rgrub st 2 - list all rooms sectortype 2.\n", ch );
 void do_rgrub (CHAR_DATA *ch, char *argument)
 {
 extern    ROOM_INDEX_DATA *room_index_hash[MAX_KEY_HASH];
-char arg1[MAX_STRING_LENGTH]; 
-char arg2[MAX_STRING_LENGTH]; 
-char arg3[MAX_STRING_LENGTH]; 
-char arg4[MAX_STRING_LENGTH]; 
+std::string arg1; 
+std::string arg2; 
+std::string arg3; 
+std::string arg4; 
+std::string argstr = argument;
 
-argument = one_argument (argument, arg1);
-argument = one_argument (argument, arg2);
-argument = one_argument (argument, arg3);
-argument = one_argument (argument, arg4);
+argstr = one_argument (argstr, arg1);
+argstr = one_argument (argstr, arg2);
+argstr = one_argument (argstr, arg3);
+argstr = one_argument (argstr, arg4);
 
 if (!str_cmp(arg1, "st"))
 {
@@ -123,16 +124,16 @@ if (!str_cmp(arg1, "st"))
    ROOM_INDEX_DATA *pRoom;
    int match, lo, hi, hit_cou, cou, vnum[RGRUB_ST_MAX_SIZE];
 
-   if (!*arg2)                                   /* empty arg gets help scrn */
+   if (arg2.empty())                                   /* empty arg gets help scrn */
    {
       rgrub_help(ch);
       return;
    }
-   else match = atoi (arg2);
+   else match = strtoi (arg2);
 
    hit_cou = 0;                                 /* number of vnums found */
-   lo = (*arg3) ? atoi (arg3) : 0;
-   hi = (*arg4) ? atoi (arg4) : 32767;
+   lo = (!arg3.empty()) ? strtoi (arg3) : 0;
+   hi = (!arg4.empty()) ? strtoi (arg4) : 32767;
 
    ch_printf (ch, "\nRoom Vnums\n");
    for (cou = 0; cou < MAX_KEY_HASH; cou++)
@@ -429,7 +430,7 @@ bool go_parse_operator (CHAR_DATA *ch, char *pch, int *op_num)
         go_op[*op_num].nval = atoi ( pch );
      else
      if ( go_op[*op_num].field == OTYPE )
-          go_op[*op_num].nval = get_otype( pch ); /* user entered token */
+          go_op[*op_num].nval = get_otype( (const char*)pch ); /* user entered token */
      else
      if ( go_op[*op_num].field == OWEAR )
           go_op[*op_num].nval = owear_to_num( pch ); /* user entered token */
@@ -452,50 +453,57 @@ bool go_parse_operator (CHAR_DATA *ch, char *pch, int *op_num)
 /*
  * Store operand's field name in the operand table.
  */
-bool go_parse_operand (CHAR_DATA *ch, char *arg, int *op_num, int *sor_ind,
+bool go_parse_operand( CHAR_DATA *ch, const std::string &arg_in, int *op_num, int *sor_ind,
         bool *sor_dir, bool *or_sw, bool *np_sw, bool *nm_sw, bool *ng_sw,
-        bool *do_sw, bool *d2_sw)
+        bool *do_sw, bool *d2_sw )
 {
-  int  cou;
-  char *pch;
+    std::string arg = arg_in;
 
-  if ( !strcmp(arg, "or"    ) ) return *or_sw    = TRUE;
-  if ( !strcmp(arg, "np"    ) ) return *np_sw    = TRUE;
-  if ( !strcmp(arg, "nm"    ) ) return *nm_sw    = TRUE;
-  if ( !strcmp(arg, "ng"    ) ) return *ng_sw    = TRUE;
-  if ( !strcmp(arg, "do"    ) ) return *do_sw    = TRUE;
-  if ( !strcmp(arg, "d2"    ) ) return *d2_sw = TRUE;
+    if ( arg == "or" ) return *or_sw = TRUE;
+    if ( arg == "np" ) return *np_sw = TRUE;
+    if ( arg == "nm" ) return *nm_sw = TRUE;
+    if ( arg == "ng" ) return *ng_sw = TRUE;
+    if ( arg == "do" ) return *do_sw = TRUE;
+    if ( arg == "d2" ) return *d2_sw = TRUE;
 
-  if ( arg[0]=='+' || arg[0]=='-')
-  {
-     *sor_dir = (arg[0]=='+') ? TRUE : FALSE;
-     pch = arg + 1;
-     if ( pch[0] == '\0')
+    if ( !arg.empty() && (arg[0] == '+' || arg[0] == '-') )
+    {
+        *sor_dir = (arg[0] == '+') ? TRUE : FALSE;
+
+        std::string pch = arg.substr(1);
+
+        if ( pch.empty() )
         {
-        pager_printf(ch, "Sorry. Missing sort field: %s\n", arg);
-        return FALSE;
-        }
-
-     if ( (*sor_ind = go_fnam_to_num(pch)) == -1 )
-        {
-        pager_printf(ch, "Sorry. Invalid sort field: %s\n", arg);
-        return FALSE;
-        }
-     return TRUE;
-  }
-                                                 
-  for (cou=0; cou<GO_NUM_FIELDS; cou++)           /* check field name    */
-      if ( !str_prefix( go_fd[cou].nam, arg ) )
-      {
-         arg += strlen( go_fd[cou].nam );         /* advance to operator */
-         go_op[ *op_num ].field = cou;
-						 /* store field enum */
-         if ( !go_parse_operator (ch, arg, op_num) )
+            pager_printf(ch, "Sorry. Missing sort field: %s\n", arg.c_str());
             return FALSE;
-         return TRUE;
-      }
-  pager_printf(ch, "Sorry. Invalid field name: %s\n", arg);
-  return FALSE;
+        }
+
+        if ( (*sor_ind = go_fnam_to_num(pch.data())) == -1 )
+        {
+            pager_printf(ch, "Sorry. Invalid sort field: %s\n", arg.c_str());
+            return FALSE;
+        }
+
+        return TRUE;
+    }
+
+    for ( int cou = 0; cou < GO_NUM_FIELDS; cou++ )   /* check field name */
+    {
+        if ( !str_prefix( go_fd[cou].nam, arg.c_str() ) )
+        {
+            std::string rest = arg.substr( strlen(go_fd[cou].nam) );
+
+            go_op[*op_num].field = cou;
+
+            if ( !go_parse_operator( ch, rest.data(), op_num ) )
+                return FALSE;
+
+            return TRUE;
+        }
+    }
+
+    pager_printf(ch, "Sorry. Invalid field name: %s\n", arg.c_str());
+    return FALSE;
 }
 
 /*
@@ -814,7 +822,8 @@ void do_ogrub (CHAR_DATA *ch, char *argument)
   enum {OCOUNT, OVNUM, OTYPE, OLEVEL, OWEAR, OAVG, OHR, ODR, OHP, OMP, OAC,
         OSTR, ODEX, OCON, OWIS, OINT, OLUCK,
         OSAV0, OSAV1, OSAV2, OSAV3, OSAV4};  
-  char arg1[MAX_STRING_LENGTH];
+  std::string arg1;
+  std::string argstr = argument;
   int  dis_num;                            /* display lines requested     */
   int  op_num = 0;                         /* num of operands on cmd line */
   int  sor_ind  = OVNUM;                   /* sort indicator              */
@@ -827,14 +836,14 @@ void do_ogrub (CHAR_DATA *ch, char *argument)
   bool d2_sw    = FALSE;                   /* alternate display format    */
 
   go_init();                              /* initialize data structures  */
-  argument = one_argument (argument, arg1);
-  if ( !*arg1 )
+  argstr = one_argument (argstr, arg1);
+  if ( arg1.empty() )
   {
      pager_printf(ch, "Syntax: ogrub <num of lines> <sort order> [keywords] [operands].\n");
      return;
   }
-  if ( isdigit(*arg1) )        /* first arg is number of display lines   */
-     dis_num = atoi(arg1);
+  if ( isdigit(*arg1.c_str()) )        /* first arg is number of display lines   */
+     dis_num = strtoi(arg1);
   else
   {
      pager_printf(ch, "You did not specify the number of display lines.\n");
@@ -847,8 +856,8 @@ void do_ogrub (CHAR_DATA *ch, char *argument)
      return;
   }
 
-  argument = one_argument (argument, arg1);
-  while ( *arg1 )                      /* build the operand table        */
+  argstr = one_argument (argstr, arg1);
+  while ( !arg1.empty() )                      /* build the operand table        */
   {
      if ( op_num >= MAX_NUM_OPS )
      {
@@ -859,7 +868,7 @@ void do_ogrub (CHAR_DATA *ch, char *argument)
      if ( !go_parse_operand (ch, arg1, &op_num, &sor_ind, &sor_dir,
         &or_sw, &np_sw, &nm_sw, &ng_sw, &do_sw, &d2_sw ) )
         return;
-     argument = one_argument (argument, arg1);
+     argstr = one_argument (argstr, arg1);
   }
   if (op_num <= 0)
   {
@@ -1026,68 +1035,85 @@ void gr_init (void)
 /*
  *  Store operand's operator and value in operand table.
  */
-bool gr_parse_operator (CHAR_DATA *ch, char *pch, int *op_num)
+bool gr_parse_operator( CHAR_DATA *ch, const std::string &pch_in, int *op_num )
 {
-  enum op_type {EQ, NE, SU, GE, GT, LE, LT};
-  int  cou;
-  char opstr [7][3] = { "=", "!=", "<>", ">=", ">", "<=", "<" };
+    enum op_type { EQ, NE, SU, GE, GT, LE, LT };
+    int cou;
+    std::string pch = pch_in;
+    const char *opstr[7] = { "=", "!=", "<>", ">=", ">", "<=", "<" };
 
-  gr_op[*op_num].op = -1;
-  for (cou=0; cou<7; cou++)
-      if ( !str_prefix(opstr[cou], pch) )
-         {
-         gr_op[*op_num].op = cou;
-         break;
-         }
+    gr_op[*op_num].op = -1;
+    for ( cou = 0; cou < 7; cou++ )
+        if ( !str_prefix( opstr[cou], pch.c_str() ) )
+        {
+            gr_op[*op_num].op = cou;
+            break;
+        }
 
-  if ( gr_op[*op_num].op < 0 )
-   {ch_printf(ch, "Invalid operator: %s\n", pch); return FALSE;}
+    if ( gr_op[*op_num].op < 0 )
+    {
+        ch_printf( ch, "Invalid operator: %s\n", pch.c_str() );
+        return FALSE;
+    }
 
-  if ( gr_op[*op_num].op==EQ || gr_op[*op_num].op==LT
-  || gr_op[*op_num].op==GT )
-     pch++;
-  else pch+=2;                               /* advance to operand value */
+    if ( gr_op[*op_num].op == EQ || gr_op[*op_num].op == LT
+    ||   gr_op[*op_num].op == GT )
+        pch = pch.substr( 1 );
+    else
+        pch = pch.substr( 2 );   /* advance to operand value */
 
-  if ( *pch=='\0' )
-     {ch_printf(ch, "Value is missing from operand.\n"); return FALSE;}
+    if ( pch.empty() )
+    {
+        ch_printf( ch, "Value is missing from operand.\n" );
+        return FALSE;
+    }
 
-  if ( gr_fd[gr_op[*op_num].field].num )
-  {
-     gr_op[*op_num].num  = TRUE;
-     gr_op[*op_num].nval = atol (pch);   /* store num operand value in table */
-  }
-  else
-  {
-     if ( strlen(pch) > MAX_FIELD_LENGTH )
-        {ch_printf(ch, "Char string is too long:%s\n", pch); return FALSE;}
-     gr_op[*op_num].num  = FALSE;
-     SPRINTF (gr_op[*op_num].sval, "%s", pch);  /* store str operand value in table */
-  }
-  (*op_num)++;                         /* operand now stored in table      */
-  return TRUE;
+    if ( gr_fd[gr_op[*op_num].field].num )
+    {
+        gr_op[*op_num].num  = TRUE;
+        gr_op[*op_num].nval = strtoi( pch );   /* store num operand value in table */
+    }
+    else
+    {
+        if ( pch.size() > MAX_FIELD_LENGTH )
+        {
+            ch_printf( ch, "Char string is too long:%s\n", pch.c_str() );
+            return FALSE;
+        }
+        gr_op[*op_num].num = FALSE;
+        SPRINTF( gr_op[*op_num].sval, "%s", pch.c_str() );  /* store str operand value in table */
+    }
+
+    (*op_num)++;                         /* operand now stored in table      */
+    return TRUE;
 }
 
 /*
  * Store operand's field name in the operand table.
  */
-bool gr_parse_operand (CHAR_DATA *ch, char *arg, bool *or_sw, int *op_num)
+bool gr_parse_operand( CHAR_DATA *ch, const std::string &arg_in, bool *or_sw, int *op_num )
 {
-  int  cou;
+    std::string arg = arg_in;
 
-  if ( !strcmp(arg, "or") )
-     return *or_sw = TRUE;
-                                                 
-  for (cou=1; cou<=GR_NUM_FIELDS; cou++)          /* check field name    */
-      if ( !str_prefix( gr_fd[cou-1].nam, arg ) )
-      {
-         arg += strlen( gr_fd[ cou-1 ].nam );     /* advance to operator */
-         gr_op[ *op_num ].field = cou-1;          /* store field name    */
-         if ( !gr_parse_operator (ch, arg, op_num) )
-            return FALSE;
-         return TRUE;
-      }
-  ch_printf(ch, "Sorry. Invalid field name: %s\n", arg);
-  return FALSE;
+    if ( arg == "or" )
+        return *or_sw = TRUE;
+
+    for ( int cou = 1; cou <= GR_NUM_FIELDS; cou++ )   /* check field name */
+    {
+        if ( !str_prefix( gr_fd[cou - 1].nam, arg.c_str() ) )
+        {
+            std::string rest = arg.substr( strlen( gr_fd[cou - 1].nam ) );
+            gr_op[*op_num].field = cou - 1;            /* store field name */
+
+            if ( !gr_parse_operator( ch, rest, op_num ) )
+                return FALSE;
+
+            return TRUE;
+        }
+    }
+
+    ch_printf( ch, "Sorry. Invalid field name: %s\n", arg.c_str() );
+    return FALSE;
 }
 
 /*
@@ -1171,32 +1197,33 @@ void gr_read (
  */
 void do_grub (CHAR_DATA *ch, char *argument)
 {
-  char arg1[MAX_STRING_LENGTH];
+  std::string arg1;
+  std::string argstr = argument;
   bool or_sw = FALSE;                       /* or search criteria           */
   int  dis_num;                             /* display lines requested      */
   int  op_num = 0;                          /* num of operands on cmd line  */
 
   gr_init();				    /* initialize data structures   */
-  argument = one_argument (argument, arg1);
-  if ( !*arg1 )
+  argstr = one_argument (argstr, arg1);
+  if ( arg1.empty() )
   {
      ch_printf(ch, "Syntax <max results> [keywords] [operands].\n");
      return;
   }
-  if ( isdigit(*arg1) )        /* first argument is number of display lines */
-     dis_num = atoi( arg1 );
+  if ( isdigit(*arg1.c_str()) )        /* first argument is number of display lines */
+     dis_num = strtoi( arg1 );
   else
   {
      ch_printf(ch, "You did not specify the number of display lines.\n");
      return;
   }
 
-  argument = one_argument (argument, arg1);
-  while ( *arg1 )
+  argstr = one_argument (argstr, arg1);
+  while ( !arg1.empty() )
   {					        /* build the operand table */
      if ( !gr_parse_operand (ch, arg1, &or_sw, &op_num) )
         return;
-     argument = one_argument (argument, arg1);
+     argstr = one_argument (argstr, arg1);
   }
   /*display_operand_table (op_num);*/
   gr_read( ch, op_num, or_sw, dis_num );      /* read the input file     */
@@ -1214,22 +1241,23 @@ void do_showlayers( CHAR_DATA *ch, char *argument )
 {
 extern    OBJ_INDEX_DATA  *obj_index_hash[MAX_KEY_HASH];
 OBJ_INDEX_DATA *pObj;
-char arg1[MAX_STRING_LENGTH];
+std::string arg1;
+std::string argstr = argument;
 
 int hash;                                           /* hash counter */
 int cou = 0;                                        /* display counter */
 int display_limit;                                  /* display limit */
 
-argument = one_argument (argument, arg1);
+argstr = one_argument (argstr, arg1);
 
-if ( !*arg1 )
+if ( arg1.empty() )
 {
 send_to_char( "Syntax:\n", ch);
 send_to_char( "showlayers n  -  display maximum of n lines.\n", ch);
 return;
 }
 
-display_limit = atoi(arg1);
+display_limit = strtoi(arg1);
 pager_printf(ch, "      Vnum      Wear Layer   Description \n");
 for (hash = 0; hash < MAX_KEY_HASH; hash++) /* loop thru obj_index_hash */
   if ( obj_index_hash[hash] )
@@ -1347,23 +1375,24 @@ extern    ROOM_INDEX_DATA *room_index_hash[MAX_KEY_HASH];
 extern    MOB_INDEX_DATA  *mob_index_hash[MAX_KEY_HASH];
 OBJ_INDEX_DATA *pObj;
 OBJ_INDEX_DATA **freq;                        /* dynamic array of pointers */
-char arg1 [MAX_INPUT_LENGTH];
-char arg2 [MAX_INPUT_LENGTH];
-char arg3 [MAX_INPUT_LENGTH];
-char arg4 [MAX_INPUT_LENGTH];
-char arg5 [MAX_INPUT_LENGTH];
-char arg6 [MAX_INPUT_LENGTH];
+std::string arg1;
+std::string arg2;
+std::string arg3;
+std::string arg4;
+std::string arg5;
+std::string arg6;
+std::string argstr = argument;
 int   num = 20;                               /* display lines requested */
 int   cou;
 
-argument = one_argument( argument, arg1 );
-argument = one_argument( argument, arg2 );
-argument = one_argument( argument, arg3 );
-argument = one_argument( argument, arg4 );
-argument = one_argument( argument, arg5 );
-argument = one_argument( argument, arg6 );
+argstr = one_argument( argstr, arg1 );
+argstr = one_argument( argstr, arg2 );
+argstr = one_argument( argstr, arg3 );
+argstr = one_argument( argstr, arg4 );
+argstr = one_argument( argstr, arg5 );
+argstr = one_argument( argstr, arg6 );
 
-if (!*arg1) {                                 /* empty arg gets help screen */
+if (arg1.empty()) {                                 /* empty arg gets help screen */
    diagnose_help(ch);
    return;
    }
@@ -1383,16 +1412,16 @@ if (!str_cmp(arg1, "rf"))
    ROOM_INDEX_DATA *pRoom;
    int match, lo, hi, hit_cou, vnum[DIAG_RF_MAX_SIZE];
 
-   if (!*arg2)                                   /* empty arg gets help scrn */
+   if (arg2.empty())                                   /* empty arg gets help scrn */
    {
       diagnose_help(ch);
       return;
    }
-   else match = atoi (arg2);
+   else match = strtoi (arg2);
 
    hit_cou = 0;                                 /* number of vnums found */
-   lo = (*arg3) ? atoi (arg3) : 0;
-   hi = (*arg4) ? atoi (arg4) : 32767;
+   lo = (!arg3.empty()) ? strtoi (arg3) : 0;
+   hi = (!arg4.empty()) ? strtoi (arg4) : 32767;
 
    ch_printf (ch, "\nRoom Vnums\n");
    for (cou = 0; cou < MAX_KEY_HASH; cou++)
@@ -1415,8 +1444,8 @@ if (!str_cmp(arg1, "rf"))
 }
 
 if (!str_cmp(arg1, "of")) {
-   if (*arg2)                                    /* empty arg gets dft number */
-      num = atoi (arg2);
+   if (!arg2.empty())                                    /* empty arg gets dft number */
+      num = strtoi (arg2);
    if (num > DIAG_MAX_SIZE  || num < 1) {        /* display num out of bounds */
       diagnose_help(ch);
       return;
@@ -1441,7 +1470,7 @@ if (!str_cmp(arg1, "mm")) {
    DESCRIPTOR_DATA *d;
    CHAR_DATA *victim;
 
-   if ( !*arg2 )
+   if ( arg2.empty() )
       return;
 
    if ( get_trust(ch) < LEVEL_SUB_IMPLEM )
@@ -1494,8 +1523,8 @@ if (!str_cmp(arg1, "zero"))
    int zero_obj     = 0;                        /* num of objs with 0 wt */
    int zero_num     = -1;                       /* num of lines requested */
 
-   if (*arg2)
-      zero_num = atoi (arg2);
+   if (!arg2.empty())
+      zero_num = strtoi (arg2);
    for (cou = 0; cou < MAX_KEY_HASH; cou++)     /* loop thru obj_index_hash */
        if ( obj_index_hash[cou] )
           for (pObj=obj_index_hash[cou]; pObj; pObj=pObj->next)
@@ -1616,18 +1645,18 @@ if (!str_cmp(arg1, "mrc"))
    MOB_INDEX_DATA *pm;
    sh_int race, dis_num, vnum1, vnum2, dis_cou = 0;
 
-   if ( !*arg2 || !*arg3 || !*arg4 || !*arg5
-   ||  !isdigit(*arg2) || !isdigit(*arg3) || !isdigit(*arg4)
-   ||  !isdigit(*arg5))
+   if ( arg2.empty() || arg3.empty() || arg4.empty() || arg5.empty()
+   ||  !isdigit(*arg2.c_str()) || !isdigit(*arg3.c_str()) || !isdigit(*arg4.c_str())
+   ||  !isdigit(*arg5.c_str()))
    {
       send_to_char( "Sorry. Invalid format.\n\n", ch);
       diagnose_help(ch);
       return;
    }
-   dis_num  = UMIN(atoi (arg2), DIAG_MAX_SIZE);
-   race     = atoi (arg3);
-   vnum1    = atoi (arg4);
-   vnum2    = atoi (arg5);
+   dis_num  = UMIN(strtoi (arg2), DIAG_MAX_SIZE);
+   race     = strtoi (arg3);
+   vnum1    = strtoi (arg4);
+   vnum2    = strtoi (arg5);
 
    send_to_char("\n", ch);
 

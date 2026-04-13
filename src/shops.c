@@ -54,6 +54,7 @@ float cost_equation( OBJ_DATA *obj )
 				    break;				\
 				}
 
+std::string strip_aoran( const std::string &input );				
 
 /*
  * Local functions
@@ -76,7 +77,7 @@ const flag_name shop_types[] = {
     { (size_t)-1, nullptr } // terminator
 };
 
-int get_shoptype( char *type )
+int get_shoptype( const std::string& type )
 {
 	const flag_name* x;
 	x = find_flag(shop_types, type);
@@ -389,12 +390,13 @@ int get_repaircost( CHAR_DATA *keeper, OBJ_DATA *obj )
 
 void do_buy( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+	std::string argstr = argument;
     int maxgold;
 
-    argument = one_argument( argument, arg );
+    argstr = one_argument( argstr, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Buy what?\n", ch );
 	return;
@@ -402,7 +404,7 @@ void do_buy( CHAR_DATA *ch, char *argument )
 
     if ( BV_IS_SET(ch->in_room->room_flags, ROOM_PET_SHOP) )
     {
-	char buf[MAX_STRING_LENGTH];
+	std::string buf;
 	CHAR_DATA *pet;
 	ROOM_INDEX_DATA *pRoomIndexNext;
 	ROOM_INDEX_DATA *in_room;
@@ -462,15 +464,15 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	BV_SET_BIT(pet->act, ACT_PET);
 	BV_SET_BIT(pet->affected_by, AFF_CHARM);
 
-	argument = one_argument( argument, arg );
-	if ( arg[0] != '\0' )
+	argstr = one_argument( argstr, arg );
+	if ( !arg.empty() )
 	{
-	    SPRINTF( buf, "%s %s", pet->name, arg );
+	    buf = str_printf( "%s %s", pet->name, arg );
 	    STRFREE( pet->name );
 	    pet->name = STRALLOC( buf );
 	}
 
-	SPRINTF( buf, "%sA neck tag says 'I belong to %s'.\n",
+	buf = str_printf( "%sA neck tag says 'I belong to %s'.\n",
 	    pet->description, ch->name );
 	STRFREE( pet->description );
 	pet->description = STRALLOC( buf );
@@ -502,8 +504,8 @@ void do_buy( CHAR_DATA *ch, char *argument )
 
 	if ( is_number( arg ) )
 	{
-	    noi = atoi( arg );
-	    argument = one_argument( argument, arg );
+	    noi = strtoi( arg );
+	    argstr = one_argument( argstr, arg );
 	    if ( noi > mnoi )
 	    {
 		act( AT_TELL, "$n tells you 'I don't sell that many items at"
@@ -515,13 +517,13 @@ void do_buy( CHAR_DATA *ch, char *argument )
 
 	obj  = get_obj_carry( keeper, arg );
 	
-	if ( !obj && arg[0] == '#' )
+	if ( !obj && !arg.empty() && arg[0] == '#' )
         {     
               int onum, oref;
               bool ofound = FALSE;
               
               onum =0;
-              oref = atoi(arg+1);
+              oref = strtoi(arg.c_str()+1);
               for ( obj = keeper->last_carrying; obj; obj = obj->prev_content )
 	      { 
 	        if ( obj->wear_loc == WEAR_NONE
@@ -640,14 +642,13 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	}
         else
 	{
-	    SPRINTF( arg, "$n buys %d $p%s.", noi,
-		( obj->short_descr[strlen(obj->short_descr)-1] == 's'
-		? "" : "s" ) );
-	    act( AT_ACTION, arg, ch, obj, NULL, TO_ROOM );
-	    SPRINTF( arg, "You buy %d $p%s.", noi,
-		( obj->short_descr[strlen(obj->short_descr)-1] == 's'
-		? "" : "s" ) );
-	    act( AT_ACTION, arg, ch, obj, NULL, TO_CHAR );
+		std::string desc = strip_aoran( obj->short_descr );
+		arg = str_printf( "$n buys %d %s%s.", noi,
+			desc.c_str(), ( !desc.empty() && desc.back() == 's' ? "" : "s" ) );
+	    act( AT_ACTION, arg.c_str(), ch, obj, NULL, TO_ROOM );
+	    arg = str_printf( "You buy %d %s%s.", noi,
+		desc.c_str(), ( !desc.empty() && desc.back() == 's' ? "" : "s" ) );
+	    act( AT_ACTION, arg.c_str(), ch, obj, NULL, TO_CHAR );
 	    act( AT_ACTION, "$N puts them into a bag and hands it to you.",
 		ch, NULL, keeper, TO_CHAR );
 	}
@@ -661,8 +662,8 @@ void do_buy( CHAR_DATA *ch, char *argument )
 	    keeper->gold = maxgold/2;
 	    act( AT_ACTION, "$n puts some credits into a large safe.", keeper, NULL, NULL, TO_ROOM );
 	}
-	
-	ch->in_room->area->supply[obj->value[0]] -= obj->value[1]*noi;
+	if( obj->item_type == ITEM_CARGO )
+		ch->in_room->area->supply[obj->value[0]] -= obj->value[1]*noi;
 
 	if ( IS_OBJ_STAT( obj, ITEM_INVENTORY ) && ( keeper->home == NULL ) )
 	{
@@ -767,89 +768,89 @@ void do_list( CHAR_DATA *ch, char *argument )
     }
     else
     {
-	char arg[MAX_INPUT_LENGTH];
-	CHAR_DATA *keeper;
-	OBJ_DATA *obj;
-	int cost;
-	int oref = 0;
-	bool found;
+		std::string arg;
+		CHAR_DATA *keeper;
+		OBJ_DATA *obj;
+		int cost;
+		int oref = 0;
+		bool found;
 
-	one_argument( argument, arg );
+		one_argument( argument, arg );
 
-	if ( ( keeper = find_keeper( ch ) ) == NULL )
-	    return;
+		if ( ( keeper = find_keeper( ch ) ) == NULL )
+			return;
 
-	found = FALSE;
-	for ( obj = keeper->last_carrying; obj; obj = obj->prev_content )
-	{
-	    if ( obj->wear_loc == WEAR_NONE
-	    &&   can_see_obj( ch, obj ) )
-	    {
-	       oref++;
-	       if ( ( cost = get_cost( ch, keeper, obj, TRUE ) ) > 0
-	       && ( arg[0] == '\0' || nifty_is_name( arg, obj->name ) ) )
-	       {
-		 if (keeper->home != NULL)
-		 cost = obj->cost;
+		found = FALSE;
+		for ( obj = keeper->last_carrying; obj; obj = obj->prev_content )
+		{
+			if ( obj->wear_loc == WEAR_NONE
+			&&   can_see_obj( ch, obj ) )
+			{
+			oref++;
+			if ( ( cost = get_cost( ch, keeper, obj, TRUE ) ) > 0
+			&& ( arg.empty() || nifty_is_name_prefix( arg, obj->name ) ) )
+			{
+			if (keeper->home != NULL)
+			cost = obj->cost;
+			if ( !found )
+			{
+				found = TRUE;
+				send_to_char( "[Price] {ref} Item\n", ch );
+			}
+			if ( obj->item_type == ITEM_FIGHTERCOMP )
+			{
+			ch_printf( ch, "[%5d] {%3d} %s (Fighter)\n                %s Mod: %d Size: %d Cond: %d%%.\n",
+			cost, oref, capitalize( obj->short_descr ).c_str(),
+			show_mod_type2( obj->value[1] ),
+			obj->value[3], obj->value[2], obj->value[0] );
+			continue;
+			}
+
+			if ( obj->item_type == ITEM_MIDCOMP )
+			{
+			ch_printf( ch, "[%5d] {%3d} %s (Midsize)\n                %s Mod: %d Size: %d Cond: %d%%.\n",
+			cost, oref, capitalize( obj->short_descr ).c_str(),
+			show_mod_type2( obj->value[1] ),
+			obj->value[3], obj->value[2], obj->value[0] );
+			continue;
+			}
+
+			if ( obj->item_type == ITEM_CAPITALCOMP )
+			{
+			ch_printf( ch, "[%5d] {%3d} %s (Capital)\n                %s Mod: %d Size: %d Cond: %d%%.\n",
+			cost, oref, capitalize( obj->short_descr ).c_str(),
+			show_mod_type2( obj->value[1] ),
+			obj->value[3], obj->value[2], obj->value[0] );
+			continue;
+			}
+
+			ch_printf( ch, "[%5d] {%3d} %s%s.\n",
+			cost, oref, capitalize( obj->short_descr ).c_str(),
+				BV_IS_SET(obj->objflags, ITEM_HUTT_SIZE) ? " (hutt size)" :
+				( BV_IS_SET(obj->objflags, ITEM_LARGE_SIZE) ? " (large)" :
+				( BV_IS_SET(obj->objflags, ITEM_HUMAN_SIZE) ? " (medium)" :
+				( BV_IS_SET(obj->objflags, ITEM_SMALL_SIZE) ? " (small)" :
+				"" ) ) ) );
+			}
+			}
+		}
+
 		if ( !found )
 		{
-		    found = TRUE;
-		    send_to_char( "[Price] {ref} Item\n", ch );
+			if ( arg.empty() )
+			send_to_char( "You can't buy anything here.\n", ch );
+			else
+			send_to_char( "You can't buy that here.\n", ch );
 		}
-		if ( obj->item_type == ITEM_FIGHTERCOMP )
-		{
-		  ch_printf( ch, "[%5d] {%3d} %s (Fighter)\n                %s Mod: %d Size: %d Cond: %d%%.\n",
-		  cost, oref, capitalize( obj->short_descr ),
-		  show_mod_type2( obj->value[1] ),
-          obj->value[3], obj->value[2], obj->value[0] );
-          continue;
-        }
-
-        if ( obj->item_type == ITEM_MIDCOMP )
-        {
-		  ch_printf( ch, "[%5d] {%3d} %s (Midsize)\n                %s Mod: %d Size: %d Cond: %d%%.\n",
-		  cost, oref, capitalize( obj->short_descr ),
-		  show_mod_type2( obj->value[1] ),
-          obj->value[3], obj->value[2], obj->value[0] );
-          continue;
-        }
-
-        if ( obj->item_type == ITEM_CAPITALCOMP )
-        {
-		  ch_printf( ch, "[%5d] {%3d} %s (Capital)\n                %s Mod: %d Size: %d Cond: %d%%.\n",
-		  cost, oref, capitalize( obj->short_descr ),
-		  show_mod_type2( obj->value[1] ),
-          obj->value[3], obj->value[2], obj->value[0] );
-          continue;
-        }
-
-        ch_printf( ch, "[%5d] {%3d} %s%s.\n",
-          cost, oref, capitalize( obj->short_descr ),
-		    BV_IS_SET(obj->objflags, ITEM_HUTT_SIZE) ? " (hutt size)" :
-		    ( BV_IS_SET(obj->objflags, ITEM_LARGE_SIZE) ? " (large)" :
-		    ( BV_IS_SET(obj->objflags, ITEM_HUMAN_SIZE) ? " (medium)" :
-		    ( BV_IS_SET(obj->objflags, ITEM_SMALL_SIZE) ? " (small)" :
-		    "" ) ) ) );
-	       }
-	    }
-	}
-
-	if ( !found )
-	{
-	    if ( arg[0] == '\0' )
-		send_to_char( "You can't buy anything here.\n", ch );
-	    else
-		send_to_char( "You can't buy that here.\n", ch );
-	}
-	return;
+		return;
     }
 }
 
 
 void do_sell( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
+    std::string buf;
+    std::string arg;
     CHAR_DATA *keeper;
     OBJ_DATA *obj;
     int cost;
@@ -857,7 +858,7 @@ void do_sell( CHAR_DATA *ch, char *argument )
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Sell what?\n", ch );
 	return;
@@ -908,9 +909,9 @@ void do_sell( CHAR_DATA *ch, char *argument )
    
     separate_obj( obj );
     act( AT_ACTION, "$n sells $p.", ch, obj, NULL, TO_ROOM );
-    SPRINTF( buf, "You sell $p for %d credit%s.",
+    buf = str_printf( "You sell $p for %d credit%s.",
 	cost, cost == 1 ? "" : "s" );
-    act( AT_ACTION, buf, ch, obj, NULL, TO_CHAR );
+    act( AT_ACTION, buf.c_str(), ch, obj, NULL, TO_CHAR );
     ch->gold     += cost;
     keeper->gold -= cost;
     if ( spice )
@@ -959,7 +960,7 @@ void do_sell( CHAR_DATA *ch, char *argument )
 
 void do_value( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     CHAR_DATA *keeper;
     OBJ_DATA *obj;
     int cost;
@@ -993,8 +994,8 @@ void do_value( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    SPRINTF( buf, "$n tells you 'I'll give you %d credits for $p.'", cost );
-    act( AT_TELL, buf, keeper, obj, ch, TO_VICT );
+    buf = str_printf( "$n tells you 'I'll give you %d credits for $p.'", cost );
+    act( AT_TELL, buf.c_str(), keeper, obj, ch, TO_VICT );
     ch->reply = keeper;
 
     return;
@@ -1006,7 +1007,7 @@ void do_value( CHAR_DATA *ch, char *argument )
 void repair_one_obj( CHAR_DATA *ch, CHAR_DATA *keeper, OBJ_DATA *obj,
                  char *arg, int maxgold )
 {
-   char buf[MAX_STRING_LENGTH];
+   std::string buf;
    int cost;
 
    	if ( !can_drop_obj( ch, obj ) )
@@ -1023,7 +1024,7 @@ void repair_one_obj( CHAR_DATA *ch, CHAR_DATA *keeper, OBJ_DATA *obj,
 
 	else if ( (cost = strcmp("all",arg) ? cost : 11*cost/10) > ch->gold )
 	{
-		SPRINTF( buf,
+		buf = str_printf(
 		"$N tells you, 'It will cost %d credit%s to maintain %s...'", cost,
 		cost == 1 ? "" : "s", obj->name );
 		act( AT_TELL, buf, ch, NULL, keeper, TO_CHAR );
@@ -1032,11 +1033,11 @@ void repair_one_obj( CHAR_DATA *ch, CHAR_DATA *keeper, OBJ_DATA *obj,
 	}
 	else
 	{
-		SPRINTF( buf, "$n gives $p to $N, who quickly maintains it." );
-		act( AT_ACTION, buf, ch, obj, keeper, TO_ROOM );
-		SPRINTF( buf, "$N charges you %d credit%s to maintain $p.",
+		buf = "$n gives $p to $N, who quickly maintains it.";
+		act( AT_ACTION, buf.c_str(), ch, obj, keeper, TO_ROOM );
+		buf = str_printf( "$N charges you %d credit%s to maintain $p.",
 			cost, cost == 1 ? "" : "s" );
-		act( AT_ACTION, buf, ch, obj, keeper, TO_CHAR );
+		act( AT_ACTION, buf.c_str(), ch, obj, keeper, TO_CHAR );
 		ch->gold     -= cost;
 		keeper->gold += cost;
 		if ( keeper->gold < 0 )
@@ -1125,10 +1126,10 @@ void do_repair( CHAR_DATA *ch, char *argument )
 
     repair_one_obj( ch, keeper, obj, argument, maxgold); }
 
-void appraise_all( CHAR_DATA *ch, CHAR_DATA *keeper, char *fixstr )
+void appraise_all( CHAR_DATA *ch, CHAR_DATA *keeper, const std::string& fixstr )
 {
     OBJ_DATA *obj;
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     int cost, total=0;
 
     for ( obj = ch->first_carrying; obj != NULL ; obj = obj->next_content )
@@ -1154,9 +1155,9 @@ void appraise_all( CHAR_DATA *ch, CHAR_DATA *keeper, char *fixstr )
             }
             else 
             {
-            SPRINTF( buf,
+            buf = str_printf(
             "$N tells you, 'It will cost %d credit%s to %s %s'",
-            cost, cost == 1 ? "" : "s", fixstr, obj->name );
+            cost, cost == 1 ? "" : "s", "maintain", obj->name );
             act( AT_TELL, buf, ch, NULL, keeper, TO_CHAR );
             total += cost;
             }
@@ -1165,12 +1166,11 @@ void appraise_all( CHAR_DATA *ch, CHAR_DATA *keeper, char *fixstr )
     if ( total > 0 )
     {
        send_to_char ("\n", ch);
-       SPRINTF( buf,
+       buf = str_printf(
           "$N tells you, 'It will cost %d credit%s in total.'",
-          total, cost == 1 ? "" : "s" );
+          total, total == 1 ? "" : "s" );
        act( AT_TELL, buf, ch, NULL, keeper, TO_CHAR );
-       SPRINTF( buf,
-       "$N tells you, 'Remember there is a 10%% surcharge for repair all.'");
+       buf = "$N tells you, 'Remember there is a 10%% surcharge for repair all.'";
        act( AT_TELL, buf, ch, NULL, keeper, TO_CHAR );
     }
 }
@@ -1178,39 +1178,28 @@ void appraise_all( CHAR_DATA *ch, CHAR_DATA *keeper, char *fixstr )
 
 void do_appraise( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
+    std::string buf;
+    std::string arg;
     CHAR_DATA *keeper;
     OBJ_DATA *obj;
     int cost;
-    char *fixstr;
+    std::string fixstr;
 
     one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
-	send_to_char( "Appraise what?\n", ch );
-	return;
+		send_to_char( "Appraise what?\n", ch );
+		return;
     }
 
     if ( ( keeper = find_fixer( ch ) ) == NULL )
-	return;
+		return;
 
-    switch( keeper->pIndexData->rShop->shop_type )
+    if ( !str_cmp( arg, "all") )
     {
-	default:
-	case SHOP_FIX:
-	  fixstr  = "repair";
-	  break;
-	case SHOP_RECHARGE:
-	  fixstr  = "recharge";
-	  break;
-    }
-
-    if ( !strcmp( arg, "all") )
-    {
-    appraise_all( ch, keeper, fixstr );
-    return;
+		appraise_all( ch, keeper, fixstr );
+		return;
     }
 
     if ( ( obj = get_obj_carry( ch, arg ) ) == NULL )
@@ -1236,9 +1225,9 @@ void do_appraise( CHAR_DATA *ch, char *argument )
       return;
     }
 
-    SPRINTF( buf,
+    buf = str_printf(
        "$N tells you, 'It will cost %d credit%s to %s that...'", cost,
-       cost == 1 ? "" : "s", fixstr );
+       cost == 1 ? "" : "s", fixstr.c_str() );
     act( AT_TELL, buf, ch, NULL, keeper, TO_CHAR );
     if ( cost > ch->gold )
       act( AT_TELL, "$N tells you, 'Which I see you can't afford.'", ch,
@@ -1297,15 +1286,16 @@ void do_shopset_old( CHAR_DATA *ch, char *argument )
 {
     SHOP_DATA *shop;
     MOB_INDEX_DATA *mob, *mob2;
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
     int vnum;
     int value;
+    std::string arg1;
+    std::string arg2;
+	std::string argstr = argument;
     
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() )
     {
 	send_to_char( "Usage: shopset <mob vnum> <field> value\n", ch );
 	send_to_char( "\nField being one of:\n", ch );
@@ -1313,7 +1303,7 @@ void do_shopset_old( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    vnum = atoi( arg1 );
+    vnum = strtoi( arg1 );
 
     if ( (mob = get_mob_index(vnum)) == NULL )
     {
@@ -1330,12 +1320,12 @@ void do_shopset_old( CHAR_DATA *ch, char *argument )
 	return;
     }
     shop = mob->pShop;
-    value = atoi( argument );
+    value = strtoi( argstr );
 
 	if ( !str_cmp( arg2, "itemtype" ))
 	{
 		int value = -1;
-		value = get_otype( argument );
+		value = get_otype( argstr );
 		if ( value < 0 || value > ITEMTYPE_MAX )
 		{
 			send_to_char( "Invalid item type!\n", ch );
@@ -1349,7 +1339,7 @@ void do_shopset_old( CHAR_DATA *ch, char *argument )
 	if ( !str_cmp( arg2, "shoptype" ))
 	{
 		int value = -1;
-		value = get_shoptype( argument );
+		value = get_shoptype( argstr );
 		if ( value < 0 || value > SHOP_MAX )
 		{
 			send_to_char( "Invalid shop type!\n", ch );
@@ -1563,18 +1553,19 @@ void do_repairset( CHAR_DATA *ch, char *argument )
 {
     REPAIR_DATA *repair;
     MOB_INDEX_DATA *mob, *mob2;
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+	std::string argstr = argument;
     int vnum;
     int value;
     
 	send_to_char( "Repair shops have been combined with shops. Use shopset to edit repair shops.\n", ch );
 	return;
 
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() )
     {
 	send_to_char( "Usage: repairset <mob vnum> <field> value\n", ch );
 	send_to_char( "\nField being one of:\n", ch );
@@ -1582,7 +1573,7 @@ void do_repairset( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    vnum = atoi( arg1 );
+    vnum = strtoi( arg1 );
 
     if ( (mob = get_mob_index(vnum)) == NULL )
     {
@@ -1599,12 +1590,12 @@ void do_repairset( CHAR_DATA *ch, char *argument )
 	return;
     }
     repair = mob->rShop;
-    value = atoi( argument );
+    value = strtoi( argstr );
 
     if ( !str_cmp( arg2, "fixtype" ) )
     {
-	if ( !is_number(argument) )
-	  value = get_otype(argument);
+	if ( !is_number(argstr) )
+	  value = get_otype(argstr);
 	if ( value < 0 || value > ITEMTYPE_MAX )
 	{
 	    send_to_char( "Invalid item type!\n", ch );
@@ -1771,11 +1762,11 @@ void do_buyvendor (CHAR_DATA *ch, char *argument)
 
   if ( !str_cmp( argument, "yes" ) )
   {
-    SPRINTF( buf, "%s/%s", VENDOR_DIR, capitalize( ch->name ) );
+    SPRINTF( buf, "%s/%s", VENDOR_DIR, capitalize( ch->name ).c_str() );
     remove( buf );
   }
   
-    SPRINTF( strsave, "%s/%s", VENDOR_DIR, capitalize( ch->name ) );
+    SPRINTF( strsave, "%s/%s", VENDOR_DIR, capitalize( ch->name ).c_str() );
 
     	if ( stat( strsave, &fst ) != -1 )
     	{
@@ -1823,13 +1814,13 @@ ch->gold = ch->gold - COST_BUY_VENDOR;
 /*this is the command that places the vendor at the specified location*/
 void do_placevendor (CHAR_DATA *ch, char *argument)
 {
-char strsave[MAX_INPUT_LENGTH];
+std::string strsave;
 struct stat fst;
 CHAR_DATA *vendor;
 MOB_INDEX_DATA *temp;
 OBJ_DATA *obj;
-char vnum1[MAX_INPUT_LENGTH];
-char buf [MAX_INPUT_LENGTH];
+std::string vnum1;
+char buf[MAX_STRING_LENGTH]; // Need this one to handle obj desc token format
 
 if (  find_keeper_q (ch, FALSE) )
 {
@@ -1861,9 +1852,9 @@ if ( IS_NPC(ch) )
 		return;
 	}
 
-        SPRINTF( strsave, "%s/%s", VENDOR_DIR, capitalize( ch->name ) );
+        strsave = str_printf( "%s/%s", VENDOR_DIR, capitalize( ch->name ).c_str() );
 
-    	if ( stat( strsave, &fst ) != -1 )
+    	if ( stat( strsave.c_str(), &fst ) != -1 )
     	{
 		send_to_char( "You already have a shop!\n", ch);
 		return;
@@ -1901,8 +1892,8 @@ extract_obj( obj );
 
 act( AT_ACTION, "$n appears in a swirl of smoke.\n", vendor, NULL, NULL, TO_ROOM );
 
-SPRINTF(vnum1,"%d", vendor->pIndexData->vnum);
-do_makeshop (vendor, vnum1 ); /*makes the vendor a shop.. there has to be a
+vnum1 = str_printf("%d", vendor->pIndexData->vnum);
+do_makeshop (vendor, (char*)vnum1.c_str() ); /*makes the vendor a shop.. there has to be a
 better way to do it but hell if i know what it is!*/
 
 }
@@ -1913,21 +1904,22 @@ void do_pricevendor (CHAR_DATA *ch, char *argument)
 {
 CHAR_DATA *vendor;
 CHAR_DATA *ch1;
-char arg1 [MAX_INPUT_LENGTH];
-char arg2 [MAX_INPUT_LENGTH];
+std::string arg1;
+std::string arg2;
+std::string argstr = argument;
 OBJ_DATA *obj;
 struct tm *tms;
 
-argument = one_argument (argument, arg1);
-argument = one_argument (argument, arg2);
+argstr = one_argument (argstr, arg1);
+argstr = one_argument (argstr, arg2);
 
-if ( arg1[0] == '\0' )
+if ( arg1.empty() )
 	{
 	    send_to_char("usage:> pricevendor <item> <cost>\n",ch);
 	    return;
 	}
 
-if (arg2[0] == '\0')
+if (arg2.empty())
 	{
 		send_to_char("usage:> pricevendor <item> <cost>\n",ch);
 		return;
@@ -1974,7 +1966,7 @@ return;
 
 if ( (obj  = get_obj_carry( vendor, arg1 )) != NULL)
 	{
-		obj->cost = atoi (arg2);
+		obj->cost = strtoi (arg2);
 		send_to_char("The price has been changed\n",ch);
 		save_vendor(vendor);
 		return;
@@ -1993,7 +1985,7 @@ void do_collectgold (CHAR_DATA *ch, char *argument)
 CHAR_DATA *vendor;
 CHAR_DATA *ch1;
 long gold;
-char name[MAX_INPUT_LENGTH];
+std::string name;
   struct tm *tms;
 
 if ( ( vendor = find_keeper (ch) ) == NULL )
@@ -2007,7 +1999,7 @@ if (vendor->owner == NULL)
 		return;
     }
 
-SPRINTF(name, "%s", vendor->owner);
+name = vendor->owner;
 
 if ( (ch1 = get_char_room(ch, vendor->owner)) == NULL )
 	{
@@ -2036,7 +2028,7 @@ if ( str_cmp( ch1->name, vendor->owner ) )
 
 if ( !(ch == ch1) )
 {
-	log_printf( "collectgold: %s and ch1 = %s\n", name, ch1->name);
+	log_printf( "collectgold: %s and ch1 = %s\n", name.c_str(), ch1->name);
 	send_to_char ("This isnt your vendor!\n",ch);
 	return;
 }
@@ -2244,7 +2236,7 @@ void save_vendor( CHAR_DATA *ch )
     de_equip_char( ch );
 
 
-    SPRINTF( strsave, "%s%s",VENDOR_DIR, capitalize( ch->owner ) );
+    SPRINTF( strsave, "%s%s",VENDOR_DIR, capitalize( ch->owner ).c_str() );
 
     if ( ( fp = fopen( strsave, "w" ) ) == NULL )
     {

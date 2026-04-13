@@ -38,7 +38,7 @@ bool	is_note_to	args( ( CHAR_DATA *ch, NOTE_DATA *pnote ) );
 void	note_attach	args( ( CHAR_DATA *ch ) );
 void	note_remove	args( ( CHAR_DATA *ch, BOARD_DATA *board,
 				NOTE_DATA *pnote ) );
-void  	do_note		args( ( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL) );
+void  	do_note		args( ( CHAR_DATA *ch, const std::string& arg_passed, bool IS_MAIL) );
 
 
 
@@ -295,7 +295,7 @@ OBJ_DATA *find_quill( CHAR_DATA *ch )
 void do_noteroom( CHAR_DATA *ch, char *argument )
 {
     BOARD_DATA *board;
-    char arg[MAX_STRING_LENGTH];
+    std::string arg;
     char arg_passed[MAX_STRING_LENGTH];
 
     SPRINTF(arg_passed, "%s", argument);
@@ -308,8 +308,8 @@ void do_noteroom( CHAR_DATA *ch, char *argument )
 
 	default:
 
-    argument = one_argument(argument, arg);  
-    smash_tilde( argument );
+    one_argument(argument, arg);  
+    smash_tilde( arg_passed );
     if (!str_cmp(arg, "write") || !str_cmp(arg, "to") 
     ||  !str_cmp(arg, "subject") || !str_cmp(arg, "show"))        
     {
@@ -340,7 +340,7 @@ void do_noteroom( CHAR_DATA *ch, char *argument )
 void do_mailroom(CHAR_DATA *ch, char *argument)
 {
     BOARD_DATA *board;
-    char arg[MAX_STRING_LENGTH];
+    std::string arg;
     char arg_passed[MAX_STRING_LENGTH];
 
     SPRINTF(arg_passed, "%s", argument);
@@ -353,8 +353,8 @@ void do_mailroom(CHAR_DATA *ch, char *argument)
 
 	default:
 
-    argument = one_argument(argument, arg);
-    smash_tilde( argument );
+    one_argument(argument, arg);  
+  smash_tilde( arg_passed );
     if (!str_cmp(arg, "write") || !str_cmp(arg, "to") 
     ||  !str_cmp(arg, "subject") || !str_cmp(arg, "show"))        
     {
@@ -382,10 +382,11 @@ void do_mailroom(CHAR_DATA *ch, char *argument)
   }
 }
 
-void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
+void do_note( CHAR_DATA *ch, const std::string& arg_passed, bool IS_MAIL )
 {
     char buf[MAX_STRING_LENGTH];
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
+	std::string argstr = arg_passed;
     NOTE_DATA  *pnote;
     BOARD_DATA *board;
     int vnum;
@@ -429,8 +430,8 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
     }
 
     set_char_color( AT_NOTE, ch );
-    arg_passed = one_argument( arg_passed, arg );
-    smash_tilde( arg_passed );
+    argstr = one_argument( argstr, arg );
+    smash_tilde( argstr );
 
     if ( !str_cmp( arg, "list" ) )
     {
@@ -446,7 +447,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	    return;
 	}
 
-        first_list = atoi(arg_passed);
+        first_list = strtoi(argstr);
         if (first_list)
         {
 	    if (IS_MAIL)
@@ -526,16 +527,16 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	    return;
 	}
 
-	if ( !str_cmp( arg_passed, "all" ) )
+	if ( !str_cmp( argstr, "all" ) )
 	{
 	    fAll = TRUE;
 	    anum = 0;
 	}
 	else
-	if ( is_number( arg_passed ) )
+	if ( is_number( argstr ) )
 	{
 	    fAll = FALSE;
-	    anum = atoi( arg_passed );
+	    anum = strtoi( argstr );
 	}
 	else
 	{
@@ -613,8 +614,8 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
     /* Voting added by Narn, June '96 */
     if ( !str_cmp( arg, "vote" ) )
     {
-	char arg2[MAX_INPUT_LENGTH];
-	arg_passed = one_argument( arg_passed, arg2 ); 
+	std::string arg2;
+	argstr = one_argument( argstr, arg2 ); 
 
 	board = find_board( ch );
 	if ( !board )
@@ -629,7 +630,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	}
 
 	if ( is_number( arg2 ) )
-	    anum = atoi( arg2 );
+	    anum = strtoi( arg2 );
 	else
 	{
             send_to_char( "Note vote which number?\n", ch );
@@ -649,7 +650,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	/* If you're the author of the note and can read the board you can open 
 	   and close voting, if you can read it and voting is open you can vote.
 	*/
-	if ( !str_cmp( arg_passed, "open" ) )
+	if ( !str_cmp( argstr, "open" ) )
 	{
 	    if ( str_cmp( ch->name, pnote->sender ) )
 	    {
@@ -662,7 +663,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
             write_board( board );
             return;
 	}  
-	if ( !str_cmp( arg_passed, "close" ) )
+	if ( !str_cmp( argstr, "close" ) )
 	{
 	    if ( str_cmp( ch->name, pnote->sender ) )
 	    {
@@ -691,7 +692,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	    send_to_char( "You have already voted on this note.\n", ch );
 	    return;
 	}
-	if ( !str_cmp( arg_passed, "yes" ) )
+	if ( !str_cmp( argstr, "yes" ) )
 	{
 	    SPRINTF( buf, "%s %s", pnote->yesvotes, ch->name );
 	    STR_DISPOSE( pnote->yesvotes );
@@ -701,7 +702,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	    write_board( board );
 	    return;
 	}  
-	if ( !str_cmp( arg_passed, "no" ) )
+	if ( !str_cmp( argstr, "no" ) )
 	{
 	    SPRINTF( buf, "%s %s", pnote->novotes, ch->name );
 	    STR_DISPOSE( pnote->novotes );
@@ -711,7 +712,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	    write_board( board );
 	    return;
 	}  
-	if ( !str_cmp( arg_passed, "abstain" ) )
+	if ( !str_cmp( argstr, "abstain" ) )
 	{
 	    SPRINTF( buf, "%s %s", pnote->abstentions, ch->name );
 	    STR_DISPOSE( pnote->abstentions );
@@ -796,7 +797,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 		return;
 	    }
 	}
-	if (!arg_passed || arg_passed[0] == '\0')
+	if (argstr.empty())
 	{
 	    send_to_char("What do you wish the subject to be?\n", ch);
 	    return;
@@ -829,7 +830,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	    paper->value[1] = 1;
 	    ed = SetOExtra(paper, "_subject_");
 	    STRFREE( ed->description );
-	    ed->description = STRALLOC( arg_passed );
+	    ed->description = STRALLOC( argstr );
 	    send_to_char("Ok.\n", ch);
 	    return;
 	}
@@ -853,7 +854,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 		return;
 	    }
 	}
-	if (!arg_passed || arg_passed[0] == '\0')
+	if (argstr.empty())
 	{
 	    send_to_char("Please specify an addressee.\n", ch);
 	    return;
@@ -883,17 +884,17 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	    return;
 	}
 
-        arg_passed[0] = UPPER(arg_passed[0]);
+        argstr[0] = UPPER(argstr[0]);
 
-        SPRINTF( fname, "%s%c/%s", PLAYER_DIR, tolower(arg_passed[0]),
-                 capitalize( arg_passed ) );
+        SPRINTF( fname, "%s%c/%s", PLAYER_DIR, tolower(argstr[0]),
+                 capitalize( argstr ).c_str() );
  
-	if ( !IS_MAIL || stat( fname, &fst ) != -1 || !str_cmp(arg_passed, "all") )
+	if ( !IS_MAIL || stat( fname, &fst ) != -1 || !str_cmp(argstr, "all") )
 	{                                       
 	    paper->value[2] = 1;
 	    ed = SetOExtra(paper, "_to_");
 	    STRFREE( ed->description );
-	    ed->description = STRALLOC( arg_passed );
+	    ed->description = STRALLOC( argstr );
 	    send_to_char("Ok.\n",ch);
 	    return;
         }
@@ -907,116 +908,116 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 
     if ( !str_cmp( arg, "show" ) )
     {
-	char *subject, *to_list, *text;
+		char *subject, *to_list, *text;
 
-	if ( ( paper = get_eq_char(ch, WEAR_HOLD) ) == NULL
-	||     paper->item_type != ITEM_PAPER )
-	{
-	    send_to_char("You are not holding a message disk.\n", ch);
-	    return;
-	}
+		if ( ( paper = get_eq_char(ch, WEAR_HOLD) ) == NULL
+		||     paper->item_type != ITEM_PAPER )
+		{
+			send_to_char("You are not holding a message disk.\n", ch);
+			return;
+		}
 
-	if ( (subject = get_extra_descr( "_subject_", paper->first_extradesc )) == NULL )
-	  subject = "(no subject)";
-	if ( (to_list = get_extra_descr( "_to_", paper->first_extradesc )) == NULL )
-	  to_list = "(nobody)";
-	SPRINTF( buf, "%s: %s\nTo: %s\n",
-	    ch->name,
-	    subject,
-	    to_list );
-	send_to_char( buf, ch );
-	if ( (text = get_extra_descr( "_text_", paper->first_extradesc )) == NULL )
-	  text = "The disk is blank.\n";
-	send_to_char( text, ch );
-	return;
+		if ( (subject = get_extra_descr( "_subject_", paper->first_extradesc )) == NULL )
+		subject = "(no subject)";
+		if ( (to_list = get_extra_descr( "_to_", paper->first_extradesc )) == NULL )
+		to_list = "(nobody)";
+		SPRINTF( buf, "%s: %s\nTo: %s\n",
+			ch->name,
+			subject,
+			to_list );
+		send_to_char( buf, ch );
+		if ( (text = get_extra_descr( "_text_", paper->first_extradesc )) == NULL )
+		text = "The disk is blank.\n";
+		send_to_char( text, ch );
+		return;
     }
 
     if ( !str_cmp( arg, "post" ) )
     {
-	char *strtime, *text;
+		char *strtime, *text; // Could be NULL, which makes it easier for char* then std::string here.
 
-	if ( ( paper = get_eq_char(ch, WEAR_HOLD) ) == NULL
-	||     paper->item_type != ITEM_PAPER )
-	{
-	    send_to_char("You are not holding a message disk.\n", ch);
-	    return;
-	}
-	
-	if ( paper->value[0] == 0 )
-	{
-	    send_to_char("There is nothing written on this disk.\n", ch);
-	    return;
-	}
+		if ( ( paper = get_eq_char(ch, WEAR_HOLD) ) == NULL
+		||     paper->item_type != ITEM_PAPER )
+		{
+			send_to_char("You are not holding a message disk.\n", ch);
+			return;
+		}
+		
+		if ( paper->value[0] == 0 )
+		{
+			send_to_char("There is nothing written on this disk.\n", ch);
+			return;
+		}
 
-	if ( paper->value[1] == 0 )
-	{
-	    send_to_char("This message has no subject... using 'none'.\n", ch);
-	    paper->value[1] = 1;
-	    ed = SetOExtra(paper, "_subject_");
-	    STRFREE( ed->description );
-	    ed->description = STRALLOC( "none" );
-	}
+		if ( paper->value[1] == 0 )
+		{
+			send_to_char("This message has no subject... using 'none'.\n", ch);
+			paper->value[1] = 1;
+			ed = SetOExtra(paper, "_subject_");
+			STRFREE( ed->description );
+			ed->description = STRALLOC( "none" );
+		}
 
-	if (paper->value[2] == 0)
-	{
-	  if ( IS_MAIL )
-	  {
-	    send_to_char("This message is addressed to no one!\n", ch); 
-	    return;
-	  }
-	  else
-	  {
-	    send_to_char("This message is addressed to no one... sending to 'all'!\n", ch);
-	    paper->value[2] = 1;
-	    ed = SetOExtra(paper, "_to_");
-	    STRFREE( ed->description );
-	    ed->description = STRALLOC( "All" );
-	  }
-	}
+		if (paper->value[2] == 0)
+		{
+		if ( IS_MAIL )
+		{
+			send_to_char("This message is addressed to no one!\n", ch); 
+			return;
+		}
+		else
+		{
+			send_to_char("This message is addressed to no one... sending to 'all'!\n", ch);
+			paper->value[2] = 1;
+			ed = SetOExtra(paper, "_to_");
+			STRFREE( ed->description );
+			ed->description = STRALLOC( "All" );
+		}
+		}
 
-	board = find_board( ch );
-	if ( !board )
-	{
-	    send_to_char( "There is no terminal here to upload your message to.\n", ch );
-	    return;
-	}
-	if ( !can_post( ch, board ) ) 
-	{
-	    send_to_char( "You cannot use this terminal. It is encrypted...\n", ch );
-	    return;
-	}
+		board = find_board( ch );
+		if ( !board )
+		{
+			send_to_char( "There is no terminal here to upload your message to.\n", ch );
+			return;
+		}
+		if ( !can_post( ch, board ) ) 
+		{
+			send_to_char( "You cannot use this terminal. It is encrypted...\n", ch );
+			return;
+		}
 
-	if ( board->num_posts >= board->max_posts )
-	{
-	    send_to_char( "This terminal is full. There is no room for your message.\n", ch );
-	    return;
-	}
+		if ( board->num_posts >= board->max_posts )
+		{
+			send_to_char( "This terminal is full. There is no room for your message.\n", ch );
+			return;
+		}
 
-	act( AT_ACTION, "$n uploads a message.", ch, NULL, NULL, TO_ROOM );
+		act( AT_ACTION, "$n uploads a message.", ch, NULL, NULL, TO_ROOM );
 
-	strtime				= ctime( &current_time );
-	strtime[strlen(strtime)-1]	= '\0';
-	CREATE( pnote, NOTE_DATA, 1 );
-	pnote->date			= STRALLOC( strtime );
+		strtime				= ctime( &current_time );
+		strtime[strlen(strtime)-1]	= '\0';
+		CREATE( pnote, NOTE_DATA, 1 );
+		pnote->date			= STRALLOC( strtime );
 
-	text = get_extra_descr( "_text_", paper->first_extradesc );
-	pnote->text = text ? STRALLOC( text ) : STRALLOC( "" );
-	text = get_extra_descr( "_to_", paper->first_extradesc );
-	pnote->to_list = text ? STRALLOC( text ) : STRALLOC( "all" );
-	text = get_extra_descr( "_subject_", paper->first_extradesc );
-	pnote->subject = text ? STRALLOC( text ) : STRALLOC( "" );
-	pnote->sender  = QUICKLINK( ch->name );
-        pnote->voting      = 0;
-        pnote->yesvotes    = str_dup( "" );
-        pnote->novotes     = str_dup( "" );
-        pnote->abstentions = str_dup( "" );
+		text = get_extra_descr( "_text_", paper->first_extradesc );
+		pnote->text = text ? STRALLOC( text ) : STRALLOC( "" );
+		text = get_extra_descr( "_to_", paper->first_extradesc );
+		pnote->to_list = text ? STRALLOC( text ) : STRALLOC( "all" );
+		text = get_extra_descr( "_subject_", paper->first_extradesc );
+		pnote->subject = text ? STRALLOC( text ) : STRALLOC( "" );
+		pnote->sender  = QUICKLINK( ch->name );
+			pnote->voting      = 0;
+			pnote->yesvotes    = str_dup( "" );
+			pnote->novotes     = str_dup( "" );
+			pnote->abstentions = str_dup( "" );
 
-	LINK( pnote, board->first_note, board->last_note, next, prev );
-	board->num_posts++;
-        write_board( board );
-	send_to_char( "You upload your message to the terminal.\n", ch );
-	extract_obj( paper );
-	return;
+		LINK( pnote, board->first_note, board->last_note, next, prev );
+		board->num_posts++;
+			write_board( board );
+		send_to_char( "You upload your message to the terminal.\n", ch );
+		extract_obj( paper );
+		return;
     }
 
     if ( !str_cmp( arg, "remove" )
@@ -1045,7 +1046,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	else
 	  take = 0;
 
-	if ( !is_number( arg_passed ) )
+	if ( !is_number( argstr ) )
 	{
 	    send_to_char( "Note remove which number?\n", ch );
 	    return;
@@ -1057,7 +1058,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 	    return;
 	}
 
-	anum = atoi( arg_passed );
+	anum = strtoi( argstr );
 	vnum = 0;
 	for ( pnote = board->first_note; pnote; pnote = pnote->next )
 	{
@@ -1163,7 +1164,7 @@ void do_note( CHAR_DATA *ch, char *arg_passed, bool IS_MAIL )
 
 
 
-BOARD_DATA *read_board( GameContext *game, char *boardfile, FILE *fp )
+BOARD_DATA *read_board( GameContext *game, const std::string& boardfile, FILE *fp )
 {
     BOARD_DATA *board;
     const char *word;
@@ -1254,7 +1255,7 @@ BOARD_DATA *read_board( GameContext *game, char *boardfile, FILE *fp )
   return board;
 }
 
-NOTE_DATA *read_note( char *notefile, FILE *fp )
+NOTE_DATA *read_note( const std::string& notefile, FILE *fp )
 {
     NOTE_DATA *pnote;
     char *word;
@@ -1392,15 +1393,16 @@ void do_bset( CHAR_DATA *ch, char *argument )
 {
     BOARD_DATA *board;
     bool found;
-    char arg1[MAX_INPUT_LENGTH];
-    char arg2[MAX_INPUT_LENGTH];
+    std::string arg1;
+    std::string arg2;
+	std::string argstr = argument;
     char buf[MAX_STRING_LENGTH];
     int value;
     
-    argument = one_argument( argument, arg1 );
-    argument = one_argument( argument, arg2 );
+    argstr = one_argument( argstr, arg1 );
+    argstr = one_argument( argstr, arg2 );
 
-    if ( arg1[0] == '\0' || arg2[0] == '\0' )
+    if ( arg1.empty() || arg2.empty() )
     {
 	send_to_char( "Usage: bset <board filename> <field> value\n", ch );
 	send_to_char( "\nField being one of:\n", ch );
@@ -1409,7 +1411,7 @@ void do_bset( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    value = atoi( argument );
+    value = strtoi( argstr );
     found = FALSE;
     for ( board = first_board; board; board = board->next )
 	if ( !str_cmp( arg1, board->note_file ) )
@@ -1451,16 +1453,16 @@ void do_bset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "read_group" ) )
     {
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	    send_to_char( "No group specified.\n", ch );
 	    return;
 	}
 	STR_DISPOSE( board->read_group );
-        if ( !str_cmp( argument, "none" ) )
+        if ( !str_cmp( argstr, "none" ) )
 	  board->read_group = str_dup( "" );
         else
-	  board->read_group = str_dup( argument );
+	  board->read_group = str_dup( argstr );
 	write_boards_txt( );
 	send_to_char( "Done.\n", ch );
 	return;
@@ -1468,16 +1470,16 @@ void do_bset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "post_group" ) )
     {
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	    send_to_char( "No group specified.\n", ch );
 	    return;
 	}
 	STR_DISPOSE( board->post_group );
-        if ( !str_cmp( argument, "none" ) )
+        if ( !str_cmp( argstr, "none" ) )
 	  board->post_group = str_dup( "" );
         else
-	  board->post_group = str_dup( argument );
+	  board->post_group = str_dup( argstr );
 	write_boards_txt( );
 	send_to_char( "Done.\n", ch );
 	return;
@@ -1485,15 +1487,15 @@ void do_bset( CHAR_DATA *ch, char *argument )
 
    if ( !str_cmp( arg2, "extra_removers" ) )
     {
-        if ( !argument || argument[0] == '\0' )
+        if ( argstr.empty() )
         {   
             send_to_char( "No names specified.\n", ch );
             return;
         }
-        if ( !str_cmp( argument, "none" ) )
+        if ( !str_cmp( argstr, "none" ) )
             buf[0] = '\0';
         else
-            SPRINTF( buf, "%s %s", board->extra_removers, argument );
+            SPRINTF( buf, "%s %s", board->extra_removers, argstr.c_str() );
         STR_DISPOSE( board->extra_removers );
         board->extra_removers = str_dup( buf ); 
         write_boards_txt( );
@@ -1503,15 +1505,15 @@ void do_bset( CHAR_DATA *ch, char *argument )
  
     if ( !str_cmp( arg2, "extra_readers" ) )
     {
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	    send_to_char( "No names specified.\n", ch );
 	    return;
 	}
-	if ( !str_cmp( argument, "none" ) )
+	if ( !str_cmp( argstr, "none" ) )
 	    buf[0] = '\0';
 	else
-	    SPRINTF( buf, "%s %s", board->extra_readers, argument );        
+	    SPRINTF( buf, "%s %s", board->extra_readers, argstr.c_str() );        
 	STR_DISPOSE( board->extra_readers );
 	board->extra_readers = str_dup( buf );
 	write_boards_txt( );
@@ -1521,13 +1523,13 @@ void do_bset( CHAR_DATA *ch, char *argument )
 
     if ( !str_cmp( arg2, "filename" ) )
     {
-	if ( !argument || argument[0] == '\0' )
+	if ( argstr.empty() )
 	{
 	    send_to_char( "No filename specified.\n", ch );
 	    return;
 	}
 	STR_DISPOSE( board->note_file );
-	board->note_file = str_dup( argument );
+	board->note_file = str_dup( argstr );
 	write_boards_txt( );
 	send_to_char( "Done.\n", ch );
 	return;
@@ -1593,11 +1595,11 @@ void do_bstat( CHAR_DATA *ch, char *argument )
 {
     BOARD_DATA *board;
     bool found;
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     
-    argument = one_argument( argument, arg );
+    one_argument( argument, arg );
 
-    if ( arg[0] == '\0' )
+    if ( arg.empty() )
     {
 	send_to_char( "Usage: bstat <board filename>\n", ch );
 	return;
