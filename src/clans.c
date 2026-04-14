@@ -81,10 +81,10 @@ void write_clan_list( )
 {
     CLAN_DATA *tclan;
     FILE *fpout;
-    char filename[256];
+    std::string filename;
 
-    SPRINTF( filename, "%s%s", CLAN_DIR, CLAN_LIST );
-    fpout = fopen( filename, "w" );
+    filename = str_printf("%s%s", CLAN_DIR, CLAN_LIST);
+    fpout = fopen( filename.c_str(), "w" );
     if ( !fpout )
     {
 	bug( "FATAL: cannot open clan.lst for writing!\n", 0 );
@@ -100,10 +100,10 @@ void write_planet_list( )
 {
     PLANET_DATA *tplanet;
     FILE *fpout;
-    char filename[256];
+    std::string filename;
 
-    SPRINTF( filename, "%s%s", PLANET_DIR, PLANET_LIST );
-    fpout = fopen( filename, "w" );
+    filename = str_printf("%s%s", PLANET_DIR, PLANET_LIST);
+    fpout = fopen( filename.c_str(), "w" );
     if ( !fpout )
     {
 	bug( "FATAL: cannot open planet.lst for writing!\n", 0 );
@@ -121,7 +121,7 @@ void write_planet_list( )
 void save_clan( CLAN_DATA *clan )
 {
     FILE *fp;
-    char filename[256];
+    std::string filename;
 
     if ( !clan )
     {
@@ -135,13 +135,13 @@ void save_clan( CLAN_DATA *clan )
 	return;
     }
  
-    SPRINTF( filename, "%s%s", CLAN_DIR, clan->filename );
+    filename = str_printf("%s%s", CLAN_DIR, clan->filename);
     
     FCLOSE( fpReserve );
-    if ( ( fp = fopen( filename, "w" ) ) == NULL )
+    if ( ( fp = fopen( filename.c_str(), "w" ) ) == NULL )
     {
     	bug( "save_clan: fopen", 0 );
-    	perror( filename );
+    	perror( filename.c_str() );
     }
     else
     {
@@ -183,7 +183,7 @@ void save_clan( CLAN_DATA *clan )
 void save_planet( PLANET_DATA *planet )
 {
     FILE *fp;
-    char filename[256];
+    std::string filename;
 
     if ( !planet )
     {
@@ -197,13 +197,13 @@ void save_planet( PLANET_DATA *planet )
 	return;
     }
  
-    SPRINTF( filename, "%s%s", PLANET_DIR, planet->filename );
+    filename = str_printf("%s%s", PLANET_DIR, planet->filename);
     
     FCLOSE( fpReserve );
-    if ( ( fp = fopen( filename, "w" ) ) == NULL )
+    if ( ( fp = fopen( filename.c_str(), "w" ) ) == NULL )
     {
     	bug( "save_planet: fopen", 0 );
-    	perror( filename );
+    	perror( filename.c_str() );
     }
     else
     {
@@ -370,10 +370,13 @@ void fread_planet( PLANET_DATA *planet, FILE *fp )
 	case 'A':
 	    if ( !str_cmp( word, "Area" ) )
 	    {
-	        char aName[MAX_STRING_LENGTH];
+	        char * tmp;
+            std::string aName;
                 AREA_DATA *pArea;
                 	        
-	     	SPRINTF (aName, "%s", fread_string(fp));
+	     	tmp = fread_string(fp);
+            aName = tmp;
+            STRFREE( tmp );
 		for( pArea = first_area ; pArea ; pArea = pArea->next )
 	          if (pArea->filename && !str_cmp(pArea->filename , aName ) )
 	          {
@@ -457,7 +460,7 @@ void fread_planet( PLANET_DATA *planet, FILE *fp )
 
 bool load_clan_file( GameContext *game, const std::string& clanfile )
 {
-    char filename[256];
+    std::string filename;
     CLAN_DATA *clan;
     FILE *fp;
     bool found;
@@ -471,9 +474,9 @@ bool load_clan_file( GameContext *game, const std::string& clanfile )
     clan->mainclan     = NULL;
     
     found = FALSE;
-    SPRINTF( filename, "%s%s", CLAN_DIR, clanfile.c_str() );
+    filename = str_printf("%s%s", CLAN_DIR, clanfile.c_str() );
 
-    if ( ( fp = fopen( filename, "r" ) ) != NULL )
+    if ( ( fp = fopen( filename.c_str(), "r" ) ) != NULL )
     {
 
 	found = TRUE;
@@ -538,8 +541,8 @@ bool load_clan_file( GameContext *game, const std::string& clanfile )
 	    return found;
 	}
 	
-	SPRINTF( filename, "%s%s.vault", CLAN_DIR, clan->filename );
-	if ( ( fp = fopen( filename, "r" ) ) != NULL )
+	filename = str_printf("%s%s.vault", CLAN_DIR, clan->filename );
+	if ( ( fp = fopen( filename.c_str(), "r" ) ) != NULL )
 	{
 //	    bool found;
 	    OBJ_DATA *tobj, *tobj_next;
@@ -600,7 +603,7 @@ bool load_clan_file( GameContext *game, const std::string& clanfile )
 
 bool load_planet_file( GameContext *game, const std::string& planetfile )
 {
-    char filename[256];
+    std::string filename;
     PLANET_DATA *planet;
     FILE *fp;
     bool found;
@@ -618,9 +621,9 @@ bool load_planet_file( GameContext *game, const std::string& planetfile )
     planet->last_guard = NULL;
     
     found = FALSE;
-    SPRINTF( filename, "%s%s", PLANET_DIR, planetfile.c_str() );
+    filename = str_printf("%s%s", PLANET_DIR, planetfile.c_str() );
 
-    if ( ( fp = fopen( filename, "r" ) ) != NULL )
+    if ( ( fp = fopen( filename.c_str(), "r" ) ) != NULL )
     {
 
 	found = TRUE;
@@ -675,8 +678,8 @@ bool load_planet_file( GameContext *game, const std::string& planetfile )
 void load_clans( GameContext *game )
 {
     FILE *fpList;
-    const char *filename;
-    char clanlist[256];
+    std::string filename;
+    std::string clanlist;
     CLAN_DATA *clan;
     CLAN_DATA *bosclan;
     
@@ -685,24 +688,24 @@ void load_clans( GameContext *game )
 
     log_string( "Loading clans..." );
 
-    SPRINTF( clanlist, "%s%s", CLAN_DIR, CLAN_LIST );
+    clanlist = str_printf("%s%s", CLAN_DIR, CLAN_LIST );
     FCLOSE( fpReserve );
-    if ( ( fpList = fopen( clanlist, "r" ) ) == NULL )
+    if ( ( fpList = fopen( clanlist.c_str(), "r" ) ) == NULL )
     {
-	perror( clanlist );
+	perror( clanlist.c_str() );
 	exit( 1 );
     }
 
     for ( ; ; )
     {
 	filename = feof( fpList ) ? "$" : fread_word( fpList );
-	log_string( filename );
+	log_string( filename.c_str() );
 	if ( filename[0] == '$' )
 	  break;
 
 	if ( !load_clan_file( game, std::string( filename ) ) )
 	{
-	  bug( str_printf("Cannot load clan file: %s", filename).c_str(), 0 );
+	  bug( str_printf("Cannot load clan file: %s", filename.c_str()).c_str(), 0 );
 	}
     }
     FCLOSE( fpList );
@@ -729,32 +732,32 @@ void load_clans( GameContext *game )
 void load_planets( GameContext *game )
 {
     FILE *fpList;
-    const char *filename;
-    char planetlist[256];
+    std::string filename;
+    std::string planetlist;
     
     first_planet	= NULL;
     last_planet	= NULL;
 
     log_string( "Loading planets..." );
 
-    SPRINTF( planetlist, "%s%s", PLANET_DIR, PLANET_LIST );
+    planetlist = str_printf("%s%s", PLANET_DIR, PLANET_LIST );
     FCLOSE( fpReserve );
-    if ( ( fpList = fopen( planetlist, "r" ) ) == NULL )
+    if ( ( fpList = fopen( planetlist.c_str(), "r" ) ) == NULL )
     {
-	perror( planetlist );
+	perror( planetlist.c_str() );
 	exit( 1 );
     }
 
     for ( ; ; )
     {
 	filename = feof( fpList ) ? "$" : fread_word( fpList );
-	log_string( filename );
+	log_string( filename.c_str() );
 	if ( filename[0] == '$' )
 	  break;
 
-	if ( !load_planet_file( game, (char * ) filename ) )
+	if ( !load_planet_file( game, filename ) )
 	{
-	  bug( str_printf("Cannot load planet file: %s", filename).c_str(), 0 );
+	  bug( str_printf("Cannot load planet file: %s", filename.c_str()).c_str(), 0 );
 	}
     }
     FCLOSE( fpList );
@@ -1490,7 +1493,7 @@ void do_showplanet( CHAR_DATA *ch, char *argument )
 
 void do_makeclan( CHAR_DATA *ch, char *argument )
 {
-    char filename[256];
+    std::string filename;
     CLAN_DATA *clan;
 //    bool found;
 
@@ -1501,7 +1504,7 @@ void do_makeclan( CHAR_DATA *ch, char *argument )
     }
 
 //    found = FALSE;
-    SPRINTF( filename, "%s%s", CLAN_DIR, strlower(argument).c_str() );
+    filename = str_printf("%s%s", CLAN_DIR, strlower(argument).c_str());
 
     CREATE( clan, CLAN_DATA, 1 );
     clan->game = ch->game;
@@ -1521,7 +1524,7 @@ void do_makeclan( CHAR_DATA *ch, char *argument )
 
 void do_makeplanet( CHAR_DATA *ch, char *argument )
 {
-    char filename[256];
+    std::string filename;
     PLANET_DATA *planet;
 //    bool found;
 
@@ -1532,7 +1535,7 @@ void do_makeplanet( CHAR_DATA *ch, char *argument )
     }
 
 //    found = FALSE;
-    SPRINTF( filename, "%s%s", PLANET_DIR, strlower(argument).c_str() );
+    filename = str_printf("%s%s", PLANET_DIR, strlower(argument).c_str() );
 
     CREATE( planet, PLANET_DATA, 1 );
     planet->game = ch->game;
@@ -2865,10 +2868,10 @@ void save_senate( )
 /*
     BOUNTY_DATA *tbounty;
     FILE *fpout;
-    char filename[256];
+    std::string filename;
     
-    SPRINTF( filename, "%s%s", SYSTEM_DIR, BOUNTY_LIST );
-    fpout = fopen( filename, "w" );
+    filename = str_printf("%s%s", SYSTEM_DIR, BOUNTY_LIST );
+    fpout = fopen( filename.c_str(), "w" );
     if ( !fpout )
     {
          bug( "FATAL: cannot open bounty.lst for writing!\n", 0 );
@@ -2891,7 +2894,7 @@ void load_senate( GameContext *game )
 /*
     FILE *fpList;
     char *target;
-    char bountylist[256];
+    std::string bountylist;
     BOUNTY_DATA *bounty;
     long int  amount;
      
@@ -2903,11 +2906,11 @@ void load_senate( GameContext *game )
 
     log_string( "Loading disintigrations..." );
 
-    SPRINTF( bountylist, "%s%s", SYSTEM_DIR, DISINTIGRATION_LIST );
+    bountylist = str_printf("%s%s", SYSTEM_DIR, DISINTIGRATION_LIST );
     FCLOSE( fpReserve );
-    if ( ( fpList = fopen( bountylist, "r" ) ) == NULL )
+    if ( ( fpList = fopen( bountylist.c_str(), "r" ) ) == NULL )
     {
-	perror( bountylist );
+	perror( bountylist.c_str() );
 	exit( 1 );
     }
 

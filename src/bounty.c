@@ -163,7 +163,7 @@ void disintigration ( CHAR_DATA *ch , CHAR_DATA *victim , long amount )
 {
     BOUNTY_DATA *bounty;
     bool found;
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     CHAR_DATA *p, *p_prev;
     found = FALSE;
 
@@ -191,7 +191,7 @@ void disintigration ( CHAR_DATA *ch , CHAR_DATA *victim , long amount )
     bounty->amount      = bounty->amount + amount;
     save_disintigrations();
 
-    SPRINTF( buf, "&R%s has added %ld credits to the bounty on %s.\n", ch->name, amount , victim->name );
+    buf = str_printf("&R%s has added %ld credits to the bounty on %s.\n", ch->name, amount , victim->name);
     send_to_char(buf, ch);
 
     for (p = last_char; p ; p = p_prev )
@@ -199,9 +199,9 @@ void disintigration ( CHAR_DATA *ch , CHAR_DATA *victim , long amount )
     	p_prev = p->prev;
 
       if ( ch->pcdata && ch->pcdata->clan && ( !str_cmp(ch->pcdata->clan->name, "the hunters guild") || !str_cmp(ch->pcdata->clan->name, "the assassins guild") ) )
-        ch_printf(p, buf);
+        ch_printf(p, buf.c_str());
       else if (!IS_NPC(p) && get_trust(p) >= LEVEL_IMMORTAL)
-        ch_printf(p, buf);
+        ch_printf(p, buf.c_str());
       if (victim == p)
         ch_printf(p, "&RSomeone has added %ld credits to the bounty on you!\n", amount );
     }
@@ -299,7 +299,7 @@ void claim_disintigration( CHAR_DATA *ch , CHAR_DATA *victim )
 {
 	BOUNTY_DATA *bounty;
 	long int     exp;
-	char buf[MAX_STRING_LENGTH];
+	std::string buf;
 
         if ( IS_NPC(victim) )
             return;
@@ -347,8 +347,8 @@ void claim_disintigration( CHAR_DATA *ch , CHAR_DATA *victim )
 	set_char_color( AT_BLOOD, ch );
 	ch_printf( ch, "You receive %ld experience and %ld credits,\n from the bounty on %s\n", exp, bounty->amount, bounty->target );
 	
-	SPRINTF( buf, "The disintigration bounty on %s has been claimed!",victim->name );
-	echo_to_all ( AT_RED , str_printf("The disintigration bounty on %s has been claimed!",victim->name ), 0 );
+	buf = str_printf("The disintegration bounty on %s has been claimed!",victim->name );
+	echo_to_all ( AT_RED , buf, 0 );
 
 	
 	if ( !BV_IS_SET(victim->act , PLR_KILLER ) )

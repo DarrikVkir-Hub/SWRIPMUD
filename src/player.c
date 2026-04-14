@@ -46,7 +46,7 @@ void do_gold(CHAR_DATA * ch, char *argument)
  */
 void do_score(CHAR_DATA * ch, char *argument)
 {
-    char            buf[MAX_STRING_LENGTH];
+    std::string buf;
     AFFECT_DATA    *paf;
     int iLang, drug;
 
@@ -62,7 +62,7 @@ void do_score(CHAR_DATA * ch, char *argument)
 
 	if (!str_cmp(argument, "lang"))
 	{
-		SPRINTF(buf, "&cLanguages: &c");
+		buf = ("&cLanguages: &c");
 		int race_lang = race_table[ch->race].language;
 		for (iLang = 0; iLang < LANG_MAX; ++iLang)
 		{
@@ -77,16 +77,16 @@ void do_score(CHAR_DATA * ch, char *argument)
 			if (knows)
 			{
 				if (speaking)
-					STRAPP(buf, "&R");
-				STRAPP(buf, "%s", lang_names[iLang].name);
-				STRAPP(buf, " ");
-				STRAPP(buf, "&c");
+					buf += "&R";
+				buf += lang_names[iLang].name;
+				buf += " ";
+				buf += "&c";
 			}
 		}
 
 // fprintf(stderr,"LANG_BUF: %s\n", buf);
 
-ch_printf(ch, "\n%s\n", buf);
+ch_printf(ch, "\n%s\n", buf.c_str());
 		return;
 	}
 	if (!str_cmp(argument, "test"))
@@ -172,34 +172,34 @@ ch_printf(ch, "\n%s\n", buf);
     switch (ch->position)
     {
 	case POS_DEAD:
-		SPRINTF(buf, "&CYou are slowly decomposing. ");
+		buf = "&CYou are slowly decomposing. ";
 		break;
 	case POS_MORTAL:
-		SPRINTF(buf, "&CYou are mortally wounded. ");
+		buf = "&CYou are mortally wounded. ";
 		break;
 	case POS_INCAP:
-		SPRINTF(buf, "&CYou are incapacitated. ");
+		buf = "&CYou are incapacitated. ";
 		break;
 	case POS_STUNNED:
-		SPRINTF(buf, "&CYou are stunned. ");
+		buf = "&CYou are stunned. ";
 		break;
 	case POS_SLEEPING:
-		SPRINTF(buf, "&CYou are sleeping. ");
+		buf = "&CYou are sleeping. ";
 		break;
 	case POS_RESTING:
-		SPRINTF(buf, "&CYou are resting. ");
+		buf = "&CYou are resting. ";
 		break;
 	case POS_STANDING:
-		SPRINTF(buf, "&CYou are standing. ");
+		buf = "&CYou are standing. ";
 		break;
 	case POS_FIGHTING:
-		SPRINTF(buf, "&CYou are fighting. " );
+		buf = "&CYou are fighting. ";
 		break;
 	case POS_MOUNTED:
-		SPRINTF(buf, "&CYou are mounted. ");
+		buf = "&CYou are mounted. ";
 		break;
         case POS_SITTING:
-		SPRINTF(buf, "&CYou are sitting. ");
+		buf = "&CYou are sitting. ";
 		break;
     }
 
@@ -254,8 +254,7 @@ ch_printf(ch, "\n%s\n", buf);
     {
     	if (ch->pcdata->target && ch->pcdata->target[0] != '\0' )
     	{
-    		SPRINTF( buf,
-    		"&cYour current alias focus is : &C%s.\n", ch->pcdata->target);
+    		buf = str_printf("&cYour current alias focus is : &C%s.\n", ch->pcdata->target);
     		send_to_char( buf, ch );
     	}
     	else 
@@ -270,7 +269,7 @@ ch_printf(ch, "\n%s\n", buf);
 										ch->pcdata->drug_level[drug],
 										ch->pcdata->addiction[drug] );
 		}
-	SPRINTF(buf, "\n&cLanguages: &c");
+	buf =  "\n&cLanguages: &c";
 	int race_lang = race_table[ch->race].language;
 	for (iLang = 0; iLang < LANG_MAX; ++iLang)
 	{
@@ -285,13 +284,13 @@ ch_printf(ch, "\n%s\n", buf);
 		if (knows)
 		{
 			if (speaking)
-				STRAPP(buf, "&R");
-			STRAPP(buf, "%s", lang_names[iLang].name);
-			STRAPP(buf, " ");
-			STRAPP(buf, "&c");
+				buf += "&R";
+			buf += lang_names[iLang].name;
+			buf += " ";
+			buf += "&c";
 		}
 	}
-    ch_printf( ch, "%s\n", buf );
+    ch_printf( ch, "%s\n", buf.c_str() );
     ch_printf( ch, "&cWANTED ON: &C%s\n",
              bitset_to_string(ch->pcdata->wanted_flags, planet_flags).c_str() );
 
@@ -927,7 +926,7 @@ void do_title( CHAR_DATA *ch, char *argument )
 
 void do_homepage( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
 
     if ( IS_NPC(ch) )
 	return;
@@ -951,11 +950,11 @@ void do_homepage( CHAR_DATA *ch, char *argument )
     }
 
     if ( strstr( argument, "://" ) )
-	SPRINTF( buf, "%s", argument );
+	buf = argument;
     else
-	SPRINTF( buf, "http://%s", argument );
-    if ( strlen(buf) > 70 )
-	buf[70] = '\0';
+	buf = str_printf("http://%s", argument);
+    if ( buf.length() > 70 )
+	buf = buf.substr(0, 70);
 
     hide_tilde( buf );
     if ( ch->pcdata->homepage )
@@ -1050,7 +1049,7 @@ void do_bio( CHAR_DATA *ch, char *argument )
 
 void do_report( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_INPUT_LENGTH];
+    std::string buf;
 
     if ( IS_AFFECTED(ch, AFF_POSSESS) )
     {   
@@ -1065,11 +1064,11 @@ void do_report( CHAR_DATA *ch, char *argument )
 	ch->move, ch->max_move   );
 
     
-      SPRINTF( buf, "$n reports: %d/%d hp %d/%d.",
+      buf = str_printf("$n reports: %d/%d hp %d/%d.",
 	ch->hit,  ch->max_hit,
 	ch->move, ch->max_move   );
 
-    act( AT_REPORT, buf, ch, NULL, NULL, TO_ROOM );
+    act( AT_REPORT, buf.c_str(), ch, NULL, NULL, TO_ROOM );
 
     return;
 }

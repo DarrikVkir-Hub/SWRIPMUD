@@ -765,7 +765,7 @@ void gain_condition( CHAR_DATA *ch, int iCond, int value )
  */
 void mobile_update( GameContext *game )
 {
-    char buf[MAX_STRING_LENGTH];
+    char buf[MAX_STRING_LENGTH]; // Used for do_fun command
     CHAR_DATA *ch;
     EXIT_DATA *pexit;
     int door;
@@ -1693,7 +1693,7 @@ void obj_update( GameContext *game )
 
 	  	if ( obj->timer > 0 && obj->value[2] > timerfrac )
 	  	{
-            char buf[MAX_STRING_LENGTH];
+            char buf[MAX_STRING_LENGTH]; // Used for runtime sprintf.
 			std::string rest;
 			std::string name;
 
@@ -2486,7 +2486,7 @@ void reboot_check( GameContext *game, time_t reset )
   };
   static const int times[] = { 10, 30, 60, 120, 180, 240, 300, 600 };
   static const int timesize = 8;
-  char buf[MAX_STRING_LENGTH];
+  std::string buf;
   static int trun;
   static bool init;
     SHIP_DATA *ship;
@@ -2502,7 +2502,7 @@ void reboot_check( GameContext *game, time_t reset )
   
   if ( (current_time % 1800) == 0 )
   {
-    SPRINTF(buf, "%.24s: %d players", ctime(&current_time), num_descriptors);
+    buf = str_printf( "%.24s: %d players", ctime(&current_time), num_descriptors);
     append_to_file(USAGE_FILE, buf);
   }
   
@@ -2517,8 +2517,7 @@ void reboot_check( GameContext *game, time_t reset )
     
     if ( auction->item )
     {
-      SPRINTF(buf, "Sale of %s has been stopped by mud.",
-          auction->item->short_descr);
+      buf = str_printf( "Sale of %s has been stopped by mud.", auction->item->short_descr);
       talk_auction(buf);
       obj_to_char(auction->item, auction->seller);
       auction->item = NULL;
@@ -2556,7 +2555,7 @@ void reboot_check( GameContext *game, time_t reset )
 #if 0
 void reboot_check( GameContext *game, char *arg )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     extern bool mud_down;
     /*struct tm *timestruct;
     int timecheck;*/
@@ -2593,7 +2592,7 @@ void reboot_check( GameContext *game, char *arg )
 
 if ((current_time % 1800) == 0)
 {
-  SPRINTF(buf, "%s: %d players", ctime(&current_time), num_descriptors);  
+  buf = str_printf( "%s: %d players", ctime(&current_time), num_descriptors);
   append_to_file(USAGE_FILE, buf);
 }
 
@@ -2615,8 +2614,7 @@ if ((current_time % 1800) == 0)
        /* Return auction item to seller */
        if (auction->item != NULL)
        {
-        SPRINTF (buf,"Sale of %s has been stopped by mud.",
-                 auction->item->short_descr);
+        buf = str_printf("Sale of %s has been stopped by mud.", auction->item->short_descr);
         talk_auction (buf);
         obj_to_char (auction->item, auction->seller);
         auction->item = NULL;
@@ -2747,7 +2745,7 @@ if ((current_time % 1800) == 0)
 void auction_update (GameContext *game)
 {
     int tax, pay;
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
 
 	if (!auction->game)
 	    auction->game = game;
@@ -2757,10 +2755,10 @@ void auction_update (GameContext *game)
 	case 1 : /* going once */
 	case 2 : /* going twice */
 	    if (auction->bet > auction->starting)
-		SPRINTF (buf, "%s: going %s for %d.", auction->item->short_descr,
+		buf = str_printf("%s: going %s for %d.", auction->item->short_descr,
 			((auction->going == 1) ? "once" : "twice"), auction->bet);
 	    else
-		SPRINTF (buf, "%s: going %s (bid not received yet).", auction->item->short_descr,
+		buf = str_printf("%s: going %s (bid not received yet).", auction->item->short_descr,
 			((auction->going == 1) ? "once" : "twice"));
 
 	    talk_auction (buf);
@@ -2774,7 +2772,7 @@ void auction_update (GameContext *game)
 	    }
 	    if (auction->bet > 0 && auction->buyer != auction->seller)
 	    {
-		SPRINTF (buf, "%s sold to %s for %d.",
+		buf = str_printf("%s sold to %s for %d.",
 			auction->item->short_descr,
 			IS_NPC(auction->buyer) ? auction->buyer->short_descr : auction->buyer->name,
 			auction->bet);
@@ -2799,7 +2797,7 @@ void auction_update (GameContext *game)
 		tax = (int) (auction->bet * 0.1 );
 		boost_economy( auction->seller->in_room->area, tax );
                 auction->seller->gold += pay; /* give him the money, tax 10 % */
-		SPRINTF(buf, "The auctioneer pays you %d gold, charging an auction fee of %d.\n", pay, tax);
+		buf = str_printf("The auctioneer pays you %d gold, charging an auction fee of %d.\n", pay, tax);
 		send_to_char(buf, auction->seller);
                 auction->item = NULL; /* reset item */
 		if ( BV_IS_SET( game->get_sysdata()->save_flags, SV_AUCTION ) )
@@ -2810,7 +2808,7 @@ void auction_update (GameContext *game)
             }
             else /* not sold */
             {
-                SPRINTF (buf, "No bids received for %s - object has been removed from auction\n.",auction->item->short_descr);
+                buf = str_printf("No bids received for %s - object has been removed from auction\n.",auction->item->short_descr);
                 talk_auction(buf);
                 act (AT_ACTION, "The auctioneer appears before you to return $p to you.",
                       auction->seller,auction->item,NULL,TO_CHAR);
@@ -2832,7 +2830,7 @@ void auction_update (GameContext *game)
 		    obj_to_char (auction->item,auction->seller);
 		tax = (int) ( auction->item->cost * 0.05 );
 		boost_economy( auction->seller->in_room->area, tax );
-		SPRINTF(buf, "The auctioneer charges you an auction fee of %d.\n", tax );
+		buf = str_printf("The auctioneer charges you an auction fee of %d.\n", tax );
 		send_to_char(buf, auction->seller);
 		if ((auction->seller->gold - tax) < 0)
 		  auction->seller->gold = 0;

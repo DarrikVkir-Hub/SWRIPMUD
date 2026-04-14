@@ -120,7 +120,7 @@ void do_restrict( CHAR_DATA *ch, char *argument )
     std::string arg;
     std::string arg2;
     std::string argstr;
-    char buf[MAX_STRING_LENGTH];
+    char buf[MAX_STRING_LENGTH]; // used for do_fun command
     sh_int level, hash;
     CMDTYPE *cmd;
     bool found;
@@ -165,7 +165,7 @@ void do_restrict( CHAR_DATA *ch, char *argument )
 	cmd->level = level;
 	ch_printf( ch, "You restrict %s to level %d\n",
 	   cmd->name, level );
-	log_printf( buf, "%s restricting %s to level %d",
+	log_printf( "%s restricting %s to level %d",
 	     ch->name, cmd->name, level );
     }
     else
@@ -211,7 +211,7 @@ void do_authorize( CHAR_DATA *ch, char *argument )
   std::string arg1;
   std::string arg2;
   std::string argstr;
-  char buf[MAX_STRING_LENGTH];
+  std::string buf;
   CHAR_DATA *victim;
   DESCRIPTOR_DATA *d;
 
@@ -244,7 +244,7 @@ void do_authorize( CHAR_DATA *ch, char *argument )
 	if ( victim->pcdata->authed_by )
 	   STRFREE( victim->pcdata->authed_by );
 	victim->pcdata->authed_by = QUICKLINK( ch->name );
-	SPRINTF( buf, "%s authorized %s", ch->name,
+	buf = str_printf("%s authorized %s", ch->name,
 					  victim->name );
 	to_channel( buf, CHANNEL_MONITOR, "Monitor", ch->top_level );
 	ch_printf( ch, "You have authorized %s.\n", victim->name);
@@ -259,7 +259,7 @@ void do_authorize( CHAR_DATA *ch, char *argument )
      else if ( !str_cmp( arg2, "no" ) || !str_cmp( arg2, "deny" ) )
      {
 	send_to_char( "You have been denied access.\n", victim);
-	SPRINTF( buf, "%s denied authorization to %s", ch->name,
+	buf = str_printf("%s denied authorization to %s", ch->name,
 						       victim->name );
 	to_channel( buf, CHANNEL_MONITOR, "Monitor", ch->top_level );
 	ch_printf( ch, "You have denied %s.\n", victim->name);
@@ -268,7 +268,7 @@ void do_authorize( CHAR_DATA *ch, char *argument )
 
      else if ( !str_cmp( arg2, "name" ) || !str_cmp(arg2, "n" ) )
      {
-	SPRINTF( buf, "%s has denied %s's name", ch->name,
+	buf = str_printf("%s has denied %s's name", ch->name,
 						       victim->name );
 	to_channel( buf, CHANNEL_MONITOR, "Monitor", ch->top_level );
         ch_printf (victim,
@@ -1817,7 +1817,7 @@ void do_bodybag( CHAR_DATA *ch, char *argument )
 /* New owhere by Altrag, 03/14/96 */
 void do_owhere( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     std::string arg;
     std::string arg1;
     std::string argstr = argument;
@@ -1848,24 +1848,24 @@ void do_owhere( CHAR_DATA *ch, char *argument )
                 obj->in_obj->pIndexData->vnum, obj->in_obj->short_descr);
 	++icnt;
       }
-      SPRINTF(buf, "[%5d] %-28s in ", obj->pIndexData->vnum,
+      buf = str_printf("[%5d] %-28s in ", obj->pIndexData->vnum,
 		obj_short(obj));
       if ( obj->carried_by )
-        SPRINTF(buf+strlen(buf), "invent [%5d] %s\n",
+        buf = str_printf("%s invent [%5d] %s\n", buf.c_str(),
                 (IS_NPC(obj->carried_by) ? obj->carried_by->pIndexData->vnum
                 : 0), PERS(obj->carried_by, ch));
       else if ( obj->in_room )
-        SPRINTF(buf+strlen(buf), "room   [%5d] %s\n",
+        buf = str_printf("%sroom   [%5d] %s\n", buf.c_str(),
                 obj->in_room->vnum, obj->in_room->name);
       else if ( obj->in_obj )
       {
         bug("do_owhere: obj->in_obj after NULL!",0);
-        STRAPP(buf, "object??\n");
+        buf += "object??\n";
       }
       else
       {
         bug("do_owhere: object doesnt have location!",0);
-        STRAPP(buf, "nowhere??\n");
+        buf += "nowhere??\n";
       }
       send_to_pager(buf, ch);
       ++icnt;
@@ -1880,22 +1880,22 @@ void do_owhere( CHAR_DATA *ch, char *argument )
             continue;
         found = TRUE;
         
-        SPRINTF(buf, "(%3d) [%5d] %-28s in ", ++icnt, obj->pIndexData->vnum,
+        buf = str_printf("(%3d) [%5d] %-28s in ", ++icnt, obj->pIndexData->vnum,
                 obj_short(obj));
         if ( obj->carried_by )
-          SPRINTF(buf+strlen(buf), "invent [%5d] %s\n",
+          buf = str_printf("%s invent [%5d] %s\n", buf.c_str(),
                   (IS_NPC(obj->carried_by) ? obj->carried_by->pIndexData->vnum
                   : 0), PERS(obj->carried_by, ch));
         else if ( obj->in_room )
-          SPRINTF(buf+strlen(buf), "room   [%5d] %s\n",
+          buf = str_printf("%sroom   [%5d] %s\n", buf.c_str(),
                   obj->in_room->vnum, obj->in_room->name);
         else if ( obj->in_obj )
-          SPRINTF(buf+strlen(buf), "object [%5d] %s\n",
+          buf = str_printf("%sobject [%5d] %s\n", buf.c_str(),
                   obj->in_obj->pIndexData->vnum, obj_short(obj->in_obj));
         else
         {
           bug("do_owhere: object doesnt have location!",0);
-          STRAPP(buf, "nowhere??\n");
+          buf += "nowhere??\n";
         }
         send_to_pager(buf, ch);
     }
@@ -1917,7 +1917,8 @@ void trunc1(char *s, int len)
 
 void do_owhere( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH], field[MAX_INPUT_LENGTH];
+    std::string buf;
+    std::string field;
     std::string arg;
     OBJ_DATA *obj, *outer_obj;
     bool found = FALSE;
@@ -1952,40 +1953,40 @@ void do_owhere( CHAR_DATA *ch, char *argument )
         while ( outer_obj->in_obj )
               outer_obj = outer_obj->in_obj;
 
-        SPRINTF(field, "%-18s", obj_short(obj));
-        trunc1(field, 18);
-        SPRINTF(buf, "%3d &R&w%5d &R&w%-18s &R&w", ++icnt, obj->pIndexData->vnum, field);
+        field = str_printf("%-18s", obj_short(obj));
+        field = field.substr(0, 18);
+        buf = str_printf("%3d &R&w%5d &R&w%-18s &R&w", ++icnt, obj->pIndexData->vnum, field);
         if ( outer_obj->carried_by )
         {
-            SPRINTF(field, "%-18s", PERS(outer_obj->carried_by, ch));
-            trunc1(field, 18);
-            STRAPP(buf, "%5d %-18s &R&w",
+            field = str_printf("%-18s", PERS(outer_obj->carried_by, ch));
+            field = field.substr(0, 18);
+            buf = str_printf("%s%5d %-18s &R&w", buf.c_str(),
                (IS_NPC(outer_obj->carried_by) ?
                 outer_obj->carried_by->pIndexData->vnum : 0), field);
             if ( outer_obj!=obj )
             {
-               SPRINTF(field, "%-18s", obj->in_obj->name);
-               trunc1(field, 18);
-               STRAPP(buf, "%5d %-18s &R&w",
+               field = str_printf("%-18s", obj->in_obj->name);
+               field = field.substr(0, 18);
+               buf = str_printf("%s%5d %-18s &R&w", buf.c_str(),
                obj->in_obj->pIndexData->vnum, field);
             }
-            STRAPP(buf, "&R&w\n");
+            buf += "&R&w\n";
             send_to_pager(buf, ch);
         }
         else if ( outer_obj->in_room )
         {
-           SPRINTF(field, "%-18s", outer_obj->in_room->name);
-           trunc1(field, 18);
-           STRAPP(buf, "%5d %-18s &R&w",
+           field = str_printf("%-18s", outer_obj->in_room->name);
+           field = field.substr(0, 18);
+           buf = str_printf("%s%5d %-18s &R&w", buf.c_str(),
            outer_obj->in_room->vnum, field);
            if ( outer_obj!=obj )
            {
-              SPRINTF(field, "%-18s", obj->in_obj->name);
-              trunc1(field, 18);
-              STRAPP(buf, "%5d %-18s &R&w",
+              field = str_printf("%-18s", obj->in_obj->name);
+              field = field.substr(0, 18);
+              buf = str_printf("%s%5d %-18s &R&w", buf.c_str(),
               obj->in_obj->pIndexData->vnum, field);
            }
-           STRAPP(buf, "&R&w\n");
+           buf += "&R&w\n";
            send_to_pager(buf, ch);
         }
     }
@@ -2341,7 +2342,7 @@ void do_reboo( CHAR_DATA *ch, char *argument )
 
 void do_reboot( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    char buf[MAX_STRING_LENGTH]; // Used in do_fun command
     extern bool mud_down;
     CHAR_DATA *vch;
     SHIP_DATA *ship;
@@ -2397,7 +2398,7 @@ void do_shutdow( CHAR_DATA *ch, char *argument )
 
 void do_shutdown( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    char buf[MAX_STRING_LENGTH]; // Used in do_fun command
     extern bool mud_down;
     CHAR_DATA *vch;
     SHIP_DATA *ship;
@@ -2933,8 +2934,7 @@ void do_low_purge( CHAR_DATA *ch, char *argument )
 void do_balzhur( CHAR_DATA *ch, char *argument )
 {
     std::string arg;
-    char buf[MAX_STRING_LENGTH];
-    char buf2[MAX_STRING_LENGTH];
+    std::string buf, buf2;
     CHAR_DATA *victim;
     int sn;
 
@@ -2995,18 +2995,18 @@ void do_balzhur( CHAR_DATA *ch, char *argument )
 	victim->move     = victim->max_move;
     gmcp_evt_char_vitals(victim);
 
-    SPRINTF( buf, "%s%s", GOD_DIR, capitalize(victim->name).c_str() );  
+    buf = str_printf( "%s%s", GOD_DIR, capitalize(victim->name).c_str() );  
  
-    if ( !remove( buf ) )
+    if ( !remove( buf.c_str() ) )
       send_to_char( "Player's immortal data destroyed.\n", ch );
     else if ( errno != ENOENT )
     {
       ch_printf( ch, "Unknown error #%d - %s (immortal data).  Report to the admins.\n",
               errno, strerror( errno ) );
-      SPRINTF( buf2, "%s balzhuring %s", ch->name, buf );
-      perror( buf2 );
+      buf2 = str_printf( "%s balzhuring %s", ch->name, buf.c_str() );
+      perror( buf2.c_str() );
     }
-    SPRINTF( buf2, "%s.are", capitalize(arg).c_str() );
+    buf2 = str_printf( "%s.are", capitalize(arg).c_str() );
 /*    for ( pArea = first_build; pArea; pArea = pArea->next )
       if ( pArea && !str_cmp( pArea->filename, buf2 ) )
       {
@@ -3867,7 +3867,7 @@ void save_banlist( void )
 
 void do_ban( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     std::string arg;
     std::string argstr = argument;
     BAN_DATA *pban;
@@ -3970,7 +3970,7 @@ void do_ban( CHAR_DATA *ch, char *argument )
     LINK( pban, first_ban, last_ban, next, prev );
     pban->name	= str_dup( arg );
     pban->level = LEVEL_AVATAR;
-    SPRINTF(buf, "%24.24s", ctime(&current_time));
+    buf = str_printf("%24.24s", ctime(&current_time));
     pban->ban_time = str_dup( buf );
     save_banlist( );
     send_to_char( "Ban created.  Mortals banned from site.\n", ch );
@@ -4046,21 +4046,20 @@ void do_noresolve( CHAR_DATA *ch, char *argument )
 
 void do_users( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     DESCRIPTOR_DATA *d;
     int count;
     std::string arg;
 
     one_argument (argument, arg);
     count	= 0;
-    buf[0]	= '\0';
+    buf.clear();
 
     set_pager_color( AT_PLAIN, ch );
-    SPRINTF(buf, 
-"Desc|Con|Idle| Port | Player@HostIP                 ");
-   STRAPP(buf, "\n");
-   STRAPP(buf, "----+---+----+------+-------------------------------");
-   STRAPP(buf, "\n");
+    buf = "Desc|Con|Idle| Port | Player@HostIP                 ";
+   buf += "\n";
+   buf += "----+---+----+------+-------------------------------";
+   buf += "\n";
    send_to_pager(buf, ch);
 
     for ( d = first_descriptor; d; d = d->next )
@@ -4071,7 +4070,7 @@ void do_users( CHAR_DATA *ch, char *argument )
 	||   (d->character && can_see( ch, d->character )) )
 	{
 	    count++;
-	    SPRINTF( buf,
+	    buf = str_printf(
 	     " %3d| %2d|%4d|%6d| %s@%s ",
 		d->descriptor,
 		d->connected,
@@ -4081,8 +4080,8 @@ void do_users( CHAR_DATA *ch, char *argument )
 		d->character ? d->character->name : "(none)",
 		d->hostip );
 	    if ( ch->top_level >= LEVEL_GOD && ( !d->character || d->character->top_level <= LEVEL_GOD ) )
-	      STRAPP( buf, " (%s@%s)", d->user, d->host  );
-	    STRAPP(buf, "\n");
+	      buf += str_printf( " (%s@%s)", d->user, d->host  );
+	    buf += "\n";
 	    send_to_pager( buf, ch );
 	}
       }
@@ -4104,10 +4103,10 @@ void do_users( CHAR_DATA *ch, char *argument )
 		d->character ? d->character->name : "(none)",
 		d->host
 		);
-	    buf[0] = '\0';
+	    buf.clear();
 	    if (get_trust(ch) >= LEVEL_GOD)
-	      SPRINTF(buf, "| %s", d->user);
-	    STRAPP(buf, "\n");
+	      buf = str_printf("| %s", d->user);
+	    buf += "\n";
 	    send_to_pager( buf, ch );
 	}
       }
@@ -4579,7 +4578,7 @@ void do_loadup( CHAR_DATA *ch, char *argument )
 //    bool loaded;
     DESCRIPTOR_DATA *d;
     int old_room_vnum;
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
 
     one_argument( argument, name );
     if ( name.empty() )
@@ -4694,8 +4693,8 @@ void do_loadup( CHAR_DATA *ch, char *argument )
 	DISPOSE_ARRAY( d->outbuf );
 	DISPOSE( d );
 	ch_printf(ch, "Player %s loaded from room %d.\n", capitalize( name ).c_str(),old_room_vnum );
-	SPRINTF(buf, "%s appears from nowhere, eyes glazed over.\n", capitalize( name ).c_str() );
-        act( AT_IMMORT, buf, ch, NULL, NULL, TO_ROOM );
+	buf = str_printf("%s appears from nowhere, eyes glazed over.\n", capitalize( name ).c_str() );
+        act( AT_IMMORT, buf.c_str(), ch, NULL, NULL, TO_ROOM );
 
 	send_to_char( "Done.\n", ch );
 	return;
@@ -5447,8 +5446,7 @@ void close_area( AREA_DATA *pArea )
 void do_destroy( CHAR_DATA *ch, char *argument )
 {
   CHAR_DATA *victim;
-  char buf[MAX_STRING_LENGTH];
-  char buf2[MAX_STRING_LENGTH];
+  std::string buf, buf2;
   std::string arg;
 
   one_argument( argument, arg );
@@ -5486,45 +5484,45 @@ void do_destroy( CHAR_DATA *ch, char *argument )
 	    save_equipment[x][y] = NULL;
   }
   
-  SPRINTF( buf, "%s%c/%s", PLAYER_DIR, tolower(arg[0]),
+  buf = str_printf("%s%c/%s", PLAYER_DIR, tolower(arg[0]),
           capitalize( arg ).c_str() );
-  SPRINTF( buf2, "%s%c/%s", BACKUP_DIR, tolower(arg[0]),
+  buf2 = str_printf("%s%c/%s", BACKUP_DIR, tolower(arg[0]),
           capitalize( arg ).c_str() );
-  if ( !rename( buf, buf2 ) )
+  if ( !rename( buf.c_str(), buf2.c_str() ) )
   {
     AREA_DATA *pArea;
     
     set_char_color( AT_RED, ch );
     send_to_char( "Player destroyed.  Pfile saved in backup directory.\n", ch );
-    SPRINTF( buf, "%s%s", GOD_DIR, capitalize(arg).c_str() );
-    if ( !remove( buf ) )
+    buf = str_printf("%s%s", GOD_DIR, capitalize(arg).c_str() );
+    if ( !remove( buf.c_str() ) )
       send_to_char( "Player's immortal data destroyed.\n", ch );
     else if ( errno != ENOENT )
     {
       ch_printf( ch, "Unknown error #%d - %s (immortal data).  Report to Thoric.\n",
               errno, strerror( errno ) );
-      SPRINTF( buf2, "%s destroying %s", ch->name, buf );
-      perror( buf2 );
+      buf2 = str_printf("%s destroying %s", ch->name, buf.c_str() );
+      perror( buf2.c_str() );
     }
 
-    SPRINTF( buf2, "%s.are", capitalize(arg).c_str() );
+    buf2 = str_printf("%s.are", capitalize(arg).c_str() );
     for ( pArea = first_build; pArea; pArea = pArea->next )
-      if ( !strcmp( pArea->filename, buf2 ) )
+      if ( !strcmp( pArea->filename, buf2.c_str() ) )
       {
-        SPRINTF( buf, "%s%s", BUILD_DIR, buf2 );
+        buf = str_printf("%s%s", BUILD_DIR, buf2.c_str() );
         if ( IS_SET( pArea->status, AREA_LOADED ) )
           fold_area( pArea, buf, FALSE );
         close_area( pArea );
-        SPRINTF( buf2, "%s.bak", buf );
+        buf2 = str_printf("%s.bak", buf.c_str() );
         set_char_color( AT_RED, ch ); /* Log message changes colors */
-        if ( !rename( buf, buf2 ) )
+        if ( !rename( buf.c_str(), buf2.c_str() ) )
           send_to_char( "Player's area data destroyed.  Area saved as backup.\n", ch );
         else if ( errno != ENOENT )
         {
           ch_printf( ch, "Unknown error #%d - %s (area data).  Report to Thoric.\n",
                   errno, strerror( errno ) );
-          SPRINTF( buf2, "%s destroying %s", ch->name, buf );
-          perror( buf2 );
+          buf2 = str_printf("%s destroying %s", ch->name, buf.c_str() );
+          perror( buf2.c_str() );
         }
       }
   }
@@ -5538,8 +5536,8 @@ void do_destroy( CHAR_DATA *ch, char *argument )
     set_char_color( AT_WHITE, ch );
     ch_printf( ch, "Unknown error #%d - %s.  Report to Thoric.\n",
             errno, strerror( errno ) );
-    SPRINTF( buf, "%s destroying %s", ch->name, arg.c_str() );
-    perror( buf );
+    buf = str_printf("%s destroying %s", ch->name, arg.c_str() );
+    perror( buf.c_str() );
   }
   return;
 }
@@ -6652,7 +6650,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
     std::string arg1;
     std::string arg2;
     std::string argstr = argument;
-    char buf[128];
+    std::string buf;
 
     smash_tilde( argstr );
     argstr = one_argument( argstr, arg1 );
@@ -6775,8 +6773,8 @@ void do_cedit( CHAR_DATA *ch, char *argument )
         {
             send_to_char("Command Groups: \n",ch);
             for (i = 0; i <  MAX_COMMAND_GROUP; i++) {
-              SPRINTF(buf,"%d) %s\n",i, get_flag_name(command_groups, i, MAX_COMMAND_GROUP));
-              send_to_char(buf,ch);
+              buf = str_printf("%d) %s\n",i, get_flag_name(command_groups, i, MAX_COMMAND_GROUP));
+              send_to_char(buf.c_str(),ch);
             }
             return;
         }

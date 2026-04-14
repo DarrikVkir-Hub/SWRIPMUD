@@ -145,7 +145,7 @@ bool spec_newbie_pilot( CHAR_DATA *ch )
     CHAR_DATA   * victim;
     CHAR_DATA   * v_next;
     OBJ_DATA    * obj;
-    char          buf[MAX_STRING_LENGTH];
+    char          buf[MAX_STRING_LENGTH]; // Needed for do_fun command
     bool          diploma = FALSE;
     
     for ( victim = ch->in_room->first_person; victim; victim = v_next )
@@ -335,7 +335,7 @@ bool spec_customs_smut( CHAR_DATA *ch )
     CHAR_DATA *victim;
     CHAR_DATA *v_next;
     OBJ_DATA  *obj;
-    char       buf[MAX_STRING_LENGTH];
+    char       buf[MAX_STRING_LENGTH]; // needed for do_fun command
     long       ch_exp;
     
     if ( !IS_AWAKE(ch) || ch->position == POS_FIGHTING )
@@ -420,7 +420,7 @@ bool spec_customs_weapons( CHAR_DATA *ch )
     CHAR_DATA *victim;
     CHAR_DATA *v_next;
     OBJ_DATA  *obj;
-    char       buf[MAX_STRING_LENGTH];
+    char       buf[MAX_STRING_LENGTH]; // needed for do_fun command
     long       ch_exp;
     
     if ( !IS_AWAKE(ch) || ch->position == POS_FIGHTING )
@@ -507,7 +507,7 @@ bool spec_customs_alcohol( CHAR_DATA *ch )
     CHAR_DATA *victim;
     CHAR_DATA *v_next;
     OBJ_DATA  *obj;
-    char       buf[MAX_STRING_LENGTH];
+    char       buf[MAX_STRING_LENGTH]; // needed for do_fun command
     int        liquid;
     long       ch_exp;
     
@@ -612,7 +612,7 @@ bool spec_customs_spice( CHAR_DATA *ch )
     CHAR_DATA *victim;
     CHAR_DATA *v_next;
     OBJ_DATA  *obj;
-    char       buf[MAX_STRING_LENGTH];
+    char       buf[MAX_STRING_LENGTH]; // needed for do_fun command
     long       ch_exp;
     
     if ( !IS_AWAKE(ch) || ch->position == POS_FIGHTING )
@@ -695,7 +695,7 @@ bool spec_police( CHAR_DATA *ch )
 {
     CHAR_DATA *victim;
     CHAR_DATA *v_next;
-    char buf[MAX_STRING_LENGTH];
+    char buf[MAX_STRING_LENGTH]; // needed for do_fun command
     
     if ( !IS_AWAKE(ch) || ch->fighting )
 	return FALSE;
@@ -767,7 +767,7 @@ bool spec_police_attack( CHAR_DATA *ch )
 {
     CHAR_DATA *victim;
     CHAR_DATA *v_next;
-    char buf[MAX_STRING_LENGTH];
+    char buf[MAX_STRING_LENGTH]; // needed for do_fun command
     
     if ( !IS_AWAKE(ch) || ch->fighting )
 	return FALSE;
@@ -801,7 +801,7 @@ bool spec_police_undercover( CHAR_DATA *ch )
 {
     CHAR_DATA *victim;
     CHAR_DATA *v_next;
-    char buf[MAX_STRING_LENGTH];
+    char buf[MAX_STRING_LENGTH]; // needed for do_fun command
     
     if ( !IS_AWAKE(ch) || ch->fighting )
 	return FALSE;
@@ -835,7 +835,7 @@ bool spec_police_fine( CHAR_DATA *ch )
 {
     CHAR_DATA *victim;
     CHAR_DATA *v_next;
-    char buf[MAX_STRING_LENGTH];
+    char buf[MAX_STRING_LENGTH]; // needed for do_fun command
 
     if ( !IS_AWAKE(ch) || ch->fighting )
 	return FALSE;
@@ -875,7 +875,7 @@ bool spec_police_jail( CHAR_DATA *ch )
     ROOM_INDEX_DATA *jail = NULL;
     CHAR_DATA *victim;
     CHAR_DATA *v_next;
-    char buf[MAX_STRING_LENGTH];
+    char buf[MAX_STRING_LENGTH]; // Needed for do_fun command
 
     if ( !IS_AWAKE(ch) || ch->fighting )
 	return FALSE;
@@ -1159,7 +1159,7 @@ bool spec_rebel_trooper( CHAR_DATA *ch )
 
 bool spec_guardian( CHAR_DATA *ch )
 {
-    char buf[MAX_STRING_LENGTH];
+    char buf[MAX_STRING_LENGTH]; // Needed for do_fun command
     CHAR_DATA *victim;
     CHAR_DATA *v_next;
     CHAR_DATA *ech;
@@ -1317,7 +1317,7 @@ bool spec_auth( CHAR_DATA *ch )
 {
     CHAR_DATA *victim;
     CHAR_DATA *v_next;
-    char buf[MAX_STRING_LENGTH];
+    char buf[MAX_STRING_LENGTH]; // Needed for do_fun command
     OBJ_INDEX_DATA *pObjIndex;
     OBJ_DATA *obj;
     bool hasdiploma;

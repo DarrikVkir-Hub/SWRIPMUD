@@ -384,7 +384,7 @@ void do_mailroom(CHAR_DATA *ch, char *argument)
 
 void do_note( CHAR_DATA *ch, const std::string& arg_passed, bool IS_MAIL )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf, notebuf, short_desc_buf, long_desc_buf, keyword_buf;
     std::string arg;
 	std::string argstr = arg_passed;
     NOTE_DATA  *pnote;
@@ -394,10 +394,6 @@ void do_note( CHAR_DATA *ch, const std::string& arg_passed, bool IS_MAIL )
     int first_list;
     OBJ_DATA *quill, *paper, *tmpobj = NULL;
     EXTRA_DESCR_DATA *ed = NULL;
-    char notebuf[MAX_STRING_LENGTH];  
-    char short_desc_buf[MAX_STRING_LENGTH];
-    char long_desc_buf[MAX_STRING_LENGTH];
-    char keyword_buf[MAX_STRING_LENGTH];
     bool mfound = FALSE;
     bool wasfound = FALSE;
 
@@ -685,7 +681,7 @@ void do_note( CHAR_DATA *ch, const std::string& arg_passed, bool IS_MAIL )
 	}
 
 	/* Can only vote once on a note. */
-	SPRINTF( buf, "%s %s %s", 
+	buf = str_printf("%s %s %s", 
 		pnote->yesvotes, pnote->novotes, pnote->abstentions );
 	if ( is_name( ch->name, buf ) )
 	{
@@ -694,7 +690,7 @@ void do_note( CHAR_DATA *ch, const std::string& arg_passed, bool IS_MAIL )
 	}
 	if ( !str_cmp( argstr, "yes" ) )
 	{
-	    SPRINTF( buf, "%s %s", pnote->yesvotes, ch->name );
+	    buf = str_printf("%s %s", pnote->yesvotes, ch->name);
 	    STR_DISPOSE( pnote->yesvotes );
 	    pnote->yesvotes = str_dup( buf );
 	    act( AT_ACTION, "$n votes on a note.", ch, NULL, NULL, TO_ROOM );
@@ -704,7 +700,7 @@ void do_note( CHAR_DATA *ch, const std::string& arg_passed, bool IS_MAIL )
 	}  
 	if ( !str_cmp( argstr, "no" ) )
 	{
-	    SPRINTF( buf, "%s %s", pnote->novotes, ch->name );
+	    buf = str_printf("%s %s", pnote->novotes, ch->name );
 	    STR_DISPOSE( pnote->novotes );
 	    pnote->novotes = str_dup( buf );
 	    act( AT_ACTION, "$n votes on a note.", ch, NULL, NULL, TO_ROOM );
@@ -714,7 +710,7 @@ void do_note( CHAR_DATA *ch, const std::string& arg_passed, bool IS_MAIL )
 	}  
 	if ( !str_cmp( argstr, "abstain" ) )
 	{
-	    SPRINTF( buf, "%s %s", pnote->abstentions, ch->name );
+	    buf = str_printf("%s %s", pnote->abstentions, ch->name );
 	    STR_DISPOSE( pnote->abstentions );
 	    pnote->abstentions = str_dup( buf );
 	    act( AT_ACTION, "$n votes on a note.", ch, NULL, NULL, TO_ROOM );
@@ -921,7 +917,7 @@ void do_note( CHAR_DATA *ch, const std::string& arg_passed, bool IS_MAIL )
 		subject = "(no subject)";
 		if ( (to_list = get_extra_descr( "_to_", paper->first_extradesc )) == NULL )
 		to_list = "(nobody)";
-		SPRINTF( buf, "%s: %s\nTo: %s\n",
+		buf = str_printf("%s: %s\nTo: %s\n",
 			ch->name,
 			subject,
 			to_list );
@@ -1109,28 +1105,28 @@ void do_note( CHAR_DATA *ch, const std::string& arg_passed, bool IS_MAIL )
 		    ed->description = QUICKLINK( pnote->date );
 		    ed = SetOExtra( paper, "note" );
 		    STRFREE( ed->description );
-		    SPRINTF(notebuf, "From: ");
-		    STRAPP(notebuf, "%s", pnote->sender);		 
-		    STRAPP(notebuf, "\nTo: ");
-		    STRAPP(notebuf, "%s", pnote->to_list);
-		    STRAPP(notebuf, "\nSubject: ");
-		    STRAPP(notebuf, "%s", pnote->subject);
-		    STRAPP(notebuf, "\n\n");
-		    STRAPP(notebuf, "%s", pnote->text);
-		    STRAPP(notebuf, "\n");
+		    notebuf = "From: ";
+		    notebuf += pnote->sender;		 
+		    notebuf += "\nTo: ";
+		    notebuf += pnote->to_list;
+		    notebuf += "\nSubject: ";
+		    notebuf += pnote->subject;
+		    notebuf += "\n\n";
+		    notebuf += pnote->text;
+		    notebuf += "\n";
 		    ed->description = STRALLOC(notebuf);
 		    paper->value[0] = 2;
 		    paper->value[1] = 2;
 	 	    paper->value[2] = 2;
-		    SPRINTF(short_desc_buf, "a note from %s to %s",
+		    short_desc_buf = str_printf("a note from %s to %s",
 			pnote->sender, pnote->to_list);
 		    STRFREE(paper->short_descr);
 		    paper->short_descr = STRALLOC(short_desc_buf);
-		    SPRINTF(long_desc_buf, "A note from %s to %s lies on the ground.",
+		    long_desc_buf = str_printf("A note from %s to %s lies on the ground.",
 			pnote->sender, pnote->to_list);
 		    STRFREE(paper->description);
 		    paper->description = STRALLOC(long_desc_buf);
-		    SPRINTF(keyword_buf, "note parchment paper %s", 
+		    keyword_buf = str_printf("note parchment paper %s", 
 			pnote->to_list);
 		    STRFREE(paper->name);
 		    paper->name = STRALLOC(keyword_buf);
@@ -1168,7 +1164,7 @@ BOARD_DATA *read_board( GameContext *game, const std::string& boardfile, FILE *f
 {
     BOARD_DATA *board;
     const char *word;
-    char  buf[MAX_STRING_LENGTH];
+    std::string buf;
     bool fMatch;
     char letter;
 
@@ -1247,8 +1243,8 @@ BOARD_DATA *read_board( GameContext *game, const std::string& boardfile, FILE *f
         }
 	if ( !fMatch )
 	{
-	    SPRINTF( buf, "read_board: no match: %s", word );
-	    bug( buf, 0 );
+	    buf = str_printf("read_board: no match: %s", word );
+	    bug( buf.c_str(), 0 );
 	}
     }
 
@@ -1397,7 +1393,7 @@ void do_bset( CHAR_DATA *ch, char *argument )
     std::string arg1;
     std::string arg2;
 	std::string argstr = argument;
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     int value;
     
     argstr = one_argument( argstr, arg1 );
@@ -1494,9 +1490,9 @@ void do_bset( CHAR_DATA *ch, char *argument )
             return;
         }
         if ( !str_cmp( argstr, "none" ) )
-            buf[0] = '\0';
+            buf = "";
         else
-            SPRINTF( buf, "%s %s", board->extra_removers, argstr.c_str() );
+            buf = str_printf("%s %s", board->extra_removers, argstr.c_str());
         STR_DISPOSE( board->extra_removers );
         board->extra_removers = str_dup( buf ); 
         write_boards_txt( );
@@ -1512,9 +1508,9 @@ void do_bset( CHAR_DATA *ch, char *argument )
 	    return;
 	}
 	if ( !str_cmp( argstr, "none" ) )
-	    buf[0] = '\0';
+	    buf = "";
 	else
-	    SPRINTF( buf, "%s %s", board->extra_readers, argstr.c_str() );        
+	    buf = str_printf("%s %s", board->extra_readers, argstr.c_str());        
 	STR_DISPOSE( board->extra_readers );
 	board->extra_readers = str_dup( buf );
 	write_boards_txt( );

@@ -235,7 +235,7 @@ void do_arena(CHAR_DATA *ch, char *argument)
 
 void do_marena(CHAR_DATA *ch, char *argument)
 {
- char buf[MAX_INPUT_LENGTH];
+ std::string buf;
  struct struct_gladiator *gladiator_node;
  CHAR_DATA *mob;
  std::string arg;
@@ -273,7 +273,7 @@ void do_marena(CHAR_DATA *ch, char *argument)
  else
  {
     act(AT_RED, "$n has been whisked away to the killing fields.", mob, NULL, NULL, TO_ROOM);
-    SPRINTF(buf,"%s has been whisked away to the killing fields.\n",mob->name);
+    buf = str_printf("%s has been whisked away to the killing fields.\n",mob->name);
     send_to_char(buf,ch);
   
     mob->retran = mob->in_room->vnum;
@@ -282,7 +282,7 @@ void do_marena(CHAR_DATA *ch, char *argument)
     act(AT_WHITE,"$n is dropped from the sky.", mob, NULL, NULL, TO_ROOM);
     send_to_char("You have been taken to the killing fields\n",mob);
     do_look(mob, "auto");
-    SPRINTF(buf, "%s has joined the blood bath.", mob->name);
+    buf = str_printf("%s has joined the blood bath.", mob->name);
     to_channel(buf,CHANNEL_ARENA,"&RArena&W",5);
     send_to_char(buf, mob);
     CREATE(gladiator_node, struct struct_gladiator, 1);
@@ -623,22 +623,7 @@ void do_end_game(GameContext *game)
 
 }                                                                                                                                                                  
                                                                                                         
-/*void sportschan(char *argument)
-{
-  char buf1[MAX_INPUT_LENGTH];
-  DESCRIPTOR_DATA *i;
-        
-  SPRINTF(buf1, "&R[Arena] &W%s\n", argument);
-            
-  for (i = first_descriptor; i; i = i->next)
-  {
-    if (!i->connected && i->character)
-    {
-       send_to_char(buf1, i->character);
-    }
-  }
-}*/
-                                                               
+                                                      
 void do_awho(CHAR_DATA *ch, char *argument)
 {
   struct struct_gladiator *g;
@@ -707,7 +692,6 @@ void do_ahall(CHAR_DATA *ch, char *argument)
         "&B---------------------------------");
  
      send_to_char(buf, ch);
-//   SPRINTF(format2, "&W%-25.25s  &R%-10.10s  &Y%-16d\n");
      for (fame_node = fame_list; fame_node; fame_node = fame_node->next)
      {
         if (fame_node->date)

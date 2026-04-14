@@ -2605,13 +2605,13 @@ void area_update( GameContext *game )
 	 */
 	if ( pArea->nplayer > 0 && pArea->age == (reset_age-1) )
 	{
-	    char buf[MAX_STRING_LENGTH];
+	    std::string buf;
 
 	    /* Rennard */
 	    if ( pArea->resetmsg )
-			SPRINTF( buf, "%s\n", pArea->resetmsg );
+			buf = str_printf("%s\n", pArea->resetmsg );
 	    else
-			SPRINTF( buf, "You hear some squeaking sounds...\n" );
+			buf = ("You hear some squeaking sounds...\n" );
 	    for ( pch = first_char; pch; pch = pch->next )
 	    {
 		if ( !IS_NPC(pch)
@@ -4230,6 +4230,16 @@ void hide_tilde( char *str )
     return;
 }
 
+void hide_tilde( std::string& str )
+{
+    for (char& c : str)
+    {
+        if (c == '~')
+            c = HIDDEN_TILDE;
+    }
+
+    return;
+}
 char *show_tilde( char *str )
 {
     static char buf[MAX_STRING_LENGTH];
@@ -5934,7 +5944,7 @@ ROOM_INDEX_DATA *make_room( GameContext *game, int vnum )
 OBJ_INDEX_DATA *make_object( GameContext *game, int vnum, int cvnum, const std::string& name )
 {
 	OBJ_INDEX_DATA *pObjIndex, *cObjIndex;
-	char buf[MAX_STRING_LENGTH];
+	std::string buf;
 	int	iHash;
 
 	if ( cvnum > 0 )
@@ -5951,9 +5961,9 @@ OBJ_INDEX_DATA *make_object( GameContext *game, int vnum, int cvnum, const std::
 	pObjIndex->last_extradesc	= NULL;
 	if ( !cObjIndex )
 	{
-	  SPRINTF( buf, "A %s", name.c_str() );
-	  pObjIndex->short_descr	= STRALLOC( buf  );
-	  SPRINTF( buf, "A %s is here.", name.c_str() );
+	  buf = str_printf("A %s", name.c_str());
+	  pObjIndex->short_descr	= STRALLOC( buf );
+	  buf = str_printf("A %s is here.", name.c_str());
 	  pObjIndex->description	= STRALLOC( buf );
 	  pObjIndex->action_desc	= STRALLOC( "" );
 	  pObjIndex->short_descr[0]	= LOWER(pObjIndex->short_descr[0]);
@@ -6024,7 +6034,7 @@ OBJ_INDEX_DATA *make_object( GameContext *game, int vnum, int cvnum, const std::
 MOB_INDEX_DATA *make_mobile( GameContext *game, sh_int vnum, sh_int cvnum, const std::string& name )
 {
 	MOB_INDEX_DATA *pMobIndex, *cMobIndex;
-	char buf[MAX_STRING_LENGTH];
+	std::string buf;
 	int	iHash;
 
 	if ( cvnum > 0 )
@@ -6039,9 +6049,9 @@ MOB_INDEX_DATA *make_mobile( GameContext *game, sh_int vnum, sh_int cvnum, const
 	pMobIndex->player_name		= STRALLOC( name );
 	if ( !cMobIndex )
 	{
-	  SPRINTF( buf, "A newly created %s", name.c_str() );
-	  pMobIndex->short_descr	= STRALLOC( buf  );
-	  SPRINTF( buf, "Some god abandoned a newly created %s here.\n", name.c_str() );
+	  buf = str_printf("A newly created %s", name.c_str());
+	  pMobIndex->short_descr	= STRALLOC( buf );
+	  buf = str_printf("Some god abandoned a newly created %s here.\n", name.c_str());
 	  pMobIndex->long_descr		= STRALLOC( buf );
 	  pMobIndex->description	= STRALLOC( "" );
 	  pMobIndex->short_descr[0]	= LOWER(pMobIndex->short_descr[0]);
@@ -6246,7 +6256,7 @@ void fix_area_exits( AREA_DATA *tarea )
     }
 }
 
-void load_area_file( GameContext *game, AREA_DATA *tarea, char *filename )
+void load_area_file( GameContext *game, AREA_DATA *tarea, const std::string& filename )
 {
 /*    FILE *fpin;
     what intelligent person stopped using fpArea?????
@@ -6263,10 +6273,10 @@ void load_area_file( GameContext *game, AREA_DATA *tarea, char *filename )
 	return;
     }
 
-    if ( ( fpArea = fopen( filename, "r" ) ) == NULL )
+    if ( ( fpArea = fopen( filename.c_str(), "r" ) ) == NULL )
     {
         bug( "load_area: error loading file (can't open)" );
-        bug( filename );
+        bug( filename.c_str() );
         return;
     }
 
@@ -6348,7 +6358,7 @@ void load_area_file( GameContext *game, AREA_DATA *tarea, char *filename )
 	SET_BIT( tarea->status, AREA_LOADED );
     }
     else
-      fprintf( stderr, "(%s)\n", filename );
+      fprintf( stderr, "(%s)\n", filename.c_str() );
 }
 
 
@@ -6441,8 +6451,7 @@ void load_buildlist( GameContext *game )
 #if !defined(READ_AREA)
 				pArea->name = fread_string_nohash( fp );
 #else
-				SPRINTF( buf, "{PROTO} %s's area in progress", dentry->d_name );
-				pArea->name = str_dup( buf );
+				pArea->name = str_dup( str_printf("{PROTO} %s's area in progress", dentry->d_name) );
 #endif
 				FCLOSE( fp );
 				pArea->low_r_vnum = rlow; pArea->hi_r_vnum = rhi;
@@ -6661,12 +6670,12 @@ void do_newzones( CHAR_DATA *ch, char *argument )
 void save_sysdata( SYSTEM_DATA sys )
 {
     FILE *fp;
-    char filename[MAX_INPUT_LENGTH];
+    std::string filename;
 
-    SPRINTF( filename, "%ssysdata.dat", SYSTEM_DIR );
+    filename = str_printf("%ssysdata.dat", SYSTEM_DIR);
     
     FCLOSE( fpReserve );
-    if ( ( fp = fopen( filename, "w" ) ) == NULL )
+    if ( ( fp = fopen( filename.c_str(), "w" ) ) == NULL )
     {
     	bug( "save_sysdata: fopen" );
     }
@@ -6870,14 +6879,14 @@ void fread_sysdata( SYSTEM_DATA *sys, FILE *fp )
  */
 bool load_systemdata( SYSTEM_DATA *sys )
 {
-    char filename[MAX_INPUT_LENGTH];
+    std::string filename;
     FILE *fp;
     bool found;
 
     found = FALSE;
-    SPRINTF( filename, "%ssysdata.dat", SYSTEM_DIR );
+    filename = str_printf("%ssysdata.dat", SYSTEM_DIR);
 
-    if ( ( fp = fopen( filename, "r" ) ) != NULL )
+    if ( ( fp = fopen( filename.c_str(), "r" ) ) != NULL )
     {
 
 	found = TRUE;

@@ -121,7 +121,7 @@ void free_aliases( CHAR_DATA *ch )
 
 bool check_alias( CHAR_DATA *ch, const std::string& command, const std::string&argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     ALIAS_DATA *alias;
     bool nullarg = TRUE;
     
@@ -134,7 +134,7 @@ bool check_alias( CHAR_DATA *ch, const std::string& command, const std::string&a
     if (!alias->cmd || !*alias->cmd)
 	return FALSE;
 
-    SPRINTF(arg, "%s", alias->cmd);
+    arg = alias->cmd;
 
     if (ch->cmd_recurse==-1 || ++ch->cmd_recurse>50)
     {
@@ -148,22 +148,22 @@ bool check_alias( CHAR_DATA *ch, const std::string& command, const std::string&a
 
 /*
    {
-    char buf[MAX_INPUT_LENGTH];
+    std::string buf;
 
-    SPRINTF(buf, "%s", alias->name);
+    buf = alias->name;
 
     if ( (alias=find_alias(ch,arg)) != NULL )
     {
-	SPRINTF(arg, "Your alias '%s' calls another alias and cannot be executed.\n", buf);
-	send_to_char(arg, ch);
+	buf = str_printf("Your alias '%s' calls another alias and cannot be executed.\n", buf.c_str());
+	send_to_char(buf, ch);
 	return TRUE;
     }
    }
 */
     if (!argument.empty() && !nullarg)
     {
-        STRAPP(arg, " ");
-        STRAPP(arg, "%s", argument.c_str());
+        arg += " ";
+        arg += argument;
     }
 
     interpret(ch, arg);

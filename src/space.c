@@ -409,7 +409,7 @@ void update_bus( GameContext *game )
 */
     SHIP_DATA *target;
     int        destination, bus;
-    char       buf[MAX_STRING_LENGTH];
+    std::string buf;
 
    for( bus = 0; bus < MAX_BUS; bus++ )
    {
@@ -499,7 +499,7 @@ void update_bus( GameContext *game )
             if( ship_from_cockpit( game, serin[bus].cockpitvnum ) == NULL )
               continue;
 
-            SPRINTF( buf, "It continues, 'Next stop, %s'" , serin[bus].bus_stop[serin[bus].planetloc+1] );
+            buf = str_printf("It continues, 'Next stop, %s'" , serin[bus].bus_stop[serin[bus].planetloc+1]);
             echo_to_ship( AT_CYAN , ship[bus] , "An electronic voice says, 'Preparing for launch.'");
             echo_to_ship( AT_CYAN , ship[bus] , buf);
          }
@@ -632,7 +632,7 @@ void move_ships( GameContext *game )
     SHIP_DATA *target;
     SPACE_DATA *spaceobj;
     float dx, dy, dz, change;
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     CHAR_DATA *ch;
     bool ch_found = FALSE;
     sh_int crashsun = 0;
@@ -714,7 +714,7 @@ void move_ships( GameContext *game )
                     echo_to_room( AT_YELLOW , get_room_index(ship->gunseat), "Your missile hits its target dead on!" );
                     echo_to_cockpit( AT_BLOOD, target, "The ship is hit by a missile.");
                     echo_to_ship( AT_RED , target , "A loud explosion shakes thee ship violently!" );
-                    SPRINTF( buf, "You see a small explosion as %s is hit by a missile" , target->name );
+                    buf = str_printf("You see a small explosion as %s is hit by a missile" , target->name );
                     echo_to_system( AT_ORANGE , target , buf , ship );
                     for ( ch = first_char; ch; ch = ch->next )
                     {
@@ -780,21 +780,21 @@ void move_ships( GameContext *game )
             {
                 ship->accel = 0; 
                 echo_to_cockpit( AT_YELLOW, ship, "Your computer beeps as the ship reaches a stop.");
-                SPRINTF( buf, "%s slows to a stop." , ship->name );
+                buf = str_printf("%s slows to a stop." , ship->name);
                 echo_to_system( AT_ORANGE , ship , buf , NULL );
             }
             else if ( ship->currspeed >= ship->realspeed && ship->goalspeed >= ship->realspeed && ship->accel )
             {
                 ship->accel = 0; 
                 echo_to_cockpit( AT_YELLOW, ship, "Your computer beeps as the ship reaches max speed.");
-                SPRINTF( buf, "%s steadies its speed." , ship->name );
+                buf = str_printf("%s steadies its speed." , ship->name);
                 echo_to_system( AT_ORANGE , ship , buf , NULL );
             }
             else if( ship->goalspeed == ship->currspeed && ship->accel )
             {
                 ship->accel = 0; 
                 echo_to_cockpit( AT_YELLOW, ship, "Your computer beeps as the ship reaches designated speed.");
-                SPRINTF( buf, "%s steadies its speed." , ship->name );
+                buf = str_printf("%s steadies its speed." , ship->name );
                 echo_to_system( AT_ORANGE , ship , buf , NULL );
             }
         }
@@ -913,9 +913,9 @@ void move_ships( GameContext *game )
                         abs( (int) ( ship->vy - spaceobj->ypos )) < 10 &&
                         abs( (int) ( ship->vz - spaceobj->zpos )) < 10 )
               {
-                  SPRINTF( buf , "You begin orbitting %s.", spaceobj->name); 
+                  buf = str_printf("You begin orbitting %s.", spaceobj->name); 
                   echo_to_cockpit( AT_YELLOW, ship, buf);
-                  SPRINTF( buf , "%s begins orbiting %s.", ship->name, spaceobj->name); 
+                  buf = str_printf("%s begins orbiting %s.", ship->name, spaceobj->name); 
                   echo_to_system( AT_ORANGE , ship , buf , NULL );
                   ship->inorbitof = spaceobj;
                   ship->currspeed = 0;
@@ -960,7 +960,7 @@ void move_ships( GameContext *game )
                   echo_to_ship( AT_YELLOW, ship, "The ship slams to a halt as it comes out of hyperspace.");
                   // 2/18/04 - Johnson - Modified call to reflect origin of object entering the system
                   //SPRINTF( buf ,"%s enters the starsystem at %.0f %.0f %.0f" , ship->name, ship->vx, ship->vy, ship->vz );
-                  SPRINTF( buf ,"%s enters the starsystem from hyperspace at %.0f %.0f %.0f" , ship->name, ship->vx, ship->vy, ship->vz );
+                  buf = str_printf("%s enters the starsystem from hyperspace at %.0f %.0f %.0f" , ship->name, ship->vx, ship->vy, ship->vz );
                   damage = 15* number_range( 1, 4 );
                   ship->hull -= damage;
                   echo_to_ship( AT_YELLOW, ship, "The hull cracks from the pressure.");
@@ -994,7 +994,7 @@ void move_ships( GameContext *game )
                 echo_to_ship( AT_YELLOW, ship, "The ship slams to a halt as it comes out of hyperspace.  An artificial gravity well surrounds you!");
                 // 2/18/04 - Johnson - Modified call to reflect origin of object entering the system
                 //SPRINTF( buf ,"%s enters the starsystem at %.0f %.0f %.0f" , ship->name, ship->vx, ship->vy, ship->vz );
-                SPRINTF( buf ,"%s slams into a gravity well at %.0f %.0f %.0f" , ship->name, ship->vx, ship->vy, ship->vz );
+                buf = str_printf("%s slams into a gravity well at %.0f %.0f %.0f" , ship->name, ship->vx, ship->vy, ship->vz );
                 ship->vx = ship->cx;
                 ship->vy = ship->cy;
                 ship->vz = ship->cz;
@@ -1022,7 +1022,7 @@ void move_ships( GameContext *game )
                     echo_to_ship( AT_YELLOW, ship, "The ship lurches slightly as it comes out of hyperspace.");
 					          // 2/18/04 - Johnson - Modified call to reflect origin of object entering the system
             	      //SPRINTF( buf ,"%s enters the starsystem at %.0f %.0f %.0f" , ship->name, ship->vx, ship->vy, ship->vz );
-					          SPRINTF( buf ,"%s enters the starsystem from hyperspace at %.0f %.0f %.0f" , ship->name, ship->vx, ship->vy, ship->vz );
+					          buf = str_printf("%s enters the starsystem from hyperspace at %.0f %.0f %.0f" , ship->name, ship->vx, ship->vy, ship->vz );
                     ship->cx = ship->vx;
                     ship->cy = ship->vy;
                     ship->cz = ship->vz;
@@ -1158,7 +1158,7 @@ void move_ships( GameContext *game )
 void recharge_ships( GameContext *game )
 {
    SHIP_DATA *ship;
-   char buf[MAX_STRING_LENGTH];
+   std::string buf;
    bool closeem = FALSE;
    int distance, origchance = 100;
    TURRET_DATA *turret;
@@ -1362,20 +1362,20 @@ void recharge_ships( GameContext *game )
                     {
                         if ( lasermisses )
                         {
-                          SPRINTF( buf, "%s fires %d lasers at you, hitting you %d times.\n", 
+                          buf = str_printf("%s fires %d lasers at you, hitting you %d times.\n", 
                                   ship->name, laserguns, laserhits );
                                       echo_to_cockpit( AT_BLOOD , target , buf );           
-                          SPRINTF( buf, "%s fires %d lasers at %s, hitting %d times.\n", 
+                          buf = str_printf("%s fires %d lasers at %s, hitting %d times.\n", 
                                   ship->name, laserguns, target->name, laserhits );
                                       echo_to_system( AT_ORANGE , target , buf , NULL );
 
                         }
                         else
                         {
-                          SPRINTF( buf, "%s fires %d lasers at you, hitting you %d times.\n", 
+                          buf = str_printf("%s fires %d lasers at you, hitting you %d times.\n", 
                                   ship->name, laserguns, laserhits );
                                       echo_to_cockpit( AT_BLOOD , target , buf );           
-                          SPRINTF( buf, "%s fires %d lasers at %s, hitting %d times.\n", 
+                          buf = str_printf("%s fires %d lasers at %s, hitting %d times.\n", 
                                   ship->name, laserguns, target->name, laserhits );
                                       echo_to_system( AT_ORANGE , target , buf , NULL );
                         }
@@ -1384,10 +1384,10 @@ void recharge_ships( GameContext *game )
                     }
                     else if ( lasermisses )
                     {
-                        SPRINTF( buf, "%s fires its lasers at you, missing you %d times.\n", 
+                        buf = str_printf("%s fires its lasers at you, missing you %d times.\n", 
                                 ship->name, lasermisses );
                         echo_to_cockpit( AT_BLOOD , target , buf );           
-                        SPRINTF( buf, "%s fires its lasers at %s, missing %d times.\n", 
+                        buf = str_printf("%s fires its lasers at %s, missing %d times.\n", 
                                 ship->name, target->name, lasermisses );
                         echo_to_system( AT_ORANGE , target , buf , NULL );
                     }
@@ -1396,19 +1396,19 @@ void recharge_ships( GameContext *game )
                     {
                       if ( ionmisses )
                       {
-                          SPRINTF( buf, "%s fires %d ion cannons at you, hitting you %d times.\n", 
+                          buf = str_printf("%s fires %d ion cannons at you, hitting you %d times.\n", 
                                 ship->name, ionguns, ionhits );
                           echo_to_cockpit( AT_BLOOD , target , buf );           
-                          SPRINTF( buf, "%s fires %d ion cannons at %s, hitting %d times.\n", 
+                          buf = str_printf("%s fires %d ion cannons at %s, hitting %d times.\n", 
                                 ship->name, ionguns, target->name, ionhits );
                           echo_to_system( AT_ORANGE , target , buf , NULL );
                       }
                       else
                       {
-                          SPRINTF( buf, "%s fires %d ion cannons at you, hitting you %d times.\n", 
+                          buf = str_printf("%s fires %d ion cannons at you, hitting you %d times.\n", 
                                 ship->name, ionguns, ionhits );
                           echo_to_cockpit( AT_BLOOD , target , buf );           
-                          SPRINTF( buf, "%s fires %d ion cannons at %s, hitting %d times.\n", 
+                          buf = str_printf("%s fires %d ion cannons at %s, hitting %d times.\n", 
                                 ship->name, ionguns, target->name, ionhits );
                           echo_to_system( AT_ORANGE , target , buf , NULL );
                       }
@@ -1418,10 +1418,10 @@ void recharge_ships( GameContext *game )
                     }		
                     else if ( ionmisses )
                     {
-                        SPRINTF( buf, "%s fires its ion cannons at you, missing you %d times.\n", 
+                        buf = str_printf("%s fires its ion cannons at you, missing you %d times.\n", 
                                 ship->name, ionmisses );
                         echo_to_cockpit( AT_BLOOD , target , buf );           
-                        SPRINTF( buf, "%s fires its ions cannons at %s, missing %d times.\n", 
+                        buf = str_printf("%s fires its ions cannons at %s, missing %d times.\n", 
                                 ship->name, target->name, ionmisses );
                         echo_to_system( AT_ORANGE , target , buf , NULL );
                       
@@ -1571,27 +1571,27 @@ void recharge_ships( GameContext *game )
                     if ( laserhits )
                     {
                         if ( lasermisses )
-                            SPRINTF( buf, "%s fires %d lasers at you, hitting you %d times and missing you %d times.\n", 
+                            buf = str_printf("%s fires %d lasers at you, hitting you %d times and missing you %d times.\n", 
                                   ship->name, laserguns, laserhits, lasermisses );
                         else
-                            SPRINTF( buf, "%s fires %d lasers at you, hitting you %d times.\n", 
+                            buf = str_printf("%s fires %d lasers at you, hitting you %d times.\n", 
                                   ship->name, laserguns, laserhits );
                         
                         damage_ship ( target, ship, laserdamage, laserdamage+1 );
                     }
                     else if ( lasermisses )
                     {
-                        SPRINTF( buf, "%s fires its lasers at you, missing you %d times.\n", 
+                        buf = str_printf("%s fires its lasers at you, missing you %d times.\n", 
                                 ship->name, lasermisses );
                     }
                       
                     if ( ionhits ) 
                     {
                         if ( ionmisses )
-                            SPRINTF( buf, "%s fires %d ion cannons at you, hitting you %d times and missing you %d times.\n", 
+                            buf = str_printf("%s fires %d ion cannons at you, hitting you %d times and missing you %d times.\n", 
                                   ship->name, ionguns, ionhits, ionmisses );
                         else
-                            SPRINTF( buf, "%s fires %d ion cannons at you, hitting you %d times.\n", 
+                            buf = str_printf("%s fires %d ion cannons at you, hitting you %d times.\n", 
                                   ship->name, ionguns, ionhits );
                         
                         damage_ship ( target, ship, -1*iondamage, -1*(iondamage-1) );
@@ -1599,7 +1599,7 @@ void recharge_ships( GameContext *game )
                     }		
                     else if ( ionmisses )
                     {
-                        SPRINTF( buf, "%s fires its ion cannons at you, missing you %d times.\n", 
+                        buf = str_printf("%s fires its ion cannons at you, missing you %d times.\n", 
                                 ship->name, ionmisses );
                     }
                 }
@@ -1613,7 +1613,7 @@ void update_space( GameContext *game )
 {
     SHIP_DATA *ship;
     SHIP_DATA *target;
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     int too_close, target_too_close;
     SPACE_DATA *spaceobj;
     TURRET_DATA *turret;
@@ -1878,7 +1878,7 @@ void update_space( GameContext *game )
                               if ( target->target0 == NULL && ship->target0 != target )
                               {  
                                 target->target0 = ship->target0;
-                                SPRINTF( buf , "You are being targetted by %s." , target->name);  
+                                buf = str_printf("You are being targetted by %s." , target->name);  
                                 echo_to_cockpit( AT_BLOOD , target->target0 , buf );
                                 break;
                               }   
@@ -1935,9 +1935,9 @@ void update_space( GameContext *game )
                                 if( projectiles == CONCUSSION_MISSILE ) ship->missiles--;
                                 if( projectiles == PROTON_TORPEDO ) ship->torpedos--;
                                 if( projectiles == HEAVY_ROCKET ) ship->rockets--;
-                                SPRINTF( buf , "Incoming projectile from %s." , ship->name);
+                                buf = str_printf("Incoming projectile from %s." , ship->name);
                                 echo_to_cockpit( AT_BLOOD , target , buf );
-                                SPRINTF( buf, "%s fires a projectile towards %s." , ship->name, target->name );
+                                buf = str_printf("%s fires a projectile towards %s." , ship->name, target->name );
                                 echo_to_system( AT_ORANGE , target , buf , NULL );
 
                                 if ( ship->shipclass == CAPITAL_SHIP || ship->shipclass == SHIP_PLATFORM )
@@ -2011,10 +2011,10 @@ void write_spaceobject_list( GameContext *game )
 {
     SPACE_DATA *tspaceobject;
     FILE *fpout;
-    char filename[256];
+    std::string filename;
 
-    SPRINTF( filename, "%s%s", SPACE_DIR, SPACE_LIST );
-    fpout = fopen( filename, "w" );
+    filename = str_printf("%s%s", SPACE_DIR, SPACE_LIST);
+    fpout = fopen( filename.c_str(), "w" );
     if ( !fpout )
     {
          bug( "FATAL: cannot open space.lst for writing!\n", 0 );
@@ -2077,8 +2077,7 @@ SPACE_DATA *spaceobject_from_vnum( GameContext *game, int vnum )
 void save_spaceobject( SPACE_DATA *spaceobject )
 {
     FILE *fp;
-    char filename[256];
-    char buf[MAX_STRING_LENGTH];
+    std::string filename, buf;
     CARGO_DATA_LIST *cargolist;
 
     if ( !spaceobject )
@@ -2089,18 +2088,18 @@ void save_spaceobject( SPACE_DATA *spaceobject )
 
     if ( !spaceobject->filename || spaceobject->filename[0] == '\0' )
     {
-	SPRINTF( buf, "save_spaceobject: %s has no filename", spaceobject->name );
-	bug( buf, 0 );
+	buf = str_printf("save_spaceobject: %s has no filename", spaceobject->name );
+	bug( buf.c_str(), 0 );
 	return;
     }
  
-    SPRINTF( filename, "%s%s", SPACE_DIR, spaceobject->filename );
+    filename = str_printf("%s%s", SPACE_DIR, spaceobject->filename);
     
     FCLOSE( fpReserve );
-    if ( ( fp = fopen( filename, "w" ) ) == NULL )
+    if ( ( fp = fopen( filename.c_str(), "w" ) ) == NULL )
     {
     	bug( "save_spaceobject: fopen", 0 );
-    	perror( filename );
+    	perror( filename.c_str() );
     }
     else
     {
@@ -2162,7 +2161,7 @@ void save_spaceobject( SPACE_DATA *spaceobject )
 
 void fread_spaceobject( SPACE_DATA *spaceobject, FILE *fp )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     const char *word;
     bool fMatch;
     CARGO_DATA_LIST *cargolist;
@@ -2284,8 +2283,8 @@ void fread_spaceobject( SPACE_DATA *spaceobject, FILE *fp )
 
         if ( !fMatch )
         {
-            SPRINTF( buf, "Fread_spaceobject: no match: %s", word );
-            bug( buf, 0 );
+            buf = str_printf("Fread_spaceobject: no match: %s", word);
+            bug( buf.c_str(), 0 );
         }
     }
 }
@@ -2296,7 +2295,7 @@ void fread_spaceobject( SPACE_DATA *spaceobject, FILE *fp )
 
 bool load_spaceobject( GameContext *game, const std::string& spaceobjectfile )
 {
-    char filename[256];
+    std::string filename;
     SPACE_DATA *spaceobject;
     FILE *fp;
     bool found;
@@ -2305,9 +2304,9 @@ bool load_spaceobject( GameContext *game, const std::string& spaceobjectfile )
     spaceobject->game = game;
 
     found = FALSE;
-    SPRINTF( filename, "%s%s", SPACE_DIR, spaceobjectfile.c_str() );
+    filename = str_printf("%s%s", SPACE_DIR, spaceobjectfile.c_str() );
 
-    if ( ( fp = fopen( filename, "r" ) ) != NULL )
+    if ( ( fp = fopen( filename.c_str(), "r" ) ) != NULL )
     {
 
 	found = TRUE;
@@ -2341,10 +2340,10 @@ bool load_spaceobject( GameContext *game, const std::string& spaceobjectfile )
 	        break;
 	    else
 	    {
-		char buf[MAX_STRING_LENGTH];
+		std::string buf;
 
-		SPRINTF( buf, "Load_spaceobject_file: bad section: %s.", word );
-		bug( buf, 0 );
+		buf = str_printf("Load_spaceobject_file: bad section: %s.", word);
+		bug( buf.c_str(), 0 );
 		break;
 	    }
 	}
@@ -2364,8 +2363,8 @@ void load_space( GameContext *game )
 {
     FILE *fpList;
     const char *filename;
-    char spaceobjectlist[256];
-    char buf[MAX_STRING_LENGTH];
+    std::string spaceobjectlist;
+    std::string buf;
     
     
     first_spaceobject	= NULL;
@@ -2373,11 +2372,11 @@ void load_space( GameContext *game )
 
     log_string( "Loading space..." );
 
-    SPRINTF( spaceobjectlist, "%s%s", SPACE_DIR, SPACE_LIST );
+    spaceobjectlist = str_printf("%s%s", SPACE_DIR, SPACE_LIST );
     FCLOSE( fpReserve );
-    if ( ( fpList = fopen( spaceobjectlist, "r" ) ) == NULL )
+    if ( ( fpList = fopen( spaceobjectlist.c_str(), "r" ) ) == NULL )
     {
-	perror( spaceobjectlist );
+	perror( spaceobjectlist.c_str() );
 	exit( 1 );
     }
 
@@ -2388,10 +2387,10 @@ void load_space( GameContext *game )
 	  break;
 	  
        
-	if ( !load_spaceobject( game, (char*) filename ) )
+	if ( !load_spaceobject( game, filename ) )
 	{
-	  SPRINTF( buf, "Cannot load spaceobject file: %s", filename );
-	  bug( buf, 0 );
+	  buf = str_printf("Cannot load spaceobject file: %s", filename);
+	  bug( buf.c_str(), 0 );
 	}
     }
     FCLOSE( fpList );
@@ -2653,7 +2652,7 @@ void do_showspaceobject( CHAR_DATA *ch, char *argument )
 void do_makespaceobject( CHAR_DATA *ch, char *argument )
 {   
     std::string arg;
-    char filename[256];
+    std::string filename;
     SPACE_DATA *spaceobject;
 
     if ( !argument || argument[0] == '\0' )
@@ -2674,7 +2673,7 @@ void do_makespaceobject( CHAR_DATA *ch, char *argument )
 		  spaceobject->locationc            = STRALLOC( "" );  
     
     one_argument( argument, arg );
-    SPRINTF( filename, "%s.system" , strlower(arg).c_str() );
+    filename = str_printf("%s.system" , strlower(arg).c_str() );
     spaceobject->filename = str_dup( filename );
     save_spaceobject( spaceobject );
     if ( !ch->game )
@@ -2971,10 +2970,10 @@ void write_ship_list( GameContext *game )
 {
     SHIP_DATA *tship;
     FILE *fpout;
-    char filename[256];
+    std::string filename;
     
-    SPRINTF( filename, "%s%s", SHIP_DIR, SHIP_LIST );
-    fpout = fopen( filename, "w" );
+    filename = str_printf("%s%s", SHIP_DIR, SHIP_LIST);
+    fpout = fopen( filename.c_str(), "w" );
     if ( !fpout )
     {
          bug( "FATAL: cannot open ship.lst for writing!\n", 0 );
@@ -3366,8 +3365,8 @@ SHIP_DATA *ship_from_room( GameContext *game, int vnum )
 void save_ship( SHIP_DATA *ship )
 {
     FILE *fp;
-    char filename[256];
-    char buf[MAX_STRING_LENGTH];
+    std::string filename;
+    std::string buf;
     MODULE_DATA *module;
     TURRET_DATA *turret;
 
@@ -3384,18 +3383,18 @@ void save_ship( SHIP_DATA *ship )
         
     if ( !ship->filename || ship->filename[0] == '\0' )
     {
-	SPRINTF( buf, "save_ship: %s has no filename", ship->name );
-	bug( buf, 0 );
+	buf = str_printf("save_ship: %s has no filename", ship->name);
+	bug( buf.c_str(), 0 );
 	return;
     }
 
-    SPRINTF( filename, "%s%s", SHIP_DIR, ship->filename );
+    filename = str_printf("%s%s", SHIP_DIR, ship->filename);
     
     FCLOSE( fpReserve );
-    if ( ( fp = fopen( filename, "w" ) ) == NULL )
+    if ( ( fp = fopen( filename.c_str(), "w" ) ) == NULL )
     {
     	bug( "save_ship: fopen", 0 );
-    	perror( filename );
+    	perror( filename.c_str() );
     }
     else
     {
@@ -3637,7 +3636,7 @@ void fread_cargohold( SHIP_DATA *ship, FILE *fp )
 
 void fread_ship( SHIP_DATA *ship, FILE *fp )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     const char *word;
     bool fMatch;
     int turretvnum;//, dummy_number;
@@ -3991,8 +3990,8 @@ void fread_ship( SHIP_DATA *ship, FILE *fp )
 	
 	if ( !fMatch )
 	{
-	    SPRINTF( buf, "Fread_ship: no match: %s", word );
-	    bug( buf, 0 );
+	    buf = str_printf("Fread_ship: no match: %s", word);
+	    bug( buf.c_str(), 0 );
 	}
     }
 }
@@ -4001,9 +4000,9 @@ void fread_ship( SHIP_DATA *ship, FILE *fp )
  * Load a ship file
  */
 
-bool load_ship_file( GameContext *game, char *shipfile )
+bool load_ship_file( GameContext *game, const std::string& shipfile )
 {
-    char filename[256];
+    std::string filename;
     SHIP_DATA *ship;
     FILE *fp;
     bool found, isbus = FALSE;
@@ -4014,9 +4013,9 @@ bool load_ship_file( GameContext *game, char *shipfile )
     CREATE( ship, SHIP_DATA, 1 );
     ship->game = game;
     found = FALSE;
-    SPRINTF( filename, "%s%s", SHIP_DIR, shipfile );
+    filename = str_printf("%s%s", SHIP_DIR, shipfile.c_str() );
 
-    if ( ( fp = fopen( filename, "r" ) ) != NULL )
+    if ( ( fp = fopen( filename.c_str(), "r" ) ) != NULL )
     {
 
 	found = TRUE;
@@ -4055,10 +4054,10 @@ bool load_ship_file( GameContext *game, char *shipfile )
 	        break;
 	    else
 	    {
-		char buf[MAX_STRING_LENGTH];
+		std::string buf;
 
-		SPRINTF( buf, "Load_ship_file: bad section: %s.", word );
-		bug( buf, 0 );
+		buf = str_printf("Load_ship_file: bad section: %s.", word);
+		bug( buf.c_str(), 0 );
 		break;
 	    }
 	}
@@ -4202,9 +4201,9 @@ bool load_ship_file( GameContext *game, char *shipfile )
 void load_ships( GameContext *game )
 {
     FILE *fpList;
-    const char *filename;
-    char shiplist[256];
-    char buf[MAX_STRING_LENGTH];
+    std::string filename;
+    std::string shiplist;
+    std::string buf;
     SHIP_DATA *ship;
     ROOM_INDEX_DATA *pRoomIndex;
 
@@ -4216,11 +4215,11 @@ void load_ships( GameContext *game )
 
     log_string( "Loading ships..." );
 
-    SPRINTF( shiplist, "%s%s", SHIP_DIR, SHIP_LIST );
+    shiplist = str_printf("%s%s", SHIP_DIR, SHIP_LIST);
     FCLOSE( fpReserve );
-    if ( ( fpList = fopen( shiplist, "r" ) ) == NULL )
+    if ( ( fpList = fopen( shiplist.c_str(), "r" ) ) == NULL )
     {
-	perror( shiplist );
+	perror( shiplist.c_str() );
 	exit( 1 );
     }
 
@@ -4232,10 +4231,10 @@ void load_ships( GameContext *game )
 	if ( filename[0] == '$' )
 	  break;
 
-	if ( !load_ship_file( game, (char*) filename ) )
+	if ( !load_ship_file( game, filename ) )
 	{
-	  SPRINTF( buf, "Cannot load ship file: %s", filename );
-	  bug( buf, 0 );
+	  buf = str_printf("Cannot load ship file: %s", filename);
+	  bug( buf.c_str(), 0 );
 	}
 
     }
@@ -10281,7 +10280,7 @@ bool autofly( SHIP_DATA *ship )
 void makedebris( SHIP_DATA *ship )
 {
   SHIP_DATA *debris;
-  char buf[MAX_STRING_LENGTH];
+  std::string buf;
 
   if ( ship->shipclass == SHIP_DEBRIS )
     return;
@@ -10326,8 +10325,8 @@ void makedebris( SHIP_DATA *ship )
  
   add_random_modules( debris, ship );
  
-  SPRINTF( buf, "Debris of a " );
-  STRAPP( buf, "%s", ship->name );
+  buf = "Debris of a ";
+  buf += ship->name;
   debris->name		= STRALLOC( "Debris" );
   debris->personalname		= STRALLOC( "Debris" );
   debris->description	= STRALLOC( buf );
@@ -10346,14 +10345,13 @@ void makedebris( SHIP_DATA *ship )
 
 void shipdelete(SHIP_DATA * ship, bool shiplist) {
 
-  char buf[MAX_STRING_LENGTH];
-  char buf2[MAX_STRING_LENGTH];
+  std::string buf, buf2;
   GameContext *game = ship->game;
   
-  SPRINTF( buf, "%s%s", SHIP_DIR, ship->filename );
-  SPRINTF( buf2, "%s%s", BACKUPSHIP_DIR, ship->filename );
+  buf = str_printf("%s%s", SHIP_DIR, ship->filename);
+  buf2 = str_printf("%s%s", BACKUPSHIP_DIR, ship->filename);
   
-  rename( buf, buf2 );
+  rename( buf.c_str(), buf2.c_str() );
 
   UNLINK (ship, first_ship, last_ship, next, prev);
   extract_ship(ship);
@@ -10426,7 +10424,7 @@ SHIP_DATA *create_virtual_ship( GameContext *game, SHIP_DATA *shiptemplate )
   SHIP_MOD_DATA *ship_mod;
   ROOM_INDEX_DATA *cockpitroom;
   ROOM_INDEX_DATA *templateroom;
-  char buf[MAX_STRING_LENGTH];
+  std::string buf;
   int roomvnum;
 
   if ( !shiptemplate )
@@ -10497,8 +10495,8 @@ SHIP_DATA *create_virtual_ship( GameContext *game, SHIP_DATA *shiptemplate )
   update_ship_modules(ship);
   
   ship->name          = STRALLOC (shiptemplate->name);
-  SPRINTF( buf, "%d",roomvnum );
-  ship->personalname  = STRALLOC (buf);
+  buf = str_printf("%d",roomvnum);
+  ship->personalname  = STRALLOC (buf.c_str());
   ship->description   = STRALLOC (shiptemplate->description);
 
   cockpitroom = make_room( game, roomvnum );

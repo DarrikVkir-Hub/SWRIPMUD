@@ -1122,7 +1122,7 @@ void do_avtalk( CHAR_DATA *ch, char *argument )
 
 void do_say(CHAR_DATA *ch, char *argument)
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     CHAR_DATA *vch;
     FLAG_SET actflags;
     int lang;
@@ -1190,7 +1190,7 @@ void do_say(CHAR_DATA *ch, char *argument)
 
     if (BV_IS_SET(ch->in_room->room_flags, ROOM_LOGSPEECH))
     {
-        SPRINTF(buf, "%s: %s",
+        buf = str_printf("%s: %s",
                 IS_NPC(ch) ? ch->short_descr : ch->name,
                 argument);
         append_to_file(LOG_FILE, buf);
@@ -1212,7 +1212,7 @@ void do_say(CHAR_DATA *ch, char *argument)
 void do_tell( CHAR_DATA *ch, char *argument )
 {
     std::string arg;
-    char buf[MAX_INPUT_LENGTH];
+    std::string buf;
     std::string sbuf = argument;
     std::string sbuflang;
     CHAR_DATA *victim;
@@ -1395,7 +1395,7 @@ void do_tell( CHAR_DATA *ch, char *argument )
       ch->retell          = victim;
     if ( BV_IS_SET( ch->in_room->room_flags, ROOM_LOGSPEECH ) )
     {
-	    SPRINTF( buf, "%s: %s (tell to) %s.",
+	    buf = str_printf("%s: %s (tell to) %s.",
 		 IS_NPC( ch ) ? ch->short_descr : ch->name,
 		 argument,
 		 IS_NPC( victim ) ? victim->short_descr : victim->name );
@@ -1439,7 +1439,7 @@ void do_tell( CHAR_DATA *ch, char *argument )
 
 void do_reply( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     std::string sbuf;
     std::string sbuflang;
     CHAR_DATA *victim;
@@ -1518,7 +1518,7 @@ void do_reply( CHAR_DATA *ch, char *argument )
     victim->reply	= ch;
     if ( BV_IS_SET( ch->in_room->room_flags, ROOM_LOGSPEECH ) )
     {
-	SPRINTF( buf, "%s: %s (reply to) %s.",
+	buf = str_printf("%s: %s (reply to) %s.",
 		 IS_NPC( ch ) ? ch->short_descr : ch->name,
 		 argument,
 		 IS_NPC( victim ) ? victim->short_descr : victim->name );
@@ -1566,7 +1566,7 @@ void do_retell( CHAR_DATA *ch, char *argument )
 	CHAR_DATA *victim;
 	int position;	
 	bool sameroom = FALSE;	
-	char buf[MAX_STRING_LENGTH];
+	std::string buf;
 	std::string sbuf;
 	std::string sbuflang;
 	if( argument[0] == '\0' ) {
@@ -1620,7 +1620,7 @@ void do_retell( CHAR_DATA *ch, char *argument )
 	victim->position = position;	
 	victim->reply = ch;
 	if( BV_IS_SET( ch->in_room->room_flags, ROOM_LOGSPEECH ) )	{
-		SPRINTF( buf, "%s: %s (retell to) %s", IS_NPC( ch ) ?ch->short_descr : ch->name, argument, IS_NPC( victim ) ? victim->short_descr : victim->name );
+		buf = str_printf("%s: %s (retell to) %s", IS_NPC( ch ) ?ch->short_descr : ch->name, argument, IS_NPC( victim ) ? victim->short_descr : victim->name );
 		append_to_file( LOG_FILE, buf );	
 	}	
 	if(!IS_IMMORTAL( ch ) && !sameroom )	{
@@ -1654,7 +1654,7 @@ void do_retell( CHAR_DATA *ch, char *argument )
 
 void do_emote( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     char *plast;
     FLAG_SET actflags;
 
@@ -1675,9 +1675,9 @@ void do_emote( CHAR_DATA *ch, char *argument )
     for ( plast = argument; *plast != '\0'; plast++ )
 	;
 
-    STRLCPY( buf, argument );
+    buf = argument;
     if ( isalpha(plast[-1]) )
-	STRAPP( buf, "." );
+	buf += ".";
 
     MOBtrigger = FALSE;
     act( AT_ACTION, "$n $T", ch, NULL, buf, TO_ROOM );
@@ -1687,7 +1687,7 @@ void do_emote( CHAR_DATA *ch, char *argument )
     if (!ch || !ch->in_room) return;
     if ( BV_IS_SET( ch->in_room->room_flags, ROOM_LOGSPEECH ) )
     {
-	    SPRINTF( buf, "%s %s (emote)", IS_NPC( ch ) ? ch->short_descr : ch->name,
+	    buf = str_printf("%s %s (emote)", IS_NPC( ch ) ? ch->short_descr : ch->name,
 		 argument );
 	append_to_file( LOG_FILE, buf );
     }
@@ -1766,8 +1766,8 @@ void do_quit( CHAR_DATA *ch, char *argument )
 /*  OBJ_DATA *obj; */ /* Unused */
     int x, y, cost;
 //  int level;
-    char qbuf[MAX_INPUT_LENGTH];
-    char buf[MAX_INPUT_LENGTH];
+    std::string qbuf;
+    std::string buf;
 
     if ( IS_NPC(ch) && BV_IS_SET(ch->act, ACT_POLYMORPHED))
     { 
@@ -1812,18 +1812,18 @@ void do_quit( CHAR_DATA *ch, char *argument )
     	cost = get_cost_quit( ch );
 	if( !cost )
 	{
-	  SPRINTF( buf, "The keeper takes a good look at you and adopts a look of pity, letting you stay here for free\n");
+	  buf = "The keeper takes a good look at you and adopts a look of pity, letting you stay here for free\n";
 	  send_to_char("The keeper takes a good look at you and adopts a look of pity, letting you stay here for free\n", ch);
 	}
     	else if( ch->gold < cost )
         {
-	  SPRINTF( buf, "You need %d credits to spend the night here!\n", cost );
+	  buf = str_printf("You need %d credits to spend the night here!\n", cost );
 	  send_to_char(buf, ch);
 	  return;
         }
         else
         {
-	  SPRINTF( buf, "The keeper takes a good look at you and lets you stay here for %d credits\n", cost );
+	  buf = str_printf("The keeper takes a good look at you and lets you stay here for %d credits\n", cost );
 	  send_to_char(buf, ch);
           ch->gold -= cost;
           if( ch->in_room && ch->in_room->area )
@@ -1833,7 +1833,7 @@ void do_quit( CHAR_DATA *ch, char *argument )
     
     if ( ch->challenged )
     {
-      SPRINTF(qbuf,"%s has quit! Challenge is void. WHAT A WUSS!",ch->name);
+      qbuf = str_printf("%s has quit! Challenge is void. WHAT A WUSS!",ch->name);
       ch->challenged=NULL;
       to_channel(qbuf,CHANNEL_ARENA,"&RArena&W",5);
     }
@@ -2289,17 +2289,6 @@ void do_order( CHAR_DATA *ch, char *argument )
     return;
 }
 
-/*
-char *itoa(int foo)
-{
-  static char bar[256];
-
-  SPRINTF(bar,"%d",foo);
-  return(bar);
-
-}
-*/
-
 void do_group( CHAR_DATA *ch, char *argument )
 {
     std::string arg;
@@ -2452,7 +2441,7 @@ void do_group( CHAR_DATA *ch, char *argument )
  */
 void do_split( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     std::string arg;
     CHAR_DATA *gch;
     int members;
@@ -2522,8 +2511,8 @@ void do_split( CHAR_DATA *ch, char *argument )
 	"You split %d credits.  Your share is %d credits.\n",
 	amount, share + extra );
 
-    SPRINTF( buf, "$n splits %d credits.  Your share is %d credits.",
-	amount, share );
+    buf = str_printf("$n splits %d credits.  Your share is %d credits.",
+	    amount, share );
 
     for ( gch = ch->in_room->first_person; gch; gch = gch->next_in_room )
     {

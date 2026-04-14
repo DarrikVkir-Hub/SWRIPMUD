@@ -132,29 +132,29 @@ int get_class_from_name( const std::string& arg )
 
 const std::string format_obj_to_char( OBJ_DATA *obj, CHAR_DATA *ch, bool fShort )
 {
-    static char buf[MAX_STRING_LENGTH];
+    static std::string buf;
 
-    buf[0] = '\0';
-    if ( IS_OBJ_STAT(obj, ITEM_INVIS)     )   STRAPP( buf, "(Invis) "     );
+    buf.clear();
+    if ( IS_OBJ_STAT(obj, ITEM_INVIS)     )   buf += "(Invis) "     ;
     if ( ( IS_AFFECTED(ch, AFF_DETECT_MAGIC) || IS_IMMORTAL(ch) )
-	 && IS_OBJ_STAT(obj, ITEM_MAGIC)  )   STRAPP( buf, "&B(Blue Aura)&w "   );
-    if ( IS_OBJ_STAT(obj, ITEM_GLOW)      )   STRAPP( buf, "(Glowing) "   );
-    if ( IS_OBJ_STAT(obj, ITEM_HUM)       )   STRAPP( buf, "(Humming) "   );
-    if ( IS_OBJ_STAT(obj, ITEM_HIDDEN)	  )   STRAPP( buf, "(Hidden) "	  );
-    if ( IS_OBJ_STAT(obj, ITEM_BURRIED)	  )   STRAPP( buf, "(Burried) "	  );
-    if ( IS_IMMORTAL(ch) && IS_OBJ_STAT(obj, ITEM_PROTOTYPE) ) STRAPP( buf, "(PROTO) "	  );
+	 && IS_OBJ_STAT(obj, ITEM_MAGIC)  )   buf += "&B(Blue Aura)&w "   ;
+    if ( IS_OBJ_STAT(obj, ITEM_GLOW)      )   buf += "(Glowing) "   ;
+    if ( IS_OBJ_STAT(obj, ITEM_HUM)       )   buf += "(Humming) "   ;
+    if ( IS_OBJ_STAT(obj, ITEM_HIDDEN)	  )   buf += "(Hidden) "	  ;
+    if ( IS_OBJ_STAT(obj, ITEM_BURRIED)	  )   buf += "(Burried) "	  ;
+    if ( IS_IMMORTAL(ch) && IS_OBJ_STAT(obj, ITEM_PROTOTYPE) ) buf += "(PROTO) "	  ;
    if( ( IS_AFFECTED( ch, AFF_DETECTTRAPS ) || BV_IS_SET( ch->act, PLR_HOLYLIGHT ) ) && is_trapped( obj ) )
-        STRAPP( buf, "(Trap) "  );
+        buf += "(Trap) ";
 
     if ( fShort )
     {
 	if ( obj->short_descr )
-	    STRAPP( buf, "%s", obj->short_descr );
+	    buf += obj->short_descr;
     }
     else
     {
 	if ( obj->description )
-	    STRAPP( buf, "%s", obj->description );
+	    buf += obj->description;
     }
 
     return buf;
@@ -421,52 +421,8 @@ void show_list_to_char( OBJ_DATA *list, CHAR_DATA *ch, bool fShort, bool fShowNo
  */
 void show_visible_affects_to_char( CHAR_DATA *victim, CHAR_DATA *ch )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
 
-    /*
-    if ( IS_AFFECTED(victim, AFF_SANCTUARY) )
-    {
-        if ( IS_GOOD(victim) )
-        {
-            set_char_color( AT_WHITE, ch );
-            ch_printf( ch, "%s glows with an aura of divine radiance.\n",
-		IS_NPC( victim ) ? capitalize(victim->short_descr).c_str() : (victim->name) );
-        }
-        else if ( IS_EVIL(victim) )
-        {
-            set_char_color( AT_WHITE, ch );
-            ch_printf( ch, "%s shimmers beneath an aura of dark energy.\n",
-		IS_NPC( victim ) ? capitalize(victim->short_descr).c_str() : (victim->name) );
-        }
-        else
-        {
-            set_char_color( AT_WHITE, ch );
-            ch_printf( ch, "%s is shrouded in flowing shadow and light.\n",
-		IS_NPC( victim ) ? capitalize(victim->short_descr).c_str() : (victim->name) );
-        }
-    }
-    if ( IS_AFFECTED(victim, AFF_FIRESHIELD) )
-    {
-        set_char_color( AT_FIRE, ch );
-        ch_printf( ch, "%s is engulfed within a blaze of mystical flame.\n",
-	    IS_NPC( victim ) ? capitalize(victim->short_descr).c_str() : (victim->name) );
-    }
-    if ( IS_AFFECTED(victim, AFF_SHOCKSHIELD) )
-    {
-        set_char_color( AT_BLUE, ch );
-	ch_printf( ch, "%s is surrounded by cascading torrents of energy.\n",
-	    IS_NPC( victim ) ? capitalize(victim->short_descr).c_str() : (victim->name) );
-    }
-    */
-/*Scryn 8/13*/
-    /*
-    if ( IS_AFFECTED(victim, AFF_ICESHIELD) )
-    {
-        set_char_color( AT_LBLUE, ch );
-        ch_printf( ch, "%s is ensphered by shards of glistening ice.\n",
-	    IS_NPC( victim ) ? capitalize(victim->short_descr).c_str() : (victim->name) );
-    }
-    */
     if ( IS_AFFECTED(victim, AFF_CHARM)       )
     {
 	set_char_color( AT_MAGIC, ch );
@@ -477,123 +433,114 @@ void show_visible_affects_to_char( CHAR_DATA *victim, CHAR_DATA *ch )
     &&    victim->switched && IS_AFFECTED(victim->switched, AFF_POSSESS) )
     {
 	set_char_color( AT_MAGIC, ch );
-	STRLCPY( buf, PERS( victim, ch ));
-	STRAPP( buf, " appears to be in a deep trance...\n" );
+	buf = PERS( victim, ch );
+	buf += " appears to be in a deep trance...\n";
     }
 }
 
 void show_char_to_char_0( CHAR_DATA *victim, CHAR_DATA *ch )
 {
-    char buf[MAX_STRING_LENGTH];
-    char buf1[MAX_STRING_LENGTH];
-    char message[MAX_STRING_LENGTH];
-
-    buf[0] = '\0';
+    std::string buf, buf1, message;
 
     if ( IS_NPC(victim) )
-      STRAPP( buf, " "  );
+      buf += " ";
       
     if ( !IS_NPC(victim) && !victim->desc )
     {
-	if ( !victim->switched )		STRAPP( buf, "(Link Dead) "  );
+	if ( !victim->switched )		buf += "(Link Dead) ";
 	else
 	if ( !IS_AFFECTED(victim->switched, AFF_POSSESS) )
-						STRAPP( buf, "(Switched) " );
+						buf += "(Switched) ";
     }
     if ( !IS_NPC(victim)
-    && BV_IS_SET(victim->act, PLR_AFK) )		STRAPP( buf, "[AFK] ");        
+    && BV_IS_SET(victim->act, PLR_AFK) )		buf += "[AFK] ";        
 
     if ( (!IS_NPC(victim) && BV_IS_SET(victim->act, PLR_WIZINVIS))
       || (IS_NPC(victim) && BV_IS_SET(victim->act, ACT_MOBINVIS)) ) 
     {
         if (!IS_NPC(victim))
-    snprintf(buf1, sizeof(buf1), "(Invis %d) ", victim->pcdata->wizinvis);
-        else SPRINTF( buf1,"(Mobinvis %d) ", victim->mobinvis);
-	STRAPP( buf, "%s", buf1 );
+            buf1 = str_printf( "(Invis %d) ", victim->pcdata->wizinvis);
+        else 
+            buf1 = str_printf("(Mobinvis %d) ", victim->mobinvis);
+	buf += buf1;
     }
-    if ( IS_AFFECTED(victim, AFF_INVISIBLE)   ) STRAPP( buf, "(Invis) "      );
-    if ( IS_AFFECTED(victim, AFF_HIDE)        ) STRAPP( buf, "(Stealth) "       );
-    if ( IS_AFFECTED(victim, AFF_PASS_DOOR)   ) STRAPP( buf, "(Translucent) ");
-    if ( IS_AFFECTED(victim, AFF_FAERIE_FIRE) ) STRAPP( buf, "&P(Pink Aura)&w "  );
+    if ( IS_AFFECTED(victim, AFF_INVISIBLE)   ) buf += "(Invis) "      ;
+    if ( IS_AFFECTED(victim, AFF_HIDE)        ) buf += "(Stealth) "       ;
+    if ( IS_AFFECTED(victim, AFF_PASS_DOOR)   ) buf += "(Translucent) ";
+    if ( IS_AFFECTED(victim, AFF_FAERIE_FIRE) ) buf += "&P(Pink Aura)&w "  ;
     if ( IS_EVIL(victim)
-    &&   IS_AFFECTED(ch, AFF_DETECT_EVIL)     ) STRAPP( buf, "&R(Red Aura)&w "   );
+    &&   IS_AFFECTED(ch, AFF_DETECT_EVIL)     ) buf += "&R(Red Aura)&w "   ;
     if ( ( victim->mana > 10 )
     &&   ( IS_AFFECTED( ch , AFF_DETECT_MAGIC ) || IS_IMMORTAL( ch ) ) )
-                                                 STRAPP( buf, "&B(Blue Aura)&w "  );   
+                                                 buf += "&B(Blue Aura)&w "  ;   
     if ( !IS_NPC(victim) && BV_IS_SET(victim->act, PLR_LITTERBUG  ) )
-						STRAPP( buf, "(LITTERBUG) "  );
+						buf += "(LITTERBUG) "  ;
     if ( IS_NPC(victim) && IS_IMMORTAL(ch)
-	 && BV_IS_SET(victim->act, ACT_PROTOTYPE) ) STRAPP( buf, "(PROTO) " );
+	 && BV_IS_SET(victim->act, ACT_PROTOTYPE) ) buf += "(PROTO) " ;
     if ( victim->desc && victim->desc->connected == CON_EDITING )
-						STRAPP( buf, "(Writing) " );
+						buf += "(Writing) " ;
 
     set_char_color( AT_PERSON, ch );
     if ( victim->position == victim->defposition && victim->long_descr[0] != '\0' )
     {
-	STRAPP( buf, "%s", victim->long_descr );
+	buf += victim->long_descr;
 	send_to_char( buf, ch );
 	show_visible_affects_to_char( victim, ch );
 	return;
     }
-
-   /*   STRAPP( buf, PERS( victim, ch ) );       old system of titles
-    *    removed to prevent prepending of name to title     -Kuran  
-    *
-    *    But added back bellow so that you can see mobs too :P   -Durga 
-    */
     
     if ( !IS_NPC(victim) && !BV_IS_SET(ch->act, PLR_BRIEF) )
-	    STRAPP( buf, "%s", victim->pcdata->title );
+	    buf += victim->pcdata->title;
     else
-        STRAPP( buf, "%s", PERS( victim, ch ) );  
+        buf += PERS( victim, ch );  
     
     switch ( victim->position )
     {
-    case POS_DEAD:     STRAPP( buf, " is DEAD!!" );			break;
-    case POS_MORTAL:   STRAPP( buf, " is mortally wounded." );		break;
-    case POS_INCAP:    STRAPP( buf, " is incapacitated." );		break;
-    case POS_STUNNED:  STRAPP( buf, " is lying here stunned." );	break;
+    case POS_DEAD:     buf += " is DEAD!!";			break;
+    case POS_MORTAL:   buf += " is mortally wounded.";		break;
+    case POS_INCAP:    buf += " is incapacitated.";		break;
+    case POS_STUNNED:  buf += " is lying here stunned.";	break;
     case POS_SLEEPING: 
 	if (victim->on != NULL)
 	{
 	    if (victim->on->value[2] == SLEEP_AT)
   	    {
-		SPRINTF(message," is sleeping at %s",
+		message = str_printf(" is sleeping at %s",
 		    victim->on->short_descr);
               if( ((ch->position < POS_FIGHTING) && (ch->position > POS_STUNNED)) 
               && ch->on && (ch->on == victim->on ) )
-              	STRAPP(message, " with you");
-              STRAPP(message, ".");
-	      STRAPP(buf,"%s", message);
+              	message += " with you";
+              message += ".";
+	      buf += message;
 	    }
 	    else if (victim->on->value[2] == SLEEP_ON)
 	    {
-		SPRINTF(message," is sleeping on %s",
+		message = str_printf(" is sleeping on %s",
 		    victim->on->short_descr); 
               if( ((ch->position < POS_FIGHTING) && (ch->position > POS_STUNNED)) 
               && ch->on && (ch->on == victim->on ) )
-              	STRAPP(message, " with you");
-              STRAPP(message, ".");
-              STRAPP(buf,"%s", message);
+              	message += " with you";
+              message += ".";
+              buf += message;
 	    }
 	    else
 	    {
-		SPRINTF(message, " is sleeping in %s",
+		message = str_printf(" is sleeping in %s",
 		    victim->on->short_descr);
               if( ((ch->position < POS_FIGHTING) && (ch->position > POS_STUNNED)) 
               && ch->on && (ch->on == victim->on ) )
-              	STRAPP(message, " with you");
-              STRAPP(message, ".");
-              STRAPP(buf, "%s",message);
+              	message += " with you";
+              message += ".";
+              buf += message;
 	    }
 	}
 	else 
 	{
          if (ch->position == POS_SITTING
          ||  ch->position == POS_RESTING )
-            STRAPP( buf, " is sleeping nearby." );
+            buf += " is sleeping nearby." ;
 	 else
-            STRAPP( buf, " is deep in slumber here." );
+            buf += " is deep in slumber here.";
         }
         break;
     case POS_RESTING:  
@@ -601,44 +548,44 @@ void show_char_to_char_0( CHAR_DATA *victim, CHAR_DATA *ch )
 	{
             if (victim->on->value[2] == REST_AT)
             {
-                SPRINTF(message," is resting at %s",
+                message = str_printf(" is resting at %s",
                     victim->on->short_descr);
               if( ((ch->position < POS_FIGHTING) && (ch->position > POS_STUNNED)) 
               && ch->on && (ch->on == victim->on ) )
-              	STRAPP(message, " with you");
-              STRAPP(message, ".");
-              STRAPP(buf, "%s", message);
+              	message += " with you";
+              message += ".";
+              buf += message;
             }
             else if (victim->on->value[2] == REST_ON)
             {
-                SPRINTF(message," is resting on %s",
+                message = str_printf(" is resting on %s",
                     victim->on->short_descr);
               if( ((ch->position < POS_FIGHTING) && (ch->position > POS_STUNNED)) 
               && ch->on && (ch->on == victim->on ) )
-              	STRAPP(message, " with you");
-              STRAPP(message, ".");
-              STRAPP(buf, "%s", message);
+              	message += " with you";
+              message += ".";
+              buf += message;
             }
             else 
             {
-                SPRINTF(message, " is resting in %s",
+                message = str_printf(" is resting in %s",
                     victim->on->short_descr);
               if( ((ch->position < POS_FIGHTING) && (ch->position > POS_STUNNED)) 
               && ch->on && (ch->on == victim->on ) )
-              	STRAPP(message, " with you");
-              STRAPP(message, ".");
-              STRAPP(buf, "%s", message);
+              	message += " with you";
+              message += ".";
+              buf += message;
             }
 	}
        else
        {
         if (ch->position == POS_RESTING)
-            STRAPP ( buf, " is sprawled out alongside you." );
+            buf += " is sprawled out alongside you." ;
         else
 	if (ch->position == POS_MOUNTED)
-	    STRAPP ( buf, " is sprawled out at the foot of your mount." );
+	    buf += " is sprawled out at the foot of your mount." ;
 	else
-            STRAPP (buf, " is sprawled out here." );
+            buf += " is sprawled out here." ;
        }
         break;
     case POS_SITTING:  
@@ -646,105 +593,105 @@ void show_char_to_char_0( CHAR_DATA *victim, CHAR_DATA *ch )
         {
             if (victim->on->value[2] == SIT_AT)
             {
-                SPRINTF(message," is sitting at %s",
+                message = str_printf(" is sitting at %s",
                     victim->on->short_descr);
               if( (ch->position == POS_SITTING) 
               && ch->on && (ch->on == victim->on ) )
-              	STRAPP(message, " with you");
-              STRAPP(message, ".");
-              STRAPP(buf, "%s", message);
+              	message += " with you";
+              message += ".";
+              buf += message;
             }
             else if (victim->on->value[2] == SIT_ON)
             {
-                SPRINTF(message," is sitting on %s",
+                message = str_printf(" is sitting on %s",
                     victim->on->short_descr);
               if( (ch->position == POS_SITTING) 
               && ch->on && (ch->on == victim->on ) )
-              	STRAPP(message, " with you");
-              STRAPP(message, ".");
-              STRAPP(buf, "%s", message);
+              	message += " with you";
+              message += ".";
+              buf += message;
             }
             else
             {
-                SPRINTF(message, " is sitting in %s",
+                message = str_printf(" is sitting in %s",
                     victim->on->short_descr);
               if( (ch->position == POS_SITTING) 
               	&& ch->on && (ch->on == victim->on ) )
-              	STRAPP(message, " with you");
-              STRAPP(message, ".");
-              STRAPP(buf, "%s", message);
+              	message += " with you";
+              message += ".";
+              buf += message;
             }
         }
 	else
 	{
          if (ch->position == POS_SITTING)
-            STRAPP( buf, " sits here with you." );
+            buf += " sits here with you." ;
          else
          if (ch->position == POS_RESTING)
-            STRAPP( buf, " sits nearby as you lie around." );
+            buf += " sits nearby as you lie around." ;
          else
-            STRAPP( buf, " sits upright here." );
+            buf += " sits upright here." ;
         }
         break;
     case POS_STANDING:
 	if ( IS_IMMORTAL(victim) )
-            STRAPP( buf, " is here before you." );
+            buf += " is here before you." ;
 	else
         if ( ( victim->in_room->sector_type == SECT_UNDERWATER )
         && !IS_AFFECTED(victim, AFF_AQUA_BREATH) && !IS_NPC(victim) )
-            STRAPP( buf, " is drowning here." );
+            buf += " is drowning here." ;
 	else
 	if ( victim->in_room->sector_type == SECT_UNDERWATER )
-            STRAPP( buf, " is here in the water." );
+            buf += " is here in the water." ;
 	else
 	if ( ( victim->in_room->sector_type == SECT_OCEANFLOOR )
 	&& !IS_AFFECTED(victim, AFF_AQUA_BREATH) && !IS_NPC(victim) )
-	    STRAPP( buf, " is drowning here." );
+	    buf += " is drowning here." ;
 	else
 	if ( victim->in_room->sector_type == SECT_OCEANFLOOR )
-	    STRAPP( buf, " is standing here in the water." );
+	    buf += " is standing here in the water." ;
 	else
 	if ( IS_AFFECTED(victim, AFF_FLOATING)
         || IS_AFFECTED(victim, AFF_FLYING) )
-          STRAPP( buf, " is hovering here." );
+          buf += " is hovering here." ;
         else
-          STRAPP( buf, " is standing here." );
+          buf += " is standing here." ;
         break;
-    case POS_SHOVE:    STRAPP( buf, " is being shoved around." );	break;
-    case POS_DRAG:     STRAPP( buf, " is being dragged around." );	break;
+    case POS_SHOVE:    buf += " is being shoved around." ;	break;
+    case POS_DRAG:     buf += " is being dragged around." ;	break;
     case POS_MOUNTED:
-	STRAPP( buf, " is here, upon " );
+	buf += " is here, upon " ;
 	if ( !victim->mount )
-	    STRAPP( buf, "thin air???" );
+	    buf += "thin air???" ;
 	else
 	if ( victim->mount == ch )
-	    STRAPP( buf, "your back." );
+	    buf += "your back." ;
 	else
 	if ( victim->in_room == victim->mount->in_room )
 	{
-	    STRAPP( buf, "%s", PERS( victim->mount, ch ) );
-	    STRAPP( buf, "." );
+	    buf += PERS( victim->mount, ch );
+	    buf += ".";
 	}
 	else
-	    STRAPP( buf, "someone who left??" );
+	    buf += "someone who left??" ;
 	break;
     case POS_FIGHTING:
-	STRAPP( buf, " is here, fighting " );
+	buf += " is here, fighting " ;
 	if ( !victim->fighting )
-	    STRAPP( buf, "thin air???" );
+	    buf += "thin air???" ;
 	else if ( who_fighting( victim ) == ch )
-	    STRAPP( buf, "YOU!" );
+	    buf += "YOU!" ;
 	else if ( victim->in_room == victim->fighting->who->in_room )
 	{
-	    STRAPP( buf, "%s", PERS( victim->fighting->who, ch ) );
-	    STRAPP( buf, "." );
+	    buf += PERS( victim->fighting->who, ch );
+	    buf += ".";
 	}
 	else
-	    STRAPP( buf, "someone who left??" );
+	    buf += "someone who left??" ;
 	break;
     }
 
-    STRAPP( buf, "\n" );
+    buf += "\n";
     buf[0] = UPPER(buf[0]);
     send_to_char( buf, ch );
     show_visible_affects_to_char( victim, ch );
@@ -1443,7 +1390,7 @@ void do_look(CHAR_DATA *ch, char *argument)
 
 void show_condition( CHAR_DATA *ch, CHAR_DATA *victim )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     int percent;
 
     if( victim->max_hit > 0 )
@@ -1452,39 +1399,39 @@ void show_condition( CHAR_DATA *ch, CHAR_DATA *victim )
         percent = -1;
 
 
-    STRLCPY( buf, PERS(victim, ch) );
+    buf = PERS(victim, ch);
 
     if ( (IS_NPC ( victim ) && BV_IS_SET( victim->act , ACT_DROID ) ) ||
          ( victim->race == RACE_DROID ) )
     {
     
-         if ( percent >= 100 ) STRAPP( buf, " is in perfect condition.\n"  );
-    else if ( percent >=  90 ) STRAPP( buf, " is slightly scratched.\n" );
-    else if ( percent >=  80 ) STRAPP( buf, " has a few scrapes.\n"     );
-    else if ( percent >=  70 ) STRAPP( buf, " has some dents.\n"         );
-    else if ( percent >=  60 ) STRAPP( buf, " has a couple holes in its plating.\n"    );
-    else if ( percent >=  50 ) STRAPP( buf, " has a many broken pieces.\n" );
-    else if ( percent >=  40 ) STRAPP( buf, " has many exposed circuits.\n"    );
-    else if ( percent >=  30 ) STRAPP( buf, " is leaking oil.\n"   );
-    else if ( percent >=  20 ) STRAPP( buf, " has smoke coming out of it.\n"       );
-    else if ( percent >=  10 ) STRAPP( buf, " is almost completely broken.\n"        );
-    else                       STRAPP( buf, " is about to EXPLODE.\n"              );
+         if ( percent >= 100 ) buf += " is in perfect condition.\n";
+    else if ( percent >=  90 ) buf += " is slightly scratched.\n";
+    else if ( percent >=  80 ) buf += " has a few scrapes.\n"     ;
+    else if ( percent >=  70 ) buf += " has some dents.\n"         ;
+    else if ( percent >=  60 ) buf += " has a couple holes in its plating.\n"    ;
+    else if ( percent >=  50 ) buf += " has a many broken pieces.\n" ;
+    else if ( percent >=  40 ) buf += " has many exposed circuits.\n"    ;
+    else if ( percent >=  30 ) buf += " is leaking oil.\n"   ;
+    else if ( percent >=  20 ) buf += " has smoke coming out of it.\n"       ;
+    else if ( percent >=  10 ) buf += " is almost completely broken.\n"        ;
+    else                       buf += " is about to EXPLODE.\n"              ;
     
     }
     else  
     { 
     
-         if ( percent >= 100 ) STRAPP( buf, " is in perfect health.\n"  );
-    else if ( percent >=  90 ) STRAPP( buf, " is slightly scratched.\n" );
-    else if ( percent >=  80 ) STRAPP( buf, " has a few bruises.\n"     );
-    else if ( percent >=  70 ) STRAPP( buf, " has some cuts.\n"         );
-    else if ( percent >=  60 ) STRAPP( buf, " has several wounds.\n"    );
-    else if ( percent >=  50 ) STRAPP( buf, " has many nasty wounds.\n" );
-    else if ( percent >=  40 ) STRAPP( buf, " is bleeding freely.\n"    );
-    else if ( percent >=  30 ) STRAPP( buf, " is covered in blood.\n"   );
-    else if ( percent >=  20 ) STRAPP( buf, " is leaking guts.\n"       );
-    else if ( percent >=  10 ) STRAPP( buf, " is almost dead.\n"        );
-    else                       STRAPP( buf, " is DYING.\n"              );
+         if ( percent >= 100 ) buf += " is in perfect health.\n"  ;
+    else if ( percent >=  90 ) buf += " is slightly scratched.\n" ;
+    else if ( percent >=  80 ) buf += " has a few bruises.\n"     ;
+    else if ( percent >=  70 ) buf += " has some cuts.\n"         ;
+    else if ( percent >=  60 ) buf += " has several wounds.\n"    ;
+    else if ( percent >=  50 ) buf += " has many nasty wounds.\n" ;
+    else if ( percent >=  40 ) buf += " is bleeding freely.\n"    ;
+    else if ( percent >=  30 ) buf += " is covered in blood.\n"   ;
+    else if ( percent >=  20 ) buf += " is leaking guts.\n"       ;
+    else if ( percent >=  10 ) buf += " is almost dead.\n"        ;
+    else                       buf += " is DYING.\n"              ;
     
     }
     buf[0] = UPPER(buf[0]);
@@ -1555,7 +1502,7 @@ void do_glance( CHAR_DATA *ch, char *argument )
 
 void do_examine( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     std::string arg;
     OBJ_DATA *obj;
     BOARD_DATA *board;
@@ -1608,39 +1555,39 @@ void do_examine( CHAR_DATA *ch, char *argument )
 	    if ( obj->value[1] == 0 )
 	      obj->value[1] = 1;
 	    dam = (sh_int) ((obj->value[0] * 10) / obj->value[1]);
-	    STRLCPY( buf, "As you look more closely, you notice that it is " );
-	    if (dam >= 10) STRAPP( buf, "in superb condition.");
-            else if (dam ==  9) STRAPP( buf, "in very good condition.");
-            else if (dam ==  8) STRAPP( buf, "in good shape.");
-            else if (dam ==  7) STRAPP( buf, "showing a bit of wear.");
-            else if (dam ==  6) STRAPP( buf, "a little run down.");
-            else if (dam ==  5) STRAPP( buf, "in need of repair.");
-            else if (dam ==  4) STRAPP( buf, "in great need of repair.");
-            else if (dam ==  3) STRAPP( buf, "in dire need of repair.");
-            else if (dam ==  2) STRAPP( buf, "very badly worn.");
-            else if (dam ==  1) STRAPP( buf, "practically worthless.");
-            else if (dam <=  0) STRAPP( buf, "broken.");
-                STRAPP( buf, "\n" );
+	    buf = "As you look more closely, you notice that it is ";
+	    if (dam >= 10) buf += "in superb condition.";
+            else if (dam ==  9) buf += "in very good condition.";
+            else if (dam ==  8) buf += "in good shape.";
+            else if (dam ==  7) buf += "showing a bit of wear.";
+            else if (dam ==  6) buf += "a little run down.";
+            else if (dam ==  5) buf += "in need of repair.";
+            else if (dam ==  4) buf += "in great need of repair.";
+            else if (dam ==  3) buf += "in dire need of repair.";
+            else if (dam ==  2) buf += "very badly worn.";
+            else if (dam ==  1) buf += "practically worthless.";
+            else if (dam <=  0) buf += "broken.";
+                buf += "\n";
        send_to_char( buf, ch );
        break;
 
 	case ITEM_WEAPON:
 	    dam = INIT_WEAPON_CONDITION - obj->value[0];
-	    STRLCPY( buf, "As you look more closely, you notice that it is " );
-	    if (dam ==  0) STRAPP( buf, "in superb condition.");
-            else if (dam ==  1) STRAPP( buf, "in excellent condition.");
-            else if (dam ==  2) STRAPP( buf, "in very good condition.");
-            else if (dam ==  3) STRAPP( buf, "in good shape.");
-            else if (dam ==  4) STRAPP( buf, "showing a bit of wear.");
-            else if (dam ==  5) STRAPP( buf, "a little run down.");
-            else if (dam ==  6) STRAPP( buf, "in need of repair.");
-            else if (dam ==  7) STRAPP( buf, "in great need of repair.");
-            else if (dam ==  8) STRAPP( buf, "in dire need of repair.");
-            else if (dam ==  9) STRAPP( buf, "very badly worn.");
-            else if (dam == 10) STRAPP( buf, "practically worthless.");
-            else if (dam == 11) STRAPP( buf, "almost broken.");
-            else if (dam == 12) STRAPP( buf, "broken.");
-    	    STRAPP( buf, "\n" );
+	    buf = "As you look more closely, you notice that it is ";
+	    if (dam ==  0) buf += "in superb condition.";
+            else if (dam ==  1) buf += "in excellent condition.";
+            else if (dam ==  2) buf += "in very good condition.";
+            else if (dam ==  3) buf += "in good shape.";
+            else if (dam ==  4) buf += "showing a bit of wear.";
+            else if (dam ==  5) buf += "a little run down.";
+            else if (dam ==  6) buf += "in need of repair.";
+            else if (dam ==  7) buf += "in great need of repair.";
+            else if (dam ==  8) buf += "in dire need of repair.";
+            else if (dam ==  9) buf += "very badly worn.";
+            else if (dam == 10) buf += "practically worthless.";
+            else if (dam == 11) buf += "almost broken.";
+            else if (dam == 12) buf += "broken.";
+    	    buf += "\n";
 
         send_to_char( buf, ch );
         if (BV_IS_SET(obj->objflags, WEAPON_BLASTER) || BV_IS_SET(obj->objflags,WEAPON_BOWCASTER))
@@ -1672,19 +1619,19 @@ void do_examine( CHAR_DATA *ch, char *argument )
 	      dam = (obj->timer * 10) / obj->value[1];
 	    else
 	      dam = 10;
-	    STRLCPY( buf, "As you examine it carefully you notice that it " );
-	    if (dam >= 10) STRAPP( buf, "is fresh.");
-            else if (dam ==  9) STRAPP( buf, "is nearly fresh.");
-            else if (dam ==  8) STRAPP( buf, "is perfectly fine.");
-            else if (dam ==  7) STRAPP( buf, "looks good.");
-            else if (dam ==  6) STRAPP( buf, "looks ok.");
-            else if (dam ==  5) STRAPP( buf, "is a little stale.");
-            else if (dam ==  4) STRAPP( buf, "is a bit stale.");
-            else if (dam ==  3) STRAPP( buf, "smells slightly off.");
-            else if (dam ==  2) STRAPP( buf, "smells quite rank.");
-            else if (dam ==  1) STRAPP( buf, "smells revolting.");
-            else if (dam <=  0) STRAPP( buf, "is crawling with maggots.");
-    	        STRAPP( buf, "\n" );
+	    buf = "As you examine it carefully you notice that it ";
+	    if (dam >= 10) buf += "is fresh.";
+            else if (dam ==  9) buf += "is nearly fresh.";
+            else if (dam ==  8) buf += "is perfectly fine.";
+            else if (dam ==  7) buf += "looks good.";
+            else if (dam ==  6) buf += "looks ok.";
+            else if (dam ==  5) buf += "is a little stale.";
+            else if (dam ==  4) buf += "is a bit stale.";
+            else if (dam ==  3) buf += "smells slightly off.";
+            else if (dam ==  2) buf += "smells quite rank.";
+            else if (dam ==  1) buf += "smells revolting.";
+            else if (dam <=  0) buf += "is crawling with maggots.";
+    	    buf += "\n";
 	    send_to_char( buf, ch );
 	    break;
 
@@ -1702,13 +1649,6 @@ void do_examine( CHAR_DATA *ch, char *argument )
 	    else
 		send_to_char( "You notice that it is not depressed.\n", ch );
 	    break;
-
-/* Not needed due to check in do_look already
-	case ITEM_PORTAL:
-	    SPRINTF( buf, "in %s noprog", arg );
-	    do_look( ch, buf );
-	    break;
-*/
 
         case ITEM_CORPSE_PC:
 	case ITEM_CORPSE_NPC:
@@ -1792,13 +1732,13 @@ void do_examine( CHAR_DATA *ch, char *argument )
 
 void do_exits( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     EXIT_DATA *pexit;
     bool found;
     bool fAuto;
 
     set_char_color( AT_EXITS, ch );
-    buf[0] = '\0';
+    buf.clear();
     fAuto  = !str_cmp( argument, "auto" );
 
     if ( !check_blind( ch ) )
@@ -1811,7 +1751,7 @@ void do_exits( CHAR_DATA *ch, char *argument )
         send_to_char( "It is pitch black ... \r\n", ch );
         return;
     }
-    STRLCPY( buf, fAuto ? "Exits:" : "Obvious exits:\n" );
+    buf = fAuto ? "Exits:" : "Obvious exits:\n";
 
     found = FALSE;
     for ( pexit = ch->in_room->first_exit; pexit; pexit = pexit->next )
@@ -1824,24 +1764,24 @@ void do_exits( CHAR_DATA *ch, char *argument )
 	    {	
             if ( IS_SET(pexit->exit_info, EX_CLOSED) )
             {
-                STRAPP( buf, "%-5s - (closed)\n",
+                buf += str_printf("%-5s - (closed)\n",
                 capitalize( dir_name[pexit->vdir] ).c_str() );
             }
             else if ( IS_SET(pexit->exit_info, EX_WINDOW) )
             {
-                STRAPP( buf, "%-5s - (window)\n",
+                buf += str_printf("%-5s - (window)\n",
                 capitalize( dir_name[pexit->vdir] ).c_str() );
             }
             else if ( IS_SET(pexit->exit_info, EX_xAUTO) )
             {
-            STRAPP( buf, "%-5s - %s\n",
+            buf += str_printf("%-5s - %s\n",
                 capitalize( pexit->keyword ).c_str(),
                 room_is_dark( pexit->to_room )
                 ?  "Too dark to tell"
                 : pexit->to_room->name );
             }
             else
-                STRAPP( buf, "%-5s - %s\n",
+                buf += str_printf("%-5s - %s\n",
                 capitalize( dir_name[pexit->vdir] ).c_str(),
                 room_is_dark( pexit->to_room )
                 ?  "Too dark to tell"
@@ -1849,17 +1789,17 @@ void do_exits( CHAR_DATA *ch, char *argument )
 	    }
 	    else
 	    {
-	        STRAPP( buf, " %s",
+	        buf += str_printf(" %s",
 		    capitalize( dir_name[pexit->vdir] ).c_str() );
 	    }
 	}
     }
 
     if ( !found )
-	STRAPP( buf, fAuto ? " none.\n" : "None.\n" );
+	buf += fAuto ? " none.\n" : "None.\n";
     else
       if ( fAuto )
-	STRAPP( buf, ".\n" );
+	buf += ".\n";
     send_to_char( buf, ch );
     return;
 }
@@ -2037,7 +1977,7 @@ void similar_help_files(CHAR_DATA *ch, const std::string& argument)
     sh_int lvl = 0;
     bool single = FALSE;
 
-    send_to_pager_color("&C&BSimilar Help Files:\n", ch);
+    send_to_pager("&C&BSimilar Help Files:\n", ch);
 
     /* First pass: find best similarity level */
     for (pHelp = first_help; pHelp; pHelp = pHelp->next)
@@ -2067,7 +2007,7 @@ void similar_help_files(CHAR_DATA *ch, const std::string& argument)
 
     if (lvl == 0)
     {
-        send_to_pager_color("&C&GNo similar help files.\n", ch);
+        send_to_pager("&C&GNo similar help files.\n", ch);
         return;
     }
 
@@ -2087,7 +2027,7 @@ void similar_help_files(CHAR_DATA *ch, const std::string& argument)
             {
                 if (single)
                 {
-                    send_to_pager_color("&C&GOpening closest helpfile.&C\n", ch);
+                    send_to_pager("&C&GOpening closest helpfile.&C\n", ch);
 
                     if (pHelp->level >= 0 && str_cmp(argument, "imotd"))
                     {
@@ -2096,9 +2036,9 @@ void similar_help_files(CHAR_DATA *ch, const std::string& argument)
                     }
 
                     if (pHelp->text[0] == '.')
-                        send_to_pager_color(pHelp->text + 1, ch);
+                        send_to_pager(pHelp->text + 1, ch);
                     else
-                        send_to_pager_color(pHelp->text, ch);
+                        send_to_pager(pHelp->text, ch);
 
                     return;
                 }
@@ -2117,10 +2057,6 @@ void similar_help_files(CHAR_DATA *ch, const std::string& argument)
 void do_help( CHAR_DATA *ch, char *argument )
 {
     HELP_DATA *pHelp;
-
-//    char nohelp[MAX_STRING_LENGTH];
-
-//    STRLCPY(nohelp, argument); /* For Finding "needed" helpfiles */
 
     if ( !argument || argument[0] == '\0')
     {
@@ -2153,14 +2089,14 @@ void do_help( CHAR_DATA *ch, char *argument )
      * Strip leading '.' to allow initial blanks.
      */
     if ( pHelp->text[0] == '.' )
-	send_to_pager_color( pHelp->text+1, ch );
+	send_to_pager( pHelp->text+1, ch );
     else
-	send_to_pager_color( pHelp->text  , ch );
+	send_to_pager( pHelp->text  , ch );
 
 /*    if( pHelp->timemoded )
     {
-      send_to_pager_color( asctime("Last Modified: ", ch );
-      send_to_pager_color( asctime(pHelp->timemoded, ch );
+      send_to_pager( asctime("Last Modified: ", ch );
+      send_to_pager( asctime(pHelp->timemoded, ch );
       send_to_pager( "\n", ch );
     }
 */
@@ -2393,12 +2329,12 @@ void do_hlist( CHAR_DATA *ch, char *argument )
  */
 void do_who( CHAR_DATA *ch, char *argument )
 {
-  char buf[MAX_STRING_LENGTH];
-  char clan_name[MAX_INPUT_LENGTH];
-  char invis_str[MAX_INPUT_LENGTH];
-  char char_name[MAX_INPUT_LENGTH];
-  char extra_title[MAX_STRING_LENGTH];
-  char race_text[MAX_INPUT_LENGTH];
+  std::string buf;
+  std::string clan_name;
+  std::string invis_str;
+  std::string char_name;
+  std::string extra_title;
+  std::string race_text;
   DESCRIPTOR_DATA *d;
   int iRace;
   int iLevelLower;
@@ -2594,7 +2530,7 @@ void do_who( CHAR_DATA *ch, char *argument )
 	 for ( d = last_descriptor; d; d = d->prev )
 	 {
 	CHAR_DATA *wch;
-	char const *race;
+	std::string race;
         char force_char = ' ';
 
 	if ( (d->connected != CON_PLAYING && d->connected != CON_EDITING)
@@ -2624,15 +2560,15 @@ void do_who( CHAR_DATA *ch, char *argument )
 	if ( fShowHomepage
 	&&   wch->pcdata->homepage
 	&&   wch->pcdata->homepage[0] != '\0' )
-	  SPRINTF( char_name, "<A HREF=\"%s\">%s</A>",
+	  char_name = str_printf( "<A HREF=\"%s\">%s</A>",
 		show_tilde( wch->pcdata->homepage ), wch->name );
 	else
-	  STRLCPY( char_name, "") ;
+	  char_name = "";
 
 	if ( IS_GOD(ch) )
-	  SPRINTF( race_text, "(%s) ", race_table[wch->race].race_name);
+	  race_text = str_printf( "(%s) ", race_table[wch->race].race_name);
 	else
-	  STRLCPY( race_text, "" );
+	  race_text = "";
 	  
 	race = race_text;
 
@@ -2656,9 +2592,9 @@ void do_who( CHAR_DATA *ch, char *argument )
 	}
 
         if ( !nifty_is_name(wch->name, wch->pcdata->title) && ch->top_level > wch->top_level )
-          SPRINTF( extra_title , " [%s]" , wch->name );
+          extra_title = str_printf( " [%s]", wch->name );
         else
-          STRLCPY(extra_title, "");
+          extra_title = "";
         
         if ( IS_RETIRED( wch ) )
           race = "Retired";
@@ -2673,61 +2609,53 @@ void do_who( CHAR_DATA *ch, char *argument )
 	{
           CLAN_DATA *pclan = wch->pcdata->clan;
 
-	  STRLCPY( clan_name, " (" );
+	  clan_name = " (" ;
 
 	    if ( !str_cmp( wch->name, pclan->leader ) )
-              STRAPP( clan_name, "Leader, " );
+              clan_name += "Leader, ";
             if ( !str_cmp( wch->name, pclan->number1 ) )
-              STRAPP( clan_name, "First, " );
+              clan_name += "First, ";
             if ( !str_cmp( wch->name, pclan->number2 ) )
-              STRAPP( clan_name, "Second, " );
+              clan_name += "Second, ";
 
-	  STRAPP( clan_name, "%s", pclan->name );
-	  STRAPP( clan_name, ")" );
+	  clan_name += pclan->name;
+	  clan_name += ")";
 	}
 	else
-	  clan_name[0] = '\0';
+	  clan_name = "";
 
 
 	if ( BV_IS_SET(wch->act, PLR_WIZINVIS) )
-	  SPRINTF( invis_str, "(%d) ", wch->pcdata->wizinvis );
+	  invis_str = str_printf( "(%d) ", wch->pcdata->wizinvis );
 	else
-	  invis_str[0] = '\0';
+	  invis_str = "";
 
 #define MAX_NAME    32
 #define MAX_TITLE   64
 #define MAX_EXTRA   32
 
-char safe_name[MAX_NAME+1];
-char safe_title[MAX_TITLE+1];
-char safe_extra[MAX_EXTRA+1];
-char safe_clan[MAX_CLAN+1];
 
 /* Copy and truncate strings safely, handle NULL pointers */
-strncpy(safe_name, *char_name ? char_name : "", MAX_NAME);
-safe_name[MAX_NAME] = '\0';
+if (char_name.length() > MAX_NAME)
+    char_name = char_name.substr(0, MAX_NAME);
 
-strncpy(safe_title, wch->pcdata->title ? wch->pcdata->title : "", MAX_TITLE);
-safe_title[MAX_TITLE] = '\0';
-
-strncpy(safe_extra, *extra_title ? extra_title : "", MAX_EXTRA);
-safe_extra[MAX_EXTRA] = '\0';
-
-strncpy(safe_clan, *clan_name ? clan_name : "", MAX_CLAN);
-safe_clan[MAX_CLAN] = '\0';
+std::string safe_title;
+safe_title = wch->pcdata->title ? wch->pcdata->title : "";
+if (safe_title.length() > MAX_TITLE)
+    safe_title = safe_title.substr(0, MAX_TITLE);
 
 /* Format into buf safely */
-snprintf(buf, sizeof(buf),
+buf = str_printf(
     "%c%s %s%s%s%s %s%s%s%s\n",
     force_char,
-    race ? race : "",
-    *invis_str ? invis_str : "",
+    race.c_str(),
+    invis_str.c_str(),
     BV_IS_SET(wch->act, PLR_AFK) ? "[AFK] " : "",
-    safe_name,
-    safe_title,
-    safe_extra,
+    char_name.c_str(),
+    safe_title.c_str(),
+    extra_title.c_str(),
     wch->pcdata->whoCloak ? "<WC>" : "",
-    safe_clan,
+    clan_name.c_str(),
     BV_IS_SET(wch->act, PLR_KILLER) && (ch->top_level >= LEVEL_IMMORTAL)
         ? "&R [Wanted for Murder]&W"
         : "&W"
@@ -3064,7 +2992,7 @@ void do_consider( CHAR_DATA *ch, char *argument )
 
 void do_practice( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     int sn;
 
     if ( IS_NPC(ch) )
@@ -3194,7 +3122,7 @@ void do_practice( CHAR_DATA *ch, char *argument )
 	 */
 	if ( skill_table[sn]->teachers && skill_table[sn]->teachers[0] != '\0' )
 	{
-	    SPRINTF( buf, "%d", mob->pIndexData->vnum );
+	    buf = std::to_string(mob->pIndexData->vnum);
 	    if ( !is_name( buf, skill_table[sn]->teachers ) )
 	    {
 		act( AT_TELL, "$n tells you, 'I know not know how to teach that.'",
@@ -3213,7 +3141,7 @@ void do_practice( CHAR_DATA *ch, char *argument )
 
         if ( ch->gold < skill_table[sn]->min_level*10 )
 	{
-	    SPRINTF ( buf , "$n tells you, 'I charge %d credits to teach that. You don't have enough.'" , skill_table[sn]->min_level*10 );
+	    buf = str_printf("$n tells you, 'I charge %d credits to teach that. You don't have enough.'", skill_table[sn]->min_level*10);
 	    act( AT_TELL, "$n tells you 'You don't have enough credits.'",
 		mob, NULL, ch, TO_VICT );
 	    return;
@@ -3221,7 +3149,7 @@ void do_practice( CHAR_DATA *ch, char *argument )
 
 	if ( ch->pcdata->learned[sn] >= adept )
 	{
-	    SPRINTF( buf, "$n tells you, 'I've taught you everything I can about %s.'",
+	    buf = str_printf("$n tells you, 'I've taught you everything I can about %s.'",
 		skill_table[sn]->name );
 	    act( AT_TELL, buf, mob, NULL, ch, TO_VICT );
 	    act( AT_TELL, "$n tells you, 'You'll have to practice it on your own now...'",
@@ -3249,7 +3177,7 @@ void do_practice( CHAR_DATA *ch, char *argument )
 
 void do_teach( CHAR_DATA *ch, char *argument )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     int sn;
     std::string arg;
     std::string argumentstr;
@@ -3332,10 +3260,10 @@ void do_teach( CHAR_DATA *ch, char *argument )
 	else
 	{
 	    victim->pcdata->learned[sn] += int_app[get_curr_int(ch)].learn;
-	    SPRINTF( buf, "You teach %s $T.", victim->name );
+	    buf = str_printf("You teach %s $T.", victim->name );
 	    act( AT_ACTION, buf,
 		    ch, NULL, skill_table[sn]->name, TO_CHAR );
-	    SPRINTF( buf, "%s teaches you $T.", ch->name );
+	    buf = str_printf("%s teaches you $T.", ch->name );
 	    act( AT_ACTION, buf,
 		    victim, NULL, skill_table[sn]->name, TO_CHAR );
 	}
@@ -4203,10 +4131,8 @@ void do_slist( CHAR_DATA *ch, char *argument )
 void do_whois( CHAR_DATA *ch, char *argument)
 {
   CHAR_DATA *victim;
-  char buf[MAX_STRING_LENGTH];
-  char buf2[MAX_STRING_LENGTH];
-
-  buf[0] = '\0';
+  std::string buf;
+  char buf2[MAX_STRING_LENGTH]; // used for do_command.
 
   if(IS_NPC(ch))
     return;
@@ -4217,8 +4143,8 @@ void do_whois( CHAR_DATA *ch, char *argument)
     return;
   }
 
-  STRAPP(buf, "0.");
-  STRAPP(buf, "%s", argument);
+  buf = "0.";
+  buf += argument;
   if( ( victim = get_char_world(ch, buf) ) == NULL )
   {
     send_to_char("No such player online.\n", ch);
@@ -4308,7 +4234,7 @@ void do_whois( CHAR_DATA *ch, char *argument)
 
     if(get_trust(victim) < get_trust(ch))
     {
-      int n = snprintf(buf2, sizeof(buf2), "list %s", buf);
+      int n = snprintf(buf2, sizeof(buf2), "list %s", buf.c_str());
         if (n < 0 || n >= (int)sizeof(buf2))
                 buf2[sizeof(buf2) - 1] = '\0';
       do_comment(ch, buf2);
@@ -4317,32 +4243,32 @@ void do_whois( CHAR_DATA *ch, char *argument)
     if(BV_IS_SET(victim->act, PLR_SILENCE) || BV_IS_SET(victim->act, PLR_NO_EMOTE) 
     || BV_IS_SET(victim->act, PLR_NO_TELL) )
     {
-      snprintf(buf2, sizeof(buf2), "This player has the following flags set:");
+      buf = "This player has the following flags set:";
       if(BV_IS_SET(victim->act, PLR_SILENCE)) 
-        STRAPP(buf2, " silence");
+        buf += " silence";
       if(BV_IS_SET(victim->act, PLR_NO_EMOTE)) 
-        STRAPP(buf2, " noemote");
+        buf += " noemote";
       if(BV_IS_SET(victim->act, PLR_NO_TELL) )
-        STRAPP(buf2, " notell");
-      STRAPP(buf2, ".\n");
-      send_to_char(buf2, ch);
+        buf += " notell";
+      buf += ".\n";
+      send_to_char(buf, ch);
     }
     if ( victim->desc && victim->desc->host[0]!='\0' )   /* added by Gorog */
     {
-      SPRINTF (buf2, "%s's IP info: %s ", victim->name, victim->desc->hostip);
+      buf = str_printf("%s's IP info: %s ", victim->name, victim->desc->hostip);
       if (get_trust(ch) > LEVEL_GOD)
       {
-        STRAPP (buf2, "%s", victim->desc->user);
-        STRAPP (buf2, "@");
-        STRAPP (buf2, "%s", victim->desc->host);
+        buf  += str_printf("%s", victim->desc->user);
+        buf += "@";
+        buf += victim->desc->host;
       }
-      STRAPP (buf2, "\n");
-      send_to_char(buf2, ch);
+      buf += "\n";
+      send_to_char(buf, ch);
     }
     if (get_trust(ch) >= LEVEL_GOD && get_trust(ch) >= get_trust( victim ) && victim->pcdata )
     {
-        SPRINTF (buf2, "Email: %s\n" , victim->pcdata->email );
-        send_to_char(buf2, ch);
+        buf = str_printf("Email: %s\n" , victim->pcdata->email );
+        send_to_char(buf, ch);
     }
   }
 }
@@ -4500,8 +4426,7 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
     CHAR_DATA *raceCh;
     int race, plrclass, iR, iC, iC2;
     bool chk_race = FALSE;
-    char buf[MAX_INPUT_LENGTH];
-    char buf2[MAX_INPUT_LENGTH];
+    std::string buf, buf2;
 
     if( !ch->pcdata )
       do_showstatistic_web( NULL, argument );
@@ -4554,26 +4479,19 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
 
     if( chk_race )
     {
-	SPRINTF( buf, "&R%s Statistics\n", race_table[race].race_name );
+	buf = str_printf("&R%s Statistics\n", race_table[race].race_name );
     	send_to_pager( buf, ch );
-	SPRINTF( buf, "&cStr: &C%d  &cWis: &C%d  &cInt: &C%d  &cDex: &C%d  &cCon: &C%d  &cCha: &C%d\n", 
+	buf = str_printf("&cStr: &C%d  &cWis: &C%d  &cInt: &C%d  &cDex: &C%d  &cCon: &C%d  &cCha: &C%d\n", 
 	         raceCh->perm_str, raceCh->perm_wis, raceCh->perm_int, 
 	         raceCh->perm_dex, raceCh->perm_con, raceCh->perm_cha );
     	send_to_pager( buf, ch );
-/*
-        SPRINTF( "Resistant  : %s\n",
-	flag_string(race_table[raceCh->race].resist, ris_flags) );
-    	send_to_pager( buf, ch );
-    	SPRINTF( "Susceptible: %s\n",
-	flag_string(race_table[raceCh->race].suscept, ris_flags) );
-    	send_to_pager( buf, ch );
-*/    	
+
     	for( iC = 0; iC < MAX_ABILITY; iC++ )
     	{
     	  if( iC == FORCE_ABILITY )
     	    continue;
     	  raceCh->main_ability = iC;
-    	  SPRINTF( buf, "\n&c%-20s &B| &C", ability_name[iC] );
+    	  buf = str_printf("\n&c%-20s &B| &C", ability_name[iC] );
     	  for( iC2 = 0; iC2 < MAX_ABILITY; iC2++ )
     	  {
     	  if( iC2 == FORCE_ABILITY )
@@ -4582,18 +4500,18 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
     	    continue;
 
     	   if( iC2 == SMUGGLING_ABILITY )
-    	    SPRINTF( buf2, "%-3d+ &B| &C", max_level( raceCh, iC2 ) );
+    	    buf2 = str_printf("%-3d+ &B| &C", max_level( raceCh, iC2 ) );
 	   else    	   
-    	    SPRINTF( buf2, "%-3d &B| &C", max_level( raceCh, iC2 ) );
+    	    buf2 = str_printf("%-3d &B| &C", max_level( raceCh, iC2 ) );
 
-   	   STRAPP( buf, "%s", buf2 );
+   	   buf += buf2;
     	  }
 	  send_to_pager( buf, ch );
     	}
     }
     else
     {
-	SPRINTF( buf, "&R%s Statistics\n", ability_name[plrclass]);
+	buf = str_printf("&R%s Statistics\n", ability_name[plrclass]);
     	send_to_pager( buf, ch );
     	
     	for( iR = 0; iR < MAX_RACE; iR++ )
@@ -4605,14 +4523,14 @@ void do_showstatistic( CHAR_DATA *ch, char *argument )
           raceCh->perm_dex = 20 + race_table[raceCh->race].dex_plus;
           raceCh->perm_con = 20 + race_table[raceCh->race].con_plus;
           raceCh->perm_cha = 20 + race_table[raceCh->race].cha_plus;
-    	  SPRINTF( buf, "\n&c%-20s &B| &C", race_table[iR].race_name );
+    	  buf = str_printf("\n&c%-20s &B| &C", race_table[iR].race_name );
     	  for( iC2 = 0; iC2 < FORCE_ABILITY; iC2++ )
     	  {
     	   if( iC2 == SMUGGLING_ABILITY )
-    	    SPRINTF( buf2, "%-3d+ &B| &C", max_level( raceCh, iC2 ) );
+    	    buf2 = str_printf("%-3d+ &B| &C", max_level( raceCh, iC2 ) );
 	   else
-    	    SPRINTF( buf2, "%-3d &B| &C", max_level( raceCh, iC2 ) );
-    	   STRAPP( buf, "%s", buf2 );
+    	    buf2 = str_printf("%-3d &B| &C", max_level( raceCh, iC2 ) );
+    	   buf += buf2;
     	  }
 	  send_to_pager( buf, ch );
     	}

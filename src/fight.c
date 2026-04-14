@@ -185,7 +185,7 @@ int max_fight( CHAR_DATA *ch )
  */
 void violence_update( GameContext *game )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     CHAR_DATA *ch;
     CHAR_DATA *lst_ch;
     CHAR_DATA *victim;
@@ -212,9 +212,8 @@ void violence_update( GameContext *game )
 
         if ( gch_prev && gch_prev->next != ch )
         {
-            SPRINTF( buf, "FATAL: violence_update: %s->prev->next doesn't point to ch.",
-            ch->name );
-            bug( buf, 0 );	    
+            buf = str_printf("FATAL: violence_update: %s->prev->next doesn't point to ch.", ch->name);
+            bug( buf.c_str(), 0 );	    
             bug( "Short-cutting here", 0 );
             ch->prev = NULL;
             gch_prev = NULL;
@@ -1202,7 +1201,7 @@ ch_ret damage_no_fighting(CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt)
  */
 ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt, bool bool_start_fighting )
 {
-    char buf1[MAX_STRING_LENGTH];
+    char buf1[MAX_STRING_LENGTH]; // Needed for do_fun command
     sh_int dameq;
     bool npcvict;
     bool loot;
@@ -1691,12 +1690,6 @@ ch_ret damage_optional_fighting( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int 
         
 	if ( !npcvict )
 	{
-//	    SPRINTF( buf1, "%s killed by %s at %d",
-//		victim->name,
-//		(IS_NPC(ch) ? ch->short_descr : ch->name),
-//		victim->in_room->vnum );
-//	    log_string( buf1 );
-//	    to_channel( buf1, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
 
 	}
 	else
@@ -1886,11 +1879,11 @@ void check_killer( CHAR_DATA *ch, CHAR_DATA *victim )
     {
         if ( !ch->master )
         {
-            char buf[MAX_STRING_LENGTH];
+            std::string buf;
 
-            SPRINTF( buf, "Check_killer: %s bad AFF_CHARM",
+            buf = str_printf("Check_killer: %s bad AFF_CHARM",
             IS_NPC(ch) ? ch->short_descr : ch->name );
-            bug( buf, 0 );
+            bug( buf.c_str(), 0 );
             affect_strip( ch, gsn_charm_person );
             BV_REMOVE_BIT( ch->affected_by, AFF_CHARM );
             return;
@@ -2126,9 +2119,9 @@ void raw_kill( CHAR_DATA *ch, CHAR_DATA *victim )
     
     CHAR_DATA *victmp;
     
-    char buf[MAX_STRING_LENGTH];
-    char buf2[MAX_STRING_LENGTH];
-    char arg[MAX_STRING_LENGTH];    
+    std::string buf;
+    std::string buf2;
+    std::string arg;    
     OBJ_DATA *obj, *obj_next;
     SHIP_DATA *ship;
     
@@ -2138,17 +2131,17 @@ void raw_kill( CHAR_DATA *ch, CHAR_DATA *victim )
       return;
     }
     
-    SPRINTF( arg , "%s", victim->name );
+    arg = victim->name;
 
     if ( !IS_NPC( victim ) && victim->pcdata->clan )
         remove_member( victim );
     if ( !IS_NPC( victim ) && !IS_NPC( ch ) )
     {
-      SPRINTF( buf, "%s killed by %s at %d",
+      buf = str_printf("%s killed by %s at %d",
       victim->name,
       (IS_NPC(ch) ? ch->short_descr : ch->name),
       victim->in_room->vnum );
-      log_string( buf );
+      log_string( buf.c_str() );
       to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
     }
 
@@ -2320,37 +2313,35 @@ else
 	    save_equipment[x][y] = NULL;
   }
   
-  SPRINTF( buf, "%s%c/%s", PLAYER_DIR, tolower(arg[0]),
+  buf = str_printf("%s%c/%s", PLAYER_DIR, tolower(arg[0]),
           capitalize( arg ).c_str() );
-  SPRINTF( buf2, "%s%c/%s", BACKUP_DIR, tolower(arg[0]),
+  buf2 = str_printf("%s%c/%s", BACKUP_DIR, tolower(arg[0]),
           capitalize( arg ).c_str() );
   
-  rename( buf, buf2 );
+  rename( buf.c_str(), buf2.c_str() );
   
-  SPRINTF( buf, "%s%c/%s.clone", PLAYER_DIR, tolower(arg[0]),
+  buf = str_printf("%s%c/%s.clone", PLAYER_DIR, tolower(arg[0]),
           capitalize( arg ).c_str() );
-  SPRINTF( buf2, "%s%c/%s", PLAYER_DIR, tolower(arg[0]),
+  buf2 = str_printf("%s%c/%s", PLAYER_DIR, tolower(arg[0]),
           capitalize( arg ).c_str() );
 
-  rename( buf, buf2 );
+  rename( buf.c_str(), buf2.c_str() );
 
-    SPRINTF( buf, "%s%s", GOD_DIR, capitalize(victim->name).c_str() );  
+    buf = str_printf("%s%s", GOD_DIR, capitalize(victim->name).c_str() );  
  
-    if ( !remove( buf ) )
+    if ( !remove( buf.c_str() ) )
       send_to_char( "Player's immortal data destroyed.\n", ch );
     else if ( errno != ENOENT )
     {
       ch_printf( ch, "Unknown error #%d - %s (immortal data).  Report to Thoric\n",
               errno, strerror( errno ) );
-      int n =  snprintf( buf2, sizeof(buf2), "%s slaying %s", ch->name, buf );
-      if (n >= (int)sizeof(buf2))
-        buf2[sizeof(buf2)-1] = '\0';  // ensure null-terminated
-      perror( buf2 );
+      std::string tmp = str_printf("%s slaying %s", ch->name, buf.c_str() );
+      perror( tmp.c_str() );
     }
 
-    SPRINTF( buf, "%s%c/%s.home", PLAYER_DIR, tolower(arg[0]),
+    buf = str_printf("%s%c/%s.home", PLAYER_DIR, tolower(arg[0]),
           capitalize( arg ).c_str() );
-    remove( buf );
+    remove( buf.c_str() );
   
   return;
 
@@ -2402,7 +2393,7 @@ else
 
 void group_gain( CHAR_DATA *ch, CHAR_DATA *victim )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     CHAR_DATA *gch;
     CHAR_DATA *lch;
     int xp;
@@ -2447,12 +2438,12 @@ void group_gain( CHAR_DATA *ch, CHAR_DATA *victim )
 	&& !str_cmp ( gch->pcdata->clan->name , victim->mob_clan ) )
 	{
 	     xp = 0;
-	     SPRINTF( buf, "You receive no experience for killing your organizations resources.\n");
+	     buf = "You receive no experience for killing your organizations resources.\n";
 	     send_to_char( buf, gch );
 	}
 	else
 	{
-	   SPRINTF( buf, "You receive %d combat experience.\n", xp );
+	   buf = str_printf("You receive %d combat experience.\n", xp );
 	   send_to_char( buf, gch );
 	}
         
@@ -2461,7 +2452,7 @@ void group_gain( CHAR_DATA *ch, CHAR_DATA *victim )
         if ( lch == gch && members > 1 )
         {
            xp = URANGE( members, xp*members, (exp_level( gch->skill_level[LEADERSHIP_ABILITY]+1) - exp_level(gch->skill_level[LEADERSHIP_ABILITY] )/10) );  
-           SPRINTF( buf, "You get %d leadership experience for leading your group to victory.\n", xp ); 
+           buf = str_printf("You get %d leadership experience for leading your group to victory.\n", xp ); 
 	   send_to_char( buf, gch );
            gain_exp( gch, xp , LEADERSHIP_ABILITY );
         }   
@@ -2567,7 +2558,7 @@ int xp_compute( CHAR_DATA *gch, CHAR_DATA *victim )
  */
 void dam_message( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
 {
-    char buf1[256], buf2[256], buf3[256];
+    std::string buf1, buf2, buf3;
     const char *vs;
     const char *vp;
     const char *attack;
@@ -2630,9 +2621,9 @@ void dam_message( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
     
     if ( dt == TYPE_HIT || dam==0 )
     {
-	SPRINTF( buf1, "$n %s $N%c",  vp, punct );
-	SPRINTF( buf2, "You %s $N%c", vs, punct );
-	SPRINTF( buf3, "$n %s you%c", vp, punct );
+	buf1 = str_printf("$n %s $N%c",  vp, punct );
+	buf2 = str_printf("You %s $N%c", vs, punct );
+	buf3 = str_printf("$n %s you%c", vp, punct );
     }
     else
     if ( dt > TYPE_HIT && is_wielding_poisoned( ch ) )
@@ -2645,9 +2636,9 @@ void dam_message( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
             attack = flag_bit_name((WEAPON_FIRST), obj_attack_table);
         }
 
-	SPRINTF( buf1, "$n's poisoned %s %s $N%c", attack, vp, punct );
-	SPRINTF( buf2, "Your poisoned %s %s $N%c", attack, vp, punct );
-	SPRINTF( buf3, "$n's poisoned %s %s you%c", attack, vp, punct ); 
+	buf1 = str_printf("$n's poisoned %s %s $N%c", attack, vp, punct );
+	buf2 = str_printf("Your poisoned %s %s $N%c", attack, vp, punct );
+	buf3 = str_printf("$n's poisoned %s %s you%c", attack, vp, punct ); 
     }
     else
     {
@@ -2697,18 +2688,15 @@ void dam_message( CHAR_DATA *ch, CHAR_DATA *victim, int dam, int dt )
         }
     }
 
-	SPRINTF( buf1, "$n's %s %s $N%c",  attack, vp, punct );
-	SPRINTF( buf2, "Your %s %s $N%c",  attack, vp, punct );
-	SPRINTF( buf3, "$n's %s %s you%c", attack, vp, punct );
+	buf1 = str_printf("$n's %s %s $N%c",  attack, vp, punct );
+	buf2 = str_printf("Your %s %s $N%c",  attack, vp, punct );
+	buf3 = str_printf("$n's %s %s you%c", attack, vp, punct );
     }
 
     if ( ch->skill_level[COMBAT_ABILITY] >= 50 )
     {
-        char tmp[MAX_STRING_LENGTH];
-        SPRINTF(tmp, "%s", buf2);   // copy old content        
-       int n = snprintf( buf2, sizeof(buf2), "%s You do %d points of damage.", tmp, dam);
-      if (n >= (int)sizeof(buf2))
-        buf2[sizeof(buf2)-1] = '\0';  // ensure null-terminated
+        std::string tmp = buf2;   // copy old content        
+        buf2 = str_printf("%s You do %d points of damage.", tmp.c_str(), dam);
 
     }
     act( AT_ACTION, buf1, ch, NULL, victim, TO_NOTVICT );

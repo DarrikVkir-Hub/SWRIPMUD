@@ -1345,8 +1345,7 @@ void start_editing( CHAR_DATA *ch, const std::string &data )
 
 char *copy_buffer( CHAR_DATA *ch )
 {
-   char buf[MAX_STRING_LENGTH];
-   char tmp[100];
+   std::string buf, tmp;
    sh_int x, len;
 
    if ( !ch )
@@ -1361,17 +1360,18 @@ char *copy_buffer( CHAR_DATA *ch )
 	return STRALLOC( "" );
    }
 
-   buf[0] = '\0';
+   buf.clear();
    for ( x = 0; x < ch->editor->numlines; x++ )
    {
-      SPRINTF( tmp, "%s", ch->editor->line[x] );
+	  tmp.clear();
+      tmp = str_printf("%s", ch->editor->line[x]);
       smush_tilde( tmp );
-      len = strlen(tmp);
-      if ( len > 0 && *tmp && tmp[len-1] == '~' )
+      len = tmp.length();
+      if ( len > 0 && !tmp.empty() && tmp[len-1] == '~' )
         tmp[len-1] = '\0';
       else
-        STRAPP( tmp, "\n" );
-      STRAPP( buf, "%s", tmp );
+        tmp += "\n";
+      buf =  tmp;
    }
    return STRALLOC( buf );
 }
@@ -4816,7 +4816,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
     std::string arg2;
     std::string arg3;
 	std::string argstr = argument;
-    char buf [MAX_STRING_LENGTH];
+    std::string buf;
     ROOM_INDEX_DATA	*location, *tmp;
     EXTRA_DESCR_DATA	*ed;
     char		dir;
@@ -4824,6 +4824,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
     size_t		value;
     int			edir, ekey, evnum;
     std::string origarg = argument;
+	char buf2[MAX_STRING_LENGTH]; // Used for do_fun command
 
     if ( !ch->desc )
     {
@@ -5221,17 +5222,17 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	}
 	if ( argstr.empty() )
 	{
-	   SPRINTF( buf, "Flags for exit direction: %d  Keywords: %s  Key: %d\n[ ",
+	   buf = str_printf("Flags for exit direction: %d  Keywords: %s  Key: %d\n[ ",
 	   	xit->vdir, xit->keyword, xit->key );
 	   for ( value = 0; value <= MAX_EXFLAG; value++ )
 	   {
 		if ( IS_SET( xit->exit_info, 1 << value ) )
 		{
-		    STRAPP( buf, "%s", ex_flags[value] );
-		    STRAPP( buf, " " );
+		    buf += ex_flags[value];
+		    buf += " ";
 		}
 	   }
-	   STRAPP( buf, "]\n" );
+	   buf += "]\n";
 	   send_to_char( buf, ch );
 	   return;
 	}
@@ -5271,8 +5272,8 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	}
 	if ( (xit = get_exit(location,edir)) == NULL )
 	{ 
-	   SPRINTF(buf,"exit %c 1",dir);
-	   do_redit(ch,buf);
+	   SPRINTF(buf2,"exit %c 1",dir);
+	   do_redit(ch,buf2);
 	   xit = get_exit(location,edir);
 	}     
 	TOGGLE_BIT( xit->exit_info, value );
@@ -5306,8 +5307,8 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	}
 	if ( (xit = get_exit(location,edir)) == NULL )
 	{ 
-	   SPRINTF(buf,"exit %c 1",dir);
-	   do_redit(ch,buf);
+	   SPRINTF(buf2,"exit %c 1",dir);
+	   do_redit(ch,buf2);
 	   xit = get_exit(location,edir);
 	}     
 	xit->vnum = evnum;
@@ -5329,8 +5330,8 @@ void do_redit( CHAR_DATA *ch, char *argument )
 	}
 	if ( (xit = get_exit(location,edir)) == NULL )
 	{ 
-	   SPRINTF(buf,"exit %c 1",dir);
-	   do_redit(ch,buf);
+	   SPRINTF(buf2,"exit %c 1",dir);
+	   do_redit(ch,buf2);
 	   xit = get_exit(location,edir);
 	}     
 	xit->key = strtoi( arg2 );
@@ -5497,7 +5498,7 @@ void do_redit( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg, "bexit" ) )
     {
 	EXIT_DATA *rxit;
-	char tmpcmd[MAX_INPUT_LENGTH];
+	char tmpcmd[MAX_INPUT_LENGTH]; // Used for do_fun command
 	ROOM_INDEX_DATA *tmploc;
 	int vnum, exnum;
 	char rvnum[MAX_INPUT_LENGTH];
@@ -6514,7 +6515,7 @@ void free_area( AREA_DATA *are )
 
 void assign_area( CHAR_DATA *ch )
 {
-	char taf[1024];
+	std::string taf;
 	AREA_DATA *tarea, *tmp;
 	bool created = FALSE;
 
@@ -6525,7 +6526,7 @@ void assign_area( CHAR_DATA *ch )
 	&&   ch->pcdata->r_range_hi )
 	{
 	  tarea = ch->pcdata->area;
-	  SPRINTF( taf, "%s.are", capitalize( ch->name ).c_str() );
+	  taf = str_printf("%s.are", capitalize( ch->name ).c_str() );
 	  if ( !tarea )
 	  {
 		for ( tmp = first_build; tmp; tmp = tmp->next )
@@ -7195,7 +7196,7 @@ void fold_area( AREA_DATA *tarea, const std::string& filename, bool install )
 void do_savearea( CHAR_DATA *ch, char *argument )
 {
     AREA_DATA	*tarea;
-    char	 filename[256];
+    std::string filename;
 
     if ( IS_NPC(ch) || get_trust( ch ) < LEVEL_AVATAR || !ch->pcdata
     ||  ( argument[0] == '\0' && !ch->pcdata->area) )
@@ -7241,7 +7242,7 @@ void do_savearea( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    SPRINTF( filename, "%s%s", BUILD_DIR, tarea->filename );
+    filename = str_printf("%s%s", BUILD_DIR, tarea->filename);
     fold_area( tarea, filename, FALSE );
     send_to_char( "Done.\n", ch );
 }
@@ -7249,7 +7250,7 @@ void do_savearea( CHAR_DATA *ch, char *argument )
 void do_loadarea( CHAR_DATA *ch, char *argument )
 {
     AREA_DATA	*tarea;
-    char	 filename[256];
+    std::string filename;
     int		tmp;
 
     if ( IS_NPC(ch) || get_trust( ch ) < LEVEL_AVATAR || !ch->pcdata
@@ -7302,7 +7303,7 @@ void do_loadarea( CHAR_DATA *ch, char *argument )
 	send_to_char( "Your area is already loaded.\n", ch );
 	return;
     }
-    SPRINTF( filename, "%s%s", BUILD_DIR, tarea->filename );
+    filename = str_printf("%s%s", BUILD_DIR, tarea->filename);
     send_to_char( "Loading...\n", ch );
     load_area_file( ch->game, tarea, filename );
     send_to_char( "Linking exits...\n", ch );

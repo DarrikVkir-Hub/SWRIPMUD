@@ -439,12 +439,9 @@ static void caught_alarm(int)
  */
 static void handle_alarm_recovery(GameContext *game)
 {
-    char buf[MAX_STRING_LENGTH];
-
     (void)game;
 
     bug("ALARM CLOCK!");
-    SPRINTF(buf, "Alas, the hideous mandalorian entity known only as 'Lag' rises once more!\n");
     echo_to_all(AT_IMMORT, ("Alas, the hideous mandalorian entity known only as 'Lag' rises once more!\n"), ECHOTAR_ALL);
 
     log_string("alarm recovery complete");
@@ -895,7 +892,7 @@ void game_loop(GameContext *game)
 
 void new_descriptor( GameContext *game, int new_desc )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     DESCRIPTOR_DATA *dnew;
     BAN_DATA *pban;
     struct hostent  *from;
@@ -1009,7 +1006,7 @@ void new_descriptor( GameContext *game, int new_desc )
     memset(dnew->telopt_him, 0, sizeof(dnew->telopt_him));
     CREATE_ARRAY( dnew->outbuf, char, dnew->outsize );
 
-    SPRINTF( buf, "%s", inet_ntoa( sock.sin_addr ) );
+    buf = inet_ntoa( sock.sin_addr );
 
     dnew->host = STRALLOC( buf );
 
@@ -1053,9 +1050,9 @@ void new_descriptor( GameContext *game, int new_desc )
     if ( !str_prefix( dnew->host, "172.1" ) )
     {
 //    log_string_plus( "AOL Ping!", LOG_COMM, sysdata.log_level );
-      SPRINTF( buf, inet_ntoa( sock.sin_addr ) );
+      buf = inet_ntoa( sock.sin_addr );
       log_printf_plus( LOG_COMM, sysdata.log_level, "Sock.sinaddr: AOL Ping! %s, port %hd.",
-		buf, dnew->port );
+		buf.c_str(), dnew->port );
       
       output_to_descriptor( dnew,
       "AOL users have been banned from this site.  We apologize for the inconvenience.\n");
@@ -1087,13 +1084,13 @@ void new_descriptor( GameContext *game, int new_desc )
 	}
     }
 
-    SPRINTF( buf, "%s", inet_ntoa( sock.sin_addr ) );
-    log_printf_plus( LOG_COMM, game->get_sysdata()->log_level, "Sock.sinaddr:  %s, port %d.",	buf, dnew->port );
+    buf = inet_ntoa( sock.sin_addr );
+    log_printf_plus( LOG_COMM, game->get_sysdata()->log_level, "Sock.sinaddr:  %s, port %d.",	buf.c_str(), dnew->port );
 
     if ( !game->get_sysdata()->no_name_resolving )
     {
        STRFREE ( dnew->host);
-       dnew->host = STRALLOC( (char *)( from ? from->h_name : buf) );
+       dnew->host = STRALLOC( ( from ? from->h_name : buf) );
     }
 
     /*
@@ -1170,11 +1167,11 @@ void new_descriptor( GameContext *game, int new_desc )
     	game->get_sysdata()->maxplayers = num_descriptors;
     if ( game->get_sysdata()->maxplayers > game->get_sysdata()->alltimemax )
     {
-      SPRINTF(buf, "%24.24s", ctime(&current_time));
+      buf = str_printf("%24.24s", ctime(&current_time));
       game->get_sysdata()->set_time_of_max (buf);
       game->get_sysdata()->alltimemax = game->get_sysdata()->maxplayers;
-      SPRINTF( buf, "Broke all-time maximum player record: %d", game->get_sysdata()->alltimemax );
-      log_string_plus( buf, LOG_COMM, game->get_sysdata()->log_level );
+      buf = str_printf("Broke all-time maximum player record: %d", game->get_sysdata()->alltimemax);
+      log_string_plus( buf.c_str(), LOG_COMM, game->get_sysdata()->log_level );
       to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
       save_sysdata( *game->get_sysdata() );
     }
@@ -4250,7 +4247,7 @@ static void nanny_clear_login_flags_and_timers( CHAR_DATA *ch )
 
 static void nanny_load_player_home_storage( DESCRIPTOR_DATA *d, CHAR_DATA *ch )
 {
-    char filename[256];
+    std::string buf;
     FILE *fph;
     ROOM_INDEX_DATA *storeroom;
     OBJ_DATA *obj;
@@ -4267,10 +4264,10 @@ static void nanny_load_player_home_storage( DESCRIPTOR_DATA *d, CHAR_DATA *ch )
         extract_obj( obj );
     }
 
-    SPRINTF( filename, "%s%c/%s.home", PLAYER_DIR, tolower( ch->name[0] ),
+    buf = str_printf("%s%c/%s.home", PLAYER_DIR, tolower( ch->name[0] ),
         capitalize( ch->name ).c_str() );
 
-    if ( ( fph = fopen( filename, "r" ) ) == NULL )
+    if ( ( fph = fopen( buf.c_str(), "r" ) ) == NULL )
         return;
 
     rset_supermob( storeroom );

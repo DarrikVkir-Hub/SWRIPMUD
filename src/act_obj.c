@@ -965,7 +965,7 @@ void do_give( CHAR_DATA *ch, char *argument )
 {
     std::string arg1;
     std::string arg2;
-    char buf  [MAX_INPUT_LENGTH];
+	std::string	buf;
     CHAR_DATA *victim;
     OBJ_DATA  *obj;
     std::string argstr;
@@ -1020,9 +1020,9 @@ void do_give( CHAR_DATA *ch, char *argument )
 
 	ch->gold     -= amount;
 	victim->gold += amount;
-        STRLCPY(buf, "$n gives you ");
-        STRAPP(buf, "%s", arg1.c_str());
-        STRAPP(buf, (amount > 1) ? " credits." : " credit.");
+        buf = "$n gives you ";
+        buf = str_printf("%s", arg1.c_str());
+        buf = str_printf("%s", (amount > 1) ? " credits." : " credit.");
 
 	act( AT_ACTION, buf, ch, NULL, victim, TO_VICT    );
 	act( AT_ACTION, "$n gives $N some credits.",  ch, NULL, victim, TO_NOTVICT );
@@ -2448,7 +2448,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
     std::string arg1;
     std::string arg2;
 	std::string argstr;
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
 
     argstr = one_argument (argument, arg1);
 
@@ -2478,14 +2478,14 @@ void do_auction (CHAR_DATA *ch, char *argument)
 
             /* show item data here */
             if (auction->bet > 0)
-                SPRINTF (buf, "Current bid on this item is %d credits.\n",auction->bet);
+                buf = str_printf("Current bid on this item is %d credits.\n",auction->bet);
             else
-                SPRINTF (buf, "No bids on this item have been received.\n");
+                buf = "No bids on this item have been received.\n";
 	       set_char_color ( AT_BLUE, ch );
             send_to_char (buf,ch);
 /*          spell_identify (0, LEVEL_HERO - 1, ch, auction->item); */
 
-	    SPRINTF( buf,
+	    buf = str_printf(
 		"Object '%s' is %s, special properties: %s.\nIts weight is %d, value is %d.\n",
 		obj->name,
 		aoran( item_type_name( obj ) ).c_str(),
@@ -2495,7 +2495,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
 	    set_char_color( AT_LBLUE, ch );
 	    send_to_char( buf, ch );
            
-            SPRINTF( buf, "Worn on: %s\n", 
+            buf = str_printf( "Worn on: %s\n", 
                      bitset_to_string(obj->wear_flags , w_flags ).c_str());
             send_to_char( buf, ch );
 
@@ -2524,11 +2524,11 @@ void do_auction (CHAR_DATA *ch, char *argument)
 
 	    if (IS_IMMORTAL(ch))
 	    {
-		SPRINTF(buf, "Seller: %s.  Bidder: %s.  Round: %d.\n",
+		buf = str_printf("Seller: %s.  Bidder: %s.  Round: %d.\n",
                         auction->seller->name, auction->buyer->name,
                         (auction->going + 1));
 		send_to_char(buf, ch);
-		SPRINTF(buf, "Time left in round: %d.\n", auction->pulse);
+		buf = str_printf("Time left in round: %d.\n", auction->pulse);
 		send_to_char(buf, ch);
 	    }
             return;
@@ -2551,7 +2551,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
       else /* stop the auction */
       {
 	set_char_color ( AT_LBLUE, ch );
-        SPRINTF (buf,"Sale of %s has been stopped by an Immortal.",
+        buf = str_printf("Sale of %s has been stopped by an Immortal.",
                         auction->item->short_descr);
         talk_auction (buf);
         obj_to_char (auction->item, auction->seller);
@@ -2631,7 +2631,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
             auction->going = 0;
             auction->pulse = PULSE_AUCTION; /* start the auction over again */
 
-            SPRINTF (buf,"A bid of %d credits has been received on %s.\n",newbet,auction->item->short_descr);
+            buf = str_printf("A bid of %d credits has been received on %s.\n",newbet,auction->item->short_descr);
             talk_auction (buf);
             return;
 
@@ -2716,7 +2716,7 @@ void do_auction (CHAR_DATA *ch, char *argument)
 	if (auction->starting > 0)
 	  auction->bet = auction->starting;
 
-	SPRINTF (buf, "A new item is being auctioned: %s at %d credits.", obj->short_descr, auction->starting);
+	buf = str_printf("A new item is being auctioned: %s at %d credits.", obj->short_descr, auction->starting);
 	talk_auction (buf);
 
 	return;

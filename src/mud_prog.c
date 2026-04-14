@@ -2217,7 +2217,7 @@ void set_supermob( GameContext *game, OBJ_DATA *obj)
   ROOM_INDEX_DATA *room;
   OBJ_DATA *in_obj;
 //  CHAR_DATA *mob;
-  char buf[200];
+  std::string buf;
 
   if ( !supermob )
     supermob = create_mobile(game, get_mob_index( MOB_VNUM_SUPERMOB ));
@@ -2252,7 +2252,7 @@ void set_supermob( GameContext *game, OBJ_DATA *obj)
 
   /* Added by Jenny to allow bug messages to show the vnum
      of the object, and not just supermob's vnum */
-  SPRINTF( buf, "Object #%d", obj->pIndexData->vnum );
+  buf = str_printf("Object #%d", obj->pIndexData->vnum);
   STRFREE( supermob->description );
   supermob->description = STRALLOC( buf );
 
@@ -2732,7 +2732,7 @@ void oprog_wordlist_check( const std::string &arg, CHAR_DATA *mob, CHAR_DATA *ac
 
 void rset_supermob( ROOM_INDEX_DATA *room)
 {
-  char buf[200];
+  std::string buf;
 
   if (room)
   {
@@ -2745,7 +2745,7 @@ void rset_supermob( ROOM_INDEX_DATA *room)
 
     /* Added by Jenny to allow bug messages to show the vnum
        of the room, and not just supermob's vnum */
-    SPRINTF( buf, "Room #%d", room->vnum );
+    buf = str_printf("Room #%d", room->vnum);
     STRFREE( supermob->description );
     supermob->description = STRALLOC( buf );
 

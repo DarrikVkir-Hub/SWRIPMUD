@@ -1752,9 +1752,7 @@ void do_buyvendor (CHAR_DATA *ch, char *argument)
 {
   CHAR_DATA *keeper;
   OBJ_DATA *deed;
-  char buf[MAX_STRING_LENGTH];
-  char buf1[MAX_STRING_LENGTH];
-  char strsave[MAX_INPUT_LENGTH];
+  std::string buf, buf1, strsave;
   struct stat fst;
 
   if (IS_NPC(ch))
@@ -1762,13 +1760,13 @@ void do_buyvendor (CHAR_DATA *ch, char *argument)
 
   if ( !str_cmp( argument, "yes" ) )
   {
-    SPRINTF( buf, "%s/%s", VENDOR_DIR, capitalize( ch->name ).c_str() );
-    remove( buf );
+    buf = str_printf("%s/%s", VENDOR_DIR, capitalize( ch->name ).c_str() );
+    remove( buf.c_str() );
   }
   
-    SPRINTF( strsave, "%s/%s", VENDOR_DIR, capitalize( ch->name ).c_str() );
+    strsave = str_printf("%s/%s", VENDOR_DIR, capitalize( ch->name ).c_str() );
 
-    	if ( stat( strsave, &fst ) != -1 )
+    	if ( stat( strsave.c_str(), &fst ) != -1 )
     	{
 		send_to_char( "You already have a shop!\n", ch);
 		send_to_char( "If you want to buy one anyway, type buyvendor yes.\n", ch);
@@ -1785,14 +1783,14 @@ void do_buyvendor (CHAR_DATA *ch, char *argument)
 
   if ( ch->gold < COST_BUY_VENDOR )
      {
-         SPRINTF(buf1, "%s says, You are too poor!\n", keeper->name);
+         buf1 = str_printf("%s says, You are too poor!\n", keeper->name);
          send_to_char (buf1, ch);
          return;
      }
 
 if ( (ch->top_level) < LEVEL_BUY_VENDOR )
 	{
-		SPRINTF (buf1, "you must be at least %d level.\n", LEVEL_BUY_VENDOR);
+		buf1 = str_printf("you must be at least %d level.\n", LEVEL_BUY_VENDOR);
 		send_to_char (buf1, ch);
 		return;
 	}
@@ -2224,7 +2222,7 @@ char vnum1 [MAX_INPUT_LENGTH];
 
 void save_vendor( CHAR_DATA *ch )
 {
-    char strsave[MAX_INPUT_LENGTH];
+    std::string strsave;
     FILE *fp;
 
     if ( !ch )
@@ -2236,18 +2234,18 @@ void save_vendor( CHAR_DATA *ch )
     de_equip_char( ch );
 
 
-    SPRINTF( strsave, "%s%s",VENDOR_DIR, capitalize( ch->owner ).c_str() );
+    strsave = str_printf("%s%s",VENDOR_DIR, capitalize( ch->owner ).c_str() );
 
-    if ( ( fp = fopen( strsave, "w" ) ) == NULL )
+    if ( ( fp = fopen( strsave.c_str(), "w" ) ) == NULL )
     {
-	perror( strsave );
+	perror( strsave.c_str() );
 	bug( "Save_vendor: fopen", 0 );
     }
     else
     {
 	bool ferr;
 
-	chmod(strsave, S_IRUSR|S_IWUSR | S_IRGRP|S_IWGRP | S_IROTH|S_IWOTH);
+	chmod(strsave.c_str(), S_IRUSR|S_IWUSR | S_IRGRP|S_IWGRP | S_IROTH|S_IWOTH);
 	fprintf( fp, "#VENDOR\n"		);
 	fwrite_vendor( fp, ch );
 
@@ -2259,8 +2257,8 @@ void save_vendor( CHAR_DATA *ch )
 	FCLOSE( fp );
 	if (ferr)
 	{
-	  perror(strsave);
-	  bug("Error writing temp file for %s -- not copying", strsave);
+	  perror(strsave.c_str());
+	  bug("Error writing temp file for %s -- not copying", strsave.c_str());
 	}
     }
 

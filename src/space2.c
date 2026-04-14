@@ -2100,9 +2100,6 @@ void do_install_module( CHAR_DATA *ch, char *argument )
         return;       
     }
 
-//	SPRINTF( buf, "Ship: %s\n", ship->personalname );
-//	send_to_char( buf, ch );
-
   if ( obj->value[1] != MOD_FLAG )
   {
       if ( obj->item_type==ITEM_FIGHTERCOMP && ship->shipclass != FIGHTER_SHIP )
@@ -2878,26 +2875,6 @@ char * get_template_string( int templatetype )
     
     if( i >= MAX_TEMPLATETYPE ) 
       templatestring = STRALLOC( "" );
-
-  /*
-    switch(templatetype)
-    {
-      case 1: 
-  //  	  SPRINTF( buf, "2] 1; 2)20:1" );
-        SPRINTF( buf, "2] 1)22:2" );
-        templatestring = STRALLOC( buf ); 
-        break;
-      case 2:
-        SPRINTF( buf, "1] 1; " );
-        templatestring = STRALLOC( buf );
-        break;
-      case 3:
-        SPRINTF( buf, "1] 10;" );
-        templatestring = STRALLOC( buf );
-        break;
-      default: send_to_char( "Template not found.\n", ch );return; break;
-    }
-  */
 
     return templatestring;
 }

@@ -443,7 +443,7 @@ bool mob_snipe( CHAR_DATA *ch, CHAR_DATA *victim )
    EXIT_DATA       * pexit;
    ROOM_INDEX_DATA * was_in_room;
    ROOM_INDEX_DATA * to_room;
-   char              buf[MAX_STRING_LENGTH];
+   std::string buf;
    bool              pfound = FALSE;
 
  if ( !ch->in_room || !victim->in_room )
@@ -546,11 +546,11 @@ bool mob_snipe( CHAR_DATA *ch, CHAR_DATA *victim )
     char_from_room( ch );
     char_to_room( ch, victim->in_room );    
                 
-       SPRINTF( buf , "A blaster shot fires at you from the %s." , dir_name[dir] );
-       act( AT_ACTION, buf , victim, NULL, ch, TO_CHAR );      
+       buf = "A blaster shot fires at you from the " + std::string(dir_name[dir]) + ".";
+       act( AT_ACTION, buf.c_str(), victim, NULL, ch, TO_CHAR );      
        act( AT_ACTION, "You fire at $N.", ch, NULL, victim, TO_CHAR );         
-       SPRINTF( buf, "A blaster shot fires at $N from the %s." , dir_name[dir] );
-       act( AT_ACTION, buf, ch, NULL, victim, TO_NOTVICT );  
+       buf = "A blaster shot fires at $N from the " + std::string(dir_name[dir]) + ".";
+       act( AT_ACTION, buf.c_str(), ch, NULL, victim, TO_NOTVICT );  
                                                    
        one_hit( ch, victim, TYPE_UNDEFINED );  
        

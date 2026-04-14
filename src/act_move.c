@@ -254,8 +254,7 @@ int wherehome( CHAR_DATA *ch)
 
 void decorate_room( ROOM_INDEX_DATA *room )
 {
-    char buf[MAX_STRING_LENGTH];
-    char buf2[MAX_STRING_LENGTH];
+    std::string buf, buf2;
     int nRand;
     int iRand, len;
     int previous[8];
@@ -267,7 +266,7 @@ void decorate_room( ROOM_INDEX_DATA *room )
       STRFREE( room->description );
 
     room->name	= STRALLOC( (char*)get_flag_name(sect_names, sector, SECT_MAX) );
-    buf[0] = '\0';
+    buf.clear();
     nRand = number_range( 1, UMIN(8,sent_total[sector]) );
 
     for ( iRand = 0; iRand < nRand; iRand++ )
@@ -290,21 +289,20 @@ void decorate_room( ROOM_INDEX_DATA *room )
 
 	    previous[iRand] = x;
 
-	    len = strlen(buf);
-	    SPRINTF( buf2, "%s", room_sents[sector][x] );
+	    len = buf.length();
+	    buf2 = room_sents[sector][x];
 	    if ( len > 5 && buf[len-1] == '.' )
 	    {
-		STRAPP( buf, "  " );
+		buf += "  ";
 		buf2[0] = UPPER(buf2[0] );
 	    }
 	    else
 	    if ( len == 0 )
 	        buf2[0] = UPPER(buf2[0] );
-	    STRAPP( buf, "%s", buf2 );
+	    buf += buf2;
 	}
     }
-//    SPRINTF( buf2, "%s\n", wordwrap(buf, 78) );
-	SPRINTF( buf2, "%s\n", buf );
+	buf2 = str_printf("%s\n", buf );
     room->description = STRALLOC( buf2 );
 }
 
@@ -564,7 +562,7 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
     ROOM_INDEX_DATA *in_room;
     ROOM_INDEX_DATA *to_room;
     ROOM_INDEX_DATA *from_room;
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     std::string txt;
     std::string dtxt;
     ch_ret retcode;
@@ -996,12 +994,12 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
       }
       if ( ch->mount )
       {
-	SPRINTF( buf, "$n %s %s upon $N.", txt.c_str(), dir_name[door] );
+	buf = str_printf("$n %s %s upon $N.", txt.c_str(), dir_name[door] );
 	act( AT_ACTION, buf, ch, NULL, ch->mount, TO_NOTVICT );
       }
       else
       {
-	SPRINTF( buf, "$n %s $T.", txt.c_str() );
+	buf = str_printf("$n %s $T.", txt.c_str() );
 	act( AT_ACTION, buf, ch, NULL, dir_name[door], TO_ROOM );
       }
     }
@@ -1090,13 +1088,13 @@ ch_ret move_char( CHAR_DATA *ch, EXIT_DATA *pexit, int fall )
 			}
 			if ( ch->mount )
 			{
-				SPRINTF( buf, "$n %s from %s upon $N.", txt.c_str(), dtxt.c_str() );
+				buf = str_printf("$n %s from %s upon $N.", txt.c_str(), dtxt.c_str() );
 				act( AT_ACTION, buf, ch, NULL, ch->mount, TO_ROOM );
 			}
 			else
 			{
-				SPRINTF( buf, "$n %s from %s.", txt.c_str(), dtxt.c_str() );
-				act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
+				buf = str_printf("$n %s from %s.", txt.c_str(), dtxt.c_str() );
+				act( AT_ACTION, buf.c_str(), ch, NULL, NULL, TO_ROOM );
 			}
 		}
 	}

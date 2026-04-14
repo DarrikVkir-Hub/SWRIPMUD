@@ -1781,7 +1781,7 @@ void do_search( CHAR_DATA *ch, char *argument )
 
 void do_steal( CHAR_DATA *ch, char *argument )
 {
-    char buf  [MAX_STRING_LENGTH];
+    char buf  [MAX_STRING_LENGTH]; // used for do_fun command
     std::string arg1;
     std::string arg2;
 	std::string argstr = argument;

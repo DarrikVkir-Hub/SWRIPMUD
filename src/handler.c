@@ -1704,7 +1704,7 @@ void extract_char( CHAR_DATA *ch, bool fPull )
 {
     CHAR_DATA *wch;
     OBJ_DATA *obj;
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     ROOM_INDEX_DATA *location;
 
     if ( !ch )
@@ -1727,8 +1727,8 @@ void extract_char( CHAR_DATA *ch, bool fPull )
 
     if ( char_died(ch) )
     {
-	SPRINTF( buf, "extract_char: %s already died!", ch->name );
-	bug( buf, 0 );
+	buf = str_printf("extract_char: %s already died!", ch->name );
+	bug( buf.c_str(), 0 );
 	return;
     }
 
@@ -2741,8 +2741,8 @@ ch_ret spring_trap( CHAR_DATA *ch, OBJ_DATA *obj )
       int dam;
       int typ;
       int lev;
-      char *txt;
-      char buf[MAX_STRING_LENGTH];
+      std::string txt;
+      std::string buf;
       ch_ret retcode;
 
       typ = obj->value[1];
@@ -2783,10 +2783,10 @@ ch_ret spring_trap( CHAR_DATA *ch, OBJ_DATA *obj )
       }
 
       dam = number_range( obj->value[2], obj->value[2] * 2);
-      SPRINTF( buf, "You are %s!", txt );
-      act( AT_HITME, buf, ch, NULL, NULL, TO_CHAR );
-      SPRINTF( buf, "$n is %s.", txt );
-      act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
+      buf = str_printf("You are %s!", txt.c_str() );
+      act( AT_HITME, buf.c_str(), ch, NULL, NULL, TO_CHAR );
+      buf = str_printf("$n is %s.", txt.c_str() );
+      act( AT_ACTION, buf.c_str(), ch, NULL, NULL, TO_ROOM );
       --obj->value[0];
       if ( obj->value[0] <= 0 )
 	extract_obj( obj );
@@ -3158,7 +3158,7 @@ void fix_char( CHAR_DATA *ch )
  */
 void showaffect( CHAR_DATA *ch, AFFECT_DATA *paf )
 {
-	char buf[MAX_STRING_LENGTH];
+	std::string buf;
 	int x;
 
 	if ( !paf )
@@ -3171,35 +3171,35 @@ void showaffect( CHAR_DATA *ch, AFFECT_DATA *paf )
 	    switch( paf->location )
 	    {
 	      default:
-		SPRINTF( buf, "Affects %s by %d.\n",
+		buf = str_printf("Affects %s by %d.\n",
 		  affect_loc_name( paf->location ).c_str(), paf->modifier );
 		break;
 	      case APPLY_AFFECT:
-		SPRINTF( buf, "Affects %s by",
+		buf = str_printf("Affects %s by",
 		  affect_loc_name( paf->location ).c_str() );
 		for ( x = 0; x < AFF_MAX ; x++ )
 		    if ( IS_SET( paf->modifier, x ) )
 		    {
-		        STRAPP( buf, " " );
-		        STRAPP( buf, "%s", get_flag_name(aff_flags, x, AFF_MAX) );
+		        buf += " ";
+		        buf += get_flag_name(aff_flags, x, AFF_MAX);
 		    }
-		STRAPP( buf, "\n" );
+		buf += "\n";
 		break;
 	      case APPLY_WEAPONSPELL:
 	      case APPLY_WEARSPELL:
 	      case APPLY_REMOVESPELL:
-		SPRINTF( buf, "Casts spell '%s'\n",
+		buf = str_printf("Casts spell '%s'\n",
 			IS_VALID_SN(paf->modifier) ? skill_table[paf->modifier]->name
 						   : "unknown" );
 		break;
 	      case APPLY_RESISTANT:
 	      case APPLY_IMMUNE:
 	      case APPLY_SUSCEPTIBLE:
-		SPRINTF( buf, "Affects %s by",
+		buf = str_printf("Affects %s by",
 		  affect_loc_name( paf->location ).c_str() );
-		  STRAPP( buf, " " );
-		  STRAPP( buf, "%s", get_flag_name(ris_flags,paf->modifier, RIS_MAX) );
-		STRAPP( buf, "\n" );
+		  buf += " ";
+		  buf += get_flag_name(ris_flags,paf->modifier, RIS_MAX);
+		buf += "\n";
 		break;
 	    }
 	    send_to_char( buf, ch );

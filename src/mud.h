@@ -864,6 +864,7 @@ struct system_data
     long get_current_shipID() { return currentshipID; };
     void set_current_shipID(int id) { currentshipID = id; };    
     void set_time_of_max(const char* time) { time_of_max = time; };
+    void set_time_of_max(const std::string& time) { time_of_max = time; };
     void set_guild_overseer(const char* name) { guild_overseer = name; };
     void set_guild_advisor(const char* name) { guild_advisor = name; };
     void set_guild_overseer(const std::string& name) { guild_overseer = name; };
@@ -5958,7 +5959,7 @@ void dockship( CHAR_DATA *ch, SHIP_DATA *ship );
 bool is_bus_stop( int vnum );
 bool space_in_range_c( SHIP_DATA *ship, SPACE_DATA *object, int range = 10000 );
 bool    autofly(SHIP_DATA *ship);
-bool	load_ship_file	args( ( GameContext *game, char *shipfile ) );
+bool	load_ship_file	args( ( GameContext *game, const std::string& shipfile ) );
 
 /* space2.c */
 bool check_hostile( SHIP_DATA *ship );
@@ -6008,7 +6009,6 @@ void    send_to_char( const std::string& txt, CHAR_DATA *ch );
 //void  send_to_desc_color  args( ( const char *txt, DESCRIPTOR_DATA *d ) );
 void	send_to_pager	args( ( const std::string& txt, CHAR_DATA *ch ) );
 void	send_to_pager	args( ( const char *txt, CHAR_DATA *ch ) );
-void	send_to_pager_color	args( ( const char *txt, CHAR_DATA *ch ) );
 void	set_char_color  args( ( sh_int AType, CHAR_DATA *ch ) );
 void	set_pager_color	args( ( sh_int AType, CHAR_DATA *ch ) );
 void	ch_printf_	args( ( CHAR_DATA *ch, const char *fmt, ... ) );
@@ -6079,6 +6079,7 @@ int	dice		args( ( int number, int size ) );
 int	interpolate	args( ( int level, int value_00, int value_32 ) );
 void	smash_tilde	args( ( char *str ) );
 void smash_tilde(std::string& str);
+void hide_tilde( std::string& str );
 void	hide_tilde	args( ( char *str ) );
 char *	show_tilde	args( ( char *str ) );
 bool	str_cmp		args( ( const char *astr, const char *bstr ) );
@@ -6103,7 +6104,7 @@ MID *	make_mobile	args( ( GameContext *game, sh_int vnum, sh_int cvnum, const st
 ED  *	make_exit	args( ( ROOM_INDEX_DATA *pRoomIndex, ROOM_INDEX_DATA *to_room, sh_int door ) );
 void	add_help	args( ( HELP_DATA *pHelp ) );
 void	fix_area_exits	args( ( AREA_DATA *tarea ) );
-void	load_area_file	args( ( GameContext *game, AREA_DATA *tarea, char *filename ) );
+void	load_area_file	args( ( GameContext *game, AREA_DATA *tarea, const std::string& filename ) );
 void	randomize_exits	args( ( ROOM_INDEX_DATA *room, sh_int maxdir ) );
 void	make_wizlist	args( ( GameContext *game ) );
 void	tail_chain	args( ( GameContext *game ) );
@@ -6816,7 +6817,6 @@ void rprog_act_trigger( const std::string& buf, ROOM_INDEX_DATA *room, CHAR_DATA
 
 
 #define send_to_char_color  send_to_char
-#define send_to_pager send_to_pager_color
 #define GET_BETTED_ON(ch)    ((ch)->betted_on)
 #define GET_BET_AMT(ch) ((ch)->bet_amt)
 #define IN_ARENA(ch)            (IS_SET((ch)->in_room->room_flags, ROOM_ARENA))

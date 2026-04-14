@@ -41,8 +41,7 @@ extern int      top_affect;
 
 void do_makeblade( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
+    std::string arg, buf;
     int level, chance;
     int charge = 0;
     bool checktool, checkdura, checkbatt, checkoven, checkstaff; 
@@ -52,7 +51,7 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
     AFFECT_DATA *paf;
     AFFECT_DATA *paf2;
             
-    SPRINTF( arg , "%s", argument );
+    arg = argument;
     
     switch( ch->substate )
     { 
@@ -118,7 +117,7 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
       {
          send_to_char( "&GYou begin the long process of crafting a vibroblade.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and a small oven and begins to work on something.", ch,
-          NULL, argument , TO_ROOM );
+          NULL, arg , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 25 , do_makeblade , 1 );
          ch->dest_buf = str_dup(arg);
          return;
@@ -130,7 +129,7 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
      case 1: 
       if ( !ch->dest_buf )
            return;
-      SPRINTF(arg, "%s", (const char* )ch->dest_buf);
+      arg = (const char* )ch->dest_buf;
       STR_DISPOSE( ch->dest_buf);
       break;
       
@@ -209,18 +208,18 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
     obj->level = level;
     obj->weight = 3;
     STRFREE( obj->name );
-    SPRINTF( buf, "%s", arg );
+    buf = arg;
     if (!checkstaff)
-      STRAPP( buf, " vibro-blade blade" );
+      buf += " vibro-blade blade";
     else
-      STRAPP( buf, " force pike" );
+      buf += " force pike";
    
     obj->name = STRALLOC( buf );
-    SPRINTF( buf, "%s", arg );
+    buf = arg;
     STRFREE( obj->short_descr );
     obj->short_descr = STRALLOC( buf );        
     STRFREE( obj->description );
-    STRAPP( buf, " was left here." );
+    buf += " was left here.";
     obj->description = STRALLOC( buf );
     CREATE( paf, AFFECT_DATA, 1 );
     paf->type               = -1;
@@ -268,7 +267,7 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
                                                             
     send_to_char( "&GYou finish your work and hold up your newly created blade.&w\n", ch);
     act( AT_PLAIN, "$n finishes crafting a blade.", ch,
-         NULL, argument , TO_ROOM );
+         NULL, arg , TO_ROOM );
     
     {
          long xpgain;
@@ -283,8 +282,7 @@ void do_makeblade( CHAR_DATA *ch, char *argument )
 
 void do_makeblaster( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
+    std::string arg, buf;
     int level, chance;
     bool checktool, checkdura, checkbatt, checkoven, checkcond, checkcirc, checkammo, checkscope;
     OBJ_DATA *obj;
@@ -293,12 +291,12 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
     AFFECT_DATA *paf;
     AFFECT_DATA *paf2;
     
-    SPRINTF( arg , "%s", argument );
+    arg = argument;
     
     switch( ch->substate )
     { 
      default:
-             if ( arg[0] == '\0' )
+             if ( arg.empty() )
                 {
                   send_to_char( "&RUsage: Makeblaster <name>\n&w", ch);
                   return;   
@@ -376,7 +374,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
       {
          send_to_char( "&GYou begin the long process of making a blaster.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and a small oven and begins to work on something.", ch,
-          NULL, argument , TO_ROOM );
+          NULL, arg , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 25 , do_makeblaster , 1 );
          ch->dest_buf   = str_dup(arg);
          return;
@@ -388,7 +386,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
      case 1: 
       if ( !ch->dest_buf )
            return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
+      arg = (const char*) ch->dest_buf;
       STR_DISPOSE( ch->dest_buf);
       break;
       
@@ -507,14 +505,14 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
     obj->level = level;
     obj->weight = 2+level/10;
     STRFREE( obj->name );
-    SPRINTF( buf , "%s", arg );
-    STRAPP( buf , " blaster");
+    buf = arg;
+    buf += " blaster";
     obj->name = STRALLOC( buf );
-    SPRINTF( buf, "%s", arg );
+    buf = arg;
     STRFREE( obj->short_descr );
     obj->short_descr = STRALLOC( buf );        
     STRFREE( obj->description );
-    STRAPP( buf, " was carelessly misplaced here." );
+    buf += " was carelessly misplaced here.";
     obj->description = STRALLOC( buf );
     CREATE( paf, AFFECT_DATA, 1 );
     paf->type               = -1;
@@ -558,7 +556,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
                                                             
     send_to_char( "&GYou finish your work and hold up your newly created blaster.&w\n", ch);
     act( AT_PLAIN, "$n finishes making $s new blaster.", ch,
-         NULL, argument , TO_ROOM );
+         NULL, arg , TO_ROOM );
     
     {
          long xpgain;
@@ -572,8 +570,7 @@ void do_makeblaster( CHAR_DATA *ch, char *argument )
 
 void do_makelightsaber( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
+    std::string arg, buf;
     int chance;
     bool checktool, checkdura, checkbatt, 
          checkoven, checkcond, checkcirc, checklens, checkgems, checkmirr;
@@ -583,12 +580,12 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
     AFFECT_DATA *paf;
     AFFECT_DATA *paf2;
     
-    SPRINTF( arg, "%s", argument );    
+    arg = argument;    
     
     switch( ch->substate )
     { 
      default:
-             if ( arg[0] == '\0' )
+             if ( arg.empty() )
                 {
                   send_to_char( "&RUsage: Makelightsaber <name>\n&w", ch);
                   return;   
@@ -692,7 +689,7 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
       {
          send_to_char( "&GYou begin the long process of crafting a lightsaber.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and a small oven and begins to work on something.", ch,
-          NULL, argument , TO_ROOM );
+          NULL, arg , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 25 , do_makelightsaber , 1 );
          ch->dest_buf = str_dup(arg);
          return;
@@ -704,7 +701,7 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
      case 1: 
       if ( !ch->dest_buf )
            return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
+      arg = (const char*) ch->dest_buf;
       STR_DISPOSE( ch->dest_buf);
       break;
       
@@ -835,15 +832,15 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
     obj->weight = 5;
     STRFREE( obj->name );
     obj->name = STRALLOC( "lightsaber saber" );
-    SPRINTF( buf, "%s", arg );
+    buf = arg;
     STRFREE( obj->short_descr );
     obj->short_descr = STRALLOC( buf );        
     STRFREE( obj->description );
-    STRAPP( buf, " was carelessly misplaced here." );
+    buf += " was carelessly misplaced here.";
     obj->description = STRALLOC( buf );
     STRFREE( obj->action_desc );
-    SPRINTF( buf, "%s", arg );
-    STRAPP( buf, " ignites with a hum and a soft glow." );
+    buf = arg;
+    buf += " ignites with a hum and a soft glow.";
     obj->action_desc = STRALLOC( buf );
     CREATE( paf, AFFECT_DATA, 1 );
     paf->type               = -1;
@@ -875,7 +872,7 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
                                                             
     send_to_char( "&GYou finish your work and hold up your newly created lightsaber.&w\n", ch);
     act( AT_PLAIN, "$n finishes making $s new lightsaber.", ch,
-         NULL, argument , TO_ROOM );
+         NULL, arg , TO_ROOM );
     
     {
          long xpgain;
@@ -890,17 +887,16 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
 
 void do_makespice( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
+    std::string arg, buf;
     int chance;
     OBJ_DATA *obj;
         
     switch( ch->substate )
     { 
      default:
-             SPRINTF( arg, "%s", argument );
+             arg = argument;
              
-             if ( arg[0] == '\0' )
+             if ( arg.empty() )
                 {
                   send_to_char( "&RFrom what?\n&w", ch);
                   return;   
@@ -933,7 +929,7 @@ void do_makespice( CHAR_DATA *ch, char *argument )
       {
          send_to_char( "&GYou begin the long process of refining spice into a drug.\n", ch);
          act( AT_PLAIN, "$n begins working on something.", ch,
-          NULL, argument , TO_ROOM );
+          NULL, arg , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 10 , do_makespice , 1 );
          ch->dest_buf = str_dup(arg);
          return;
@@ -945,7 +941,7 @@ void do_makespice( CHAR_DATA *ch, char *argument )
      case 1:
       if ( !ch->dest_buf )
          return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
+      arg = (const char*) ch->dest_buf;
       STR_DISPOSE( ch->dest_buf);
       break;
       
@@ -971,22 +967,22 @@ void do_makespice( CHAR_DATA *ch, char *argument )
     
     obj->value[1] = URANGE (10, obj->value[1], ( IS_NPC(ch) ? ch->top_level
                   : (int) (ch->pcdata->learned[gsn_spice_refining]) ) +10);
-    SPRINTF( buf, "%s", obj->name );
+    buf = obj->name;
     STRFREE( obj->name );
-    STRAPP( buf, " drug spice" );
+    buf += " drug spice";
     obj->name = STRALLOC( buf );
-    SPRINTF( buf, "a drug made from " );
-    STRAPP( buf, "%s", obj->short_descr );   
+    buf = "a drug made from ";
+    buf += obj->short_descr;   
     STRFREE( obj->short_descr );
     obj->short_descr = STRALLOC( buf ); 
-    STRAPP( buf, " was foolishly left lying around here." );
+    buf += " was foolishly left lying around here.";
     STRFREE( obj->description );
     obj->description = STRALLOC( buf ); 
     obj->item_type = ITEM_SPICE;
     
     send_to_char( "&GYou finish your work.\n", ch);
     act( AT_PLAIN, "$n finishes $s work.", ch,
-         NULL, argument , TO_ROOM );
+         NULL, arg , TO_ROOM );
     
     if ( !obj->cost )
       obj->cost = 500;
@@ -1006,7 +1002,7 @@ void do_makespice( CHAR_DATA *ch, char *argument )
 
 void do_improve_module( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
+    std::string arg;
     int chance, origvalue;
     OBJ_DATA *obj;
     bool checktool;
@@ -1016,9 +1012,9 @@ void do_improve_module( CHAR_DATA *ch, char *argument )
     switch( ch->substate )
     { 
      default:
-             SPRINTF( arg, "%s", argument );
+             arg = argument;
              
-             if ( arg[0] == '\0' )
+             if ( arg.empty() )
                 {
                   send_to_char( "&RImprove what module?\n&w", ch);
                   return;   
@@ -1063,7 +1059,7 @@ void do_improve_module( CHAR_DATA *ch, char *argument )
                {
                  send_to_char( "&GYou begin the process of improving this module.\n", ch);
                  act( AT_PLAIN, "$n begins working on something.", ch,
-                   NULL, argument , TO_ROOM );
+                   NULL, arg , TO_ROOM );
                  add_timer ( ch , TIMER_DO_FUN , 50 , do_improve_module, 1 );
                  ch->dest_buf = str_dup(arg);
                  return;
@@ -1075,7 +1071,7 @@ void do_improve_module( CHAR_DATA *ch, char *argument )
      case 1:
       if ( !ch->dest_buf )
          return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
+      arg = (const char*) ch->dest_buf;
       STR_DISPOSE( ch->dest_buf);
       break;
       
@@ -1109,7 +1105,7 @@ void do_improve_module( CHAR_DATA *ch, char *argument )
     
     send_to_char( "&GYou finish your work.\n", ch);
     act( AT_PLAIN, "$n finishes $s work.", ch,
-         NULL, argument , TO_ROOM );
+         NULL, arg , TO_ROOM );
     
     {
     long xpgain;
@@ -1126,20 +1122,19 @@ void do_improve_module( CHAR_DATA *ch, char *argument )
 
 void do_makegrenade( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
+    std::string arg, buf;
     int level, chance, weight = 0, strength = 0;
     bool checktool, checkdrink, checkbatt, checkchem, checkcirc;
     OBJ_DATA *obj;
     OBJ_INDEX_DATA *pObjIndex;
     int vnum;
     
-    SPRINTF( arg , "%s", argument );
+    arg = argument;
     
     switch( ch->substate )
     { 
      default:
-             if ( arg[0] == '\0' )
+             if ( arg.empty() )
                 {
                   send_to_char( "&RUsage: Makegrenade <name>\n&w", ch);
                   return;   
@@ -1207,7 +1202,7 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
       {
          send_to_char( "&GYou begin the long process of making a grenade.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and a drink container and begins to work on something.", ch,
-          NULL, argument , TO_ROOM );
+          NULL, arg , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 25 , do_makegrenade , 1 );
          ch->dest_buf   = str_dup(arg);
          return;
@@ -1219,7 +1214,7 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
      case 1: 
       if ( !ch->dest_buf )
            return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
+      arg = (const char*) ch->dest_buf;
       STR_DISPOSE( ch->dest_buf);
       break;
       
@@ -1301,14 +1296,14 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
     obj->level = level;
     obj->weight = weight;
     STRFREE( obj->name );
-    SPRINTF( buf , "%s", arg );
-    STRAPP( buf , " grenade");
+    buf = arg;
+    buf += " grenade";
     obj->name = STRALLOC( buf );
-    SPRINTF( buf, "%s", arg );
+    buf = arg;
     STRFREE( obj->short_descr );
     obj->short_descr = STRALLOC( buf );        
     STRFREE( obj->description );
-    STRAPP( buf, " was carelessly misplaced here." );
+    buf += " was carelessly misplaced here.";
     obj->description = STRALLOC( buf );
     obj->value[0] = strength/2;
     obj->value[1] = strength;
@@ -1318,7 +1313,7 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
                                                             
     send_to_char( "&GYou finish your work and hold up your newly created grenade.&w\n", ch);
     act( AT_PLAIN, "$n finishes making $s new grenade.", ch,
-         NULL, argument , TO_ROOM );
+         NULL, arg.c_str() , TO_ROOM );
     
     {
          long xpgain;
@@ -1332,20 +1327,19 @@ void do_makegrenade( CHAR_DATA *ch, char *argument )
 
 void do_makelandmine( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
+    std::string arg, buf;
     int level, chance, strength = 0, weight = 0;
     bool checktool, checkdrink, checkbatt, checkchem, checkcirc;
     OBJ_DATA *obj;
     OBJ_INDEX_DATA *pObjIndex;
     int vnum;
     
-    SPRINTF( arg , "%s", argument );
+    arg = argument;
     
     switch( ch->substate )
     { 
      default:
-             if ( arg[0] == '\0' )
+             if ( arg.empty() )
                 {
                   send_to_char( "&RUsage: Makelandmine <name>\n&w", ch);
                   return;   
@@ -1413,7 +1407,7 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
       {
          send_to_char( "&GYou begin the long process of making a landmine.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and a drink container and begins to work on something.", ch,
-          NULL, argument , TO_ROOM );
+          NULL, arg , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 25 , do_makelandmine , 1 );
          ch->dest_buf   = str_dup(arg);
          return;
@@ -1425,7 +1419,7 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
      case 1: 
       if ( !ch->dest_buf )
            return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
+      arg = (const char*) ch->dest_buf;
       STR_DISPOSE( ch->dest_buf);
       break;
       
@@ -1507,14 +1501,14 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
     obj->level = level;
     obj->weight = weight;
     STRFREE( obj->name );
-    SPRINTF( buf , "%s", arg );
-    STRAPP( buf , " landmine");
+    buf = arg;
+    buf += " landmine";
     obj->name = STRALLOC( buf );
-    SPRINTF( buf, "%s", arg );
+    buf = arg;
     STRFREE( obj->short_descr );
     obj->short_descr = STRALLOC( buf );        
     STRFREE( obj->description );
-    STRAPP( buf, " was carelessly misplaced here." );
+    buf += " was carelessly misplaced here.";
     obj->description = STRALLOC( buf );
     obj->value[0] = strength/2;
     obj->value[1] = strength;
@@ -1524,7 +1518,7 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
                                                             
     send_to_char( "&GYou finish your work and hold up your newly created landmine.&w\n", ch);
     act( AT_PLAIN, "$n finishes making $s new landmine.", ch,
-         NULL, argument , TO_ROOM );
+         NULL, arg , TO_ROOM );
     
     {
          long xpgain;
@@ -1537,20 +1531,19 @@ void do_makelandmine( CHAR_DATA *ch, char *argument )
 }
 void do_makelight( CHAR_DATA *ch, char *argument )
 {
-    char arg[MAX_INPUT_LENGTH];
-    char buf[MAX_STRING_LENGTH];
+    std::string arg, buf;
     int level, chance, strength = 0;
     bool checktool, checkbatt, checkchem, checkcirc, checklens;
     OBJ_DATA *obj;
     OBJ_INDEX_DATA *pObjIndex;
     int vnum;
     
-    SPRINTF( arg , "%s", argument );
+    arg = argument;
     
     switch( ch->substate )
     { 
      default:
-             if ( arg[0] == '\0' )
+             if ( arg.empty() )
                 {
                   send_to_char( "&RUsage: Makeflashlight <name>\n&w", ch);
                   return;   
@@ -1618,7 +1611,7 @@ void do_makelight( CHAR_DATA *ch, char *argument )
       {
          send_to_char( "&GYou begin the long process of making a light.\n", ch);
          act( AT_PLAIN, "$n takes $s tools and begins to work on something.", ch,
-          NULL, argument , TO_ROOM );
+          NULL, arg.c_str() , TO_ROOM );
      add_timer ( ch , TIMER_DO_FUN , 10 , do_makelight , 1 );
          ch->dest_buf   = str_dup(arg);
          return;
@@ -1630,7 +1623,7 @@ void do_makelight( CHAR_DATA *ch, char *argument )
      case 1: 
       if ( !ch->dest_buf )
            return;
-      SPRINTF(arg, "%s", (const char*) ch->dest_buf);
+      arg = (const char*) ch->dest_buf;
       STR_DISPOSE( ch->dest_buf);
       break;
       
@@ -1710,14 +1703,14 @@ void do_makelight( CHAR_DATA *ch, char *argument )
     obj->level = level;
     obj->weight = 3;
     STRFREE( obj->name );
-    SPRINTF( buf , "%s", arg );
-    STRAPP( buf , " light");
+    buf = arg;
+    buf += " light";
     obj->name = STRALLOC( buf );
-    SPRINTF( buf, "%s", arg );
+    buf = arg;
     STRFREE( obj->short_descr );
     obj->short_descr = STRALLOC( buf );        
     STRFREE( obj->description );
-    STRAPP( buf, " was carelessly misplaced here." );
+    buf += " was carelessly misplaced here.";
     obj->description = STRALLOC( buf );
     obj->value[2] = strength;
     obj->cost = obj->value[2];
@@ -1726,7 +1719,7 @@ void do_makelight( CHAR_DATA *ch, char *argument )
                                                             
     send_to_char( "&GYou finish your work and hold up your newly created light.&w\n", ch);
     act( AT_PLAIN, "$n finishes making $s new light.", ch,
-         NULL, argument , TO_ROOM );
+         NULL, arg.c_str() , TO_ROOM );
     
     {
          long xpgain;
@@ -3001,11 +2994,11 @@ void add_reinforcements( CHAR_DATA *ch )
       char_to_room( mob, ch->in_room );
       if ( ch->pcdata && ch->pcdata->clan )
       {
-         char tmpbuf[MAX_STRING_LENGTH];
+         std::string tmpbuf;
 
          STRFREE( mob->name );
          mob->name = STRALLOC( ch->pcdata->clan->name );
-         SPRINTF( tmpbuf , "(%s) %s" , ch->pcdata->clan->name  , mob->long_descr );
+         tmpbuf = "(" + std::string(ch->pcdata->clan->name) + ") " + mob->long_descr;
          STRFREE( mob->long_descr );
          mob->long_descr = STRALLOC( tmpbuf );
       }
@@ -3615,7 +3608,7 @@ void do_throw( CHAR_DATA *ch, char *argument )
    ROOM_INDEX_DATA * was_in_room;
    ROOM_INDEX_DATA * to_room;
    CHAR_DATA       * victim;
-   char              buf[MAX_STRING_LENGTH];
+   std::string       buf;
 
 
    argstr = one_argument( argstr, arg );
@@ -3669,8 +3662,8 @@ void do_throw( CHAR_DATA *ch, char *argument )
    }
    else if ( arg2.empty() )
    {
-      SPRINTF( buf, "$n throws %s at the floor." , obj->short_descr );
-      act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );  
+      buf = "$n throws " + std::string(obj->short_descr) + " at the floor.";
+      act( AT_ACTION, buf.c_str(), ch, NULL, NULL, TO_ROOM );  
       ch_printf( ch, "You throw %s at the floor.\n", obj->short_descr );
       
       victim = NULL;
@@ -3769,29 +3762,29 @@ void do_throw( CHAR_DATA *ch, char *argument )
          char_from_room( ch );
          char_to_room( ch, to_room );
 
-         SPRINTF( buf, "Someone throws %s at you from the %s.", obj->short_descr, dir_name[dir] );
+         buf = "Someone throws " + std::string(obj->short_descr) + " at you from the " + dir_name[dir] + ".";
          act( AT_ACTION, buf, victim, NULL, ch, TO_CHAR );
          act( AT_ACTION, "You throw %p at $N.", ch, obj, victim, TO_CHAR );
          char_from_room( ch );
          char_to_room( ch, was_in_room );
-         SPRINTF( buf, "$n throws %s to the %s.", obj->short_descr, dir_name[get_dir(arg2)] );
-         act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
+         buf = "$n throws " + std::string(obj->short_descr) + " to the " + dir_name[get_dir(arg2)] + ".";
+         act( AT_ACTION, buf.c_str(), ch, NULL, NULL, TO_ROOM );
          char_from_room( ch );
          char_to_room( ch, to_room );
-         SPRINTF( buf, "%s is thrown at $N from the %s.", obj->short_descr, dir_name[dir] );
-         act( AT_ACTION, buf, ch, NULL, victim, TO_NOTVICT );
+         buf = std::string(obj->short_descr) + " is thrown at $N from the " + dir_name[dir] + ".";
+         act( AT_ACTION, buf.c_str(), ch, NULL, victim, TO_NOTVICT );
       }
       else
       {
          ch_printf( ch, "You throw %s %s.\n", obj->short_descr, dir_name[get_dir( arg2 )] );
          char_from_room( ch );
          char_to_room( ch, was_in_room );
-         SPRINTF( buf, "$n throws %s to the %s.", obj->short_descr, dir_name[get_dir(arg2)] );
-         act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
+         buf = "$n throws " + std::string(obj->short_descr) + " to the " + dir_name[get_dir(arg2)] + ".";
+         act( AT_ACTION, buf.c_str(), ch, NULL, NULL, TO_ROOM );
          char_from_room( ch );
          char_to_room( ch, to_room );
-         SPRINTF( buf, "%s is thrown from the %s.", obj->short_descr, dir_name[dir] );
-         act( AT_ACTION, buf, ch, NULL, NULL, TO_ROOM );
+         buf = std::string(obj->short_descr) + " is thrown from the " + dir_name[dir] + ".";
+         act( AT_ACTION, buf.c_str(), ch, NULL, NULL, TO_ROOM );
       }
    }
    else if ( ( victim = get_char_room( ch, arg2 ) ) != NULL )
@@ -6565,8 +6558,6 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 		obj->weight = furn_table[i].weight;
 		STRFREE( obj->name );
 		obj->name = STRALLOC( str_printf("%s %s", arg2.c_str(), furn_table[i].name) );
-		/*SPRINTF( buf, "A %s is sitting here.",
-furn_table[i].name );*/
 		STRFREE( obj->short_descr );
 		obj->short_descr = STRALLOC( arg2 );
 		STRFREE( obj->description );

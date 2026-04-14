@@ -75,14 +75,14 @@ void save_home( CHAR_DATA *ch )
     if ( ch->plr_home )
     {
        	FILE *fp;
-       	char filename[256];
+       	std::string filename;
        	sh_int templvl;
        	OBJ_DATA *contents;
 
 
-       	SPRINTF( filename, "%s%c/%s.home", PLAYER_DIR, tolower(ch->name[0]),
+       	filename = str_printf("%s%c/%s.home", PLAYER_DIR, tolower(ch->name[0]),
 				 capitalize( ch->name ).c_str() );
-    	if ( ( fp = fopen( filename, "w" ) ) == NULL )
+    	if ( ( fp = fopen( filename.c_str(), "w" ) ) == NULL )
     	{
     	}
     	else
@@ -105,7 +105,7 @@ void save_home( CHAR_DATA *ch )
  */
 void de_equip_char( CHAR_DATA *ch )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     OBJ_DATA *obj;
     int x,y;
 
@@ -124,9 +124,9 @@ void de_equip_char( CHAR_DATA *ch )
 		   }
 		if ( x == MAX_LAYERS )
 		{
-		    SPRINTF( buf, "%s had on more than %d layers of clothing in one location (%d): %s",
+		    buf = str_printf("%s had on more than %d layers of clothing in one location (%d): %s",
 			ch->name, MAX_LAYERS, obj->wear_loc, obj->name );
-		    bug( buf, 0 );
+		    bug( buf.c_str(), 0 );
 		}
 	    
 	    unequip_char(ch, obj);
@@ -160,8 +160,7 @@ void re_equip_char( CHAR_DATA *ch )
  */
 void save_char_obj( CHAR_DATA *ch )
 {
-    char strsave[MAX_INPUT_LENGTH];
-    char strback[MAX_INPUT_LENGTH];
+    std::string strsave, strback;
     FILE *fp;
 
     if ( !ch )
@@ -184,7 +183,7 @@ void save_char_obj( CHAR_DATA *ch )
     de_equip_char( ch );
 
     ch->pcdata->save_time = current_time;
-    SPRINTF( strsave, "%s%c/%s", PLAYER_DIR, tolower(ch->name[0]),
+    strsave = str_printf("%s%c/%s", PLAYER_DIR, tolower(ch->name[0]),
 				 capitalize( ch->name ).c_str() );
 
     /*
@@ -192,9 +191,9 @@ void save_char_obj( CHAR_DATA *ch )
      */
     if ( BV_IS_SET( ch->game->get_sysdata()->save_flags, SV_BACKUP ) )
     {
-		SPRINTF( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
+		strback = str_printf("%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
 					capitalize( ch->name ).c_str() );
-		if (rename(strsave, strback) != 0)
+		if (rename(strsave.c_str(), strback.c_str()) != 0)
 		{
 			perror("rename failed");
 			bug("save_char_obj: backup rename failed", 0);
@@ -210,12 +209,12 @@ void save_char_obj( CHAR_DATA *ch )
      */
     if ( get_trust(ch) > LEVEL_HERO )
     {
-      SPRINTF( strback, "%s%s", GOD_DIR, capitalize( ch->name ).c_str() );
+      strback = str_printf("%s%s", GOD_DIR, capitalize( ch->name ).c_str() );
 
-      if ( ( fp = fopen( strback, "w" ) ) == NULL )
+      if ( ( fp = fopen( strback.c_str(), "w" ) ) == NULL )
       {
 	bug( "Save_god_level: fopen", 0 );
-	perror( strback );
+	perror( strback.c_str() );
       }
       else
       {
@@ -235,10 +234,10 @@ void save_char_obj( CHAR_DATA *ch )
       }
     }
 
-    if ( ( fp = fopen( strsave, "w" ) ) == NULL )
+    if ( ( fp = fopen( strsave.c_str(), "w" ) ) == NULL )
     {
 	bug( "Save_char_obj: fopen", 0 );
-	perror( strsave );
+	perror( strsave.c_str() );
     }
     else
     {
@@ -265,8 +264,7 @@ void save_char_obj( CHAR_DATA *ch )
 
 void save_clone( CHAR_DATA *ch )
 {
-    char strsave[MAX_INPUT_LENGTH];
-    char strback[MAX_INPUT_LENGTH];
+    std::string strsave, strback;
     FILE *fp;
 
     if ( !ch )
@@ -285,7 +283,7 @@ void save_clone( CHAR_DATA *ch )
     ch->pcdata->clones++;
     
     ch->pcdata->save_time = current_time;
-    SPRINTF( strsave, "%s%c/%s.clone", PLAYER_DIR, tolower(ch->name[0]),
+    strsave = str_printf("%s%c/%s.clone", PLAYER_DIR, tolower(ch->name[0]),
 				 capitalize( ch->name ).c_str() );
 
     /*
@@ -293,15 +291,15 @@ void save_clone( CHAR_DATA *ch )
      */
     if ( BV_IS_SET( ch->game->get_sysdata()->save_flags, SV_BACKUP ) )
     {
-	SPRINTF( strback, "%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
+	strback = str_printf("%s%c/%s", BACKUP_DIR, tolower(ch->name[0]),
 				 capitalize( ch->name ).c_str() );
-	rename( strsave, strback );
+	rename( strsave.c_str(), strback.c_str() );
     }
 
-    if ( ( fp = fopen( strsave, "w" ) ) == NULL )
+    if ( ( fp = fopen( strsave.c_str(), "w" ) ) == NULL )
     {
 	bug( "Save_char_obj: fopen", 0 );
-	perror( strsave );
+	perror( strsave.c_str() );
     }
     else
     {
@@ -911,7 +909,7 @@ bool load_char_obj( DESCRIPTOR_DATA *d, const std::string& name, bool preload )
  */
 bool load_char_obj_v2( DESCRIPTOR_DATA *d, const std::string& name, bool preload , int undead)
 {
-    char strsave[MAX_INPUT_LENGTH];
+    std::string strsave;
     CHAR_DATA *ch;
     FILE *fp;
     bool found;
@@ -969,17 +967,17 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, const std::string& name, bool preload
     ch->plr_home                        = NULL;
     found = FALSE;
     if (undead) {
-      SPRINTF( strsave, "%s%c/%s", BACKUP_DIR, tolower(name[0]),
+      strsave = str_printf("%s%c/%s", BACKUP_DIR, tolower(name[0]),
                         capitalize( name ).c_str() );
     } else {
-      SPRINTF( strsave, "%s%c/%s", PLAYER_DIR, tolower(name[0]),
+      strsave = str_printf("%s%c/%s", PLAYER_DIR, tolower(name[0]),
 			capitalize( name ).c_str() );
     }
-    if ( stat( strsave, &fst ) != -1 )
+    if ( stat( strsave.c_str(), &fst ) != -1 )
     {
       if ( fst.st_size == 0 )
       {
-	SPRINTF( strsave, "%s%c/%s", BACKUP_DIR, tolower(name[0]),
+	strsave = str_printf("%s%c/%s", BACKUP_DIR, tolower(name[0]),
 			capitalize( name ).c_str() );
 	send_to_char( "Restoring your backup player file...", ch );
       }
@@ -992,7 +990,7 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, const std::string& name, bool preload
     }
     /* else no player file */
 
-    if ( ( fp = fopen( strsave, "r" ) ) != NULL )
+    if ( ( fp = fopen( strsave.c_str(), "r" ) ) != NULL )
     {
 	int iNest;
 
@@ -1002,7 +1000,7 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, const std::string& name, bool preload
 	found = TRUE;
 	/* Cheat so that bug will show line #'s -- Altrag */
 	fpArea = fp;
-	SPRINTF(strArea, "%s", strsave);
+	SPRINTF(strArea, "%s", strsave.c_str());
 	for ( ; ; )
 	{
 	    char letter;
@@ -1166,7 +1164,7 @@ bool load_char_obj_v2( DESCRIPTOR_DATA *d, const std::string& name, bool preload
 
 void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     char *line;
     const char *word;
     int x1, x2, x3, x4, x5, x6, x7, x8, x9, x0;
@@ -1417,7 +1415,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		&&   ch->pcdata->clan_name[0] != '\0'
 		&& ( ch->pcdata->clan = get_clan( ch->pcdata->clan_name )) == NULL )
 		{
-		  SPRINTF( buf, "Warning: the organization %s no longer exists, and therefore you no longer\nbelong to that organization.\n",
+		  buf = str_printf("Warning: the organization %s no longer exists, and therefore you no longer\nbelong to that organization.\n",
 		           ch->pcdata->clan_name );
 		  send_to_char( buf, ch );
 		  STRFREE( ch->pcdata->clan_name );
@@ -1550,7 +1548,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		&&   ch->pcdata->clan_name[0] != '\0'
 		&& ( ch->pcdata->clan = get_clan( ch->pcdata->clan_name )) == NULL )
 		{
-		  SPRINTF( buf, "Warning: the organization %s no longer exists, and therefore you no longer\nbelong to that organization.\n",
+		  buf = str_printf("Warning: the organization %s no longer exists, and therefore you no longer\nbelong to that organization.\n",
 		           ch->pcdata->clan_name );
 		  send_to_char( buf, ch );
 		  STRFREE( ch->pcdata->clan_name );
@@ -1819,7 +1817,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 	    {
 		if ( !preload )
 		{
-		  SPRINTF( buf, "Last connected from: %s\n", fread_word( fp ) );
+		  buf = str_printf("Last connected from: %s\n", fread_word( fp ) );
 		  send_to_char( buf, ch );
 		}
 		else
@@ -1998,7 +1996,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 		if ( isalpha(ch->pcdata->title[0])
 		||   isdigit(ch->pcdata->title[0]) )
 		{
-		    SPRINTF( buf, " %s", ch->pcdata->title );
+		    buf = ch->pcdata->title;
 		    if ( ch->pcdata->title )
 		      STRFREE( ch->pcdata->title );
 		    ch->pcdata->title = STRALLOC( buf );
@@ -2072,7 +2070,7 @@ void fread_char( CHAR_DATA *ch, FILE *fp, bool preload )
 
 	if ( !fMatch )
 	{
-	    bug( buf, "Fread_char: no match: %s", word );
+	    bug( buf.c_str(), "Fread_char: no match: %s", word );
 	}
     }
 	if ( !ch->channels.any() ) 

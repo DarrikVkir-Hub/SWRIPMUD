@@ -134,11 +134,9 @@ void do_clone( CHAR_DATA *ch, char *argument )
 {
 	  long credits, bank;
 	  long played, frc_experience;
-	  char clanname[MAX_STRING_LENGTH];
-	  char bestowments[MAX_STRING_LENGTH];
-	  char oldbestowments[MAX_STRING_LENGTH];
-          int experience[MAX_ABILITY];
-          int skill_level[MAX_ABILITY];
+    std::string clanname, bestowments, oldbestowments;
+    int experience[MAX_ABILITY];
+    int skill_level[MAX_ABILITY];
 	  FLAG_SET flags;
     int ability;
      sh_int frc, change, change2, frc_level, low_frc = 0, mana;
@@ -261,7 +259,7 @@ void do_clone( CHAR_DATA *ch, char *argument )
 	  ch->pcdata->bank = 0;
 	  home = ch->plr_home;
 	  ch->plr_home = NULL;
-	  SPRINTF( oldbestowments, "%s", ch->pcdata->bestowments);
+	  oldbestowments = ch->pcdata->bestowments;
 	  
 	  
       if( ch->pcdata->clones == 1 )
@@ -284,10 +282,10 @@ void do_clone( CHAR_DATA *ch, char *argument )
       
       if ( ch->pcdata->clan_name && ch->pcdata->clan_name[0] != '\0' )
       {
-	 SPRINTF( clanname, "%s", ch->pcdata->clan_name);
-	 STRFREE( ch->pcdata->clan_name );
-	 ch->pcdata->clan_name = STRALLOC( "" );
-         SPRINTF( bestowments, "%s", ch->pcdata->bestowments);
+        clanname = ch->pcdata->clan_name;
+        STRFREE( ch->pcdata->clan_name );
+        ch->pcdata->clan_name = STRALLOC( "" );
+         bestowments = ch->pcdata->bestowments;
          STR_DISPOSE( ch->pcdata->bestowments );
          ch->pcdata->bestowments = str_dup( "" );
          save_clone(ch);
@@ -1875,7 +1873,7 @@ void do_recite( CHAR_DATA *ch, char *argument )
  */
 void pullorpush( CHAR_DATA *ch, OBJ_DATA *obj, bool pull )
 {
-    char buf[MAX_STRING_LENGTH];
+    std::string buf;
     CHAR_DATA		*rch;
     bool		 isup;
     ROOM_INDEX_DATA	*room,  *to_room;
@@ -1927,10 +1925,10 @@ void pullorpush( CHAR_DATA *ch, OBJ_DATA *obj, bool pull )
 
     if ( !oprog_use_trigger( ch, obj, NULL, NULL, NULL ) )
     {
-        SPRINTF( buf, "$n %s $p.", pull ? "pulls" : "pushes" );
-        act( AT_ACTION, buf,  ch, obj, NULL, TO_ROOM );
-        SPRINTF( buf, "You %s $p.", pull ? "pull" : "push" );
-        act( AT_ACTION, buf, ch, obj, NULL, TO_CHAR );
+        buf = str_printf("$n %s $p.", pull ? "pulls" : "pushes");
+        act( AT_ACTION, buf.c_str(),  ch, obj, NULL, TO_ROOM );
+        buf = str_printf("You %s $p.", pull ? "pull" : "push");
+        act( AT_ACTION, buf.c_str(), ch, obj, NULL, TO_CHAR );
     }
 
     if ( !BV_IS_SET(obj->trig_flags, TRIG_AUTORETURN ) )
@@ -1996,9 +1994,9 @@ void pullorpush( CHAR_DATA *ch, OBJ_DATA *obj, bool pull )
        */
       act( AT_DEAD, "$n falls prey to a terrible death!", ch, NULL, NULL, TO_ROOM );
       act( AT_DEAD, "Oopsie... you're dead!\r\n", ch, NULL, NULL, TO_CHAR );
-      snprintf( buf, MAX_STRING_LENGTH, "%s hit a DEATH TRIGGER in room %d!", ch->name, ch->in_room->vnum );
-      log_string( buf );
-      to_channel( buf, CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
+      buf = str_printf("%s hit a DEATH TRIGGER in room %d!", ch->name, ch->in_room->vnum);
+      log_string_plus( buf.c_str(), LOG_NORMAL, ch->top_level );
+      to_channel( buf.c_str(), CHANNEL_MONITOR, "Monitor", LEVEL_IMMORTAL );
 
       /*
        * Personaly I fiqured if we wanted it to be a full DT we could just have it send them into a DT. 
@@ -2739,13 +2737,6 @@ while ( *srcptr != '\0' )
 
 *charptr = '\0';
 *roomptr = '\0';
-
-/*
-SPRINTF( buf, "Charbuf: %s", charbuf );
-log_string_plus( buf, LOG_HIGH, LEVEL_LESSER ); 
-SPRINTF( buf, "Roombuf: %s", roombuf );
-log_string_plus( buf, LOG_HIGH, LEVEL_LESSER ); 
-*/
 
 switch( obj->item_type )
 {
@@ -4246,10 +4237,10 @@ void quest_update(GameContext *game)
         {
 	    if (--ch->countdown <= 0)
 	    {
-    	        char buf [MAX_STRING_LENGTH];
+    	    std::string buf;
 
 	        ch->nextquest = 30;
-	        SPRINTF(buf, "You have run out of time for your quest!\nYou may quest again in %d minutes.\n",ch->nextquest);
+	        buf = str_printf("You have run out of time for your quest!\nYou may quest again in %d minutes.\n",ch->nextquest);
 	        send_to_char(buf, ch);
                 BV_REMOVE_BIT(ch->act, PLR_QUESTOR);
                 ch->questgiver = NULL;
