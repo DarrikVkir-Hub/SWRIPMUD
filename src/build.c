@@ -1230,14 +1230,29 @@ char *strip_cr( char *str )
  */
 void smush_tilde( char *str )
 {
+    int len;
+    char last;
+    char *strptr;
+
     if ( !str )
         return;
 
-    std::string tmp = str;
-    smush_tilde( tmp );
+    strptr = str;
 
-    strncpy( str, tmp.c_str(), MAX_STRING_LENGTH - 1 );
-    str[MAX_STRING_LENGTH - 1] = '\0';
+    len = strlen( str );
+    if ( len )
+        last = strptr[len - 1];
+    else
+        last = '\0';
+
+    for ( ; *str != '\0'; str++ )
+    {
+        if ( *str == '~' )
+            *str = '-';
+    }
+
+    if ( len )
+        strptr[len - 1] = last;
 }
 
 void start_editing( CHAR_DATA *ch, char *data )

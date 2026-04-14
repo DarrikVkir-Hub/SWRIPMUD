@@ -289,11 +289,12 @@ void do_authorize( CHAR_DATA *ch, char *argument )
 
 void do_bamfin( CHAR_DATA *ch, char *argument )
 {
+    std::string argstr = argument;
     if ( !IS_NPC(ch) )
     {
-        smash_tilde( argument );
+        smash_tilde( argstr );
         STR_DISPOSE( ch->pcdata->bamfin );
-        ch->pcdata->bamfin = str_dup( argument );
+        ch->pcdata->bamfin = str_dup( argstr );
         send_to_char( "Ok.\n", ch );
     }
     return;
@@ -303,11 +304,12 @@ void do_bamfin( CHAR_DATA *ch, char *argument )
 
 void do_bamfout( CHAR_DATA *ch, char *argument )
 {
+    std::string argstr = argument;
     if ( !IS_NPC(ch) )
     {
-        smash_tilde( argument );
+        smash_tilde( argstr );
         STR_DISPOSE( ch->pcdata->bamfout );
-        ch->pcdata->bamfout = str_dup( argument );
+        ch->pcdata->bamfout = str_dup( argstr );
         send_to_char( "Ok.\n", ch );
     }
     return;
@@ -325,12 +327,13 @@ void do_rank( CHAR_DATA *ch, char *argument )
     return;
   }
 
-  smash_tilde( argument );
+  std::string argstr = argument;
+  smash_tilde( argstr );
   STR_DISPOSE( ch->pcdata->rank );
-  if ( !str_cmp( argument, "none" ) )
+  if ( !str_cmp( argstr, "none" ) )
     ch->pcdata->rank = str_dup( "" );
   else
-    ch->pcdata->rank = str_dup( argument );
+    ch->pcdata->rank = str_dup( argstr );
   send_to_char( "Ok.\n", ch );
 
   return;
@@ -6199,9 +6202,10 @@ void do_sober( CHAR_DATA *ch, char *argument )
 {
   CHAR_DATA *victim;
   std::string arg1;
+  std::string argstr = argument;
 
-  smash_tilde( argument );
-  one_argument( argument, arg1 );
+  smash_tilde( argstr );
+  one_argument( argstr, arg1 );
   if ( ( victim = get_char_room( ch, arg1 ) ) == NULL )
   {
     send_to_char( "They aren't here.\n", ch );
@@ -6364,7 +6368,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
     std::string arg2;
     std::string argstr = argument;
 
-    smash_tilde( argument );
+    smash_tilde( argstr );
     argstr = one_argument( argstr, arg1 );
     argstr = one_argument( argstr, arg2 );
 
@@ -6517,7 +6521,7 @@ void do_sedit( CHAR_DATA *ch, char *argument )
         bool relocate;
         SOCIALTYPE *checksocial;    
 
-        one_argument( argument, arg1 );
+        one_argument( argstr, arg1 );
         if ( arg1[0] == '\0' )
         {
             send_to_char( "Cannot clear name field!\n", ch );
@@ -6650,7 +6654,7 @@ void do_cedit( CHAR_DATA *ch, char *argument )
     std::string argstr = argument;
     char buf[128];
 
-    smash_tilde( argument );
+    smash_tilde( argstr );
     argstr = one_argument( argstr, arg1 );
     argstr = one_argument( argstr, arg2 );
 

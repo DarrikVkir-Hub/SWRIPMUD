@@ -29,80 +29,692 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include "mud.h"
 #define MAX_TEMPLATETYPE 38
 
-struct templatetype templatetypes[MAX_TEMPLATETYPE] =
+SHIP_DATA *get_ship_in_space( GameContext *game, const std::string& name );
+
+struct scmd_data
 {
-  { 0, 0, "JV-7 Shuttle", "3] 8)22:2; 2)22:10", "Cygunus Spaceworks JV-7-Three room shuttlecraft with passenger lounge.", 40, 15, 800 },
-  { 1, 0, "T-Wing Starfighter", "1] 8;", "Hoersh-Kessel T-wing Starfighter - Cheap and fast.", 30, 10, 500 },
-  { 2, 0, "R-41 Starchaser", "1] 8;", "Hoersh-Kessel R-41 Starchaser - Room enough for two.", 35, 10, 550 },
-  { 3, 0, "Z-95 Headhunter", "1] 8;", "Z-95 - Highly adaptable, cheap and fast.", 30, 20, 550 },
-  { 4, 0, "Z-100 Centurion", "1] 8;", "Z-100 - Two-passenger, high adaptable.", 35, 20, 600 },
-  { 5, 0, "HLAF-500", "1] 8;", "CEC HLAF-500 - Fast single-seater.", 30, 10, 500 },
-  { 6, 0, "KSE Cloakshape", "2] 8)22:11", "Cloakshape w/stabilizer conversion set - Slow and sluggish, but highly adaptable.", 48, 15, 1000 },
-  { 7, 0, "VFS Lightning Bomber", "1] 8;", "VFS Lightning Bomber - Two-seater Heavy Bomber.", 35, 30, 650 },
-  { 8, 0, "VFS Road Runner", "1] 8;", "VFS Road Runner - Fast and light.", 30, 5, 250 },
-  { 9, 0, "A-9 Vigiliance Interceptor", "1] 8;", "A-9 - Fast and agile.", 32, 5, 300 },
-  {10, 0, "VFS Gauntlet", "1] 8;", "Gauntlet-Designed to get out and fast.", 35, 3, 250 },
-  {11, 0, "Shobquix Tocsan 8-Q", "1] 8;", "Toscan 8-Q - Heavy, but durable.", 40, 15, 1000 },
-  {12, 0, "Pinook Starfighter", "1] 8;", "Pinook - Small and versatile.", 30, 10, 500 },
-  {13, 0, "Sunhui Spaceworks Razor", "1] 8;", "Razor - Adaptable fighter.", 35, 15, 600 },
-  {14, 10, "T-65c A2 Starfighter", "1] 8;", "X-Wing - Powerful and versatile.", 40, 15, 500 },
-  {15, 10, "Koensayr BTL-S3 Longprobe", "1] 8;", "Y-Wing - Two-seater, sturdy, but slow and sluggish.", 45, 30, 1000 },
-  {16, 10, "Dodonna/Blissez RZ-1 Starfighter", "1] 8;", "A-Wing - Fast and agile.", 35, 20, 300 },
-  {17, 20, "SFS Tie/ln StarFighter", "1] 8;", "TIE Fighter - Small and agile, but weak.", 25, 5, 150 },
-  {18, 20, "SFS Tie/Int Starfighter", "1] 8;", "TIE Interceptor - Small and agile, can be more heavily armed then the Tie/ln.", 30, 10, 200 },
-  {19, 20, "SFS Tie/B Starfighter", "1] 8;", "TIE Bomber - Heavy and slow, but can be better equipped.", 35, 15, 800 },
-  {20, 20, "SFS Tie/R Starfighter", "1] 8;", "Tie Recon - Expanded Tie/ln to include more internal space.", 35, 30, 800 },
-  {21, 20, "Cygnus Spaceworks XG-1", "1]8;", "Assault Gunboat - Adaptable and durable.", 40, 20, 700 },
-  {22, 1, "KSE Firespray-31", "5] 9)22:13,23:2,28:12,29:4;", "Firespray - Powerful and relatively light.", 60, 20, 2000 },
-  {23, 1, "Pursuer Enforcement Ship", "6] 9)20:8,29:2,22:14;14)22:13,29:4;", "Pursuer - Versatile.", 60, 20, 2500 },
-  {24, 21, "Fast Attack Patrol Ship", "8] 9)20:8,23:2,21:16;14)20:9,23:17,21:10,22:4;", "FAPS - Strong and light.", 65, 15, 2000 },
-  {25, 21, "Gamma-class Assault Shuttle", "3] 8)22:2; 2)22:18", "Imperial Telgorn GAS - Versatile.", 50, 20, 2500 },
-  {26, 11, "Gamma-class Assault Shuttle", "3] 8)22:2; 2)22:18", "Rebel Telgorn GAS - Versatile.", 50, 20, 2500 },
-  {27, 1, "CEC Action IV", "10] 22)20:8,22:9;9)22:4,29:14;14)22:20,21:13,23:19,20:21;2)22:21;", "Act IV - BIG ship.", 75, 20, 5500 },
-  {28, 1, "CEC YT-1300", "8] 9)20:8,28:23,23:2,25:17,27:4;20)22:13,24:17,26:4;", "YT-1300 - Highly adaptable, light.", 65, 20, 3500 },
-  {29, 1, "CEC Modified YT-1300", "9] 9)20:8,28:23,29:24,23:2,25:17,27:4;20)22:13,24:17,26:4;", "YT-1300 - Modified has add'l turret mount.", 65, 20, 3500 },
-  {30, 1, "CEC Barloz", "6] 8)22:2;9)20:2,23:20,22:4;20)22:13;", "Barloz - Versatile, mid-weight.", 65, 20, 3500 },
-  {31, 0, "SFS Gat-12 Starfighter", "3] 8)22:2;2)22:4", "Skipray Blastboat - Light for its mods.", 65, 15, 3000 },
-  {32, 21, "MT/191 Drop-Ship", "9] 9)20:8,23:23,21:24,22:14;14)23:18,21:25,22:4,29:2;", "Imperial Dropship - Heavy.", 65, 15, 5500 },
-  {33, 11, "MT/191 Drop-Ship", "9] 9)20:8,23:23,21:24,22:14;14)23:18,21:25,22:4,29:2;", "Rebel Dropship - Heavy.", 65, 15, 3500 },
-  {34, 1, "Mobquet Medium Cargo Hauler", "8] 9)20:8,23:23,21:24,22:2;2)23:17,21:26,22:4;", "Mobquest - BIG ship, high mods.", 80, 20, 6500 },
-  {35, 2, "Corellian CR-90 Blockade Runner", "19] 12)24:3,25:1,23:5,21:6,22:22;3)23:1,22:6;1)22:5;51)28:22,21:16,23:62,22:21;21)21:20,23:17,22:27;20)22:13;27)23:26,22:52;17)22:26;52)21:7,22:4,23:61;", "Corellian Corvette - Capital class - CR-90 Blockade Runner", 400, 20, 10000 },
-  {36, 2, "Corellian Gunship", "20]12)25:01,24:03,23:05,21:06,29:22;01)22:05,21:03;03)22:06;22)22:27,29:15;27)23:13,21:16,22:28;28)21:11,23:20,22:29;29)21:62,23:19,22:30;20)20:13;07)28:30,29:04,21:61", "Corellian Gunship - Capital class - Slightly heavier than the runner.", 400, 20, 12000 },
-  {37, 2, "Marauder Corvette", "22]12)20:03;03)20:01,21:06,23:05;01)27:05,26:06;61)20:12,22:51;51)21:27,23:28,22:31,29:07;29)23:27,21:20;30)21:28,23:10;20)26:13;10)27:19;32)20:31,22:04,29:26;26)20:15;12)29:16;", "Marauder Corvette - Capital class - Slightly heavier than the runner.", 400, 20, 12000 }
+    SHIP_DATA *ship = nullptr;
+    SHIP_DATA *target = nullptr;
+    ROOM_INDEX_DATA *room = nullptr;
+    std::string arg1;
+    std::string arg2;
+    std::string arg3;
+    std::string arg4;
+    std::string arg5;
+    std::string rest;
 };
 
-#define MAX_CARGO_NAMES 10
-#define CARGOTYPE_DEFAULT CARGOTYPE_MAX
-const flag_name cargo_names[] =
+
+
+inline bool space_require_ship_from_cockpit( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
 {
-    { CARGOTYPE_ORE,         "ore" },
-    { CARGOTYPE_FOOD,        "food" },
-    { CARGOTYPE_ELECTRONICS, "electronics" },
-    { CARGOTYPE_WEAPONS,     "weapons" },
-    { CARGOTYPE_MEDICAL,     "medical" },
-    { CARGOTYPE_CLOTHING,    "clothing" },
-    { CARGOTYPE_LUXURIES,    "luxuries" },
-    { CARGOTYPE_SPICE,       "spice" },
-    { CARGOTYPE_WATER,       "water" },
-    { CARGOTYPE_SPECIAL,     "special" },
-    { CARGOTYPE_MAX,         "_cargotype max_"},
-	  { (size_t)-1, nullptr } // terminator
+    ctx.ship = ship_from_cockpit( ch->game, ch->in_room->vnum );
+    if ( !ctx.ship )
+    {
+        if (showmsg)
+            send_to_char( "&RYou must be in the cockpit of a ship to do that!\n", ch );
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_from_pilotseat( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    ctx.ship = ship_from_pilotseat( ch->game, ch->in_room->vnum );
+    if ( !ctx.ship )
+    {
+        if (showmsg)
+            send_to_char( "&RYou don't seem to be in the pilot seat!\n", ch );
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_from_navseat( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    ctx.ship = ship_from_navseat( ch->game, ch->in_room->vnum );
+    if ( !ctx.ship )
+    {
+        if (showmsg)
+            send_to_char( "&RYou don't seem to be in the navigator seat!\n", ch );
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_from_engineroom( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    ctx.ship = ship_from_engine( ch->game, ch->in_room->vnum );
+    if ( !ctx.ship )
+    {
+        if (showmsg)
+            send_to_char( "&RYou don't seem to be in the engine room!\n", ch );
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_from_hanger( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    ctx.ship = ship_from_hanger( ch->game, ch->in_room->vnum );
+    if ( !ctx.ship )
+    {
+        if (showmsg)
+            send_to_char( "&RYou don't seem to be in the hanger!\n", ch );
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_from_turret( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    ctx.ship = ship_from_turret( ch->game, ch->in_room->vnum );
+    if ( !ctx.ship )
+    {
+        if (showmsg)
+            send_to_char( "&RYou must be in the gunners seat or turret of a ship to do that!\n", ch );
+        return false;
+    }
+    return true;
+}
+
+inline bool space_requires_finish_launching( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if (! ctx.ship->spaceobject && ctx.ship->shipclass <= SHIP_PLATFORM)
+    {
+        if (showmsg)
+            send_to_char("&RYou can't do that until you've finished launching!\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_requires_in_system( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if (ctx.ship->spaceobject == NULL)
+    {
+        if (showmsg)
+            send_to_char("&RYou can't do that unless the ship is flying in realspace!\n",ch);
+        return false;
+    }        
+    return true;
+}
+
+inline bool space_require_ship_from_coseat( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    ctx.ship = ship_from_coseat( ch->game, ch->in_room->vnum );
+    if ( !ctx.ship )
+    {
+        if (showmsg)
+            send_to_char( "&RYou don't seem to be in the co-pilot seat!\n", ch );
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_notplatform( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if  ( ctx.ship->shipclass == SHIP_PLATFORM )
+    {
+        if (showmsg)
+            send_to_char( "&RPlatforms can not move!\n" , ch );
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_nottractored( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->tractoredby )
+    {
+        if (showmsg)
+            send_to_char("&RYou are still locked in a tractor beam!\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_notdocked( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if (ctx.ship->docking != SHIP_READY)
+    {
+        if (showmsg)
+            send_to_char("&RYou can't do that while docked to another ship!\n",ch);
+        return false;
+    }      
+    return true;
+}
+
+inline bool space_require_ship_energy( CHAR_DATA *ch, scmd_data &ctx, int energy_required = 0, bool showmsg = true )
+{
+    if (ctx.ship->energy <= energy_required)
+    {
+      if (showmsg)
+          send_to_char("&RThere is not enough fuel!\n",ch);
+      return false;
+    }	      
+    return true;
+}
+
+inline bool space_require_tractor_weaker( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if (ctx.ship->tractored && ctx.ship->tractored->shipclass > ctx.ship->shipclass )
+    {
+        if (showmsg)
+            send_to_char("&RYou can not move while a tractorbeam is locked on to such a large mass.\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_not_landed( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->shipstate == SHIP_LANDED )
+    {
+        if (showmsg)
+            send_to_char("&RYou can't do that until after you've launched!\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_tractoree_ed( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->tractoredby )
+    {
+        if (showmsg)
+            send_to_char("&RYou are still locked in a tractor beam!\n",ch);
+        return false;
+    }  
+    if (ctx.ship->tractored && ctx.ship->tractored->shipclass > ctx.ship->shipclass )
+    {
+        if (showmsg)
+            send_to_char("&RYou can not move while a tractorbeam is locked on to such a large mass.\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_movement( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( !space_require_ship_notplatform( ch , ctx , showmsg ) )
+        return false;
+    if ( !space_require_ship_notdocked( ch , ctx , showmsg ) )
+        return false;
+    if ( !space_require_ship_energy( ch , ctx , 0 , showmsg ) )
+        return false;
+
+    return true;
+}
+
+inline bool space_require_ship_spaceship( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->shipclass > SHIP_PLATFORM )
+    {
+        if (showmsg)
+            send_to_char("&RThis isn't a spacecraft!\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_ownership( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( !check_pilot( ch , ctx.ship ) )
+    {
+        if (showmsg)
+            send_to_char("&RYou don't have permission to do that!\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_autopilot_off( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( autofly(ctx.ship) )
+    {
+        if (showmsg)
+          send_to_char("&RThe ship is set on autopilot, you'll have to turn it off first.\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_docked( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->lastdoc != ctx.ship->location )
+    {
+        if (showmsg)
+            send_to_char("&RYou don't seem to be docked right now.\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_not_capital( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->shipclass == CAPITAL_SHIP )
+    {
+        if (showmsg)
+            send_to_char("&RCapital ships can't do that!\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_not_disabled( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->shipstate == SHIP_DISABLED )
+    {
+        if (showmsg)
+            send_to_char("&RYour ship is disabled and can't do that!\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_not_docked( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->shipstate == SHIP_LANDED && ctx.ship->docked == NULL )
+    {
+        if (showmsg)
+            send_to_char("&RYou can't do that while docked!\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_not_hyperspace( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->shipstate == SHIP_HYPERSPACE )
+    {
+        if (showmsg)
+            send_to_char("&RYou can't do that while in hyperspace!\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_ready( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->shipstate != SHIP_READY )
+    {
+        if (showmsg)
+            send_to_char("&RPlease wait until the ship has finished its current manouver.\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_target_hangar_valid( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.target == NULL )
+    {
+        if (showmsg)
+            send_to_char("&RI don't see that here. Type land by itself for a list\n",ch);
+        return false;
+    }
+    if ( ctx.target == ctx.ship )
+    {
+        if (showmsg)
+          send_to_char("&RYou can't land your ship inside itself!\n",ch);
+        return false;
+    }
+    if ( ! ctx.target->hanger )
+    {
+        if (showmsg)
+            send_to_char("&RThat ship has no hanger for you to land in!\n",ch);
+        return false;
+    }
+    if ( ctx.ship->shipclass == MIDSIZE_SHIP && ctx.target->shipclass == MIDSIZE_SHIP )
+    {
+        if (showmsg)
+            send_to_char("&RThat ship is not big enough for your ship to land in!\n",ch);
+        return false;
+    }
+    if ( ! ctx.target->bayopen )
+    {
+        if (showmsg)
+            send_to_char("&RTheir hanger is closed. You'll have to ask them to open it for you\n",ch);
+        return false;
+    }
+    return true;
+}
+
+enum class ProjectileKind
+{
+    MISSILE,
+    TORPEDO,
+    ROCKET
 };
 
-//Price defaults for each cargo type.
-struct cargo_data cargodefaults[CARGOTYPE_DEFAULT] =
+static inline SHIP_DATA *space_get_turret_target( CHAR_DATA *ch, TURRET_DATA *turret, bool showmsg = true )
 {
-  { CARGOTYPE_ORE, 		2000	 },
-  { CARGOTYPE_FOOD, 		500 	 },
-  { CARGOTYPE_ELECTRONICS, 	5000	 },
-  { CARGOTYPE_WEAPONS, 		10000 	 },
-  { CARGOTYPE_MEDICAL, 		8000 	 },
-  { CARGOTYPE_CLOTHING, 	1000	 },
-  { CARGOTYPE_LUXURIES, 	20000 	 },
-  { CARGOTYPE_SPICE, 		15000 	 },
-  { CARGOTYPE_WATER, 		200 	 },
-  { CARGOTYPE_SPECIAL, 		5000 	 }
+    if ( turret->target == NULL )
+    {
+        if (showmsg)
+            send_to_char( "&RYou need to choose a target first.\n", ch );
+        return NULL;
+    }
+
+    return turret->target;
+}
+
+static inline SHIP_DATA *space_get_target( CHAR_DATA *ch, SHIP_DATA *ship, bool showmsg = true )
+{
+    if ( ship->target0 == NULL )
+    {
+        if (showmsg)
+            send_to_char( "&RYou need to choose a target first.\n", ch );
+        return NULL;
+    }
+
+    return ship->target0;
+}
+
+static inline bool target_left_or_clear( CHAR_DATA *ch, SHIP_DATA *ship, SHIP_DATA *target, SHIP_DATA **target_slot )
+{
+    if ( ship->shipclass <= SHIP_PLATFORM && !ship_in_range( ship, target ) )
+    {
+        send_to_char( "&RYour target seems to have left.\n", ch );
+        *target_slot = NULL;
+        return true;
+    }
+
+    if ( ship->shipclass > SHIP_PLATFORM && target->in_room != ship->in_room )
+    {
+        send_to_char( "&RYour target seems to have left.\n", ch );
+        *target_slot = NULL;
+        return true;
+    }
+
+    return false;
+}
+
+static inline int ship_target_distance( SHIP_DATA *from, SHIP_DATA *to )
+{
+    return ( abs( (int)( to->vx - from->vx ) )
+           + abs( (int)( to->vy - from->vy ) )
+           + abs( (int)( to->vz - from->vz ) ) ) / 3;
+}
+
+static inline bool target_out_of_coord_range( CHAR_DATA *ch, SHIP_DATA *ship, SHIP_DATA *target, int max_delta, const char *msg )
+{
+    if ( ship->shipclass > SHIP_PLATFORM )
+        return false;
+
+    if ( abs( (int)( target->vx - ship->vx ) ) > max_delta
+      || abs( (int)( target->vy - ship->vy ) ) > max_delta
+      || abs( (int)( target->vz - ship->vz ) ) > max_delta )
+    {
+        if (msg)
+            send_to_char( msg, ch );
+        return true;
+    }
+
+    return false;
+}
+
+inline bool space_distance_ship_less_than( SHIP_DATA *ship1, SHIP_DATA *ship2, long distance )
+{
+    if ( abs( (int) ( ship1->vx - ship2->vx )) > distance ||
+    abs( (int) ( ship1->vy - ship2->vy )) > distance ||
+    abs( (int) ( ship1->vz - ship2->vz )) > distance )
+        return false;
+    return true;
+}
+
+static inline void maybe_autofly_retarget( SHIP_DATA *attacker, SHIP_DATA *target )
+{
+    if ( target && autofly( target ) && target->target0 != attacker && attacker->spaceobject )
+    {
+        target->target0 = attacker;
+        echo_to_cockpit( AT_BLOOD, attacker,
+                         str_printf( "You are being targetted by %s.", target->name ) );
+    }
+}
+
+static inline void echo_ship_observers( int at_color, SHIP_DATA *ship, SHIP_DATA *target, const std::string &msg )
+{
+    if ( ship->shipclass > SHIP_PLATFORM )
+        echo_to_room( at_color, ship->in_room, msg );
+    else
+        echo_to_system( at_color, ship, msg, target );
+}
+
+static inline int compute_projectile_hit_chance( int chance, int origchance, SHIP_DATA *ship, SHIP_DATA *target )
+{
+    int distance = ship_target_distance( ship, target );
+
+    chance += target->shipclass - ship->shipclass;
+    chance += ship->currspeed - target->currspeed;
+    chance += ship->mod->manuever - target->mod->manuever;
+    chance -= distance / ( 10 * ( target->shipclass + 1 ) );
+    chance -= origchance;
+    chance /= 2;
+    chance += origchance;
+
+    chance += 30;
+    return URANGE( 20, chance, 99 );
+}
+
+inline int space_chance_by_shipclass( CHAR_DATA *ch, SHIP_DATA *ship )
+{
+    int chance;
+     if ( ship->shipclass <= FIGHTER_SHIP )
+          chance = IS_NPC(ch) ? ch->top_level
+          : (int)  (ch->pcdata->learned[gsn_starfighters]) ;
+    if ( ship->shipclass == MIDSIZE_SHIP )
+        chance = IS_NPC(ch) ? ch->top_level
+        : (int)  (ch->pcdata->learned[gsn_midships]) ;
+    if ( ship->shipclass == CAPITAL_SHIP )
+        chance = IS_NPC(ch) ? 0 // CHanged so mobs can't fly capital ships - otherwise possession would allow players to bypass requirements.
+        : (int) (ch->pcdata->learned[gsn_capitalships]);
+    return chance;
+}
+
+inline int space_chance_combat( CHAR_DATA *ch, SHIP_DATA *ship = nullptr)
+{
+    int chance;
+    chance = IS_NPC(ch) ? ch->top_level
+            : (int) ( ch->perm_dex*2 + ch->pcdata->learned[gsn_spacecombat]/3
+                    + ch->pcdata->learned[gsn_spacecombat2]/3 + ch->pcdata->learned[gsn_spacecombat3]/3 );        
+    return chance;
+}
+
+inline int space_chance_by_shipsystems( CHAR_DATA *ch, SHIP_DATA *ship )
+{
+    int chance;
+    chance = IS_NPC(ch) ? ch->top_level
+        : (int)  (ch->pcdata->learned[gsn_shipsystems]) ;
+    return chance;
+}
+
+
+inline void space_learn_from_success( CHAR_DATA *ch, SHIP_DATA *ship )
+{
+    if ( ship->shipclass <= FIGHTER_SHIP )
+        learn_from_success( ch , gsn_starfighters );
+    else if ( ship->shipclass == MIDSIZE_SHIP )
+        learn_from_success( ch , gsn_midships );
+    else if ( ship->shipclass == CAPITAL_SHIP )
+        learn_from_success( ch , gsn_capitalships );
+}
+
+inline void space_learn_from_failure( CHAR_DATA *ch, SHIP_DATA *ship )
+{
+    if ( ship->shipclass <= FIGHTER_SHIP )
+        learn_from_failure( ch , gsn_starfighters );
+    else if ( ship->shipclass == MIDSIZE_SHIP )
+        learn_from_failure( ch , gsn_midships );
+    else if ( ship->shipclass == CAPITAL_SHIP )
+        learn_from_failure( ch , gsn_capitalships );
+}
+
+inline void space_learn_combat_from_success( CHAR_DATA *ch )
+{
+    learn_from_success( ch , gsn_spacecombat );
+    learn_from_success( ch , gsn_spacecombat2 );
+    learn_from_success( ch , gsn_spacecombat3 );
+}
+
+inline void space_learn_combat_from_failure( CHAR_DATA *ch )
+{
+    learn_from_failure( ch , gsn_spacecombat );
+    learn_from_failure( ch , gsn_spacecombat2 );
+    learn_from_failure( ch , gsn_spacecombat3 );
+}
+
+inline void space_show_landing_choices( CHAR_DATA *ch, SHIP_DATA *ship )
+{
+    SPACE_DATA *spaceobj;
+    ch_printf(ch, "%s", "Choices:\n" );
+    for( spaceobj = first_spaceobject; spaceobj; spaceobj = spaceobj->next )
+    {
+        if( space_in_range( ship, spaceobj ) )
+        {
+            if ( spaceobj->doca && !spaceobj->seca)
+                ch_printf(ch, "%s (%s)  %.0f %.0f %.0f\n         " ,
+                    spaceobj->locationa,
+                    spaceobj->name,
+                    spaceobj->xpos,
+                    spaceobj->ypos,
+                    spaceobj->zpos );
+            if ( spaceobj->docb && !spaceobj->secb )
+                ch_printf(ch, "%s (%s)  %.0f %.0f %.0f\n         " ,
+                    spaceobj->locationb,
+                    spaceobj->name,
+                    spaceobj->xpos,
+                    spaceobj->ypos,
+                    spaceobj->zpos );
+            if ( spaceobj->docc && !spaceobj->secc )
+                ch_printf(ch, "%s (%s)  %.0f %.0f %.0f\n         " ,
+                    spaceobj->locationc,
+                    spaceobj->name,
+                    spaceobj->xpos,
+                    spaceobj->ypos,
+                    spaceobj->zpos );
+        }
+    }
+}
+
+enum class ShipBuyContext
+{
+    PLAYER,
+    CLAN
+};
+
+static inline CLAN_DATA *get_mainclan( CLAN_DATA *clan )
+{
+    return ( clan && clan->mainclan ) ? clan->mainclan : clan;
+}
+
+static inline bool ship_is_owned( SHIP_DATA *ship )
+{
+    return str_cmp( ship->owner, "" ) || ship->type == MOB_SHIP;
+}
+
+static inline SHIP_DATA *find_ship_in_or_room( CHAR_DATA *ch, const char *argument, bool allow_cockpit )
+{
+    SHIP_DATA *ship = ship_in_room( ch->in_room, argument );
+
+    if ( !ship && allow_cockpit )
+        ship = ship_from_cockpit( ch->game, ch->in_room->vnum );
+
+    if ( !ship )
+    {
+        if ( !argument || argument[0] == '\0' )
+             send_to_char( "Which ship do you want?\n", ch );
+        else
+            act( AT_PLAIN, "I see no $T here.", ch, NULL, argument, TO_CHAR );
+    }
+    return ship;
+}
+
+static inline void ship_show( CHAR_DATA *ch, SHIP_DATA *ship, bool fromafar = false )
+{
+    ch_printf( ch, "&Y%s %s : %s (%s)\n&B",
+        ship->type == SHIP_REBEL ? "Rebel" :
+        (ship->type == SHIP_IMPERIAL ? "Imperial" : "Civilian" ),
+        ship->shipclass == FIGHTER_SHIP ? "Starfighter" :
+        (ship->shipclass == MIDSIZE_SHIP ? "Midtarget" : 
+        (ship->shipclass == CAPITAL_SHIP ? "Capital Ship" :
+        (ship->shipclass == SHIP_PLATFORM ? "Platform" : 
+        (ship->shipclass == CLOUD_CAR ? "Cloudcar" : 
+        (ship->shipclass == OCEAN_SHIP ? "Boat" : 
+        (ship->shipclass == LAND_SPEEDER ? "Speeder" : 
+        (ship->shipclass == WHEELED ? "Wheeled Transport" : 
+        (ship->shipclass == LAND_CRAWLER ? "Crawler" : 
+        (ship->shipclass == WALKER ? "Walker" : "Unknown" ) ) ) ) ) ) ) ) ),
+        ship->name,
+        ship->personalname,
+        ship->filename);
+    ch_printf( ch, "Description: %s\nOwner: %s",
+        ship->description,
+        ship->owner );
+    if( fromafar == FALSE )
+        ch_printf( ch, "   Pilot: %s   Copilot: %s", ship->pilot,  ship->copilot );
+
+    ch_printf( ch, "\nLaser cannons: %d  Ion cannons: %d\n",
+        ship->mod->lasers, ship->mod->ions);
+    ch_printf( ch, "Projectile Launchers (8): %d  ",
+        ship->mod->launchers);
+    ch_printf( ch, "Chaff Launchers (6): %d\n",
+        ship->mod->defenselaunchers);
+    ch_printf( ch, "Max Hull: %d  ",
+        ship->mod->maxhull);
+    ch_printf( ch, "Max Shields: %d   Max Energy(fuel): %d\n",
+        ship->mod->maxshield,
+        ship->mod->maxenergy);
+    ch_printf( ch, "Maximum Speed: %d   Hyperspeed: %d  Value: %d\n",
+        ship->mod->realspeed, ship->mod->hyperspeed, get_ship_value( ship ));
+    ch_printf( ch, "Maximum Cargo: %d\n", ship->maxcargo );
+
+}
+
+static inline void ship_show_status( CHAR_DATA *ch, SHIP_DATA *ship )
+{
+    TURRET_DATA *turret;
+    int turretnum = 0;
+    ch_printf( ch, "&W%s:\n",ship->name);
+    ch_printf( ch, "&OCurrent Coordinates:&Y %.0f %.0f %.0f\n",
+                        ship->vx, ship->vy, ship->vz );
+    ch_printf( ch, "&OCurrent Heading:&Y %.0f %.0f %.0f\n",
+                        ship->hx, ship->hy, ship->hz );
+    ch_printf( ch, "&OCurrent Speed:&Y %d&O/%d Accel: &Y%d&O/%d\n",
+                        ship->currspeed , ship->mod->realspeed, 
+                        ship->accel, get_acceleration(ship) );
+    ch_printf( ch, "&OHull:&Y %d&O/%d  Ship Condition:&Y %s\n",
+                        ship->hull,
+    		                ship->mod->maxhull,
+    			              ship->shipstate == SHIP_DISABLED ? "Disabled" : "Running");
+    ch_printf( ch, "&OShields:&Y %d&O/%d   Energy(fuel):&Y %d&O/%d\n",
+                        ship->shield,
+                        ship->mod->maxshield,
+                        ship->energy,
+                        ship->mod->maxenergy);
+    ch_printf( ch, "&OLaser Condition:&Y %s  &OCurrent Target:&Y %s\n",
+    		                ship->statet0 == LASER_DAMAGED ? "Damaged" : "Good" , ship->target0 ? ship->target0->name : "none");
+    if (ship->first_turret)
+        for ( turret = ship->first_turret, turretnum = 0; turret; turret= turret->next, turretnum++ )
+            ch_printf( ch, "&OTurret %d:  &Y %s  &OCurrent Target:&Y %s\n",
+    			      turretnum, turret->state == LASER_DAMAGED ? "Damaged" : "Good" , turret->target ? turret->target->name : "none");
+
+    ch_printf( ch, "&OSensors:    &Y%d   &OTractor Beam:   &Y%d\n", ship->mod->sensor, ship->mod->tractorbeam);
+    ch_printf( ch, "&OAstroArray: &Y%d   &OComm:           &Y%d\n", ship->mod->astro_array, ship->mod->comm);
+    if( ship->mod->gravitypower > 0 )
+        ch_printf( ch, "&OGravity Well Projectors: Power: &Y%d\n", ship->mod->gravitypower );
+    ch_printf( ch, "\n&OMissiles:&Y %d&O  Torpedos: &Y%d&ORockets:  &Y%d&O\n  Chaff:    &Y%d&O  Gravity Power: %d/%d\n Launchers: %d/%d Condition:&Y %s&w\n",
+       			ship->missiles,
+    			  ship->torpedos,
+    			  ship->rockets,
+            ship->chaff, ship->mod->gravproj, ship->mod->gravitypower,
+            ship->mod->launchers,
+            ship->mod->defenselaunchers,
+    			  ship->missilestate == MISSILE_DAMAGED ? "Damaged" : "Good");
+    ch_printf( ch, "\n&OMaxMods Ext:&Y %d&O/%d  Int: &Y%d&O/%d\n", 
+            get_extmodule_count(ship), ship->maxextmodules, get_intmodule_count(ship), ship->maxintmodules );
+
 };

@@ -327,10 +327,10 @@ DO_FUN *skill_function( const std::string& name )
 	if ( !str_cmp( name, "do_exits" ))		return do_exits;
 	break;
     case 'f':
+	if ( !str_cmp( name, "do_fire" ))               return do_fire;
 	if ( !str_cmp( name, "do_feed" ))		return do_feed;
 	if ( !str_cmp( name, "do_fill" ))		return do_fill;
 	if ( !str_cmp( name, "do_findserin" ))		return do_findserin;
-	if ( !str_cmp( name, "do_fire" ))               return do_fire;
 	if ( !str_cmp( name, "do_first_aid" ))          return do_first_aid; 
 	if ( !str_cmp( name, "do_fixchar" ))		return do_fixchar;
 	if ( !str_cmp( name, "do_flee" ))		return do_flee;

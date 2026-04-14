@@ -1370,6 +1370,7 @@ void load_boards( GameContext *game )
 void do_makeboard( CHAR_DATA *ch, char *argument )
 {
     BOARD_DATA *board;
+	std::string argstr = argument;
 
     if ( !argument || argument[0] == '\0' )
     {
@@ -1377,12 +1378,12 @@ void do_makeboard( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    smash_tilde( argument );
+    smash_tilde( argstr );
 
     CREATE( board, BOARD_DATA, 1 );
 	board->game = ch->game;
     LINK( board, first_board, last_board, next, prev );
-    board->note_file	   = str_dup( strlower( argument ) );
+    board->note_file	   = str_dup( strlower( argstr ) );
     board->read_group      = str_dup( "" );
     board->post_group      = str_dup( "" );
     board->extra_readers   = str_dup( "" );

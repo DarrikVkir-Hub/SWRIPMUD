@@ -2191,8 +2191,10 @@ void do_hedit( CHAR_DATA *ch, char *argument )
 		stop_editing( ch );
 		return;
 	  }
-	  STRFREE( pHelp->text );
-	  pHelp->text = copy_buffer( ch );
+	  STR_DISPOSE( pHelp->text );
+      char *chbuf = copy_buffer( ch );
+	  pHelp->text = str_dup(chbuf);
+      STRFREE( chbuf );
 	  stop_editing( ch );
 	  return;
     }
@@ -2209,8 +2211,8 @@ void do_hedit( CHAR_DATA *ch, char *argument )
     */	lev = get_trust(ch);
         CREATE( pHelp, HELP_DATA, 1 );
         pHelp->game = ch->game;
-        pHelp->keyword = STRALLOC( strupper(argument) );
-        pHelp->text    = STRALLOC( "" );
+        pHelp->keyword = str_dup( strupper(argument) );
+        pHelp->text    = str_dup( "" );
         pHelp->level   = lev;
         add_help( pHelp );
     }
@@ -2239,11 +2241,11 @@ void do_hset( CHAR_DATA *ch, char *argument )
     HELP_DATA *pHelp;
     std::string arg1;
     std::string arg2;
-    std::string argumentstr;
+    std::string argumentstr = argument;
 
 
-    smash_tilde( argument );
-    argumentstr = one_argument( argument, arg1 );
+    smash_tilde( argumentstr );
+    argumentstr = one_argument( argumentstr, arg1 );
     if ( arg1.empty() )
     {
         send_to_char( "Syntax: hset <field> [value] [help page]\n",	ch );
@@ -2291,8 +2293,8 @@ void do_hset( CHAR_DATA *ch, char *argument )
     if ( !str_cmp( arg1, "remove" ) )
     { 	
         UNLINK( pHelp, first_help, last_help, next, prev );
-        STRFREE( pHelp->text );
-        STRFREE( pHelp->keyword );
+        STR_DISPOSE( pHelp->text );
+        STR_DISPOSE( pHelp->keyword );
         DISPOSE( pHelp );
         send_to_char( "Removed.\n", ch );
         return;
@@ -2319,8 +2321,8 @@ void do_hset( CHAR_DATA *ch, char *argument )
     }
     if ( !str_cmp( arg1, "keyword" ) )
     {
-        STRFREE( pHelp->keyword );
-        pHelp->keyword = STRALLOC( strupper(arg2) );
+        STR_DISPOSE( pHelp->keyword );
+        pHelp->keyword = str_dup( strupper(arg2) );
         send_to_char( "Done.\n", ch );
         return;
     }

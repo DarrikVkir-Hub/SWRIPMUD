@@ -1875,12 +1875,12 @@ struct ship_data
     bool	tracking;
     int		tcount;
     bool	guard;
-    float       tx, ty, tz;
-    float       vx, vy, vz;
-    float       hx, hy, hz;
-    float       jx, jy, jz;
-    float       cx, cy, cz;
-    float       ox, oy, oz;
+    float       tx, ty, tz; // Current target/tracking coordinates
+    float       vx, vy, vz; // Current real coordinates
+    float       hx, hy, hz; // Current heading
+    float       jx, jy, jz; // Calculated jump coordinates
+    float       cx, cy, cz; // Current real coordinates in hyperspace
+    float       ox, oy, oz; // Original coordinates when jump started
     int         maxenergy;
     int         energy;
     int         shield;
@@ -5952,11 +5952,11 @@ SHIP_DATA * ship_in_room            args( ( ROOM_INDEX_DATA *room, const std::st
 void         transship              args( ( SHIP_DATA *ship , int destination ) );
 bool ship_in_range( SHIP_DATA *ship, SHIP_DATA *target );
 bool ship_in_range_c( SHIP_DATA *ship, SHIP_DATA *target );
-bool missile_in_range( SHIP_DATA *ship, MISSILE_DATA *missile );
-bool space_in_range( SHIP_DATA *ship, SPACE_DATA *object );
+bool missile_in_range( SHIP_DATA *ship, MISSILE_DATA *missile, int range = 5000 );
+bool space_in_range( SHIP_DATA *ship, SPACE_DATA *object, int range = 100000 );
 void dockship( CHAR_DATA *ch, SHIP_DATA *ship );
 bool is_bus_stop( int vnum );
-bool space_in_range_c( SHIP_DATA *ship, SPACE_DATA *object );
+bool space_in_range_c( SHIP_DATA *ship, SPACE_DATA *object, int range = 10000 );
 bool    autofly(SHIP_DATA *ship);
 bool	load_ship_file	args( ( GameContext *game, char *shipfile ) );
 

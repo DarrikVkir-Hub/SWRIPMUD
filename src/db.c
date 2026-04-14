@@ -1046,8 +1046,8 @@ void add_help( HELP_DATA *pHelp )
 	&&   strcmp(pHelp->keyword, tHelp->keyword) == 0 )
 	{
 	    bug( "add_help: duplicate: %s.  Deleting.", pHelp->keyword );
-	    STRFREE( pHelp->text );
-	    STRFREE( pHelp->keyword );
+	    STR_DISPOSE( pHelp->text );
+	    STR_DISPOSE( pHelp->keyword );
 	    DISPOSE( pHelp );
 	    return;
 	}

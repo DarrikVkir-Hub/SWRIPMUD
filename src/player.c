@@ -891,6 +891,7 @@ void set_title(CHAR_DATA *ch, const std::string& title)
 void do_title( CHAR_DATA *ch, char *argument )
 {
     std::string buf;	
+	std::string argstr = argument;
     if ( IS_NPC(ch) )
 	return;
 
@@ -907,18 +908,18 @@ void do_title( CHAR_DATA *ch, char *argument )
 	return;
     }
 
-    if ((get_trust(ch) <= LEVEL_IMMORTAL) && (!nifty_is_name(ch->name, argument)))
+    if ((get_trust(ch) <= LEVEL_IMMORTAL) && (!nifty_is_name(ch->name, argstr)))
      {
        send_to_char("You must include your name somewhere in your title!", ch);
        return;
      }
-	if (strlen(argument) >40)
+	if (argstr.length() >40)
 	{
 	send_to_char("40 characters is maximum allowed for titles now.\n", ch);
 	return;
 	}
-    smash_tilde( argument );
-	buf = str_printf("%s &R&W^x", argument);
+    smash_tilde( argstr );
+	buf = str_printf("%s &R&W^x", argstr);
     set_title( ch, buf );
     send_to_char( "Ok.\n", ch );
 }
