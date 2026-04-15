@@ -62,21 +62,28 @@ Ships in room
 */
 
 void handle_gmcp(DESCRIPTOR_DATA *d, unsigned char *data, int len);
-void send_gmcp(DESCRIPTOR_DATA *d, const char *msg);
-void dispatch_gmcp(DESCRIPTOR_DATA *d, const char *module, const char *data);
-void gmcp_core_ping(DESCRIPTOR_DATA *d, const char *data);
-void gmcp_core_hello(DESCRIPTOR_DATA *d, const char *data);
-void gmcp_sendf(DESCRIPTOR_DATA *d, const char *module, const char *fmt, ...);
+void send_gmcp(DESCRIPTOR_DATA *d, const std::string &msg);
+void dispatch_gmcp(DESCRIPTOR_DATA *d, const std::string &module, const std::string &data);
+void gmcp_core_ping(DESCRIPTOR_DATA *d, const std::string &data);
+void gmcp_core_hello(DESCRIPTOR_DATA *d, const std::string &data);
+void gmcp_sendf(DESCRIPTOR_DATA *d, const std::string &module, const char *fmt, ...);
 void gmcp_send_char_vitals(DESCRIPTOR_DATA *d);
 void gmcp_send_char_status(DESCRIPTOR_DATA *d);
 void gmcp_send_room_info(DESCRIPTOR_DATA *d);
 void gmcp_send_all(void (*func)(DESCRIPTOR_DATA *));
-void gmcp_core_supports_set(DESCRIPTOR_DATA *d, const char *data);
-void gmcp_core_supports_remove(DESCRIPTOR_DATA *d, const char *data);
-void gmcp_core_supports_add(DESCRIPTOR_DATA *d, const char *data);
-void gmcp_unsubscribe(DESCRIPTOR_DATA *d, const char *module);
-void gmcp_subscribe(DESCRIPTOR_DATA *d, const char *module);
-bool gmcp_is_subscribed(DESCRIPTOR_DATA *d, const char *module);
+void gmcp_core_supports_set(DESCRIPTOR_DATA *d, const std::string &data);
+void gmcp_core_supports_remove(DESCRIPTOR_DATA *d, const std::string &data);
+void gmcp_core_supports_add(DESCRIPTOR_DATA *d, const std::string &data);
+void gmcp_unsubscribe(DESCRIPTOR_DATA *d, const std::string &module);
+void gmcp_subscribe(DESCRIPTOR_DATA *d, const std::string &module);
+bool gmcp_is_subscribed(DESCRIPTOR_DATA *d, const std::string &module);
+const char *gmcp_cache_get(DESCRIPTOR_DATA *d, const char *key);
+const char *gmcp_cache_get(DESCRIPTOR_DATA *d, const std::string &key);
+
+bool gmcp_cache_set(DESCRIPTOR_DATA *d, const char *key, const char *value);
+bool gmcp_cache_set(DESCRIPTOR_DATA *d, const std::string &key, const std::string &value);
+bool gmcp_cache_set(DESCRIPTOR_DATA *d, const std::string &key, const char *value);
+bool gmcp_cache_set(DESCRIPTOR_DATA *d, const char *key, const std::string &value);
 
 /* GMCP pending flags */
 #define GMCP_PEND_VITALS    BV00
@@ -87,7 +94,7 @@ bool gmcp_is_subscribed(DESCRIPTOR_DATA *d, const char *module);
 
 /* === GMCP MODULE SYSTEM (NEW) =============================== */
 
-typedef void (*gmcp_handler_f)(DESCRIPTOR_DATA *d, const char *data);
+typedef void (*gmcp_handler_f)(DESCRIPTOR_DATA *d, const std::string &data);
 
 typedef struct
 {
@@ -96,9 +103,9 @@ typedef struct
 } gmcp_module_t;
 
 /* Forward declarations */
-void gmcp_core_ping(DESCRIPTOR_DATA *d, const char *data);
-void gmcp_core_hello(DESCRIPTOR_DATA *d, const char *data);
-void dispatch_gmcp(DESCRIPTOR_DATA *d, const char *module, const char *data);
+void gmcp_core_ping(DESCRIPTOR_DATA *d, const std::string &data);
+void gmcp_core_hello(DESCRIPTOR_DATA *d, const std::string &data);
+void dispatch_gmcp(DESCRIPTOR_DATA *d, const std::string &module, const std::string &data);
 
 /* Module table */
 static const gmcp_module_t gmcp_modules[] =
@@ -116,45 +123,62 @@ static const gmcp_module_t gmcp_modules[] =
 
 typedef struct
 {
-    char buf[2048];
-    size_t len;
+    std::string buf;
     bool first;
 } gmcp_json_t;
 
 void gmcp_json_init(gmcp_json_t *j)
 {
-    j->len = 0;
+    j->buf = "{";
     j->first = true;
-    j->buf[j->len++] = '{';
-    j->buf[j->len] = '\0';
 }
 
-void gmcp_json_add_int(gmcp_json_t *j, const char *key, int value)
+void gmcp_json_add_int(gmcp_json_t *j, const std::string &key, int value)
 {
     if (!j->first)
-        j->buf[j->len++] = ',';
-
+        j->buf += ",";
     j->first = false;
-
-    j->len += snprintf(j->buf + j->len,
-        sizeof(j->buf) - j->len,
-        "\"%s\":%d", key, value);
+    j->buf += "\"" + key + "\":" + std::to_string(value);
 }
 
-void gmcp_json_add_str(gmcp_json_t *j, const char *key, const char *val)
+static std::string gmcp_escape_json(const std::string &s)
+{
+    std::string out;
+    out.reserve(s.size());
+
+    for (char c : s)
+    {
+        switch (c)
+        {
+            case '\\': out += "\\\\"; break;
+            case '"':  out += "\\\""; break;
+            case '\n': out += "\\n";  break;
+            case '\r': out += "\\r";  break;
+            case '\t': out += "\\t";  break;
+            default:   out += c;      break;
+        }
+    }
+    return out;
+}
+
+void gmcp_json_add_str(gmcp_json_t *j, const std::string &key, const std::string &val)
 {
     if (!j->first)
-        j->buf[j->len++] = ',';
-
+        j->buf += ",";
     j->first = false;
 
-    j->len += snprintf(j->buf + j->len,
-        sizeof(j->buf) - j->len,
-        "\"%s\":\"%s\"", key, val ? val : "");
+    j->buf += "\"";
+    j->buf += key;
+    j->buf += "\":\"";
+    j->buf += gmcp_escape_json(val);
+    j->buf += "\"";
 }
 
 const char *gmcp_cache_get(DESCRIPTOR_DATA *d, const char *key)
 {
+    if (!d || !key)
+        return NULL;
+
     for (int i = 0; i < d->gmcp_cache.count; i++)
     {
         if (!strcmp(d->gmcp_cache.entries[i].key, key))
@@ -163,10 +187,15 @@ const char *gmcp_cache_get(DESCRIPTOR_DATA *d, const char *key)
     return NULL;
 }
 
-const char *gmcp_json_close(gmcp_json_t *j)
+const char *gmcp_cache_get(DESCRIPTOR_DATA *d, const std::string &key)
 {
-    j->buf[j->len++] = '}';
-    j->buf[j->len] = '\0';
+    return gmcp_cache_get(d, key.c_str());
+}
+
+const std::string &gmcp_json_close(gmcp_json_t *j)
+{
+    if (j->buf.empty() || j->buf.back() != '}')
+        j->buf += "}";
     return j->buf;
 }
 
@@ -221,8 +250,8 @@ void build_char_status(gmcp_json_t *j, DESCRIPTOR_DATA *d)
     gmcp_json_add_cache_str(j, d, "fullname", "Char.Status.fullname");
     gmcp_json_add_cache_str(j, d, "class", "Char.Status.class");
     gmcp_json_add_cache_str(j, d, "race", "Char.Status.race");    
-    gmcp_json_add_cache_int(j, d, "wimpy",      "Char.Stats.wimpy");
-    gmcp_json_add_cache_str(j, d, "wanted",      "Char.Stats.wanted");
+    gmcp_json_add_cache_int(j, d, "wimpy",      "Char.Status.wimpy");
+    gmcp_json_add_cache_str(j, d, "wanted",      "Char.Status.wanted");
 
     gmcp_json_add_cache_str(j, d, "clan", "Char.Status.clan");    
     gmcp_json_add_cache_str(j, d, "clan salary", "Char.Status.salary");    
@@ -270,8 +299,6 @@ void build_char_stats(gmcp_json_t *j, DESCRIPTOR_DATA *d)
 
 }
 
-
-
 void gmcp_send_from_cache(DESCRIPTOR_DATA *d, const char *module,
                           void (*builder)(gmcp_json_t *, DESCRIPTOR_DATA *))
 {
@@ -280,7 +307,7 @@ void gmcp_send_from_cache(DESCRIPTOR_DATA *d, const char *module,
 
     builder(&j, d);
 
-    gmcp_sendf(d, module, "%s", gmcp_json_close(&j));
+    gmcp_sendf(d, module, "%s", gmcp_json_close(&j).c_str());
 }
 
 int gmcp_cache_get_int(DESCRIPTOR_DATA *d, const char *key)
@@ -291,6 +318,9 @@ int gmcp_cache_get_int(DESCRIPTOR_DATA *d, const char *key)
 
 bool gmcp_cache_set(DESCRIPTOR_DATA *d, const char *key, const char *value)
 {
+    if (!d || !key || !value)
+        return false;
+
     for (int i = 0; i < d->gmcp_cache.count; i++)
     {
         if (!strcmp(d->gmcp_cache.entries[i].key, key))
@@ -299,6 +329,7 @@ bool gmcp_cache_set(DESCRIPTOR_DATA *d, const char *key, const char *value)
                 return false; /* no change */
 
             strncpy(d->gmcp_cache.entries[i].value, value, 127);
+            d->gmcp_cache.entries[i].value[127] = '\0';
             return true; /* changed */
         }
     }
@@ -307,17 +338,33 @@ bool gmcp_cache_set(DESCRIPTOR_DATA *d, const char *key, const char *value)
         return false;
 
     strncpy(d->gmcp_cache.entries[d->gmcp_cache.count].key, key, 63);
+    d->gmcp_cache.entries[d->gmcp_cache.count].key[63] = '\0';
+
     strncpy(d->gmcp_cache.entries[d->gmcp_cache.count].value, value, 127);
+    d->gmcp_cache.entries[d->gmcp_cache.count].value[127] = '\0';
 
     d->gmcp_cache.count++;
     return true;
 }
 
+bool gmcp_cache_set(DESCRIPTOR_DATA *d, const std::string &key, const std::string &value)
+{
+    return gmcp_cache_set(d, key.c_str(), value.c_str());
+}
+
+bool gmcp_cache_set(DESCRIPTOR_DATA *d, const std::string &key, const char *value)
+{
+    return gmcp_cache_set(d, key.c_str(), value);
+}
+
+bool gmcp_cache_set(DESCRIPTOR_DATA *d, const char *key, const std::string &value)
+{
+    return gmcp_cache_set(d, key, value.c_str());
+}
+
 bool gmcp_cache_set_int(DESCRIPTOR_DATA *d, const char *key, int value)
 {
-    char buf[32];
-    SPRINTF(buf, "%d", value);
-    return gmcp_cache_set(d, key, buf);
+    return gmcp_cache_set(d, key, std::to_string(value));
 }
 
 void gmcp_cache_clear_prefix(DESCRIPTOR_DATA *d, const char *prefix)
@@ -351,79 +398,179 @@ bool gmcp_has(DESCRIPTOR_DATA *d, const char *name)
 
 void handle_gmcp(DESCRIPTOR_DATA *d, unsigned char *data, int len)
 {
-    char buf[2048];
-
     if (len <= 0)
         return;
 
-    if (len >= (int)sizeof(buf))
-        len = sizeof(buf) - 1;
+    std::string msg(reinterpret_cast<const char *>(data), len);
 
-    memcpy(buf, data, len);
-    buf[len] = '\0';
+    fprintf(stderr, "GMCP RECV: %s\r\n", msg.c_str());
 
-    fprintf(stderr, "GMCP RECV: %s\r\n", buf);
+    const size_t pos = msg.find(' ');
 
-    char *space = strchr(buf, ' ');
-
-    if (space)
-    {
-        *space = '\0';
-        dispatch_gmcp(d, buf, space + 1);
-    }
+    if (pos != std::string::npos)
+        dispatch_gmcp(d, msg.substr(0, pos), msg.substr(pos + 1));
     else
-    {
-        dispatch_gmcp(d, buf, "");
-    }
+        dispatch_gmcp(d, msg, "");
 }
 
-void dispatch_gmcp(DESCRIPTOR_DATA *d, const char *module, const char *data)
+void dispatch_gmcp(DESCRIPTOR_DATA *d, const std::string &module, const std::string &data)
 {
     for (int i = 0; gmcp_modules[i].name != NULL; i++)
     {
-        if (!strcmp(module, gmcp_modules[i].name))
+        if (module == gmcp_modules[i].name)
         {
             gmcp_modules[i].handler(d, data);
             return;
         }
     }
 
-    /* CLEANER: ignore known noise prefixes */
-    if (!strncmp(module, "External.", 9) ||
-        !strncmp(module, "Client.", 7))
+    if (module.compare(0, 9, "External.") == 0 ||
+        module.compare(0, 7, "Client.") == 0)
         return;
 
-    fprintf(stderr, "GMCP: unhandled module %s\r\n", module);
+    fprintf(stderr, "GMCP: unhandled module %s\r\n", module.c_str());
 }
 
-void gmcp_core_ping(DESCRIPTOR_DATA *d, const char *data)
+static std::string gmcp_trim_token(const std::string &s)
+{
+    const std::string trim_chars = "[]\" ,";
+    const size_t start = s.find_first_not_of(trim_chars);
+    if (start == std::string::npos)
+        return "";
+
+    const size_t end = s.find_last_not_of(trim_chars);
+    return s.substr(start, end - start + 1);
+}
+
+static bool gmcp_extract_json_string(const std::string &data,
+                                     const std::string &key,
+                                     std::string &out)
+{
+    const std::string needle = "\"" + key + "\"";
+    const size_t key_pos = data.find(needle);
+    if (key_pos == std::string::npos)
+        return false;
+
+    const size_t colon_pos = data.find(':', key_pos + needle.size());
+    if (colon_pos == std::string::npos)
+        return false;
+
+    const size_t open_quote = data.find('"', colon_pos + 1);
+    if (open_quote == std::string::npos)
+        return false;
+
+    const size_t close_quote = data.find('"', open_quote + 1);
+    if (close_quote == std::string::npos)
+        return false;
+
+    out = data.substr(open_quote + 1, close_quote - open_quote - 1);
+    return true;
+}
+
+static void gmcp_parse_supports(const std::string &data,
+                                void (*fn)(const std::string &name, int version, void *ctx),
+                                void *ctx)
+{
+    size_t pos = 0;
+
+    while (pos < data.size())
+    {
+        size_t comma = data.find(',', pos);
+        std::string token = (comma == std::string::npos)
+            ? data.substr(pos)
+            : data.substr(pos, comma - pos);
+
+        token = gmcp_trim_token(token);
+
+        if (!token.empty())
+        {
+            std::string name;
+            int version = 1;
+
+            size_t space = token.find(' ');
+            if (space == std::string::npos)
+            {
+                name = token;
+            }
+            else
+            {
+                name = gmcp_trim_token(token.substr(0, space));
+
+                std::string version_str = gmcp_trim_token(token.substr(space + 1));
+                if (!version_str.empty())
+                    version = atoi(version_str.c_str());
+            }
+
+            if (!name.empty())
+                fn(name, version, ctx);
+        }
+
+        if (comma == std::string::npos)
+            break;
+
+        pos = comma + 1;
+    }
+}
+
+static void gmcp_supports_set_cb(const std::string &name, int version, void *ctx)
+{
+    if (!ctx)
+        return;
+
+    DESCRIPTOR_DATA *d = (DESCRIPTOR_DATA *)ctx;
+
+    if (d->gmcp_cap_count >= MAX_GMCP_CAPS)
+        return;
+
+    strncpy(d->gmcp_caps[d->gmcp_cap_count].name, name.c_str(), 63);
+    d->gmcp_caps[d->gmcp_cap_count].name[63] = '\0';
+    d->gmcp_caps[d->gmcp_cap_count].version = version;
+    d->gmcp_cap_count++;
+}
+
+static void gmcp_supports_add_cb(const std::string &name, int version, void *ctx)
+{
+    if (!ctx)
+        return;
+
+    DESCRIPTOR_DATA *d = (DESCRIPTOR_DATA *)ctx;
+    gmcp_subscribe(d, name);
+}
+
+static void gmcp_supports_remove_cb(const std::string &name, int version, void *ctx)
+{
+    if (!ctx)
+        return;
+
+    DESCRIPTOR_DATA *d = (DESCRIPTOR_DATA *)ctx;
+    gmcp_unsubscribe(d, name);
+}
+
+void gmcp_core_ping(DESCRIPTOR_DATA *d, const std::string &data)
 {
     send_gmcp(d, "Core.Ping {}");
 }
 
-void gmcp_core_hello(DESCRIPTOR_DATA *d, const char *data)
+void gmcp_core_hello(DESCRIPTOR_DATA *d, const std::string &data)
 {
-    char client[64] = {0};
-    char version[64] = {0};
+    std::string client;
+    std::string version;
 
-    sscanf(data,
-        "{ \"client\": \"%63[^\"]\", \"version\": \"%63[^\"]\" }",
-        client, version);
+    if (gmcp_extract_json_string(data, "client", client))
+        gmcp_cache_set(d, "Client.Name", client);
 
-    gmcp_cache_set(d, "Client.Name", client);
-    gmcp_cache_set(d, "Client.Version", version);
+    if (gmcp_extract_json_string(data, "version", version))
+        gmcp_cache_set(d, "Client.Version", version);
 }
 
-void gmcp_sendf(DESCRIPTOR_DATA *d, const char *module, const char *fmt, ...)
+void gmcp_sendf(DESCRIPTOR_DATA *d, const std::string &module, const char *fmt, ...)
 {
-    if (!d || !d->gmcp_enabled || !module)
+    if (!d || !d->gmcp_enabled || module.empty())
         return;
 
-    /* NEW: subscription gate */
     if (!gmcp_is_subscribed(d, module))
         return;
 
-    char payload[4096];
     char json[3072];
 
     if (fmt && fmt[0] != '\0')
@@ -433,14 +580,12 @@ void gmcp_sendf(DESCRIPTOR_DATA *d, const char *module, const char *fmt, ...)
         vsnprintf(json, sizeof(json), fmt, args);
         va_end(args);
 
-        snprintf(payload, sizeof(payload), "%s %s", module, json);
+        send_gmcp(d, module + " " + json);
     }
     else
     {
-        snprintf(payload, sizeof(payload), "%s {}", module);
+        send_gmcp(d, module + " {}");
     }
-
-    send_gmcp(d, payload);
 }
 
 void gmcp_send_all(void (*func)(DESCRIPTOR_DATA *))
@@ -454,36 +599,12 @@ void gmcp_send_all(void (*func)(DESCRIPTOR_DATA *))
     }
 }
 
-void gmcp_core_supports_set(DESCRIPTOR_DATA *d, const char *data)
+void gmcp_core_supports_set(DESCRIPTOR_DATA *d, const std::string &data)
 {
-    fprintf(stderr, "GMCP: Supports.Set %s\r\n", data);
+    fprintf(stderr, "GMCP: Supports.Set %s\r\n", data.c_str());
 
     d->gmcp_cap_count = 0;
-
-    /* VERY SIMPLE PARSER (safe + good enough) */
-    const char *p = data;
-
-    while (*p && d->gmcp_cap_count < MAX_GMCP_CAPS)
-    {
-        while (*p && (*p == '[' || *p == ']' || *p == '"' || *p == ' ' || *p == ','))
-            p++;
-
-        if (!*p)
-            break;
-
-        char name[64] = {0};
-        int version = 1;
-
-        /* Parse "Module.Submodule X" */
-        sscanf(p, "%63[^ ] %d", name, &version);
-
-        strncpy(d->gmcp_caps[d->gmcp_cap_count].name, name, 63);
-        d->gmcp_caps[d->gmcp_cap_count].version = version;
-        d->gmcp_cap_count++;
-
-        while (*p && *p != ',')
-            p++;
-    }
+    gmcp_parse_supports(data, gmcp_supports_set_cb, d);
 }
 
 void gmcp_force_resync(CHAR_DATA *ch)
@@ -546,9 +667,9 @@ void gmcp_evt_char_status(CHAR_DATA *ch)
     changed |= gmcp_cache_set(d, "Char.Status.name", ch->name);
     changed |= gmcp_cache_set(d, "Char.Status.fullname", ch->pcdata->title);
     changed |= gmcp_cache_set(d, "Char.Status.class", ability_name[ch->main_ability]);
-    changed |= gmcp_cache_set(d, "Char.Status.race", capitalize(get_race(ch)).c_str());
+    changed |= gmcp_cache_set(d, "Char.Status.race", capitalize(get_race(ch)));
     changed |= gmcp_cache_set_int(d, "Char.Status.wimpy", ch->wimpy);
-    changed |= gmcp_cache_set(d, "Char.Status.wanted", bitset_to_string(ch->pcdata->wanted_flags, planet_flags).c_str());
+    changed |= gmcp_cache_set(d, "Char.Status.wanted", bitset_to_string(ch->pcdata->wanted_flags, planet_flags));
 
     changed |= gmcp_cache_set(d, "Char.Status.clan", (ch->pcdata->clan ? ch->pcdata->clan->name : "None"));
     changed |= gmcp_cache_set_int(d, "Char.Status.salary", (ch->pcdata->clan ? ch->pcdata->salary : 0));
@@ -614,36 +735,35 @@ void gmcp_evt_room_change(CHAR_DATA *ch)
     ROOM_INDEX_DATA *room = ch->in_room;
 
     bool changed = false;
-    char buf[64];
 
-    snprintf(buf, sizeof(buf), "%d", room->vnum);
-    changed |= gmcp_cache_set(d, "Room.Info.num", buf);
-
+    changed |= gmcp_cache_set(d, "Room.Info.num", std::to_string(room->vnum));
     changed |= gmcp_cache_set(d, "Room.Info.name", room->name);
-    changed |= gmcp_cache_set_int(d, "Room.Info.rentship", (BV_IS_SET( room->room_flags, ROOM_CAN_LAND) ? 1 : 0));
-    changed |= gmcp_cache_set_int(d, "Room.Info.serinstop", (is_bus_stop( ch->in_room->vnum ) ? 1 : 0));
-
+    changed |= gmcp_cache_set_int(d, "Room.Info.rentship",
+        (BV_IS_SET(room->room_flags, ROOM_CAN_LAND) ? 1 : 0));
+    changed |= gmcp_cache_set_int(d, "Room.Info.serinstop",
+        (is_bus_stop(ch->in_room->vnum) ? 1 : 0));
 
     if (!changed)
         return;
+
     d->gmcp_pending |= GMCP_PEND_ROOM;
     //gmcp_send_from_cache(d, "Room.Info", build_room_info);
 }
 
 /* Check if subscribed */
-bool gmcp_is_subscribed(DESCRIPTOR_DATA *d, const char *module)
+bool gmcp_is_subscribed(DESCRIPTOR_DATA *d, const std::string &module)
 {
     for (int i = 0; i < d->gmcp_sub_count; i++)
     {
-        if (!strncmp(module, d->gmcp_subs[i].name,
-                     strlen(d->gmcp_subs[i].name)))
+        const std::string sub = d->gmcp_subs[i].name;
+        if (module.compare(0, sub.size(), sub) == 0)
             return true;
     }
     return false;
 }
 
 /* Add subscription */
-void gmcp_subscribe(DESCRIPTOR_DATA *d, const char *module)
+void gmcp_subscribe(DESCRIPTOR_DATA *d, const std::string &module)
 {
     if (d->gmcp_sub_count >= MAX_GMCP_SUBS)
         return;
@@ -651,16 +771,17 @@ void gmcp_subscribe(DESCRIPTOR_DATA *d, const char *module)
     if (gmcp_is_subscribed(d, module))
         return;
 
-    strncpy(d->gmcp_subs[d->gmcp_sub_count].name, module, 63);
+    strncpy(d->gmcp_subs[d->gmcp_sub_count].name, module.c_str(), 63);
+    d->gmcp_subs[d->gmcp_sub_count].name[63] = '\0';
     d->gmcp_sub_count++;
 }
 
 /* Remove subscription */
-void gmcp_unsubscribe(DESCRIPTOR_DATA *d, const char *module)
+void gmcp_unsubscribe(DESCRIPTOR_DATA *d, const std::string &module)
 {
     for (int i = 0; i < d->gmcp_sub_count; i++)
     {
-        if (!strcmp(d->gmcp_subs[i].name, module))
+        if (module == d->gmcp_subs[i].name)
         {
             d->gmcp_subs[i] = d->gmcp_subs[d->gmcp_sub_count - 1];
             d->gmcp_sub_count--;
@@ -669,50 +790,14 @@ void gmcp_unsubscribe(DESCRIPTOR_DATA *d, const char *module)
     }
 }
 
-void gmcp_core_supports_add(DESCRIPTOR_DATA *d, const char *data)
+void gmcp_core_supports_add(DESCRIPTOR_DATA *d, const std::string &data)
 {
-    /* Example: [ "Char.Vitals 1", "Room.Info 1" ] */
-
-    const char *p = data;
-
-    while (*p)
-    {
-        while (*p && (*p == '[' || *p == ']' || *p == '"' || *p == ' ' || *p == ','))
-            p++;
-
-        if (!*p)
-            break;
-
-        char name[64] = {0};
-        sscanf(p, "%63[^ ]", name);
-
-        gmcp_subscribe(d, name);
-
-        while (*p && *p != ',')
-            p++;
-    }
+    gmcp_parse_supports(data, gmcp_supports_add_cb, d);
 }
 
-void gmcp_core_supports_remove(DESCRIPTOR_DATA *d, const char *data)
+void gmcp_core_supports_remove(DESCRIPTOR_DATA *d, const std::string &data)
 {
-    const char *p = data;
-
-    while (*p)
-    {
-        while (*p && (*p == '[' || *p == ']' || *p == '"' || *p == ' ' || *p == ','))
-            p++;
-
-        if (!*p)
-            break;
-
-        char name[64] = {0};
-        sscanf(p, "%63[^ ]", name);
-
-        gmcp_unsubscribe(d, name);
-
-        while (*p && *p != ',')
-            p++;
-    }
+    gmcp_parse_supports(data, gmcp_supports_remove_cb, d);
 }
 
 void gmcp_init_subscriptions(DESCRIPTOR_DATA *d)

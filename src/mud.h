@@ -6011,8 +6011,8 @@ int parse_ship_template(char *string, SHIP_DATA *ship);
 
 /* gmcp.c*/
 void handle_gmcp(DESCRIPTOR_DATA *d, unsigned char *data, int len);
-void send_gmcp(DESCRIPTOR_DATA *d, const char *msg);
-void dispatch_gmcp(DESCRIPTOR_DATA *d, const char *module, const char *data);
+void send_gmcp(DESCRIPTOR_DATA *d, const std::string &msg);
+void dispatch_gmcp(DESCRIPTOR_DATA *d, const std::string &module, const std::string &data);
 void gmcp_evt_room_change(CHAR_DATA *ch);
 void gmcp_evt_char_vitals(CHAR_DATA *ch);
 void gmcp_evt_char_status(CHAR_DATA *ch);

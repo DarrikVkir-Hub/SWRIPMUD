@@ -7186,14 +7186,13 @@ ssize_t net_write(DESCRIPTOR_DATA *d, const unsigned char *data, size_t len)
     return net_write_raw(d, data, len);
 }
 
-void send_gmcp(DESCRIPTOR_DATA *d, const char *msg)
+void send_gmcp(DESCRIPTOR_DATA *d, const std::string &msg)
 {
     unsigned char buf[2048];
     int len = 0;
 
-    int msg_len = strlen(msg);
+    int msg_len = msg.size();
 
-    /* NEW: bounds check */
     if (msg_len > (int)sizeof(buf) - 6)
         msg_len = sizeof(buf) - 6;
 
@@ -7201,14 +7200,12 @@ void send_gmcp(DESCRIPTOR_DATA *d, const char *msg)
     buf[len++] = SB;
     buf[len++] = TELOPT_GMCP;
 
-    /* SAFE COPY WITH IAC ESCAPING */
     for (int i = 0; i < msg_len && len < (int)sizeof(buf) - 2; i++)
     {
         unsigned char c = (unsigned char)msg[i];
 
         if (c == IAC)
         {
-            /* Duplicate IAC */
             if (len < (int)sizeof(buf) - 3)
             {
                 buf[len++] = IAC;
@@ -7216,7 +7213,7 @@ void send_gmcp(DESCRIPTOR_DATA *d, const char *msg)
             }
             else
             {
-                break; /* avoid overflow */
+                break;
             }
         }
         else
@@ -7224,14 +7221,11 @@ void send_gmcp(DESCRIPTOR_DATA *d, const char *msg)
             buf[len++] = c;
         }
     }
-//    len += msg_len;
 
     buf[len++] = IAC;
     buf[len++] = SE;
 
     write_to_buffer_raw(d, buf, len);
-
-//    send_telnet(d, buf, len);
 }
 
 #define MSSP_VAR 1
