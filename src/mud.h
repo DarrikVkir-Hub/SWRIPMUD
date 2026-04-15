@@ -1810,6 +1810,9 @@ struct module_data
   MODULE_DATA *prev;  
 };
 
+void unlink_ship_rooms( GameContext *game, SHIP_DATA *ship );
+void link_ship_rooms( GameContext *game, SHIP_DATA *ship );
+
 struct ship_data
 {
     GameContext *game = NULL;   /* Pointer to our game context */
@@ -1897,8 +1900,29 @@ struct ship_data
     int         entrance;
     int         hanger;
     int         engineroom;
+private:
     int         firstroom;
     int         lastroom;
+public:
+    void set_firstroom(int vnum) { 
+        unlink_ship_rooms(this->game, this);
+        firstroom = vnum; 
+        if (lastroom == 0) lastroom = vnum;
+        if (cockpit == 0) cockpit = vnum;
+        if (coseat == 0) coseat = vnum;
+        if (pilotseat == 0) pilotseat = vnum;
+        if (gunseat == 0) gunseat = vnum;
+        if (navseat == 0) navseat = vnum;
+        if (entrance == 0) entrance = vnum;
+        link_ship_rooms(this->game, this);
+    }
+    void set_lastroom(int vnum) { 
+        unlink_ship_rooms(this->game, this); 
+        lastroom = vnum; 
+        link_ship_rooms(this->game, this);
+    }
+    int get_firstroom() { return firstroom; }
+    int get_lastroom() { return lastroom; }
     int         navseat;
     int         pilotseat;
     int         coseat;
@@ -3721,6 +3745,7 @@ struct	room_index_data
     EXIT_DATA *		last_exit;
     SHIP_DATA * 	first_ship;
     SHIP_DATA * 	last_ship;	
+    SHIP_DATA * 	ship; // What ship is the room on, if any.
     char *		name;
     MAP_DATA *		map;                 /* maps */
     char *		description;

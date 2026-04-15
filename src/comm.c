@@ -4180,8 +4180,8 @@ static bool nanny_try_place_in_ship_room( CHAR_DATA *ch )
 
     for ( ship = first_ship; ship; ship = ship->next )
     {
-        if ( ch->in_room->vnum >= ship->firstroom
-        &&   ch->in_room->vnum <= ship->lastroom )
+        if ( ch->in_room->vnum >= ship->get_firstroom()
+        &&   ch->in_room->vnum <= ship->get_lastroom() )
         {
             if ( ship->shipclass != SHIP_PLATFORM || ship->spaceobject )
             {
@@ -5407,13 +5407,425 @@ void send_eor(DESCRIPTOR_DATA *d)
     send_telnet(d, eor, 2);
 }
 
+static int prompt_percent( int current, int maximum )
+{
+    if ( maximum <= 0 )
+        return 0;
+
+    if ( current <= 0 )
+        return 0;
+
+    if ( current >= maximum )
+        return 100;
+
+    return ( current * 100 ) / maximum;
+}
+
+static std::string get_prompt_status_flags( CHAR_DATA *ch, CHAR_DATA *och )
+{
+    std::string flags;
+
+    if ( !ch )
+        return flags;
+
+    if ( ( !IS_NPC( ch ) && BV_IS_SET( ch->act, PLR_WIZINVIS ) )
+    ||   ( IS_NPC( ch ) && BV_IS_SET( ch->act, ACT_MOBINVIS ) ) )
+        flags.push_back( 'W' );
+    else if ( IS_AFFECTED( ch, AFF_INVISIBLE ) )
+        flags.push_back( 'I' );
+
+    if ( IS_AFFECTED( ch, AFF_HIDE ) )
+        flags.push_back( 'H' );
+
+    if ( IS_AFFECTED( ch, AFF_SNEAK ) )
+        flags.push_back( 'S' );
+
+    if ( ch->mount )
+        flags.push_back( 'M' );
+
+    if ( IS_AFFECTED( ch, AFF_FLYING ) )
+        flags.push_back( 'F' );
+
+    if ( ch->position == POS_STUNNED )
+        flags.push_back( 'T' );
+
+    if ( ch->fighting )
+        flags.push_back( '*' );
+
+    if ( !IS_NPC( och ) && BV_IS_SET( och->act, PLR_AFK ) )
+        flags.push_back( 'A' );
+
+    return flags;
+}
+
+static std::string get_prompt_ship_name( CHAR_DATA *ch, SHIP_DATA *ship )
+{
+    if ( ship && ship->name && ship->name[0] != '\0' )
+        return ship->name;
+
+    return "";
+}
+
+static std::string get_prompt_ship_status( CHAR_DATA *ch, SHIP_DATA *ship )
+{
+    std::string flags;
+
+    if ( !ship )
+        return "";
+
+    switch ( ship->shipstate )
+    {
+        case SHIP_LANDED:
+            flags.push_back( 'L' );
+            break;
+
+        case SHIP_DOCKED:
+            flags.push_back( 'D' );
+            break;
+
+        case SHIP_HYPERSPACE:
+            flags.push_back( 'H' );
+            break;
+
+        case SHIP_DISABLED:
+            flags.push_back( 'X' );
+            break;
+
+        case SHIP_FLYING:
+            flags.push_back( 'F' );
+            break;
+
+        case SHIP_READY:
+            flags.push_back( 'R' );
+            break;
+
+        case SHIP_BUSY:
+        case SHIP_BUSY_2:
+        case SHIP_BUSY_3:
+            flags.push_back( 'B' );
+            break;
+
+        case SHIP_REFUEL:
+            flags.push_back( 'U' );
+            break;
+
+        case SHIP_LAUNCH:
+        case SHIP_LAUNCH_2:
+            flags.push_back( '+' );
+            break;
+
+        case SHIP_LAND:
+        case SHIP_LAND_2:
+            flags.push_back( '-' );
+            break;
+
+        case SHIP_DOCK:
+        case SHIP_DOCK_2:
+            flags.push_back( 'K' );
+            break;
+
+        case SHIP_TRACTORED:
+            flags.push_back( 'T' );
+            break;
+
+        default:
+            break;
+    }
+
+    if ( ship->autopilot )
+        flags.push_back( 'A' );
+
+    if ( ship->autorecharge )
+        flags.push_back( 'C' );
+
+    if ( ship->autotrack )
+        flags.push_back( 'Y' );
+
+    if ( ship->autospeed )
+        flags.push_back( 'S' );
+
+    if ( ship->tracking )
+        flags.push_back( 't' );
+
+    if ( ship->tractoredby )
+        flags.push_back( '<' );
+
+    if ( ship->tractored )
+        flags.push_back( '>' );
+
+    if ( ship->docked )
+        flags.push_back( '=' );
+
+    return flags;
+}
+
+static std::string get_prompt_ship_hud( CHAR_DATA *ch, SHIP_DATA *ship )
+{
+    if ( !ship )
+        return "";
+
+    const char *name = 
+    ( ship->personalname && ship->personalname[0] != '\0' )
+        ? ship->personalname : NULL;
+
+    if ( !name )
+        name = ( ship->name && ship->name[0] != '\0' )
+        ? ship->name : "Ship";
+
+    std::string status = get_prompt_ship_status( ch, ship );
+
+    int shield_pct = prompt_percent( ship->shield, ship->maxshield );
+    int hull_pct   = prompt_percent( ship->hull,   ship->maxhull );
+    int energy_pct = prompt_percent( ship->energy, ship->maxenergy );
+
+    /*
+     * Format:
+     *   [Name STATUS S:x% H:y% E:z%]
+     *
+     * If no status flags, omit that section.
+     */
+
+    if ( !status.empty() )
+    {
+        return str_printf(
+            "[%s %s S:%d%% H:%d%% E:%d%%]",
+            name,
+            status.c_str(),
+            shield_pct,
+            hull_pct,
+            energy_pct );
+    }
+
+    return str_printf(
+        "[%s S:%d%% H:%d%% E:%d%%]",
+        name,
+        shield_pct,
+        hull_pct,
+        energy_pct );
+}
+
+static std::string get_prompt_zone_context( CHAR_DATA *ch )
+{
+    if ( !ch || !ch->in_room )
+        return "";
+
+    ROOM_INDEX_DATA *room = ch->in_room;
+    SHIP_DATA *ship = ship_from_room( ch->game, ch->in_room->vnum );
+
+    if ( ship && ship->name && ship->name[0] != '\0' )
+        return ship->name;
+
+    if ( room->area && room->area->planet && room->area->planet->name && room->area->planet->name[0] != '\0' )
+        return room->area->planet->name;
+
+    if ( room->area && room->area->name && room->area->name[0] != '\0' )
+        return room->area->name;
+
+    return "";
+}
+
+static std::string get_prompt_combat_block( CHAR_DATA *ch )
+{
+    CHAR_DATA *victim = ch->fighting ? who_fighting( ch ) : nullptr;
+
+    if ( !victim )
+        return "";
+
+    return str_printf(
+        "[%s %d%%]",
+        PERS( victim, ch ),
+        prompt_percent( victim->hit, victim->max_hit ) );
+}
+
+static std::string get_prompt_token_value( DESCRIPTOR_DATA *d, CHAR_DATA *ch, CHAR_DATA *och, char token )
+{
+    CHAR_DATA *victim = ch->fighting ? who_fighting( ch ) : nullptr;
+    SHIP_DATA *ship = ship_from_room( ch->game, ch->in_room->vnum );
+    switch ( token )
+    {
+        case '%':
+            return "%";
+
+        case 'a':
+            if ( ch->top_level >= 10 )
+                return str_printf( "%d", ch->alignment );
+            if ( IS_GOOD( ch ) )
+                return "good";
+            if ( IS_EVIL( ch ) )
+                return "evil";
+            return "neutral";
+
+        case 'h':
+            return str_printf( "%d", ch->hit );
+
+        case 'H':
+            return str_printf( "%d", ch->max_hit );
+
+        case 'm':
+            if ( IS_IMMORTAL( ch ) || ch->skill_level[FORCE_ABILITY] > 1 )
+                return str_printf( "%d", ch->mana );
+            return "0";
+
+        case 'M':
+            if ( IS_IMMORTAL( ch ) || ch->skill_level[FORCE_ABILITY] > 1 )
+                return str_printf( "%d", ch->max_mana );
+            return "0";
+
+        case 'n':
+            return "\n";
+
+        case 'p':
+            switch( ch->position )
+            {
+                case POS_DEAD:      return "dead";
+                case POS_MORTAL:    return "mortally wounded";
+                case POS_INCAP:     return "incapacitated";
+                case POS_STUNNED:   return "stunned";
+                case POS_SLEEPING:  return "sleeping";
+                case POS_RESTING:   return "resting";
+                case POS_SITTING:   return "sitting";
+                case POS_FIGHTING:  return "fighting";
+                case POS_STANDING:  return "standing";
+                case POS_MOUNTED:   return "mounted";
+                case POS_SHOVE:     return "shoving";
+                case POS_DRAG:      return "dragging";
+                default:            return "";
+            }
+
+        case 'u':
+            return str_printf( "%d", num_descriptors );
+
+        case 'U':
+            return str_printf( "%d", d->game->get_sysdata()->maxplayers );
+
+        case 'v':
+            return str_printf( "%d", ch->move );
+
+        case 'V':
+            return str_printf( "%d", ch->max_move );
+
+        case 'g':
+            return str_printf( "%d", ch->gold );
+
+        case 'r':
+            if ( IS_IMMORTAL( och ) && ch->in_room )
+                return str_printf( "%d", ch->in_room->vnum );
+            return "";
+
+        case 'R':
+            if ( BV_IS_SET( och->act, PLR_ROOMVNUM ) && ch->in_room )
+                return str_printf( "<#%d> ", ch->in_room->vnum );
+            return "";
+
+        case 'i':
+            if ( ( !IS_NPC( ch ) && BV_IS_SET( ch->act, PLR_WIZINVIS ) )
+            ||   ( IS_NPC( ch ) && BV_IS_SET( ch->act, ACT_MOBINVIS ) ) )
+            {
+                return str_printf(
+                    "(Invis %d) ",
+                    ( IS_NPC( ch ) ? ch->mobinvis : ch->pcdata->wizinvis ) );
+            }
+
+            if ( IS_AFFECTED( ch, AFF_INVISIBLE ) )
+                return "(Invis) ";
+
+            return "";
+
+        case 'I':
+            return str_printf(
+                "%d",
+                ( IS_NPC( ch )
+                    ? ( BV_IS_SET( ch->act, ACT_MOBINVIS ) ? ch->mobinvis : 0 )
+                    : ( BV_IS_SET( ch->act, PLR_WIZINVIS ) ? ch->pcdata->wizinvis : 0 ) ) );
+
+        case 'e':
+            if ( victim )
+                return PERS(victim, ch);
+            return "";
+
+        case 'E':
+            if ( victim )
+                return str_printf( "%d", prompt_percent( victim->hit, victim->max_hit ) );
+            return "";
+
+        case '1':
+            return str_printf( "%d", prompt_percent( ch->hit, ch->max_hit ) );
+
+        case '2':
+            if ( IS_IMMORTAL( ch ) || ch->skill_level[FORCE_ABILITY] > 1 )
+                return str_printf( "%d", prompt_percent( ch->mana, ch->max_mana ) );
+            return "0";
+
+        case '3':
+            return str_printf( "%d", prompt_percent( ch->move, ch->max_move ) );
+
+        case '4':
+            return str_printf( "%d", ship ? prompt_percent( ship->shield, ship->maxshield ) : 0 );
+
+        case '5':
+            return str_printf( "%d", ship ? prompt_percent( ship->hull, ship->maxhull ) : 0 );
+
+        case '6':
+            return str_printf( "%d", ship ? prompt_percent( ship->energy, ship->maxenergy ) : 0 );
+
+        case 's':
+            return get_prompt_status_flags( ch, och );
+
+        case 'f':
+            return get_prompt_combat_block( ch );
+
+        case 't':
+            if ( ch->in_room && ch->in_room->name )
+                return ch->in_room->name;
+            return "";
+
+        case 'A':
+            if ( ch->in_room && ch->in_room->area && ch->in_room->area->name )
+                return ch->in_room->area->name;
+            return "";
+
+        case 'z':
+            return get_prompt_zone_context( ch );            
+
+        case 'q':
+            return get_prompt_ship_name( ch, ship );
+
+        case 'Q':
+            return get_prompt_ship_status( ch, ship );
+
+        case '@':
+            return get_prompt_ship_hud( ch, ship );
+
+        case 'k':
+            return str_printf( "%d", ship ? ship->shield : 0 );
+
+        case 'K':
+            return str_printf( "%d", ship ? ship->maxshield : 0 );
+
+        case 'o':
+            return str_printf( "%d", ship ? ship->hull : 0 );
+
+        case 'O':
+            return str_printf( "%d", ship ? ship->maxhull : 0 );
+
+        case 'j':
+            return str_printf( "%d", ship ? ship->energy : 0 );
+
+        case 'J':
+            return str_printf( "%d", ship ? ship->maxenergy : 0 );
+
+        default:
+            bug( "Display_prompt: bad command char '%c'.", token );
+            return "";
+    }
+}
+
 void display_prompt( DESCRIPTOR_DATA *d )
 {
     CHAR_DATA *ch = d->character;
     CHAR_DATA *och = ( d->original ? d->original : d->character );
     bool ansi = ( !IS_NPC( och ) && BV_IS_SET( och->act, PLR_ANSI ) );
     const char *prompt;
-    int stat;
 
     if ( !ch )
     {
@@ -5470,109 +5882,7 @@ void display_prompt( DESCRIPTOR_DATA *d )
                 break;
 
             case '%':
-                stat = 0x80000000;
-
-                switch ( *prompt )
-                {
-                    case '%':
-                        out.push_back( '%' );
-                        break;
-
-                    case 'a':
-                        if ( ch->top_level >= 10 )
-                            stat = ch->alignment;
-                        else if ( IS_GOOD( ch ) )
-                            out += "good";
-                        else if ( IS_EVIL( ch ) )
-                            out += "evil";
-                        else
-                            out += "neutral";
-                        break;
-
-                    case 'h':
-                        stat = ch->hit;
-                        break;
-
-                    case 'H':
-                        stat = ch->max_hit;
-                        break;
-
-                    case 'm':
-                        if ( IS_IMMORTAL( ch ) || ch->skill_level[FORCE_ABILITY] > 1 )
-                            stat = ch->mana;
-                        else
-                            stat = 0;
-                        break;
-
-                    case 'M':
-                        if ( IS_IMMORTAL( ch ) || ch->skill_level[FORCE_ABILITY] > 1 )
-                            stat = ch->max_mana;
-                        else
-                            stat = 0;
-                        break;
-                    case 'n':
-                        out.push_back('\n');
-                        break;
-                    case 'p':
-                        if ( ch->position == POS_RESTING )
-                            out += "resting";
-                        else if ( ch->position == POS_SLEEPING )
-                            out += "sleeping";
-                        else if ( ch->position == POS_SITTING )
-                            out += "sitting";
-                        break;
-
-                    case 'u':
-                        stat = num_descriptors;
-                        break;
-
-                    case 'U':
-                        stat = d->game->get_sysdata()->maxplayers;
-                        break;
-
-                    case 'v':
-                        stat = ch->move;
-                        break;
-
-                    case 'V':
-                        stat = ch->max_move;
-                        break;
-
-                    case 'g':
-                        stat = ch->gold;
-                        break;
-
-                    case 'r':
-                        if ( IS_IMMORTAL( och ) && ch->in_room )
-                            stat = ch->in_room->vnum;
-                        break;
-
-                    case 'R':
-                        if ( BV_IS_SET( och->act, PLR_ROOMVNUM ) && ch->in_room )
-                            out += str_printf( "<#%d> ", ch->in_room->vnum );
-                        break;
-
-                    case 'i':
-                        if ( ( !IS_NPC( ch ) && BV_IS_SET( ch->act, PLR_WIZINVIS ) )
-                        ||   ( IS_NPC( ch ) && BV_IS_SET( ch->act, ACT_MOBINVIS ) ) )
-                        {
-                            out += str_printf(
-                                "(Invis %d) ",
-                                ( IS_NPC( ch ) ? ch->mobinvis : ch->pcdata->wizinvis ) );
-                        }
-                        else if ( IS_AFFECTED( ch, AFF_INVISIBLE ) )
-                            out += "(Invis) ";
-                        break;
-
-                    case 'I':
-                        stat = ( IS_NPC( ch )
-                            ? ( BV_IS_SET( ch->act, ACT_MOBINVIS ) ? ch->mobinvis : 0 )
-                            : ( BV_IS_SET( ch->act, PLR_WIZINVIS ) ? ch->pcdata->wizinvis : 0 ) );
-                        break;
-                }
-
-                if ( stat != (int)0x80000000 )
-                    out += str_printf( "%d", stat );
+                out += get_prompt_token_value( d, ch, och, *prompt );
                 break;
         }
     }

@@ -154,7 +154,7 @@ bool is_legal_kill(CHAR_DATA *ch, CHAR_DATA *vch)
 }
 
 
-extern std::string& target_name;	/* from magic.c */
+extern std::string target_name;	/* from magic.c */
 
 /*
  * Perform a binary search on a section of the skill table

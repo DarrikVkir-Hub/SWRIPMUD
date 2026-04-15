@@ -1371,7 +1371,7 @@ char *copy_buffer( CHAR_DATA *ch )
         tmp[len-1] = '\0';
       else
         tmp += "\n";
-      buf =  tmp;
+      buf +=  tmp;
    }
    return STRALLOC( buf );
 }
@@ -6294,7 +6294,7 @@ void edit_buffer(CHAR_DATA *ch, const std::string& argument_in)
             {
                 send_to_char("------------------\n", ch);
                 for (x = 0; x < edit->numlines; x++)
-                    ch_printf(ch, "%2d> %s len=%d\n", x + 1, edit->line[x], (int)strlen(edit->line[x]));
+                    ch_printf(ch, "%2d> %s\n", x + 1, edit->line[x]);
                 send_to_char("------------------\n> ", ch);
             }
             return;

@@ -649,7 +649,7 @@ static bool can_receive_channel(
             return false;
 
         if (info->channel == CHANNEL_SHIP)
-            if (vch->in_room->vnum < ship->firstroom || vch->in_room->vnum > ship->lastroom)
+            if (vch->in_room->vnum < ship->get_firstroom() || vch->in_room->vnum > ship->get_lastroom())
                 return false;
 
         if (info->channel == CHANNEL_SYSTEM && !ship_in_range(ship, target))

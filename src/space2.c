@@ -3003,7 +3003,7 @@ void do_maketemplateship(CHAR_DATA * ch, char *argument)
         shipdelete(ship, FALSE);
         return;
       }
-    
+
     save_ship( ship );
     write_ship_list( ch->game );
 
@@ -3195,7 +3195,7 @@ void do_ordership( CHAR_DATA *ch, char *argument )
         shipdelete(ship, FALSE);
         return;
       }
-    
+
     save_ship( ship );
     write_ship_list( ch->game);
     

@@ -2721,7 +2721,7 @@ void echo_to_ship( int color , SHIP_DATA *ship , const std::string& argument )
 {
      int room;
       
-     for ( room = ship->firstroom ; room <= ship->lastroom ;room++ )
+     for ( room = ship->get_firstroom() ; room <= ship->get_lastroom() ;room++ )
      {
          echo_to_room( color , get_room_index(room) , argument );
      }  
@@ -2734,7 +2734,7 @@ void sound_to_ship( SHIP_DATA *ship , const std::string& argument )
      ROOM_INDEX_DATA *room;
      CHAR_DATA *vic;
       
-     for ( roomnum = ship->firstroom ; roomnum <= ship->lastroom ;roomnum++ )
+     for ( roomnum = ship->get_firstroom() ; roomnum <= ship->get_lastroom() ;roomnum++ )
      {
         room = get_room_index( roomnum );
         if ( room == NULL ) continue;
@@ -2761,7 +2761,7 @@ void echo_to_cockpit( int color , SHIP_DATA *ship , const std::string& argument 
 {
      int room;
      TURRET_DATA *turret;      
-     for ( room = ship->firstroom ; room <= ship->lastroom ;room++ )
+     for ( room = ship->get_firstroom() ; room <= ship->get_lastroom() ;room++ )
      {
          if ( room == ship->cockpit || room == ship->navseat
          || room == ship->pilotseat || room == ship->coseat
@@ -3354,12 +3354,20 @@ SHIP_DATA *ship_from_hanger( GameContext *game, int vnum )
 
 SHIP_DATA *ship_from_room( GameContext *game, int vnum )
 {
-    SHIP_DATA *ship;
+//  SHIP_DATA *ship;
+    ROOM_INDEX_DATA *room;
     
+     room = get_room_index( vnum );
+    if (room && room->ship)
+      return room->ship;
+
+    return NULL;
+        /*
     for ( ship = first_ship; ship; ship = ship->next )
-       if ( vnum >= ship->firstroom && vnum <= ship->lastroom )
+       if ( vnum >= ship->get_firstroom() && vnum <= ship->get_lastroom() )
          return ship;
     return NULL;
+    */
 }
 
 void save_ship( SHIP_DATA *ship )
@@ -3436,8 +3444,8 @@ void save_ship( SHIP_DATA *ship )
 	fprintf( fp, "Torpedos     %d\n",	ship->torpedos		);
 	fprintf( fp, "Maxtorpedos  %d\n",	ship->maxtorpedos	);
 	fprintf( fp, "Lastdoc      %d\n",	ship->lastdoc		);
-	fprintf( fp, "Firstroom    %d\n",	ship->firstroom		);
-	fprintf( fp, "Lastroom     %d\n",	ship->lastroom		);
+	fprintf( fp, "Firstroom    %d\n",	ship->get_firstroom()		);
+	fprintf( fp, "Lastroom     %d\n",	ship->get_lastroom()		);
 	fprintf( fp, "Shield       %d\n",	ship->shield		);
 	fprintf( fp, "Maxshield    %d\n",	ship->maxshield		);
 	fprintf( fp, "Hull         %d\n",	ship->hull		);
@@ -3770,7 +3778,13 @@ void fread_ship( SHIP_DATA *ship, FILE *fp )
 
 	case 'F':
 	    KEY( "Filename",	ship->filename,		fread_string_nohash( fp ) );
-            KEY( "Firstroom",   ship->firstroom,        fread_number( fp ) );
+        if ( !str_cmp( word, "Firstroom" ) )
+        {
+            ship->set_firstroom(fread_number( fp ));
+            fMatch = TRUE;
+            break;
+        }
+            //KEY( "Firstroom",   ship->firstroom,        fread_number( fp ) );
             break;
         
         case 'G':    
@@ -3793,7 +3807,13 @@ void fread_ship( SHIP_DATA *ship, FILE *fp )
             KEY( "Laserstr",   ship->lasers,   (sh_int)  ( fread_number( fp )/10 ) );
             KEY( "Lasers",   ship->lasers,      fread_number( fp ) );
             KEY( "Lastdoc",    ship->lastdoc,       fread_number( fp ) );
-            KEY( "Lastroom",   ship->lastroom,        fread_number( fp ) );
+//          KEY( "Lastroom",   ship->lastroom,        fread_number( fp ) );
+            if ( !str_cmp( word, "Lastroom" ) )
+            {
+                ship->set_lastroom(fread_number( fp ));
+                fMatch = TRUE;
+                break;
+            }            
             break;
 
         case 'M':
@@ -3996,6 +4016,19 @@ void fread_ship( SHIP_DATA *ship, FILE *fp )
     }
 }
 
+// Helper to link ship rooms to the ship after loading a ship file.
+void link_ship_rooms( GameContext *game, SHIP_DATA *ship )
+{
+    if ( !ship )
+        return;
+
+    for ( int vnum = ship->get_firstroom(); vnum <= ship->get_lastroom(); ++vnum )
+    {
+        ROOM_INDEX_DATA *room = get_room_index( vnum );
+        if ( room )
+            room->ship = ship;
+    }
+}
 /*
  * Load a ship file
  */
@@ -4180,6 +4213,7 @@ bool load_ship_file( GameContext *game, const std::string& shipfile )
        ship->lastdoc = 0;
      }
        
+     link_ship_rooms( ship->game, ship );
 
          if ( ship->type != MOB_SHIP && (clan = get_clan( ship->owner )) != NULL )
          {
@@ -4480,8 +4514,8 @@ void do_setship( CHAR_DATA *ch, char *argument )
     	   send_to_char("That room doesn't exist.\n",ch);
     	   return;
     	} 
-	ship->firstroom = tempnum;
-        ship->lastroom = tempnum;
+	    ship->set_firstroom(tempnum);
+        ship->set_lastroom(tempnum);
         ship->cockpit = tempnum;
         ship->coseat = tempnum;
         ship->pilotseat = tempnum;
@@ -4503,27 +4537,27 @@ void do_setship( CHAR_DATA *ch, char *argument )
     	   send_to_char("That room doesn't exist.\n",ch);
     	   return;
     	} 
-    	if ( tempnum < ship->firstroom )
+    	if ( tempnum < ship->get_firstroom() )
     	{
     	   send_to_char("The last room on a ship must be greater than or equal to the first room.\n",ch);
            return;
     	}
-    	if ( ship->shipclass == FIGHTER_SHIP && (tempnum - ship->firstroom) > 5 )
+    	if ( ship->shipclass == FIGHTER_SHIP && (tempnum - ship->get_firstroom()) > 5 )
     	{
     	   send_to_char("Starfighters may have up to 5 rooms only.\n",ch);
     	   return;
     	}  
-	if ( ship->shipclass == MIDSIZE_SHIP && (tempnum - ship->firstroom) > 25 )
+	if ( ship->shipclass == MIDSIZE_SHIP && (tempnum - ship->get_firstroom()) > 25 )
     	{
     	   send_to_char("Midships may have up to 25 rooms only.\n",ch);
     	   return;
     	}  
-	if ( ship->shipclass == CAPITAL_SHIP && (tempnum - ship->firstroom) > 100 )
+	if ( ship->shipclass == CAPITAL_SHIP && (tempnum - ship->get_firstroom()) > 100 )
     	{
     	   send_to_char("Capital Ships may have up to 100 rooms only.\n",ch);
     	   return;
     	}
-	ship->lastroom = tempnum;
+	ship->set_lastroom(tempnum);
 	send_to_char( "Done.\n", ch );
 	save_ship( ship );
 	return;
@@ -4538,7 +4572,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
     	   send_to_char("That room doesn't exist.\n",ch);
     	   return;
     	} 
-    	if ( tempnum < ship->firstroom || tempnum > ship->lastroom )
+    	if ( tempnum < ship->get_firstroom() || tempnum > ship->get_lastroom() )
     	{
     	   send_to_char("That room number is not in that ship .. \nIt must be between Firstroom and Lastroom.\n",ch);
            return;
@@ -4563,7 +4597,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
     	   send_to_char("That room doesn't exist.\n",ch);
     	   return;
     	}
-    	if ( tempnum < ship->firstroom || tempnum > ship->lastroom )
+    	if ( tempnum < ship->get_firstroom() || tempnum > ship->get_lastroom() )
     	{
     	   send_to_char("That room number is not in that ship .. \nIt must be between Firstroom and Lastroom.\n",ch);
            return;
@@ -4587,7 +4621,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
     	   send_to_char("That room doesn't exist.\n",ch);
     	   return;
     	} 
-    	if ( tempnum < ship->firstroom || tempnum > ship->lastroom )
+    	if ( tempnum < ship->get_firstroom() || tempnum > ship->get_lastroom() )
     	{
     	   send_to_char("That room number is not in that ship .. \nIt must be between Firstroom and Lastroom.\n",ch);
            return;
@@ -4611,7 +4645,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
     	   send_to_char("That room doesn't exist.\n",ch);
     	   return;
     	} 
-    	if ( tempnum < ship->firstroom || tempnum > ship->lastroom )
+    	if ( tempnum < ship->get_firstroom() || tempnum > ship->get_lastroom() )
     	{
     	   send_to_char("That room number is not in that ship .. \nIt must be between Firstroom and Lastroom.\n",ch);
            return;
@@ -4635,7 +4669,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
     	   send_to_char("That room doesn't exist.\n",ch);
     	   return;
     	}
-    	if ( tempnum < ship->firstroom || tempnum > ship->lastroom )
+    	if ( tempnum < ship->get_firstroom() || tempnum > ship->get_lastroom() )
     	{
     	   send_to_char("That room number is not in that ship .. \nIt must be between Firstroom and Lastroom.\n",ch);
            return;
@@ -4660,7 +4694,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
     	   send_to_char("That room doesn't exist.\n",ch);
     	   return;
     	} 
-    	if ( tempnum < ship->firstroom || tempnum > ship->lastroom )
+    	if ( tempnum < ship->get_firstroom() || tempnum > ship->get_lastroom() )
     	{
     	   send_to_char("That room number is not in that ship .. \nIt must be between Firstroom and Lastroom.\n",ch);
            return;
@@ -4793,7 +4827,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
     	   send_to_char("That room doesn't exist.\n",ch);
     	   return;
     	} 
-	if ( tempnum < ship->firstroom || tempnum > ship->lastroom )
+	if ( tempnum < ship->get_firstroom() || tempnum > ship->get_lastroom() )
     	{
     	   send_to_char("That room number is not in that ship .. \nIt must be between Firstroom and Lastroom.\n",ch);
            return;
@@ -4824,7 +4858,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
     	   send_to_char("That room doesn't exist.\n",ch);
     	   return;
     	} 
-	if ( tempnum < ship->firstroom || tempnum > ship->lastroom )
+	if ( tempnum < ship->get_firstroom() || tempnum > ship->get_lastroom() )
     	{
     	   send_to_char("That room number is not in that ship .. \nIt must be between Firstroom and Lastroom.\n",ch);
            return;
@@ -4855,7 +4889,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
     	   send_to_char("That room doesn't exist.\n",ch);
     	   return;
     	} 
-	if (( tempnum < ship->firstroom || tempnum > ship->lastroom ) && (strtoi(argstr) != 0 ))
+	if (( tempnum < ship->get_firstroom() || tempnum > ship->get_lastroom() ) && (strtoi(argstr) != 0 ))
     	{
     	   send_to_char("That room number is not in that ship .. \nIt must be between Firstroom and Lastroom.\n",ch);
            return;
@@ -4885,7 +4919,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
     	   send_to_char("That room doesn't exist.\n",ch);
     	   return;
     	} 
-	if ( tempnum < ship->firstroom || tempnum > ship->lastroom )
+	if ( tempnum < ship->get_firstroom() || tempnum > ship->get_lastroom() )
     	{
     	   send_to_char("That room number is not in that ship .. \nIt must be between Firstroom and Lastroom.\n",ch);
            return;
@@ -4915,7 +4949,7 @@ void do_setship( CHAR_DATA *ch, char *argument )
     	   send_to_char("That room doesn't exist.\n",ch);
     	   return;
     	} 
-	if ( tempnum < ship->firstroom || tempnum > ship->lastroom )
+	if ( tempnum < ship->get_firstroom() || tempnum > ship->get_lastroom() )
     	{
     	   send_to_char("That room number is not in that ship .. \nIt must be between Firstroom and Lastroom.\n",ch);
            return;
@@ -5302,8 +5336,8 @@ void do_showship( CHAR_DATA *ch, char *argument )
     			ship->owner, ship->pilot,  ship->copilot );
     ch_printf( ch, "Current Jump Destination: %s  Jump Point: %s\n", (ship->currjump ? ship->currjump->name : "(null)"), (ship->lastsystem ? ship->lastsystem->name : "(null)" ));
     ch_printf( ch, "Firstroom: %d   Lastroom: %d",
-    			ship->firstroom,
-    			ship->lastroom);
+    			ship->get_firstroom(),
+    			ship->get_lastroom());
     ch_printf( ch, "Cockpit: %d   Entrance: %d   Hanger: %d  Engineroom: %d\n",
     			ship->cockpit,
     			ship->entrance,
@@ -6276,7 +6310,7 @@ bool destroy_ship( SHIP_DATA *ship , CHAR_DATA *ch )
 
     makedebris(ship);
 
-    for ( roomnum = ship->firstroom ; roomnum <= ship->lastroom ; roomnum++ )
+    for ( roomnum = ship->get_firstroom() ; roomnum <= ship->get_lastroom() ; roomnum++ )
     {
         room = get_room_index(roomnum);
 
@@ -10343,6 +10377,19 @@ void makedebris( SHIP_DATA *ship )
   
 }
 
+void unlink_ship_rooms( GameContext *game, SHIP_DATA *ship )
+{
+    if ( !ship )
+        return;
+
+    for ( int vnum = ship->get_firstroom(); vnum <= ship->get_lastroom(); ++vnum )
+    {
+        ROOM_INDEX_DATA *room = get_room_index( vnum );
+        if ( room && room->ship == ship )
+            room->ship = nullptr;
+    }
+}
+
 void shipdelete(SHIP_DATA * ship, bool shiplist) {
 
   std::string buf, buf2;
@@ -10352,6 +10399,8 @@ void shipdelete(SHIP_DATA * ship, bool shiplist) {
   buf2 = str_printf("%s%s", BACKUPSHIP_DIR, ship->filename);
   
   rename( buf.c_str(), buf2.c_str() );
+
+  unlink_ship_rooms( ship->game, ship );
 
   UNLINK (ship, first_ship, last_ship, next, prev);
   extract_ship(ship);
@@ -10462,8 +10511,8 @@ SHIP_DATA *create_virtual_ship( GameContext *game, SHIP_DATA *shiptemplate )
 
   ship->entrance      = roomvnum;
   ship->engineroom    = roomvnum;
-  ship->firstroom     = roomvnum;
-  ship->lastroom      = roomvnum;
+  ship->set_firstroom( roomvnum );
+  ship->set_lastroom( roomvnum );
   ship->navseat       = roomvnum;
   ship->pilotseat     = roomvnum;
   ship->coseat        = roomvnum;

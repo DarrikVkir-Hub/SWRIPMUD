@@ -353,16 +353,16 @@ int parse_ship_template(char *string, SHIP_DATA *ship)
           ship->engineroom    = ((vnumArray[i])->vnum);
           ship->navseat       = ((vnumArray[i])->vnum);
           ship->gunseat       = ((vnumArray[i])->vnum);
-          ship->lastroom      = roomCount;
+          ship->set_lastroom( roomCount );
 //        ship->cockpitroom   = get_room_index((vnumArray[i])->vnum);
         }
 
 //	printf("Make room type: %d, Vnum: %d\n",roomArray[i],vnumArray[i]->vnum);
     }
 
-  ship->firstroom = ship->shipID*100;
-  ship->lastroom += ship->firstroom-1;
-
+  ship->set_firstroom( ship->shipID*100 );
+  ship->set_lastroom( ship->get_firstroom() + roomCount - 1 );
+  link_ship_rooms(ship->game, ship);
 /*  for( i = 0; i < roomCount; i++ )
     {
     	bug("Rooms: Tmp#: %d Vnum: %d\n", roomArray[i], vnumArray[i]->vnum );
