@@ -150,7 +150,7 @@ void do_clone( CHAR_DATA *ch, char *argument )
 
     if( IS_IMMORTAL(ch) )
     {
-        send_to_char( "You can't close an imm!\n", ch );
+        send_to_char( "You can't clone an imm!\n", ch );
         return;
     }    
 
@@ -3052,7 +3052,7 @@ void do_train( CHAR_DATA *ch, char *argument )
 		             mob, NULL, ch, TO_VICT );
 		          return;
                       }
-                      send_to_char("&GYou begin lessons in maners and ettiquite.\n", ch);
+                      send_to_char("&GYou begin lessons in manners and ettiquite.\n", ch);
                 }
             	add_timer ( ch , TIMER_DO_FUN , 1 , do_train , 1 ); //was 10
     	    	ch->dest_buf = str_dup(arg);
@@ -3083,10 +3083,10 @@ void do_train( CHAR_DATA *ch, char *argument )
     {
         if ( !successful )
         {
-             send_to_char("&RYou feel that you have wasted alot of energy for nothing...\n", ch);
+             send_to_char("&RYou feel that you have wasted a lot of energy for nothing...\n", ch);
              return;	
         }
-        send_to_char("&GAfter much of excercise you feel a little stronger.\n", ch);
+        send_to_char("&GAfter much of exercise you feel a little stronger.\n", ch);
     	ch->perm_str++;
     	return;
     }
@@ -3110,7 +3110,7 @@ void do_train( CHAR_DATA *ch, char *argument )
              send_to_char("&RHitting the books leaves you only with sore eyes...\n", ch);
              return;	
         } 
-        send_to_char("&GAfter much study you feel alot more knowledgeable.\n", ch);
+        send_to_char("&GAfter much study you feel a lot more knowledgeable.\n", ch);
     	ch->perm_int++;
     	return;
     }
@@ -3131,10 +3131,10 @@ void do_train( CHAR_DATA *ch, char *argument )
     {
         if ( !successful )
         {
-             send_to_char("&RYou spend long a long arobics session ecersising very hard but finish \nfeeling only tired and out of breath....\n", ch);
+             send_to_char("&RYou spend long a long aerobics session exercising very hard but finish \nfeeling only tired and out of breath....\n", ch);
              return;	
         } 
-        send_to_char("&GAfter a long tiring excersise session you feel much healthier than before.\n", ch);
+        send_to_char("&GAfter a long tiring exercise session you feel much healthier than before.\n", ch);
     	ch->perm_con++;
     	return;
     }
@@ -3228,7 +3228,7 @@ void do_bank( CHAR_DATA *ch, char *argument )
     
     if ( NOT_AUTHED(ch) )
     { 
-      send_to_char("You can not access your bank account until after you've graduated from the acadamey.\n", ch);
+      send_to_char("You can not access your bank account until after you've graduated from the academy.\n", ch);
       return;
     }
 

@@ -1,0 +1,578 @@
+#CRAFT
+Name armor~
+DisplayName Armor~
+Gsn makearmor~
+RoomReq factory~
+Timer 15
+OutputMode transform_base~
+ResultVnum 0
+ResultItemType armor~
+AllowCustomName 1~
+RequiresExtraArg 1~
+ExtraArgName wearloc~
+NameTemplate {name}~
+ShortTemplate {name}~
+DescriptionTemplate {name} was dropped here.~
+WearFlag 0
+Slot fabric~ fabric~ 1 1 true~ transform_base~ 1~
+Slot thread~ thread~ 1 1 true~ keep~ 0~
+Assign level~ skill~
+Assign value0~ var(base_value1)~
+Assign cost~ mul(var(base_cost),const(10))~
+End
+
+#CRAFT
+Name bowcaster~
+DisplayName Bowcaster~
+Gsn makebowcaster~
+RoomReq factory~
+Timer 25
+OutputMode create_proto~
+ResultVnum 10431
+ResultItemType weapon~
+AllowCustomName 1~
+RequiresExtraArg 0~
+ExtraArgName ~
+NameTemplate {name} bowcaster~
+ShortTemplate {name}~
+DescriptionTemplate {name} was carefully placed here.~
+WearFlag 13
+WearFlag 0
+ObjFlag 73
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot duraplast~ duraplast~ 1 1 true~ consume~ 0~
+Slot crossbow~ none~ 1 1 true~ consume~ 0~
+Slot oven~ oven~ 1 1 true~ keep~ 0~
+Slot tinder~ none~ 1 4 true~ consume~ 0~
+Slot oil~ none~ 1 1 true~ consume~ 0~
+Slot lens~ lens~ 0 2 true~ consume~ 0~
+Slot bolt~ bolt~ 0 1 true~ consume~ 0~
+DerivedVar ammo~ bolt~ value0~ highest~ 0~ 0 0~ 0 0~ 0
+DerivedVar power~ tinder~ value0~ count~ 0~ 0 0~ 0 0~ 0
+DerivedVar scope~ lens~ value0~ count~ 0~ 0 0~ 0 0~ 0
+Assign level~ skill~
+Assign weight~ add(const(2),div(skill,const(7)))~
+Assign value0~ const(12)~
+Assign value1~ add(div(skill,const(10)),const(25))~
+Assign value2~ add(div(skill,const(5)),const(25))~
+Assign value4~ var(ammo)~
+Assign value5~ const(250)~
+Affect 18 min(add(const(1),var(scope)),div(skill,const(30)))~ -1 0~ const(0)~
+Affect 19 min(var(power),div(skill,const(30)))~ -1 0~ const(0)~
+End
+
+#CRAFT
+Name vibroblade~
+DisplayName VibroBlade~
+Gsn makeblade~
+RoomReq factory~
+Timer 25
+OutputMode create_proto~
+ResultVnum 10422
+ResultItemType weapon~
+AllowCustomName 1~
+RequiresExtraArg 0~
+ExtraArgName ~
+NameTemplate {name} vibro-blade blade~
+ShortTemplate {name}~
+DescriptionTemplate {name} was left here.~
+WearFlag 0
+ObjFlag 66
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot oven~ oven~ 1 1 true~ keep~ 0~
+Slot durasteel~ durasteel~ 1 1 true~ consume~ 0~
+Slot battery~ battery~ 1 1 true~ consume~ 0~
+DerivedVar charge~ battery~ value0~ first~ 1~ 5 0~ 0 0~ 0
+Assign level~ skill~
+Assign weight~ const(3)~
+Assign value0~ const(12)~
+Assign value1~ add(add(div(skill,const(20)),const(8)),const(2))~
+Assign value2~ add(add(div(skill,const(10)),const(18)),const(2))~
+Assign value4~ var(charge)~
+Assign value5~ var(charge)~
+Assign cost~ mul(add(add(div(skill,const(10)),const(18)),const(2)),const(10))~
+Affect 32 div(skill,const(3))~ -1 0~ const(0)~
+Affect 18 const(-2)~ -1 0~ const(0)~
+End
+
+#CRAFT
+Name forcepike~
+DisplayName ForcePike~
+Gsn makeblade~
+RoomReq factory~
+Timer 25
+OutputMode create_proto~
+ResultVnum 10422
+ResultItemType weapon~
+AllowCustomName 1~
+RequiresExtraArg 0~
+ExtraArgName ~
+NameTemplate {name} forcepike pike~
+ShortTemplate {name}~
+DescriptionTemplate {name} was left here.~
+WearFlag 0
+ObjFlag 75
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot oven~ oven~ 1 1 true~ keep~ 0~
+Slot durasteel~ durasteel~ 1 1 true~ consume~ 0~
+Slot battery~ battery~ 1 1 true~ consume~ 0~
+Slot staff~ staff~ 1 1 true~ consume~ 0~
+DerivedVar charge~ battery~ value0~ first~ 1~ 5 0~ 0 0~ 0
+Assign level~ skill~
+Assign weight~ const(3)~
+Assign value0~ const(12)~
+Assign value1~ add(add(div(skill,const(20)),const(8)),const(11))~
+Assign value2~ add(add(div(skill,const(10)),const(18)),const(11))~
+Assign value4~ var(charge)~
+Assign value5~ var(charge)~
+Assign cost~ mul(add(add(div(skill,const(10)),const(18)),const(2)),const(10))~
+Affect 32 div(skill,const(3))~ -1 0~ const(0)~
+End
+
+#CRAFT
+Name blaster~
+DisplayName Blaster~
+Gsn makeblaster~
+RoomReq factory~
+Timer 25
+OutputMode create_proto~
+ResultVnum 10420
+ResultItemType weapon~
+AllowCustomName 1~
+RequiresExtraArg 0~
+ExtraArgName ~
+NameTemplate {name} blaster~
+ShortTemplate {name}~
+DescriptionTemplate {name} was carelessly misplaced here.~
+WearFlag 0
+WearFlag 13
+ObjFlag 70
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot oven~ oven~ 1 1 true~ keep~ 0~
+Slot duraplast~ duraplast~ 1 1 true~ consume~ 0~
+Slot ammo~ ammo~ 1 1 true~ consume~ 0~
+Slot superconductor~ superconductor~ 1 2 true~ consume~ 0~
+Slot circuit~ circuit~ 1 1 true~ consume~ 0~
+Slot lens~ lens~ 1 1 true~ consume~ 0~
+Slot scope~ scope~ 0 1 true~ consume~ 0~
+Slot battery~ battery~ 1 1 true~ consume~ 0~
+DerivedVar charge~ ammo~ value0~ first~ 0~ 5 0~ 0 1~ 2000
+DerivedVar power~ superconductor~ value0~ count~ 0~ 0 0~ 0 0~ 0
+DerivedVar scope~ scope~ value0~ count~ 0~ 0 0~ 0 0~ 0
+DerivedVar lens~ lens~ value0~ count~ 0~ 0 0~ 0 0~ 0
+Assign level~ skill~
+Assign weight~ add(div(skill,const(10)),const(2))~
+Assign value0~ const(12)~
+Assign value1~ add(div(skill,const(10)),const(15))~
+Assign value2~ add(div(skill,const(5)),const(25))~
+Assign value4~ var(charge)~
+Assign value5~ const(2000)~
+Assign cost~ mul(add(div(skill,const(5)),const(25)),const(50))~
+Affect 19 min(mul(var(power),sub(const(1),var(scope))),div(skill,const(30)))~ -1 0~ const(0)~
+Affect 67 mul(var(scope),min(const(30),div(skill,const(3))))~ -1 0~ const(0)~
+Affect 18 min(add(const(1),var(lens)),div(skill,const(30)))~ -1 0~ const(0)~
+End
+
+#CRAFT
+Name lightsaber~
+DisplayName Lightsaber~
+Gsn lightsaber crafting~
+RoomReq factory~
+Timer 25
+OutputMode create_proto~
+ResultVnum 10421
+ResultItemType weapon~
+AllowCustomName 1~
+RequiresExtraArg 0~
+ExtraArgName ~
+NameTemplate {name} lightsaber saber~
+ShortTemplate {name}~
+DescriptionTemplate {name} was carelessly misplaced here.~
+WearFlag 0
+WearFlag 13
+ObjFlag 270
+ObjFlag 272
+ObjFlag 280
+ObjFlag 278
+ObjFlag 67
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot oven~ oven~ 1 1 true~ keep~ 0~
+Slot duraplast~ duraplast~ 1 1 true~ consume~ 0~
+Slot battery~ battery~ 1 1 true~ consume~ 0~
+Slot superconductor~ superconductor~ 1 1 true~ consume~ 0~
+Slot circuit~ circuit~ 1 1 true~ consume~ 0~
+Slot lens~ lens~ 1 1 true~ consume~ 0~
+Slot mirror~ mirror~ 1 1 true~ consume~ 0~
+Slot crystal~ crystal~ 1 3 true~ consume~ 0~
+DerivedVar charge~ battery~ value1~ first~ 1~ 0 0~ 0 1~ 10
+DerivedVar gems~ crystal~ value0~ count~ 0~ 0 0~ 0 0~ 0
+DerivedVar gemtype~ crystal~ value0~ highest~ 0~ 0 0~ 0 0~ 0
+Assign level~ skill~
+Assign weight~ const(5)~
+Assign value0~ const(12)~
+Assign value1~ add(div(skill,const(10)),mul(var(gemtype),const(2)))~
+Assign value2~ add(div(skill,const(5)),mul(var(gemtype),const(6)))~
+Assign value4~ var(charge)~
+Assign value5~ var(charge)~
+Assign cost~ mul(add(div(skill,const(5)),mul(var(gemtype),const(6))),const(75))~
+Affect 18 min(var(gems),div(skill,const(30)))~ -1 0~ const(0)~
+Affect 48 div(skill,const(3))~ -1 0~ const(0)~
+End
+
+#CRAFT
+Name spice~
+DisplayName Spice~
+Gsn spice refining~
+RoomReq factory~
+Timer 25
+OutputMode transform_base~
+ResultVnum 0
+ResultItemType spice~
+AllowCustomName 0~
+RequiresExtraArg 0~
+ExtraArgName ~
+NameTemplate {base_name} drug spice~
+ShortTemplate a drug made from {base_short}~
+DescriptionTemplate a drug made from {base_short} was foolishly left lying around here.~
+Slot rawspice~ rawspice~ 1 1 true~ transform_base~ 1~
+Assign value1~ max(const(10),min(var(base_value1),add(skill,const(10))))~
+Assign cost~ mul(add(max(var(base_cost),const(500)),mul(max(const(10),min(var(base_value1),add(skill,const(10)))),const(10))),const(2))~
+End
+
+#CRAFT
+Name grenade~
+DisplayName Grenade~
+Gsn makegrenade~
+RoomReq factory~
+Timer 25
+OutputMode create_proto~
+ResultVnum 10425
+ResultItemType grenade~
+AllowCustomName 1~
+RequiresExtraArg 0~
+ExtraArgName ~
+NameTemplate {name} grenade~
+ShortTemplate {name}~
+DescriptionTemplate {name} was carelessly misplaced here.~
+WearFlag 14
+WearFlag 0
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot battery~ battery~ 1 1 true~ consume~ 0~
+Slot chemical~ chemical~ 1 1 true~ consume~ 0~
+Slot circuit~ circuit~ 1 1 true~ consume~ 0~
+Slot container~ drinkcon~ 1 1 true~ consume~ 0~
+DerivedVar strength~ chemical~ value0~ first~ 1~ 10 1~ 5 0~ 0
+DerivedVar chemweight~ chemical~ weight~ first~ 0~ 0 0~ 0 0~ 0
+Assign level~ skill~
+Assign weight~ var(chemweight)~
+Assign value0~ div(var(strength),const(2))~
+Assign value1~ var(strength)~
+Assign cost~ mul(var(strength),const(5))~
+End
+
+#CRAFT
+Name landmine~
+DisplayName Landmine~
+Gsn makelandmine~
+RoomReq factory~
+Timer 25
+OutputMode create_proto~
+ResultVnum 10427
+ResultItemType landmine~
+AllowCustomName 1~
+RequiresExtraArg 0~
+ExtraArgName ~
+NameTemplate {name} landmine~
+ShortTemplate {name}~
+DescriptionTemplate {name} was carelessly misplaced here.~
+WearFlag 14
+WearFlag 0
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot container~ drinkcon~ 1 1 true~ consume~ 0~
+Slot battery~ battery~ 1 1 true~ consume~ 0~
+Slot chemical~ chemical~ 1 1 true~ consume~ 0~
+Slot circuit~ circuit~ 1 1 true~ consume~ 0~
+DerivedVar strength~ chemical~ value0~ first~ 1~ 10 1~ 5 0~ 0
+DerivedVar chemweight~ chemical~ weight~ first~ 0~ 0 0~ 0 0~ 0
+Assign level~ skill~
+Assign weight~ var(chemweight)~
+Assign value0~ div(var(strength),const(2))~
+Assign value1~ var(strength)~
+Assign cost~ mul(var(strength),const(5))~
+End
+
+#CRAFT
+Name light~
+DisplayName Light~
+Gsn makeflashlight~
+RoomReq factory~
+Timer 25
+OutputMode create_proto~
+ResultVnum 10428
+ResultItemType light~
+AllowCustomName 1~
+RequiresExtraArg 0~
+ExtraArgName ~
+NameTemplate {name} light~
+ShortTemplate {name}~
+DescriptionTemplate {name} was carelessly misplaced here.~
+WearFlag 0
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot battery~ battery~ 1 1 true~ consume~ 0~
+Slot chemical~ chemical~ 1 1 true~ consume~ 0~
+Slot circuit~ circuit~ 1 1 true~ consume~ 0~
+Slot lens~ lens~ 1 1 true~ consume~ 0~
+DerivedVar strength~ battery~ value0~ first~ 0~ 0 0~ 0 0~ 0
+Assign level~ skill~
+Assign weight~ const(3)~
+Assign value2~ var(strength)~
+Assign cost~ var(strength)~
+End
+
+#CRAFT
+Name jewelry~
+DisplayName Jewelry~
+Gsn makejewelry~
+RoomReq factory~
+Timer 15
+OutputMode transform_base~
+ResultVnum 0
+ResultItemType armor~
+AllowCustomName 1~
+RequiresExtraArg 1~
+ExtraArgName wearloc~
+NameTemplate {name}~
+ShortTemplate {name}~
+DescriptionTemplate {name} was dropped here.~
+WearFlag 0
+BlockedWearFlag 3
+BlockedWearFlag 4
+BlockedWearFlag 5
+BlockedWearFlag 8
+BlockedWearFlag 10
+BlockedWearFlag 11
+BlockedWearFlag 14
+BlockedWearFlag 6
+BlockedWearFlag 20
+BlockedWearFlag 19
+BlockedWearFlag 7
+BlockedWearFlag 9
+BlockedWearFlag 13
+Slot metal~ rare_metal~ 1 1 true~ transform_base~ 1~
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot oven~ oven~ 1 1 true~ keep~ 0~
+Slot crystal~ crystal~ 0 1 true~ consume~ 0~
+DerivedVar crystal_cost~ crystal~ cost~ sum~ 0~ 0 0~ 0 0~ 0
+Assign level~ skill~
+Assign value0~ var(base_value1)~
+Assign cost~ add(mul(var(base_cost),const(10)),var(crystal_cost))~
+End
+
+#CRAFT
+Name comlink~
+DisplayName Comlink~
+Gsn makecomlink~
+RoomReq factory~
+Timer 10
+OutputMode create_proto~
+ResultVnum 10430
+ResultItemType comlink~
+AllowCustomName 1~
+RequiresExtraArg 1~
+ExtraArgName wearloc~
+NameTemplate {name} comlink~
+ShortTemplate {name}~
+DescriptionTemplate {name} was left here.~
+WearFlag 0
+BlockedWearFlag 3
+BlockedWearFlag 4
+BlockedWearFlag 5
+BlockedWearFlag 8
+BlockedWearFlag 10
+BlockedWearFlag 17
+BlockedWearFlag 11
+BlockedWearFlag 14
+BlockedWearFlag 6
+BlockedWearFlag 7
+BlockedWearFlag 9
+BlockedWearFlag 13
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot crystal~ crystal~ 1 1 true~ consume~ 0~
+Slot battery~ battery~ 1 1 true~ consume~ 0~
+Slot circuit~ circuit~ 1 1 true~ consume~ 0~
+Assign weight~ const(1)~
+Assign cost~ const(50)~
+End
+
+#CRAFT
+Name shield~
+DisplayName Energy Shield~
+Gsn makeshield~
+RoomReq factory~
+Timer 20
+OutputMode create_proto~
+ResultVnum 10429
+ResultItemType armor~
+AllowCustomName 1~
+RequiresExtraArg 0~
+ExtraArgName ~
+NameTemplate energy shield~
+ShortTemplate {name}~
+DescriptionTemplate {name} was carelessly misplaced here.~
+WearFlag 13
+WearFlag 9
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot battery~ battery~ 1 1 true~ consume~ 0~
+Slot superconductor~ superconductor~ 1 1 true~ consume~ 0~
+Slot circuit~ circuit~ 1 1 true~ consume~ 0~
+Slot crystal~ crystal~ 1 1 true~ consume~ 0~
+DerivedVar charge~ battery~ value1~ first~ 1~ 0 0~ 0 1~ 10
+DerivedVar gemtype~ crystal~ value0~ first~ 0~ 0 0~ 0 0~ 0
+Assign level~ skill~
+Assign weight~ const(2)~
+Assign value0~ add(div(skill,const(10)),mul(var(gemtype),const(2)))~
+Assign value1~ add(div(skill,const(10)),mul(var(gemtype),const(2)))~
+Assign value4~ var(charge)~
+Assign value5~ var(charge)~
+Assign cost~ mul(add(div(skill,const(10)),mul(var(gemtype),const(2))),const(100))~
+End
+
+#CRAFT
+Name container~
+DisplayName Container~
+Gsn makecontainer~
+RoomReq factory~
+Timer 10
+OutputMode transform_base~
+ResultVnum 0
+ResultItemType container~
+AllowCustomName 1~
+RequiresExtraArg 1~
+ExtraArgName wearloc~
+NameTemplate {name}~
+ShortTemplate {name}~
+DescriptionTemplate {name} was dropped here.~
+WearFlag 0
+BlockedWearFlag 17
+BlockedWearFlag 16
+BlockedWearFlag 1
+BlockedWearFlag 2
+BlockedWearFlag 19
+BlockedWearFlag 20
+BlockedWearFlag 12
+BlockedWearFlag 6
+BlockedWearFlag 7
+BlockedWearFlag 9
+BlockedWearFlag 13
+Slot fabric~ fabric~ 1 1 true~ transform_base~ 1~
+Slot thread~ thread~ 1 1 true~ keep~ 0~
+Assign level~ skill~
+Assign value0~ skill~
+Assign value1~ const(0)~
+Assign value2~ const(0)~
+Assign value3~ const(10)~
+Assign cost~ mul(var(base_cost),const(2))~
+End
+
+#CRAFT
+Name medpac~
+DisplayName Medpac~
+Gsn makemedpac~
+RoomReq factory~
+Timer 10
+OutputMode transform_base~
+ResultVnum 0
+ResultItemType medpac~
+AllowCustomName 1~
+RequiresExtraArg 0~
+ExtraArgName ~
+NameTemplate {name} medkit medpac~
+ShortTemplate {name}~
+DescriptionTemplate {name} was left here.~
+WearFlag 0
+WearFlag 14
+Slot chemical~ chemical~ 1 1 true~ consume~ 0~
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot container~ drinkcon~ 1 1 true~ transform_base~ 1~
+Assign value0~ div(skill,const(10))~
+End
+
+#CRAFT
+Name chair~
+DisplayName Chair~
+Gsn makefurniture~
+RoomReq factory~
+Timer 25
+OutputMode create_proto~
+ResultVnum 61
+ResultItemType furniture~
+AllowCustomName 1~
+RequiresExtraArg 0~
+ExtraArgName ~
+NameTemplate {name} chair~
+ShortTemplate {name}~
+DescriptionTemplate {name}~
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot thread~ thread~ 1 1 true~ keep~ 0~
+Slot metal~ rare_metal~ 1 1 true~ consume~ 0~
+Slot fabric~ fabric~ 1 1 true~ consume~ 0~
+Assign value0~ const(1)~
+Assign value2~ const(2)~
+Assign weight~ const(20)~
+End
+
+#CRAFT
+Name couch~
+DisplayName Couch~
+Gsn makefurniture~
+RoomReq factory~
+Timer 25
+OutputMode create_proto~
+ResultVnum 61
+ResultItemType furniture~
+AllowCustomName 1~
+RequiresExtraArg 0~
+ExtraArgName ~
+NameTemplate {name} couch~
+ShortTemplate {name}~
+DescriptionTemplate {name}~
+Slot toolkit~ toolkit~ 1 1 true~ keep~ 0~
+Slot thread~ thread~ 1 1 true~ keep~ 0~
+Slot metal~ rare_metal~ 1 1 true~ consume~ 0~
+Slot fabric~ fabric~ 1 1 true~ consume~ 0~
+Slot hide~ fabric~ 1 1 true~ consume~ 0~
+Slot plating~ fabric~ 1 1 true~ consume~ 0~
+Assign value0~ const(4)~
+Assign value2~ const(2)~
+Assign weight~ const(80)~
+End
+
+#CRAFT
+Name disguise~
+DisplayName Disguise~
+Gsn disguise~
+RoomReq factory~
+Timer 25
+OutputMode create_proto~
+ResultVnum 10420
+ResultItemType disguise~
+AllowCustomName 1~
+RequiresExtraArg 1~
+ExtraArgName sexrace~
+NameTemplate {name} disguise~
+ShortTemplate {name}~
+DescriptionTemplate {name} was left here.~
+WearFlag 21
+WearFlag 0
+Slot thread~ thread~ 1 1 true~ keep~ 0~
+Slot hair~ hair~ 0 1 true~ consume~ 0~
+Slot fabric~ disguise_fabric~ 1 1 true~ consume~ 0~
+Assign level~ skill~
+Assign value0~ const(12)~
+Assign value1~ const(12)~
+Assign cost~ const(5000)~
+Assign value2~ var(race)~
+Assign value3~ var(sex)~
+End
+
+#END

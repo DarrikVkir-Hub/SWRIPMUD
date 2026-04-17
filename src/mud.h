@@ -991,7 +991,7 @@ typedef enum
   SUB_OBJ_EXTRA, SUB_MOB_LONG, SUB_MOB_DESC, SUB_ROOM_DESC, SUB_ROOM_EXTRA,
   SUB_ROOM_EXIT_DESC, SUB_WRITING_NOTE, SUB_MPROG_EDIT, SUB_HELP_EDIT,
   SUB_WRITING_MAP, SUB_PERSONAL_BIO, SUB_REPEATCMD, SUB_RESTRICTED,
-  SUB_DEITYDESC,
+  SUB_DEITYDESC, SUB_CRAFT_MENU,
   /* timer types ONLY below this point */
   SUB_TIMER_DO_ABORT = 128, SUB_TIMER_CANT_ABORT
 } char_substates;
@@ -3202,6 +3202,8 @@ struct	extracted_char_data
     bool		extract;
 };
 
+struct CraftSession;
+
 /*
  * One character (PC or NPC).
  * (Shouldn't most of that build interface stuff use substate, dest_buf,
@@ -3353,6 +3355,7 @@ CHAR_DATA           *   challenged;
     sh_int   cmd_recurse;
     OBJ_DATA 	    * 	on;
     CHAR_DATA 	    * 	pet;
+    CraftSession *craft_session;
 };
 
 
@@ -4979,6 +4982,7 @@ DECLARE_DO_FUN( do_planets );
 DECLARE_DO_FUN( do_showplanet );
 DECLARE_DO_FUN( do_showstatistic );
 DECLARE_DO_FUN( do_teach );
+DECLARE_DO_FUN( do_teaches);
 DECLARE_DO_FUN( do_gather_intelligence );
 DECLARE_DO_FUN( do_add_patrol );
 DECLARE_DO_FUN( do_special_forces );
@@ -5163,6 +5167,8 @@ DECLARE_DO_FUN( do_buyvendor    );
 DECLARE_DO_FUN(	do_cargo	);
 DECLARE_DO_FUN(	do_cast		);
 DECLARE_DO_FUN(	do_cedit	);
+DECLARE_DO_FUN(	do_cfedit	);
+DECLARE_DO_FUN(	do_cfcreate	);
 DECLARE_DO_FUN(	do_channels	);
 DECLARE_DO_FUN(	do_chat		);
 DECLARE_DO_FUN(	do_ooc		);
@@ -5196,6 +5202,7 @@ DECLARE_DO_FUN( do_cutdoor     );
 DECLARE_DO_FUN( do_senate	);
 DECLARE_DO_FUN( do_addsenator	);
 DECLARE_DO_FUN( do_remsenator	);
+DECLARE_DO_FUN( do_craft    );
 DECLARE_DO_FUN( do_credits	);
 DECLARE_DO_FUN(	do_cset		);
 DECLARE_DO_FUN(	do_degradeship	);
@@ -6550,7 +6557,7 @@ void do_olcshow(CHAR_DATA* ch, char* argument);
 bool bitset_apply_from_string(BitSet& bs, const std::string& input, const flag_name* table);
 std::string enum_to_string_legacy(int value, const char* const* table);
 bool enum_from_string_legacy(const std::string& input, int& out, const char* const* table);
-std::string enum_to_string_flag(int value, const flag_name *table);
+std::string enum_to_string_flag(size_t value, const flag_name *table);
 bool enum_from_string_flag(const std::string& input, int& out, const flag_name *table);
 EXTRA_DESCR_DATA* olc_room_get_or_create_extra_desc(ROOM_INDEX_DATA* room, const std::string& keyword);
 bool olc_room_remove_extra_desc(ROOM_INDEX_DATA* room, const char* keyword);

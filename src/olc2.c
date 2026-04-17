@@ -60,8 +60,11 @@
 
 #include <typeinfo>
 #include <cstring>
+#include <set>
 #include "mud.h"
 #include "olc.h"
+#include "craft.h"
+
 // extern functions
 extern size_t visible_length(const char *txt);
 extern char *wrap_text_ex(const char *txt, int width, int flags, int indent);
@@ -70,6 +73,9 @@ extern int get_risflag( const std::string& flag );
 extern int get_npc_race( const std::string& type );
 extern size_t get_langflag(const std::string& flag);
 extern bool command_is_authorized_for_char(CHAR_DATA* ch, CMDTYPE* cmd);
+std::vector<CraftRecipe> &craft_get_recipes_for_olc();
+CraftRecipe *craft_find_recipe_for_olc( const std::string &name );
+void craft_save_all_recipes_for_olc();
 
 
 bool olc_extradescs_equal(const EXTRA_DESCR_DATA* a, const EXTRA_DESCR_DATA* b);
@@ -126,6 +132,107 @@ void olc_shop_free(SHOP_DATA* shop);
 void olc_shop_apply_instance_changes(SHOP_DATA* dst, const SHOP_DATA* src);
 void olc_show_shop(CHAR_DATA* ch, SHOP_DATA* shop, bool show_help, int term_width);
 bool olc_shop_in_edit_mode(CHAR_DATA* ch);
+
+static const char *craft_consume_mode_name( CraftConsumeMode mode );
+static bool craft_consume_mode_from_string( const std::string &value, CraftConsumeMode &out );
+static bool craft_item_type_from_string( const std::string &value, int &out );
+static std::string craft_slot_summary( const CraftRecipe *recipe );
+static void olc_craft_show_slot_help( CHAR_DATA *ch );
+static int olc_craft_find_slot_index( const CraftRecipe *recipe, const std::string &which );
+static bool olc_craft_edit_slots_field( CHAR_DATA *ch, CraftRecipe *recipe );
+static bool craft_is_valid_derived_source_field( const std::string &field );
+static bool craft_is_valid_derived_aggregate_op( const std::string &op );
+static std::string craft_derived_var_summary( const CraftRecipe *recipe );
+static void olc_craft_show_derived_var_help( CHAR_DATA *ch );
+static int olc_craft_find_derived_var_index( const CraftRecipe *recipe, const std::string &which );
+static bool olc_craft_edit_derived_vars_field( CHAR_DATA *ch, CraftRecipe *recipe );
+static bool craft_is_valid_assignment_target( const std::string &target );
+static std::string craft_assignment_summary( const CraftRecipe *recipe );
+static void olc_craft_show_assignment_help( CHAR_DATA *ch );
+static int olc_craft_find_assignment_index( const CraftRecipe *recipe, const std::string &which );
+static bool olc_craft_edit_assignments_field( CHAR_DATA *ch, CraftRecipe *recipe );
+static std::string craft_affect_bitvector_name( int bitvector );
+static std::string craft_affect_summary( const CraftRecipe *recipe );
+static void olc_craft_show_affect_help( CHAR_DATA *ch );
+static int olc_craft_find_affect_index( const CraftRecipe *recipe, const std::string &which );
+static bool olc_craft_edit_affects_field( CHAR_DATA *ch, CraftRecipe *recipe );
+static bool craft_is_valid_result_target( const std::string &target );
+static void craft_collect_expr_var_refs( const CraftExpr &expr, std::set<std::string> &out );
+static bool craft_validate_expr_vars( const CraftExpr &expr, const std::set<std::string> &valid_vars, std::string &err );
+static bool craft_validate_recipe( const CraftRecipe *recipe, std::vector<std::string> &errors );
+static bool craft_validate_recipe_report( CHAR_DATA *ch, const CraftRecipe *recipe, const char *label );
+static bool olc_craft_is_field_name( const char *input );
+static bool olc_craft_edit_interpret( CHAR_DATA *ch, const std::string &command, const std::string &argument );
+bool olc_craft_edit_revert(CHAR_DATA* ch);
+
+template <typename T>
+OlcField<T> make_olc_std_string_field(
+    const char* name,
+    std::string T::*member,
+    const char* help)
+{
+    return make_olc_custom_value_field<T>(
+        name,
+        OlcValueType::STRING,
+        nullptr,
+        OlcMetaType::NONE,
+        [member](T* obj, const std::string& value) -> bool
+        {
+            obj->*member = value;
+            return true;
+        },
+        [member](T* obj) -> std::string
+        {
+            return obj->*member;
+        },
+        help
+    );
+}
+
+static std::string craft_flag_vector_to_string(
+    const std::vector<int> &flags,
+    const flag_name *table)
+{
+    std::string out;
+
+    for ( size_t i = 0; i < flags.size(); ++i )
+    {
+        std::string name = enum_to_string_flag( flags[i], table );
+
+        if ( name.empty() )
+            name = std::to_string( flags[i] );
+
+        if ( !out.empty() )
+            out += " ";
+
+        out += name;
+    }
+
+    return out.empty() ? "none" : out;
+}
+
+static bool craft_flag_vector_from_string(
+    std::vector<int> &dst,
+    const std::string &value,
+    const flag_name *table)
+{
+    std::istringstream iss(value);
+    std::string token;
+    std::vector<int> out;
+
+    while ( iss >> token )
+    {
+        int bit = -1;
+
+        if ( !enum_from_string_flag(token, bit, table) )
+            return false;
+
+        out.push_back(bit);
+    }
+
+    dst = std::move(out);
+    return true;
+}
 
 // --------------------------------------------
 // OLCSCHEMA Olc Schema declarations
@@ -411,8 +518,160 @@ const OlcSchema<SHOP_DATA>* get_shop_schema()
     return &shop_schema;
 }
 
+static const char *craft_room_req_names[] =
+{
+    "none",
+    "factory",
+    nullptr
+};
+
+static const char *craft_output_mode_names[] =
+{
+    "create_proto",
+    "transform_base",
+    nullptr
+};
+
+const OlcSchema<CraftRecipe>* get_craft_schema()
+{
+    static std::vector<OlcField<CraftRecipe>> craft_fields =
+    {
+        make_olc_std_string_field<CraftRecipe>("name", &CraftRecipe::name, "Internal recipe name used by select/cfedit/save"),
+        make_olc_std_string_field<CraftRecipe>( "display", &CraftRecipe::display_name, "Displayed recipe name"),
+        make_olc_custom_value_field<CraftRecipe>( "gsn", OlcValueType::STRING, nullptr, OlcMetaType::NONE,
+            [](CraftRecipe* r, const std::string& value) -> bool
+            {
+                std::string s = value;
+                if ( s.empty() || !str_cmp(s, "none") )
+                {
+                    r->gsn = -1;
+                    return true;
+                }
+
+                int gsn = skill_lookup(s);
+                if ( gsn >= 0 )
+                {
+                    r->gsn = gsn;
+                    return true;
+                }
+
+                try
+                {
+                    r->gsn = std::stoi(s);
+                    return true;
+                }
+                catch (...)
+                {
+                    return false;
+                }
+            },
+            [](CraftRecipe* r) -> std::string
+            {
+                if ( r->gsn < 0 || !skill_table[r->gsn] )
+                    return "none";
+                return skill_table[r->gsn]->name;
+            },
+            "Required skill name, skill number, or 'none'"
+        ),
+
+        make_olc_custom_value_field<CraftRecipe>( "roomreq", OlcValueType::ENUM, (const void*)craft_room_req_names, OlcMetaType::ENUM_LEGACY,
+            [](CraftRecipe* r, const std::string& value) -> bool
+            {
+                int v;
+                if ( !enum_from_string_legacy(value, v, craft_room_req_names) )
+                    return false;
+
+                r->room_req = static_cast<CraftRoomRequirement>(v);
+                return true;
+            },
+            [](CraftRecipe* r) -> std::string
+            {
+                return enum_to_string_legacy((int)r->room_req, craft_room_req_names);
+            },
+            "Room requirement: none or factory"
+        ),
+
+        make_olc_int_field<CraftRecipe>( "timer", &CraftRecipe::timer_ticks, "Craft timer in pulses/ticks", 0, INT_MAX),
+
+        make_olc_custom_value_field<CraftRecipe>( "output", OlcValueType::ENUM, (const void*)craft_output_mode_names, OlcMetaType::ENUM_LEGACY,
+            [](CraftRecipe* r, const std::string& value) -> bool
+            {
+                int v;
+                if ( !enum_from_string_legacy(value, v, craft_output_mode_names) )
+                    return false;
+
+                r->output_mode = static_cast<CraftOutputMode>(v);
+                return true;
+            },
+            [](CraftRecipe* r) -> std::string
+            {
+                return enum_to_string_legacy((int)r->output_mode, craft_output_mode_names);
+            },
+            "Output mode: create_proto or transform_base"
+        ),
+
+        make_olc_int_field<CraftRecipe>( "resultvnum", &CraftRecipe::result_vnum, "Prototype vnum used in create_proto mode", 0, INT_MAX),
+        make_olc_custom_value_field<CraftRecipe>( "resulttype", OlcValueType::ENUM, (const void*)o_types, OlcMetaType::ENUM_FLAG,
+            [](CraftRecipe* r, const std::string& value) -> bool { return set_enum_flag_field(r->result_item_type, value, o_types); },
+            [](CraftRecipe* r) -> std::string { return get_enum_flag_field(r->result_item_type, o_types); },
+            "Final object item type"
+        ),
+
+        make_olc_bool_field<CraftRecipe>( "customname", &CraftRecipe::allow_custom_name, "Whether the crafter may set a custom name"),
+        make_olc_bool_field<CraftRecipe>( "extraargreq", &CraftRecipe::requires_extra_arg, "Whether this recipe requires an extra argument"),
+        make_olc_std_string_field<CraftRecipe>( "extraarg", &CraftRecipe::extra_arg_name, "Name of the required extra argument"),
+        make_olc_custom_value_field<CraftRecipe>( "wearflags", OlcValueType::FLAG, (const void*)w_flags, OlcMetaType::FLAG_TABLE,
+            [](CraftRecipe* r, const std::string& value) -> bool { return craft_flag_vector_from_string(r->set_wear_flags, value, w_flags); },
+            [](CraftRecipe* r) -> std::string { return craft_flag_vector_to_string(r->set_wear_flags, w_flags); },
+            "Wear flags applied to the result object"
+        ),
+
+        make_olc_custom_value_field<CraftRecipe>( "objflags", OlcValueType::FLAG, (const void*)obj_flag_table, OlcMetaType::FLAG_TABLE,
+            [](CraftRecipe* r, const std::string& value) -> bool { return craft_flag_vector_from_string(r->set_objflags, value, obj_flag_table); },
+            [](CraftRecipe* r) -> std::string { return craft_flag_vector_to_string(r->set_objflags, obj_flag_table); },
+            "Object flags applied to the result object"
+        ),
+
+        make_olc_std_string_field<CraftRecipe>( "nametemplate", &CraftRecipe::name_template, "Internal keyword/name template"),
+        make_olc_std_string_field<CraftRecipe>( "shorttemplate", &CraftRecipe::short_template, "Short description template"),
+        make_olc_std_string_field<CraftRecipe>( "desctemplate", &CraftRecipe::description_template, "Room description template"),
+        make_olc_custom_editor_field<CraftRecipe>(
+            "slots", OlcMetaType::LIST,
+            [](CHAR_DATA* ch, CraftRecipe* recipe) -> bool { return olc_craft_edit_slots_field(ch, recipe); },
+            [](CraftRecipe* recipe) -> std::string { return craft_slot_summary(recipe); },
+            nullptr, 0, "Manage recipe slots. Type 'slots ?' for help.", true
+        ),        
+        make_olc_custom_editor_field<CraftRecipe>( "derivedvar", OlcMetaType::LIST,
+            [](CHAR_DATA* ch, CraftRecipe* recipe) -> bool { return olc_craft_edit_derived_vars_field(ch, recipe); },
+            [](CraftRecipe* recipe) -> std::string { return craft_derived_var_summary(recipe); },
+            nullptr, 0, "Manage derived vars. Type 'derivedvar ?' for help.", true
+        ),        
+        make_olc_custom_editor_field<CraftRecipe>( "assignments", OlcMetaType::LIST,
+            [](CHAR_DATA* ch, CraftRecipe* recipe) -> bool { return olc_craft_edit_assignments_field(ch, recipe); },
+            [](CraftRecipe* recipe) -> std::string { return craft_assignment_summary(recipe); },
+            nullptr, 0, "Manage result assignments. Type 'assignments ?' for help.", true
+        ),        
+        make_olc_custom_editor_field<CraftRecipe>( "affects", OlcMetaType::LIST,
+            [](CHAR_DATA* ch, CraftRecipe* recipe) -> bool { return olc_craft_edit_affects_field(ch, recipe); },
+            [](CraftRecipe* recipe) -> std::string { return craft_affect_summary(recipe); },
+            nullptr, 0, "Manage recipe affects. Type 'affects ?' for help.", true
+        ),        
+        make_olc_bool_field<CraftRecipe>( "disabled", &CraftRecipe::disabled, "Whether the recipe is disabled for normal crafting use"),
+        make_olc_custom_value_field<CraftRecipe>( "blockedwear", OlcValueType::FLAG, (const void*)w_flags, OlcMetaType::FLAG_TABLE,
+            [](CraftRecipe* r, const std::string& value) -> bool { return craft_flag_vector_from_string(r->blocked_wear_flags, value, w_flags); },
+            [](CraftRecipe* r) -> std::string { return craft_flag_vector_to_string(r->blocked_wear_flags, w_flags); },
+            "Wear locations forbidden for recipes using extraarg wearloc"
+        ),        
+    };
+
+    static OlcSchema<CraftRecipe> craft_schema;
+    craft_schema.name = "craft";
+    craft_schema.fields = &craft_fields;
+    return &craft_schema;
+}
+
 // Value0 through 5 use description mapping, used for help files..
-const OlcItemValueInfo g_olc_item_value_info[] =
+extern const OlcItemValueInfo g_olc_item_value_info[] =
 {
     //Item Type  Used Vals_Used - {Value 0 - Value 5 use description}
     {ITEM_NONE, false, false, {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}},
@@ -515,6 +774,9 @@ const OlcItemValueInfo g_olc_item_value_info[] =
     {ITEM_SPACECRAFT, true, false, {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}},
     {-1, false, false, {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}}
 };
+
+extern const size_t g_olc_item_value_info_count =
+    sizeof(g_olc_item_value_info) / sizeof(g_olc_item_value_info[0]);
 
 
 // --------------------------------------------
@@ -6421,8 +6683,2080 @@ void olc_show_shop(CHAR_DATA* ch, SHOP_DATA* shop, bool show_help, int term_widt
 }
 
 // ------------------------
+// CRAFT_OLC craft_olc OlcOps commands
+// ------------------------
+
+void* craft_olc_clone(const void* src)
+{
+    if ( !src )
+        return nullptr;
+
+    return new CraftRecipe( *static_cast<const CraftRecipe*>(src) );
+}
+
+void craft_olc_free_clone(void* obj)
+{
+    delete static_cast<CraftRecipe*>(obj);
+}
+
+void craft_olc_apply_changes(void* original, void* working)
+{
+    CraftRecipe *dst = static_cast<CraftRecipe*>(original);
+    const CraftRecipe *src = static_cast<const CraftRecipe*>(working);
+
+    if ( !dst || !src )
+        return;
+
+    *dst = *src;
+}
+
+void craft_olc_save(CHAR_DATA* ch, void* original)
+{
+    CraftRecipe *recipe = static_cast<CraftRecipe*>( original );
+
+    if ( !craft_validate_recipe_report(ch, recipe, "Committed craft recipe") )
+    {
+        if ( ch )
+            send_to_char("Craft recipes were NOT written to disk.\n", ch);
+        return;
+    }
+
+    craft_save_all_recipes_for_olc();
+
+    if ( ch )
+        send_to_char("Craft recipes written to disk.\n", ch);
+}
+
+void craft_olc_after_commit(CHAR_DATA* ch, void* /*original*/, void* /*working*/)
+{
+    if ( ch )
+        send_to_char("Craft recipe committed.\n", ch);
+}
+
+void craft_olc_after_revert(CHAR_DATA* ch, void* /*original*/, void* /*working*/)
+{
+    if ( ch )
+        send_to_char("Craft recipe reverted to pre-edit state.\n", ch);
+}
+
+const OlcOps craft_olc_ops =
+{
+    craft_olc_clone,
+    craft_olc_free_clone,
+    craft_olc_apply_changes,
+    craft_olc_save,
+    craft_olc_after_commit,
+    craft_olc_after_revert,
+    olc_craft_edit_interpret,
+    OlcInterpretStage::EARLY
+};
+
+// ------------------------
+// OLC_CRAFT olc_craft craft related commands
+// ------------------------
+
+bool olc_craft_in_edit_mode(CHAR_DATA* ch)
+{
+    return ch && ch->desc && ch->desc->olc &&
+           ch->desc->olc->schema &&
+           ch->desc->olc->schema->name &&
+           !str_cmp(ch->desc->olc->schema->name, "craft");
+}
+
+void olc_craft_edit_help(CHAR_DATA* ch)
+{
+    send_to_char("CEDIT commands:\n", ch);
+    send_to_char("  show [field]\n", ch);
+    send_to_char("  help/? [field]\n", ch);
+    send_to_char("  validate\n", ch);    
+    send_to_char("  commit\n", ch);
+    send_to_char("  revert\n", ch);
+    send_to_char("  stop save\n", ch);
+    send_to_char("  stop abort\n", ch);
+    send_to_char("    or just save/abort\n", ch);
+    send_to_char("  <field> <value>\n", ch);
+}
+
+static void olc_craft_mark_dirty( CHAR_DATA *ch )
+{
+    if ( ch && ch->desc && ch->desc->olc )
+        ch->desc->olc->dirty = true;
+}
+
+
+bool olc_craft_edit_revert(CHAR_DATA *ch)
+{
+    if (!ch || !ch->desc || !ch->desc->olc)
+        return false;
+
+    auto sess = ch->desc->olc;
+
+    /* Must be editing a craft recipe */
+    if (!sess->schema || !sess->schema->name ||
+        str_cmp(sess->schema->name, "craft"))
+        return false;
+
+    if (!sess->original_clone || !sess->ops ||
+        !sess->ops->clone || !sess->ops->free_clone)
+    {
+        send_to_char("No revert snapshot is available.\n", ch);
+        return false;
+    }
+
+    /* Free current working copy */
+    if (sess->working_copy)
+        sess->ops->free_clone(sess->working_copy);
+
+    /* Restore from original clone */
+    sess->working_copy = sess->ops->clone(sess->original_clone);
+    if (!sess->working_copy)
+    {
+        send_to_char("Failed to restore revert snapshot.\n", ch);
+        return false;
+    }
+
+    sess->last_cmd_arg.clear();
+    sess->dirty = false;
+
+    if (sess->ops->after_revert)
+        sess->ops->after_revert(ch, sess->original, sess->working_copy);
+
+    send_to_char("Craft recipe reverted to pre-edit state.\n", ch);
+    return true;
+}
+
+static bool olc_craft_is_field_name( const char *input )
+{
+    if ( !input || input[0] == '\0' )
+        return false;
+
+    const auto *schema = get_craft_schema();
+
+    if ( olc_find_field_fuzzy(schema, input) )
+        return true;
+
+    if ( olc_field_name_is_ambiguous(schema, input) )
+        return true;
+
+    return false;
+}
+
+static bool olc_craft_edit_interpret( CHAR_DATA *ch, const std::string &command, const std::string &argument )
+{
+    if ( !olc_craft_in_edit_mode(ch) || command.empty() )
+        return false;
+
+    if ( olc_command_matches(command, "help") || !str_cmp(command, "?") )
+    {
+        if ( argument.empty() )
+            olc_craft_edit_help(ch);
+        else
+            olc_show(ch, argument, "help");
+        return true;
+    }
+
+    if ( olc_command_matches(command, "stop") )
+    {
+        std::string arg = argument;
+        std::string mode;
+        arg = one_argument(arg, mode);
+
+        if ( !str_cmp(mode, "save") )
+        {
+            olc_stop(ch, true);
+            return true;
+        }
+
+        if ( !str_cmp(mode, "abort") )
+        {
+            olc_stop(ch, false);
+            return true;
+        }
+
+        send_to_char("Syntax: stop save|abort\n", ch);
+        return true;
+    }
+
+    if ( olc_command_matches(command, "abort") || olc_command_matches(command, "cancel") )
+    {
+        olc_stop(ch, false);
+        return true;
+    }
+
+    if ( olc_command_matches(command, "save") || olc_command_matches(command, "done") )
+    {
+        olc_stop(ch, true);
+        return true;
+    }
+
+    if ( olc_command_matches(command, "revert") )
+    {
+        if (olc_command_matches(command, "revert"))
+        {
+            olc_craft_edit_revert(ch);
+            return true;
+        }
+    }
+
+    if ( olc_command_matches(command, "commit") )
+    {
+        if ( olc_commit_current(ch) )
+            send_to_char("Current changes committed.\n", ch);
+        else
+            send_to_char("No pending changes to commit.\n", ch);
+        return true;
+    }
+
+    if ( olc_command_matches(command, "show") || olc_command_matches(command, "olcshow") )
+    {
+        do_olcshow(ch, const_cast<char*>(argument.c_str()));
+        return true;
+    }
+
+    if ( olc_command_matches(command, "olcset") )
+    {
+        do_olcset(ch, const_cast<char*>(argument.c_str()));
+        return true;
+    }
+
+    if (olc_command_matches(command, "validate") || olc_command_matches(command, "check"))
+    {
+        CraftRecipe *working = olc_session_working_as<CraftRecipe>( ch->desc->olc );
+        craft_validate_recipe_report(ch, working, "Working craft recipe");
+        return true;
+    }
+
+    if ( olc_craft_is_field_name(command.c_str()) )
+    {
+        std::string buf = command;
+        if ( !argument.empty() )
+        {
+            buf += " ";
+            buf += argument;
+        }
+
+        do_olcset(ch, const_cast<char*>(buf.c_str()));
+        return true;
+    }
+
+    return false;
+}
+
+static bool craft_is_valid_result_target( const std::string &target )
+{
+    if ( target.empty() )
+        return false;
+
+    return !str_cmp(target, "value0")
+        || !str_cmp(target, "value1")
+        || !str_cmp(target, "value2")
+        || !str_cmp(target, "value3")
+        || !str_cmp(target, "value4")
+        || !str_cmp(target, "value5")
+        || !str_cmp(target, "weight")
+        || !str_cmp(target, "cost")
+        || !str_cmp(target, "level");
+}
+
+static void craft_collect_expr_var_refs( const CraftExpr &expr, std::set<std::string> &out )
+{
+    if ( !str_cmp(expr.op, "var") && !expr.var_name.empty() )
+        out.insert( expr.var_name );
+
+    if ( expr.left )
+        craft_collect_expr_var_refs( *expr.left, out );
+
+    if ( expr.right )
+        craft_collect_expr_var_refs( *expr.right, out );
+
+    if ( expr.third )
+        craft_collect_expr_var_refs( *expr.third, out );
+
+    if ( expr.fourth )
+        craft_collect_expr_var_refs( *expr.fourth, out );        
+}
+
+static bool craft_validate_expr_vars( const CraftExpr &expr, const std::set<std::string> &valid_vars, std::string &err )
+{
+    std::set<std::string> refs;
+    craft_collect_expr_var_refs( expr, refs );
+
+    for ( const auto &name : refs )
+    {
+        if ( valid_vars.find(name) == valid_vars.end() )
+        {
+            err = str_printf( "Unknown var() reference: %s", name.c_str() );
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool craft_validate_recipe( const CraftRecipe *recipe, std::vector<std::string> &errors )
+{
+    if ( !recipe )
+    {
+        errors.push_back( "Recipe pointer was null." );
+        return false;
+    }
+
+    std::set<std::string> slot_names;
+    std::set<std::string> derived_var_names;
+    std::set<std::string> valid_vars;
+    std::set<std::string> assignment_targets;
+    bool has_base_slot = false;
+
+    if ( recipe->name.empty() )
+        errors.push_back( "Recipe name is empty." );
+
+    if ( recipe->display_name.empty() )
+        errors.push_back( "Recipe display name is empty." );
+
+    if ( recipe->gsn < -1 )
+        errors.push_back( "Recipe gsn is less than -1." );
+
+    if ( recipe->timer_ticks < 0 )
+        errors.push_back( "Recipe timer is negative." );
+
+    if ( recipe->requires_extra_arg && recipe->extra_arg_name.empty() )
+        errors.push_back( "Recipe requires extra arg but extra_arg_name is empty." );
+
+    if ( recipe->output_mode == CraftOutputMode::CreateFromPrototype )
+    {
+        if ( recipe->result_vnum <= 0 )
+            errors.push_back( "Create-prototype recipe requires result_vnum > 0." );
+    }
+    else if ( recipe->output_mode == CraftOutputMode::TransformBaseMaterial )
+    {
+        for ( const auto &slot : recipe->slots )
+            if ( slot.may_be_base_material )
+                has_base_slot = true;
+
+        if ( !has_base_slot )
+            errors.push_back( "Transform-base recipe has no slot marked may_be_base_material." );
+    }
+
+    if ( recipe->result_item_type < 0 )
+        errors.push_back( "Result item type is invalid." );
+
+    for ( size_t i = 0; i < recipe->slots.size(); ++i )
+    {
+        const CraftSlotDef &slot = recipe->slots[i];
+
+        if ( slot.name.empty() )
+            errors.push_back( str_printf("Slot #%zu has an empty name.", i + 1) );
+
+        if ( !slot.name.empty() )
+        {
+            if ( slot_names.find(slot.name) != slot_names.end() )
+                errors.push_back( str_printf("Duplicate slot name: %s", slot.name.c_str()) );
+            else
+                slot_names.insert( slot.name );
+        }
+
+        if ( slot.item_type < 0 )
+            errors.push_back( str_printf("Slot '%s' has invalid item type.", slot.name.c_str()) );
+
+        if ( slot.min_count < 0 )
+            errors.push_back( str_printf("Slot '%s' has min_count < 0.", slot.name.c_str()) );
+
+        if ( slot.max_count < 0 )
+            errors.push_back( str_printf("Slot '%s' has max_count < 0.", slot.name.c_str()) );
+
+        if ( slot.max_count > 0 && slot.min_count > slot.max_count )
+            errors.push_back( str_printf("Slot '%s' has min_count greater than max_count.", slot.name.c_str()) );
+    }
+
+    for ( const auto &builtin : {
+        std::string("base_value0"), std::string("base_value1"), std::string("base_value2"),
+        std::string("base_value3"), std::string("base_value4"), std::string("base_value5"),
+        std::string("base_weight"), std::string("base_cost"), std::string("base_level"),
+        std::string("race"), std::string("sex")
+    } )
+    {
+        valid_vars.insert( builtin );
+    }
+
+    for ( size_t i = 0; i < recipe->derived_vars.size(); ++i )
+    {
+        const CraftDerivedVarDef &dv = recipe->derived_vars[i];
+
+        if ( dv.var_name.empty() )
+            errors.push_back( str_printf("Derived var #%zu has an empty var_name.", i + 1) );
+
+        if ( !dv.var_name.empty() )
+        {
+            if ( derived_var_names.find(dv.var_name) != derived_var_names.end() )
+                errors.push_back( str_printf("Duplicate derived var name: %s", dv.var_name.c_str()) );
+            else
+            {
+                derived_var_names.insert( dv.var_name );
+                valid_vars.insert( dv.var_name );
+            }
+        }
+
+        if ( dv.slot_name.empty() || slot_names.find(dv.slot_name) == slot_names.end() )
+            errors.push_back( str_printf("Derived var '%s' references missing slot '%s'.",
+                dv.var_name.c_str(), dv.slot_name.c_str()) );
+
+        if ( !craft_is_valid_derived_source_field(dv.source_field) )
+            errors.push_back( str_printf("Derived var '%s' has invalid source field '%s'.",
+                dv.var_name.c_str(), dv.source_field.c_str()) );
+
+        if ( !craft_is_valid_derived_aggregate_op(dv.aggregate_op) )
+            errors.push_back( str_printf("Derived var '%s' has invalid aggregate op '%s'.",
+                dv.var_name.c_str(), dv.aggregate_op.c_str()) );
+
+        if ( dv.clamp_max_from_skill_mult && dv.clamp_max_constant )
+            errors.push_back( str_printf("Derived var '%s' enables both skill max and constant max.",
+                dv.var_name.c_str()) );
+
+        if ( dv.clamp_max_from_skill_mult && dv.clamp_max_skill_mult < 0 )
+            errors.push_back( str_printf("Derived var '%s' has negative skill multiplier.",
+                dv.var_name.c_str()) );
+    }
+
+    for ( size_t i = 0; i < recipe->assignments.size(); ++i )
+    {
+        const CraftAssignment &asgn = recipe->assignments[i];
+        std::string err;
+
+        if ( !craft_is_valid_result_target(asgn.target) )
+            errors.push_back( str_printf("Assignment #%zu has invalid target '%s'.",
+                i + 1, asgn.target.c_str()) );
+        else
+        {
+            if ( assignment_targets.find(asgn.target) != assignment_targets.end() )
+                errors.push_back( str_printf("Duplicate assignment target: %s", asgn.target.c_str()) );
+            else
+                assignment_targets.insert( asgn.target );
+        }
+
+        if ( !craft_validate_expr_vars(asgn.expr, valid_vars, err) )
+            errors.push_back( str_printf("Assignment '%s': %s",
+                asgn.target.c_str(), err.c_str()) );
+    }
+
+    for ( size_t i = 0; i < recipe->affects.size(); ++i )
+    {
+        const CraftAffectDef &aff = recipe->affects[i];
+        std::string err;
+
+        if ( aff.location < 0 || !a_types[aff.location].name )
+            errors.push_back( str_printf("Affect #%zu has invalid location %d.",
+                i + 1, aff.location) );
+
+        if ( aff.bitvector >= 0 && !find_flag(aff_flags, craft_affect_bitvector_name(aff.bitvector)) )
+            errors.push_back( str_printf("Affect #%zu has invalid bitvector %d.",
+                i + 1, aff.bitvector) );
+
+        if ( !craft_validate_expr_vars(aff.modifier_expr, valid_vars, err) )
+            errors.push_back( str_printf("Affect #%zu modifier: %s", i + 1, err.c_str()) );
+
+        if ( aff.use_duration )
+        {
+            if ( !craft_validate_expr_vars(aff.duration_expr, valid_vars, err) )
+                errors.push_back( str_printf("Affect #%zu duration: %s", i + 1, err.c_str()) );
+        }
+    }
+
+    return errors.empty();
+}
+
+static bool craft_validate_recipe_report( CHAR_DATA *ch, const CraftRecipe *recipe, const char *label )
+{
+    std::vector<std::string> errors;
+
+    if ( !ch )
+        return false;
+
+    if ( craft_validate_recipe(recipe, errors) )
+    {
+        ch_printf(ch, "%s is valid.\n", label ? label : "Recipe");
+        return true;
+    }
+
+    ch_printf(ch, "%s is invalid:\n", label ? label : "Recipe");
+    for ( const auto &err : errors )
+        ch_printf(ch, "  - %s\n", err.c_str());
+
+    return false;
+}
+
+static std::string craft_affect_location_name( int location )
+{
+    if ( location >= 0 && location < MAX_APPLY_TYPE && a_types[location].name )
+        return a_types[location].name;
+
+    return std::to_string(location);
+}
+
+static std::string craft_affect_bitvector_name( int bitvector )
+{
+    if ( bitvector < 0 )
+        return "none";
+
+    return get_enum_flag_field( bitvector, aff_flags );
+}
+
+static std::string craft_affect_summary( const CraftRecipe *recipe )
+{
+    if ( !recipe || recipe->affects.empty() )
+        return "none";
+
+    std::string out;
+
+    for ( size_t i = 0; i < recipe->affects.size(); ++i )
+    {
+        const CraftAffectDef &aff = recipe->affects[i];
+
+        if ( !out.empty() )
+            out += " ; \n";
+
+        out += "#";
+        out += std::to_string(i + 1);
+        out += " ";
+        out += craft_affect_location_name( aff.location );
+        out += "=";
+        out += craft_expr_to_string_for_olc( aff.modifier_expr );
+
+        if ( aff.bitvector >= 0 )
+        {
+            out += " bit=";
+            out += craft_affect_bitvector_name( aff.bitvector );
+        }
+
+        if ( aff.use_duration )
+        {
+            out += " dur=";
+            out += craft_expr_to_string_for_olc( aff.duration_expr );
+        }
+    }
+
+    return out;
+}
+
+static void olc_craft_show_affect_help( CHAR_DATA *ch )
+{
+    send_to_char("AFFECTS commands:\n", ch);
+    send_to_char("  affects\n", ch);
+    send_to_char("  affects ?\n", ch);
+    send_to_char("  affects add <location> <modifier-expr>\n", ch);
+    send_to_char("  affects set <#> location <location>\n", ch);
+    send_to_char("  affects set <#> modifier <expr>\n", ch);
+    send_to_char("  affects set <#> bitvector <flag|none>\n", ch);
+    send_to_char("  affects set <#> useduration <true|false>\n", ch);
+    send_to_char("  affects set <#> duration <expr>\n", ch);
+    send_to_char("  affects delete <#>\n", ch);
+    send_to_char("\n", ch);
+    send_to_char("Affect locations are the normal APPLY_* names used by get_atype.\n", ch);
+    send_to_char("Bitvector uses aff_flags, or 'none'.\n", ch);
+    send_to_char("Modifier and duration use normal craft expressions.\n", ch);
+}
+
+static int olc_craft_find_affect_index( const CraftRecipe *recipe, const std::string &which )
+{
+    if ( !recipe || which.empty() )
+        return -1;
+
+    try
+    {
+        int n = std::stoi(which);
+        if ( n >= 1 && n <= (int)recipe->affects.size() )
+            return n - 1;
+    }
+    catch (...)
+    {
+    }
+
+    return -1;
+}
+
+static void olc_craft_show_affect_location_choices( CHAR_DATA *ch )
+{
+    if ( !ch )
+        return;
+
+    send_to_char("Valid affect locations:\n", ch);
+
+    for ( int i = 0; i < MAX_APPLY_TYPE; ++i )
+    {
+        if ( !a_types[i].name || a_types[i].name[0] == '\0' )
+            continue;
+
+        ch_printf(ch, "  %-2d %s\n", i, a_types[i].name);
+    }
+}
+
+static bool olc_craft_edit_affects_field( CHAR_DATA *ch, CraftRecipe *recipe )
+{
+    if ( !ch || !ch->desc || !ch->desc->olc || !recipe )
+        return false;
+
+    std::string input = ch->desc->olc->last_cmd_arg;
+    std::string command;
+    std::string rest;
+
+    rest = one_argument(input, command);
+
+    if ( command.empty() || !str_cmp(command, "?") || !str_cmp(command, "help") )
+    {
+        olc_craft_show_affect_help(ch);
+        return false;
+    }
+
+    if ( !str_cmp(command, "list") || !str_cmp(command, "show") )
+    {
+        if ( recipe->affects.empty() )
+        {
+            send_to_char("No affects defined.\n", ch);
+            return true;
+        }
+
+        for ( size_t i = 0; i < recipe->affects.size(); ++i )
+        {
+            const CraftAffectDef &aff = recipe->affects[i];
+
+            ch_printf(ch,
+                "#%zu loc=%s mod=%s bit=%s usedur=%s dur=%s\n",
+                i + 1,
+                craft_affect_location_name( aff.location ).c_str(),
+                craft_expr_to_string_for_olc( aff.modifier_expr ).c_str(),
+                craft_affect_bitvector_name( aff.bitvector ).c_str(),
+                aff.use_duration ? "true" : "false",
+                aff.use_duration
+                    ? craft_expr_to_string_for_olc( aff.duration_expr ).c_str()
+                    : "none");
+        }
+
+        return true;
+    }
+
+    if ( !str_cmp(command, "add") )
+    {
+        std::string location_name;
+        std::string expr_text;
+        int location;
+        CraftExpr expr;
+        std::string err;
+
+        rest = one_argument(rest, location_name);
+        expr_text = rest;
+
+        if ( location_name.empty() || expr_text.empty() )
+        {
+            send_to_char("Syntax: affects add <location> <modifier-expr>\n", ch);
+            return false;
+        }
+
+        location = get_atype( location_name );
+        if ( location < 1 )
+        {
+            ch_printf(ch, "Unknown affect location: %s\n", location_name.c_str() );
+            olc_craft_show_affect_location_choices(ch);
+            return false;
+        }
+
+        if ( !craft_parse_expr_for_olc(expr_text, expr, err) )
+        {
+            ch_printf(ch, "Invalid modifier expression: %s\n", err.c_str() );
+            return false;
+        }
+
+        CraftAffectDef aff;
+        aff.location = location;
+        aff.modifier_expr = std::move(expr);
+        aff.bitvector = -1;
+        aff.use_duration = false;
+
+        recipe->affects.push_back( std::move(aff) );
+        send_to_char("Affect added.\n", ch);
+        return true;
+    }
+
+    if ( !str_cmp(command, "delete") || !str_cmp(command, "remove") )
+    {
+        std::string which;
+        int idx;
+
+        rest = one_argument(rest, which);
+
+        if ( which.empty() )
+        {
+            send_to_char("Syntax: affects delete <#>\n", ch);
+            return false;
+        }
+
+        idx = olc_craft_find_affect_index(recipe, which);
+        if ( idx < 0 )
+        {
+            send_to_char("Affect not found.\n", ch);
+            return false;
+        }
+
+        recipe->affects.erase( recipe->affects.begin() + idx );
+        send_to_char("Affect deleted.\n", ch);
+        return true;
+    }
+
+    if ( !str_cmp(command, "set") )
+    {
+        std::string which, field, value;
+        int idx;
+
+        rest = one_argument(rest, which);
+        rest = one_argument(rest, field);
+        value = rest;
+
+        if ( which.empty() || field.empty() || value.empty() )
+        {
+            send_to_char("Syntax: affects set <#> <field> <value>\n", ch);
+            return false;
+        }
+
+        idx = olc_craft_find_affect_index(recipe, which);
+        if ( idx < 0 )
+        {
+            send_to_char("Affect not found.\n", ch);
+            return false;
+        }
+
+        CraftAffectDef &aff = recipe->affects[idx];
+
+        if ( !str_cmp(field, "location") )
+        {
+            int location = get_atype( value );
+            if ( location < 1 )
+            {
+                ch_printf(ch, "Unknown affect location: %s\n", value.c_str() );
+                olc_craft_show_affect_location_choices(ch);
+                return false;
+            }
+
+            aff.location = location;
+            send_to_char("Affect location updated.\n", ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "modifier") )
+        {
+            CraftExpr expr;
+            std::string err;
+
+            if ( !craft_parse_expr_for_olc(value, expr, err) )
+            {
+                ch_printf(ch, "Invalid modifier expression: %s\n", err.c_str() );
+                return false;
+            }
+
+            aff.modifier_expr = std::move(expr);
+            send_to_char("Affect modifier updated.\n", ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "bitvector") || !str_cmp(field, "bit") )
+        {
+            if ( !str_cmp(value, "none") )
+            {
+                aff.bitvector = -1;
+                send_to_char("Affect bitvector cleared.\n", ch);
+                return true;
+            }
+
+            const flag_name *flag = find_flag( aff_flags, value );
+            if ( !flag )
+            {
+                send_to_char("Unknown affect bitvector.\n", ch);
+                return false;
+            }
+
+            aff.bitvector = flag->bit;
+            send_to_char("Affect bitvector updated.\n", ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "useduration") || !str_cmp(field, "durationon") )
+        {
+            bool b;
+            if ( !set_bool_field(b, value) )
+            {
+                send_to_char("useduration must be true/false.\n", ch);
+                return false;
+            }
+
+            aff.use_duration = b;
+            send_to_char("Affect use_duration updated.\n", ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "duration") )
+        {
+            CraftExpr expr;
+            std::string err;
+
+            if ( !craft_parse_expr_for_olc(value, expr, err) )
+            {
+                ch_printf(ch, "Invalid duration expression: %s\n", err.c_str() );
+                return false;
+            }
+
+            aff.duration_expr = std::move(expr);
+            send_to_char("Affect duration expression updated.\n", ch);
+            return true;
+        }
+
+        send_to_char("Unknown affect field. Use: location modifier bitvector useduration duration\n", ch);
+        return false;
+    }
+
+    olc_craft_show_affect_help(ch);
+    return false;
+}
+
+static bool craft_is_valid_assignment_target( const std::string &target )
+{
+    if ( target.empty() )
+        return false;
+
+    return !str_cmp(target, "value0")
+        || !str_cmp(target, "value1")
+        || !str_cmp(target, "value2")
+        || !str_cmp(target, "value3")
+        || !str_cmp(target, "value4")
+        || !str_cmp(target, "value5")
+        || !str_cmp(target, "weight")
+        || !str_cmp(target, "cost")
+        || !str_cmp(target, "level");
+}
+
+static std::string craft_assignment_summary( const CraftRecipe *recipe )
+{
+    if ( !recipe || recipe->assignments.empty() )
+        return "none";
+
+    std::string out;
+
+    for ( size_t i = 0; i < recipe->assignments.size(); ++i )
+    {
+        const CraftAssignment &asgn = recipe->assignments[i];
+
+        if ( !out.empty() )
+            out += " ; ";
+
+        out += "#";
+        out += std::to_string(i + 1);
+        out += " ";
+        out += asgn.target;
+        out += "=";
+        out += craft_expr_to_string_for_olc( asgn.expr );
+    }
+
+    return out;
+}
+
+static void olc_craft_show_assignment_help( CHAR_DATA *ch )
+{
+    send_to_char("ASSIGNMENTS commands:\n", ch);
+    send_to_char("  assignments\n", ch);
+    send_to_char("  assignments ?\n", ch);
+    send_to_char("  assignments add <target> <expr>\n", ch);
+    send_to_char("  assignments set <target/#> target <newtarget>\n", ch);
+    send_to_char("  assignments set <target/#> expr <expression>\n", ch);
+    send_to_char("  assignments delete <target/#>\n", ch);
+    send_to_char("\n", ch);
+    send_to_char("Valid targets:\n", ch);
+    send_to_char("  value0 value1 value2 value3 value4 value5 weight cost level\n", ch);
+    send_to_char("\n", ch);
+    send_to_char("Expression forms:\n", ch);
+    send_to_char("  const(5)\n", ch);
+    send_to_char("  skill\n", ch);
+    send_to_char("  var(base_value1)\n", ch);
+    send_to_char("  add(expr,expr)\n", ch);
+    send_to_char("  sub(expr,expr)\n", ch);
+    send_to_char("  mul(expr,expr)\n", ch);
+    send_to_char("  div(expr,expr)\n", ch);
+    send_to_char("  min(expr,expr)\n", ch);
+    send_to_char("  max(expr,expr)\n", ch);
+    send_to_char("  iflt(a,b,then,else) - if a < b then then else else\n", ch);    
+}
+
+static int olc_craft_find_assignment_index( const CraftRecipe *recipe, const std::string &which )
+{
+    if ( !recipe || which.empty() )
+        return -1;
+
+    try
+    {
+        int n = std::stoi(which);
+        if ( n >= 1 && n <= (int)recipe->assignments.size() )
+            return n - 1;
+    }
+    catch (...)
+    {
+    }
+
+    for ( size_t i = 0; i < recipe->assignments.size(); ++i )
+    {
+        if ( !str_cmp(which, recipe->assignments[i].target) )
+            return (int)i;
+    }
+
+    for ( size_t i = 0; i < recipe->assignments.size(); ++i )
+    {
+        if ( !str_prefix(which, recipe->assignments[i].target) )
+            return (int)i;
+    }
+
+    return -1;
+}
+
+static bool olc_craft_edit_assignments_field( CHAR_DATA *ch, CraftRecipe *recipe )
+{
+    if ( !ch || !ch->desc || !ch->desc->olc || !recipe )
+        return false;
+
+    std::string input = ch->desc->olc->last_cmd_arg;
+    std::string command;
+    std::string rest;
+
+    rest = one_argument(input, command);
+
+    if ( command.empty() || !str_cmp(command, "?") || !str_cmp(command, "help") )
+    {
+        olc_craft_show_assignment_help(ch);
+        return false;
+    }
+
+    if ( !str_cmp(command, "list") || !str_cmp(command, "show") )
+    {
+        if ( recipe->assignments.empty() )
+        {
+            send_to_char("No assignments defined.\n", ch);
+            return true;
+        }
+
+        for ( size_t i = 0; i < recipe->assignments.size(); ++i )
+        {
+            const CraftAssignment &asgn = recipe->assignments[i];
+
+            ch_printf(ch, "#%zu %-8s = %s\n",
+                i + 1,
+                asgn.target.c_str(),
+                craft_expr_to_string_for_olc( asgn.expr ).c_str() );
+        }
+
+        return true;
+    }
+
+    if ( !str_cmp(command, "add") )
+    {
+        std::string target;
+        std::string expr_text;
+        CraftExpr expr;
+        std::string err;
+
+        rest = one_argument(rest, target);
+        expr_text = rest;
+
+        if ( target.empty() || expr_text.empty() )
+        {
+            send_to_char("Syntax: assignments add <target> <expr>\n", ch);
+            return false;
+        }
+
+        if ( !craft_is_valid_assignment_target(target) )
+        {
+            send_to_char("Invalid assignment target.\n", ch);
+            return false;
+        }
+
+        if ( olc_craft_find_assignment_index(recipe, target) >= 0 )
+        {
+            send_to_char("An assignment for that target already exists.\n", ch);
+            return false;
+        }
+
+        if ( !craft_parse_expr_for_olc(expr_text, expr, err) )
+        {
+            ch_printf(ch, "Invalid expression: %s\n", err.c_str() );
+            return false;
+        }
+
+        CraftAssignment asgn;
+        asgn.target = target;
+        asgn.expr = std::move(expr);
+
+        recipe->assignments.push_back( std::move(asgn) );
+        send_to_char("Assignment added.\n", ch);
+        olc_craft_mark_dirty(ch);
+        return true;
+    }
+
+    if ( !str_cmp(command, "delete") || !str_cmp(command, "remove") )
+    {
+        std::string which;
+        int idx;
+
+        rest = one_argument(rest, which);
+
+        if ( which.empty() )
+        {
+            send_to_char("Syntax: assignments delete <target/#>\n", ch);
+            return false;
+        }
+
+        idx = olc_craft_find_assignment_index(recipe, which);
+        if ( idx < 0 )
+        {
+            send_to_char("Assignment not found.\n", ch);
+            return false;
+        }
+
+        recipe->assignments.erase( recipe->assignments.begin() + idx );
+        send_to_char("Assignment deleted.\n", ch);
+        olc_craft_mark_dirty(ch);
+
+        return true;
+    }
+
+    if ( !str_cmp(command, "set") )
+    {
+        std::string which, field, value;
+        int idx;
+
+        rest = one_argument(rest, which);
+        rest = one_argument(rest, field);
+        value = rest;
+
+        if ( which.empty() || field.empty() || value.empty() )
+        {
+            send_to_char("Syntax: assignments set <target/#> <field> <value>\n", ch);
+            return false;
+        }
+
+        idx = olc_craft_find_assignment_index(recipe, which);
+        if ( idx < 0 )
+        {
+            send_to_char("Assignment not found.\n", ch);
+            return false;
+        }
+
+        CraftAssignment &asgn = recipe->assignments[idx];
+
+        if ( !str_cmp(field, "target") )
+        {
+            if ( !craft_is_valid_assignment_target(value) )
+            {
+                send_to_char("Invalid assignment target.\n", ch);
+                return false;
+            }
+
+            if ( olc_craft_find_assignment_index(recipe, value) >= 0 && str_cmp(asgn.target, value) )
+            {
+                send_to_char("An assignment for that target already exists.\n", ch);
+                return false;
+            }
+
+            asgn.target = value;
+            send_to_char("Assignment target updated.\n", ch);
+            olc_craft_mark_dirty(ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "expr") || !str_cmp(field, "expression") )
+        {
+            CraftExpr expr;
+            std::string err;
+
+            if ( !craft_parse_expr_for_olc(value, expr, err) )
+            {
+                ch_printf(ch, "Invalid expression: %s\n", err.c_str() );
+                return false;
+            }
+
+            asgn.expr = std::move(expr);
+            send_to_char("Assignment expression updated.\n", ch);
+            olc_craft_mark_dirty(ch);
+            return true;
+        }
+
+        send_to_char("Unknown assignment field. Fields: target, expr\n", ch);
+        return false;
+    }
+
+    olc_craft_show_assignment_help(ch);
+    return false;
+}
+
+static bool craft_is_valid_derived_source_field( const std::string &field )
+{
+    if ( field.empty() )
+        return false;
+
+    return !str_cmp(field, "value0")
+        || !str_cmp(field, "value1")
+        || !str_cmp(field, "value2")
+        || !str_cmp(field, "value3")
+        || !str_cmp(field, "value4")
+        || !str_cmp(field, "value5")
+        || !str_cmp(field, "weight")
+        || !str_cmp(field, "cost")
+        || !str_cmp(field, "level");
+}
+
+static bool craft_is_valid_derived_aggregate_op( const std::string &op )
+{
+    if ( op.empty() )
+        return false;
+
+    return !str_cmp(op, "count")
+        || !str_cmp(op, "first")
+        || !str_cmp(op, "highest")
+        || !str_cmp(op, "lowest")
+        || !str_cmp(op, "sum");
+}
+
+static std::string craft_derived_var_summary( const CraftRecipe *recipe )
+{
+    if ( !recipe || recipe->derived_vars.empty() )
+        return "none";
+
+    std::string out;
+
+    for ( size_t i = 0; i < recipe->derived_vars.size(); ++i )
+    {
+        const CraftDerivedVarDef &dv = recipe->derived_vars[i];
+
+        if ( !out.empty() )
+            out += " ; ";
+
+        out += "#";
+        out += std::to_string(i + 1);
+        out += " ";
+        out += dv.var_name;
+        out += "=(";
+        out += dv.slot_name;
+        out += ".";
+        out += dv.source_field;
+        out += " ";
+        out += dv.aggregate_op;
+        out += ")";
+
+        if ( dv.use_clamp )
+        {
+            out += " clamp[min=";
+            out += std::to_string(dv.clamp_min);
+
+            if ( dv.clamp_max_from_skill_mult )
+            {
+                out += ", max=skill*";
+                out += std::to_string(dv.clamp_max_skill_mult);
+            }
+            else if ( dv.clamp_max_constant )
+            {
+                out += ", max=";
+                out += std::to_string(dv.clamp_max_value);
+            }
+            else
+            {
+                out += ", max=result";
+            }
+
+            out += "]";
+        }
+    }
+
+    return out;
+}
+
+static void olc_craft_show_derived_var_help( CHAR_DATA *ch )
+{
+    send_to_char("DERIVEDVARS commands:\n", ch);
+    send_to_char("  derivedvar\n", ch);
+    send_to_char("  derivedvar ?\n", ch);
+    send_to_char("  derivedvar add <var> <slot> <source> <op>\n", ch);
+    send_to_char("  derivedvar set <var/#> <field> <value>\n", ch);
+    send_to_char("  derivedvar delete <var/#>\n", ch);
+    send_to_char("\n", ch);
+    send_to_char("Fields for 'derivedvar set' are:\n", ch);
+    send_to_char("  var      slot      source      op\n", ch);
+    send_to_char("  useclamp clampmin  maxskill    skillmult\n", ch);
+    send_to_char("  maxconst maxvalue\n", ch);
+    send_to_char("\n", ch);
+    send_to_char("Valid source fields:\n", ch);
+    send_to_char("  value0 value1 value2 value3 value4 value5 weight cost level\n", ch);
+    send_to_char("Valid aggregate ops:\n", ch);
+    send_to_char("  count first highest lowest sum\n", ch);
+    send_to_char("\n", ch);
+    send_to_char("Clamp rules:\n", ch);
+    send_to_char("  useclamp true/false enables clamping.\n", ch);
+    send_to_char("  clampmin is the lower bound.\n", ch);
+    send_to_char("  maxskill true means max = skill * skillmult.\n", ch);
+    send_to_char("  maxconst true means max = maxvalue.\n", ch);
+    send_to_char("  If both maxskill and maxconst are false, max stays as the result value.\n", ch);
+}
+
+static int olc_craft_find_derived_var_index( const CraftRecipe *recipe, const std::string &which )
+{
+    if ( !recipe || which.empty() )
+        return -1;
+
+    try
+    {
+        int n = std::stoi(which);
+        if ( n >= 1 && n <= (int)recipe->derived_vars.size() )
+            return n - 1;
+    }
+    catch (...)
+    {
+    }
+
+    for ( size_t i = 0; i < recipe->derived_vars.size(); ++i )
+    {
+        if ( !str_cmp(which, recipe->derived_vars[i].var_name) )
+            return (int)i;
+    }
+
+    for ( size_t i = 0; i < recipe->derived_vars.size(); ++i )
+    {
+        if ( !str_prefix(which, recipe->derived_vars[i].var_name) )
+            return (int)i;
+    }
+
+    return -1;
+}
+
+static bool olc_craft_edit_derived_vars_field( CHAR_DATA *ch, CraftRecipe *recipe )
+{
+    if ( !ch || !ch->desc || !ch->desc->olc || !recipe )
+        return false;
+
+    std::string input = ch->desc->olc->last_cmd_arg;
+    std::string command;
+    std::string rest;
+
+    rest = one_argument(input, command);
+
+    if ( command.empty() || !str_cmp(command, "?") || !str_cmp(command, "help") )
+    {
+        olc_craft_show_derived_var_help(ch);
+        return false;
+    }
+
+    if ( !str_cmp(command, "list") || !str_cmp(command, "show") )
+    {
+        if ( recipe->derived_vars.empty() )
+        {
+            send_to_char("No derived vars defined.\n", ch);
+            return true;
+        }
+
+        for ( size_t i = 0; i < recipe->derived_vars.size(); ++i )
+        {
+            const CraftDerivedVarDef &dv = recipe->derived_vars[i];
+
+            ch_printf(ch,
+                "#%zu %-16s slot=%-12s source=%-8s op=%-8s clamp=%s min=%d maxskill=%s skillmult=%d maxconst=%s maxvalue=%d\n",
+                i + 1,
+                dv.var_name.c_str(),
+                dv.slot_name.c_str(),
+                dv.source_field.c_str(),
+                dv.aggregate_op.c_str(),
+                dv.use_clamp ? "true" : "false",
+                dv.clamp_min,
+                dv.clamp_max_from_skill_mult ? "true" : "false",
+                dv.clamp_max_skill_mult,
+                dv.clamp_max_constant ? "true" : "false",
+                dv.clamp_max_value);
+        }
+
+        return true;
+    }
+
+    if ( !str_cmp(command, "add") )
+    {
+        std::string var_name, slot_name, source_field, aggregate_op;
+
+        rest = one_argument(rest, var_name);
+        rest = one_argument(rest, slot_name);
+        rest = one_argument(rest, source_field);
+        rest = one_argument(rest, aggregate_op);
+
+        if ( var_name.empty() || slot_name.empty() || source_field.empty() || aggregate_op.empty() )
+        {
+            send_to_char("Syntax: derivedvar add <var> <slot> <source> <op>\n", ch);
+            return false;
+        }
+
+        if ( olc_craft_find_derived_var_index(recipe, var_name) >= 0 )
+        {
+            send_to_char("A derived var with that name already exists.\n", ch);
+            return false;
+        }
+
+        if ( olc_craft_find_slot_index(recipe, slot_name) < 0 )
+        {
+            send_to_char("That slot does not exist.\n", ch);
+            return false;
+        }
+
+        if ( !craft_is_valid_derived_source_field(source_field) )
+        {
+            send_to_char("Invalid source field.\n", ch);
+            return false;
+        }
+
+        if ( !craft_is_valid_derived_aggregate_op(aggregate_op) )
+        {
+            send_to_char("Invalid aggregate op.\n", ch);
+            return false;
+        }
+
+        CraftDerivedVarDef dv;
+        dv.var_name = var_name;
+        dv.slot_name = slot_name;
+        dv.source_field = source_field;
+        dv.aggregate_op = aggregate_op;
+
+        recipe->derived_vars.push_back( std::move(dv) );
+        send_to_char("Derived var added.\n", ch);
+        olc_craft_mark_dirty(ch);
+        return true;
+    }
+
+    if ( !str_cmp(command, "delete") || !str_cmp(command, "remove") )
+    {
+        std::string which;
+        int idx;
+
+        rest = one_argument(rest, which);
+
+        if ( which.empty() )
+        {
+            send_to_char("Syntax: derivedvar delete <var/#>\n", ch);
+            return false;
+        }
+
+        idx = olc_craft_find_derived_var_index(recipe, which);
+        if ( idx < 0 )
+        {
+            send_to_char("Derived var not found.\n", ch);
+            return false;
+        }
+
+        recipe->derived_vars.erase( recipe->derived_vars.begin() + idx );
+        send_to_char("Derived var deleted.\n", ch);
+        olc_craft_mark_dirty(ch);
+        return true;
+    }
+
+    if ( !str_cmp(command, "set") )
+    {
+        std::string which, field, value;
+        int idx;
+
+        rest = one_argument(rest, which);
+        rest = one_argument(rest, field);
+
+        if ( which.empty() || field.empty() || rest.empty() )
+        {
+            send_to_char("Syntax: derivedvar set <var/#> <field> <value>\n", ch);
+            return false;
+        }
+
+        value = rest;
+        idx = olc_craft_find_derived_var_index(recipe, which);
+
+        if ( idx < 0 )
+        {
+            send_to_char("Derived var not found.\n", ch);
+            return false;
+        }
+
+        CraftDerivedVarDef &dv = recipe->derived_vars[idx];
+
+        if ( !str_cmp(field, "var") || !str_cmp(field, "name") )
+        {
+            if ( olc_craft_find_derived_var_index(recipe, value) >= 0 && str_cmp(dv.var_name, value) )
+            {
+                send_to_char("A derived var with that name already exists.\n", ch);
+                return false;
+            }
+
+            dv.var_name = value;
+            send_to_char("Derived var name updated.\n", ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "slot") )
+        {
+            if ( olc_craft_find_slot_index(recipe, value) < 0 )
+            {
+                send_to_char("That slot does not exist.\n", ch);
+                return false;
+            }
+
+            dv.slot_name = value;
+            send_to_char("Derived var slot updated.\n", ch);
+            olc_craft_mark_dirty(ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "source") || !str_cmp(field, "sourcefield") )
+        {
+            if ( !craft_is_valid_derived_source_field(value) )
+            {
+                send_to_char("Invalid source field.\n", ch);
+                return false;
+            }
+
+            dv.source_field = value;
+            send_to_char("Derived var source field updated.\n", ch);
+            olc_craft_mark_dirty(ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "op") || !str_cmp(field, "aggregate") )
+        {
+            if ( !craft_is_valid_derived_aggregate_op(value) )
+            {
+                send_to_char("Invalid aggregate op.\n", ch);
+                return false;
+            }
+
+            dv.aggregate_op = value;
+            send_to_char("Derived var aggregate op updated.\n", ch);
+            olc_craft_mark_dirty(ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "useclamp") || !str_cmp(field, "clamp") )
+        {
+            bool b;
+            if ( !set_bool_field(b, value) )
+            {
+                send_to_char("useclamp must be true/false.\n", ch);
+                return false;
+            }
+
+            dv.use_clamp = b;
+            send_to_char("Derived var use_clamp updated.\n", ch);
+            olc_craft_mark_dirty(ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "clampmin") || !str_cmp(field, "min") )
+        {
+            try
+            {
+                dv.clamp_min = std::stoi(value);
+                send_to_char("Derived var clamp_min updated.\n", ch);
+                olc_craft_mark_dirty(ch);
+                return true;
+            }
+            catch (...)
+            {
+                send_to_char("clampmin must be a number.\n", ch);
+                return false;
+            }
+        }
+
+        if ( !str_cmp(field, "maxskill") || !str_cmp(field, "skillmax") )
+        {
+            bool b;
+            if ( !set_bool_field(b, value) )
+            {
+                send_to_char("maxskill must be true/false.\n", ch);
+                return false;
+            }
+
+            dv.clamp_max_from_skill_mult = b;
+            if ( b )
+                dv.clamp_max_constant = false;
+
+            send_to_char("Derived var max-skill mode updated.\n", ch);
+            olc_craft_mark_dirty(ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "skillmult") || !str_cmp(field, "maxskillmult") )
+        {
+            try
+            {
+                dv.clamp_max_skill_mult = std::stoi(value);
+                send_to_char("Derived var skill multiplier updated.\n", ch);
+                olc_craft_mark_dirty(ch);
+                return true;
+            }
+            catch (...)
+            {
+                send_to_char("skillmult must be a number.\n", ch);
+                return false;
+            }
+        }
+
+        if ( !str_cmp(field, "maxconst") || !str_cmp(field, "constmax") )
+        {
+            bool b;
+            if ( !set_bool_field(b, value) )
+            {
+                send_to_char("maxconst must be true/false.\n", ch);
+                return false;
+            }
+
+            dv.clamp_max_constant = b;
+            if ( b )
+                dv.clamp_max_from_skill_mult = false;
+
+            send_to_char("Derived var max-constant mode updated.\n", ch);
+            olc_craft_mark_dirty(ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "maxvalue") || !str_cmp(field, "constvalue") )
+        {
+            try
+            {
+                dv.clamp_max_value = std::stoi(value);
+                send_to_char("Derived var max value updated.\n", ch);
+                olc_craft_mark_dirty(ch);
+                return true;
+            }
+            catch (...)
+            {
+                send_to_char("maxvalue must be a number.\n", ch);
+                return false;
+            }
+        }
+
+        send_to_char("Unknown derived var field.\n", ch);
+        return false;
+    }
+
+    olc_craft_show_derived_var_help(ch);
+    return false;
+}
+
+static const char *craft_consume_mode_name( CraftConsumeMode mode )
+{
+    switch ( mode )
+    {
+        default:
+        case CraftConsumeMode::Keep:          return "keep";
+        case CraftConsumeMode::Consume:       return "consume";
+        case CraftConsumeMode::TransformBase: return "transform_base";
+    }
+}
+
+static bool craft_consume_mode_from_string( const std::string &value, CraftConsumeMode &out )
+{
+    if ( !str_cmp(value, "keep") )
+    {
+        out = CraftConsumeMode::Keep;
+        return true;
+    }
+
+    if ( !str_cmp(value, "consume") )
+    {
+        out = CraftConsumeMode::Consume;
+        return true;
+    }
+
+    if ( !str_cmp(value, "transform_base") || !str_cmp(value, "transform") || !str_cmp(value, "base") )
+    {
+        out = CraftConsumeMode::TransformBase;
+        return true;
+    }
+
+    return false;
+}
+
+static bool craft_item_type_from_string( const std::string &value, int &out )
+{
+    if ( value.empty() )
+        return false;
+
+    if ( enum_from_string_flag(value, out, o_types) )
+        return true;
+
+    try
+    {
+        out = std::stoi(value);
+        return true;
+    }
+    catch (...)
+    {
+        return false;
+    }
+}
+
+static std::string craft_slot_summary( const CraftRecipe *recipe )
+{
+    if ( !recipe || recipe->slots.empty() )
+        return "none";
+
+    std::string out;
+
+    for ( size_t i = 0; i < recipe->slots.size(); ++i )
+    {
+        const CraftSlotDef &slot = recipe->slots[i];
+
+        if ( !out.empty() )
+            out += " ; ";
+
+        out += "#";
+        out += std::to_string(i + 1);
+        out += " ";
+        out += slot.name;
+        out += " ";
+        out += "(";
+        out += get_enum_flag_field(slot.item_type, o_types);
+        out += ", ";
+        out += std::to_string(slot.min_count);
+        out += "..";
+        out += (slot.max_count > 0) ? std::to_string(slot.max_count) : std::string("inf");
+        out += ", ";
+        out += slot.min_count == 0 ? "optional" : "required";
+        out += ", ";
+        out += craft_consume_mode_name(slot.consume_mode);
+        out += ", ";
+        out += slot.may_be_base_material ? "base_ok" : "not_base";
+        out += ")";
+    }
+
+    return out;
+}
+
+static void olc_craft_show_slot_help( CHAR_DATA *ch )
+{
+    send_to_char("SLOTS commands:\n", ch);
+    send_to_char("  slots                       - show slot list\n", ch);
+    send_to_char("  slots ?                     - show this help\n", ch);
+    send_to_char("  slots add <name> <type> <min> <max> <consume> <base>\n", ch);
+    send_to_char("  slots set <slot> <field> <value>\n", ch);
+    send_to_char("  slots delete <slot>\n", ch);
+    send_to_char("\n", ch);
+    send_to_char("  <slot> may be a slot number or slot name.\n", ch);
+    send_to_char("  <type> may be an object type name or raw number.\n", ch);
+    send_to_char("  <consume> is keep, consume, or transform_base.\n", ch);
+    send_to_char("  <base> is true/false.\n", ch);
+    send_to_char("  <max> may be 0 for unlimited.\n", ch);
+    send_to_char("\n", ch);
+    send_to_char("Fields for 'slots set' are:\n", ch);
+    send_to_char("  name  type  min  max  consume  base\n", ch);
+}
+
+static int olc_craft_find_slot_index( const CraftRecipe *recipe, const std::string &which )
+{
+    if ( !recipe || which.empty() )
+        return -1;
+
+    try
+    {
+        int n = std::stoi(which);
+        if ( n >= 1 && n <= (int)recipe->slots.size() )
+            return n - 1;
+    }
+    catch (...)
+    {
+    }
+
+    for ( size_t i = 0; i < recipe->slots.size(); ++i )
+    {
+        if ( !str_cmp(which, recipe->slots[i].name) )
+            return (int)i;
+    }
+
+    for ( size_t i = 0; i < recipe->slots.size(); ++i )
+    {
+        if ( !str_prefix(which, recipe->slots[i].name) )
+            return (int)i;
+    }
+
+    return -1;
+}
+
+static bool olc_craft_edit_slots_field( CHAR_DATA *ch, CraftRecipe *recipe )
+{
+    if ( !ch || !ch->desc || !ch->desc->olc || !recipe )
+        return false;
+
+    std::string arg = ch->desc->olc->last_cmd_arg;
+    std::string cmd;
+    std::string rest;
+
+    one_argument(arg, cmd);
+    rest = arg;
+
+    if ( cmd.empty() || !str_cmp(cmd, "?") || !str_cmp(cmd, "help") )
+    {
+        olc_craft_show_slot_help(ch);
+        return false;
+    }
+/*
+    if ( !str_cmp(cmd, "slots") )
+        one_argument(rest, cmd);
+    else
+        cmd = "show";
+*/
+    if ( cmd.empty() || !str_cmp(cmd, "show") || !str_cmp(cmd, "list") )
+    {
+        if ( recipe->slots.empty() )
+        {
+            send_to_char("No slots defined.\n", ch);
+            return true;
+        }
+
+        for ( size_t i = 0; i < recipe->slots.size(); ++i )
+        {
+            const CraftSlotDef &slot = recipe->slots[i];
+
+            ch_printf(ch,
+                "#%zu %-12s type=%s min=%d max=%s optional=%s consume=%s base=%s\n",
+                i + 1,
+                slot.name.c_str(),
+                get_enum_flag_field(slot.item_type, o_types).c_str(),
+                slot.min_count,
+                (slot.max_count > 0 ? std::to_string(slot.max_count).c_str() : "inf"),
+                slot.min_count == 0 ? "optional" : "required",
+                craft_consume_mode_name(slot.consume_mode),
+                slot.may_be_base_material ? "true" : "false");
+        }
+        return true;
+    }
+
+    if ( !str_cmp(cmd, "add") )
+    {
+        std::string name, type_s, min_s, max_s, consume_s, base_s;
+        int item_type, min_count, max_count;
+        bool base_ok;
+        CraftConsumeMode consume_mode;
+
+//        one_argument(rest, cmd);          // consume "slots"
+        rest = one_argument(rest, cmd);          // consume "add"
+        rest = one_argument(rest, name);
+        rest = one_argument(rest, type_s);
+        rest = one_argument(rest, min_s);
+        rest = one_argument(rest, max_s);
+        rest = one_argument(rest, consume_s);
+        rest = one_argument(rest, base_s);
+
+        if ( name.empty() || type_s.empty() || min_s.empty() || max_s.empty()
+          || consume_s.empty() || base_s.empty() )
+        {
+            send_to_char("Syntax: slots add <name> <type> <min> <max> <consume> <base>\n", ch);
+            return false;
+        }
+
+        if ( olc_craft_find_slot_index(recipe, name) >= 0 )
+        {
+            send_to_char("A slot with that name already exists.\n", ch);
+            return false;
+        }
+
+        if ( !craft_item_type_from_string(type_s, item_type) )
+        {
+            send_to_char("Unknown item type.\n", ch);
+            return false;
+        }
+
+        try
+        {
+            min_count = std::stoi(min_s);
+            max_count = std::stoi(max_s);
+        }
+        catch (...)
+        {
+            send_to_char("min and max must be numbers.\n", ch);
+            return false;
+        }
+
+        if ( min_count < 0 || max_count < 0 )
+        {
+            send_to_char("min and max must be 0 or greater.\n", ch);
+            return false;
+        }
+
+        if ( max_count > 0 && min_count > max_count )
+        {
+            send_to_char("min cannot exceed max.\n", ch);
+            return false;
+        }
+
+        if ( !craft_consume_mode_from_string(consume_s, consume_mode) )
+        {
+            send_to_char("consume must be keep, consume, or transform_base.\n", ch);
+            return false;
+        }
+
+        if ( !set_bool_field(base_ok, base_s) )
+        {
+            send_to_char("base must be true/false.\n", ch);
+            return false;
+        }
+
+        recipe->slots.push_back( CraftSlotDef{ name, item_type, min_count, max_count, consume_mode, base_ok } );
+        send_to_char("Slot added.\n", ch);
+        olc_craft_mark_dirty(ch);
+        return true;
+    }
+
+    if ( !str_cmp(cmd, "delete") || !str_cmp(cmd, "remove") )
+    {
+        std::string which;
+        int idx;
+
+        //one_argument(rest, cmd);          // consume "slots"
+        rest = one_argument(rest, cmd);          // consume "delete/remove"
+        rest = one_argument(rest, which);
+
+        if ( which.empty() )
+        {
+            send_to_char("Syntax: slots delete <slot>\n", ch);
+            return false;
+        }
+
+        idx = olc_craft_find_slot_index(recipe, which);
+        if ( idx < 0 )
+        {
+            send_to_char("Slot not found.\n", ch);
+            return false;
+        }
+
+        recipe->slots.erase( recipe->slots.begin() + idx );
+        send_to_char("Slot deleted.\n", ch);
+        olc_craft_mark_dirty(ch);
+        return true;
+    }
+
+    if ( !str_cmp(cmd, "set") )
+    {
+        std::string which, field, value;
+        int idx;
+
+        //one_argument(rest, cmd);          // consume "slots"
+        rest = one_argument(rest, cmd);          // consume "set"
+        rest = one_argument(rest, which);
+        rest = one_argument(rest, field);
+
+        value = rest;
+
+        if ( which.empty() || field.empty() || value.empty() )
+        {
+            send_to_char("Syntax: slots set <slot> <field> <value>\n", ch);
+            return false;
+        }
+
+        idx = olc_craft_find_slot_index(recipe, which);
+        if ( idx < 0 )
+        {
+            send_to_char("Slot not found.\n", ch);
+            return false;
+        }
+
+        CraftSlotDef &slot = recipe->slots[idx];
+
+        if ( !str_cmp(field, "name") )
+        {
+            if ( olc_craft_find_slot_index(recipe, value) >= 0 && str_cmp(slot.name, value) )
+            {
+                send_to_char("A slot with that name already exists.\n", ch);
+                return false;
+            }
+
+            slot.name = value;
+            send_to_char("Slot name updated.\n", ch);
+            olc_craft_mark_dirty(ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "type") )
+        {
+            int item_type;
+            if ( !craft_item_type_from_string(value, item_type) )
+            {
+                send_to_char("Unknown item type.\n", ch);
+                return false;
+            }
+
+            slot.item_type = item_type;
+            send_to_char("Slot type updated.\n", ch);
+            olc_craft_mark_dirty(ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "min") )
+        {
+            try
+            {
+                int v = std::stoi(value);
+                if ( v < 0 )
+                    throw 1;
+                if ( slot.max_count > 0 && v > slot.max_count )
+                {
+                    send_to_char("min cannot exceed max.\n", ch);
+                    return false;
+                }
+                slot.min_count = v;
+                send_to_char("Slot min updated.\n", ch);
+                olc_craft_mark_dirty(ch);
+                return true;
+            }
+            catch (...)
+            {
+                send_to_char("min must be 0 or greater.\n", ch);
+                return false;
+            }
+        }
+
+        if ( !str_cmp(field, "max") )
+        {
+            try
+            {
+                int v = std::stoi(value);
+                if ( v < 0 )
+                    throw 1;
+                if ( v > 0 && v < slot.min_count )
+                {
+                    send_to_char("max cannot be less than min unless max is 0.\n", ch);
+                    return false;
+                }
+                slot.max_count = v;
+                send_to_char("Slot max updated.\n", ch);
+                olc_craft_mark_dirty(ch);
+                return true;
+            }
+            catch (...)
+            {
+                send_to_char("max must be 0 or greater.\n", ch);
+                return false;
+            }
+        }
+
+        if ( !str_cmp(field, "consume") )
+        {
+            CraftConsumeMode mode;
+            if ( !craft_consume_mode_from_string(value, mode) )
+            {
+                send_to_char("consume must be keep, consume, or transform_base.\n", ch);
+                return false;
+            }
+
+            slot.consume_mode = mode;
+            send_to_char("Slot consume mode updated.\n", ch);
+            olc_craft_mark_dirty(ch);
+            return true;
+        }
+
+        if ( !str_cmp(field, "base") || !str_cmp(field, "maybebase") || !str_cmp(field, "baseok") )
+        {
+            bool v;
+            if ( !set_bool_field(v, value) )
+            {
+                send_to_char("base must be true/false.\n", ch);
+                return false;
+            }
+
+            slot.may_be_base_material = v;
+            send_to_char("Slot base flag updated.\n", ch);
+            olc_craft_mark_dirty(ch);
+            return true;
+        }
+
+        send_to_char("Unknown slot field. Use: name type min max consume base\n", ch);
+        return false;
+    }
+
+    olc_craft_show_slot_help(ch);
+    return false;
+}
+
+// ------------------------
 // DO_COMMANDS
 // ------------------------
+
+void do_cfedit(CHAR_DATA* ch, char* argument)
+{
+    std::string arg1;
+    std::string arg2;
+    std::string argstr = argument;
+
+    if (!ch || !ch->desc)
+        return;
+
+    /*
+     * Existing craft edit session commands
+     */
+    if (olc_craft_in_edit_mode(ch))
+    {
+        std::string rest = argstr;
+        rest = one_argument(rest, arg1);
+        rest = one_argument(rest, arg2);
+
+        if (argstr.empty())
+        {
+            olc_craft_edit_help(ch);
+            return;
+        }
+
+        if (!str_cmp(arg1, "validate") || !str_cmp(arg1, "check"))
+        {
+            CraftRecipe *working = olc_session_working_as<CraftRecipe>( ch->desc->olc );
+            craft_validate_recipe_report(ch, working, "Working craft recipe");
+            return;
+        }
+
+        if ( !str_cmp(arg1, "save")
+          || !str_cmp(arg1, "done")
+          || ( !str_cmp(arg1, "stop") && !str_cmp(arg2, "save") ) )
+        {
+            CraftRecipe *working = olc_session_working_as<CraftRecipe>( ch->desc->olc );
+            if ( !craft_validate_recipe_report(ch, working, "Working craft recipe") )
+            {
+                send_to_char("Save blocked until the recipe validates cleanly.\n", ch);
+                return;
+            }
+        }
+
+        do_olc(ch, argument);
+        return;
+    }
+
+    argstr = one_argument(argstr, arg1);
+
+    /*
+     * Start a new craft recipe edit session
+     */
+    if (arg1.empty())
+    {
+        send_to_char("Usage: cfedit <recipe>\n", ch);
+        return;
+    }
+
+    CraftRecipe *recipe = craft_find_recipe_for_olc(arg1);
+    if (!recipe)
+    {
+        send_to_char("Craft recipe not found.\n", ch);
+        return;
+    }
+
+    if (ch->desc->olc)
+    {
+        send_to_char("You are already editing something.\n", ch);
+        return;
+    }
+
+    olc_start(ch, recipe, get_craft_schema(), &craft_olc_ops);
+    if (!ch->desc->olc)
+        return;
+
+    ch->desc->olc->mode = OlcEditMode::CRAFT_INLINE;
+    send_to_char("Craft inline editing mode enabled.\n", ch);
+    send_to_char("To exit, type stop save/abort, or just save/abort.\n", ch);
+
+    olc_show(ch, "", "");
+}
 
 void do_redit2(CHAR_DATA* ch, char* argument)
 {
@@ -6731,3 +9065,118 @@ void do_shopset(CHAR_DATA* ch, char* argument)
 
     olc_show(ch, "", "");
 }
+
+void do_cfcreate(CHAR_DATA* ch, char* argument)
+{
+    std::string new_name;
+    std::string keyword;
+    std::string source_name;
+    std::string argstr = argument;
+
+    if (!ch || !ch->desc)
+        return;
+
+    if (ch->desc->olc)
+    {
+        send_to_char("You are already editing something.\n", ch);
+        return;
+    }
+
+    argstr = one_argument(argstr, new_name);
+
+    if (new_name.empty())
+    {
+        send_to_char("Usage: cfcreate <new_recipe>\n", ch);
+        send_to_char("   or: cfcreate <new_recipe> copy <existing_recipe>\n", ch);
+        return;
+    }
+
+    if (craft_find_recipe_for_olc(new_name))
+    {
+        send_to_char("A craft recipe with that name already exists.\n", ch);
+        return;
+    }
+
+    argstr = one_argument(argstr, keyword);
+
+    CraftRecipe recipe;
+
+    if (!keyword.empty())
+    {
+        if (str_cmp(keyword, "copy"))
+        {
+            send_to_char("Syntax: cfcreate <new_recipe> copy <existing_recipe>\n", ch);
+            return;
+        }
+
+        argstr = one_argument(argstr, source_name);
+        if (source_name.empty())
+        {
+            send_to_char("Syntax: cfcreate <new_recipe> copy <existing_recipe>\n", ch);
+            return;
+        }
+
+        CraftRecipe *src = craft_find_recipe_for_olc(source_name);
+        if (!src)
+        {
+            send_to_char("Source craft recipe not found.\n", ch);
+            return;
+        }
+
+        recipe = *src;
+        recipe.name = new_name;
+        recipe.display_name = new_name;
+        recipe.disabled = false;
+    }
+    else
+    {
+        recipe.name = new_name;
+        recipe.display_name = new_name;
+
+        recipe.gsn = -1;
+        recipe.disabled = false;
+        recipe.room_req = CraftRoomRequirement::None;
+        recipe.timer_ticks = 0;
+
+        recipe.output_mode = CraftOutputMode::CreateFromPrototype;
+        recipe.result_vnum = 0;
+        recipe.result_item_type = -1;
+
+        recipe.allow_custom_name = false;
+        recipe.requires_extra_arg = false;
+        recipe.extra_arg_name.clear();
+
+        recipe.set_wear_flags.clear();
+        recipe.set_objflags.clear();
+
+        recipe.name_template.clear();
+        recipe.short_template.clear();
+        recipe.description_template.clear();
+
+        recipe.slots.clear();
+        recipe.derived_vars.clear();
+        recipe.assignments.clear();
+        recipe.affects.clear();
+    }
+
+    auto &list = craft_get_recipes_for_olc();
+    list.push_back(std::move(recipe));
+    CraftRecipe *created = &list.back();
+
+    send_to_char("Craft recipe created.\n", ch);
+
+    if (ch->desc->olc)
+    {
+        send_to_char("You are already editing something.\n", ch);
+        return;
+    }
+
+    olc_start(ch, created, get_craft_schema(), &craft_olc_ops);
+    if (!ch->desc->olc)
+        return;
+
+    ch->desc->olc->mode = OlcEditMode::CRAFT_INLINE;
+    send_to_char("Entering craft editor.\n", ch);
+    olc_show(ch, "", "");
+}
+

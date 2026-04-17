@@ -839,7 +839,7 @@ void do_mpat( CHAR_DATA *ch, char *argument )
     original = ch->in_room;
     char_from_room( ch );
     char_to_room( ch, location );
-    interpret( ch, argument );
+    interpret( ch, argstr );
 
     /*
      * See if 'ch' still exists before continuing!
@@ -995,7 +995,7 @@ void do_mpforce( CHAR_DATA *ch, char *argument )
 
 	for ( vch = ch->in_room->first_person; vch; vch = vch->next_in_room )
 	    if ( get_trust( vch ) < get_trust( ch ) && can_see( ch, vch ) )
-		interpret( vch, argument );
+		interpret( vch, argstr );
     }
     else
     {
@@ -1022,7 +1022,7 @@ void do_mpforce( CHAR_DATA *ch, char *argument )
 	}
 
 
-	interpret( victim, argument );
+	interpret( victim, argstr );
     }
 
     return;

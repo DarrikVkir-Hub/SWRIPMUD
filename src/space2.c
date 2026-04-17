@@ -936,8 +936,8 @@ void do_dock(CHAR_DATA *ch, char *argument)
         space_learn_from_failure( ch, ctx.ship );
         return;
     }
-    echo_to_ship( AT_YELLOW , ctx.ship , "The ship slowly begins its docking maneveurs.");
-    echo_to_ship( AT_YELLOW , eShip , "The ship slowly begins its docking maneveurs.");
+    echo_to_ship( AT_YELLOW , ctx.ship , "The ship slowly begins its docking maneuvers.");
+    echo_to_ship( AT_YELLOW , eShip , "The ship slowly begins its docking maneuvers.");
 		ctx.ship->docked = eShip;
 		ctx.ship->docking= SHIP_DOCK;
 		ctx.ship->ch = ch;
@@ -953,7 +953,7 @@ void dockship( CHAR_DATA *ch, SHIP_DATA *ship )
     if ( ship->statetdocking == SHIP_DISABLED )
     {
         echo_to_ship( AT_YELLOW , ship , "Maneuver Aborted. Docking clamps damaged.");
-        echo_to_ship( AT_YELLOW , ship->docked, "The ship aborted the docking manuever.");
+        echo_to_ship( AT_YELLOW , ship->docked, "The ship aborted the docking maneuver.");
         ship->docking = SHIP_READY;
         ship->docked = NULL;
         return;
@@ -961,14 +961,14 @@ void dockship( CHAR_DATA *ch, SHIP_DATA *ship )
     if ( ship->docked->statetdocking == SHIP_DISABLED )
     {
         echo_to_ship( AT_YELLOW , ship->docked , "Maneuver Aborted. Docking clamps damaged.");
-        echo_to_ship( AT_YELLOW , ship, "The ship aborted the docking manuever.");
+        echo_to_ship( AT_YELLOW , ship, "The ship aborted the docking maneuver.");
         ship->docking = SHIP_READY;
         ship->docked = NULL;
         return;
     }
 
-    echo_to_ship( AT_YELLOW , ship , "The ship finishing its docking manuevers.");
-    echo_to_ship( AT_YELLOW , ship->docked, "The ship finishes its docking manuevers.");
+    echo_to_ship( AT_YELLOW , ship , "The ship finishing its docking maneuvers.");
+    echo_to_ship( AT_YELLOW , ship->docked, "The ship finishes its docking maneuvers.");
 
     ship->docking = SHIP_DOCKED;
     ship->currspeed = 0;

@@ -165,14 +165,14 @@ std::string enum_to_string_legacy(int value, const char* const* table)
     return std::to_string(value);
 }
 
-std::string enum_to_string_flag(int value, const flag_name *table)
+std::string enum_to_string_flag(size_t value, const flag_name *table)
 {
     if (!table || value < 0)
         return std::to_string(value);
 
     for (int i = 0; table[i].name != nullptr; ++i)
     {
-        if (i == value)
+        if (table[i].bit == value)
             return table[i].name;
     }
 
@@ -575,7 +575,7 @@ std::vector<std::string> olc_format_line(
     if (available < 20)
         available = 20;
 
-    auto wrapped = olc_format_wrap_text(value, available, prefix_len);
+    auto wrapped = olc_format_wrap_text(value, available, 0);
 
     char buf[MSL];
 
@@ -1641,6 +1641,10 @@ static bool olc_finish_editor_substate(CHAR_DATA* ch)
             return olc_finish_editor_substate_typed(
                 ch, sess, get_shop_schema(),
                 olc_session_working_as<SHOP_DATA>(sess));
+        case OlcEditMode::CRAFT_INLINE:
+            return olc_finish_editor_substate_typed(
+                ch, sess, get_craft_schema(),
+                olc_session_working_as<CraftRecipe>(sess));
 
         default:
             return false;
@@ -1730,6 +1734,25 @@ bool olc_dispatch_entry_command(CHAR_DATA* ch, const std::string& type, const st
         return true;
     }
 
+    if (olc_matches_word(type, "craft") || olc_matches_word(type, "recipe") || olc_matches_word(type, "c"))
+    {
+        if (!olc_can_use_command(ch, "cfedit"))
+        {
+            send_to_char("You do not have permission to edit craft recipes (cfedit)\n", ch);
+            return true;
+        }
+
+        if (rest.empty())
+        {
+            send_to_char("Usage: olc craft <recipe>\n", ch);
+            return true;
+        }
+
+        snprintf(buf, sizeof(buf), "%s", rest.c_str());
+        do_cfedit(ch, buf);
+        return true;
+    }
+
     return false;
 }
 
@@ -1751,6 +1774,9 @@ bool olc_session_command_is_field_name(OlcSession* sess, const std::string& cmd)
 
         case OlcEditMode::SHOP_INLINE:
             return olc_schema_has_field_name(get_shop_schema(), cmd);
+
+        case OlcEditMode::CRAFT_INLINE:
+            return olc_schema_has_field_name(get_craft_schema(), cmd);
 
         default:
             return false;
@@ -1856,6 +1882,12 @@ bool olc_dispatch_session_command(CHAR_DATA* ch, const std::string& cmd, const s
             return true;
         }
 
+        if (!str_cmp(sess->schema->name, "craft"))
+        {
+            olc_craft_edit_revert(ch);
+            return true;
+        }
+
         send_to_char("Revert is not supported for this editor.\n", ch);
         return true;
     }
@@ -1909,6 +1941,7 @@ void olc_show_main_help(CHAR_DATA* ch)
     send_to_char("  olc object <target>   - edit object by keyword/vnum\n", ch);
     send_to_char("  olc mobile <target>   - edit mobile by keyword/vnum\n", ch);
     send_to_char("  olc shop <target>   - edit mobile's shop by vnum\n", ch);
+    send_to_char("  olc craft <recipe>    - edit craft recipe by name\n", ch);    
     send_to_char("\n", ch);
     send_to_char("While editing:\n", ch);
     send_to_char("  olc show [field] [value]\n", ch);
@@ -1943,6 +1976,14 @@ void olc_show_help(CHAR_DATA* ch, const std::string& field)
 
         case OlcEditMode::MOBILE_INLINE:
             olc_show_help_typed(ch, get_mobile_schema(), field);
+            return;
+
+        case OlcEditMode::SHOP_INLINE:
+            olc_show_help_typed(ch, get_shop_schema(), field);
+            return;
+
+        case OlcEditMode::CRAFT_INLINE:
+            olc_show_help_typed(ch, get_craft_schema(), field);
             return;
 
         default:
@@ -2002,6 +2043,16 @@ void olc_show(CHAR_DATA* ch, const std::string& field, const std::string& value)
                 sess,
                 olc_session_working_as<SHOP_DATA>(sess),
                 get_shop_schema(),
+                field,
+                value,
+                term_width);
+            return;
+        case OlcEditMode::CRAFT_INLINE:
+            olc_show_typed(
+                ch,
+                sess,
+                olc_session_working_as<CraftRecipe>(sess),
+                get_craft_schema(),
                 field,
                 value,
                 term_width);
@@ -2085,6 +2136,13 @@ void olc_set(CHAR_DATA* ch, const std::string& field, const std::string& value)
                 ch, sess,
                 olc_session_working_as<SHOP_DATA>(sess),
                 get_shop_schema(),
+                field, value);
+            return;
+        case OlcEditMode::CRAFT_INLINE:
+            olc_set_typed(
+                ch, sess,
+                olc_session_working_as<CraftRecipe>(sess),
+                get_craft_schema(),
                 field, value);
             return;
 

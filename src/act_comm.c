@@ -2013,7 +2013,7 @@ void do_save( CHAR_DATA *ch, char *argument )
 
     if ( NOT_AUTHED(ch) )
     { 
-      send_to_char("You can't save untill after you've graduated from the acadamey.\n", ch);
+      send_to_char("You can't save untill after you've graduated from the academy.\n", ch);
       return;
     }
 

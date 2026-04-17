@@ -33,6 +33,7 @@
 
 void subtract_times( struct timeval *etime, struct timeval *stime );
 bool olc_try_inline_interpret(CHAR_DATA* ch, const std::string& command, const std::string& argument, OlcInterpretStage stage);
+bool craft_interpret( CHAR_DATA *ch, const std::string& argument );
 
 
 bool	check_social	args( ( CHAR_DATA *ch, const std::string& command,
@@ -440,6 +441,12 @@ void interpret( CHAR_DATA *ch, const std::string &argument )
             ch->substate = tempsub;
             return;
         }
+    }
+
+    if ( ch->substate == SUB_CRAFT_MENU )
+    {
+        if (craft_interpret( ch, argument ))
+            return;
     }
 
     if (olc_try_inline_interpret(ch, command, arg, OlcInterpretStage::EARLY))

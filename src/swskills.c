@@ -679,7 +679,7 @@ void do_makelightsaber( CHAR_DATA *ch, char *argument )
                 
                 if ( !checkmirr )
                 {
-                   send_to_char( "&RYou need a high intesity reflective cup to create a lightsaber.\n", ch);
+                   send_to_char( "&RYou need a high intensity reflective cup to create a lightsaber.\n", ch);
                    return;
                 }
  
@@ -5912,7 +5912,7 @@ void do_makedisguise( CHAR_DATA *ch, char *argument )
                 
                 if ( !checkneedle )
                 {
-                   send_to_char( "&RYou need need and thread to make a blaster.\n", ch);
+                   send_to_char( "&RYou need a needle and thread to make a blaster.\n", ch);
                    return;
                 }
  
@@ -6565,7 +6565,7 @@ void do_makefurniture( CHAR_DATA *ch, char *argument )
 		obj_to_char( obj, ch );
 
 		send_to_char("You complete your new piece of furniture!\n",ch);
-		act( AT_PLAIN, "$n finishes thier new piece of furniture.", ch, NULL, NULL, TO_ROOM );
+		act( AT_PLAIN, "$n finishes their new piece of furniture.", ch, NULL, NULL, TO_ROOM );
 
 		{
 			long xpgain = UMIN( (chance * 100)*2, exp_level( ch->skill_level[ENGINEERING_ABILITY]+1 ) - exp_level( ch->skill_level[ENGINEERING_ABILITY] ) );

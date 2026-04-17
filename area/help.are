@@ -1635,17 +1635,17 @@ reward MAY be given determined by Darrik. &R&w
 ~
 
 1 BUILD BUILDING~
-SWreality Building:
+SW:RIP Building
                            TABLE OF CONTENTS
 ***************************************************************************
 
 HELP BUILD  - This file ( Contents )
 HELP BUILD1 - Assigning Areas
-HELP BUILD2 - Room Building Basics
-HELP BUILD3 - Mob Building Basics
-HELP BUILD4 - Object Building Basics
-HELP BUILD5 -
-HELP BUILD6 -
+HELP BUILD2 - OLC Introduction and Building Basics
+HELP BUILD3 - Room Building Basics
+HELP BUILD4 - Mob Building Basics
+HELP BUILD5 - Object Building Basics
+HELP BUILD6 - Other objects handled through OLC.
 HELP BUILD7 -
 HELP BUILD8 -
 HELP BUILD9 -
@@ -1683,7 +1683,37 @@ see HELP BUILD2
 ~
 
 1 BUILD2 BUILDING2 BUILDER2~
-SWReality Building Pg 2:
+SW:RIP Building Pg 2:
+                          OLC SYSTEM BASICS
+***************************************************************************
+
+The OLC command provides a unified interface for editing rooms,
+objects, mobiles, and more. It acts as a front-end to the new OLC
+rwalk, oedit, and medit commands while preserving permissions.
+
+Entering an editor:
+    olc r(oom) edits your current room
+    olc o(bject) edits an object in room or world
+    olc m(obile) edits a mobile in room or world
+
+
+You can also use direct edit commands, such as rwalk, medit, or oedit
+You can even use the legacy commands, mset oset and redit, although they
+are less newbie friendly.
+
+Note that changes are only in a temporary buffer until you commit or save.
+
+Once you 'save' out of the OLC system, remembering to savearea.
+Because save within OLC does not save the area, it just sends the changes
+to the real object instead of the temporary one.
+
+***************************************************************************
+
+see HELP BUILD3 OLC RWALK MEDIT OEDIT
+~
+
+1 BUILD3~
+SW:RIP Building Pg 3:
                           ROOM BUILDING BASICS
 ***************************************************************************
 
@@ -1694,81 +1724,43 @@ RSTAT                           Gives you the current room statistics.
 
 RLIST                           Gives you a list of rooms in your area.
 
-REDIT NAME <name of the room>
-REDIT DESC                      Puts you into the description editor.
-                                Make sure you press enter after each line.
-REDIT SECTOR <sector value>     Type redit sector by itself for sector list.
-REDIT FLAGS <flag> <flag> ..    Type redit flag by itself fo a flag list.
-REDIT BEXIT <dir> <room>        Creates a two way exit to <room>
-REDIT EXFLAGS <flag> <flag>..   Type redit exflags by itself for choices.
+OLC roomPuts you into the room editing state.
 
-SAVEAREA???Saves your area .. do this alot :)
+SAVEAREA  Saves your area .. do this alot :)
 
 ***************************************************************************
 
-see HELP BUILD3
-
+SEE ALSO : HELP BUILD4 OLC RWALK
 ~
 
-1 BUILD3~
-SWReality Building Pg 3
+1 BUILD4~
+SW:RIP Building Pg 4:
                          MOB BUILDING BASICS
 ***************************************************************************
 
-MCREATE <vnum> [cvnum] <names>  Creates a mob with the vnum/names specified.
-                                A mob with Empire or Republic (or other clan
-                                name) as one of their names will give less
-                                xp when killed by someone of that clan.
+MCREATE <vnum> [cvnum] <names>
+                       Creates a mob with the vnum/keywords specified.
+                       Note: A mob with Empire or Republic (or other clan
+                             name) as one of their names will give less
+                             xp when killed by someone of that clan.
 
 MLIST                           Lists mobs in your area.
 MLIST <lowvnum> <hivnum>        Lists mobs between those numbers.
 
 MFIND <name>                    Returns a list of all mobs with that name.
 
-MSET <mob> HP <value>           these are the most important values
-MSET <mob> ALIGN <value>          to set although there are many optional 
-MSET <mob> HITROLL <value>        choices type MSET by itself for a list
-MSET <mob> DAMROLL <value>
-MSET <mob> LEVEL <value>
-MSET <mob> CLASS <value>        class 0 citizens don't give as much xp when
-MSET <mob> SHORT <short desc>     killed for obvious reasons
-MSET <mob> LONG <long desc>
-MSET <mob> DESCRIPTION          puts you into the editor
-MSET <mob> HITNUMDIE <amount>
-MSET <mob> HITSIZEDIE <amount>
-MSET <mob> DAMNUMDIE <amount>
-MSET <mob> DAMSIZEDIE <amount>
+
+OLC <mob>                       Puts you into a mob editing state.
+Important values to set:
+HP, ALIGN, HITROLL, DAMROLL, LEVEL, SHORT, LONG, DESCRIPTION,
+HITNUMDIE, HITSIZEDIE, DAMNUMDIE, DAMSIZEDIE
 
 MINVOKE <vnum>                  Loads a previously created mob.
 
 SAVEAREA                        Do this alot.
 
 ***************************************************************************
-see HELP BUILD4
-~
-
-1 BUILD4~
-SWReality Building Pg 4
-                       OBJECT BUILDING BASICS
-***************************************************************************
-
-OCREATE <vnum> [cvnum] <namelist>  Creates a new object.                        
-
-OLIST                              Lists objects in your area.
-OLIST <from> <to>                  Lists objects within the given range.
-
-OFIND <name>                       Lists all objects with that name.
-
-OINVOKE <vnum>                     Creates a new instance of the object.
-
-OSET <object> <field> <value>      Try typing oset by itself to get a list
-                                   of fields. Then "oset <object> <field>
-                                   to get a list of values for that field.
-                                   You should set the type first.
-
-SAVEAREA                           Do this alot                      
-
-***************************************************************************
+SEE ALSO : HELP BUILD5 OLC MEDIT
 ~
 
 101 BUILDING_CARGO_ITEMS~
@@ -3056,6 +3048,90 @@ the Cradle Law.
 &RAlso Type&W:&Y SHOWSTAT COYNITE
 ~
 
+1 CRAFT~
+&YCrafting System&w
+
+Syntax:
+craft (recipe)
+
+Description:
+The craft command allows you to create items using learned recipes.
+Each recipe requires specific materials and tools.
+
+Entering 'craft' will display your available recipes and place you
+into crafting mode. You may also directly enter a recipe by typing
+'craft (recipe)'.
+
+Commands:
+list               - Show all recipes you currently know.
+select             - Show all available recipes.
+
+select (recipe)    - Begin working on a specific recipe.
+select autoselect  - Automatically assigns valid items from
+                     your inventory to all required slots.
+
+show               - Display your current crafting session,
+                     including selected materials and derived values.
+use                - Assign an item from your inventory to a slot.
+unuse              - Remove an assigned item from a slot.
+base               - Select the base material for recipes that transform an
+item.
+name               - Set the name of the crafted item (if allowed).
+set                - Set a recipe-specific option (such as wear location).
+build              - Begin crafting the item.
+pause              - Exit crafting mode without losing your progress.
+cancel             - Abandon the current crafting session.
+
+Notes:
+
+You must possess all required materials in your inventory.
+Some recipes require specific locations (such as factories).
+'select autoselect' will only fill required slots; optional
+materials must be added manually.
+
+See also: CRAFT OLC, ENGINEERING
+~
+
+101 CRAFTEXPRESSIONS~
+&YCraft Expression System&c
+Description:  Craft expressions are used in OLC crafting recipes to
+calculate values dynamically based on skill level, selected materials,
+and derived variables. Expressions are written in a functional format
+and evaluated when the item is created.
+&YBasic Forms:&c
+const(<number>)    - A fixed constant value.  Example: const(10)
+skill              - The player's skill level for the recipe.
+
+var(<name>)        - A previously defined variable.  Example: var(power)
+
+&YArithmetic:&c
+add(a,b)   - addition            - sub(a,b)   - subtraction
+mul(a,b)   - multiplication      - div(a,b)   - division
+Example:   - add(skill,const(10))- mul(var(power),const(2))
+
+&YComparison / Logic:&c  iflt(a,b,c,d)
+If a < b, return c, otherwise return d.
+Example:  iflt(skill,const(50),const(10),const(20))
+    - if skill is less than 50, then 10, else 20
+
+Min / Max:  min(a,b)  - Returns the smaller value.
+            max(a,b)  - Returns the larger value.
+&YEvaluation Rules: &c- Expressions are evaluated recursively.
+                  - All values are integers.
+                  - Invalid or malformed expressions default to 0.
+                  - Division by zero returns 0.
+Common Targets:  Expressions are commonly assigned to:
+value0 - value5, weight, cost, level
+Example:   - value1 = add(div(skill,const(10)),const(25))
+           - value2 = add(var(power),const(5))
+           - weight = add(const(2),div(skill,const(7)))
+&YNotes:&c
+* Use derived variables to avoid repetition.
+* Clamp logic should be handled in derived vars when possible.
+
+&RSee also: &WCRAFT OLC, DERIVEDVAR
+~
+
 1 CREATING HELPFILES~
 Guess what? We need more helpfiles. 
  
@@ -3371,6 +3447,51 @@ people get killed for money quite often in the
 star wars universe. 
  
 &RNote&W:  You most have a comlink for this to work 
+~
+
+101 DERIVEDVAR DERIVEDVALUES~
+
+&YDerived Variables&w
+
+&YDescription:&c Derived variables are calculated values used by crafting
+recipes. They summarize properties of selected materials and allow
+recipes to react dynamically to what items are used.
+Variables are defined per recipe and accessed using:
+&Yvar()&c
+
+&YSource Fields&c:
+value0 - value5 - object value fields weight - object weight
+cost            - object cost         level  - object level
+
+&YAggregation Types:&c
+&Yfirst    &c- first item in slot  &Yhighest &c- highest value among items
+&Ysum      &c- total of all values &Ylowest  &c- lowest value among items
+&Ycount    &c- number of items in slot
+
+Examples:
+power = highest value0 from slot 'tinder'
+parts = count from slot 'components'
+weight = sum weight from slot 'fabric'
+
+Usage:  add(var(power),skill)
+        min(var(parts),const(5))
+        mul(var(power),const(2))
+
+&YClamping&c:  Variables may be limited after calculation.
+Minimum:               &Yclamp_min&c  = value cannot go below this
+Maximum (skill-based): &Ymax&c        = skill * multiplier
+Maximum (constant):    fixed upper limit
+
+Notes:
+If no items are selected, result is 0 (count is also 0).
+Aggregation happens before clamping.
+Values are recomputed whenever selections change.
+
+Base Variables:  When a base material is used:
+base_value0 - base_value5
+base_weight, base_cost, base_level
+
+&RSee also&W: CRAFT EXPRESSIONS, CRAFT
 ~
 
 101 DESTRO DESTROY~
@@ -3965,20 +4086,8 @@ weapons as well as armor.  There are few engineers in the galaxy, but
 those who are, find it very profitable.  Engineers are the only ones that
 can use fake signal. 
 
-&R&WAlso see:&P Help Makecontainer
-          Help Makecomlink
-          Help Makeflashlight
-          Help "Ship Maintenance"
-          Help Makeblade
-          Help "Spice Refining"
-          Help Makeshield
-          Help Makearmor
-          Help Makejewelry
-          Help Makelandmine
-          Help Makeblaster
-          Help Makegrenade
-          Help "Fake Signal"
- 
+&WSEE ALSO : &cCRAFT
+
 &RAlso type&W:&Y showstat engineering
 ~
 
@@ -5141,11 +5250,37 @@ You can also type hlist to get a list of ALL help topics.
 ~
 
 1 HELP BUILD5~
-SWreality Building Pg 5
+SW:RIP Building Pg 5:
+                       OBJECT BUILDING BASICS
+***************************************************************************
+
+OCREATE <vnum> [cvnum] <namelist>  Creates a new object.
+
+OLIST                              Lists objects in your area.
+OLIST <from> <to>                  Lists objects within the given range.
+
+OFIND <name>                       Lists all objects with that name.
+
+OINVOKE <vnum>                     Creates a new instance of the object.
+
+
+OLC O(BJECT) <object>              Enters the object OLC editing state
+        or                         Try typing oset by itself to get a list
+OSET <object> <field> <value>      of fields. Then "oset <object> <field>
+                                   to get a list of values for that field.
+                                   You should set the type first.
+
+SAVEAREA                           Do this alot
+
+***************************************************************************
+SEE ALSO : OLC OEDIT OSET
 ~
 
 1 HELP BUILD6~
 SWreality Building Pg 6
+Other available commands through OLC:
+
+    olc s(hop) - Edits a shop.  Use a mob's vnum who will be the keeper.
 ~
 
 1 HELP BUILD7~
@@ -6562,25 +6697,12 @@ pen in your inventory.  Mail can only be addressed to real players, or
 'all'.  There is a charge for reading and taking mail.
 ~
 
-1 MAKEARMOR~
-&CSyntax &R&W:&Y Makearmor &R&W<&YLocation&R&W> <&YName&R&W> 
+110 MAKE(OBJECT)~
 
-&cThis allows you to create custom armor for yourself and others using some
-material, and a sewing needle. 
-~
+The make(object) skills are now linked to the crafting system.  Use the
+'craft' command to enter a crafting menu.
 
-1 MAKEBLADE~
-&CSyntax &R&W:&Y Makeblade &R&W<&YName&R&W> 
- 
-&cThis allows you to make a custom vibroblade, using a toolkit, some
-SCRAP durasteel, a battery, and an oven.
-~
-
-1 MAKEBLASTER~
-&CSyntax &R&W: &YMakeblaster &R&W<&YName&R&W> 
- 
-&cThis lets you make a blaster using a toolkit, some duraplast, a battery,
-an oven, some circuitry, and some sort of conductor.
+SEE ALSO : CRAFT ENGINEERING
 ~
 
 101 MAKEBOARD~
@@ -6592,17 +6714,6 @@ Used to create a board file, which can then be defined using 'bset'.
 See BSET, BSTAT and BOARDS
 ~
 
-1 MAKEBOWCASTER~
-&CSyntax &W: &YMakebowcaster &W<&YName&W>
- 
-&cThis is a wookiee only skill for creating bowcaster weapons.
-It is taught on Kashyyyk by an old wookiee, but not all of its
-parts are sold on that planet.
- 
-&CRequirements&W : &YOven, Toolkit, Duraplast Tubing, Oil,
-               Crossbow Bundle, and Tinder
-~
-
 101 MAKECLAN~
 Syntax:  makeclan <clan name>
 Example: makeclan Retribution
@@ -6612,13 +6723,6 @@ the 'setclan' command.  Orders, guilds and clans are distinguished using the
 'type' field in 'setclan'.
  
 See SETCLAN, SHOWCLAN
-~
-
-1 MAKECOMLINK~
-&CSyntax &R&W: &YMakecomlink &R&W<&YLocation&R&W> <&YName&R&W> 
- 
-&cThis skill allows you to make a custom comlink, using a toolkit, a
-battery, some circuitry, and a crystal.
 ~
 
 1 MAKECONTAINER "MAKE CONTAINER"~
@@ -6644,64 +6748,6 @@ Used to create a new council, which can then de defined using 'setcouncil'.
 See SETCOUNCIL
 ~
 
-1 MAKEFLASHLIGHT~
-&CSyntax &R&W: &YMakeflashlight &R&W<&YName&R&W> 
- 
-&cThis allows you to make a flashlight using a toolkit, a battery, a lens,
-some circuitry, and some chemicals.
-~
-
-0 MAKEFURNITURE~
-Syntax: Makefurniture <type> <name>
- 
-The type is either Couch or Chair. A chair holds 1 person, a couch holds up
-to 4 people.
- 
-Tools needed: Needle and thread, and a toolkit.
-Requirements: Chair - Katasik Metal, and Synthafabric. 
-Requirements: Couch - Katasik Metal, Bothan Mesh, Bantha Hide, and
-Durasteel Plating.
-~
-
-1 MAKEGRENADE~
-&CSyntax&R&W :&Y Makegrenade &R&W<&YName&R&W> 
- 
-&cThis allows you to make a grenade using a toolkit, a drink container, a
-battery, some circuitry, and some chemicals.
-~
-
-1 MAKEJEWELRY~
-&CSyntax &R&W: &YMakejewelry &R&W<&YLocation&R&W> <&YName&R&W>
- 
-&cThis skill lets you make jewelry from a precious metal.  A toolkit and an
-oven are also needed.
- 
-&R&WAlso see:&P Help Wearlocs
-~
-
-1 MAKELANDMIND~
-Syntax : makelandmine <mine name>
-
-This makes a landmine using a toolkit(reuseable), a drink container, a battery, some
-circuitry and some chemicals.
-~
-
-1 MAKELANDMINE~
-&CSyntax&R&W : &YMakelandmine&R&W <&YName&R&W> 
- 
-&cThis allows you to make a landmine using a toolkit, a drinking container,
-a battery, some circuitry, and some chemicals.
-~
-
-0 MAKEMEDPAC MAKEMEDPACK~
-Syntax: Makemedpac <medpack name>
- 
-When adept this will create a medpack with 3-5 uses per medpack.
- 
-Tools Required: A toolkit
-Requirements: An empty drink container, and a chemestry set.
-~
-
 101 MAKEREPAIR~
 Syntax:  makerepair (depreciated)
  
@@ -6711,15 +6757,6 @@ Use 'repairset' to set the parameters by which the shop will function.
 This command has been eliminated as repairshops
 have been combined with shops.
 SEE : MAKESHOP
-~
-
-1 MAKESHIELD~
-&CSyntax &R&W: &YMakeshield &R&W<&YName&R&W> 
- 
-&cThis skill lets you make an energy shield using a toolkit, a battery,
-some circuitry, a conductor, and a crystal.
- 
-&RNote:&r Sometimes failing this skill will cause the shield to explode.
 ~
 
 101 MAKESHOP~
@@ -8223,6 +8260,7 @@ olc r(oom) edits your current room
 olc o(bject) edits an object in room or world
 olc m(obile) edits a mobile in room or world
 olc s(hop) #vnum edits the supplied keeper's shop.
+olc c(raft) [recipe] edits a crafting recipe.
 
 The new OLC uses a schema-driven system. Available fields, valid values,
 and help text are determined automatically by the editor type.
@@ -8779,6 +8817,22 @@ strong lessening effect on the lifetime of weapons.  To poison a weapon,
 you must have the weapon, poison, and a full canteen in your inventory.
 ~
 
+101 POSITIONS~
+Position values:
+Dead      0
+Mortal    1
+Incap'd   2
+Stunned   3
+Sleeping  4
+Resting   5
+Sitting   6
+Fighting  7
+Standing  8
+Mounted   9
+Shoved   10
+Dragged  11
+~
+
 101 'POSSESS'~
 Syntax:  cast 'possess' <mob>
  
@@ -8812,46 +8866,49 @@ may not show up in the list.
 
 0 PROMPT~
 Syntax: prompt <string>
- 
 Sets your prompt to a given string.
- 
+
 The game automatically sets your prompt when your character is created.
 You can use PROMPT to change your prompt to something else.
- 
-If you type 'default' as the string, your prompt will be set back to the
-game default.  Otherwise you may use any string you want.  A few special
-characters may be embedded into the string to customize it to your
-player, followed by a token indicating what action to take.
- 
-The first special character is:  %
-Tokens for % are:
-  %h  - current hitpoints
-  %H  - maximum hitpoints
-  %m  - current forcepoints
-  %M  - maximum forcepoints
-  %v  - current movement
-  %V  - maximum movement
-  %g  - gold held
-  %a  - your alignment
-  %r  - vnum of current room (Immortal only)
-  %R  - vnum of current room (Immortal only, and only if config +vnum is
-        set.  Shows '<#vnum> ', including trailing space)
-  %x  - current experience
-  %X  - experience needed to gain a level
-  %i  - Wizinvis (Immortal only, shows '(Invis Lv) ', including trailing
-        space)
-  %I  - Raw wizinvis (Immortal only, only shows 'Lv', and only if wizinvis
-        is active)
-  %p  - Position (ie Resting, Sitting, Sleeping)
- 
-The other special characters are:
-  &&  - Foreground color
-  ^^  - Background color
- 
-Example: Prompt %h%m%v
-         Will give you a prompt of current hit points, force, and movement.
- 
-Please see HELP COLORS for a list of the color tokens.
+
+If you type 'default' as the string, your prompt will be reset to the
+game default. Otherwise you may use any string you want. Special tokens
+may be embedded into the string using '%'.
+Basic tokens:
+  %h  - current hitpoints      %H  - maximum hitpoints
+  %m  - current force          %M  - maximum force
+  %v  - current movement       %V  - maximum movement
+  %g  - gold held              %a  - alignment
+Percent tokens:
+  %1  - hitpoints %            %2  - force %
+  %3  - movement %             %4  - shields %
+  %5  - hull %                 %6  - energy %
+Combat:
+  %e  - target name            %E  - target hitpoint %
+  %f  - combat block [target xx%]
+Status / position:
+  %p  - position (standing, fighting, etc)
+  %s  - status flags (I=inv H=hide S=sneak M=mount F=fly T=stunned *=fight)
+Location:
+  %t  - room name              %A  - area name     %z  - context location
+Ship:
+  %q  - ship name              %Q  - status flags  %@  - ship HUD
+Ship resources:
+  %k/%K - shields cur/max      %o/%O - hull cur/max
+  %j/%J - energy cur/max
+Immortal:
+  %r  - room vnum              %R  - room vnum (<#vnum>)
+  %i  - wizinvis text          %I  - wizinvis level
+Other:
+  %u  - players online         %U  - max players
+  %n  - newline                %%  - literal %
+Special characters:
+  &  - foreground color        ^  - background color
+Examples:
+  prompt [%1%% %2%% %3%% %s] >  prompt %f %t - %z>
+  prompt [%q %Q %4%% %5%% %6%%]>  prompt %@
+
+See HELP COLORS for color tokens.
 ~
 
 1 PROPEGANDA~
@@ -10712,7 +10769,7 @@ The following are commands you can use to control spacecraft:
 &YFire Ion &W-&c Fires Ion cannons. 
 &YRepairship (Ship system) &W-&c Repairs a ship's specified system. 
 &YAutotrack &W-&c Automatically adjusts your course to follow a target.
- 
+&Yopenbay&y/&Yclosebay &W- &cOpens and closes your hangar bay.
 ~
 
 1 SPACETALK SHIPTALK SYSTEMTALK~
@@ -11379,6 +11436,52 @@ Types of traps:
  --------------------------------------------------------------------
 
 See RESET, TRAPSETTING and TRAPFLAGS.
+~
+
+101 TRIGFLAGS TRIG_FLAGS~
+object -> trig_flags / trigger flags
+These flags control what happens when a trigger object (button, lever,
+switch, or pullchain) is pushed or pulled. Flags may define state,
+perform actions, or modify other behaviors. Multiple flags may combine.
+--------------------------------------------------------------------------
+STATE FLAGS
+up              Tracks trigger state. push sets, pull clears (unless
+                autoreturn is set).
+autoreturn      Prevents state change when used.
+--------------------------------------------------------------------------
+TELEPORT FLAGS
+teleport        Teleports user to room value[1].
+teleportall     With teleport, transfers additional PCs.
+teleportplus    Teleports everyone, PCs and NPCs.
+showroomdesc    Shows destination room description after teleport.
+--------------------------------------------------------------------------
+DOOR / PASSAGE FLAGS
+door            Operates exit in room value[1] (or current room).
+d_north, d_south, d_east, d_west, d_up, d_down - directions
+passage         Creates exit if missing: v[2]=destination room.
+lock/unlock          (Un)locks exit (and reverse if present).
+open/close      Opens or closes exit, notifies rooms, may trigger traps.
+--------------------------------------------------------------------------
+OTHER FLAGS
+rand4           Randomizes exits in room value[1] (4 directions).
+rand6           Randomizes exits in room value[1] (6 directions).
+death           Instantly kills the user, logs event, notifies immortals.
+oload           Loads object: v[1]=obj, v[2]=room (0=char/room),
+                v[3]=level. Given to char if takeable, else room.
+mload           Loads mobile: v[1]=mob, v[2]=room (0=current room).
+cast            Casts spell on user: v[1]=sn, v[2]=level (0=auto).
+container       Modifies container: v[1]=room, v[2]=container,
+                v[3]=flags toggle (closeable, pickproof, closed, locked).
+--------------------------------------------------------------------------
+GENERAL NOTES
+- PUSH_PROG/PULL_PROG override default behavior.
+- value[1] = primary target (room, obj, mob, spell).
+- value[2] = secondary target.
+- value[3] = level or flag data.
+- Most actions return immediately; usually one effect per trigger.
+- trapdoor, anotherroom, usedial, absolutevnum, and fakeblade are not used
+--------------------------------------------------------------------------
+
 ~
 
 101 TRIGGER~

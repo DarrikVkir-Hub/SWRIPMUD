@@ -1020,9 +1020,9 @@ void do_give( CHAR_DATA *ch, char *argument )
 
 	ch->gold     -= amount;
 	victim->gold += amount;
-        buf = "$n gives you ";
-        buf = str_printf("%s", arg1.c_str());
-        buf = str_printf("%s", (amount > 1) ? " credits." : " credit.");
+        buf += "$n gives you ";
+        buf += str_printf("%s", arg1.c_str());
+        buf += str_printf("%s", (amount > 1) ? " credits." : " credit.");
 
 	act( AT_ACTION, buf, ch, NULL, victim, TO_VICT    );
 	act( AT_ACTION, "$n gives $N some credits.",  ch, NULL, victim, TO_NOTVICT );

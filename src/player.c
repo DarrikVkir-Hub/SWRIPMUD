@@ -512,7 +512,7 @@ void do_oldscore( CHAR_DATA *ch, char *argument )
 	get_curr_cha(ch) );
 
     ch_printf( ch,
-	"You have have %d credits.\n" , ch->gold );
+	"You have %d credits.\n" , ch->gold );
 
     if ( !IS_NPC(ch) )
     ch_printf( ch,

@@ -249,6 +249,8 @@ DO_FUN *skill_function( const std::string& name )
 	if ( !str_cmp( name, "do_cargo" ))		return do_cargo;
 	if ( !str_cmp( name, "do_cast" ))		return do_cast;
 	if ( !str_cmp( name, "do_cedit" ))		return do_cedit;
+	if ( !str_cmp( name, "do_cfedit" ))		return do_cfedit;	
+	if ( !str_cmp( name, "do_cfcreate" ))		return do_cfcreate;	
 	if ( !str_cmp( name, "do_chaff" ))		return do_chaff;
         if ( !str_cmp( name, "do_challenge" ))          return do_challenge; 
 	if ( !str_cmp( name, "do_channels" ))		return do_channels;
@@ -281,6 +283,7 @@ DO_FUN *skill_function( const std::string& name )
 	if ( !str_cmp( name, "do_config" ))		return do_config;
 	if ( !str_cmp( name, "do_consider" ))		return do_consider;
 	if ( !str_cmp( name, "do_copyship" ))		return do_copyship;
+	if ( !str_cmp( name, "do_craft" ))		return do_craft;	
 	if ( !str_cmp( name, "do_credits" ))		return do_credits;
 	if ( !str_cmp( name, "do_cset" ))		return do_cset;
 	if ( !str_cmp( name, "do_cutdoor" ))		return do_cutdoor;
@@ -730,6 +733,7 @@ DO_FUN *skill_function( const std::string& name )
 	if ( !str_cmp( name, "do_tamp" ))		return do_tamp;
 	if ( !str_cmp( name, "do_target" ))             return do_target; 
 	if ( !str_cmp( name, "do_teach" ))		return do_teach;
+	if ( !str_cmp( name, "do_teaches" ))		return do_teaches;	
 	if ( !str_cmp( name, "do_tell" ))		return do_tell;
 	if ( !str_cmp( name, "do_throw" ))		return do_throw;
 	if ( !str_cmp( name, "do_time" ))		return do_time;
@@ -931,6 +935,7 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_alinks )	return "do_alinks";
 	if ( skill == do_viewskills) return "do_viewskills";
     if ( skill == do_teach )     return "do_teach";
+    if ( skill == do_teaches )     return "do_teaches";	
     if ( skill == do_gather_intelligence )     return "do_gather_intelligence";
     if ( skill == do_add_patrol )     return "do_add_patrol";
     if ( skill == do_special_forces )     return "do_special_forces";
@@ -1087,6 +1092,8 @@ char *skill_name( DO_FUN *skill )
     if ( skill == do_cargo )		return "do_cargo";
     if ( skill == do_cast )		return "do_cast";
     if ( skill == do_cedit )		return "do_cedit";
+	if ( skill == do_cfcreate )		return "do_cfcreate";	
+    if ( skill == do_cfedit )		return "do_cfedit";	
     if ( skill == do_channels )		return "do_channels";
     if ( skill == do_chat )		return "do_chat";
     if ( skill == do_ooc )		return "do_ooc";
@@ -1111,6 +1118,7 @@ char *skill_name( DO_FUN *skill )
 #endif
     if ( skill == do_config )		return "do_config";
     if ( skill == do_consider )		return "do_consider";
+    if ( skill == do_craft )		return "do_craft";	
     if ( skill == do_credits )		return "do_credits";
     if ( skill == do_cset )		return "do_cset";
     if ( skill == do_cutdoor )		return "do_cutdoor";

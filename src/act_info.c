@@ -3844,7 +3844,7 @@ void do_config( CHAR_DATA *ch, char *argument )
 
         send_to_char(  BV_IS_SET(ch->act, PLR_ANSI)
             ? "[+ANSI     ] You receive ANSI color sequences.\n"
-            : "[-ansi     ] You don't receive receive ANSI colors.\n"
+            : "[-ansi     ] You don't receive ANSI colors.\n"
             , ch );
 
         send_to_char(  BV_IS_SET(ch->act, PLR_SOUND)

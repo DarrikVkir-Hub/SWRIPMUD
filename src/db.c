@@ -31,6 +31,7 @@
 #include "mud.h"
 
 //extern	int	_filbuf		args( (FILE *) );
+extern void craft_clear_session( CHAR_DATA *ch );
 
 #if defined(KEY)
 #undef KEY
@@ -2844,6 +2845,33 @@ OBJ_DATA *create_object( OBJ_INDEX_DATA *pObjIndex, int level )
     case ITEM_DRINK_CON:
     case ITEM_KEY:
     case ITEM_CARGO:
+    case ITEM_SCROLL:
+    case ITEM_WAND:
+    case ITEM_STAFF:
+    case ITEM_OLDTRAP:
+    case ITEM_NOTE:
+    case ITEM_PIPE:
+    case ITEM_HERB_CON:
+    case ITEM_INCENSE:
+    case ITEM_PULLCHAIN:
+    case ITEM_RUNE:
+    case ITEM_RUNEPOUCH:
+    case ITEM_PORTAL:
+    case ITEM_SPIKE:
+    case ITEM_DISEASE:
+    case ITEM_SHORT_BOW:
+    case ITEM_LONG_BOW:
+    case ITEM_CROSSBOW:
+    case ITEM_QUIVER:
+    case ITEM_SCOPE:
+    case ITEM_DISGUISE:
+    case ITEM_DIS_FABRIC:
+    case ITEM_HAIR:
+    case ITEM_STUNGRENADE:
+    case ITEM_TRACKINGDEVICE:
+    case ITEM_OIL:
+    case ITEM_BLOOD:
+    case ITEM_BLOODSTAIN:    
 	break;
     case ITEM_FOOD:
 	/*
@@ -3113,6 +3141,7 @@ void free_char( CHAR_DATA *ch )
 		DISPOSE( comments          );
 		}
 	delete( ch->pcdata );
+    craft_clear_session( ch );
 	DISPOSE( ch );
 	return;
 }
@@ -3584,7 +3613,7 @@ static int sanitize_utf8_char(FILE *fp, int first, unsigned char out[4])
     return needed;
 }
 
-static char *fread_string_core(FILE *fp)
+char *fread_string_core(FILE *fp)
 {
     static char buf[MAX_STRING_LENGTH];
     char *plast = buf;
@@ -5390,9 +5419,9 @@ void mprog_read_programs( FILE *fp, MOB_INDEX_DATA *pMobIndex)
       break;
      default:
 	pMobIndex->progtypes = pMobIndex->progtypes | mprg->type;
-	mprg->arglist        = fread_string_nohash( fp );
+	mprg->arglist        = fread_string( fp );
 	fread_to_eol( fp );
-	mprg->comlist        = fread_string_nohash( fp );
+	mprg->comlist        = fread_string( fp );
 	fread_to_eol( fp );
 	switch ( letter = fread_letter( fp ) )
 	{

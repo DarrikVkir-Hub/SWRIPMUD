@@ -58,6 +58,8 @@
     // OLC_SHOW_MOBILE mobile specific show functions
     // DO_COMMANDS DO_?EDIT
 
+struct CraftRecipe;
+
 // New OLC definitions
 
 template<typename T>
@@ -87,6 +89,31 @@ bool set_int_field(T& field, const std::string& value, int min = INT_MIN, int ma
 inline std::string get_int_field(int value)
 {
     return std::to_string(value);
+}
+
+inline bool set_bool_field(bool &field, const std::string &value)
+{
+    if (value.empty())
+        return false;
+
+    if (!str_cmp(value, "true") || !str_cmp(value, "yes") || !str_cmp(value, "on") || !str_cmp(value, "1"))
+    {
+        field = true;
+        return true;
+    }
+
+    if (!str_cmp(value, "false") || !str_cmp(value, "no") || !str_cmp(value, "off") || !str_cmp(value, "0"))
+    {
+        field = false;
+        return true;
+    }
+
+    return false;
+}
+
+inline std::string get_bool_field(bool value)
+{
+    return value ? "true" : "false";
 }
 
 inline bool set_str_field_nohash(char*& field, const std::string& value)
@@ -233,6 +260,7 @@ enum class OlcEditMode
     OBJECT_INLINE,
     MOBILE_INLINE,
     SHOP_INLINE,
+    CRAFT_INLINE,
 };
 
 struct OlcPendingMobPrototypeChanges
@@ -1305,18 +1333,33 @@ static void olc_set_typed(
         return;
     }
 
-    if (olc_field_name_is_ambiguous(schema, field))
-    {
-        auto matches = olc_ambiguous_field_matches(schema, field);
-        send_to_char("Ambiguous field. Did you mean:\n", ch);
-        send_to_char(olc_format_columns(matches, term_width, indent), ch);
-        return;
-    }
+const auto* f = olc_find_field_fuzzy(schema, field);
 
-    const auto* f = olc_find_field_fuzzy(schema, field);
     if (!f)
     {
-        send_to_char("Unknown field.\n", ch);
+        if (olc_field_name_is_ambiguous(schema, field))
+        {
+            auto matches = olc_ambiguous_field_matches(schema, field);
+            send_to_char("Ambiguous field. Did you mean:\n", ch);
+            send_to_char(olc_format_columns(matches, term_width, indent).c_str(), ch);
+        }
+        else
+        {
+            send_to_char("Unknown field.\n", ch);
+
+            auto suggestions = olc_field_suggestions(schema, field);
+            if (!suggestions.empty())
+            {
+                send_to_char("Did you mean:\n", ch);
+                send_to_char(olc_format_columns(suggestions, term_width, indent).c_str(), ch);
+            }
+            else
+            {
+                auto all = olc_all_field_names(schema);
+                send_to_char("Valid fields:\n", ch);
+                send_to_char(olc_format_columns(all, term_width, indent).c_str(), ch);
+            }
+        }
         return;
     }
 
@@ -1756,6 +1799,7 @@ static void olc_show_typed(
     OBJ_DATA* objp = nullptr;
     CHAR_DATA* mob = nullptr;
     SHOP_DATA *shop = nullptr;
+//    CraftRecipe *recipe = nullptr;
 
     if (sess->mode == OlcEditMode::ROOM_INLINE)
         room = static_cast<ROOM_INDEX_DATA*>(sess->working_copy);
@@ -1765,6 +1809,9 @@ static void olc_show_typed(
         mob = static_cast<CHAR_DATA*>(sess->working_copy);
     else if (sess->mode == OlcEditMode::SHOP_INLINE)
         shop = static_cast<SHOP_DATA*>(sess->working_copy);
+//    else if (sess->mode == OlcEditMode::CRAFT_INLINE)
+//        recipe = static_cast<CraftRecipe*>(sess->working_copy);
+
     if (!field.empty() &&
         (!str_cmp(field, "help") || !str_cmp(value, "help")))
         show_help = true;
@@ -1913,6 +1960,7 @@ const OlcSchema<ROOM_INDEX_DATA>* get_room_schema();
 const OlcSchema<OBJ_DATA>* get_object_schema();
 const OlcSchema<CHAR_DATA>* get_mobile_schema();
 const OlcSchema<SHOP_DATA>* get_shop_schema();
+const OlcSchema<CraftRecipe>* get_craft_schema();
 
 typedef AFFECT_DATA* (*olc_find_affect_by_number_fn)(void* obj, int index);
 typedef bool (*olc_parse_affect_value_fn)(CHAR_DATA* ch, int loc, const std::string& value_text, int& out_value);
@@ -1967,4 +2015,11 @@ std::vector<std::string> olc_format_pending_exit_side_effects( CHAR_DATA* ch, si
 void olc_replace_string(char*& dst, const char* src);
 void olc_replace_string_idx(char*& dst, const char* src);
 std::vector<std::string> olc_wrap_value_pairs( const std::vector<std::string>& pairs, int width);
+
+std::vector<CraftRecipe> &craft_get_recipes_for_olc();
+CraftRecipe *craft_find_recipe_for_olc( const std::string &name );
+void craft_save_all_recipes_for_olc();
+bool olc_craft_in_edit_mode(CHAR_DATA* ch);
+void olc_craft_edit_help(CHAR_DATA* ch);
+bool olc_craft_edit_revert(CHAR_DATA* ch);
 

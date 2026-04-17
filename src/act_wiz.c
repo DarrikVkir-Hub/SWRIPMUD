@@ -7024,3 +7024,306 @@ void do_undead( CHAR_DATA *ch, char *argument )
     }
     return;
 }
+
+static bool show_teacher_languages( CHAR_DATA *ch, CHAR_DATA *mob )
+{
+    int lang;
+    int col = 0;
+    bool found_any = false;
+
+    if ( !mob || !IS_NPC(mob) )
+        return false;
+
+    if ( !BV_IS_SET(mob->act, ACT_SCHOLAR) )
+        return false;
+
+    pager_printf( ch, "&RLanguages& r\n" );
+
+    for ( lang = 0; lang < LANG_MAX; ++lang )
+    {
+        if ( lang == LANG_CLAN || lang == LANG_DIVINE )
+            continue;
+
+        if ( !VALID_LANG(lang) )
+            continue;
+
+        if ( !get_flag_name(lang_names, lang, LANG_MAX) )
+            continue;
+
+        if ( lang_sn[lang] < 0 )
+            continue;
+
+        if ( !knows_language(mob, lang, mob) )
+            continue;
+
+        found_any = true;
+        pager_printf( ch, "&r%18s  ", get_flag_name(lang_names, lang, LANG_MAX) );
+
+        if ( ++col % 3 == 0 )
+            send_to_pager( "\n&r", ch );
+    }
+
+    if ( found_any && col % 3 != 0 )
+        send_to_pager( "\n&r", ch );
+    else if ( !found_any )
+        send_to_pager( "  (none)\n", ch );
+
+    send_to_pager( "\n", ch );
+    return found_any;
+}
+
+static bool show_teacher_skills_by_vnum( CHAR_DATA *ch, int vnum, const char *label )
+{
+    std::string vnumstr;
+    int sn;
+    int col = 0;
+    sh_int lasttype = SKILL_SPELL;
+    sh_int cnt = 0;
+    bool found_any = false;
+
+    vnumstr = std::to_string( vnum );
+
+    pager_printf( ch, "&RTeacher:&r %s &R[Vnum %d]&r\n",
+        ( label && label[0] != '\0' ) ? label : "(unknown)",
+        vnum );
+
+    for ( sn = 0; sn < top_sn; sn++ )
+    {
+        if ( !skill_table[sn]->name )
+            break;
+
+        if ( skill_table[sn]->guild < 0 || skill_table[sn]->guild >= MAX_ABILITY )
+            continue;
+
+//        if ( is_name( get_flag_name(skill_tname, skill_table[sn]->type, SKILL_MAX), CANT_PRAC ) )
+//            continue;
+
+        if ( !skill_table[sn]->teachers || skill_table[sn]->teachers[0] == '\0' )
+            continue;
+
+        if ( !is_name( vnumstr, skill_table[sn]->teachers ) )
+            continue;
+
+        if ( !found_any || skill_table[sn]->type != lasttype )
+        {
+            if ( found_any )
+            {
+                if ( !cnt )
+                    send_to_pager( "&r                                (none)\n&w", ch );
+                else if ( col % 3 != 0 )
+                    send_to_pager( "\n&r", ch );
+            }
+
+            pager_printf( ch,
+"&R--------------------------------%ss---------------------------------\n&r",
+                get_flag_name(skill_tname, skill_table[sn]->type, SKILL_MAX) );
+
+            col = 0;
+            cnt = 0;
+            lasttype = skill_table[sn]->type;
+            found_any = true;
+        }
+
+        ++cnt;
+        pager_printf( ch, "&r%18s  ", skill_table[sn]->name );
+
+        if ( ++col % 3 == 0 )
+            send_to_pager( "\n&r", ch );
+    }
+
+    if ( found_any )
+    {
+        if ( !cnt )
+            send_to_pager( "&r                                (none)\n&w", ch );
+        else if ( col % 3 != 0 )
+            send_to_pager( "\n&r", ch );
+    }
+    else
+    {
+        send_to_pager( "  (none)\n", ch );
+    }
+
+    send_to_pager( "\n", ch );
+    return found_any;
+}
+
+static bool show_teacher_languages_proto( CHAR_DATA *ch, MOB_INDEX_DATA *pMobIndex )
+{
+    int lang;
+    int col = 0;
+    bool found_any = false;
+
+    if ( !pMobIndex )
+        return false;
+
+    if ( !BV_IS_SET(pMobIndex->act, ACT_SCHOLAR) )
+        return false;
+
+    pager_printf( ch, "&RLanguages&r\n" );
+
+    for ( lang = 0; lang < LANG_MAX; ++lang )
+    {
+        if ( lang == LANG_CLAN || lang == LANG_DIVINE )
+            continue;
+
+        if ( !VALID_LANG(lang) )
+            continue;
+
+        if ( !get_flag_name(lang_names, lang, LANG_MAX) )
+            continue;
+
+        if ( lang_sn[lang] < 0 )
+            continue;
+
+        if ( !BV_IS_SET(pMobIndex->speaks, lang) )
+            continue;
+
+        found_any = true;
+        pager_printf( ch, "&r%18s  ", get_flag_name(lang_names, lang, LANG_MAX) );
+
+        if ( ++col % 3 == 0 )
+            send_to_pager( "\n&r", ch );
+    }
+
+    if ( found_any && col % 3 != 0 )
+        send_to_pager( "\n&r", ch );
+    else if ( !found_any )
+        send_to_pager( "  (none)\n", ch );
+
+    send_to_pager( "\n", ch );
+    return found_any;
+}
+
+static bool show_teacher_info( CHAR_DATA *ch, CHAR_DATA *mob )
+{
+    bool found = false;
+    const char *label;
+
+    if ( !mob || !IS_NPC(mob) )
+        return false;
+
+    label = ( mob->short_descr && mob->short_descr[0] != '\0' )
+        ? mob->short_descr
+        : mob->name;
+
+    if ( BV_IS_SET(mob->act, ACT_PRACTICE) )
+        found |= show_teacher_skills_by_vnum( ch, mob->pIndexData->vnum, label );
+
+    if ( BV_IS_SET(mob->act, ACT_SCHOLAR) )
+        found |= show_teacher_languages( ch, mob );
+
+    if ( !found )
+        send_to_pager( "  (teaches nothing)\n\n", ch );
+
+    return found;
+}
+
+static bool show_teacher_info_proto( CHAR_DATA *ch, MOB_INDEX_DATA *pMobIndex )
+{
+    bool found = false;
+    const char *label;
+
+    if ( !pMobIndex )
+        return false;
+
+    label = ( pMobIndex->short_descr && pMobIndex->short_descr[0] != '\0' )
+        ? pMobIndex->short_descr
+        : pMobIndex->player_name;
+
+    pager_printf( ch, "&Y============================================================&r\n" );
+    pager_printf( ch, "&RTeacher:&r %s &R[Vnum %d]&r\n", label, pMobIndex->vnum );
+
+    if ( BV_IS_SET(pMobIndex->act, ACT_PRACTICE) )
+        found |= show_teacher_skills_by_vnum( ch, pMobIndex->vnum, label );
+
+    if ( BV_IS_SET(pMobIndex->act, ACT_SCHOLAR) )
+        found |= show_teacher_languages_proto( ch, pMobIndex );
+
+    if ( !found )
+        send_to_pager( "  (teaches nothing)\n\n", ch );
+
+    return found;
+}
+
+void do_teaches( CHAR_DATA *ch, char *argument )
+{
+    CHAR_DATA *mob;
+    bool found = false;
+
+    if ( argument[0] == '\0' )
+    {
+        send_to_char( "Syntax: teaches <mob>\n", ch );
+        send_to_char( "        teaches room\n", ch );
+        send_to_char( "        teaches all\n", ch );
+        return;
+    }
+
+    set_pager_color( AT_MAGIC, ch );
+
+    if ( !str_cmp( argument, "room" ) )
+    {
+        for ( mob = ch->in_room->first_person; mob; mob = mob->next_in_room )
+        {
+            if ( !IS_NPC(mob) )
+                continue;
+
+            if ( !BV_IS_SET(mob->act, ACT_PRACTICE)
+            &&   !BV_IS_SET(mob->act, ACT_SCHOLAR) )
+                continue;
+
+            if ( show_teacher_info( ch, mob ) )
+                found = true;
+        }
+
+        if ( !found )
+            send_to_char( "There are no teachers here.\n", ch );
+
+        return;
+    }
+
+    if ( !str_cmp( argument, "all" ) )
+    {
+        int hash;
+        MOB_INDEX_DATA *pMobIndex;
+
+        for ( hash = 0; hash < MAX_KEY_HASH; hash++ )
+        {
+            for ( pMobIndex = mob_index_hash[hash]; pMobIndex; pMobIndex = pMobIndex->next )
+            {
+                if ( !BV_IS_SET(pMobIndex->act, ACT_PRACTICE)
+                &&   !BV_IS_SET(pMobIndex->act, ACT_SCHOLAR) )
+                    continue;
+
+                if ( show_teacher_info_proto( ch, pMobIndex ) )
+                    found = true;
+            }
+        }
+
+        if ( !found )
+            send_to_char( "There are no teachers in the game.\n", ch );
+
+        return;
+    }
+
+    mob = get_char_room( ch, argument );
+    if ( !mob )
+    {
+        send_to_char( "They aren't here.\n", ch );
+        return;
+    }
+
+    if ( !IS_NPC(mob) )
+    {
+        send_to_char( "That is not a mob.\n", ch );
+        return;
+    }
+
+    if ( !BV_IS_SET(mob->act, ACT_PRACTICE)
+    &&   !BV_IS_SET(mob->act, ACT_SCHOLAR) )
+    {
+        send_to_char( "That mob is not a teacher.\n", ch );
+        return;
+    }
+
+    show_teacher_info( ch, mob );
+}

@@ -1016,6 +1016,33 @@ CommandGroupEx -1
 End
 
 #COMMAND
+Name        craft~
+Code        do_craft
+Position    0
+Level       1
+Log         0
+CommandGroupEx -1
+End
+
+#COMMAND
+Name        cfedit~
+Code        do_cfedit
+Position    0
+Level       104
+Log         0
+CommandGroupEx 0 1 -1
+End
+
+#COMMAND
+Name        cfcreate~
+Code        do_cfcreate
+Position    0
+Level       104
+Log         0
+CommandGroupEx 0 1 -1
+End
+
+#COMMAND
 Name        down~
 Code        do_down
 Position    8
@@ -1478,6 +1505,15 @@ End
 Name        feel~
 Code        do_cast
 Position    0
+Level       1
+Log         0
+CommandGroupEx -1
+End
+
+#COMMAND
+Name        fire~
+Code        do_fire
+Position    5
 Level       1
 Log         0
 CommandGroupEx -1
@@ -2063,15 +2099,6 @@ End
 Name        loadcargo~
 Code        do_loadcargo
 Position    0
-Level       1
-Log         0
-CommandGroupEx -1
-End
-
-#COMMAND
-Name        makelightsaber~
-Code        do_makelightsaber
-Position    5
 Level       1
 Log         0
 CommandGroupEx -1
@@ -4647,6 +4674,15 @@ Name        target~
 Code        do_target
 Position    0
 Level       101
+Log         0
+CommandGroupEx -1
+End
+
+#COMMAND
+Name        teaches~
+Code        do_teaches
+Position    0
+Level       103
 Log         0
 CommandGroupEx -1
 End
