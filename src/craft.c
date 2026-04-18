@@ -1941,8 +1941,11 @@ static void craft_show_session( CHAR_DATA *ch )
 static const CraftRecipe *craft_find_recipe( const std::string &name )
 {
     for ( const auto &recipe : craft_get_recipes() )
-        if ( !str_prefix( name, recipe.name ) )
+        if ( !str_cmp( name, recipe.name ) )
             return &recipe;
+    for ( const auto &recipe : craft_get_recipes() )
+        if ( !str_prefix( name, recipe.name ) )
+            return &recipe;            
     return nullptr;
 }
 
