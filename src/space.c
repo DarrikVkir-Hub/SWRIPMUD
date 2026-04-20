@@ -46,7 +46,6 @@ int bus3_planet = 11;
 int bus4_planet = 3;
 int turbocar_stop =0;
 int corus_shuttle =0;
-int baycount = 0;
 
 int currrentalvnum = 6000; // increments as rentals are created
 
@@ -624,27 +623,17 @@ Space Update function
                 if in range and launcher is ready, fire an appropriate projectile
             else accel and speed to 0
 */
-void move_ships( GameContext *game )
+
+static void move_spaceobjects(GameContext *game)
 {
-    SHIP_DATA *ship;
-    MISSILE_DATA *missile;
-    MISSILE_DATA *m_next;
-    SHIP_DATA *target;
     SPACE_DATA *spaceobj;
     float dx, dy, dz, change;
-    std::string buf;
-    CHAR_DATA *ch;
-    bool ch_found = FALSE;
-    sh_int crashsun = 0;
-  //   int speed;
-  
+
     for( spaceobj = first_spaceobject; spaceobj; spaceobj = spaceobj->next )
     {
         if ( !spaceobj->game )
           spaceobj->game = game;
 
-        if ( !spaceobj->game)
-          spaceobj->game = game;
         if ( spaceobj->speed > 0 )
         {
           
@@ -676,21 +665,42 @@ void move_ships( GameContext *game )
           spaceobj->zpos = MAX_COORD_S;
 
     }
-   	
+}
+
+static void move_missiles( GameContext *game )
+{
+    MISSILE_DATA *missile;
+    MISSILE_DATA *m_next;
+    SHIP_DATA *ship;
+    SHIP_DATA *target;
+    std::string buf;
+    CHAR_DATA *ch;
+    bool ch_found = FALSE;    
 
     for ( missile = first_missile; missile; missile = m_next )
     {
-        if (!missile->game)
-          missile->game = game;
+        ch_found = FALSE;
+        m_next = missile->next;
 
         if ( !missile->game )
             missile->game = game;
-        m_next = missile->next;
-           
+
+        if ( !missile->fired_from || !missile->target )
+        {
+            extract_missile( missile );
+            continue;
+        }
+
         ship = missile->fired_from;
         target = missile->target;
+
+        if ( !ship || !target )
+        {
+            extract_missile( missile );
+            continue;
+        }
               
-        if ( target->spaceobject && missile_in_range( ship, missile ) )
+        if ( target->spaceobject && (missile_in_range( ship, missile )) )
         {
             if ( missile->mx < target->vx ) 
                 missile->mx += UMIN( missile->speed/5 , target->vx - missile->mx );
@@ -705,9 +715,9 @@ void move_ships( GameContext *game )
             else if ( missile->mz > target->vz ) 
                 missile->mz -= UMIN( missile->speed/5 , missile->mz - target->vz );  
           
-            if ( abs( (int) ( missile->mx-target->vx )) <= 20 && abs( (int) ( missile->mx-target->vx )) >= -20
-            && abs( (int) ( missile->my-target->vy )) <= 20 && abs( (int) ( missile->my-target->vy )) >= -20
-            && abs((int) ( missile->mz-target->vz )) <= 20 && abs( (int) ( missile->mz-target->vz )) >= -20 )
+            if ( abs( (int) ( missile->mx-target->vx )) <= 20 
+            && abs( (int) ( missile->my-target->vy )) <= 20 
+            && abs((int) ( missile->mz-target->vz )) <= 20 )
             {  
                 if ( target->chaff_released <= 0)
                 { 
@@ -757,8 +767,18 @@ void move_ships( GameContext *game )
 
    }
    
-   for ( ship = first_ship; ship; ship = ship->next )
-   {
+}
+
+static void update_ships_realspace(GameContext *game)
+{
+    SHIP_DATA *ship;
+    SPACE_DATA *spaceobj;
+    float dx, dy, dz, change;
+    std::string buf;
+    sh_int crashsun = 0;
+
+    for ( ship = first_ship; ship; ship = ship->next )
+    {
         if ( !ship->game )
             ship->game = game;
         
@@ -866,7 +886,7 @@ void move_ships( GameContext *game )
         if ( autofly(ship) )
           continue;
         
-
+        crashsun = 0;
         for( spaceobj = first_spaceobject; spaceobj; spaceobj = spaceobj->next )
         {           
             if ( spaceobj->type == SPACE_SUN && spaceobj->name && strcmp(spaceobj->name,"") &&
@@ -919,11 +939,20 @@ void move_ships( GameContext *game )
                   echo_to_system( AT_ORANGE , ship , buf , NULL );
                   ship->inorbitof = spaceobj;
                   ship->currspeed = 0;
+                  ship->goalspeed = 0;
               }            
 
             }
         }
     }
+}
+
+static void update_ships_hyperspace_and_sync(GameContext *game)
+{
+    SHIP_DATA *ship;
+    SHIP_DATA *target;
+    SPACE_DATA *spaceobj;
+    std::string buf;
 
     for ( ship = first_ship; ship; ship = ship->next )  // This second round is necessary as if we did it in the first loop some ships may be 
                                                         // updated, while others are still pre-tick.  A second loop makes sure all ships have had 
@@ -938,6 +967,9 @@ void move_ships( GameContext *game )
 
             dist = (float) ship->hyperdistance;
             origdist = (float) ship->orighyperdistance;
+
+            if ( origdist == 0 ) // Not sure why origdist would ever be 0, but just in case, set it to 1 to avoid divide by zero errors.  DV 4-19-26
+              origdist = 1;
 
             if ( dist == 0)
               dist = -1;
@@ -982,9 +1014,7 @@ void move_ships( GameContext *game )
                 if ( target->spaceobject && ship->spaceobject && 
                     target->shipstate != SHIP_LANDED && 
                     target->mod && target->mod->gravproj && target->mod->gravitypower &&
-                    abs( (int) ( ship->vx - target->vx )) < 10*target->mod->gravproj &&
-                    abs( (int) ( ship->vy - target->vy )) < 10*target->mod->gravproj &&
-                    abs( (int) ( ship->vz - target->vz )) < 10*target->mod->gravproj)
+                    space_distance_ship_less_than( ship, target, 10*target->mod->gravproj ))
                   break;
               }
             }
@@ -1136,480 +1166,302 @@ void move_ships( GameContext *game )
           ship->vy = -MAX_COORD_S;
         if( ship->vz > MAX_COORD)
           ship->vz = -MAX_COORD_S;
-        if( ship->vx > MAX_COORD)
+        if( ship->vx < -MAX_COORD)
           ship->vx = MAX_COORD_S;
-        if( ship->vy > MAX_COORD)
+        if( ship->vy < -MAX_COORD)
           ship->vy = MAX_COORD_S;
-        if( ship->vz > MAX_COORD)
+        if( ship->vz < -MAX_COORD)
           ship->vz = MAX_COORD_S;
-     
     }
-    /*
-      if (ship->collision) 
-      {
-          echo_to_cockpit( AT_WHITE+AT_BLINK , ship,  "You have collided with another ship!" );
-          echo_to_ship( AT_RED , ship , "A loud explosion shakes the ship violently!" );   
-          damage_ship( ship , NULL, ship->collision , ship->collision );
-          ship->collision = 0;
-      }
-    */
+}
+
+void move_ships( GameContext *game )
+{
+    move_spaceobjects(game);
+    move_missiles(game);
+    update_ships_realspace(game);
+    update_ships_hyperspace_and_sync(game);
 }   
 
-void recharge_ships( GameContext *game )
+static bool recharge_update_bay_cycle()
 {
-   SHIP_DATA *ship;
-   std::string buf;
-   bool closeem = FALSE;
-   int distance, origchance = 100;
-   TURRET_DATA *turret;
-
-
+   static int baycount = 0;
    baycount++;
 
    if ( baycount >= 60 )
    {
-     closeem = TRUE;
      baycount = 0;
+     return TRUE;
    }
+   return FALSE;
+}
+
+static void recharge_ship_noncombat( GameContext *game, SHIP_DATA *ship, bool closeem)
+{
+    TURRET_DATA *turret;
+
+    if (!ship->game)
+        ship->game = game;
+    if ( ship->shipclass == 3 )
+        if ( closeem && ship->guard )
+        ship->bayopen = FALSE;
+        
+    if (ship->statet0 > 0)
+    {
+        ship->energy -= ship->statet0;
+        ship->statet0 = 0;
+    }
+    if (ship->statei0 > 0)
+    {
+        ship->energy -= 10*ship->statei0;
+        ship->statei0 = 0;
+    }
+
+    if (ship->first_turret)
+        for( turret = ship->first_turret; turret; turret = turret->next )
+        if (turret->state > 0)
+        {
+            ship->energy -= turret->state;
+            turret->state = 0;
+        }
+
+
+    if( ship->docked && ship->docked->shipclass == SHIP_PLATFORM )
+    {
+        if( ship->mod->maxenergy - ship->energy > 500 )
+        ship->energy += 500;
+        else
+        ship->energy = ship->mod->maxenergy;
+    }
+
+    if (ship->missilestate == MISSILE_RELOAD_2)
+    {
+        ship->missilestate = MISSILE_READY;
+        if ( ship->missiles > 0 )
+            echo_to_room( AT_YELLOW, get_room_index(ship->gunseat), "Missile launcher reloaded.");
+    }
+    
+    if (ship->missilestate == MISSILE_RELOAD )
+    {
+        ship->missilestate = MISSILE_RELOAD_2;
+    }
+    
+    if (ship->missilestate == MISSILE_FIRED )
+        ship->missilestate = MISSILE_RELOAD;    
+}
+
+static void recharge_ship_autofly_combat(SHIP_DATA *ship)
+{
+    std::string buf;
+    int origchance = 100;
+    if ( autofly(ship) )
+    {
+        if ( ship->spaceobject && ship->shipclass != SHIP_DEBRIS )
+        {
+            if (ship->target0 && ship->statet0 != LASER_DAMAGED )
+            {
+                int chance = 75;
+                SHIP_DATA * target = ship->target0;
+                int shots, guns, laserguns, ionguns;
+                int whichguns = 0;
+                int laserhits = 0, lasermisses = 0;
+                int ionhits = 0, ionmisses = 0;
+                int laserdamage = 0, iondamage = 0;
+                int damage = 0;
+                
+                if ( ship->mod->lasers && ship->mod->ions && ship->mod->lasers < 7 && ship->mod->ions < 7 )
+                {
+                    whichguns = 2;
+                    guns = ship->mod->lasers + ship->mod->ions;
+                    laserguns = ship->mod->lasers;
+                    ionguns = ship->mod->ions;
+                }
+                else if ( ship->target0->shield > 0 && ship->mod->ions )
+                {
+                    whichguns = 1;
+                    guns = ship->mod->ions;
+                    laserguns = 0;
+                    ionguns = ship->mod->ions;
+                }
+                else
+                {
+                    guns = ship->mod->lasers;
+                    laserguns = ship->mod->lasers;
+                    ionguns = 0;
+                }
+                
+                for ( shots=0 ; shots < guns; shots++ )
+                {
+                    if ( !ship->target0 )
+                        break;
+                    if (ship->shipstate != SHIP_HYPERSPACE && ship->energy > 25 
+                    && ship_target_in_combat_range( ship, target, 1000 ) )
+                    {
+                        if ( ship->shipclass > 1 || is_facing ( ship , target ) )
+                        {
+                            chance = compute_autofly_laser_ion_hit_chance( chance, origchance, ship, target);
+
+                            if ( number_percent( ) > chance )
+                            {
+                                whichguns == 0 ? lasermisses++ : ( whichguns == 1 ? ionmisses++ : ( shots < ship->mod->lasers ? lasermisses++ : ionmisses++ ) );
+                            } 
+                            else
+                            {
+                                if( whichguns == 0 )
+                                {
+                                    laserhits++;
+                                    if ( ship->shipclass == SHIP_PLATFORM ) 
+                                    {      
+                                        damage = number_range( SHIPDAM_MINPLATFORM , SHIPDAM_MAXPLATFORM );
+                                    }
+                                    else if( ship->shipclass == CAPITAL_SHIP && target->shipclass != CAPITAL_SHIP )
+                                        damage = number_range( SHIPDAM_MINCAP, SHIPDAM_MAXCAP );
+                                    else 
+                                        damage = number_range( SHIPDAM_MINDEF , SHIPDAM_MAXDEF );
+                    
+                                    laserdamage += damage;
+                    
+                                }
+                                else if( whichguns == 1 )
+                                {
+                                    ionhits++;
+                                    if ( ship->shipclass == SHIP_PLATFORM ) 
+                                    {      
+                                        damage = number_range( SHIPDAM_MINPLATFORM , SHIPDAM_MAXPLATFORM );
+                                    }
+                                    else if( ship->shipclass == CAPITAL_SHIP && target->shipclass != CAPITAL_SHIP )
+                                        damage = number_range( SHIPDAM_MINCAP, SHIPDAM_MAXCAP );
+                                    else 
+                                        damage = number_range( SHIPDAM_MINDEF , SHIPDAM_MAXDEF );
+                    
+                                    iondamage += damage;
+                    
+                    
+                                } 
+                                else if( whichguns == 2 )
+                                {
+                                    if( shots < ship->mod->lasers )
+                                    {
+                                        laserhits++;
+                                        if ( ship->shipclass == SHIP_PLATFORM ) 
+                                        {      
+                                            damage = number_range( SHIPDAM_MINPLATFORM , SHIPDAM_MAXPLATFORM );
+                                        }
+                                        else if( ship->shipclass == CAPITAL_SHIP && target->shipclass != CAPITAL_SHIP )
+                                            damage = number_range( SHIPDAM_MINCAP, SHIPDAM_MAXCAP );
+                                        else 
+                                            damage = number_range( SHIPDAM_MINDEF , SHIPDAM_MAXDEF );
+                    
+                                        laserdamage += damage;
+                                    }
+                                        else
+                                    {
+                                        ionhits++;
+                                        if ( ship->shipclass == SHIP_PLATFORM ) 
+                                        {      
+                                            damage = number_range( SHIPDAM_MINPLATFORM , SHIPDAM_MAXPLATFORM );
+                                        }
+                                        else if( ship->shipclass == CAPITAL_SHIP && target->shipclass != CAPITAL_SHIP )
+                                            damage = number_range( SHIPDAM_MINCAP, SHIPDAM_MAXCAP );
+                                        else 
+                                            damage = number_range( SHIPDAM_MINDEF , SHIPDAM_MAXDEF );
+                    
+                                        iondamage += damage;
+                                    }
+                                }
+                            }
+                    
+                        }
+                    }
+                }
+
+                if ( laserhits )
+                {
+                    if ( lasermisses )
+                    {
+                        buf = str_printf("%s fires %d lasers at you, hitting you %d times.\n", 
+                                ship->name, laserguns, laserhits );
+                                    echo_to_cockpit( AT_BLOOD , target , buf );           
+                        buf = str_printf("%s fires %d lasers at %s, hitting %d times.\n", 
+                                ship->name, laserguns, target->name, laserhits );
+                                    echo_to_system( AT_ORANGE , target , buf , NULL );
+
+                    }
+                    else
+                    {
+                        buf = str_printf("%s fires %d lasers at you, hitting you %d times.\n", 
+                                ship->name, laserguns, laserhits );
+                                    echo_to_cockpit( AT_BLOOD , target , buf );           
+                        buf = str_printf("%s fires %d lasers at %s, hitting %d times.\n", 
+                                ship->name, laserguns, target->name, laserhits );
+                                    echo_to_system( AT_ORANGE , target , buf , NULL );
+                    }
+                    
+                    damage_ship ( target, ship, laserdamage, laserdamage+1 );
+                }
+                else if ( lasermisses )
+                {
+                    buf = str_printf("%s fires its lasers at you, missing you %d times.\n", 
+                            ship->name, lasermisses );
+                    echo_to_cockpit( AT_BLOOD , target , buf );           
+                    buf = str_printf("%s fires its lasers at %s, missing %d times.\n", 
+                            ship->name, target->name, lasermisses );
+                    echo_to_system( AT_ORANGE , target , buf , NULL );
+                }
+                    
+                if ( ionhits ) 
+                {
+                    if ( ionmisses )
+                    {
+                        buf = str_printf("%s fires %d ion cannons at you, hitting you %d times.\n", 
+                            ship->name, ionguns, ionhits );
+                        echo_to_cockpit( AT_BLOOD , target , buf );           
+                        buf = str_printf("%s fires %d ion cannons at %s, hitting %d times.\n", 
+                            ship->name, ionguns, target->name, ionhits );
+                        echo_to_system( AT_ORANGE , target , buf , NULL );
+                    }
+                    else
+                    {
+                        buf = str_printf("%s fires %d ion cannons at you, hitting you %d times.\n", 
+                            ship->name, ionguns, ionhits );
+                        echo_to_cockpit( AT_BLOOD , target , buf );           
+                        buf = str_printf("%s fires %d ion cannons at %s, hitting %d times.\n", 
+                            ship->name, ionguns, target->name, ionhits );
+                        echo_to_system( AT_ORANGE , target , buf , NULL );
+                    }
+                    
+                    damage_ship ( target, ship, -1*iondamage, -1*(iondamage-1) );
+                    
+                }		
+                else if ( ionmisses )
+                {
+                    buf = str_printf("%s fires its ion cannons at you, missing you %d times.\n", 
+                            ship->name, ionmisses );
+                    echo_to_cockpit( AT_BLOOD , target , buf );           
+                    buf = str_printf("%s fires its ions cannons at %s, missing %d times.\n", 
+                            ship->name, target->name, ionmisses );
+                    echo_to_system( AT_ORANGE , target , buf , NULL );
+                    
+                }
+    
+
+            }
+        }
+    }    
+}
+void recharge_ships( GameContext *game )
+{
+   SHIP_DATA *ship;
+   bool closeem = recharge_update_bay_cycle();
 
    for ( ship = first_ship; ship; ship = ship->next )
    {                
-        if (!ship->game)
-            ship->game = game;
-        if ( ship->shipclass == 3 )
-          if ( closeem && ship->guard )
-            ship->bayopen = FALSE;
-           
-        if (ship->statet0 > 0)
-        {
-           ship->energy -= ship->statet0;
-           ship->statet0 = 0;
-        }
-        if (ship->statei0 > 0)
-        {
-           ship->energy -= 10*ship->statei0;
-           ship->statei0 = 0;
-        }
-
-        if (ship->first_turret)
-          for( turret = ship->first_turret; turret; turret = turret->next )
-            if (turret->state > 0)
-            {
-                ship->energy -= turret->state;
-                turret->state = 0;
-            }
-
-
-        if( ship->docked && ship->docked->shipclass == SHIP_PLATFORM )
-        {
-          if( ship->mod->maxenergy - ship->energy > 500 )
-            ship->energy += 500;
-          else
-            ship->energy = ship->mod->maxenergy;
-        }
-
-        if (ship->missilestate == MISSILE_RELOAD_2)
-        {
-           ship->missilestate = MISSILE_READY;
-           if ( ship->missiles > 0 )
-               echo_to_room( AT_YELLOW, get_room_index(ship->gunseat), "Missile launcher reloaded.");
-        }
-        
-        if (ship->missilestate == MISSILE_RELOAD )
-        {
-           ship->missilestate = MISSILE_RELOAD_2;
-        }
-        
-        if (ship->missilestate == MISSILE_FIRED )
-           ship->missilestate = MISSILE_RELOAD;
-        
-        if ( autofly(ship) )
-        {
-            if ( ship->spaceobject && ship->shipclass != SHIP_DEBRIS )
-            {
-                if (ship->target0 && ship->statet0 != LASER_DAMAGED )
-                {
-                    int chance = 75;
-                    SHIP_DATA * target = ship->target0;
-                    int shots, guns, laserguns, ionguns;
-                    int whichguns = 0;
-                    int laserhits = 0, lasermisses = 0;
-                    int ionhits = 0, ionmisses = 0;
-                    int laserdamage = 0, iondamage = 0;
-                    int damage = 0;
-                 
-                    if ( ship->mod->lasers && ship->mod->ions && ship->mod->lasers < 7 && ship->mod->ions < 7 )
-                    {
-                      whichguns = 2;
-                      guns = ship->mod->lasers + ship->mod->ions;
-                      laserguns = ship->mod->lasers;
-                      ionguns = ship->mod->ions;
-                    }
-                    else if ( ship->target0->shield > 0 && ship->mod->ions )
-                    {
-                      whichguns = 1;
-                      guns = ship->mod->ions;
-                      laserguns = 0;
-                      ionguns = ship->mod->ions;
-                    }
-                    else
-                    {
-                      guns = ship->mod->lasers;
-                      laserguns = ship->mod->lasers;
-                      ionguns = 0;
-                    }
-                   
-                    for ( shots=0 ; shots < guns; shots++ )
-                    {
-                        if ( !ship->target0 )
-                            break;
-                        if (ship->shipstate != SHIP_HYPERSPACE && ship->energy > 25 
-                        && ship_in_range( ship, target )
-                        && abs( (int) ( target->vx - ship->vx )) <= 1000 
-                        && abs( (int) ( target->vy - ship->vy )) <= 1000
-                        && abs( (int) ( target->vz - ship->vz )) <= 1000 )
-                        {
-                            if ( ship->shipclass > 1 || is_facing ( ship , target ) )
-                            {
-                                distance = abs( (int) ( target->vx - ship->vx )) 
-                                  + abs( (int) ( target->vy - ship->vy )) 
-                                  + abs( (int) ( target->vz - ship->vz ));
-                                distance /= 3;
-                                chance += target->shipclass - ship->shipclass;
-                                chance += ship->currspeed - target->currspeed;
-                                chance += ship->mod->manuever - target->mod->manuever;
-                                chance -= distance/(10*(target->shipclass+1));
-                                chance -= origchance;
-                                chance /= 2;
-                                chance += origchance;
-                                chance = URANGE( 1 , chance , 99 );
-
-                                if ( number_percent( ) > chance )
-                                {
-                                    whichguns == 0 ? lasermisses++ : ( whichguns == 1 ? ionmisses++ : ( shots < ship->mod->lasers ? lasermisses++ : ionmisses++ ) );
-                                } 
-                                else
-                                {
-                                    if( whichguns == 0 )
-                                    {
-                                        laserhits++;
-                                        if ( ship->shipclass == SHIP_PLATFORM ) 
-                                        {      
-                                            damage = number_range( SHIPDAM_MINPLATFORM , SHIPDAM_MAXPLATFORM );
-                                        }
-                                        else if( ship->shipclass == CAPITAL_SHIP && target->shipclass != CAPITAL_SHIP )
-                                            damage = number_range( SHIPDAM_MINCAP, SHIPDAM_MAXCAP );
-                                        else 
-                                            damage = number_range( SHIPDAM_MINDEF , SHIPDAM_MAXDEF );
-             		    
-             		                        laserdamage += damage;
-             		    
-                                    }
-                                    else if( whichguns == 1 )
-                                    {
-                                        ionhits++;
-                                        if ( ship->shipclass == SHIP_PLATFORM ) 
-                                        {      
-                                            damage = number_range( SHIPDAM_MINPLATFORM , SHIPDAM_MAXPLATFORM );
-                                        }
-                                        else if( ship->shipclass == CAPITAL_SHIP && target->shipclass != CAPITAL_SHIP )
-                                            damage = number_range( SHIPDAM_MINCAP, SHIPDAM_MAXCAP );
-                                        else 
-                                            damage = number_range( SHIPDAM_MINDEF , SHIPDAM_MAXDEF );
-             		    
-             		                        iondamage += damage;
-             		    
-             		    
-                                    } 
-                                    else if( whichguns == 2 )
-                                    {
-                                      if( shots < ship->mod->lasers )
-                                      {
-                                          laserhits++;
-                                          if ( ship->shipclass == SHIP_PLATFORM ) 
-                                          {      
-                                              damage = number_range( SHIPDAM_MINPLATFORM , SHIPDAM_MAXPLATFORM );
-                                          }
-                                          else if( ship->shipclass == CAPITAL_SHIP && target->shipclass != CAPITAL_SHIP )
-                                              damage = number_range( SHIPDAM_MINCAP, SHIPDAM_MAXCAP );
-                                          else 
-                                              damage = number_range( SHIPDAM_MINDEF , SHIPDAM_MAXDEF );
-             		    
-             		                          laserdamage += damage;
-                                      }
-			                                else
-                                      {
-                                          ionhits++;
-                                          if ( ship->shipclass == SHIP_PLATFORM ) 
-                                          {      
-                                              damage = number_range( SHIPDAM_MINPLATFORM , SHIPDAM_MAXPLATFORM );
-                                          }
-                                          else if( ship->shipclass == CAPITAL_SHIP && target->shipclass != CAPITAL_SHIP )
-                                              damage = number_range( SHIPDAM_MINCAP, SHIPDAM_MAXCAP );
-                                          else 
-                                              damage = number_range( SHIPDAM_MINDEF , SHIPDAM_MAXDEF );
-             		    
-             		                          iondamage += damage;
-                                      }
-                                    }
-                                }
-                        
-                            }
-                        }
-                    }
-
-                    if ( laserhits )
-                    {
-                        if ( lasermisses )
-                        {
-                          buf = str_printf("%s fires %d lasers at you, hitting you %d times.\n", 
-                                  ship->name, laserguns, laserhits );
-                                      echo_to_cockpit( AT_BLOOD , target , buf );           
-                          buf = str_printf("%s fires %d lasers at %s, hitting %d times.\n", 
-                                  ship->name, laserguns, target->name, laserhits );
-                                      echo_to_system( AT_ORANGE , target , buf , NULL );
-
-                        }
-                        else
-                        {
-                          buf = str_printf("%s fires %d lasers at you, hitting you %d times.\n", 
-                                  ship->name, laserguns, laserhits );
-                                      echo_to_cockpit( AT_BLOOD , target , buf );           
-                          buf = str_printf("%s fires %d lasers at %s, hitting %d times.\n", 
-                                  ship->name, laserguns, target->name, laserhits );
-                                      echo_to_system( AT_ORANGE , target , buf , NULL );
-                        }
-                      
-                        damage_ship ( target, ship, laserdamage, laserdamage+1 );
-                    }
-                    else if ( lasermisses )
-                    {
-                        buf = str_printf("%s fires its lasers at you, missing you %d times.\n", 
-                                ship->name, lasermisses );
-                        echo_to_cockpit( AT_BLOOD , target , buf );           
-                        buf = str_printf("%s fires its lasers at %s, missing %d times.\n", 
-                                ship->name, target->name, lasermisses );
-                        echo_to_system( AT_ORANGE , target , buf , NULL );
-                    }
-                      
-                    if ( ionhits ) 
-                    {
-                      if ( ionmisses )
-                      {
-                          buf = str_printf("%s fires %d ion cannons at you, hitting you %d times.\n", 
-                                ship->name, ionguns, ionhits );
-                          echo_to_cockpit( AT_BLOOD , target , buf );           
-                          buf = str_printf("%s fires %d ion cannons at %s, hitting %d times.\n", 
-                                ship->name, ionguns, target->name, ionhits );
-                          echo_to_system( AT_ORANGE , target , buf , NULL );
-                      }
-                      else
-                      {
-                          buf = str_printf("%s fires %d ion cannons at you, hitting you %d times.\n", 
-                                ship->name, ionguns, ionhits );
-                          echo_to_cockpit( AT_BLOOD , target , buf );           
-                          buf = str_printf("%s fires %d ion cannons at %s, hitting %d times.\n", 
-                                ship->name, ionguns, target->name, ionhits );
-                          echo_to_system( AT_ORANGE , target , buf , NULL );
-                      }
-                      
-                      damage_ship ( target, ship, -1*iondamage, -1*(iondamage-1) );
-                      
-                    }		
-                    else if ( ionmisses )
-                    {
-                        buf = str_printf("%s fires its ion cannons at you, missing you %d times.\n", 
-                                ship->name, ionmisses );
-                        echo_to_cockpit( AT_BLOOD , target , buf );           
-                        buf = str_printf("%s fires its ions cannons at %s, missing %d times.\n", 
-                                ship->name, target->name, ionmisses );
-                        echo_to_system( AT_ORANGE , target , buf , NULL );
-                      
-                    }
-		
-
-                }
-            }
-        }
-    
-        if ( autofly(ship) )
-        {
-            if ( ship->spaceobject && ship->shipclass != SHIP_DEBRIS )
-            {
-                if (ship->target0 && ship->statet0 != LASER_DAMAGED )
-                {
-                    int chance = 75;
-                    SHIP_DATA * target = ship->target0;
-                    int shots, guns, laserguns, ionguns;
-                    int whichguns = 0;
-                    int laserhits = 0, lasermisses = 0;
-                    int ionhits = 0, ionmisses = 0;
-                    int laserdamage = 0, iondamage = 0;
-                    int damage = 0;
-                    
-                    if ( ship->mod->lasers && ship->mod->ions && ship->mod->lasers < 7 && ship->mod->ions < 7 )
-                    {
-                        whichguns = 2;
-                        guns = ship->mod->lasers + ship->mod->ions;
-                        laserguns = ship->mod->lasers;
-                        ionguns = ship->mod->ions;
-                    }
-                    else if ( ship->target0->shield > 0 && ship->mod->ions )
-                    {
-                        whichguns = 1;
-                        guns = ship->mod->ions;
-                        laserguns = 0;
-                        ionguns = ship->mod->ions;
-                    }
-                    else
-                    {
-                        guns = ship->mod->lasers;
-                        laserguns = ship->mod->lasers;
-                        ionguns = 0;
-                    }
-                      
-                    for ( shots=0 ; shots < guns; shots++ )
-                    {
-                        if ( !ship->target0 )
-                            break;
-                        if (ship->shipstate != SHIP_HYPERSPACE && ship->energy > 25 
-                        && ship_in_range( ship, target )
-                        && abs( (int) ( target->vx - ship->vx )) <= 1000 
-                        && abs( (int) ( target->vy - ship->vy )) <= 1000
-                        && abs( (int) ( target->vz - ship->vz )) <= 1000 )
-                        {
-                            if ( ship->shipclass > 1 || is_facing ( ship , target ) )
-                            {
-
-                                distance = abs( (int) ( target->vx - ship->vx )) 
-                                  + abs( (int) ( target->vy - ship->vy )) 
-                                  + abs( (int) ( target->vz - ship->vz ));
-                                distance /= 3;
-                                chance += target->shipclass - ship->shipclass;
-                                chance += ship->currspeed - target->currspeed;
-                                chance += ship->mod->manuever - target->mod->manuever;
-                                chance -= distance/(10*(target->shipclass+1));
-                                chance -= origchance;
-                                chance /= 2;
-                                chance += origchance;
-                                chance = URANGE( 1 , chance , 99 );
-
-                                if ( number_percent( ) > chance )
-                                {
-                                    whichguns == 0 ? lasermisses++ : ( whichguns == 1 ? ionmisses++ : ( shots < ship->mod->lasers ? lasermisses++ : ionmisses++ ) );
-                                } 
-                                else
-                                {
-                                    if( whichguns == 0 )
-                                    {
-                                        laserhits++;
-                                        if ( ship->shipclass == SHIP_PLATFORM ) 
-                                        {      
-                                          damage = number_range( SHIPDAM_MINPLATFORM , SHIPDAM_MAXPLATFORM );
-                                        }
-                                        else if( ship->shipclass == CAPITAL_SHIP && target->shipclass != CAPITAL_SHIP )
-                                          damage = number_range( SHIPDAM_MINCAP, SHIPDAM_MAXCAP );
-                                        else 
-                                            damage = number_range( SHIPDAM_MINDEF , SHIPDAM_MAXDEF );
-             		    
-             		                        laserdamage += damage;
-             		    
-                                    }
-                                    else if( whichguns == 1 )
-                                    {
-                                        ionhits++;
-                                        if ( ship->shipclass == SHIP_PLATFORM ) 
-                                        {      
-                                            damage = number_range( SHIPDAM_MINPLATFORM , SHIPDAM_MAXPLATFORM );
-                                        }
-                                        else if( ship->shipclass == CAPITAL_SHIP && target->shipclass != CAPITAL_SHIP )
-                                            damage = number_range( SHIPDAM_MINCAP, SHIPDAM_MAXCAP );
-                                        else 
-                                            damage = number_range( SHIPDAM_MINDEF , SHIPDAM_MAXDEF );
-             		    
-             		                        iondamage += damage;
-             		    
-             		    
-                                    }
-                                    else if( whichguns == 2 )
-                                    {
-                                        if( shots < ship->mod->lasers )
-                                        {
-                                            laserhits++;
-                                            if ( ship->shipclass == SHIP_PLATFORM ) 
-                                            {      
-                                                damage = number_range( SHIPDAM_MINPLATFORM , SHIPDAM_MAXPLATFORM );
-                                            }
-                                            else if( ship->shipclass == CAPITAL_SHIP && target->shipclass != CAPITAL_SHIP )
-                                                damage = number_range( SHIPDAM_MINCAP, SHIPDAM_MAXCAP );
-                                            else 
-                                                damage = number_range( SHIPDAM_MINDEF , SHIPDAM_MAXDEF );
-                        
-                                            laserdamage += damage;
-                                        }
-                                        else
-                                        {
-                                            ionhits++;
-                                            if ( ship->shipclass == SHIP_PLATFORM ) 
-                                            {      
-                                              damage = number_range( SHIPDAM_MINPLATFORM , SHIPDAM_MAXPLATFORM );
-                                            }
-                                            else if( ship->shipclass == CAPITAL_SHIP && target->shipclass != CAPITAL_SHIP )
-                                              damage = number_range( SHIPDAM_MINCAP, SHIPDAM_MAXCAP );
-                                            else 
-                                                damage = number_range( SHIPDAM_MINDEF , SHIPDAM_MAXDEF );
-                                        
-                                            iondamage += damage;
-                                        }
-                                    }
-                                }
-                        
-                            }
-                        }
-                    }
-
-                    if ( laserhits )
-                    {
-                        if ( lasermisses )
-                            buf = str_printf("%s fires %d lasers at you, hitting you %d times and missing you %d times.\n", 
-                                  ship->name, laserguns, laserhits, lasermisses );
-                        else
-                            buf = str_printf("%s fires %d lasers at you, hitting you %d times.\n", 
-                                  ship->name, laserguns, laserhits );
-                        
-                        damage_ship ( target, ship, laserdamage, laserdamage+1 );
-                    }
-                    else if ( lasermisses )
-                    {
-                        buf = str_printf("%s fires its lasers at you, missing you %d times.\n", 
-                                ship->name, lasermisses );
-                    }
-                      
-                    if ( ionhits ) 
-                    {
-                        if ( ionmisses )
-                            buf = str_printf("%s fires %d ion cannons at you, hitting you %d times and missing you %d times.\n", 
-                                  ship->name, ionguns, ionhits, ionmisses );
-                        else
-                            buf = str_printf("%s fires %d ion cannons at you, hitting you %d times.\n", 
-                                  ship->name, ionguns, ionhits );
-                        
-                        damage_ship ( target, ship, -1*iondamage, -1*(iondamage-1) );
-                      
-                    }		
-                    else if ( ionmisses )
-                    {
-                        buf = str_printf("%s fires its ion cannons at you, missing you %d times.\n", 
-                                ship->name, ionmisses );
-                    }
-                }
-            }
-       }
-
+        recharge_ship_noncombat(game, ship, closeem);
+        recharge_ship_autofly_combat(ship);
    }
 }
 
-void update_space( GameContext *game )
+static void update_space_state_update_and_displays(GameContext *game)
 {
     SHIP_DATA *ship;
     SHIP_DATA *target;
@@ -1756,9 +1608,7 @@ void update_space( GameContext *game )
                 target_too_close = too_close+target->currspeed;
                 if( target->spaceobject )
                   if ( target != ship &&
-                    abs( (int) ( ship->vx - target->vx )) < target_too_close &&
-                    abs( (int) ( ship->vy - target->vy )) < target_too_close &&
-                    abs( (int) ( ship->vz - target->vz )) < target_too_close &&
+                    space_distance_ship_less_than( ship, target, target_too_close ) &&
                     ship->docked != target && target->docked != ship )
                   {
                       echo_to_room( AT_RED , get_room_index(ship->pilotseat),  str_printf("Proximity alert: %s  %.0f %.0f %.0f", target->name, target->vx - ship->vx, target->vy - ship->vy, target->vz - ship->vz) );    
@@ -1801,7 +1651,15 @@ void update_space( GameContext *game )
         }
                   
         ship->energy = URANGE( 0 , ship->energy, ship->mod->maxenergy );
-    } 
+    }     
+}
+
+static void update_space_autopilot_and_resupply(GameContext *game)
+{
+    SHIP_DATA *ship;
+    SHIP_DATA *target;
+    std::string buf;
+    int too_close, target_too_close;
 
     for ( ship = first_ship; ship; ship = ship->next )
     {
@@ -1822,9 +1680,7 @@ void update_space( GameContext *game )
             target_too_close = too_close+target->currspeed;
             if ( target != ship && ship->shipstate == SHIP_READY &&
                   ship->docked == NULL && ship->shipstate != SHIP_DOCKED &&
-                  abs( (int) ( ship->vx - target->vx )) < target_too_close &&
-                  abs( (int) ( ship->vy - target->vy )) < target_too_close &&
-                  abs( (int) ( ship->vz - target->vz )) < target_too_close )
+                  space_distance_ship_less_than( ship, target, target_too_close ) )
             {
                 ship->hx = 0-(ship->target0->vx - ship->vx);
                 ship->hy = 0-(ship->target0->vy - ship->vy);
@@ -1897,34 +1753,13 @@ void update_space( GameContext *game )
                   
 
                     if (ship->shipstate != SHIP_HYPERSPACE && ship->energy > 25
-                    && ship->missilestate == MISSILE_READY && ship_in_range( ship, target )
-                    && abs( (int) ( target->vx - ship->vx )) <= 1200
-                    && abs( (int) ( target->vy - ship->vy )) <= 1200
-                    && abs( (int) ( target->vz - ship->vz )) <= 1200 )
+                    && ship->missilestate == MISSILE_READY && ship_target_in_combat_range( ship, target, 1200 ) )
                     {
                         if ( ship->shipclass > 1 || is_facing( ship , target ) )
                         {
-                            chance -= target->mod->manuever/5;
-                            chance -= target->currspeed/20;
-                            chance += target->shipclass*target->shipclass*25;
-                            chance -= ( abs( (int) ( target->vx - ship->vx ))/100 );
-                            chance -= ( abs( (int) ( target->vy - ship->vy ))/100 );
-                            chance -= ( abs( (int) ( target->vz - ship->vz ))/100 );
-                            chance += ( 30 );
-                            chance = URANGE( 10 , chance , 90 );
+                            chance = compute_autopilot_projectile_launch_chance( chance, ship, target);
 
-                            if( ( target->shipclass == SHIP_PLATFORM || ( target->shipclass == CAPITAL_SHIP && target->currspeed < 50 )) && ship->rockets > 0 )
-                              projectiles = HEAVY_ROCKET;
-                            else if ( ( target->shipclass == MIDSIZE_SHIP || ( target->shipclass == CAPITAL_SHIP) ) && ship->torpedos > 0 )
-                              projectiles = PROTON_TORPEDO;
-                            else if ( ship->missiles < 0 && ship->torpedos > 0 )
-                              projectiles = PROTON_TORPEDO;
-                            else if ( ship->missiles < 0 && ship->rockets > 0 )
-                              projectiles = HEAVY_ROCKET;
-                            else if ( ship->missiles > 0 )
-                              projectiles = CONCUSSION_MISSILE;
-                            else
-                              projectiles = -1;
+                            projectiles = select_autopilot_projectile_type( ship, target );
           
                             if ( number_percent( ) > chance || projectiles == -1 )
                             {
@@ -2002,7 +1837,12 @@ void update_space( GameContext *game )
       
         save_ship( ship );
     }
+}
 
+void update_space( GameContext *game )
+{
+    update_space_state_update_and_displays(game);
+    update_space_autopilot_and_resupply(game);
 }
 
 
@@ -2854,11 +2694,7 @@ void echo_to_system( int color , SHIP_DATA *ship , const std::string& argument ,
        if( !ship_in_range( ship, target ) )
          continue;
        if (target != ship && target != ignore )
-         if ( abs( (int) ( target->vx - ship->vx )) < 100*(target->mod->sensor+10)*((ship->shipclass == SHIP_DEBRIS ? 2 : ship->shipclass)+1) &&
-         abs( (int) ( target->vy - ship->vy )) < 100*(target->mod->sensor+10)*((ship->shipclass == SHIP_DEBRIS ? 2 : ship->shipclass)+1) &&
-         abs( (int) ( target->vz - ship->vz )) < 100*(target->mod->sensor+10)*((ship->shipclass == SHIP_DEBRIS ? 2 : ship->shipclass)+1) )
-
-
+         if ( space_distance_ship_less_than( ship, target, 100*(target->mod->sensor+10)*((ship->shipclass == SHIP_DEBRIS ? 2 : ship->shipclass)+1) ) )
            echo_to_cockpit( color , target , argument );
      }
 
@@ -7668,9 +7504,7 @@ void do_info(CHAR_DATA *ch, char *argument )
     if ( check_pilot( ch , target ) )
         fromafar = FALSE;
 
-    if ( abs( (int) ( target->vx - ship->vx )) > 500+ship->mod->sensor*2 ||
-        abs( (int) ( target->vy - ship->vy )) > 500+ship->mod->sensor*2 ||
-        abs( (int) ( target->vz - ship->vz )) > 500+ship->mod->sensor*2 )
+    if ( !space_distance_ship_less_than( ship, target, 500+ship->mod->sensor*2 ) )
     {
         send_to_char("&RThat ship is to far away to scan.\n",ch);
         return;
@@ -7989,9 +7823,7 @@ void do_status(CHAR_DATA *ch, char *argument )
         return;
     }          
     
-    if ( abs( (int) ( target->vx - ship->vx )) > 500+ship->mod->sensor*2 ||
-        abs( (int) ( target->vy - ship->vy )) > 500+ship->mod->sensor*2 ||
-        abs( (int) ( target->vz - ship->vz )) > 500+ship->mod->sensor*2 )  
+    if ( !space_distance_ship_less_than( ship, target, 500+ship->mod->sensor*2 ) )
     {
         send_to_char("&RThat ship is to far away to scan.\n",ch);
         return;
@@ -8050,9 +7882,7 @@ void do_hyperspace(CHAR_DATA *ch, char *argument )
 		  {
 		    if ( target->spaceobject && ctx.ship->spaceobject &&  target->shipstate != SHIP_LANDED && 
 		      target->mod && target->mod->gravitypower && target->mod->gravproj &&
-		        abs( (int) ( ctx.ship->vx - target->vx )) < 10*target->mod->gravproj &&
-		        abs( (int) ( ctx.ship->vy - target->vy )) < 10*target->mod->gravproj &&
-		        abs( (int) ( ctx.ship->vz - target->vz )) < 10*target->mod->gravproj )
+		        space_distance_ship_less_than( ctx.ship, target, 10*target->mod->gravproj ) )
 		    {
 		      ch_printf(ch, "You are still within the %s's artificial gravity well.\n", target->name );
 		      return;

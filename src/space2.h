@@ -314,7 +314,7 @@ inline bool space_require_ship_not_disabled( CHAR_DATA *ch, scmd_data &ctx, bool
     }
     return true;
 }
-
+// The below function verifies that the ship is not landed or docked with another ship
 inline bool space_require_ship_not_docked( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
 {
     if ( ctx.ship->shipstate == SHIP_LANDED && ctx.ship->docked == NULL )
@@ -389,6 +389,30 @@ enum class ProjectileKind
     TORPEDO,
     ROCKET
 };
+
+inline bool space_validate_tractor_links( CHAR_DATA *ch, SHIP_DATA *ship, bool showmsg = true )
+{
+    bool ok = true;
+
+    if ( ship->tractored && ship->tractored->tractoredby != ship )
+    {
+        ship->tractored = NULL;
+        ok = false;
+    }
+
+    if ( ship->tractoredby && ship->tractoredby->tractored != ship )
+    {
+        ship->tractoredby = NULL;
+        if ( ship->shipstate == SHIP_TRACTORED )
+            ship->shipstate = SHIP_READY;
+        ok = false;
+    }
+
+    if ( !ok && showmsg )
+        send_to_char("&RTractor lock desync detected. Control link reset.\n", ch);
+
+    return ok;
+}
 
 static inline SHIP_DATA *space_get_turret_target( CHAR_DATA *ch, TURRET_DATA *turret, bool showmsg = true )
 {
@@ -718,3 +742,130 @@ static inline void ship_show_status( CHAR_DATA *ch, SHIP_DATA *ship )
             get_extmodule_count(ship), ship->maxextmodules, get_intmodule_count(ship), ship->maxintmodules );
 
 };
+
+static inline int compute_autofly_laser_ion_hit_chance( int chance, int origchance, SHIP_DATA *ship, SHIP_DATA *target )
+{
+    int distance;
+    distance = abs( (int) ( target->vx - ship->vx ))
+            + abs( (int) ( target->vy - ship->vy ))
+            + abs( (int) ( target->vz - ship->vz ));
+    distance /= 3;
+
+    chance += target->shipclass - ship->shipclass;
+    chance += ship->currspeed - target->currspeed;
+    chance += ship->mod->manuever - target->mod->manuever;
+    chance -= distance/(10*(target->shipclass+1));
+    chance -= origchance;
+    chance /= 2;
+    chance += origchance;
+    chance = URANGE( 1 , chance , 99 );
+
+    return chance;
+}
+
+static inline int compute_autopilot_projectile_launch_chance( int chance, SHIP_DATA *ship, SHIP_DATA *target )
+{
+    chance -= target->mod->manuever/5;
+    chance -= target->currspeed/20;
+    chance += target->shipclass*target->shipclass*25;
+    chance -= ( abs( (int) ( target->vx - ship->vx ))/100 );
+    chance -= ( abs( (int) ( target->vy - ship->vy ))/100 );
+    chance -= ( abs( (int) ( target->vz - ship->vz ))/100 );
+    chance += 30;
+    chance = URANGE( 10 , chance , 90 );
+    return chance;
+}
+
+static inline bool ship_target_in_combat_range( SHIP_DATA *ship, SHIP_DATA *target, int max_delta )
+{
+    if ( !target )
+    return false;
+
+    return ship_in_range( ship, target )
+        && space_distance_ship_less_than( ship, target, max_delta );
+}    
+
+static inline int select_autopilot_projectile_type( SHIP_DATA *ship, SHIP_DATA *target )
+{
+    if( ( target->shipclass == SHIP_PLATFORM
+       || ( target->shipclass == CAPITAL_SHIP && target->currspeed < 50 ) )
+       && ship->rockets > 0 )
+        return HEAVY_ROCKET;
+
+    if( ( target->shipclass == MIDSIZE_SHIP || target->shipclass == CAPITAL_SHIP )
+       && ship->torpedos > 0 )
+        return PROTON_TORPEDO;
+
+    if( ship->missiles < 0 && ship->torpedos > 0 )
+        return PROTON_TORPEDO;
+
+    if( ship->missiles < 0 && ship->rockets > 0 )
+        return HEAVY_ROCKET;
+
+    if( ship->missiles > 0 )
+        return CONCUSSION_MISSILE;
+
+    return -1;
+}
+
+inline bool space_validate_dock_links( CHAR_DATA *ch, SHIP_DATA *ship, bool showmsg = true )
+{
+    bool ok = true;
+
+    if ( !ship )
+        return false;
+
+    if ( ship->docked == ship )
+    {
+        ship->docked = NULL;
+        ship->docking = SHIP_READY;
+        ok = false;
+    }
+
+    if ( ship->docking == SHIP_DOCKED && ship->docked == NULL )
+    {
+        ship->docking = SHIP_READY;
+        ok = false;
+    }
+
+    if ( ship->docking == SHIP_READY && ship->docked != NULL )
+    {
+        ship->docked = NULL;
+        ok = false;
+    }
+
+    if ( !ok && showmsg )
+        send_to_char("&RDocking link desync detected. Control link reset.\n", ch);
+
+    return ok;
+}
+
+inline bool space_validate_ship_links( CHAR_DATA *ch, SHIP_DATA *ship, bool showmsg = true )
+{
+    bool dock_ok = space_validate_dock_links( ch, ship, false );
+    bool tractor_ok = space_validate_tractor_links( ch, ship, false );
+
+    if ( !( dock_ok && tractor_ok ) && showmsg )
+        send_to_char("&RShip control links desynced. Safety reset applied.\n", ch);
+
+    return dock_ok && tractor_ok;
+}
+
+inline void space_release_tractor_target( SHIP_DATA *ship )
+{
+    SHIP_DATA *target;
+
+    if ( !ship || !ship->tractored )
+        return;
+
+    target = ship->tractored;
+    ship->tractored = NULL;
+
+    if ( target->tractoredby == ship )
+        target->tractoredby = NULL;
+
+    if ( target->location )
+        target->shipstate = SHIP_LANDED;
+    else if ( target->shipstate != SHIP_DOCKED && target->shipstate != SHIP_DISABLED )
+        target->shipstate = SHIP_READY;
+}

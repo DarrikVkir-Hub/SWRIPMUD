@@ -358,7 +358,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
           if (!space_require_ship_spaceship( ch , ctx )) return;
           if (!space_requires_in_system( ch , ctx )) return;
           if (!space_require_ship_autopilot_off( ch , ctx )) return;  
-
+          space_validate_ship_links( ch, ctx.ship, false );
           if ( ctx.ship->mod->tractorbeam == 0 )
           {
               send_to_char("&RThis craft does not have a tractorbeam!\n",ch);
@@ -385,29 +385,15 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
           if ( !str_cmp( ctx.arg1, "none") )
           {
               send_to_char("&GTractorbeam set to no target.\n",ch);
-              if( ctx.ship->tractored && ctx.ship->tractored->tractoredby == ctx.ship )
-              {
-                ctx.ship->tractored->tractoredby = NULL;
-                if( ctx.ship->tractored->location )
-                  ctx.ship->tractored->shipstate = SHIP_LANDED;
-                else if ( ctx.ship->tractored->shipstate != SHIP_DOCKED && ctx.ship->tractored->shipstate != SHIP_DISABLED )
-                  ctx.ship->tractored->shipstate = SHIP_READY;
-                
-              }
-              ctx.ship->tractored = NULL;
+              space_release_tractor_target( ctx.ship );
               return;
           }
 
           if( ctx.ship->tractored )
           {
               send_to_char("&RReleasing previous target.\n",ch);
-              ctx.ship->tractored->tractoredby = NULL;
-              if( ctx.ship->tractored->location )
-                ctx.ship->tractored->shipstate = SHIP_LANDED;
-              else if ( ctx.ship->tractored->shipstate != SHIP_DOCKED && ctx.ship->tractored->shipstate != SHIP_DISABLED )
-                ctx.ship->tractored->shipstate = SHIP_READY;
+              space_release_tractor_target( ctx.ship );
           }
-		  
           target = get_ship_here( ctx.ship->game, ctx.arg1, ctx.ship );
 
 
@@ -488,6 +474,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
     {
         return;
     }
+    space_validate_ship_links( ch, ctx.ship, false );
     target = get_ship_here( ctx.ship->game, ctx.arg1, ctx.ship );
 
     if (  target == NULL || target == ctx.ship)
@@ -573,11 +560,9 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
         send_to_char("&RYou must be in the copilot's seat of a ship to do that!\n",ch);
         return;
     }
-
+    space_validate_ship_links( ch, ctx.ship, false );
     if ( !ctx.ship->tractored || ctx.ship->tractored->tractoredby != ctx.ship )
     {
-        if ( ctx.ship->tractored && ctx.ship->tractored->tractoredby != ctx.ship )
-          ctx.ship->tractored = NULL;
         send_to_char("&RYour tractor beam is not trained on a ship.\n",ch);
         return;
     }
@@ -654,13 +639,8 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
   
     if ( !str_cmp( ctx.arg1, "dock") )
     {
-        if ( abs( (int) ( ctx.ship->vx-eShip->vx )) > 100 ||
-            abs( (int) ( ctx.ship->vy-eShip->vy )) > 100 ||
-            abs( (int) ( ctx.ship->vz-eShip->vz )) > 100 )
-        {
-            send_to_char("&RYou aren't close enough to dock target.\n",ch);
+        if ( target_out_of_coord_range( ch, ctx.ship, eShip, 100, "&RYou aren't close enough to dock target.\n" ) )
             return;
-        }
         if ( !candock( eShip ) || !candock( ctx.ship ) )
         {
             send_to_char("&RYou have no empty docking port.\n",ch);
@@ -674,13 +654,8 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
     }
     if ( !str_cmp( ctx.arg1, "land") )
     {
-        if ( abs( (int) ( ctx.ship->vx-eShip->vx )) > 100 ||
-            abs( (int) ( ctx.ship->vy-eShip->vy )) > 100 ||
-            abs( (int) ( ctx.ship->vz-eShip->vz )) > 100 )
-        {
-            send_to_char("&RYou aren't close enough to the target to pull it into your hanger.\n",ch);
+        if ( target_out_of_coord_range( ch, ctx.ship, eShip, 100, "&RYou aren't close enough to the target to pull it into your hanger.\n" ) )
             return;
-        }
         if ( !ctx.ship->hanger )
         {
             send_to_char("&RYou have no hanger!\n",ch);
@@ -704,15 +679,10 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
         return;
     }
 
-    if ( !str_cmp( ctx.arg1, "undock" ) )
-    {
-        if ( abs( (int) ( ctx.ship->vx-eShip->vx )) > 100 ||
-            abs( (int) ( ctx.ship->vy-eShip->vy )) > 100 ||
-            abs( (int) ( ctx.ship->vz-eShip->vz )) > 100 )
-        {
-            send_to_char("&RYou aren't close enough to the target to pull it off its position.\n",ch);
+      if ( !str_cmp( ctx.arg1, "undock" ) )
+      {
+        if ( target_out_of_coord_range( ch, ctx.ship, eShip, 100, "&RYou aren't close enough to the target to pull it off its position.\n" ) )
             return;
-        }
         if ( !eShip->docked )  
         {
             send_to_char("&RYour target is not docked.\n",ch);
@@ -747,6 +717,7 @@ void do_undock(CHAR_DATA *ch, char *argument)
     if (!space_require_ship_autopilot_off( ch , ctx )) return;        
     if (!space_require_ship_notplatform( ch , ctx )) return;
     if (!space_require_ship_not_hyperspace( ch , ctx )) return;
+    space_validate_ship_links( ch, ctx.ship, false );
 
 
     if ( ctx.ship->docked && ctx.ship->tractoredby &&
@@ -839,6 +810,7 @@ void do_dock(CHAR_DATA *ch, char *argument)
     if (!space_require_ship_not_disabled( ch , ctx )) return;
     if (!space_require_ship_not_landed( ch , ctx )) return;
     if (!space_require_ship_ready( ch , ctx )) return;    
+    space_validate_ship_links( ch, ctx.ship, false );
 
     int chance = 0;
     SHIP_DATA *eShip = NULL;
@@ -949,6 +921,19 @@ void do_dock(CHAR_DATA *ch, char *argument)
 
 void dockship( CHAR_DATA *ch, SHIP_DATA *ship )
 {
+    if ( !ship )
+        return;
+
+    space_validate_ship_links( ch, ship, false );
+    if ( ship->docked == NULL )
+        return;
+
+    if ( ship->docked == ship )
+    {
+        ship->docked = NULL;
+        ship->docking = SHIP_READY;
+        return;
+    }
 
     if ( ship->statetdocking == SHIP_DISABLED )
     {
