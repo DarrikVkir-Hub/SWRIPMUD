@@ -428,7 +428,7 @@ void update_bus( GameContext *game )
               target = ship_from_hanger( game, serin[bus].bus_vnum[serin[bus].planetloc] );
               if ( target != NULL && !target->spaceobject )
               {
-                echo_to_ship( AT_CYAN , ship[bus] , str_printf("An electronic voice says, 'Cannot land at %s ... it seems to have dissapeared.'", serin[bus].bus_stop[serin[bus].planetloc]) );
+                echo_to_ship( AT_CYAN , ship[bus] , str_printf("An electronic voice says, 'Cannot land at %s ... it seems to have disappeared.'", serin[bus].bus_stop[serin[bus].planetloc]) );
                 bus_pos = 5;
               }
             }
@@ -479,7 +479,7 @@ void update_bus( GameContext *game )
             destination = serin[bus].bus_vnum[serin[bus].planetloc];
             if ( !land_bus( ship[bus], destination ) )
             {
-               echo_to_ship( AT_CYAN , ship[bus] , str_printf("An electronic voice says, 'Oh My, %s seems to have dissapeared.'" , serin[bus].bus_stop[serin[bus].planetloc]) );
+               echo_to_ship( AT_CYAN , ship[bus] , str_printf("An electronic voice says, 'Oh My, %s seems to have disappeared.'" , serin[bus].bus_stop[serin[bus].planetloc]) );
                echo_to_ship( AT_CYAN , ship[bus] , "An electronic voice says, 'Alderaan was bad enough... Landing aborted.'");
             }
             else
@@ -775,7 +775,6 @@ static void update_ships_realspace(GameContext *game)
     SPACE_DATA *spaceobj;
     float dx, dy, dz, change;
     std::string buf;
-    sh_int crashsun = 0;
 
     for ( ship = first_ship; ship; ship = ship->next )
     {
@@ -823,7 +822,7 @@ static void update_ships_realspace(GameContext *game)
             continue;
             
         if( ship->shipstate == SHIP_LANDED && ship->spaceobject )
-            ship->shipstate = SHIP_READY;
+            space_set_shipstate( ship, SHIP_READY );
 
         if ( ship->currspeed > 0 && ship->shipstate != SHIP_LAND && ship->shipstate != SHIP_LAND_2)
         {
@@ -841,7 +840,7 @@ static void update_ships_realspace(GameContext *game)
             }
           
         } 
-
+        space_validate_tractor_links( NULL, ship, false );
         if ( ship->tractoredby && ( ship->tractoredby->shipclass <= ship->shipclass || ship->shipclass == SHIP_DEBRIS ) )
         {
             ship->tractoredby->currspeed = (ship->tractoredby->mod->tractorbeam)/4;
@@ -886,7 +885,6 @@ static void update_ships_realspace(GameContext *game)
         if ( autofly(ship) )
           continue;
         
-        crashsun = 0;
         for( spaceobj = first_spaceobject; spaceobj; spaceobj = spaceobj->next )
         {           
             if ( spaceobj->type == SPACE_SUN && spaceobj->name && strcmp(spaceobj->name,"") &&
@@ -894,33 +892,26 @@ static void update_ships_realspace(GameContext *game)
                       abs( (int) ( ship->vy - spaceobj->ypos )) < 10 &&
                       abs( (int) ( ship->vz - spaceobj->zpos )) < 10 )
             {
-                /* Why the redundence of code here?
-                  Only need to evade once.  Darrik Vequir */
-                crashsun = 1;
-            }
+                /* Evading the sun added by Darrik Vequir */
 
-            if (crashsun == 1)
-            {
-            /* Evading the sun added by Darrik Vequir */
-
-              ship->hx = 10 * ship->vx;
-              ship->hy = 10 * ship->vy;
-              ship->hz = 10 * ship->vz;
-              ship->energy -= ship->currspeed/10;
-              ship->goalspeed = ship->mod->realspeed;
-              ship->accel = get_acceleration(ship);
-              echo_to_room( AT_RED , get_room_index(ship->pilotseat), "Automatic Override: Evading to avoid collision with sun!\n" );
-              if ( ship->shipclass == FIGHTER_SHIP || ( ship->shipclass == MIDSIZE_SHIP && ship->mod->manuever > 50 ) )
-                ship->shipstate = SHIP_BUSY_3;
-              else if ( ship->shipclass == MIDSIZE_SHIP || ( ship->shipclass == CAPITAL_SHIP && ship->mod->manuever > 50 ) )
-                ship->shipstate = SHIP_BUSY_2;
-              else
-                ship->shipstate = SHIP_BUSY;
-
+                ship->hx = 10 * ship->vx;
+                ship->hy = 10 * ship->vy;
+                ship->hz = 10 * ship->vz;
+                ship->energy -= ship->currspeed/10;
+                ship->goalspeed = ship->mod->realspeed;
+                ship->accel = get_acceleration(ship);
+                echo_to_room( AT_RED , get_room_index(ship->pilotseat), "Automatic Override: Evading to avoid collision with sun!\n" );
+                if ( ship->shipclass == FIGHTER_SHIP || ( ship->shipclass == MIDSIZE_SHIP && ship->mod->manuever > 50 ) )
+                    space_set_shipstate( ship, SHIP_BUSY_3 );
+                else if ( ship->shipclass == MIDSIZE_SHIP || ( ship->shipclass == CAPITAL_SHIP && ship->mod->manuever > 50 ) )
+                    space_set_shipstate( ship, SHIP_BUSY_2 );
+                else
+                    space_set_shipstate( ship, SHIP_BUSY );
+                break;
             }
             /*
             echo_to_cockpit( AT_BLOOD+AT_BLINK, ship, "You fly directly into the sun.");
-            SPRINTF( buf , "%s flys directly into %s!", ship->name, ship->spaceobject->star2);
+            SPRINTF( buf , "%s flies directly into %s!", ship->name, ship->spaceobject->star2);
             echo_to_system( AT_ORANGE , ship , buf , NULL );
             destroy_ship(ship , NULL);
             continue;
@@ -933,7 +924,7 @@ static void update_ships_realspace(GameContext *game)
                         abs( (int) ( ship->vy - spaceobj->ypos )) < 10 &&
                         abs( (int) ( ship->vz - spaceobj->zpos )) < 10 )
               {
-                  buf = str_printf("You begin orbitting %s.", spaceobj->name); 
+                  buf = str_printf("You begin orbiting %s.", spaceobj->name); 
                   echo_to_cockpit( AT_YELLOW, ship, buf);
                   buf = str_printf("%s begins orbiting %s.", ship->name, spaceobj->name); 
                   echo_to_system( AT_ORANGE , ship , buf , NULL );
@@ -950,7 +941,7 @@ static void update_ships_realspace(GameContext *game)
 static void update_ships_hyperspace_and_sync(GameContext *game)
 {
     SHIP_DATA *ship;
-    SHIP_DATA *target;
+    SHIP_DATA *target = NULL;
     SPACE_DATA *spaceobj;
     std::string buf;
 
@@ -958,6 +949,7 @@ static void update_ships_hyperspace_and_sync(GameContext *game)
                                                         // updated, while others are still pre-tick.  A second loop makes sure all ships have had 
                                                         // their positions updated that tick. DV 4-14-26
     {
+        target = NULL;
         if (ship->shipstate == SHIP_HYPERSPACE)
         {
             float tx, ty, tz;
@@ -1002,23 +994,27 @@ static void update_ships_hyperspace_and_sync(GameContext *game)
                   ship_to_spaceobject( ship, ship->currjump );
                   ship->currjump = NULL;
                   echo_to_system( AT_YELLOW, ship, buf , NULL );
-                  ship->shipstate = SHIP_READY;
+                  space_set_shipstate( ship, SHIP_READY );
                   STRFREE( ship->home );
                   ship->home = STRALLOC( ship->spaceobject->name );
-              }
-            }
-            for( target = first_ship; target; target= target->next )
-            {
-              if (target && ship && target != ship )
-              {
-                if ( target->spaceobject && ship->spaceobject && 
-                    target->shipstate != SHIP_LANDED && 
-                    target->mod && target->mod->gravproj && target->mod->gravitypower &&
-                    space_distance_ship_less_than( ship, target, 10*target->mod->gravproj ))
                   break;
               }
             }
-            if( target )
+            if ( ship->shipstate == SHIP_HYPERSPACE )
+            {
+                for( target = first_ship; target; target= target->next )
+                {
+                    if (target && ship && target != ship )
+                    {
+                        if ( target->spaceobject && ship->spaceobject && 
+                            target->shipstate != SHIP_LANDED && 
+                            target->mod && target->mod->gravproj && target->mod->gravitypower &&
+                            space_distance_ship_less_than( ship, target, 10*target->mod->gravproj ))
+                        break;
+                    }
+                }
+            }   
+            if( ship->shipstate == SHIP_HYPERSPACE && target )
             {
                 echo_to_room( AT_YELLOW, get_room_index(ship->pilotseat), "Hyperjump complete.");
                 echo_to_ship( AT_YELLOW, ship, "The ship slams to a halt as it comes out of hyperspace.  An artificial gravity well surrounds you!");
@@ -1031,7 +1027,7 @@ static void update_ships_hyperspace_and_sync(GameContext *game)
                 ship_to_spaceobject( ship, ship->currjump );
                 ship->currjump = NULL;
                 echo_to_system( AT_YELLOW, ship, buf , NULL );
-                ship->shipstate = SHIP_READY;
+                space_set_shipstate( ship, SHIP_READY );
                 STRFREE( ship->home );
                 ship->home = STRALLOC( ship->spaceobject->name );
             }
@@ -1059,7 +1055,7 @@ static void update_ships_hyperspace_and_sync(GameContext *game)
                     ship_to_spaceobject( ship, ship->currjump );
                     ship->currjump = NULL;
                     echo_to_system( AT_YELLOW, ship, buf , NULL );
-                    ship->shipstate = SHIP_READY;
+                    space_set_shipstate( ship, SHIP_READY );
                     STRFREE( ship->home );
                     ship->home = STRALLOC( ship->spaceobject->name );
             	  }
@@ -1084,7 +1080,7 @@ static void update_ships_hyperspace_and_sync(GameContext *game)
                     ship_to_spaceobject( ship, ship->currjump );
                     ship->currjump = NULL;
                     echo_to_system( AT_YELLOW, ship, str_printf("%s enters the starsystem from hyperspace at %.0f %.0f %.0f", ship->name, ship->vx, ship->vy, ship->vz) , NULL );
-                    ship->shipstate = SHIP_READY;
+                    space_set_shipstate( ship, SHIP_READY );
                     STRFREE( ship->home );
                     ship->home = STRALLOC( ship->spaceobject->name );
                     //speed = ship->mod->hyperspeed;
@@ -1112,7 +1108,8 @@ static void update_ships_hyperspace_and_sync(GameContext *game)
                     ship->orighyperdistance = ship->hyperdistance;
                     
                     ship->count = 0;
-                    do_radar( ship->ch, "" );
+                    if ( ship->ch )
+                        do_radar( ship->ch, "" );
           	    }
             }
             
@@ -1132,32 +1129,10 @@ static void update_ships_hyperspace_and_sync(GameContext *game)
               }
             }
         }
-   	
+        space_enforce_ship_invariants( ship );
         if( ship->docked )
         {
-            ship->vx = ship->docked->vx;
-            ship->vy = ship->docked->vy;
-            ship->vz = ship->docked->vz;
-            ship->cx = ship->docked->cx;
-            ship->cy = ship->docked->cy;
-            ship->cz = ship->docked->cz;
-            ship->ox = ship->docked->ox;
-            ship->oy = ship->docked->oy;
-            ship->oz = ship->docked->oz;
-            ship->jx = ship->docked->jx;
-            ship->jy = ship->docked->jy;
-            ship->jz = ship->docked->jz;
-            ship->hx = ship->docked->hx;
-            ship->hy = ship->docked->hy;
-            ship->hz = ship->docked->hz;
-            ship->shipstate = ship->docked->shipstate;
-            ship->hyperdistance = ship->docked->hyperdistance;
-            ship->currspeed = ship->docked->currspeed;
-            ship->orighyperdistance = ship->docked->orighyperdistance;
-            ship->location = ship->docked->location;
-            ship->dest = ship->docked->dest;
-            ship->spaceobject = ship->docked->spaceobject;
-            ship->currjump = ship->docked->currjump;
+            space_ship_force_docked_match( ship, ship->docked );
         }  
      
         if( ship->vx > MAX_COORD)
@@ -1225,7 +1200,7 @@ static void recharge_ship_noncombat( GameContext *game, SHIP_DATA *ship, bool cl
             turret->state = 0;
         }
 
-
+    space_validate_ship_links( NULL, ship, false );
     if( ship->docked && ship->docked->shipclass == SHIP_PLATFORM )
     {
         if( ship->mod->maxenergy - ship->energy > 500 )
@@ -1488,9 +1463,9 @@ static void update_space_state_update_and_displays(GameContext *game)
         if ( ship->chaff_released > 0 )
             ship->chaff_released--;
         
-        /* following was originaly to fix ships that lost their pilot 
-           in the middle of a manuever and are stuck in a busy state 
-           but now used for timed manouevers such as turning */
+        /* following was originally to fix ships that lost their pilot 
+           in the middle of a maneuver and are stuck in a busy state 
+           but now used for timed maneuvers such as turning */
     
         if( ship->shipstate == SHIP_READY && ship->tracking == TRUE )
 	      {
@@ -1500,7 +1475,10 @@ static void update_space_state_update_and_displays(GameContext *game)
             }
             else
             {
-                do_hyperspace( ship->ch, "" );
+                if ( ship->ch )
+                    do_hyperspace( ship->ch, "" );
+                else
+                    ship->tracking = FALSE;
                 ship->count = 0;
             }
         }         
@@ -1508,52 +1486,71 @@ static void update_space_state_update_and_displays(GameContext *game)
     	  if (ship->shipstate == SHIP_BUSY_3)
             {
                 echo_to_room( AT_YELLOW, get_room_index(ship->pilotseat), "Manuever complete.");
-                ship->shipstate = SHIP_READY;
+                space_set_shipstate( ship, SHIP_READY );
             }
         if (ship->shipstate == SHIP_BUSY_2)
-            ship->shipstate = SHIP_BUSY_3;
+            space_set_shipstate( ship, SHIP_BUSY_3 );
         if (ship->shipstate == SHIP_BUSY)
-            ship->shipstate = SHIP_BUSY_2;
+            space_set_shipstate( ship, SHIP_BUSY_2 );
         
         if (ship->shipstate == SHIP_LAND_2)
-            landship( ship , ship->dest );
+        {
+            if (!ship->dest || ship->dest[0] == '\0')
+            {
+                if (ship->shipstate != SHIP_DISABLED)
+                    space_set_shipstate( ship, SHIP_READY );
+            }
+            else
+                landship( ship , ship->dest );
+        }
         if (ship->shipstate == SHIP_LAND)
         {
-            approachland( ship, ship->dest );
-            ship->shipstate = SHIP_LAND_2;
+            if (!ship->dest || ship->dest[0] == '\0')
+            {
+                if (ship->shipstate != SHIP_DISABLED)
+                    space_set_shipstate( ship, SHIP_READY );
+            }
+            else
+            {
+                approachland( ship, ship->dest );
+                if (ship->shipstate == SHIP_LAND)
+                    space_set_shipstate( ship, SHIP_LAND_2 );
+            }
         }
         
         if (ship->shipstate == SHIP_LAUNCH_2)
             launchship( ship );
         if (ship->shipstate == SHIP_LAUNCH)
-            ship->shipstate = SHIP_LAUNCH_2;
+            space_set_shipstate( ship, SHIP_LAUNCH_2 );
 
         if (ship->docking == SHIP_DOCK_2)
             dockship( ship->ch , ship );
         if (ship->docking == SHIP_DOCK)
-            ship->docking = SHIP_DOCK_2;
+            space_set_docking_state( ship, SHIP_DOCK_2 );
         
 
         ship->shield = UMAX( 0 , ship->shield-1-ship->shipclass);
-                
-        if (ship->autorecharge && ship->mod->maxshield > ship->shield && ship->energy > 100)
+
+        if ( ship->mod ) // Unlikely guard in case mod is NULL - DV 4-20-26
         {
-            recharge  = UMIN( ship->mod->maxshield-ship->shield, 10 + ship->shipclass*10 );           
-            recharge  = UMIN( recharge , ship->energy/2 -100 );
-            recharge  = UMAX( 1, recharge );
-            ship->shield += recharge;
-            ship->energy -= recharge;        
+            if (ship->autorecharge && ship->mod->maxshield > ship->shield && ship->energy > 100)
+            {
+                recharge  = UMIN( ship->mod->maxshield-ship->shield, 10 + ship->shipclass*10 );           
+                recharge  = UMIN( recharge , ship->energy/2 -100 );
+                recharge  = UMAX( 1, recharge );
+                ship->shield += recharge;
+                ship->energy -= recharge;        
+            }
+            
+            if ( autofly(ship) && ( ship->energy >= ((25+ship->shipclass*25)*(2+ship->shipclass) ) )
+            && ((ship->mod->maxshield - ship->shield) >= ( 25+ship->shipclass*25 ) ) )
+            {
+                recharge  = 25+ship->shipclass*25;
+                recharge  = UMIN(  ship->mod->maxshield-ship->shield , recharge );
+                ship->shield += recharge;
+                ship->energy -= ( recharge*2 + recharge * ship->shipclass );        
+            }
         }
-        
-        if ( autofly(ship) && ( ship->energy >= ((25+ship->shipclass*25)*(2+ship->shipclass) ) )
-        && ((ship->mod->maxshield - ship->shield) >= ( 25+ship->shipclass*25 ) ) )
-        {
-            recharge  = 25+ship->shipclass*25;
-            recharge  = UMIN(  ship->mod->maxshield-ship->shield , recharge );
-            ship->shield += recharge;
-            ship->energy -= ( recharge*2 + recharge * ship->shipclass );        
-    	  }
-        
         
         if (ship->shield > 0)
         {
@@ -1583,7 +1580,6 @@ static void update_space_state_update_and_displays(GameContext *game)
 
         if ( ship->spaceobject )
         {
-            too_close = ship->currspeed + 50;
             too_close = ship->currspeed + 50;
 
             for( spaceobj = first_spaceobject; spaceobj; spaceobj = spaceobj->next )
@@ -1649,193 +1645,315 @@ static void update_space_state_update_and_displays(GameContext *game)
         {
             echo_to_cockpit( AT_RED , ship,  "Warning: Ship fuel low." );
         }
-                  
-        ship->energy = URANGE( 0 , ship->energy, ship->mod->maxenergy );
+        
+        if ( ship->mod )        
+            ship->energy = URANGE( 0 , ship->energy, ship->mod->maxenergy );
     }     
+}
+
+static void update_autofly_set_stop( SHIP_DATA *ship )
+{
+    ship->goalspeed = 0;
+    ship->accel = get_acceleration( ship );
+}
+
+static void update_autofly_target_departure( SHIP_DATA *ship )
+{
+    if ( ship->target0 && autofly(ship) )
+        if ( !ship_in_range( ship->target0, ship ) )
+        {
+            echo_to_room( AT_BLUE , get_room_index(ship->pilotseat), "Target left, returning to NORMAL condition.\n" );
+            update_autofly_set_stop( ship );
+            ship->target0 = NULL;
+        }
+}
+
+static void update_autotrack_set_busy_state( SHIP_DATA *ship )
+{
+    if ( ship->shipclass == FIGHTER_SHIP || ( ship->shipclass == MIDSIZE_SHIP && ship->mod->manuever > 50 ) )
+        space_set_shipstate( ship, SHIP_BUSY_3 );
+    else if ( ship->shipclass == MIDSIZE_SHIP || ( ship->shipclass == CAPITAL_SHIP && ship->mod->manuever > 50 ) )
+        space_set_shipstate( ship, SHIP_BUSY_2 );
+    else
+        space_set_shipstate( ship, SHIP_BUSY );
+}
+
+static void update_autotrack_apply_course_change( SHIP_DATA *ship, SHIP_DATA *target, bool evade, sh_int msgcolor, const char *msg )
+{
+    if ( evade )
+    {
+        ship->hx = 0 - ( target->vx - ship->vx );
+        ship->hy = 0 - ( target->vy - ship->vy );
+        ship->hz = 0 - ( target->vz - ship->vz );
+    }
+    else
+    {
+        ship->hx = target->vx - ship->vx;
+        ship->hy = target->vy - ship->vy;
+        ship->hz = target->vz - ship->vz;
+    }
+
+    ship->energy -= ship->currspeed / 10;
+    echo_to_room( msgcolor , get_room_index(ship->pilotseat), msg );
+    update_autotrack_set_busy_state( ship );
+}
+
+static void update_autotrack_course( SHIP_DATA *ship )
+{
+    SHIP_DATA *target;
+    int too_close, target_too_close;
+
+    if ( ship->autotrack && ship->docking == SHIP_READY && ship->target0 && ship->shipclass < 3 )
+    {
+        bool not_docked;
+
+        target = ship->target0;
+        too_close = ship->currspeed + 10;
+        target_too_close = too_close + target->currspeed;
+        not_docked = space_ship_is_not_docked( ship );
+
+        if ( target != ship
+          && space_ship_is_ready( ship )
+          && not_docked
+          && space_distance_ship_less_than( ship, target, target_too_close ) )
+        {
+            update_autotrack_apply_course_change(
+                ship, target, true, AT_RED, "Autotrack: Evading to avoid collision!\n" );
+        }
+        else if ( !is_facing(ship, target)
+               && not_docked )
+        {
+            update_autotrack_apply_course_change(
+                ship, target, false, AT_BLUE, "Autotracking target ... setting new course.\n" );
+        }
+    }
+}
+
+static void update_capital_ship_resupply( SHIP_DATA *ship )
+{
+    if ( ( ship->shipclass == CAPITAL_SHIP || ship->shipclass == SHIP_PLATFORM )
+    && ship->target0 == NULL )
+    {
+        int ammo = ship->missiles + ship->torpedos * 2 + ship->rockets * 3;
+
+        if ( ammo < ship->mod->launchers * 8 )
+            ship->missiles++;
+        if ( ammo < ship->mod->launchers * 8 * 2 )
+            ship->torpedos++;
+        if ( ammo < ship->mod->launchers * 8 * 3 )
+            ship->rockets++;
+        if ( ship->chaff < ship->mod->defenselaunchers * 6 )
+            ship->chaff++;
+    }
+}
+
+static void update_autofly_repair_states( SHIP_DATA *ship )
+{
+    if( ship->missilestate ==  MISSILE_DAMAGED )
+        ship->missilestate =  MISSILE_READY;
+    if( ship->statet0 ==  LASER_DAMAGED )
+        ship->statet0 =  LASER_READY;
+    if( ship->statei0 ==  LASER_DAMAGED )
+        ship->statei0 =  LASER_READY;
+    if( ship->shipstate ==  SHIP_DISABLED )
+        space_set_shipstate( ship, SHIP_READY );
+}
+
+static void update_autofly_no_target_slowdown( SHIP_DATA *ship )
+{
+    if( ship->currspeed )
+        update_autofly_set_stop( ship );
+}
+
+static void update_autofly_relocation( SHIP_DATA *ship )
+{
+    if ( number_range(1, 25) == 25 )
+    {
+        ship_to_spaceobject(ship, spaceobject_from_name(ship->game, ship->home) );
+        if( ship->spaceobject )
+        {
+            ship->vx = ship->spaceobject->xpos + number_range( -5000 , 5000 );
+            ship->vy = ship->spaceobject->ypos + number_range( -5000 , 5000 );
+            ship->vz = ship->spaceobject->zpos + number_range( -5000 , 5000 );
+            ship->hx = 1;
+            ship->hy = 1;
+            ship->hz = 1;
+        }
+    }
+}
+
+static SHIP_DATA *find_autofly_assist_ship( SHIP_DATA *ship )
+{
+    SHIP_DATA *target;
+
+    for ( target = first_ship; target; target = target->next)
+    {
+        if( ship_in_range( ship, target ) )
+          if ( autofly(target) && target->docked == NULL && target->shipstate != SHIP_DOCKED )
+            if ( !str_cmp ( target->owner , ship->owner ) && target != ship )
+              if ( target->target0 == NULL && ship->target0 != target )
+                return target;
+    }
+
+    return NULL;
+}
+
+static void update_autofly_apply_assist_target( SHIP_DATA *ship, SHIP_DATA *assist_ship )
+{
+    std::string buf;
+
+    if ( !assist_ship )
+        return;
+
+    assist_ship->target0 = ship->target0;
+    buf = str_printf("You are being targeted by %s." , assist_ship->name);
+    echo_to_cockpit( AT_BLOOD , assist_ship->target0 , buf );
+}
+
+static void update_autofly_auto_assist( SHIP_DATA *ship )
+{
+    SHIP_DATA *assist_ship;
+
+    if (!ship || !ship->target0 )
+        return;
+
+    if ( !ship->target0->target0 && autofly(ship->target0))
+      ship->target0->target0 = ship;
+
+    assist_ship = find_autofly_assist_ship( ship );
+    update_autofly_apply_assist_target( ship, assist_ship );
+}
+
+static bool update_autofly_can_try_projectile_launch( SHIP_DATA *ship, SHIP_DATA *target )
+{
+    if ( !ship || !target )
+        return false;
+    if ( ship->shipstate == SHIP_HYPERSPACE )
+        return false;
+    if ( ship->energy <= 25 )
+        return false;
+    if ( ship->missilestate != MISSILE_READY )
+        return false;
+    if ( !ship_target_in_combat_range( ship, target, 1200 ) )
+        return false;
+    if ( !( ship->shipclass > 1 || is_facing( ship , target ) ) )
+        return false;
+
+    return true;
+}
+
+static void update_autofly_consume_projectile_inventory( SHIP_DATA *ship, int projectiles )
+{
+    if( projectiles == CONCUSSION_MISSILE ) ship->missiles--;
+    if( projectiles == PROTON_TORPEDO ) ship->torpedos--;
+    if( projectiles == HEAVY_ROCKET ) ship->rockets--;
+}
+
+static void update_autofly_execute_projectile_launch( SHIP_DATA *ship, SHIP_DATA *target, int projectiles )
+{
+    std::string buf;
+
+    if ( !ship || !target )
+        return;
+
+    if ( projectiles != CONCUSSION_MISSILE
+      && projectiles != PROTON_TORPEDO
+      && projectiles != HEAVY_ROCKET )
+        return;
+
+    new_missile( ship , target , NULL , projectiles );
+    update_autofly_consume_projectile_inventory( ship, projectiles );
+    buf = str_printf("Incoming projectile from %s." , ship->name);
+    echo_to_cockpit( AT_BLOOD , target , buf );
+    buf = str_printf("%s fires a projectile towards %s." , ship->name, target->name );
+    echo_to_system( AT_ORANGE , target , buf , NULL );
+
+    if ( ship->shipclass == CAPITAL_SHIP || ship->shipclass == SHIP_PLATFORM )
+        ship->missilestate = MISSILE_RELOAD_2;
+    else
+        ship->missilestate = MISSILE_FIRED;
+}
+
+static void update_autofly_try_projectile_launch( SHIP_DATA *ship, SHIP_DATA *target )
+{
+    int chance = 50;
+    int projectiles = -1;
+
+    if ( !update_autofly_can_try_projectile_launch( ship, target ) )
+        return;
+
+    chance = compute_autopilot_projectile_launch_chance( chance, ship, target);
+    projectiles = select_autopilot_projectile_type( ship, target );
+
+    if ( number_percent( ) <= chance && projectiles != -1 )
+        update_autofly_execute_projectile_launch( ship, target, projectiles );
+}
+
+static void update_autofly_engagement_state( SHIP_DATA *ship )
+{
+    ship->autotrack = TRUE;
+    if( ship->shipclass != SHIP_PLATFORM && !ship->guard
+        && ship->docked == NULL && ship->shipstate != SHIP_DOCKED )
+    {
+        ship->goalspeed = ship->mod->realspeed;
+        ship->accel = get_acceleration( ship );
+    }
+    if ( ship->energy >200  )
+        ship->autorecharge=TRUE;
+}
+
+static void update_autofly_target_combat( SHIP_DATA *ship )
+{
+    SHIP_DATA *target;
+
+    update_autofly_auto_assist( ship );
+
+    if ( ship->target0 != NULL )
+    {
+        target = ship->target0;
+        update_autofly_engagement_state( ship );
+
+        update_autofly_try_projectile_launch( ship, target );
+    }
+    update_autofly_repair_states( ship );
+}
+
+static void update_autofly_combat_and_spaceobject( SHIP_DATA *ship )
+{
+    if ( !autofly(ship) || ship->shipclass == SHIP_DEBRIS )
+        return;
+
+    if ( !ship->spaceobject )
+    {
+        update_autofly_relocation( ship );
+        return;
+    }
+
+    check_hostile( ship );
+
+    if ( ship->target0 )
+        update_autofly_target_combat( ship );
+    else
+        update_autofly_no_target_slowdown( ship );
 }
 
 static void update_space_autopilot_and_resupply(GameContext *game)
 {
     SHIP_DATA *ship;
-    SHIP_DATA *target;
-    std::string buf;
-    int too_close, target_too_close;
 
     for ( ship = first_ship; ship; ship = ship->next )
     {
-        if( ship->target0 && autofly(ship) )
-            if( !ship_in_range( ship->target0, ship ) )
-            {
-              echo_to_room( AT_BLUE , get_room_index(ship->pilotseat), "Target left, returning to NORMAL condition.\n" );
-              ship->goalspeed = 0;
-              ship->accel = get_acceleration( ship );
-              ship->target0 = NULL;
-            }
+        update_autofly_target_departure( ship );
 
+        update_autotrack_course( ship );
 
-        if (ship->autotrack && ship->docking == SHIP_READY && ship->target0 && ship->shipclass < 3 )
-        {
-            target = ship->target0;
-            too_close = ship->currspeed + 10;
-            target_too_close = too_close+target->currspeed;
-            if ( target != ship && ship->shipstate == SHIP_READY &&
-                  ship->docked == NULL && ship->shipstate != SHIP_DOCKED &&
-                  space_distance_ship_less_than( ship, target, target_too_close ) )
-            {
-                ship->hx = 0-(ship->target0->vx - ship->vx);
-                ship->hy = 0-(ship->target0->vy - ship->vy);
-                ship->hz = 0-(ship->target0->vz - ship->vz);
-                ship->energy -= ship->currspeed/10;
-                echo_to_room( AT_RED , get_room_index(ship->pilotseat), "Autotrack: Evading to avoid collision!\n" );
-                if ( ship->shipclass == FIGHTER_SHIP || ( ship->shipclass == MIDSIZE_SHIP && ship->mod->manuever > 50 ) )
-                    ship->shipstate = SHIP_BUSY_3;
-                else if ( ship->shipclass == MIDSIZE_SHIP || ( ship->shipclass == CAPITAL_SHIP && ship->mod->manuever > 50 ) )
-                    ship->shipstate = SHIP_BUSY_2;
-                else
-                    ship->shipstate = SHIP_BUSY;
-            }
-            else if  ( !is_facing(ship, ship->target0) 
-              && ship->docked == NULL && ship->shipstate != SHIP_DOCKED )
-            {
-                ship->hx = ship->target0->vx - ship->vx;
-                ship->hy = ship->target0->vy - ship->vy;
-                ship->hz = ship->target0->vz - ship->vz;
-                ship->energy -= ship->currspeed/10;
-                echo_to_room( AT_BLUE , get_room_index(ship->pilotseat), "Autotracking target ... setting new course.\n" );
-                if ( ship->shipclass == FIGHTER_SHIP || ( ship->shipclass == MIDSIZE_SHIP && ship->mod->manuever > 50 ) )
-                    ship->shipstate = SHIP_BUSY_3;
-                else if ( ship->shipclass == MIDSIZE_SHIP || ( ship->shipclass == CAPITAL_SHIP && ship->mod->manuever > 50 ) )
-                    ship->shipstate = SHIP_BUSY_2;
-              else
-                  ship->shipstate = SHIP_BUSY;     
-            }
-        }
+        update_autofly_combat_and_spaceobject( ship );
 
-        if ( autofly(ship) && ship->shipclass != SHIP_DEBRIS )
-        {
-            if ( ship->spaceobject )
-            {
-                check_hostile( ship );
-                if (ship->target0 )
-                {
-                    int chance = 50;
-                    int projectiles = -1;		
-
-                    if ( !ship->target0->target0 && autofly(ship->target0))
-                      ship->target0->target0 = ship;
-
-                    /* auto assist ships */
-                
-                    for ( target = first_ship; target; target = target->next)
-                    {
-                        if( ship_in_range( ship, target ) )
-                          if ( autofly(target) && target->docked == NULL && target->shipstate != SHIP_DOCKED )
-                            if ( !str_cmp ( target->owner , ship->owner ) && target != ship )
-                              if ( target->target0 == NULL && ship->target0 != target )
-                              {  
-                                target->target0 = ship->target0;
-                                buf = str_printf("You are being targetted by %s." , target->name);  
-                                echo_to_cockpit( AT_BLOOD , target->target0 , buf );
-                                break;
-                              }   
-                    }
-                  
-                    target = ship->target0;
-                    ship->autotrack = TRUE;
-                    if( ship->shipclass != SHIP_PLATFORM && !ship->guard 
-                        && ship->docked == NULL && ship->shipstate != SHIP_DOCKED )
-                    {
-                          ship->goalspeed = ship->mod->realspeed;
-                          ship->accel = get_acceleration( ship );
-                    }
-                    if ( ship->energy >200  )
-                        ship->autorecharge=TRUE;
-                  
-
-                    if (ship->shipstate != SHIP_HYPERSPACE && ship->energy > 25
-                    && ship->missilestate == MISSILE_READY && ship_target_in_combat_range( ship, target, 1200 ) )
-                    {
-                        if ( ship->shipclass > 1 || is_facing( ship , target ) )
-                        {
-                            chance = compute_autopilot_projectile_launch_chance( chance, ship, target);
-
-                            projectiles = select_autopilot_projectile_type( ship, target );
-          
-                            if ( number_percent( ) > chance || projectiles == -1 )
-                            {
-                            }
-                            else
-                            {
-                                new_missile( ship , target , NULL , projectiles );
-                                if( projectiles == CONCUSSION_MISSILE ) ship->missiles--;
-                                if( projectiles == PROTON_TORPEDO ) ship->torpedos--;
-                                if( projectiles == HEAVY_ROCKET ) ship->rockets--;
-                                buf = str_printf("Incoming projectile from %s." , ship->name);
-                                echo_to_cockpit( AT_BLOOD , target , buf );
-                                buf = str_printf("%s fires a projectile towards %s." , ship->name, target->name );
-                                echo_to_system( AT_ORANGE , target , buf , NULL );
-
-                                if ( ship->shipclass == CAPITAL_SHIP || ship->shipclass == SHIP_PLATFORM )
-                                                  ship->missilestate = MISSILE_RELOAD_2;
-                                else
-                                    ship->missilestate = MISSILE_FIRED;
-                            }
-                        }
-                    }
-
-                    if( ship->missilestate ==  MISSILE_DAMAGED )
-                        ship->missilestate =  MISSILE_READY;
-                    if( ship->statet0 ==  LASER_DAMAGED )
-                        ship->statet0 =  LASER_READY;
-                    if( ship->statei0 ==  LASER_DAMAGED )
-                        ship->statei0 =  LASER_READY;
-                    if( ship->shipstate ==  SHIP_DISABLED )
-                        ship->shipstate =  SHIP_READY;
-
-                }
-                else
-                {
-                  if( ship->currspeed )
-                  {
-                    ship->goalspeed = 0;
-                    ship->accel = get_acceleration( ship );
-                  }
-                }
-            }
-            else
-            {
-                if ( number_range(1, 25) == 25 )
-                {
-                    ship_to_spaceobject(ship, spaceobject_from_name(ship->game, ship->home) );
-                    if( ship->spaceobject )
-                    {
-                              ship->vx = ship->spaceobject->xpos + number_range( -5000 , 5000 );
-                              ship->vy = ship->spaceobject->ypos + number_range( -5000 , 5000 );
-                              ship->vz = ship->spaceobject->zpos + number_range( -5000 , 5000 );
-                                  ship->hx = 1;
-                                  ship->hy = 1;
-                                  ship->hz = 1;
-                    }
-                }
-            }
-        }   
-
-        if ( ( ship->shipclass == CAPITAL_SHIP || ship->shipclass == SHIP_PLATFORM )
-        && ship->target0 == NULL )
-        {
-          int ammo = ship->missiles + ship->torpedos*2 + ship->rockets*3;
-          
-            if( ammo < ship->mod->launchers * 8 )
-              ship->missiles++;
-            if( ammo < ship->mod->launchers * 8 * 2 )
-              ship->torpedos++;
-            if( ammo < ship->mod->launchers * 8 * 3 )
-              ship->rockets++;
-            if( ship->chaff < ship->mod->defenselaunchers * 6 )
-              ship->chaff++;
-        }
+        update_capital_ship_resupply( ship );
       
-        save_ship( ship );
+        ship->lastsaved++;
+        if ( ship->dirty || ship->lastsaved > 10 )
+            save_ship( ship );
     }
 }
 
@@ -3379,6 +3497,8 @@ void save_ship( SHIP_DATA *ship )
     
     FCLOSE( fp );
     fpReserve = fopen( NULL_FILE, "r" );
+    ship->lastsaved = 0;
+    ship->dirty = FALSE;
     return;
 }
 
@@ -5237,24 +5357,25 @@ void do_showship( CHAR_DATA *ch, char *argument )
     ch_printf( ch, "Speed: %d/%d   Hyperspeed: %d   Manueverability: %d\n",
                         ship->currspeed, ship->mod->realspeed, ship->mod->hyperspeed , ship->mod->manuever );                    
     ch_printf( ch, "Docked: ");
-if ((ship->docked) != NULL)
+    space_validate_ship_links( ch, ship, false );
+    if ((ship->docked) != NULL)
 	{
-	ch_printf( ch, "with %s",ship->docked->name);
+	    ch_printf( ch, "with %s",ship->docked->name);
 	}
 	else
 	{
-	ch_printf( ch, "NO");
+	    ch_printf( ch, "NO");
 	}
 	ch_printf(ch, "  Docking Ports: %d", ship->dockingports );
-        ch_printf(ch,"  Alarm: %d   ",ship->alarm);
-        
-        if(ship->upgradeblock)
-          ch_printf( ch, "UpgradeBlock: %d\n", ship->upgradeblock );
-        else
-          ch_printf( ch, "UpgradeBlock: NO\n" );
+    ch_printf(ch,"  Alarm: %d   ",ship->alarm);
+    
+    if(ship->upgradeblock)
+        ch_printf( ch, "UpgradeBlock: %d\n", ship->upgradeblock );
+    else
+        ch_printf( ch, "UpgradeBlock: NO\n" );
         
 
-  ch_printf( ch, "Max. Modules Ext: %d Int:%d\n", ship->maxextmodules, ship->maxintmodules);
+    ch_printf( ch, "Max. Modules Ext: %d Int:%d\n", ship->maxextmodules, ship->maxintmodules);
 
    ch_printf(ch, "Maxcargo: %d  Current Cargo: %d\n", ship->maxcargo, 0 );
     return;
@@ -5756,6 +5877,7 @@ void ship_to_spaceobject( SHIP_DATA *ship , SPACE_DATA *spaceobject )
         return;
      
      ship->spaceobject = spaceobject;
+     ship->dirty = true;
         
 }
 
@@ -5812,6 +5934,7 @@ void ship_from_spaceobject( SHIP_DATA *ship , SPACE_DATA *spaceobject )
         return;
      
      ship->spaceobject = NULL;
+     ship->dirty = true;
 
 }
 
@@ -6472,7 +6595,7 @@ void do_launch( CHAR_DATA *ch, char *argument )
     if (!space_require_ship_from_pilotseat( ch , ctx )) return;
     if (!space_require_ship_movement( ch , ctx )) return;
     if (!space_require_ship_tractoree_ed( ch , ctx )) return;    
-    if (!space_require_ship_notdocked( ch , ctx )) return;
+    if (!space_require_ship_not_docked( ch , ctx )) return;
     if (!space_require_ship_spaceship( ch , ctx )) return;
     if (!space_require_ship_ownership( ch , ctx )) return;
     if (!space_require_tractor_weaker( ch , ctx )) return;
@@ -6480,11 +6603,7 @@ void do_launch( CHAR_DATA *ch, char *argument )
     if (!space_require_ship_autopilot_off( ch , ctx )) return;
     if (!space_require_ship_docked( ch , ctx )) return;
 
-    if ( ctx.ship->shipstate != SHIP_LANDED && ctx.ship->shipstate != SHIP_DISABLED )
-    {
-        send_to_char("The ship is not fully docked right now.\n",ch);
-        return;
-    }
+    if (!space_require_ship_launch_ready_state( ch , ctx )) return;
 
     chance = space_chance_by_shipclass( ch, ctx.ship );
 
@@ -6582,7 +6701,7 @@ void do_launch( CHAR_DATA *ch, char *argument )
 
               ctx.ship->missilestate = MISSILE_READY;
               ctx.ship->statet0 = LASER_READY;
-              ctx.ship->shipstate = SHIP_LANDED;
+              space_set_shipstate(ctx.ship, SHIP_LANDED);
           }
         
           if (ctx.ship->hatchopen)
@@ -6600,7 +6719,7 @@ void do_launch( CHAR_DATA *ch, char *argument )
           echo_to_ship( AT_YELLOW , ctx.ship , "The ship hums as it lifts off the ground.");
           echo_to_room( AT_YELLOW , get_room_index(ctx.ship->location) , str_printf("%s begins to launch.", ctx.ship->name) );
           echo_to_docked( AT_YELLOW , ctx.ship, "The ship shudders as it lifts off the ground." );
-          ctx.ship->shipstate = SHIP_LAUNCH;
+          space_set_shipstate(ctx.ship, SHIP_LAUNCH);
           ctx.ship->goalspeed = ctx.ship->mod->realspeed;
           ctx.ship->accel = get_acceleration(ctx.ship);
           space_learn_from_success( ch, ctx.ship );
@@ -6620,6 +6739,7 @@ void launchship( SHIP_DATA *ship )
     SHIP_DATA *target;
     int plusminus;
     
+    ship->spaceobject = NULL;
     ship_to_spaceobject( ship, spaceobject_from_vnum( ship->game, ship->location ) );
     
     
@@ -6738,7 +6858,7 @@ void do_land( CHAR_DATA *ch, char *argument )
     if (!space_require_ship_from_pilotseat( ch , ctx )) return;
     if (!space_require_ship_movement( ch , ctx )) return;
     if (!space_require_ship_tractoree_ed( ch , ctx )) return;    
-    if (!space_require_ship_notdocked( ch , ctx )) return;
+    if (!space_require_ship_not_docked( ch , ctx )) return;
     if (!space_require_ship_spaceship( ch , ctx )) return;
     if (!space_require_ship_ownership( ch , ctx )) return;
 
@@ -6746,7 +6866,7 @@ void do_land( CHAR_DATA *ch, char *argument )
     if (!space_require_ship_autopilot_off( ch , ctx )) return;
 
     if (!space_require_ship_not_disabled( ch , ctx )) return;
-    if (!space_require_ship_not_docked( ch , ctx )) return;
+    if (!space_require_ship_not_landed_or_docked( ch , ctx )) return;
     if (!space_require_ship_not_hyperspace( ch , ctx )) return;
     if (!space_require_ship_ready( ch , ctx )) return;
     if (!space_require_ship_energy( ch , ctx , 25 + 25*ctx.ship->shipclass )) return;
@@ -6784,16 +6904,15 @@ void do_land( CHAR_DATA *ch, char *argument )
             return;
         if ( ship_target_distance( ctx.ship, ctx.target ) > 200 )            
         {
-            send_to_char("&R That ship is too far away! You'll have to fly a litlle closer.\n",ch);
+            send_to_char("&R That ship is too far away! You'll have to fly a little closer.\n",ch);
             return;
         }            
     }
     else
     {
-        ctx.ship->spaceobject = spaceobj;
         if (!space_in_range( ctx.ship, spaceobj, 500 ) )
         {
-            send_to_char("&R That platform is too far away! You'll have to fly a litlle closer.\n",ch);
+            send_to_char("&R That platform is too far away! You'll have to fly a little closer.\n",ch);
             return;
         }                    
     }
@@ -6801,6 +6920,9 @@ void do_land( CHAR_DATA *ch, char *argument )
     chance = space_chance_by_shipclass( ch, ctx.ship );
     if ( number_percent( ) < chance )
     {
+        if ( found )
+            ctx.ship->spaceobject = spaceobj;
+
         set_char_color( AT_GREEN, ch );
         send_to_char( "Landing sequence initiated.\n", ch);
         act( AT_PLAIN, "$n begins the landing sequence.", ch,
@@ -6809,12 +6931,14 @@ void do_land( CHAR_DATA *ch, char *argument )
         echo_to_system( AT_YELLOW, ctx.ship, buf , NULL );
         echo_to_docked( AT_YELLOW , ctx.ship, "The ship begins to enter the atmosphere." );
 
-        echo_to_ship( AT_YELLOW , ctx.ship , "The ship slowly begins its landing aproach.");
-          ctx.ship->dest = STRALLOC(ctx.arg1);
-          ctx.ship->shipstate = SHIP_LAND;
-          
-          ctx.ship->goalspeed = 0;
-          ctx.ship->accel = get_acceleration(ctx.ship);
+        echo_to_ship( AT_YELLOW , ctx.ship , "The ship slowly begins its landing approach.");
+        if (ctx.ship->dest)
+            STRFREE(ctx.ship->dest);
+        ctx.ship->dest = STRALLOC(ctx.arg1);
+        space_set_shipstate(ctx.ship, SHIP_LAND);
+        
+        ctx.ship->goalspeed = 0;
+        ctx.ship->accel = get_acceleration(ctx.ship);
         
         space_learn_from_success( ch, ctx.ship );  
         if ( spaceobject_from_vnum(ctx.ship->game, ctx.ship->lastdoc) != ctx.ship->spaceobject )
@@ -6850,25 +6974,34 @@ void approachland( SHIP_DATA *ship, const std::string& arg)
      	    break;
      	}
 
-   if( found )
-   {
-    if ( !str_prefix(arg, spaceobj->locationa) )
-       buf2 = spaceobj->locationa;
-    else if ( !str_prefix(arg, spaceobj->locationb) )
-       buf2 = spaceobj->locationb;
-    else if ( !str_prefix(arg, spaceobj->locationc) )
-       buf2 = spaceobj->locationc;
-   }
+    if( found )
+    {
+        if ( !str_prefix(arg, spaceobj->locationa) )
+        buf2 = spaceobj->locationa;
+        else if ( !str_prefix(arg, spaceobj->locationb) )
+        buf2 = spaceobj->locationb;
+        else if ( !str_prefix(arg, spaceobj->locationc) )
+        buf2 = spaceobj->locationc;
+    }
     
     target = get_ship_here( ship->game, arg , ship );
-    if ( target != ship && target != NULL && target->bayopen 
-            && ( ship->shipclass != MIDSIZE_SHIP || target->shipclass != MIDSIZE_SHIP ) )
-       buf2 = target->name;
+    bool target_landing_valid = ( target != ship && target != NULL && target->bayopen
+            && ( ship->shipclass != MIDSIZE_SHIP || target->shipclass != MIDSIZE_SHIP ) );
 
-    if ( !found && !target )
+    if ( target_landing_valid )
+        buf2 = target->name;
+
+    if ( !found && !target_landing_valid )
     {
-      echo_to_room( AT_YELLOW , get_room_index(ship->pilotseat), "ERROR");
-      return;
+        echo_to_room( AT_YELLOW , get_room_index(ship->pilotseat), "Approach failed. Landing aborted.");
+        if ( ship->shipstate != SHIP_DISABLED )
+            space_set_shipstate( ship, SHIP_READY );
+        if (ship->dest)
+        {
+            STRFREE(ship->dest);
+            ship->dest = NULL;
+        }
+        return;
     }
 
     echo_to_room( AT_YELLOW , get_room_index(ship->pilotseat), str_printf("Approaching %s.", buf2) );
@@ -6880,33 +7013,44 @@ void approachland( SHIP_DATA *ship, const std::string& arg)
 void landship( SHIP_DATA *ship, const std::string& arg )
 {    
     SHIP_DATA *target;
-    int destination;
+    int destination = 0;
     CHAR_DATA *ch;
-    
-    if ( !str_prefix(arg,ship->spaceobject->locationa) )
-       destination = ship->spaceobject->doca;
-    if ( !str_prefix(arg,ship->spaceobject->locationb) )
-       destination = ship->spaceobject->docb;
-    if ( !str_prefix(arg,ship->spaceobject->locationc) )
-       destination = ship->spaceobject->docc;
-    
+
     target = get_ship_here( ship->game, arg , ship );
-    if ( target != ship && target != NULL && target->bayopen 
-            && ( ship->shipclass != MIDSIZE_SHIP || target->shipclass != MIDSIZE_SHIP ) )
-    destination = target->hanger;
-     
-    if ( !ship_to_room( ship , destination ) )
+    bool target_landing_valid = ( target != ship && target != NULL && target->bayopen
+            && ( ship->shipclass != MIDSIZE_SHIP || target->shipclass != MIDSIZE_SHIP ) );
+
+    if ( target_landing_valid )
     {
-       echo_to_room( AT_YELLOW , get_room_index(ship->pilotseat), "Could not complete aproach. Landing aborted.");
-       echo_to_ship( AT_YELLOW , ship , "The ship pulls back up out of its landing sequence.");
-       if (ship->shipstate != SHIP_DISABLED)
-           ship->shipstate = SHIP_READY;
-       return;
+        destination = target->hanger;
+    }
+    else if ( ship->spaceobject )
+    {
+        if ( !str_prefix(arg,ship->spaceobject->locationa) )
+        destination = ship->spaceobject->doca;
+        if ( !str_prefix(arg,ship->spaceobject->locationb) )
+        destination = ship->spaceobject->docb;
+        if ( !str_prefix(arg,ship->spaceobject->locationc) )
+        destination = ship->spaceobject->docc;
+    }
+     
+    if ( destination <= 0 || !ship_to_room( ship , destination ) )
+    {
+        echo_to_room( AT_YELLOW , get_room_index(ship->pilotseat), "Could not complete approach. Landing aborted.");
+        echo_to_ship( AT_YELLOW , ship , "The ship pulls back up out of its landing sequence.");
+        if (ship->shipstate != SHIP_DISABLED)
+            space_set_shipstate( ship, SHIP_READY );
+        if (ship->dest)
+        {
+            STRFREE(ship->dest);
+            ship->dest = NULL;
+        }           
+        return;
     }      
          
     echo_to_room( AT_YELLOW , get_room_index(ship->pilotseat), "Landing sequence complete.");
     echo_to_ship( AT_YELLOW , ship , "You feel a slight thud as the ship sets down on the ground."); 
-    echo_to_system( AT_YELLOW, ship, str_printf("%s disapears from your scanner." , ship->name) , NULL );
+    echo_to_system( AT_YELLOW, ship, str_printf("%s disappears from your scanner." , ship->name) , NULL );
 
     if( ship->ch && ship->ch->desc )
     {
@@ -6920,11 +7064,15 @@ void landship( SHIP_DATA *ship, const std::string& arg )
         ship->ch = NULL;
     }
 
-
     ship->location = destination;
     ship->lastdoc = ship->location;
     if (ship->shipstate != SHIP_DISABLED)
        ship->shipstate = SHIP_LANDED;
+    if (ship->dest)
+    {
+        STRFREE(ship->dest);
+        ship->dest = NULL;
+    }     
     ship_from_spaceobject(ship, ship->spaceobject);
     if (ship->tractored)
     {
@@ -7091,7 +7239,7 @@ void do_trajectory_actual( CHAR_DATA *ch, char *argument )
     
     ctx.ship->energy -= required_energy;
        
-    ch_printf( ch ,"&GNew course set, aproaching %.0f %.0f %.0f.\n" , vx,vy,vz );            
+    ch_printf( ch ,"&GNew course set, approaching %.0f %.0f %.0f.\n" , vx,vy,vz );            
     act( AT_PLAIN, "$n manipulates the ships controls.", ch, NULL, ctx.rest , TO_ROOM );
                          
     echo_to_cockpit( AT_YELLOW ,ctx.ship, "The ship begins to turn.\n" );                        
@@ -7165,7 +7313,7 @@ void do_trajectory( CHAR_DATA *ch, char *argument )
     
     ctx.ship->energy -= (required_energy);
        
-    ch_printf( ch ,"&GNew course set, aproaching %.0f %.0f %.0f.\n" , vx,vy,vz );            
+    ch_printf( ch ,"&GNew course set, approaching %.0f %.0f %.0f.\n" , vx,vy,vz );            
     act( AT_PLAIN, "$n manipulates the ships controls.", ch, NULL, ctx.rest , TO_ROOM );
                          
     echo_to_cockpit( AT_YELLOW ,ctx.ship, "The ship begins to turn.\n" );                        
@@ -7537,7 +7685,7 @@ void do_autorecharge(CHAR_DATA *ch, char *argument )
         return;	
     }
     
-    act( AT_PLAIN, "$n flips a switch on the control panell.", ch,
+    act( AT_PLAIN, "$n flips a switch on the control panel.", ch,
          NULL, argument , TO_ROOM );
 
     if ( !str_cmp(argument,"on" ) )
@@ -7557,7 +7705,7 @@ void do_autorecharge(CHAR_DATA *ch, char *argument )
     {
         ctx.ship->autorecharge=FALSE;
         send_to_char( "&GYou let the shields idle.\n", ch);
-        echo_to_cockpit( AT_YELLOW , ctx.ship , "Autorecharge OFF. Shields IDLEING.");
+        echo_to_cockpit( AT_YELLOW , ctx.ship , "Autorecharge OFF. Shields IDLING.");
     }
     else
     {   
@@ -7565,13 +7713,13 @@ void do_autorecharge(CHAR_DATA *ch, char *argument )
         {
            ctx.ship->autorecharge=FALSE;
            send_to_char( "&GYou toggle the shields.\n", ch);
-           echo_to_cockpit( AT_YELLOW , ctx.ship , "Autorecharge OFF. Shields IDLEING.");
+           echo_to_cockpit( AT_YELLOW , ctx.ship , "Autorecharge OFF. Shields IDLING.");
         }
         else
         {
            ctx.ship->autorecharge=TRUE;
            send_to_char( "&GYou toggle the shields.\n", ch);
-           echo_to_cockpit( AT_YELLOW , ctx.ship , "Shields ON. Autorecharge ON");
+           echo_to_cockpit( AT_YELLOW , ctx.ship , "Shields ON. Autorecharge ON.");
         }   
     }
     
@@ -7594,7 +7742,7 @@ void do_autopilot(CHAR_DATA *ch, char *argument )
     if (!space_require_ship_from_cockpit( ch , ctx )) return;
     if (!space_require_ship_from_pilotseat( ch , ctx )) return;
     if (!space_require_ship_ownership( ch , ctx )) return;
-
+    space_validate_ship_links( ch, ctx.ship, false );
     if ( ctx.ship->shipstate == SHIP_DOCKED )
     {
         if(ctx.ship->docked == NULL || ( ctx.ship->docked->shipclass > MIDSIZE_SHIP && ctx.ship->shipclass > MIDSIZE_SHIP ))
@@ -7612,7 +7760,7 @@ void do_autopilot(CHAR_DATA *ch, char *argument )
     }
   
         
-    act( AT_PLAIN, "$n flips a switch on the control panell.", ch,
+    act( AT_PLAIN, "$n flips a switch on the control panel.", ch,
          NULL, argument , TO_ROOM );
 
     if ( ( ctx.ship->autopilot == TRUE && str_cmp(argument,"on") )
@@ -7873,7 +8021,7 @@ void do_hyperspace(CHAR_DATA *ch, char *argument )
     }
 		if ( ctx.ship->mod->gravproj )
 		{
-		  send_to_char ("&RYou can not enter hyperspace with gravity wells activated!\n", ch);
+		  send_to_char ("&RYou can't enter hyperspace with gravity wells activated!\n", ch);
 		  return;
 		}
 
@@ -7946,11 +8094,10 @@ void do_hyperspace(CHAR_DATA *ch, char *argument )
             //SPRINTF( buf ,"%s enters the starsystem at %.0f %.0f %.0f" , ctx.ship->name, ctx.ship->vx, ctx.ship->vy, ctx.ship->vz );
             buf = str_printf("%s enters the starsystem from hyperspace at %.0f %.0f %.0f" , ctx.ship->name, ctx.ship->vx, ctx.ship->vy, ctx.ship->vz );
             echo_to_system( AT_YELLOW, ctx.ship, buf , NULL );
-            ctx.ship->shipstate = SHIP_READY;
+            space_set_shipstate(ctx.ship, SHIP_READY);
             STRFREE( ctx.ship->home );
             ctx.ship->home = STRALLOC( ctx.ship->spaceobject->name );
-            if ( str_cmp("Public",ctx.ship->owner) )
-                save_ship(ctx.ship);
+            ctx.ship->dirty = true;
 
             for( dship = first_ship; dship; dship = dship->next )
               if ( dship->docked && dship->docked == ctx.ship )
@@ -7963,8 +8110,7 @@ void do_hyperspace(CHAR_DATA *ch, char *argument )
                   echo_to_system( AT_YELLOW, dship, buf , NULL );
                   STRFREE( dship->home );
                   dship->home = STRALLOC( ctx.ship->home );
-                  if ( str_cmp("Public",dship->owner) )
-                      save_ship(dship);
+                  dship->dirty = true;
               }		      	  
 
 
@@ -8011,7 +8157,7 @@ void do_hyperspace(CHAR_DATA *ch, char *argument )
 
     ctx.ship->lastsystem = ctx.ship->spaceobject;
     ship_from_spaceobject( ctx.ship , ctx.ship->spaceobject );
-    ctx.ship->shipstate = SHIP_HYPERSPACE;
+    space_set_shipstate(ctx.ship, SHIP_HYPERSPACE);
 
     send_to_char( "&GYou push forward the hyperspeed lever.\n", ch);
     act( AT_PLAIN, "$n pushes a lever forward on the control panel.", ch,
@@ -8174,7 +8320,7 @@ void do_target(CHAR_DATA *ch, char *argument )
 
     if (  target == NULL || target == ctx.ship)
     {
-        send_to_char("&RThe ship has left the starsytem. Targeting aborted.\n",ch);
+        send_to_char("&RThe ship has left the starsystem. Targeting aborted.\n",ch);
         return;
     }
 
@@ -8188,9 +8334,9 @@ void do_target(CHAR_DATA *ch, char *argument )
 
 
     send_to_char( "&GTarget Locked.\n", ch);
-    buf = str_printf("You are being targetted by %s." , ctx.ship->name);  
+    buf = str_printf("You are being targeted by %s." , ctx.ship->name);  
     echo_to_cockpit( AT_BLOOD , target , buf );
-    echo_to_docked( AT_YELLOW , ctx.ship, "The ship's computer receives targetting data through the docking port link." );
+    echo_to_docked( AT_YELLOW , ctx.ship, "The ship's computer receives targeting data through the docking port link." );
 
     if ( ch->in_room->vnum == ctx.ship->gunseat )
       for( dship = first_ship; dship; dship = dship->next )
@@ -8202,7 +8348,7 @@ void do_target(CHAR_DATA *ch, char *argument )
     	
     if ( autofly(target) && !target->target0)
     {
-        buf = str_printf("You are being targetted by %s." , target->name);  
+        buf = str_printf("You are being targeted by %s." , target->name);  
         echo_to_cockpit( AT_BLOOD , ctx.ship , buf );
         target->target0 = ctx.ship;
     }
@@ -8858,19 +9004,19 @@ void do_calculate(CHAR_DATA *ch, char *argument )
         
     if ( !found )
     {
-        send_to_char( "&RYou can't seem to find that spacial object on your charts.\n", ch);
+        send_to_char( "&RYou can't seem to find that spatial object on your charts.\n", ch);
         ctx.ship->currjump = NULL;
         return;
     }
     if (spaceobject && spaceobject->trainer && (ctx.ship->shipclass != SHIP_TRAINER))
     {
-        send_to_char( "&RYou can't seem to find that spacial object on your charts.\n", ch);
+        send_to_char( "&RYou can't seem to find that spatial object on your charts.\n", ch);
         ctx.ship->currjump = NULL;
         return;
     }
     if (ctx.ship->shipclass == SHIP_TRAINER && spaceobject && !spaceobject->trainer )
     {
-        send_to_char( "&RYou can't seem to find that starsytem on your charts.\n", ch);
+        send_to_char( "&RYou can't seem to find that starsystem on your charts.\n", ch);
         ctx.ship->currjump = NULL;
         return;
     }
@@ -9011,7 +9157,7 @@ void do_calculate_diff(CHAR_DATA *ch, char *argument )
         
     if ( !found )
     {
-      send_to_char( "&RYou can't seem to find that spacial object on your charts.\n", ch);
+      send_to_char( "&RYou can't seem to find that spatial object on your charts.\n", ch);
       ctx.ship->currjump = NULL;
       return;
     }
@@ -9203,11 +9349,11 @@ void do_repairship(CHAR_DATA *ch, char *argument )
     if ( !str_cmp(ctx.arg1,"drive") )
     {  
         if (ctx.ship->location == ctx.ship->lastdoc)
-            ctx.ship->shipstate = SHIP_LANDED;
+            space_set_shipstate(ctx.ship, SHIP_LANDED);
         else if ( ctx.ship->shipstate == SHIP_HYPERSPACE )
             send_to_char("You realize after working that it would be a bad idea to do this while in hyperspace.\n", ch);		
         else     
-            ctx.ship->shipstate = SHIP_READY;
+            space_set_shipstate(ctx.ship, SHIP_READY);
         send_to_char("&GShips drive repaired.\n", ch);		
     }
 
@@ -9507,7 +9653,7 @@ void do_autotrack( CHAR_DATA *ch, char *argument )
     if (!space_require_ship_spaceship( ch , ctx )) return;
     if (!space_require_ship_notplatform( ch , ctx )) return;
     if (!space_require_ship_not_capital( ch , ctx )) return;
-    if (!space_require_ship_not_docked( ch , ctx )) return;
+    if (!space_require_ship_not_landed_or_docked( ch , ctx )) return;
     if (!space_require_ship_from_pilotseat( ch , ctx )) return;   
     if (!space_require_ship_autopilot_off( ch , ctx )) return;
 
@@ -9966,7 +10112,7 @@ ch_ret drive_ship( CHAR_DATA *ch, SHIP_DATA *ship, EXIT_DATA  *pexit , int fall 
       txt = "falls";
     else
 	  if (  ship->shipclass < OCEAN_SHIP )
-	      txt = "flys in";
+	      txt = "flies in";
 	  else
 	  if ( ship->shipclass == OCEAN_SHIP  )
 	  {
@@ -10452,7 +10598,7 @@ void do_rent( CHAR_DATA *ch, char *argument )
 
   if ( !BV_IS_SET( ch->in_room->room_flags, ROOM_CAN_LAND ) )
   {
-    send_to_char( "You can not rent ships here\n", ch );
+    send_to_char( "You can't rent ships here\n", ch );
     return;
   }
 
@@ -10554,7 +10700,7 @@ void do_hmm( CHAR_DATA *ch, char *argument )
     	  send_to_char("&Raborted.\n", ch);
     	  echo_to_room( AT_YELLOW , get_room_index(ctx.ship->cockpit) , "");
     		if (ctx.ship->shipstate != SHIP_DISABLED)
-    		   ctx.ship->shipstate = SHIP_READY;
+    		   space_set_shipstate(ctx.ship, SHIP_READY);
     		return;
     }
     

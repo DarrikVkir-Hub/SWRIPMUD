@@ -260,7 +260,7 @@ void do_reload( CHAR_DATA *ch, char *argument )
 
   ctx.ship->missilestate = MISSILE_READY;
   ctx.ship->statet0 = LASER_READY;
-  ctx.ship->shipstate = SHIP_LANDED;
+  space_set_shipstate(ctx.ship, SHIP_LANDED);
 
   return;
 
@@ -274,32 +274,18 @@ void do_openbay( CHAR_DATA *ch, char *argument )
 
     std::string buf;
 
-    if (!space_require_ship_from_pilotseat( ch , ctx , false) && !space_require_ship_from_hanger( ch , ctx , false) )  
-    {
-        send_to_char("&RYou aren't in the pilots chair or hanger of a ship!\n",ch);
-        return;
-    }
+    if (!space_require_ship_from_pilot_or_hanger( ch , ctx )) return;
+    if (!space_require_ship_has_hanger( ch , ctx )) return;
+    if (!space_require_ship_bay_closed( ch , ctx )) return;
 
-   if ( ctx.ship->hanger == 0 )
-   {
-      send_to_char("&RThis ship has no hanger!\n",ch);
-      return;
-   }
-
-   if (ctx.ship->bayopen == TRUE)
-   {
-      send_to_char("Bay doors are already open!",ch);
-      return;
-   }
-
-   act( AT_PLAIN, "$n flips a switch on the control panel.", ch,
+    act( AT_PLAIN, "$n flips a switch on the control panel.", ch,
          NULL, argument , TO_ROOM );
-      ctx.ship->bayopen = TRUE;
+    ctx.ship->bayopen = TRUE;
 
-      echo_to_cockpit( AT_YELLOW , ctx.ship, "Bay Doors Open");
-      send_to_char("You open the bay doors", ch);
-      buf = str_printf("%s's bay doors open." , ctx.ship->name );
-      echo_to_system( AT_YELLOW, ctx.ship, buf , NULL );
+    echo_to_cockpit( AT_YELLOW , ctx.ship, "Bay Doors Open");
+    send_to_char("You open the bay doors", ch);
+    buf = str_printf("%s's bay doors open." , ctx.ship->name );
+    echo_to_system( AT_YELLOW, ctx.ship, buf , NULL );
 
    }
 
@@ -310,24 +296,9 @@ void do_closebay( CHAR_DATA *ch, char *argument )
 
     std::string buf;
 
-    if (!space_require_ship_from_pilotseat( ch , ctx , false) && !space_require_ship_from_hanger( ch , ctx , false) )  
-    {
-        send_to_char("&RYou aren't in the pilots chair or hanger of a ship!\n",ch);
-        return;
-    }
-
-
-   if ( ctx.ship->hanger == 0 )
-   {
-      send_to_char("&RThis ship has no hanger!\n",ch);
-      return;
-   }
-
-   if (ctx.ship->bayopen == FALSE)
-   {
-      send_to_char("Bay doors are already closed!", ch);
-      return;
-   }
+    if (!space_require_ship_from_pilot_or_hanger( ch , ctx )) return;
+    if (!space_require_ship_has_hanger( ch , ctx )) return;
+    if (!space_require_ship_bay_open( ch , ctx )) return;
 
    act( AT_PLAIN, "$n flips a switch on the control panel.", ch,
          NULL, argument , TO_ROOM );
@@ -367,12 +338,12 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
 
           if (ctx.ship->docking != SHIP_READY )
           {
-              send_to_char("&RThe ship structure can not tolerate pressure from both tractorbeam and docking port.\n",ch);
+              send_to_char("&RThe ship structure can't tolerate pressure from both tractorbeam and docking port.\n",ch);
               return;
           }
           if (ctx.ship->shipstate == SHIP_TRACTORED)
           {
-              send_to_char("&RYou can not move in a tractorbeam!\n",ch);
+              send_to_char("&RYou can't move in a tractorbeam!\n",ch);
               return;
           }
 
@@ -439,7 +410,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
           chance = IS_NPC(ch) ? ch->top_level
               : (int)  (ch->pcdata->learned[gsn_tractorbeams]) ;
 
-          if ( number_percent( ) < chance )
+          if ( number_percent( ) <= chance )
     		  {
               send_to_char( "&GTracking target.\n", ch);
               act( AT_PLAIN, "$n makes some adjustments on the targeting computer.", ch,
@@ -479,7 +450,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
 
     if (  target == NULL || target == ctx.ship)
     {
-        send_to_char("&RThe ship has left the starsytem. Targeting aborted.\n",ch);
+        send_to_char("&RThe ship has left the starsystem. Targeting aborted.\n",ch);
         return;
     }
     chance = IS_NPC(ch) ? ch->top_level
@@ -507,7 +478,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
 
     ctx.ship->tractored = target;
     target->tractoredby = ctx.ship;
-    target->shipstate = SHIP_TRACTORED;
+    space_set_shipstate(target, SHIP_TRACTORED);
     ctx.ship->energy -= 25 + 25*target->shipclass;
 
 
@@ -536,7 +507,7 @@ void do_tractorbeam(CHAR_DATA *ch, char *argument )
     	
     if ( autofly(target) && !target->target0 && str_cmp( target->owner, ctx.ship->owner ) )
     {
-        buf = str_printf("You are being targetted by %s." , target->name);  
+        buf = str_printf("You are being targeted by %s." , target->name);  
         echo_to_cockpit( AT_BLOOD , ctx.ship , buf );
         target->target0 = ctx.ship;
     }
@@ -580,7 +551,7 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
         if( ctx.ship->tractored && ctx.ship->tractored->shipstate >= SHIP_DOCKED )
           buf += "Docking Port Approach.\n";
         if( ctx.ship->tractored && ( ctx.ship->tractored->shipstate == SHIP_LAND_2 || ctx.ship->tractored->shipstate == SHIP_LAND ) )
-          buf += "Hanger Approach.\n";
+          buf += "Hangar Approach.\n";
         ch_printf(ch, "&RCurrent tractor beam settings: %s\n", buf.c_str());
         ch_printf(ch, "&RUsage: adjusttractorbeam <pull|dock|land|undock|abort|none>\n");
         return;
@@ -588,7 +559,7 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
 
     eShip = ctx.ship->tractored;
 
-    act( AT_PLAIN, "$n flips a switch on the control panell.", ch,
+    act( AT_PLAIN, "$n flips a switch on the control panel.", ch,
          NULL, ctx.arg1.c_str() , TO_ROOM );
 
     if( str_cmp( ctx.arg1, "undock" ) && eShip->docked && eShip->docked != ctx.ship)
@@ -613,9 +584,10 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
     if ( !str_cmp( ctx.arg1, "pull") || !str_cmp( ctx.arg1, "none" ) )
     {
         echo_to_cockpit( AT_YELLOW, ctx.ship, "Tractor Beam set to pull target.\n" );
-        eShip->shipstate = SHIP_TRACTORED;
+        space_set_shipstate( eShip, SHIP_TRACTORED );
         eShip->docked = NULL;
-        eShip->docking = SHIP_READY;
+        space_set_docking_state( eShip, SHIP_READY );
+        eShip->ch = NULL;
         if (eShip->dest)
         {
             STRFREE(eShip->dest);
@@ -626,9 +598,10 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
     if ( !str_cmp( ctx.arg1, "abort" ) )
     {
         echo_to_cockpit( AT_YELLOW, ctx.ship, "Manuever aborted. Tractor beam returned to default setting.\n" );
-        eShip->shipstate = SHIP_TRACTORED;
+        space_set_shipstate( eShip, SHIP_TRACTORED );
         eShip->docked = NULL;
-        eShip->docking = SHIP_READY;
+        space_set_docking_state( eShip, SHIP_READY );
+        eShip->ch = NULL;
         if (eShip->dest)
         {
             STRFREE(eShip->dest);
@@ -648,8 +621,7 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
         }
         
         echo_to_cockpit( AT_YELLOW, ctx.ship, "Tractor Beam set to dock target.\n" );
-        eShip->docking = SHIP_DOCK;
-        eShip->docked = ctx.ship;
+        space_beg_docking_state( NULL, eShip, ctx.ship );
         return;
     }
     if ( !str_cmp( ctx.arg1, "land") )
@@ -658,7 +630,7 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
             return;
         if ( !ctx.ship->hanger )
         {
-            send_to_char("&RYou have no hanger!\n",ch);
+            send_to_char("&RYou have no hangar!\n",ch);
             return;
         }
         if( !ctx.ship->bayopen )
@@ -668,14 +640,21 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
         }
         if( ctx.ship->shipclass < eShip->shipclass || eShip->shipclass == SHIP_PLATFORM || eShip->shipclass == CAPITAL_SHIP )
         {
-            send_to_char("&RThat ship can not land in your bay.\n",ch);
+            send_to_char("&RThat ship can't land in your bay.\n",ch);
+            return;
+        }
+        if ( eShip->docked || eShip->docking != SHIP_READY )
+        {
+            send_to_char("&RThat ship must be undocked first.\n",ch);
             return;
         }
         
-        
         echo_to_cockpit( AT_YELLOW, ctx.ship, "Tractor Beam set to land target.\n" );
-        eShip->shipstate = SHIP_LAND;
+        eShip->ch = NULL;
+        if (eShip->dest)
+            STRFREE(eShip->dest);
         eShip->dest = STRALLOC(ctx.ship->name);
+        space_set_shipstate( eShip, SHIP_LAND );
         return;
     }
 
@@ -689,13 +668,12 @@ void do_adjusttractorbeam(CHAR_DATA *ch, char *argument )
             return;
         }
         echo_to_cockpit( AT_YELLOW, ctx.ship, "Tractor beam set to undock target.\n" );
-        eShip->shipstate = SHIP_TRACTORED;
+        space_set_shipstate( eShip, SHIP_TRACTORED );
         eShip->docked->statettractor = SHIP_DISABLED;
         eShip->statettractor = SHIP_DISABLED;
-        echo_to_cockpit( AT_RED, eShip, "As a ship is torn from your docking bay, the clamps are damaged!." );
-        echo_to_cockpit( AT_RED, ctx.ship, "As your ship is torn from the docking bay, the clamps are damaged!." );
-        eShip->docked = NULL;
-        eShip->docking = SHIP_READY;
+        echo_to_cockpit( AT_RED, ctx.ship, "As a ship is torn from your docking bay, the clamps are damaged!." );
+        echo_to_cockpit( AT_RED, eShip, "As your ship is torn from the docking bay, the clamps are damaged!." );
+        space_end_docking_state( eShip );
         return;
     }    
 }
@@ -723,7 +701,7 @@ void do_undock(CHAR_DATA *ch, char *argument)
     if ( ctx.ship->docked && ctx.ship->tractoredby &&
         ctx.ship->docked != ctx.ship->tractoredby )
     {
-        send_to_char("&RYou can not do that in a tractor beam!\n",ch);
+        send_to_char("&RYou can't do that in a tractor beam!\n",ch);
         return;
     }
       
@@ -749,11 +727,10 @@ void do_undock(CHAR_DATA *ch, char *argument)
                   echo_to_ship( AT_YELLOW , ctx.ship , "You abort the docking maneuver.");
 
     if ( ctx.ship->location )
-        ctx.ship->shipstate = SHIP_LANDED;
+        space_set_shipstate(ctx.ship, SHIP_LANDED );
     else                
-        ctx.ship->shipstate = SHIP_READY;
-    ctx.ship->docking = SHIP_READY;
-    ctx.ship->docked = NULL;
+        space_set_shipstate(ctx.ship, SHIP_READY );
+    space_end_docking_state(ctx.ship);
 
     if( eShip )
     {             
@@ -836,12 +813,12 @@ void do_dock(CHAR_DATA *ch, char *argument)
 
     if (ctx.ship->shipstate == SHIP_TRACTORED && ctx.ship->tractoredby && ctx.ship->tractoredby->shipclass >= ctx.ship->shipclass )
     {
-        send_to_char("&RYou can not move in a tractorbeam!\n",ch);
+        send_to_char("&RYou can't move in a tractorbeam!\n",ch);
         return;
     }
     if (ctx.ship->tractored )
     {
-        send_to_char("&RThe ship structure can not tolerate stresses from both tractorbeam and docking port simultaneously.\n",ch);
+        send_to_char("&RThe ship structure can't tolerate stresses from both tractorbeam and docking port simultaneously.\n",ch);
         return;
     }
     if ( ctx.ship->currspeed < 1 )
@@ -875,13 +852,13 @@ void do_dock(CHAR_DATA *ch, char *argument)
     }
 	  if( ctx.ship->shipclass > eShip->shipclass )
     {
-        send_to_char("&RYou can not dock with a ship smaller than yours. Have them dock to you.\n",ch);
+        send_to_char("&RYou can't dock with a ship smaller than yours. Have them dock to you.\n",ch);
         return;
     }
 	
     if (!candock(eShip))
         {
-          send_to_char("&RYou can not seem to find an open docking port.\n",ch);
+          send_to_char("&RYou can't seem to find an open docking port.\n",ch);
       return;
     }
 
@@ -910,9 +887,7 @@ void do_dock(CHAR_DATA *ch, char *argument)
     }
     echo_to_ship( AT_YELLOW , ctx.ship , "The ship slowly begins its docking maneuvers.");
     echo_to_ship( AT_YELLOW , eShip , "The ship slowly begins its docking maneuvers.");
-		ctx.ship->docked = eShip;
-		ctx.ship->docking= SHIP_DOCK;
-		ctx.ship->ch = ch;
+    space_beg_docking_state( ch, ctx.ship, eShip );
 
     return;
 
@@ -926,12 +901,14 @@ void dockship( CHAR_DATA *ch, SHIP_DATA *ship )
 
     space_validate_ship_links( ch, ship, false );
     if ( ship->docked == NULL )
+    {
+        space_end_docking_state(ship);
         return;
+    }
 
     if ( ship->docked == ship )
     {
-        ship->docked = NULL;
-        ship->docking = SHIP_READY;
+        space_end_docking_state(ship);
         return;
     }
 
@@ -939,23 +916,23 @@ void dockship( CHAR_DATA *ch, SHIP_DATA *ship )
     {
         echo_to_ship( AT_YELLOW , ship , "Maneuver Aborted. Docking clamps damaged.");
         echo_to_ship( AT_YELLOW , ship->docked, "The ship aborted the docking maneuver.");
-        ship->docking = SHIP_READY;
-        ship->docked = NULL;
+        space_end_docking_state(ship);
         return;
     }
     if ( ship->docked->statetdocking == SHIP_DISABLED )
     {
         echo_to_ship( AT_YELLOW , ship->docked , "Maneuver Aborted. Docking clamps damaged.");
         echo_to_ship( AT_YELLOW , ship, "The ship aborted the docking maneuver.");
-        ship->docking = SHIP_READY;
-        ship->docked = NULL;
+        space_end_docking_state(ship);
+
         return;
     }
 
-    echo_to_ship( AT_YELLOW , ship , "The ship finishing its docking maneuvers.");
+    echo_to_ship( AT_YELLOW , ship , "The ship finishes its docking maneuvers.");
     echo_to_ship( AT_YELLOW , ship->docked, "The ship finishes its docking maneuvers.");
 
-    ship->docking = SHIP_DOCKED;
+    space_set_docking_state(ship, SHIP_DOCKED);
+    ship->ch = NULL;
     ship->currspeed = 0;
 		ship->vx = ship->docked->vx;
 		ship->vy = ship->docked->vy;
@@ -1008,7 +985,7 @@ void do_request(CHAR_DATA *ch, char *argument)
 
     if ( eShip->hanger == 0 )
     {
-        send_to_char("&RThat ship has no hanger!",ch);
+        send_to_char("&RThat ship has no hangar!",ch);
         return;
     }
     if ( !autofly(eShip) )
@@ -1038,7 +1015,7 @@ void do_request(CHAR_DATA *ch, char *argument)
     if ( chance && !check_pilot(ch, eShip) )
       learn_from_success(ch, gsn_fake_signal);
       
-    send_to_char("&RYou open the bay doors of the remote ship.",ch);
+    send_to_char("&RYou open the bay doors of the remote ship.\n",ch);
     act(AT_PLAIN,"$n flips a switch on the control panel.",ch,NULL,argument,TO_ROOM);
     eShip->bayopen = TRUE;
     buf = str_printf("%s's bay doors open.", eShip->name);
@@ -1190,7 +1167,7 @@ void do_transship(CHAR_DATA *ch, char *argument)
     origShipyard = ship->shipyard;
     
     ship->shipyard = arg3;
-    ship->shipstate = SHIP_READY;
+    space_set_shipstate( ship, SHIP_READY );
 
     if ( ship->shipclass == SHIP_PLATFORM && ship->type != MOB_SHIP )
     {
@@ -1203,7 +1180,7 @@ void do_transship(CHAR_DATA *ch, char *argument)
     
     ship->location = ship->shipyard;
     ship->lastdoc = ship->shipyard; 
-    ship->shipstate = SHIP_LANDED;
+    space_set_shipstate( ship, SHIP_LANDED );
     ship->shipyard = origShipyard;     
     
     if (ship->spaceobject)
@@ -1225,14 +1202,14 @@ void transship(SHIP_DATA *ship, int destination)
      origShipyard = ship->shipyard;
      
      ship->shipyard = destination;
-     ship->shipstate = SHIP_READY;
+     space_set_shipstate( ship, SHIP_READY );
 
      extract_ship( ship );
      ship_to_room( ship , ship->shipyard ); 
      
      ship->location = ship->shipyard;
      ship->lastdoc = ship->shipyard; 
-     ship->shipstate = SHIP_LANDED;
+     space_set_shipstate( ship, SHIP_LANDED );
      ship->shipyard = origShipyard;
      
      if (ship->spaceobject)
@@ -1382,7 +1359,7 @@ void do_guard( CHAR_DATA *ch, char *argument )
         return;	
     }
     
-    act( AT_PLAIN, "$n flips a switch on the control panell.", ch,
+    act( AT_PLAIN, "$n flips a switch on the control panel.", ch,
          NULL, ctx.rest , TO_ROOM );
 
     if ( !str_cmp(ctx.rest,"on" ) )
@@ -1493,11 +1470,11 @@ void do_sabotage(CHAR_DATA *ch, char *argument )
     if ( !str_cmp(ctx.arg1,"drive") )
     {  
         if (ctx.ship->location == ctx.ship->lastdoc)
-            ctx.ship->shipstate = SHIP_DISABLED;
+            space_set_shipstate(ctx.ship, SHIP_DISABLED);
         else if ( ctx.ship->shipstate == SHIP_HYPERSPACE )
             send_to_char("You realize after working that it would be a bad idea to do this while in hyperspace.\n", ch);		
         else     
-            ctx.ship->shipstate = SHIP_DISABLED;
+            space_set_shipstate(ctx.ship, SHIP_DISABLED);
         send_to_char("&GShips drive damaged.\n", ch);		
     }
 
@@ -1550,7 +1527,7 @@ void do_fuel(CHAR_DATA *ch, char *argument )
     {
       if ( (ship = ship_from_entrance(ch->game, ch->in_room->vnum)) == NULL )
       {
-        send_to_char("&RYou must be in the hanger or the entrance of a ship to do that!\n",ch);
+        send_to_char("&RYou must be in the hangar or the entrance of a ship to do that!\n",ch);
         return;
       }
     }
@@ -1680,7 +1657,7 @@ void target_ship( SHIP_DATA *ship, SHIP_DATA *target )
   std::string buf;
 
         ship->target0 = target;
-        buf  = str_printf("You are being targetted by %s." , ship->name);
+        buf  = str_printf("You are being targeted by %s." , ship->name);
         echo_to_cockpit( AT_BLOOD , target , buf );
         buf = str_printf("The ship targets %s." , target->name);
         echo_to_cockpit( AT_BLOOD , ship , buf );
@@ -2057,7 +2034,7 @@ void do_install_module( CHAR_DATA *ch, char *argument )
       
       if ( obj->value[3] >= MAXMODFLAG )
       {
-          send_to_char( "That module can not be installed!  Contact an administrator.\n", ch );
+          send_to_char( "That module can't be installed!  Contact an administrator.\n", ch );
           bug( "Module's flag is set beyond the array limits! Char: %s Module vnum: %d\n",
               ch->name, obj->pIndexData->vnum);
           return;
@@ -2108,7 +2085,7 @@ void do_install_module( CHAR_DATA *ch, char *argument )
   if ( obj->value[1] == MOD_FLAG )
     if ( ship == ship_from_cockpit( ch->game, ch->in_room->vnum ) )
     {
-        send_to_char( "You can not place this in a control room of a ship.\n",ch);
+        send_to_char( "You can't place this in a control room of a ship.\n",ch);
         return;
     }
         
@@ -2694,7 +2671,7 @@ void do_load( CHAR_DATA *ch, char *argument )
 
 //  if ( ship->maxcargo < totalcargo + amountCargo )
     {
-           send_to_char( "That ship can not fit this much cargo.", ch);
+           send_to_char( "That ship can't fit this much cargo.", ch);
            return;      	  
     }
          
@@ -3662,7 +3639,7 @@ void do_unloadcargo( CHAR_DATA *ch, char *argument )
     
     if( !spaceobject->first_cargo )
     {
-        send_to_char( "You can not sell cargo here.\n", ch);
+        send_to_char( "You can't sell cargo here.\n", ch);
         return;
     }
 

@@ -181,6 +181,15 @@ typedef struct	member_list		MEMBER_LIST; /* List of members in clan */
 typedef struct  membersort_data         MS_DATA;     /* List for sorted roster list */
 typedef struct  tracker_data    TRACKER_DATA;
 typedef struct  OlcSession      OLC_SESSION;
+typedef struct wilderness_system      WILDERNESS_SYSTEM;
+typedef struct wilderness_data        WILDERNESS_DATA;
+typedef struct wild_delta_data        WILD_DELTA_DATA;
+typedef struct wild_site_proto        WILD_SITE_PROTO;
+typedef struct wild_site_data         WILD_SITE_DATA;
+typedef struct wild_room_cache_data   WILD_ROOM_CACHE_DATA;
+typedef struct wild_actor_data        WILD_ACTOR_DATA;
+typedef struct wild_vnum_alloc_data   WILD_VNUM_ALLOC_DATA;
+
 
 /*
  * Function types.
@@ -245,7 +254,19 @@ inline const char* get_flag_name(const flag_name* table, int index, int count)
     return table[index].name;
 }
 
+inline const char* get_flag_name_sparse(const flag_name* table, int index, int count)
+{
+    if (!table || index < 0 || index >= count)
+        return "none";
 
+    for (int i = 0; i < count; ++i)
+    {
+        if (table[i].bit == static_cast<size_t>(index))
+            return table[i].name;
+    }
+
+    return "none";
+}
 /*
  * FLAG SYSTEM STATUS
  *
@@ -781,6 +802,7 @@ typedef enum {
 #define PULSE_PER_SECOND	    4
 #define PULSE_MINUTE              ( 60 * PULSE_PER_SECOND)
 #define PULSE_VIOLENCE		  (  3 * PULSE_PER_SECOND)
+#define PULSE_WILD           (  10 * PULSE_PER_SECOND)
 #define PULSE_MOBILE		  (  4 * PULSE_PER_SECOND)
 #define PULSE_TICK		  ( 70 * PULSE_PER_SECOND)
 #define PULSE_AREA		  ( 60 * PULSE_PER_SECOND)
@@ -887,6 +909,7 @@ class GameContext
 //    SkillTable skills;
 //    TimeInfoData time_info;
     public:
+    WILDERNESS_SYSTEM *wilderness;
     system_data* get_sysdata() { return &sysdata; };
 
 };
@@ -1968,6 +1991,8 @@ public:
     long int shipID;
     char *templatestring;
     int weight;
+    bool dirty = false;
+    int lastsaved = 0;
 };
 
 struct missile_data
@@ -2610,8 +2635,193 @@ typedef enum
   ITEM_GRENADE, ITEM_LANDMINE, ITEM_GOVERNMENT, ITEM_DROID_CORPSE, ITEM_BOLT, ITEM_SCOPE, 
   ITEM_FIGHTERCOMP, ITEM_MIDCOMP, ITEM_CAPITALCOMP, ITEM_CHEMICAL,
   ITEM_DISGUISE, ITEM_DIS_FABRIC, ITEM_HAIR, ITEM_STUNGRENADE,
-  ITEM_CARGO, ITEM_TRACKINGDEVICE, ITEMTYPE_MAX
+  ITEM_CARGO, ITEM_TRACKINGDEVICE, 
+  ITEM_RESOURCE, ITEM_MATERIAL,  ITEM_COMPOUND,  ITEM_SPECIMEN,  ITEM_SALVAGE,
+    ITEMTYPE_MAX
 } item_types;
+
+typedef enum resource_class_types
+{
+    RESCLASS_NONE = 0,
+
+    RESCLASS_BIOMASS,       /* wood, bark, reeds, roots, vine fiber */
+    RESCLASS_MEDICINAL,     /* restorative herbs, healing flora, antitoxins */
+    RESCLASS_TOXIN,         /* poisons, corrosives, spores, venom sacs */
+    RESCLASS_FOODSTUFF,     /* edible plants, fruit, animal matter, nutrient growth */
+    RESCLASS_FUNGAL,        /* molds, fungi, spore masses, decay blooms */
+    RESCLASS_WATERBIO,      /* aquatic plants, river organisms, wetland biomass */
+    RESCLASS_MINERAL,       /* ores, crystals, stone, volcanic glass */
+    RESCLASS_ENERGY,        /* fuel sources, reactive compounds, power materials */
+    RESCLASS_SALVAGE,       /* scrap, components, wreckage, reclaimed goods */
+    RESCLASS_ARTIFACT,      /* archaeological finds, relics, culturally significant materials */
+    RESCLASS_EXOTIC,        /* rare or unusual planetary materials */
+    RESCLASS_SPECIMEN,      /* intact biological samples, live captures, unusual tissues */
+
+    MAX_RESOURCE_CLASS
+} RESOURCE_CLASS_TYPE;
+
+typedef enum resource_rarity_types
+{
+    RESRARITY_COMMON = 0,
+    RESRARITY_UNCOMMON,
+    RESRARITY_RARE,
+    RESRARITY_EXOTIC,
+
+    MAX_RESOURCE_RARITY
+} RESOURCE_RARITY_TYPE;
+
+typedef enum resource_subtype_types
+{
+    RST_NONE = 0,
+
+    /*
+     * 1–99 : Biomass / structural organics
+     */
+    RST_TIMBER           = 1,
+    RST_HARDWOOD         = 2,
+    RST_REED             = 5,
+    RST_VINE             = 6,
+    RST_ROOT_MASS        = 10,
+    RST_BARK             = 12,
+    RST_RESIN_WOOD       = 15,
+    RST_FIBER_BUNDLE     = 20,
+    RST_THATCH           = 25,
+    RST_BRUSHWOOD        = 30,
+
+    /*
+     * 100–199 : Medicinal
+     */
+    RST_MEDICINAL_HERB   = 100,
+    RST_RESTORATIVE_LEAF = 101,
+    RST_FEVER_ROOT       = 105,
+    RST_COAGULANT_MOSS   = 110,
+    RST_ANTITOXIN_FLOWER = 115,
+    RST_REGEN_SAP        = 120,
+    RST_STIM_LEAF        = 130,
+    RST_SOOTHING_POLLEN  = 140,
+
+    /*
+     * 200–299 : Toxins
+     */
+    RST_TOXIC_HERB       = 200,
+    RST_NEUROTOXIC_SPORE = 205,
+    RST_CORROSIVE_SAP    = 210,
+    RST_PARALYTIC_POLLEN = 215,
+    RST_VENOM_POD        = 220,
+    RST_IRRITANT_MOLD    = 230,
+    RST_CAUSTIC_FUNGUS   = 240,
+
+    /*
+     * 300–399 : Food
+     */
+    RST_FRUIT            = 300,
+    RST_NUTRIENT_FRUIT   = 301,
+    RST_EDIBLE_FUNGI     = 305,
+    RST_NUTRIENT_ROOT    = 310,
+    RST_SEED_CLUSTER     = 315,
+    RST_PROTEIN_GRUB     = 320,
+    RST_SMALL_GAME       = 330,
+    RST_EGGS             = 340,
+    RST_SHELLFISH        = 350,
+    RST_RIVER_FISH       = 360,
+
+    /*
+     * 400–499 : Fungal
+     */
+    RST_GLOWCAP_CLUSTER  = 400,
+    RST_SWAMP_MOLD       = 405,
+    RST_DECAY_SPORE_MAT  = 410,
+    RST_FUNGAL_BLOOM     = 420,
+    RST_MYCELIAL_MASS    = 430,
+
+    /*
+     * 500–599 : Water biology
+     */
+    RST_ALGAE_MAT        = 500,
+    RST_WATER_REED       = 505,
+    RST_AQUATIC_HERB     = 510,
+    RST_BOG_FLOWER       = 515,
+    RST_MARSH_ROOT       = 520,
+    RST_RIVER_KELP       = 530,
+
+    /*
+     * 600–699 : Minerals
+     */
+    RST_STONE            = 600,
+    RST_CLAY             = 605,
+    RST_SAND             = 610,
+    RST_SALT             = 615,
+    RST_COAL             = 620,
+    RST_IRON_ORE         = 630,
+    RST_COPPER_ORE       = 640,
+    RST_GOLD_ORE         = 650,
+    RST_GEMSTONE         = 660,
+    RST_CRYSTAL          = 670,
+    RST_VOLCANIC_GLASS   = 680,
+    RST_SULFUR           = 690,
+
+    /*
+     * 700–799 : Energy / reactive
+     */
+    RST_FUEL_SLUDGE      = 700,
+    RST_REACTIVE_CRYSTAL = 710,
+    RST_THERMAL_GAS      = 720,
+    RST_VOLATILE_COMPOUND= 730,
+    RST_RADIANT_SHARD    = 740,
+
+    /*
+     * 800–899 : Salvage / industrial
+     */
+    RST_METAL_SCRAP      = 800,
+    RST_ELECTRONIC_SCRAP = 810,
+    RST_MACHINE_PARTS    = 820,
+    RST_CIRCUITRY        = 830,
+    RST_REFINED_ALLOY    = 840,
+    RST_WRECKAGE         = 850,
+    RST_PLASTEEL_SCRAP   = 860,
+    RST_DURASTEEL_SCRAP  = 870,
+    RST_INDUSTRIAL_CHEM  = 880,
+
+    /*
+     * 900–999 : Artifacts / relics
+     */
+    RST_RELIC_FRAGMENT   = 900,
+    RST_CEREMONIAL_RELIC = 910,
+    RST_ANCIENT_TECH     = 920,
+    RST_INSCRIBED_STONE  = 930,
+    RST_RUIN_TABLET      = 940,
+    RST_BURIED_CACHE     = 950,
+
+    /*
+     * 1000+ : Exotic / rare biology
+     */
+    RST_BIOLUMINESCENT_BLOOM = 1000,
+    RST_RESONANT_SEEDPOD     = 1010,
+    RST_ADAPTIVE_PARASITE    = 1020,
+    RST_SYMBIOTIC_LARVA      = 1030,
+    RST_CANOPY_POLYP         = 1040,
+    RST_AQUATIC_MICROCOLONY  = 1050,
+    RST_RARE_EGG_CLUSTER     = 1060,
+    RST_UNUSUAL_TISSUE       = 1070,
+
+    MAX_RESOURCE_SUBTYPE
+} RESOURCE_SUBTYPE_TYPE;
+
+extern const flag_name resource_class_names[MAX_RESOURCE_CLASS];
+extern const flag_name resource_rarity_names[MAX_RESOURCE_RARITY];
+extern const flag_name resource_subtype_names[MAX_RESOURCE_SUBTYPE];
+
+#define RST_IS_BIOMASS(x)   ((x) > 0   && (x) < 100)
+#define RST_IS_MEDICINAL(x) ((x) >= 100 && (x) < 200)
+#define RST_IS_TOXIN(x)     ((x) >= 200 && (x) < 300)
+#define RST_IS_FOOD(x)      ((x) >= 300 && (x) < 400)
+#define RST_IS_FUNGAL(x)    ((x) >= 400 && (x) < 500)
+#define RST_IS_WATERBIO(x)  ((x) >= 500 && (x) < 600)
+#define RST_IS_MINERAL(x)   ((x) >= 600 && (x) < 700)
+#define RST_IS_ENERGY(x)    ((x) >= 700 && (x) < 800)
+#define RST_IS_SALVAGE(x)   ((x) >= 800 && (x) < 900)
+#define RST_IS_ARTIFACT(x)  ((x) >= 900 && (x) < 1000)
+#define RST_IS_EXOTIC(x)    ((x) >= 1000)
 
 /* Blaster settings - only saves on characters */
 #define BLASTER_NORMAL          0
@@ -2850,7 +3060,11 @@ typedef enum
     ROOM_SPACECRAFT        = 29,  /* BV29 */
     ROOM_PROTOTYPE         = 30,  /* BV30 */
     ROOM_AUCTION           = 31,   /* BV31 */
-    ROOM_MAX               = 32,
+    ROOM_WILDERNESS         = 32,
+    ROOM_WILD_TEMP          = 33,
+    ROOM_WILD_SITE_EDGE     = 34,
+    ROOM_WILD_TRANSITION    = 35,
+    ROOM_MAX                = 36    
 } RoomFlags;
 
 /*
@@ -2898,6 +3112,7 @@ typedef enum
 #define EX_NOMOB		  BV24
 #define EX_WINDOW		  BV25
 #define EX_xLOOK		  BV26
+#define EX_WILDERNESS          BV27
 #define MAX_EXFLAG		  26
 
 /*
@@ -2906,9 +3121,11 @@ typedef enum
  */
 typedef enum
 {
-  SECT_INSIDE, SECT_CITY, SECT_FIELD, SECT_FOREST, SECT_HILLS, SECT_MOUNTAIN,
-  SECT_WATER_SWIM, SECT_WATER_NOSWIM, SECT_UNDERWATER, SECT_AIR, SECT_DESERT,
-  SECT_DUNNO, SECT_OCEANFLOOR, SECT_UNDERGROUND, SECT_MAX
+  SECT_INSIDE=0, SECT_CITY, SECT_SPACE, SECT_WORLDCITY, SECT_FIELD, SECT_INDUSTRIAL, 
+  SECT_FOREST, SECT_HILLS, SECT_MOUNTAIN, SECT_WATER_SWIM, SECT_WATER_NOSWIM, 
+  SECT_OCEAN, SECT_UNDERWATER, SECT_AIR, SECT_DESERT, SECT_WASTELAND, SECT_DUNNO, 
+  SECT_OCEANFLOOR, SECT_UNDERGROUND, SECT_FROZEN, SECT_SWAMP, SECT_JUNGLE, SECT_LAVA, 
+  SECT_MAX
 } sector_types;
 
 /*
@@ -3729,12 +3946,52 @@ struct	system_data
 };
 */
 
+struct move_plan
+{
+    ROOM_INDEX_DATA *from_room;
+    ROOM_INDEX_DATA *to_room;
+
+    int door;
+    int distance;
+    bool fall;
+
+    bool is_wilderness;
+    bool drunk;
+
+    std::string leave_verb;
+    std::string blocked_msg;
+
+    int move_cost;
+
+    WILDERNESS_DATA *wild;
+    int wild_x;
+    int wild_y;
+    sh_int wild_z;
+
+    move_plan()
+        : from_room( nullptr ),
+          to_room( nullptr ),
+          door( -1 ),
+          distance( 1 ),
+          fall( false ),
+          is_wilderness( false ),
+          drunk( false ),
+          move_cost( 1 ),
+          wild( nullptr )
+    {
+        wild_x = 0;
+        wild_y = 0;
+        wild_z = 0;
+    }
+};
+
 /*
  * Room type.
  */
 struct	room_index_data
 {
     GameContext *   game = NULL;
+    WILD_ROOM_CACHE_DATA *wild_cache;
     ROOM_INDEX_DATA *	next;
     ROOM_INDEX_DATA *	next_sort;
     CHAR_DATA *		first_person;
@@ -6501,6 +6758,9 @@ void	save_herb_table	args( ( GameContext *game ) );
 /* track.c */
 void	found_prey	args( ( CHAR_DATA *ch, CHAR_DATA *victim ) );
 void	hunt_victim	args( ( CHAR_DATA *ch) );
+
+// Wilderness.c +
+bool room_is_wilderness( ROOM_INDEX_DATA *room );
 
 /* update.c */
 void	advance_level	args( ( CHAR_DATA *ch , int ability ) );

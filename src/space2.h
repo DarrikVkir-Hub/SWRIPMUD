@@ -154,6 +154,62 @@ inline bool space_require_ship_from_coseat( CHAR_DATA *ch, scmd_data &ctx, bool 
     return true;
 }
 
+inline bool space_require_ship_from_pilot_or_hanger( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( space_require_ship_from_pilotseat( ch, ctx, false ) )
+        return true;
+    if ( space_require_ship_from_hanger( ch, ctx, false ) )
+        return true;
+
+    if (showmsg)
+        send_to_char("&RYou aren't in the pilots chair or hanger of a ship!\n",ch);
+    return false;
+}
+
+inline bool space_require_ship_has_hanger( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->hanger == 0 )
+    {
+        if (showmsg)
+            send_to_char("&RThis ship has no hanger!\n",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_bay_closed( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->bayopen == TRUE )
+    {
+        if (showmsg)
+            send_to_char("Bay doors are already open!",ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_bay_open( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->bayopen == FALSE )
+    {
+        if (showmsg)
+            send_to_char("Bay doors are already closed!", ch);
+        return false;
+    }
+    return true;
+}
+
+inline bool space_require_ship_launch_ready_state( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+{
+    if ( ctx.ship->shipstate != SHIP_LANDED && ctx.ship->shipstate != SHIP_DISABLED )
+    {
+        if (showmsg)
+            send_to_char("The ship is not fully docked right now.\n",ch);
+        return false;
+    }
+    return true;
+}
+
 inline bool space_require_ship_notplatform( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
 {
     if  ( ctx.ship->shipclass == SHIP_PLATFORM )
@@ -176,14 +232,14 @@ inline bool space_require_ship_nottractored( CHAR_DATA *ch, scmd_data &ctx, bool
     return true;
 }
 
-inline bool space_require_ship_notdocked( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+inline bool space_require_ship_not_docked( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
 {
-    if (ctx.ship->docking != SHIP_READY)
+    if ( ctx.ship->docking != SHIP_READY )
     {
         if (showmsg)
             send_to_char("&RYou can't do that while docked to another ship!\n",ch);
         return false;
-    }      
+    }
     return true;
 }
 
@@ -241,7 +297,7 @@ inline bool space_require_ship_movement( CHAR_DATA *ch, scmd_data &ctx, bool sho
 {
     if ( !space_require_ship_notplatform( ch , ctx , showmsg ) )
         return false;
-    if ( !space_require_ship_notdocked( ch , ctx , showmsg ) )
+    if ( !space_require_ship_not_docked( ch , ctx , showmsg ) )
         return false;
     if ( !space_require_ship_energy( ch , ctx , 0 , showmsg ) )
         return false;
@@ -315,7 +371,7 @@ inline bool space_require_ship_not_disabled( CHAR_DATA *ch, scmd_data &ctx, bool
     return true;
 }
 // The below function verifies that the ship is not landed or docked with another ship
-inline bool space_require_ship_not_docked( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
+inline bool space_require_ship_not_landed_or_docked( CHAR_DATA *ch, scmd_data &ctx, bool showmsg = true )
 {
     if ( ctx.ship->shipstate == SHIP_LANDED && ctx.ship->docked == NULL )
     {
@@ -526,7 +582,7 @@ static inline int compute_projectile_hit_chance( int chance, int origchance, SHI
 
 inline int space_chance_by_shipclass( CHAR_DATA *ch, SHIP_DATA *ship )
 {
-    int chance;
+    int chance = 50;
      if ( ship->shipclass <= FIGHTER_SHIP )
           chance = IS_NPC(ch) ? ch->top_level
           : (int)  (ch->pcdata->learned[gsn_starfighters]) ;
@@ -808,6 +864,18 @@ static inline int select_autopilot_projectile_type( SHIP_DATA *ship, SHIP_DATA *
     return -1;
 }
 
+static inline bool space_ship_is_not_docked( SHIP_DATA *ship )
+{
+    return ship && ship->docked == NULL && ship->shipstate != SHIP_DOCKED;
+}
+
+inline bool space_ship_is_ready( SHIP_DATA *ship )
+{
+    if (!ship)
+        return false;
+    return ship->shipstate == SHIP_READY;
+}
+
 inline bool space_validate_dock_links( CHAR_DATA *ch, SHIP_DATA *ship, bool showmsg = true )
 {
     bool ok = true;
@@ -868,4 +936,120 @@ inline void space_release_tractor_target( SHIP_DATA *ship )
         target->shipstate = SHIP_LANDED;
     else if ( target->shipstate != SHIP_DOCKED && target->shipstate != SHIP_DISABLED )
         target->shipstate = SHIP_READY;
+}
+
+inline bool space_enforce_ship_invariants( SHIP_DATA *ship, bool checkch = false )
+{
+    int old_shipstate;
+    int old_docking;
+    CHAR_DATA *old_ch;
+
+    if ( !ship )
+        return false;
+
+    old_shipstate = ship->shipstate;
+    old_docking = ship->docking;
+    old_ch = ship->ch;
+
+    space_validate_ship_links( NULL, ship, false );
+
+    if ( ship->shipstate == SHIP_DOCKED && ship->docked == NULL )
+        ship->shipstate = ship->location ? SHIP_LANDED : SHIP_READY;
+
+    if ( ( ship->docking == SHIP_DOCK || ship->docking == SHIP_DOCK_2 ) && ship->docked == NULL )
+    {
+        ship->docking = SHIP_READY;
+        if ( checkch )
+            ship->ch = NULL;
+    }
+
+    if ( checkch
+      && ( old_docking == SHIP_DOCK || old_docking == SHIP_DOCK_2 || old_docking == SHIP_DOCKED )
+      && ship->docking == SHIP_READY
+      && ship->docked == NULL )
+        ship->ch = NULL;
+
+    if ( ( ship->shipstate == SHIP_LAND || ship->shipstate == SHIP_LAND_2 )
+      && ( !ship->dest || ship->dest[0] == '\0' ) )
+        ship->shipstate = SHIP_READY;
+
+    return old_shipstate != ship->shipstate
+        || old_docking != ship->docking
+        || old_ch != ship->ch;
+}
+
+inline void space_set_shipstate( SHIP_DATA *ship, int state )
+{
+    if ( !ship )
+        return;
+
+    ship->shipstate = state;
+    space_enforce_ship_invariants( ship );
+    ship->dirty = true;
+}
+
+inline void space_set_docking_state( SHIP_DATA *ship, int state )
+{
+    if ( !ship )
+        return;
+
+    ship->docking = state;
+    space_enforce_ship_invariants( ship );
+    ship->dirty = true;
+
+}
+
+inline void space_beg_docking_state( CHAR_DATA *ch, SHIP_DATA *ship, SHIP_DATA *dockto )
+{
+    ship->ch = ch;
+    ship->docked = dockto;
+    space_set_docking_state( ship, SHIP_DOCK );
+}
+
+
+inline void space_end_docking_state( SHIP_DATA *ship )
+{
+    ship->ch = NULL;
+    ship->docked = NULL;    
+    space_set_docking_state( ship, SHIP_READY );
+}
+
+void space_ship_force_docked_match (SHIP_DATA *ship, SHIP_DATA *dockedto )
+{
+            ship->vx = dockedto->vx;
+            ship->vy = dockedto->vy;
+            ship->vz = dockedto->vz;
+            ship->cx = dockedto->cx;
+            ship->cy = dockedto->cy;
+            ship->cz = dockedto->cz;
+            ship->ox = dockedto->ox;
+            ship->oy = dockedto->oy;
+            ship->oz = dockedto->oz;
+            ship->jx = dockedto->jx;
+            ship->jy = dockedto->jy;
+            ship->jz = dockedto->jz;
+            ship->hx = dockedto->hx;
+            ship->hy = dockedto->hy;
+            ship->hz = dockedto->hz;
+            ship->hyperdistance = dockedto->hyperdistance;
+            ship->currspeed = dockedto->currspeed;
+            ship->orighyperdistance = dockedto->orighyperdistance;
+            ship->location = dockedto->location;
+            if ( dockedto->dest )
+            {
+                if ( !ship->dest || str_cmp( ship->dest, dockedto->dest ) )
+                {
+                    if ( ship->dest )
+                        STRFREE( ship->dest );
+                    ship->dest = STRALLOC( dockedto->dest );
+                }
+            }
+            else if ( ship->dest )
+            {
+                STRFREE( ship->dest );
+                ship->dest = NULL;
+            }
+            space_set_shipstate( ship, dockedto->shipstate );
+            ship->spaceobject = dockedto->spaceobject;
+            ship->currjump = dockedto->currjump;    
 }
