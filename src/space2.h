@@ -1014,7 +1014,7 @@ inline void space_end_docking_state( SHIP_DATA *ship )
     space_set_docking_state( ship, SHIP_READY );
 }
 
-void space_ship_force_docked_match (SHIP_DATA *ship, SHIP_DATA *dockedto )
+inline void space_ship_force_docked_match (SHIP_DATA *ship, SHIP_DATA *dockedto )
 {
             ship->vx = dockedto->vx;
             ship->vy = dockedto->vy;
